@@ -5,16 +5,18 @@ package schedule
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	agentdomain "boardly.dev/boardly/server/internal/agent"
 	"boardly.dev/boardly/server/internal/auth"
-	companydomain "boardly.dev/boardly/server/internal/company"
 	conversationdomain "boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
@@ -22,6 +24,116 @@ import (
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
+
+func TestFiringWorkerIsolatesBrokenSchedule(t *testing.T) {
+	for _, test := range []struct{ name, mutation, reason string }{
+		{"archived agent", `UPDATE agents SET archived_at=clock_timestamp() WHERE id=$1`, "agent_unavailable"},
+		{"invalid trigger", `UPDATE schedules SET trigger_type='cron', run_at=NULL, cron_expression='invalid', timezone='UTC' WHERE agent_id=$1`, "trigger_invalid"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			pool, store, fixture := startSchedulePostgres(t)
+			ctx := context.Background()
+			service := newScheduleTestService(t, store)
+			broken := createDueSchedule(
+				t,
+				ctx,
+				pool,
+				service,
+				companyPrincipal(fixture.UserA, fixture.CompanyA),
+				fixture.AgentA,
+			)
+			healthy := createDueSchedule(
+				t,
+				ctx,
+				pool,
+				service,
+				companyPrincipal(fixture.UserB, fixture.CompanyB),
+				fixture.AgentB,
+			)
+			dbtest.MustExec(t, ctx, pool, test.mutation, fixture.AgentA)
+			worker := reliabilityWorker(t, store, MaterializerFunc(materializedScheduleRun))
+			if _, err := worker.FireOnce(ctx); err != nil {
+				t.Fatal(err)
+			}
+			var status, reason string
+			if err := pool.QueryRow(ctx, `SELECT status, pause_reason FROM schedules WHERE id=$1`, broken.Schedule.ID).
+				Scan(&status, &reason); err != nil {
+				t.Fatal(err)
+			}
+			if status != "paused" || reason != test.reason {
+				t.Fatalf("broken Schedule = %s/%s, want paused/%s", status, reason, test.reason)
+			}
+			if got := countScheduleFirings(t, ctx, pool, healthy.Schedule.ID); got != 1 {
+				t.Fatalf("healthy firings = %d, want 1", got)
+			}
+		})
+	}
+}
+
+func TestFiringWorkerRetriesTransientMaterializationWithoutPausing(t *testing.T) {
+	pool, store, fixture := startSchedulePostgres(t)
+	ctx := context.Background()
+	service := newScheduleTestService(t, store)
+	created := createDueSchedule(
+		t,
+		ctx,
+		pool,
+		service,
+		companyPrincipal(fixture.UserA, fixture.CompanyA),
+		fixture.AgentA,
+	)
+	failed := false
+	worker := reliabilityWorker(
+		t,
+		store,
+		MaterializerFunc(
+			func(ctx context.Context, q *generated.Queries, pending *[]events.Event, input MaterializeInput) (MaterializeResult, error) {
+				if !failed {
+					failed = true
+					return MaterializeResult{}, &pgconn.PgError{Code: "40P01", Message: "deadlock"}
+				}
+				return materializedScheduleRun(ctx, q, pending, input)
+			},
+		),
+	)
+	_, _ = worker.FireOnce(ctx)
+	var status string
+	if err := pool.QueryRow(ctx, `SELECT status FROM schedules WHERE id=$1`, created.Schedule.ID).
+		Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "active" {
+		t.Fatalf("status = %s, want active after transient failure", status)
+	}
+	if _, err := worker.FireOnce(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := countScheduleFirings(t, ctx, pool, created.Schedule.ID); got != 1 {
+		t.Fatalf("firings = %d, want 1", got)
+	}
+}
+
+func reliabilityWorker(t *testing.T, store *db.Store, materializer Materializer) *FiringWorker {
+	t.Helper()
+	worker, err := NewFiringWorker(
+		FiringWorkerDependencies{
+			Store:        store,
+			Bus:          newScheduleTestBus(t),
+			Materializer: materializer,
+			Superseder:   QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
+			Invalidator:  QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
+		},
+		FiringWorkerOptions{OnIssue: func(issue FiringIssue) {
+			if issue.Err != nil {
+				t.Logf("Schedule %s: %v", issue.ScheduleID, issue.Err)
+			}
+		}},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return worker
+}
 
 func TestFiringWorkerFencesCreatorMembershipBeforeScheduleAndConversation(t *testing.T) {
 	pool, store, fixture := startSchedulePostgres(t)
@@ -37,7 +149,7 @@ func TestFiringWorkerFencesCreatorMembershipBeforeScheduleAndConversation(t *tes
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -183,7 +295,7 @@ func TestFiringWorkerPausesAnInactiveCreatorWithoutMaterializing(t *testing.T) {
 						Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 						Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 					},
-					FiringWorkerOptions{BatchSize: 1},
+					FiringWorkerOptions{PassLimit: 1},
 				)
 				if err != nil {
 					t.Fatalf("NewFiringWorker() error = %v", err)
@@ -228,255 +340,6 @@ func TestFiringWorkerPausesAnInactiveCreatorWithoutMaterializing(t *testing.T) {
 	}
 }
 
-// scheduleCreator is a member who is not the fixture owner: an admin with
-// her own computer and her own setup of the fixture Agent, who created a due
-// Schedule and has its Run queued. It carries the database it lives in.
-type scheduleCreator struct {
-	pool      *pgxpool.Pool
-	store     *db.Store
-	fixture   dbtest.Fixture
-	principal auth.UserPrincipal
-	runtimeID uuid.UUID
-	schedule  Response
-	firingID  uuid.UUID
-	runID     uuid.UUID
-}
-
-func seedScheduleCreatorWithQueuedRun(
-	t *testing.T,
-	ctx context.Context,
-	pool *pgxpool.Pool,
-	store *db.Store,
-	fixture dbtest.Fixture,
-) scheduleCreator {
-	t.Helper()
-	service := newScheduleTestService(t, store)
-	creator := scheduleCreator{
-		pool: pool, store: store, fixture: fixture,
-		principal: auth.UserPrincipal{
-			UserID: dbtest.NewUUID(t), SessionID: uuid.New(), AuthKind: auth.TokenKindBearer,
-			CompanyID: fixture.CompanyA, Role: auth.CompanyRoleAdmin,
-		},
-		runtimeID: dbtest.NewUUID(t),
-	}
-	dbtest.MustExec(t, ctx, pool, `
-		INSERT INTO users (id, email, display_name) VALUES ($1, 'mia@example.com', 'Mia')`,
-		creator.principal.UserID)
-	dbtest.MustExec(t, ctx, pool, `
-		INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'admin')`,
-		fixture.CompanyA, creator.principal.UserID)
-	dbtest.MustExec(t, ctx, pool, `
-		INSERT INTO runtimes (id, company_id, daemon_id, name, provider, status, owner_user_id, last_seen_at)
-		VALUES ($1, $2, 'daemon-mia', 'Mia''s Mac', 'codex', 'online', $3, now())`,
-		creator.runtimeID, fixture.CompanyA, creator.principal.UserID)
-	dbtest.SeedAgentBinding(t, ctx, pool, fixture.CompanyA, fixture.AgentA,
-		creator.principal.UserID, creator.runtimeID, "codex")
-	creator.schedule = createDueSchedule(t, ctx, pool, service, creator.principal, fixture.AgentA).Schedule
-	creator.firingID, creator.runID = seedActiveScheduleRun(
-		t, ctx, pool, service, creator.principal, creator.schedule, "queued",
-	)
-	var authorizer, runtimeID uuid.UUID
-	if err := pool.QueryRow(ctx, `
-		SELECT execution_authorized_by_user_id, runtime_id FROM runs WHERE id = $1`,
-		creator.runID).Scan(&authorizer, &runtimeID); err != nil {
-		t.Fatalf("read the queued Schedule Run: %v", err)
-	}
-	if authorizer != creator.principal.UserID || runtimeID != creator.runtimeID {
-		t.Fatalf("queued Schedule Run = authorized by %s on %s, want the creator on her own runtime",
-			authorizer, runtimeID)
-	}
-	return creator
-}
-
-// A Schedule fires only on its creator's own setup of the Agent (ADR 0014),
-// so it stops within one worker poll once its creator leaves the Company
-// (creator_changed) or no longer has the Agent set up on a runtime of theirs
-// that is not removed (agent_unavailable), and the next due pass enqueues
-// nothing (D31). Removing the member and unbinding the Agent cancel the
-// creator's queued Run themselves; when a queued Run outlives the change,
-// the reconcile pass invalidates it and marks its firing.
-func TestFiringWorkerStopsAScheduleItsCreatorCanNoLongerRun(t *testing.T) {
-	cases := []struct {
-		name string
-		// lose takes the creator's access away, through the product path or
-		// straight in the database.
-		lose       func(t *testing.T, ctx context.Context, creator scheduleCreator)
-		wantReason string
-		// The queued Run ends with this reason; its firing then has this
-		// disposition and reason.
-		wantRunReason    string
-		wantDisposition  FiringDisposition
-		wantFiringReason string
-	}{
-		{
-			name: "the owner removes the creator from the Company",
-			lose: func(t *testing.T, ctx context.Context, creator scheduleCreator) {
-				t.Helper()
-				members, err := companydomain.NewCompanyService(companydomain.ServiceOptions{
-					Store: creator.store, Bus: newScheduleTestBus(t),
-				})
-				if err != nil {
-					t.Fatalf("NewCompanyService() error = %v", err)
-				}
-				var revision int64
-				if err := creator.pool.QueryRow(ctx, `
-					SELECT version FROM company_members WHERE company_id = $1 AND user_id = $2`,
-					creator.fixture.CompanyA, creator.principal.UserID,
-				).Scan(&revision); err != nil {
-					t.Fatalf("read the creator's membership revision: %v", err)
-				}
-				owner := companyPrincipal(creator.fixture.UserA, creator.fixture.CompanyA)
-				if err := members.RemoveMember(ctx, owner, companydomain.MembershipMutation{
-					UserID: creator.principal.UserID, ExpectedRevision: revision,
-				}); err != nil {
-					t.Fatalf("RemoveMember(creator) error = %v", err)
-				}
-			},
-			wantReason:      ReasonCreatorChanged,
-			wantRunReason:   "runtime_owner_inactive",
-			wantDisposition: FiringDispositionMaterialized,
-		},
-		{
-			name: "the creator unbinds the Agent",
-			lose: func(t *testing.T, ctx context.Context, creator scheduleCreator) {
-				t.Helper()
-				bindings, err := agentdomain.NewBindingService(agentdomain.BindingServiceOptions{
-					Store: creator.store, Bus: newScheduleTestBus(t),
-				})
-				if err != nil {
-					t.Fatalf("NewBindingService() error = %v", err)
-				}
-				if err := bindings.Unbind(ctx, creator.principal, creator.fixture.AgentA); err != nil {
-					t.Fatalf("Unbind() error = %v", err)
-				}
-			},
-			wantReason:      ReasonAgentUnavailable,
-			wantRunReason:   execution.RunReasonAgentUnbound,
-			wantDisposition: FiringDispositionMaterialized,
-		},
-		{
-			name: "the creator's membership ends while the Run is still queued",
-			lose: func(t *testing.T, ctx context.Context, creator scheduleCreator) {
-				t.Helper()
-				dbtest.MustExec(t, ctx, creator.pool, `
-					UPDATE company_members
-					SET status='revoked', revoked_at=clock_timestamp(), revoked_by_user_id=$3,
-					    updated_at=clock_timestamp(), version=version+1
-					WHERE company_id=$1 AND user_id=$2`,
-					creator.fixture.CompanyA, creator.principal.UserID, creator.fixture.UserA)
-			},
-			wantReason:       ReasonCreatorChanged,
-			wantRunReason:    execution.CancellationScheduleInvalidated,
-			wantDisposition:  FiringDispositionNeedsAttention,
-			wantFiringReason: ReasonCreatorChanged,
-		},
-		{
-			name: "the creator's binding goes while the Run is still queued",
-			lose: func(t *testing.T, ctx context.Context, creator scheduleCreator) {
-				t.Helper()
-				dbtest.MustExec(t, ctx, creator.pool, `
-					DELETE FROM agent_runtime_bindings
-					WHERE company_id = $1 AND agent_id = $2 AND user_id = $3`,
-					creator.fixture.CompanyA, creator.fixture.AgentA, creator.principal.UserID)
-			},
-			wantReason:       ReasonAgentUnavailable,
-			wantRunReason:    execution.CancellationScheduleInvalidated,
-			wantDisposition:  FiringDispositionNeedsAttention,
-			wantFiringReason: ReasonAgentUnavailable,
-		},
-		{
-			name: "the creator's runtime is removed while the Run is still queued",
-			lose: func(t *testing.T, ctx context.Context, creator scheduleCreator) {
-				t.Helper()
-				dbtest.MustExec(t, ctx, creator.pool, `
-					UPDATE runtimes SET removed_at = now() WHERE id = $1`, creator.runtimeID)
-			},
-			wantReason:       ReasonAgentUnavailable,
-			wantRunReason:    execution.CancellationScheduleInvalidated,
-			wantDisposition:  FiringDispositionNeedsAttention,
-			wantFiringReason: ReasonAgentUnavailable,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			pool, store, fixture := startSchedulePostgres(t)
-			ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-			defer cancel()
-			creator := seedScheduleCreatorWithQueuedRun(t, ctx, pool, store, fixture)
-			tc.lose(t, ctx, creator)
-
-			materializer := &recordingMaterializer{}
-			worker, err := NewFiringWorker(
-				FiringWorkerDependencies{
-					Store: store, Bus: newScheduleTestBus(t), Materializer: materializer,
-					Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
-					Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
-				},
-				FiringWorkerOptions{BatchSize: 1},
-			)
-			if err != nil {
-				t.Fatalf("NewFiringWorker() error = %v", err)
-			}
-			if count, err := worker.ReconcileOnce(ctx); err != nil || count != 1 {
-				t.Fatalf("ReconcileOnce() = %d, %v; want 1, nil", count, err)
-			}
-			var status, pauseReason string
-			if err := pool.QueryRow(ctx, `
-				SELECT status, COALESCE(pause_reason, '') FROM schedules WHERE id = $1`,
-				creator.schedule.ID).Scan(&status, &pauseReason); err != nil {
-				t.Fatalf("read the Schedule: %v", err)
-			}
-			if status != string(StatusPaused) || pauseReason != tc.wantReason {
-				t.Fatalf("Schedule after one reconcile = %s/%s, want paused/%s",
-					status, pauseReason, tc.wantReason)
-			}
-			var runStatus, runReason, disposition, firingReason string
-			if err := pool.QueryRow(ctx, `
-				SELECT status, COALESCE(error, '') FROM runs WHERE id = $1`,
-				creator.runID).Scan(&runStatus, &runReason); err != nil {
-				t.Fatalf("read the queued Run: %v", err)
-			}
-			if err := pool.QueryRow(ctx, `
-				SELECT disposition, COALESCE(reason, '') FROM schedule_firings WHERE id = $1`,
-				creator.firingID).Scan(&disposition, &firingReason); err != nil {
-				t.Fatalf("read the queued Run's firing: %v", err)
-			}
-			if runStatus != "cancelled" || runReason != tc.wantRunReason ||
-				disposition != string(tc.wantDisposition) || firingReason != tc.wantFiringReason {
-				t.Fatalf("queued Run = %s/%s, firing = %s/%s; want cancelled/%s, %s/%s",
-					runStatus, runReason, disposition, firingReason,
-					tc.wantRunReason, tc.wantDisposition, tc.wantFiringReason)
-			}
-
-			// The Schedule is still past due, and the next pass enqueues
-			// nothing for it.
-			var due bool
-			if err := pool.QueryRow(ctx, `
-				SELECT next_occurrence_at <= clock_timestamp() FROM schedules WHERE id = $1`,
-				creator.schedule.ID).Scan(&due); err != nil || !due {
-				t.Fatalf("paused Schedule past due = %t, %v; want true, nil", due, err)
-			}
-			if count, err := worker.FireOnce(ctx); err != nil || count != 0 {
-				t.Fatalf("FireOnce() after the pause = %d, %v; want 0, nil", count, err)
-			}
-			if len(materializer.snapshot()) != 0 {
-				t.Fatalf("a paused Schedule reached the Materializer: %+v", materializer.snapshot())
-			}
-			var runs, firings int
-			if err := pool.QueryRow(ctx, `
-				SELECT (SELECT count(*) FROM runs WHERE conversation_id = $1),
-				       (SELECT count(*) FROM schedule_firings WHERE schedule_id = $2)`,
-				creator.schedule.ConversationID, creator.schedule.ID,
-			).Scan(&runs, &firings); err != nil {
-				t.Fatalf("count the Schedule's Runs and firings: %v", err)
-			}
-			if runs != 1 || firings != 1 {
-				t.Fatalf("Runs, firings after FireOnce = %d, %d; want 1, 1", runs, firings)
-			}
-		})
-	}
-}
-
 func TestFiringWorkerMaterializesOneOccurrenceAcrossReplicas(t *testing.T) {
 	pool, store, fixture := startSchedulePostgres(t)
 	ctx := context.Background()
@@ -509,7 +372,7 @@ func TestFiringWorkerMaterializesOneOccurrenceAcrossReplicas(t *testing.T) {
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker(A) error = %v", err)
@@ -520,7 +383,7 @@ func TestFiringWorkerMaterializesOneOccurrenceAcrossReplicas(t *testing.T) {
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker(B) error = %v", err)
@@ -656,7 +519,7 @@ func TestFiringWorkerPausesProviderDriftWithoutMaterializing(t *testing.T) {
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -693,7 +556,7 @@ func TestFiringWorkerCancelsQueuedRunWhenProviderDrifts(t *testing.T) {
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -744,7 +607,7 @@ func TestFiringWorkerSupersedesQueuedRunAndMaterializesLatestOccurrence(t *testi
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -791,7 +654,7 @@ func TestFiringWorkerSkipsOccurrenceWhileRunIsRunning(t *testing.T) {
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 1},
+		FiringWorkerOptions{PassLimit: 1},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -869,7 +732,7 @@ func TestFiringWorkerPausesMaterializationFailureWithoutStarvingLaterSchedule(t 
 			Superseder:  QueuedRunSupersederFunc(supersedeQueuedScheduleRun),
 			Invalidator: QueuedRunInvalidatorFunc(invalidateQueuedScheduleRun),
 		},
-		FiringWorkerOptions{BatchSize: 2},
+		FiringWorkerOptions{PassLimit: 2},
 	)
 	if err != nil {
 		t.Fatalf("NewFiringWorker() error = %v", err)
@@ -920,7 +783,7 @@ func (m *failFirstMaterializer) MaterializeScheduleRunInTx(
 ) (MaterializeResult, error) {
 	m.calls++
 	if m.calls == 1 {
-		return MaterializeResult{}, errors.New("materializer unavailable")
+		return MaterializeResult{}, fmt.Errorf("materializer refused: %w", ErrConflict)
 	}
 	return materializedScheduleRun(ctx, queries, pending, input)
 }
@@ -1075,4 +938,117 @@ func seedActiveScheduleRun(
 		dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status=$2 WHERE id=$1`, *result.Firing.RunID, status)
 	}
 	return result.Firing.ID, *result.Firing.RunID
+}
+
+func TestSchedulePauseCancelsDeferredRetry(t *testing.T) {
+	ctx := context.Background()
+	pool, store, fixture := startSchedulePostgres(t)
+	svc := newScheduleTestService(t, store)
+	created := createDueSchedule(
+		t,
+		ctx,
+		pool,
+		svc,
+		companyPrincipal(fixture.UserA, fixture.CompanyA),
+		fixture.AgentA,
+	)
+	firingID, runID := seedActiveScheduleRun(
+		t,
+		ctx,
+		pool,
+		svc,
+		companyPrincipal(fixture.UserA, fixture.CompanyA),
+		created.Schedule,
+		"queued",
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='failed', finished_at=now(), failure_reason='provider_error' WHERE id=$1`,
+		runID,
+	)
+	child, err := store.Queries().
+		CreateRetryRun(ctx, generated.CreateRetryRunParams{ParentRunID: runID, FireAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !child.ScheduleFiringID.Valid || child.ScheduleFiringID.UUID != firingID {
+		t.Fatal("retry lost firing identity")
+	}
+	current, err := svc.Get(ctx, companyPrincipal(fixture.UserA, fixture.CompanyA), created.Schedule.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Pause(
+		ctx,
+		companyPrincipal(fixture.UserA, fixture.CompanyA),
+		current.ID,
+		RevisionInput{ExpectedRevision: current.Revision},
+	); err != nil {
+		t.Fatal(err)
+	}
+	latest, err := store.Queries().GetRun(ctx, child.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if latest.Status != "cancelled" || latest.Error.String != "schedule_paused" {
+		t.Fatalf("waiting retry survived pause: %s %s", latest.Status, latest.Error.String)
+	}
+	var disposition string
+	if err := pool.QueryRow(ctx, `SELECT disposition FROM schedule_firings WHERE id=$1`, firingID).
+		Scan(&disposition); err != nil {
+		t.Fatal(err)
+	}
+	if disposition != "cancelled" {
+		t.Fatalf("firing = %s", disposition)
+	}
+}
+
+// This is an explicit load gate, separate from the ordinary integration suite:
+// BOARDLY_SCHEDULE_LOAD_TEST=1 ... -run TestScheduleBurstAcrossTwoReplicas
+func TestScheduleBurstAcrossTwoReplicas(t *testing.T) {
+	if os.Getenv("BOARDLY_SCHEDULE_LOAD_TEST") != "1" {
+		t.Skip("opt in to the 1000 Schedule load gate")
+	}
+	pool, store, f := startSchedulePostgres(t)
+	ctx := t.Context()
+	svc := newScheduleTestService(t, store)
+	base := createDueSchedule(t, ctx, pool, svc, companyPrincipal(f.UserA, f.CompanyA), f.AgentA)
+	seedScheduleBurst(t, ctx, pool, base.Schedule, 1000)
+	started := time.Now()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+	done := make(chan error, 2)
+	for range 2 {
+		worker := reliabilityWorker(t, store, MaterializerFunc(materializedScheduleRun))
+		go func() { _, err := worker.FireOnce(ctx); done <- err }()
+	}
+	for range 2 {
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	}
+	var count, unique int
+	if err := pool.QueryRow(ctx, `SELECT count(*),count(DISTINCT schedule_id) FROM schedule_firings WHERE trigger='scheduled'`).
+		Scan(&count, &unique); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1000 || unique != 1000 {
+		t.Fatalf("burst produced %d firings for %d schedules", count, unique)
+	}
+	t.Logf("1000 due Schedules, two replicas: %s", time.Since(started))
+}
+
+func seedScheduleBurst(t *testing.T, ctx context.Context, pool *pgxpool.Pool, base Response, count int) {
+	t.Helper()
+	dbtest.MustExec(t, ctx, pool, `WITH identities AS MATERIALIZED (
+  SELECT gen_random_uuid() AS id,gen_random_uuid() AS conversation_id FROM generate_series(1,$2)
+ ), chats AS (
+  INSERT INTO conversations(id,company_id,kind,schedule_id,agent_id,created_by_user_id,title)
+  SELECT identities.conversation_id,s.company_id,'schedule',identities.id,s.agent_id,s.creator_user_id,s.name
+  FROM identities CROSS JOIN schedules s WHERE s.id=$1 RETURNING id
+ ) INSERT INTO schedules(id,company_id,conversation_id,creator_user_id,request_key,agent_id,reviewed_provider,name,instructions,trigger_type,run_at,next_occurrence_at,status)
+ SELECT identities.id,s.company_id,identities.conversation_id,s.creator_user_id,gen_random_uuid(),s.agent_id,s.reviewed_provider,s.name,s.instructions,'once',s.run_at,s.next_occurrence_at,'active'
+ FROM identities JOIN chats ON chats.id=identities.conversation_id CROSS JOIN schedules s WHERE s.id=$1`, base.ID, count-1)
 }

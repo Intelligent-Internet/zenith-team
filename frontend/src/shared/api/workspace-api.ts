@@ -572,6 +572,7 @@ export const workspaceApi = boardlyApi.injectEndpoints({
       { companyId: string; taskId: string }
     >({
       providesTags: (_result, _error, { companyId }) => [
+        { id: `${companyId}:workspace`, type: "Task" },
         { id: companyId, type: "Task" },
       ],
       queryFn: ({ companyId, taskId }) =>

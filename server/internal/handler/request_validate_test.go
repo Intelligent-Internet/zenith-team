@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"boardly.dev/boardly/server/internal/canvas"
 	"boardly.dev/boardly/server/internal/util"
@@ -580,6 +581,9 @@ func TestRevisionBindingRejectsRevisionsOutsideTheRange(t *testing.T) {
 	t.Parallel()
 
 	requests := map[string]any{
+		"taskScheduleRequest":            &taskScheduleRequest{},
+		"taskOccurrenceRequest":          &taskOccurrenceRequest{OccurrenceAt: time.Now()},
+		"taskAssignmentRequest":          &taskAssignmentRequest{Accept: new(bool)},
 		"calendarResponseRequest":        &calendarResponseRequest{},
 		"calendarUpdateRequest":          &calendarUpdateRequest{},
 		"calendarOccurrenceRequest":      &calendarOccurrenceRequest{},
@@ -860,7 +864,12 @@ func TestPageCreationReviewAcceptsDocumentSizedGroups(t *testing.T) {
 			for i := range indexes {
 				indexes[i] = i
 			}
-			input := canvas.PageChangeReviewInput{RequestKey: uuid.New(), Fingerprint: strings.Repeat("a", 64), Action: "apply", Indexes: indexes}
+			input := canvas.PageChangeReviewInput{
+				RequestKey:  uuid.New(),
+				Fingerprint: strings.Repeat("a", 64),
+				Action:      "apply",
+				Indexes:     indexes,
+			}
 			err := binding.Validator.ValidateStruct(input)
 			if (err == nil) != (count <= 10000) {
 				t.Fatalf("review %d indexes = %v", count, err)

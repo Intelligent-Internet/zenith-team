@@ -88,11 +88,13 @@ zen task create --title "<title>" --milestone <milestone_type>
                 [--description "<text>"] [--key <stable_slug>]
                 [--executed-by-agent <agent-id> | --executed-by-self]
                 [--project <project-id|key>]
+                [--run-at <RFC3339> | --cron "0 9 * * 1-5" --time-zone <IANA>]
+                [--assignee-user <member-id>]
 ```
 
 Use it only when `zen run context` lists it. Creates a Task for the member
 this Run works for: they are its assignee and it runs on their computer;
-`--assignee-user` is refused inside a Run. Your own Agent does the work
+For scheduled work only, `--assignee-user` may propose it to another member when your authorizer holds `tasks.assign`; that member must accept in Zenith Team before it runs. Never accept on their behalf. Without a schedule, `--assignee-user` is refused inside a Run. Your own Agent does the work
 unless you name another one from `zen agent list`, or `--executed-by-self`
 for work the member does themselves. It starts right away when the member
 has that Agent set up; when they have not, the create is refused with
@@ -102,6 +104,19 @@ lands in this Task's Project, the only one the Run can look up, so leave
 server holds a Run to the same rules: a Task for anyone else, or from a Task
 Run in another Project, is refused with `task_outside_run_scope` and nothing
 is created.
+
+Scheduling is explicit: `--run-at` uses a future whole-minute timestamp with
+an offset; `--cron` requires an IANA time zone and a cadence of at least five
+minutes. A date-only deadline never starts work. Scheduled Tasks appear in
+Calendar, where members can move one occurrence or edit/pause future runs.
+In a CEO chat, this command requires a schedule and serves an explicitly
+requested standalone Task in an existing Project. This request does not
+require onboarding or Company Context review. Immediate work and multi-Task
+plans still go through the reviewed Company Plan flow.
+Repeating work creates a separate Task and chat per occurrence; missed work
+is not replayed in bulk, and an active previous Run skips an overlap. Use
+scheduling only when requested; keep the Project, assignee and instructions
+within your Run's authority.
 
 File a follow-up only for a distinct next piece of work the member would
 want, and at most once for it. Never file one to continue, retry or hand off

@@ -301,10 +301,8 @@ func TestRunCLIPolicyAdmitsTaskCreationForTheRunsMember(t *testing.T) {
 			t.Fatalf("%s Run admitted GET /me", name)
 		}
 	}
-	// Outside a Task the root Agent plans the Company: its work reaches
-	// other Agents only through a Company Plan the founder reviews first,
-	// so it is not offered a create that starts Agent work at once. It keeps
-	// the planning reads.
+	// CEO chats can schedule explicitly requested Tasks, but their create
+	// operation cannot start immediate work outside Company Plan review.
 	for name, doc := range map[string]RunContext{
 		"CEO direct": {Agent: RunAgentContext{IsRoot: true}},
 		"CEO channel invocation": {
@@ -314,14 +312,23 @@ func TestRunCLIPolicyAdmitsTaskCreationForTheRunsMember(t *testing.T) {
 	} {
 		commands := runCLICommands(directRun, doc)
 		policy := runCLIPolicyFor(commands)
-		if policy.allows(create[0], create[1]) || policy.allows(me[0], me[1]) {
-			t.Fatalf("%s Run admitted a Task create or GET /me", name)
+		operation, admitted := policy.admit(create[0], create[1], false)
+		if !admitted || !operation.ScheduledTaskOnly || policy.allows(me[0], me[1]) {
+			t.Fatalf("%s Run lacks schedule-only Task creation or admits GET /me", name)
 		}
-		if slices.Contains(runCLICommandUses(commands), "zen task create") {
-			t.Fatalf("%s Run advertises zen task create", name)
+		if !slices.Contains(runCLICommandUses(commands), "zen task create") {
+			t.Fatalf("%s Run omits zen task create", name)
 		}
 		if !policy.allows(http.MethodGet, company+"/projects") {
 			t.Fatalf("%s Run lost its planning reads", name)
+		}
+	}
+	// Platform-authored onboarding Runs never create user work.
+	for _, source := range []string{runSourceCompanyResearch, runSourceCompanyWelcome} {
+		doc := RunContext{Agent: RunAgentContext{IsRoot: true}}
+		doc.ExecutionProfile.Source = source
+		if runCLIPolicyFor(runCLICommands(directRun, doc)).allows(create[0], create[1]) {
+			t.Fatalf("company initialization %s was offered task creation", source)
 		}
 	}
 	// Without the planning reads a direct Run has no Project to name.
@@ -509,6 +516,47 @@ func TestRunChannelForwardsWithDaemonSessionAndRunProof(t *testing.T) {
 	}
 	if seen.Load() != 1 {
 		t.Fatalf("upstream saw %d requests, want 1", seen.Load())
+	}
+}
+
+func TestRunChannelCEOCreatesOnlyScheduledTasks(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name     string
+		schedule string
+		want     bool
+	}{
+		{name: "once", schedule: `,"schedule":{"type":"once","runAt":"2030-10-12T20:32:00+07:00"}`, want: true},
+		{name: "cron", schedule: `,"schedule":{"type":"cron","expression":"*/5 * * * *","timeZone":"Asia/Ho_Chi_Minh"}`, want: true},
+		{name: "immediate"},
+		{name: "null", schedule: `,"schedule":null`},
+		{name: "empty", schedule: `,"schedule":{}`},
+		{name: "unknown", schedule: `,"schedule":{"type":"immediate"}`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			var forwarded atomic.Int32
+			upstream := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				forwarded.Add(1)
+				w.WriteHeader(http.StatusCreated)
+				_, _ = w.Write([]byte(`{"id":"` + uuid.NewString() + `","runId":null}`))
+			})
+			_, control, _ := newChannelTestDaemon(t, upstream, channelTestRun(t, false), RunContext{
+				Agent: RunAgentContext{IsRoot: true},
+			})
+			response, err := runchannel.NewClient(control).Do(context.Background(), runchannel.Request{
+				Method: http.MethodPost, Path: "/companies/" + testChannelCompany + "/tasks",
+				RequestKey: uuid.NewString(),
+				Body:       json.RawMessage(`{"projectId":"` + testChannelProject + `","title":"Scheduled work","milestoneType":"launch"` + test.schedule + `}`),
+			})
+			if test.want {
+				if err != nil || response.Status != http.StatusCreated || forwarded.Load() != 1 {
+					t.Fatalf("create = %+v, %v; forwarded = %d, want created once", response, err, forwarded.Load())
+				}
+			} else if refusal, ok := channelRefusal(err); !ok || refusal.Code != "run_scope_denied" || forwarded.Load() != 0 {
+				t.Fatalf("create = %+v, %v; forwarded = %d, want local scope refusal", response, err, forwarded.Load())
+			}
+		})
 	}
 }
 

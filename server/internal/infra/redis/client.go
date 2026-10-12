@@ -1,9 +1,7 @@
 // Package redis constructs the process's Redis clients.
 //
-// Redis is optional: a single-replica deployment runs without it and every
-// consumer degrades to a local-only path. That is why the constructor returns
-// a nil client rather than an error for an empty URL — "not configured" is a
-// supported deployment, not a misconfiguration.
+// The API configuration requires Redis for the Schedule beat and relays.
+// The constructor keeps a nil option for isolated consumers and tests.
 package redis
 
 import (

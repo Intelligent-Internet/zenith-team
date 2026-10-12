@@ -835,6 +835,12 @@
   .has-task-inspector .project-task-board-section[data-view="table"] {
     margin-right: var(--project-task-inspector-width, 480px);
   }
+  .project-task-view .work-task-table[data-variant="default"] colgroup,
+  .project-task-view
+    .work-task-table[data-variant="default"]
+    :is(th, td):nth-child(n + 6) {
+    display: none;
+  }
 }
 .project-task-view > .work-task-table-scroll[data-variant="project"] {
   height: auto;
@@ -842,7 +848,10 @@
 }
 .work-task-table[data-variant="project"] {
   table-layout: fixed;
-  min-width: 620px;
+  min-width: 800px;
+}
+.work-task-table[data-variant="project"] .work-table-time-column {
+  width: 180px;
 }
 .work-task-table[data-variant="project"] .work-table-status-column {
   width: 180px;

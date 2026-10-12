@@ -98,7 +98,7 @@ export function ScheduleEditorSources({
               Connected sources
             </h2>
             <p className="mt-1 max-w-2xl text-xs leading-5 text-[var(--workspace-native-text-muted)]">
-              Choose the connections this scheduled task can use. Only selected
+              Choose the connections this schedule can use. Only selected
               connections will be available during each run.
             </p>
           </div>
@@ -164,7 +164,7 @@ export function ScheduleEditorSources({
             <p className="mt-1 text-xs leading-5 text-[var(--workspace-native-text-muted)]">
               Each selected Connector exposes its reviewed tool contract during
               the run, including tools that may write data. Keep the
-              instructions narrow and grant only the Connectors this task
+              instructions narrow and grant only the Connectors this schedule
               actually needs.
             </p>
           </div>
@@ -325,12 +325,14 @@ function schedulePluginIconContext(
   } satisfies LocalPluginIconContext;
 }
 
-function SchedulePreviewPanel({
+export function SchedulePreviewPanel({
+  heading = "Ready to save",
   agentName,
   onEditStep,
   preview,
   values,
 }: {
+  heading?: string;
   agentName: string;
   onEditStep: (step: 1 | 2) => void;
   preview: SchedulePreviewResponse;
@@ -353,7 +355,7 @@ function SchedulePreviewPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--workspace-native-accent)]">
-            Ready to save
+            {heading}
           </p>
           <h2 className="mt-1 text-base font-semibold text-[var(--workspace-native-text)]">
             {formatPreviewTrigger(preview)}
@@ -379,7 +381,7 @@ function SchedulePreviewPanel({
             type="button"
             onClick={() => onEditStep(1)}
           >
-            Edit task
+            Edit schedule
           </button>
         </div>
         <div>
@@ -435,6 +437,11 @@ function SchedulePreviewPanel({
           </button>
         </div>
       </div>
+      <p className="mt-4 text-xs leading-5 text-[var(--workspace-native-text-muted)]">
+        Each run starts fresh and can use only these reviewed connections. It
+        cannot use local files, Company Memory or Wiki, create Tasks, or ask
+        interactive questions.
+      </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {preview.nextOccurrences.map((occurrence, index) => (
           <div
@@ -451,9 +458,32 @@ function SchedulePreviewPanel({
             <strong className="mt-1 block text-xs font-bold text-[var(--workspace-native-text-muted)]">
               {formatScheduleDateTime(occurrence, timeZone)}
             </strong>
+            {preview.occurrenceDetails?.[index] ? (
+              <span className="mt-1 block text-xs leading-5 text-[var(--workspace-native-text-muted)]">
+                {formatUTCOffset(
+                  preview.normalizedTrigger.type === "once"
+                    ? -new Date(occurrence).getTimezoneOffset() * 60
+                    : preview.occurrenceDetails[index].utcOffsetSeconds,
+                )}
+                {preview.occurrenceDetails[index].repeatedLocalTime
+                  ? " · Repeated local time"
+                  : ""}
+                {preview.occurrenceDetails[index].offsetChanged
+                  ? " · Clock offset changes"
+                  : ""}
+                {preview.occurrenceDetails[index].skippedLocalTime
+                  ? ` · Skipped ${preview.occurrenceDetails[index].skippedLocalTime}`
+                  : ""}
+              </span>
+            ) : null}
           </div>
         ))}
       </div>
     </section>
   );
+}
+
+function formatUTCOffset(seconds: number) {
+  const minutes = Math.abs(seconds) / 60;
+  return `UTC${seconds < 0 ? "−" : "+"}${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }

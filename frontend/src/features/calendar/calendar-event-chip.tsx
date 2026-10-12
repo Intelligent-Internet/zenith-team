@@ -1,5 +1,5 @@
 import type { CSSProperties, MouseEventHandler } from "react";
-import { Bell, Check, Users } from "@/shared/ui/icons";
+import { Bell, Check, Users, ListTodo } from "@/shared/ui/icons";
 import type { CalendarOccurrence } from "./calendar-api";
 import { timeRangeLabel } from "./calendar-dates";
 
@@ -23,10 +23,18 @@ export function CalendarEventChip({
           ...style,
         } as CSSProperties
       }
+      draggable={Boolean(event.taskOccurrence && event.canEdit)}
+      onDragStart={(drag) => {
+        if (event.taskOccurrence) {
+          drag.dataTransfer.setData("application/x-zenith-task", event.id);
+          drag.dataTransfer.effectAllowed = "move";
+        }
+      }}
       onClick={onClick}
       aria-label={`${event.title} · ${timeRangeLabel(event)}`}
       title={`${event.title} · ${timeRangeLabel(event)}`}
     >
+      {event.taskOccurrence ? <ListTodo size={12} /> : null}
       {event.type === "reminder" &&
         (event.completed ? <Check size={12} /> : <Bell size={12} />)}
       {event.type === "event" && event.attendees.length > 0 && (

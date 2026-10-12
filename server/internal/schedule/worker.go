@@ -1,15 +1,16 @@
 package schedule
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
+	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"boardly.dev/boardly/server/internal/auth"
@@ -20,17 +21,13 @@ import (
 	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
 
-const (
-	defaultFiringBatchSize    = 64
-	maximumFiringBatchSize    = 1000
-	defaultFiringPollInterval = 15 * time.Second
-	minimumFiringPollInterval = 100 * time.Millisecond
-	maximumFiringPollInterval = time.Hour
-)
+const maximumFiringPassLimit = 5000
 
 const (
 	ReasonRunActive              = "run_active"
 	ReasonMaterializationBlocked = "materialization_blocked"
+	ReasonTriggerInvalid         = "trigger_invalid"
+	ReasonFiringFailed           = "firing_failed"
 )
 
 // Materializer turns one occurrence into a queued Run inside the caller's
@@ -62,6 +59,7 @@ type MaterializeInput struct {
 }
 
 type MaterializeResult struct {
+	MissedCount int32
 	Disposition FiringDisposition
 	Reason      string
 	RunID       uuid.UUID
@@ -107,14 +105,10 @@ func (f QueuedRunSupersederFunc) SupersedeScheduleRunInTx(
 }
 
 type materializationFailure struct {
+	Reason       string
 	Schedule     Response
 	OccurrenceAt time.Time
 	ServerTime   time.Time
-}
-
-type scheduleAuthorityTarget struct {
-	companyID     uuid.UUID
-	creatorUserID uuid.UUID
 }
 
 type QueuedRunInvalidator interface {
@@ -166,18 +160,23 @@ func (f MaterializerFunc) MaterializeScheduleRunInTx(
 	return f(ctx, queries, pending, input)
 }
 
-type FiringIssue string
-
-const (
-	FiringIssueScanFailed         FiringIssue = "scan_failed"
-	FiringIssueMaterializeFailed  FiringIssue = "materialize_failed"
-	FiringIssueInvalidStoredState FiringIssue = "invalid_stored_state"
-)
+// FiringIssue carries row-level diagnostics to the composition root. IDs belong
+// in logs, never in metric labels or queue error messages.
+type FiringIssue struct {
+	Path       string
+	ScheduleID uuid.UUID
+	CompanyID  uuid.UUID
+	Code       string
+	Err        error
+	Stack      []byte
+}
 
 type FiringWorkerOptions struct {
-	BatchSize    int
-	PollInterval time.Duration
-	OnIssue      func(FiringIssue)
+	PassLimit     int
+	SweepInterval time.Duration
+	OnIssue       func(FiringIssue)
+	OnFired       func(string, string, string, time.Duration)
+	OnPass        func(string)
 }
 
 // FiringWorkerDependencies are the transactional adapters used by one firing
@@ -192,12 +191,15 @@ type FiringWorkerDependencies struct {
 }
 
 type FiringWorker struct {
-	store        *db.Store
-	bus          *events.Bus
-	materializer Materializer
-	superseder   QueuedRunSuperseder
-	invalidator  QueuedRunInvalidator
-	options      FiringWorkerOptions
+	failureMu        sync.Mutex
+	failures         map[uuid.UUID]firingFailureCount
+	nextFailurePrune time.Time
+	store            *db.Store
+	bus              *events.Bus
+	materializer     Materializer
+	superseder       QueuedRunSuperseder
+	invalidator      QueuedRunInvalidator
+	options          FiringWorkerOptions
 }
 
 func NewFiringWorker(
@@ -221,15 +223,15 @@ func normalizeFiringWorkerOptions(options *FiringWorkerOptions) bool {
 	if options == nil {
 		return false
 	}
-	if options.BatchSize == 0 {
-		options.BatchSize = defaultFiringBatchSize
+	if options.PassLimit == 0 {
+		options.PassLimit = maximumFiringPassLimit
 	}
-	if options.PollInterval == 0 {
-		options.PollInterval = defaultFiringPollInterval
+	if options.SweepInterval == 0 {
+		options.SweepInterval = 30 * time.Second
 	}
-	return options.BatchSize >= 1 && options.BatchSize <= maximumFiringBatchSize &&
-		options.PollInterval >= minimumFiringPollInterval &&
-		options.PollInterval <= maximumFiringPollInterval
+	return options.PassLimit >= 1 && options.PassLimit <= maximumFiringPassLimit &&
+		options.SweepInterval >= 10*time.Second &&
+		options.SweepInterval <= time.Minute
 }
 
 func (w *FiringWorker) Run(ctx context.Context) error {
@@ -237,23 +239,17 @@ func (w *FiringWorker) Run(ctx context.Context) error {
 		nilInterface(w.superseder) || nilInterface(w.invalidator) || ctx == nil {
 		return ErrWorkerConfiguration
 	}
-	ticker := time.NewTicker(w.options.PollInterval)
+	ticker := time.NewTicker(w.options.SweepInterval)
 	defer ticker.Stop()
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if _, err := w.ReconcileOnce(ctx); err != nil {
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return ctxErr
+		if _, err := w.SweepOnce(ctx); err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
 			}
-			w.observeIssue(firingIssue(err))
-		}
-		if _, err := w.FireOnce(ctx); err != nil {
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return ctxErr
-			}
-			w.observeIssue(firingIssue(err))
+			w.observeIssue(FiringIssue{Path: "sweep", Code: "scan_failed", Err: err})
 		}
 		select {
 		case <-ctx.Done():
@@ -263,133 +259,269 @@ func (w *FiringWorker) Run(ctx context.Context) error {
 	}
 }
 
-func (w *FiringWorker) ReconcileOnce(ctx context.Context) (int, error) {
-	if w == nil || w.store == nil || w.bus == nil || nilInterface(w.materializer) ||
-		nilInterface(w.superseder) || nilInterface(w.invalidator) || ctx == nil {
-		return 0, ErrWorkerConfiguration
-	}
-	processed := 0
-	for range w.options.BatchSize {
-		if err := ctx.Err(); err != nil {
-			return processed, err
+// SweepOnce repairs overdue work without depending on Redis. Each pass is
+// bounded by the sweep interval; a slow company cannot block unrelated ones.
+func (w *FiringWorker) SweepOnce(ctx context.Context) (count int, err error) {
+	ctx, cancel := context.WithTimeout(ctx, w.options.SweepInterval)
+	defer cancel()
+	defer func() {
+		if w.options.OnPass != nil {
+			func() {
+				defer func() { _ = recover() }()
+				result := "ok"
+				if err != nil {
+					result = "error"
+				}
+				if errors.Is(err, context.DeadlineExceeded) {
+					result = "deadline"
+				}
+				w.options.OnPass(result)
+			}()
 		}
-		found := false
-		pending := []events.Event{}
-		err := w.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
-			drifted, err := tx.LockNextDriftedSchedule(ctx, auth.RolesWith(auth.PermissionSchedulesManage))
-			if errors.Is(err, pgx.ErrNoRows) {
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("lock drifted Schedule: %w", err)
-			}
-			found = true
-			reason := invalidScheduleReason(
-				drifted.CompanyValid,
-				drifted.CreatorValid,
-				drifted.AgentValid,
-				drifted.ProviderMatches,
-				drifted.SourcesMatch,
+	}()
+	count, fireErr := w.firePass(ctx, 30)
+	driftCount, driftErr := w.ReconcileOnce(ctx)
+	// A previous process may have committed and died before publishing. Wake
+	// each online runtime once, also invalidating the distributed empty cache.
+	targets, wakeErr := w.store.Queries().ListScheduleWakeupTargets(ctx)
+	if wakeErr == nil {
+		for _, target := range targets {
+			execution.PublishRuntimeUnblocked(
+				ctx,
+				w.bus,
+				generated.Run{CompanyID: target.CompanyID, RuntimeID: target.RuntimeID},
 			)
-			current, err := responseWithSources(ctx, tx, drifted.Schedule)
-			if err != nil {
-				return err
-			}
-			pending = append(pending, changedEvent(current))
-			overlap, overlapFound, err := lockActiveScheduleRun(ctx, tx, current)
-			if err != nil {
-				return err
-			}
-			if overlapFound && overlap.Status == "queued" {
-				if err := w.invalidator.InvalidateScheduleRunInTx(
-					ctx,
-					tx,
-					&pending,
-					InvalidateQueuedRunInput{
-						FiringID: overlap.FiringID, RunID: overlap.RunID,
-						ScheduleID: current.ID, CompanyID: current.CompanyID,
-						ConversationID: current.ConversationID,
-					},
-				); err != nil {
-					return fmt.Errorf("invalidate queued drifted Schedule Run: %w", err)
-				}
-				if err := markNeedsAttentionFiring(ctx, tx, overlap, reason); err != nil {
-					return err
-				}
-			}
-			if _, err := tx.PauseInvalidDueSchedule(ctx, generated.PauseInvalidDueScheduleParams{
-				Reason: reason, ScheduleID: drifted.Schedule.ID, CompanyID: drifted.Schedule.CompanyID,
-				ExpectedVersion: drifted.Schedule.Version,
-			}); err != nil {
-				return fmt.Errorf("pause drifted Schedule: %w", err)
-			}
-			return nil
-		})
+		}
+	}
+	return count + driftCount, errors.Join(fireErr, driftErr, wakeErr)
+}
+
+func (w *FiringWorker) ReconcileOnce(ctx context.Context) (int, error) {
+	processed := 0
+	cursor := uuid.Nil
+	skippedCompanies := make(map[uuid.UUID]bool)
+	for processed < w.options.PassLimit {
+		rows, err := w.store.Queries().
+			ListDriftedScheduleLockTargets(ctx, generated.ListDriftedScheduleLockTargetsParams{
+				ActorRoles: auth.RolesWith(auth.PermissionSchedulesManage),
+				AfterID:    cursor,
+				PageSize:   int32(min(500, w.options.PassLimit-processed)),
+			})
 		if err != nil {
 			return processed, err
 		}
-		if !found {
-			return processed, nil
+		if len(rows) == 0 {
+			break
 		}
-		publishPending(ctx, w.bus, pending)
-		processed++
+		for _, row := range rows {
+			cursor = row.ScheduleID
+			processed++
+			if skippedCompanies[row.CompanyID] {
+				continue
+			}
+			_, err := w.processSchedule(ctx, row.ScheduleID, true, "sweep")
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "55P03" {
+				skippedCompanies[row.CompanyID] = true
+			}
+		}
 	}
-	return processed, nil
+	return processed, ctx.Err()
 }
 
 func (w *FiringWorker) FireOnce(ctx context.Context) (int, error) {
-	if w == nil || w.store == nil || w.bus == nil || nilInterface(w.materializer) ||
-		nilInterface(w.superseder) || nilInterface(w.invalidator) || ctx == nil {
-		return 0, ErrWorkerConfiguration
-	}
-	processed := 0
-	for range w.options.BatchSize {
-		if err := ctx.Err(); err != nil {
+	return w.firePass(ctx, 0)
+}
+
+func (w *FiringWorker) firePass(ctx context.Context, grace float64) (int, error) {
+	processed, visited := 0, 0
+	cursor := pgtype.Timestamptz{}
+	cursorID := uuid.Nil
+	var failed []generated.ListDueScheduleLockTargetsRow
+	skippedCompanies := make(map[uuid.UUID]bool)
+	for visited < w.options.PassLimit {
+		rows, err := w.store.Queries().
+			ListDueScheduleLockTargets(ctx, generated.ListDueScheduleLockTargetsParams{
+				GraceSeconds: grace,
+				AfterTime:    cursor,
+				AfterID:      cursorID,
+				PageSize:     int32(min(500, w.options.PassLimit-visited)),
+			})
+		if err != nil {
 			return processed, err
 		}
-		pending := []events.Event{}
-		found, runID, failure, err := w.fireNext(ctx, &pending)
-		if err != nil {
-			if failure != nil && errors.Is(err, ErrMaterialization) {
-				if recordErr := w.recordMaterializationFailure(ctx, *failure); recordErr != nil {
-					return processed, errors.Join(err, recordErr)
-				}
-				w.observeIssue(FiringIssueMaterializeFailed)
-				processed++
+		if len(rows) == 0 {
+			break
+		}
+		for _, row := range rows {
+			visited++
+			cursor, cursorID = row.NextOccurrenceAt, row.ScheduleID
+			if skippedCompanies[row.CompanyID] {
 				continue
 			}
-			return processed, err
+			fired, err := w.FireSchedule(ctx, row.ScheduleID, "sweep")
+			if err != nil {
+				if escalationEligible(err) && w.countFailure(row) >= 5 &&
+					row.ServerTime.Time.Sub(row.NextOccurrenceAt.Time) > 10*time.Minute {
+					failed = append(failed, row)
+				}
+				var pgErr *pgconn.PgError
+				if errors.As(err, &pgErr) && pgErr.Code == "55P03" {
+					skippedCompanies[row.CompanyID] = true
+				}
+				continue
+			}
+			if fired {
+				processed++
+			}
 		}
-		if !found {
-			return processed, nil
-		}
-		publishPending(ctx, w.bus, pending)
-		if runID != nil {
-			w.notifyRunEnqueued(ctx, *runID)
-		}
-		processed++
 	}
-	return processed, nil
+	if processed > 0 {
+		for _, row := range failed {
+			if err := w.escalateFailure(ctx, row); err != nil {
+				w.observeIssue(
+					FiringIssue{
+						Path:       "sweep",
+						ScheduleID: row.ScheduleID,
+						CompanyID:  row.CompanyID,
+						Code:       "firing_failed",
+						Err:        err,
+					},
+				)
+			}
+		}
+	}
+	return processed, ctx.Err()
+}
+
+// FireSchedule rechecks one candidate using the database clock. Queue delivery
+// is merely a hint: this transaction is also the repair sweep's only firing core.
+func (w *FiringWorker) FireSchedule(ctx context.Context, id uuid.UUID, path string) (bool, error) {
+	return w.processSchedule(ctx, id, false, path)
+}
+
+func (w *FiringWorker) processSchedule(
+	ctx context.Context,
+	id uuid.UUID,
+	drift bool,
+	path string,
+) (found bool, err error) {
+	ctx, cancelAttempt := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelAttempt()
+	observation := firingObservation{outcome: "noop"}
+	defer func() {
+		var stack []byte
+		if value := recover(); value != nil {
+			err = fmt.Errorf("Schedule firing panic: %v", value)
+			stack = debug.Stack()
+		}
+		if err != nil {
+			w.observeIssue(
+				FiringIssue{
+					Path:       path,
+					ScheduleID: id,
+					CompanyID:  observation.companyID,
+					Code:       firingErrorCode(err),
+					Err:        err,
+					Stack:      stack,
+				},
+			)
+		} else if observation.reason != "" || observation.outcome == "noop" {
+			code := observation.reason
+			if code == "" {
+				code = "noop"
+			}
+			w.observeIssue(
+				FiringIssue{Path: path, ScheduleID: id, CompanyID: observation.companyID, Code: code},
+			)
+		}
+	}()
+	pending := []events.Event{}
+	found, runID, failure, err := w.fireNext(ctx, id, drift, &pending, &observation)
+	if err != nil {
+		if failure != nil && errors.Is(err, ErrMaterialization) &&
+			(errors.Is(err, ErrConflict) || errors.Is(err, execution.ErrRunAgentNotBound)) {
+			err := w.recordMaterializationFailure(ctx, *failure)
+			observation.reason = ReasonMaterializationBlocked
+			if err == nil {
+				w.observeFiring(
+					path,
+					firingObservation{
+						outcome: "needs_attention",
+						reason:  ReasonMaterializationBlocked,
+					},
+				)
+			}
+			return true, err
+		}
+		if errors.Is(err, db.ErrCommitUnknown) {
+			repairCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+			w.repairWakeups(repairCtx, id)
+		}
+		if failure == nil && (errors.Is(err, ErrConflict) || errors.Is(err, pgx.ErrNoRows)) {
+			return false, nil
+		}
+		return false, err
+	}
+	postCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	publishPending(postCtx, w.bus, pending)
+	if runID != nil {
+		w.notifyRunEnqueued(postCtx, *runID)
+	}
+	// A worker dying after commit must not strand a queued Run or its cached empty claim.
+	if !found {
+		w.repairWakeups(postCtx, id)
+	}
+	w.observeFiring(path, observation)
+	return found, nil
+}
+
+func (w *FiringWorker) repairWakeups(ctx context.Context, id uuid.UUID) {
+	runs, err := w.store.Queries().ListWaitingScheduleRuns(ctx, id)
+	if err != nil {
+		return
+	}
+	for _, run := range runs {
+		execution.PublishRuntimeWork(ctx, w.bus, run)
+	}
 }
 
 func (w *FiringWorker) fireNext(
 	ctx context.Context,
+	id uuid.UUID,
+	drift bool,
 	pending *[]events.Event,
+	observation *firingObservation,
 ) (bool, *uuid.UUID, *materializationFailure, error) {
 	found := false
 	var queuedRunID *uuid.UUID
 	var failure *materializationFailure
-	err := w.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
-		candidateIDs, err := lockDueScheduleProducerFences(ctx, tx)
-		if err != nil {
+	target, err := w.store.Queries().GetScheduleLockTarget(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil, nil, nil
+	}
+	if err != nil {
+		return false, nil, nil, err
+	}
+	observation.companyID = target.CompanyID
+	err = w.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
+		if err := tx.SetScheduleTransactionTimeouts(ctx, "200ms"); err != nil {
 			return err
 		}
-		if len(candidateIDs) == 0 {
-			return nil
+		if _, err := lockScheduleCreatorAuthority(ctx, tx, target.CompanyID, target.CreatorUserID); err != nil {
+			return err
+		}
+		if err := tx.SetScheduleTransactionTimeouts(ctx, "5s"); err != nil {
+			return err
 		}
 		due, err := tx.LockNextDueSchedule(ctx, generated.LockNextDueScheduleParams{
-			ActorRoles:  auth.RolesWith(auth.PermissionSchedulesManage),
-			ScheduleIds: candidateIDs,
+			ActorRoles: auth.RolesWith(
+				auth.PermissionSchedulesManage,
+			),
+			ScheduleID:    id,
+			IncludeNotDue: drift,
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
@@ -404,12 +536,12 @@ func (w *FiringWorker) fireNext(
 		}
 		*pending = append(*pending, changedEvent(current))
 		if reason := invalidDueReason(due); reason != "" {
-			if _, err := tx.PauseInvalidDueSchedule(ctx, generated.PauseInvalidDueScheduleParams{
-				Reason: reason, ScheduleID: current.ID, CompanyID: current.CompanyID,
-				ExpectedVersion: current.Revision,
-			}); err != nil {
-				return fmt.Errorf("pause invalid due Schedule: %w", err)
-			}
+			observation.outcome, observation.reason = "paused", reason
+			return w.pauseInvalid(ctx, tx, pending, current, reason)
+		}
+		if drift {
+			found = false
+			*pending = nil
 			return nil
 		}
 		occurrenceAt, err := latestDueOccurrence(
@@ -418,16 +550,21 @@ func (w *FiringWorker) fireNext(
 			due.ServerTime.Time,
 		)
 		if err != nil {
-			return err
+			observation.outcome, observation.reason = "paused", ReasonTriggerInvalid
+			return w.pauseInvalid(ctx, tx, pending, current, ReasonTriggerInvalid)
 		}
+		observation.lag = due.ServerTime.Time.Sub(due.Schedule.NextOccurrenceAt.Time)
+		missed := missedOccurrences(current.Trigger, due.Schedule.NextOccurrenceAt.Time, occurrenceAt)
 		overlap, overlapFound, err := lockActiveScheduleRun(ctx, tx, current)
 		if err != nil {
 			return err
 		}
-		if overlapFound && overlap.Status != "queued" {
+		if overlapFound && !waitingRun(overlap.Status) {
+			observation.outcome = "skipped"
 			skipped := MaterializeResult{
 				Disposition: FiringDispositionSkipped,
 				Reason:      ReasonRunActive,
+				MissedCount: missed,
 			}
 			if _, err := insertFiring(
 				ctx, tx, current, occurrenceAt, FiringTriggerScheduled, uuid.Nil, skipped,
@@ -468,6 +605,8 @@ func (w *FiringWorker) fireNext(
 			}
 			return errors.Join(ErrMaterialization, err)
 		}
+		observation.outcome, observation.reason = string(materialized.Disposition), materialized.Reason
+		materialized.MissedCount = missed
 		firing, err := insertFiring(
 			ctx, tx, current, occurrenceAt, FiringTriggerScheduled, uuid.Nil, materialized,
 		)
@@ -494,81 +633,69 @@ func (w *FiringWorker) fireNext(
 	return found, queuedRunID, nil, nil
 }
 
-// lockDueScheduleProducerFences discovers a bounded candidate set without
-// locking Schedules, then takes every Company lock before any membership lock.
-// Both phases are UUID-sorted so concurrent workers and account deletion share
-// a deterministic prefix before Schedule -> Conversation -> Run.
-func lockDueScheduleProducerFences(
+func waitingRun(status string) bool { return status == "queued" || status == "deferred" }
+
+func (w *FiringWorker) pauseInvalid(
 	ctx context.Context,
-	queries *generated.Queries,
-) ([]uuid.UUID, error) {
-	rows, err := queries.ListDueScheduleLockTargets(ctx, defaultFiringBatchSize)
+	tx *generated.Queries,
+	pending *[]events.Event,
+	current Response,
+	reason string,
+) error {
+	if err := w.invalidateActiveOccurrence(ctx, tx, pending, current, reason); err != nil {
+		return err
+	}
+	_, err := tx.PauseInvalidDueSchedule(ctx, generated.PauseInvalidDueScheduleParams{
+		Reason: reason, ScheduleID: current.ID, CompanyID: current.CompanyID, ExpectedVersion: current.Revision,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("list due Schedule producer fences: %w", err)
+		return err
 	}
-	if len(rows) == 0 {
-		return nil, nil
-	}
+	return notifyAttentionInTx(ctx, tx, pending, current, reason)
+}
 
-	candidateIDs := make([]uuid.UUID, 0, len(rows))
-	companySet := make(map[uuid.UUID]struct{}, len(rows))
-	targetSet := make(map[scheduleAuthorityTarget]struct{}, len(rows))
-	for _, row := range rows {
-		candidateIDs = append(candidateIDs, row.ScheduleID)
-		companySet[row.CompanyID] = struct{}{}
-		targetSet[scheduleAuthorityTarget{
-			companyID: row.CompanyID, creatorUserID: row.CreatorUserID,
-		}] = struct{}{}
+func (w *FiringWorker) invalidateActiveOccurrence(
+	ctx context.Context,
+	tx *generated.Queries,
+	pending *[]events.Event,
+	current Response,
+	reason string,
+) error {
+	overlap, found, err := lockActiveScheduleRun(ctx, tx, current)
+	if err != nil {
+		return err
 	}
-
-	companyIDs := make([]uuid.UUID, 0, len(companySet))
-	for companyID := range companySet {
-		companyIDs = append(companyIDs, companyID)
-	}
-	slices.SortFunc(companyIDs, func(left, right uuid.UUID) int {
-		return bytes.Compare(left[:], right[:])
-	})
-	companyAvailable := make(map[uuid.UUID]bool, len(companyIDs))
-	for _, companyID := range companyIDs {
-		available, err := lockScheduleCompanyAuthority(ctx, queries, companyID)
-		if err != nil {
-			return nil, err
+	if found {
+		if waitingRun(overlap.Status) {
+			if err := w.invalidator.InvalidateScheduleRunInTx(ctx, tx, pending, InvalidateQueuedRunInput{
+				FiringID:       overlap.FiringID,
+				RunID:          overlap.RunID,
+				ScheduleID:     current.ID,
+				CompanyID:      current.CompanyID,
+				ConversationID: current.ConversationID,
+			}); err != nil {
+				return err
+			}
 		}
-		companyAvailable[companyID] = available
-	}
-
-	targets := make([]scheduleAuthorityTarget, 0, len(targetSet))
-	for target := range targetSet {
-		targets = append(targets, target)
-	}
-	slices.SortFunc(targets, func(left, right scheduleAuthorityTarget) int {
-		if order := bytes.Compare(left.companyID[:], right.companyID[:]); order != 0 {
-			return order
-		}
-		return bytes.Compare(left.creatorUserID[:], right.creatorUserID[:])
-	})
-	for _, target := range targets {
-		if !companyAvailable[target.companyID] {
-			continue
-		}
-		if _, err := lockScheduleCreatorMembership(
-			ctx,
-			queries,
-			target.companyID,
-			target.creatorUserID,
-		); err != nil {
-			return nil, err
+		if err := markNeedsAttentionFiring(ctx, tx, overlap, reason); err != nil {
+			return err
 		}
 	}
-	return candidateIDs, nil
+	return nil
 }
 
 func (w *FiringWorker) recordMaterializationFailure(
 	ctx context.Context,
 	failure materializationFailure,
 ) error {
+	if failure.Reason == "" {
+		failure.Reason = ReasonMaterializationBlocked
+	}
 	var pending []events.Event
 	err := w.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
+		if err := tx.SetScheduleTransactionTimeouts(ctx, "200ms"); err != nil {
+			return err
+		}
 		authorized, err := lockScheduleCreatorAuthority(
 			ctx,
 			tx,
@@ -580,6 +707,9 @@ func (w *FiringWorker) recordMaterializationFailure(
 		}
 		if !authorized {
 			return nil
+		}
+		if err := tx.SetScheduleTransactionTimeouts(ctx, "5s"); err != nil {
+			return err
 		}
 		row, err := tx.GetScheduleForCreatorForUpdate(
 			ctx,
@@ -605,9 +735,12 @@ func (w *FiringWorker) recordMaterializationFailure(
 		if err != nil {
 			return err
 		}
+		if err := w.invalidateActiveOccurrence(ctx, tx, &pending, current, failure.Reason); err != nil {
+			return err
+		}
 		result := MaterializeResult{
 			Disposition: FiringDispositionNeedsAttention,
-			Reason:      ReasonMaterializationBlocked,
+			Reason:      failure.Reason,
 		}
 		if _, err := insertFiring(
 			ctx,
@@ -618,6 +751,9 @@ func (w *FiringWorker) recordMaterializationFailure(
 			uuid.Nil,
 			result,
 		); err != nil {
+			return err
+		}
+		if err := notifyAttentionInTx(ctx, tx, &pending, current, result.Reason); err != nil {
 			return err
 		}
 		pending = append(pending, changedEvent(current))
@@ -631,7 +767,9 @@ func (w *FiringWorker) recordMaterializationFailure(
 		)
 	})
 	if err == nil {
-		publishPending(ctx, w.bus, pending)
+		postCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		publishPending(postCtx, w.bus, pending)
 	}
 	return err
 }
@@ -671,6 +809,13 @@ func lockActiveScheduleRun(
 	tx *generated.Queries,
 	current Response,
 ) (generated.LockActiveScheduleRunRow, bool, error) {
+	if err := tx.LockScheduleConversation(ctx, generated.LockScheduleConversationParams{
+		ScheduleID: current.ID, CompanyID: current.CompanyID, ConversationID: current.ConversationID,
+	}); err != nil {
+		return generated.LockActiveScheduleRunRow{}, false, err
+	}
+	// Separate READ COMMITTED statement sees a retry that committed while the
+	// Conversation lock was being acquired.
 	row, err := tx.LockActiveScheduleRun(ctx, generated.LockActiveScheduleRunParams{
 		ScheduleID: current.ID, CompanyID: current.CompanyID, ConversationID: current.ConversationID,
 	})
@@ -726,21 +871,19 @@ func advanceAfterFiring(
 	status := StatusActive
 	var next *time.Time
 	var pauseReason pgtype.Text
-	if current.Trigger.Type == TriggerTypeOnce {
+	switch {
+	case materialized.Disposition == FiringDispositionNeedsAttention:
+		status = StatusPaused
+		pauseReason = pgtype.Text{String: materialized.Reason, Valid: true}
+		next = cloneTime(current.NextOccurrenceAt)
+	case current.Trigger.Type == TriggerTypeOnce:
 		status = StatusCompleted
-	} else {
+	default:
 		value, err := nextOccurrence(current.Trigger, serverTime)
 		if err != nil {
 			return err
 		}
 		next = &value
-	}
-	if materialized.Disposition == FiringDispositionNeedsAttention {
-		status = StatusPaused
-		pauseReason = pgtype.Text{String: materialized.Reason, Valid: true}
-		if current.Trigger.Type == TriggerTypeOnce {
-			next = cloneTime(current.Trigger.RunAt)
-		}
 	}
 	if _, err := tx.AdvanceScheduleAfterFiring(ctx, generated.AdvanceScheduleAfterFiringParams{
 		Status: string(status), NextOccurrenceAt: optionalTime(next), OccurrenceAt: requiredTime(occurrenceAt),
@@ -800,7 +943,7 @@ func insertFiring(
 			Time: occurrenceAt.UTC(), Valid: true,
 		},
 		Trigger: string(trigger), RequestKey: uuid.NullUUID{UUID: requestKey, Valid: requestKey != uuid.Nil},
-		Disposition: string(materialized.Disposition), Reason: reason,
+		Disposition: string(materialized.Disposition), Reason: reason, MissedCount: materialized.MissedCount,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return generated.ScheduleFiring{}, ErrConflict
@@ -847,7 +990,7 @@ func validMaterializeResult(result MaterializeResult) bool {
 
 func validDisposition(value FiringDisposition) bool {
 	switch value {
-	case FiringDispositionMaterialized, FiringDispositionSuperseded,
+	case FiringDispositionMaterialized, FiringDispositionSuperseded, FiringDispositionCancelled,
 		FiringDispositionSkipped, FiringDispositionNeedsAttention:
 		return true
 	default:
@@ -855,15 +998,21 @@ func validDisposition(value FiringDisposition) bool {
 	}
 }
 
-func firingIssue(err error) FiringIssue {
-	switch {
-	case errors.Is(err, ErrMaterialization):
-		return FiringIssueMaterializeFailed
-	case errors.Is(err, ErrInvalidStoredState):
-		return FiringIssueInvalidStoredState
-	default:
-		return FiringIssueScanFailed
+func firingErrorCode(err error) string {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code
 	}
+	if db.IsTransient(err) {
+		return "transient"
+	}
+	if errors.Is(err, ErrMaterialization) {
+		return "materialize_failed"
+	}
+	if errors.Is(err, ErrInvalidStoredState) {
+		return "invalid_stored_state"
+	}
+	return "firing_failed"
 }
 
 func (w *FiringWorker) observeIssue(issue FiringIssue) {
@@ -897,4 +1046,18 @@ func validMaterializeInput(input MaterializeInput) bool {
 		input.Provider != "" && input.Instructions != "" &&
 		(input.Trigger == FiringTriggerScheduled || input.Trigger == FiringTriggerManual) &&
 		input.ForceFreshSession
+}
+
+type firingObservation struct {
+	companyID       uuid.UUID
+	outcome, reason string
+	lag             time.Duration
+}
+
+func (w *FiringWorker) observeFiring(path string, observation firingObservation) {
+	if w.options.OnFired == nil {
+		return
+	}
+	defer func() { _ = recover() }()
+	w.options.OnFired(path, observation.outcome, observation.reason, observation.lag)
 }

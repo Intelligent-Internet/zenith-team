@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -80,6 +81,7 @@ type ServiceOptions struct {
 	Bus                 *events.Bus
 	ConversationUpdater ConversationUpdater
 	Materializer        Materializer
+	OnFired             func(string, string, string, time.Duration)
 }
 
 type DefaultScheduleService struct {
@@ -87,6 +89,7 @@ type DefaultScheduleService struct {
 	bus                 *events.Bus
 	conversationUpdater ConversationUpdater
 	materializer        Materializer
+	onFired             func(string, string, string, time.Duration)
 }
 
 func NewScheduleService(options ServiceOptions) (*DefaultScheduleService, error) {
@@ -97,8 +100,11 @@ func NewScheduleService(options ServiceOptions) (*DefaultScheduleService, error)
 		)
 	}
 	return &DefaultScheduleService{
-		store: options.Store, bus: options.Bus,
-		conversationUpdater: options.ConversationUpdater, materializer: options.Materializer,
+		store:               options.Store,
+		bus:                 options.Bus,
+		conversationUpdater: options.ConversationUpdater,
+		materializer:        options.Materializer,
+		onFired:             options.OnFired,
 	}, nil
 }
 
@@ -249,8 +255,9 @@ func (s *DefaultScheduleService) List(
 		return Page{}, err
 	}
 	params := generated.ListSchedulesForCreatorParams{
-		ActorRoles:  auth.RolesWith(auth.PermissionSchedulesManage),
-		ActorUserID: principal.UserID, CompanyID: principal.CompanyID,
+		ExcludeTerminal: normalized.ExcludeTerminal,
+		ActorRoles:      auth.RolesWith(auth.PermissionSchedulesManage),
+		ActorUserID:     principal.UserID, CompanyID: principal.CompanyID,
 		BeforeCreatedAt: requiredTime(time.Unix(0, 0).UTC()), PageSize: int32(normalized.Limit + 1),
 	}
 	if normalized.Status != nil {
@@ -318,6 +325,9 @@ func (s *DefaultScheduleService) Update(
 		}
 		previewInput := previewInputFromResponse(current)
 		applyUpdate(&previewInput, normalized)
+		if previewInput.PresetKey != nil && previewInput.Trigger.Type == TriggerTypeOnce {
+			return ErrInvalidInput
+		}
 		clock, err := tx.GetScheduleClock(ctx)
 		if err != nil {
 			return fmt.Errorf("read Schedule update clock: %w", err)
@@ -330,6 +340,44 @@ func (s *DefaultScheduleService) Update(
 		}
 		if preview.ReviewDigest != normalized.ReviewDigest {
 			return ErrReviewStale
+		}
+		effect, err := stopWaitingRun(
+			ctx,
+			tx,
+			&pending,
+			current,
+			execution.CancellationScheduleEdited,
+			execution.CancellationScheduleEdited,
+			events.UserActor(principal.UserID.String()),
+		)
+		if err != nil {
+			return err
+		}
+		if current.Status == StatusActive && current.NextOccurrenceAt != nil &&
+			!current.NextOccurrenceAt.After(clock.Time) {
+			occurrence, err := latestDueOccurrence(current.Trigger, *current.NextOccurrenceAt, clock.Time)
+			if err != nil {
+				occurrence = *current.NextOccurrenceAt
+			}
+			if _, err := insertFiring(
+				ctx,
+				tx,
+				current,
+				occurrence,
+				FiringTriggerScheduled,
+				uuid.Nil,
+				MaterializeResult{
+					Disposition: FiringDispositionSkipped,
+					Reason:      ReasonDefinitionUpdate,
+					MissedCount: missedOccurrences(
+						current.Trigger,
+						*current.NextOccurrenceAt,
+						occurrence,
+					),
+				},
+			); err != nil {
+				return err
+			}
 		}
 		var next *time.Time
 		if current.Status == StatusActive || current.Status == StatusPaused {
@@ -374,7 +422,7 @@ func (s *DefaultScheduleService) Update(
 		if err := replaceSources(ctx, tx, row, preview.Sources); err != nil {
 			return err
 		}
-		result = MutationResult{Schedule: responseFromRow(row, preview.Sources)}
+		result = MutationResult{Schedule: responseFromRow(row, preview.Sources), RunEffect: effect}
 		pending = append(pending, changedEvent(result.Schedule))
 		return nil
 	})
@@ -467,7 +515,7 @@ func (s *DefaultScheduleService) Cancel(
 		return MutationResult{}, ErrInvalidInput
 	}
 	var result MutationResult
-	var changed events.Event
+	var pending []events.Event
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
 		current, err := lockResponse(ctx, tx, principal, scheduleID)
 		if err != nil {
@@ -479,6 +527,18 @@ func (s *DefaultScheduleService) Cancel(
 		if current.Status == StatusCompleted || current.Status == StatusCancelled {
 			return ErrTerminal
 		}
+		effect, err := stopWaitingRun(
+			ctx,
+			tx,
+			&pending,
+			current,
+			execution.CancellationScheduleCancelled,
+			execution.CancellationScheduleCancelled,
+			events.UserActor(principal.UserID.String()),
+		)
+		if err != nil {
+			return err
+		}
 		row, err := tx.CancelSchedule(ctx, generated.CancelScheduleParams{
 			ScheduleID: scheduleID, CompanyID: principal.CompanyID,
 			ActorUserID: principal.UserID, ExpectedVersion: current.Revision,
@@ -489,14 +549,14 @@ func (s *DefaultScheduleService) Cancel(
 		if err != nil {
 			return mapMutationError("cancel Schedule", err)
 		}
-		result = MutationResult{Schedule: responseFromRow(row, current.Sources)}
-		changed = changedEvent(result.Schedule)
+		result = MutationResult{Schedule: responseFromRow(row, current.Sources), RunEffect: effect}
+		pending = append(pending, changedEvent(result.Schedule))
 		return nil
 	})
 	if err != nil {
 		return MutationResult{}, err
 	}
-	s.bus.Publish(ctx, Topic, changed)
+	publishPending(ctx, s.bus, pending)
 	return result, nil
 }
 
@@ -588,7 +648,7 @@ func (s *DefaultScheduleService) RunNow(
 			RequestKey: uuid.NullUUID{UUID: normalized.RequestKey, Valid: true},
 		})
 		if err == nil {
-			firing, err := firingWithResult(ctx, tx, replay)
+			firing, err := firingWithResult(ctx, tx, replay, principal.UserID)
 			result = RunNowResult{Firing: firing}
 			return err
 		}
@@ -598,9 +658,7 @@ func (s *DefaultScheduleService) RunNow(
 		if current.Status != StatusActive {
 			return ErrInvalidState
 		}
-		active, err := tx.HasActiveScheduleRun(ctx, generated.HasActiveScheduleRunParams{
-			ScheduleID: scheduleID, CompanyID: principal.CompanyID,
-		})
+		_, active, err := lockActiveScheduleRun(ctx, tx, current)
 		if err != nil {
 			return fmt.Errorf("check active Schedule Run: %w", err)
 		}
@@ -654,7 +712,7 @@ func (s *DefaultScheduleService) RunNow(
 		}); err != nil {
 			return fmt.Errorf("record manual Schedule firing: %w", err)
 		}
-		firing, err := firingWithResult(ctx, tx, row)
+		firing, err := firingWithResult(ctx, tx, row, principal.UserID)
 		if err != nil {
 			return err
 		}
@@ -672,6 +730,12 @@ func (s *DefaultScheduleService) RunNow(
 		if loadErr == nil {
 			execution.PublishRuntimeWork(ctx, s.bus, run)
 		}
+	}
+	if result.Created && s.onFired != nil {
+		func() {
+			defer func() { _ = recover() }()
+			s.onFired("run_now", string(result.Firing.Disposition), "", 0)
+		}()
 	}
 	return result, nil
 }
@@ -700,7 +764,7 @@ func (s *DefaultScheduleService) mutateSimpleLifecycle(
 		return MutationResult{}, ErrInvalidInput
 	}
 	var result MutationResult
-	var changed events.Event
+	var pending []events.Event
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
 		current, err := lockResponse(ctx, tx, principal, scheduleID)
 		if err != nil {
@@ -712,6 +776,18 @@ func (s *DefaultScheduleService) mutateSimpleLifecycle(
 		if current.Status != expected {
 			return ErrInvalidState
 		}
+		effect, err := stopWaitingRun(
+			ctx,
+			tx,
+			&pending,
+			current,
+			execution.CancellationSchedulePaused,
+			execution.CancellationSchedulePaused,
+			events.UserActor(principal.UserID.String()),
+		)
+		if err != nil {
+			return err
+		}
 		row, err := mutate(ctx, tx, current)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrVersionConflict
@@ -719,14 +795,14 @@ func (s *DefaultScheduleService) mutateSimpleLifecycle(
 		if err != nil {
 			return mapMutationError("mutate Schedule lifecycle", err)
 		}
-		result = MutationResult{Schedule: responseFromRow(row, current.Sources)}
-		changed = changedEvent(result.Schedule)
+		result = MutationResult{Schedule: responseFromRow(row, current.Sources), RunEffect: effect}
+		pending = append(pending, changedEvent(result.Schedule))
 		return nil
 	})
 	if err != nil {
 		return MutationResult{}, err
 	}
-	s.bus.Publish(ctx, Topic, changed)
+	publishPending(ctx, s.bus, pending)
 	return result, nil
 }
 
@@ -755,7 +831,7 @@ func (s *DefaultScheduleService) reviewLifecycle(
 		return MutationResult{}, ErrInvalidInput
 	}
 	var result MutationResult
-	var changed events.Event
+	var pending []events.Event
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
 		current, err := lockResponse(ctx, tx, principal, scheduleID)
 		if err != nil {
@@ -791,13 +867,16 @@ func (s *DefaultScheduleService) reviewLifecycle(
 			return err
 		}
 		result = MutationResult{Schedule: responseFromRow(row, preview.Sources)}
-		changed = changedEvent(result.Schedule)
+		pending = append(pending, changedEvent(result.Schedule))
+		if err := closeAttentionInTx(ctx, tx, &pending, current); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
 		return MutationResult{}, err
 	}
-	s.bus.Publish(ctx, Topic, changed)
+	publishPending(ctx, s.bus, pending)
 	return result, nil
 }
 
@@ -854,9 +933,15 @@ func resolvePreview(
 		return PreviewResult{}, err
 	}
 	result := PreviewResult{
-		AgentID: input.AgentID, ReviewedProvider: provider, Name: input.Name,
-		Instructions: input.Instructions, PresetKey: cloneString(input.PresetKey),
-		Trigger: preview.Trigger, Sources: sources, Occurrences: preview.Occurrences,
+		AgentID:           input.AgentID,
+		ReviewedProvider:  provider,
+		Name:              input.Name,
+		Instructions:      input.Instructions,
+		PresetKey:         cloneString(input.PresetKey),
+		Trigger:           preview.Trigger,
+		Sources:           sources,
+		Occurrences:       preview.Occurrences,
+		OccurrenceDetails: preview.OccurrenceDetails,
 	}
 	result.ReviewDigest, err = computeReviewDigest(result)
 	if err != nil {
@@ -1132,9 +1217,10 @@ func firingWithResult(
 	ctx context.Context,
 	tx *generated.Queries,
 	row generated.ScheduleFiring,
+	actorUserID uuid.UUID,
 ) (Firing, error) {
 	withResult, err := tx.GetScheduleFiringWithResult(ctx, generated.GetScheduleFiringWithResultParams{
-		FiringID: row.ID, CompanyID: row.CompanyID,
+		FiringID: row.ID, CompanyID: row.CompanyID, ActorUserID: actorUserID,
 	})
 	if err != nil {
 		return Firing{}, fmt.Errorf("read Schedule firing result: %w", err)
@@ -1145,6 +1231,27 @@ func firingWithResult(
 func firingWithResultFromRow(row generated.ListScheduleFiringsForCreatorRow) Firing {
 	firing := firingFromRow(row.ScheduleFiring)
 	firing.RunStatus = optionalString(row.RunStatus)
+	firing.MissedCount = row.ScheduleFiring.MissedCount
+	if row.LatestRunID.Valid {
+		value := row.LatestRunID.UUID
+		firing.RunID = &value
+	}
+	if row.RunAttempt.Valid {
+		value := row.RunAttempt.Int32
+		firing.Attempt = &value
+	}
+	firing.RunFailureReason = optionalString(row.RunFailureReason)
+	// runs.error can contain provider text; only scheduler-owned reason codes cross this surface.
+	if row.RunCancelReason.Valid && strings.HasPrefix(row.RunCancelReason.String, "schedule_") &&
+		safeCodePattern.MatchString(row.RunCancelReason.String) {
+		firing.RunCancelReason = optionalString(row.RunCancelReason)
+	}
+	firing.RuntimeStatus = optionalString(row.RuntimeStatus)
+	firing.RuntimeUnusableReason = optionalString(row.RuntimeUnusableReason)
+	if row.RuntimeLastSeenAt.Valid {
+		value := row.RuntimeLastSeenAt.Time
+		firing.RuntimeLastSeenAt = &value
+	}
 	if row.HasOutput {
 		firing.Output = cloneString(&row.Output)
 	}
@@ -1371,4 +1478,91 @@ func mapMutationError(operation string, err error) error {
 		}
 	}
 	return fmt.Errorf("%s: %w", operation, err)
+}
+
+// stopWaitingRun is shared by explicit lifecycle mutations. Active execution
+// is left alone, but its firing is closed so a later failure cannot retry it.
+func stopWaitingRun(
+	ctx context.Context,
+	tx *generated.Queries,
+	pending *[]events.Event,
+	current Response,
+	reason, firingReason string,
+	actor events.Actor,
+) (string, error) {
+	run, found, err := lockActiveScheduleRun(ctx, tx, current)
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "none", nil
+	}
+	effect := "running_run_continues"
+	if waitingRun(run.Status) {
+		if err := execution.CancelScheduleRunInTx(ctx, tx, pending, execution.ScheduleRunCancellationInput{
+			RunID:          run.RunID,
+			FiringID:       run.FiringID,
+			ScheduleID:     current.ID,
+			CompanyID:      current.CompanyID,
+			ConversationID: current.ConversationID,
+			Reason:         reason,
+			Actor:          actor,
+		}); err != nil {
+			return "", err
+		}
+		effect = "waiting_run_cancelled"
+	}
+	disposition := FiringDispositionCancelled
+	if reason == execution.CancellationScheduleInvalidated {
+		disposition = FiringDispositionNeedsAttention
+	}
+	_, err = tx.UpdateScheduleFiringDisposition(ctx, generated.UpdateScheduleFiringDispositionParams{
+		FiringID:    run.FiringID,
+		CompanyID:   current.CompanyID,
+		Disposition: string(disposition),
+		Reason:      firingReason,
+	})
+	return effect, err
+}
+
+// PauseAgentSchedulesInTx participates in archive under the caller's exclusive
+// Company fence. Terminal definitions stay terminal; any waiting occurrence is
+// still dropped. No other member is given access to the private Schedule.
+func PauseAgentSchedulesInTx(
+	ctx context.Context,
+	tx *generated.Queries,
+	pending *[]events.Event,
+	companyID, agentID uuid.UUID,
+) error {
+	rows, err := tx.LockSchedulesForAgentArchive(
+		ctx,
+		generated.LockSchedulesForAgentArchiveParams{CompanyID: companyID, AgentID: agentID},
+	)
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		current := responseFromRow(row, nil)
+		if _, err := stopWaitingRun(
+			ctx,
+			tx,
+			pending,
+			current,
+			execution.CancellationScheduleInvalidated,
+			ReasonAgentUnavailable,
+			events.SystemActor(),
+		); err != nil {
+			return err
+		}
+		if err := tx.PauseArchivedAgentSchedule(ctx, row.ID); err != nil {
+			return err
+		}
+		if current.Status == StatusActive || current.Status == StatusPaused {
+			if err := notifyAttentionInTx(ctx, tx, pending, current, ReasonAgentUnavailable); err != nil {
+				return err
+			}
+		}
+		*pending = append(*pending, changedEvent(current))
+	}
+	return nil
 }

@@ -1,0 +1,56 @@
+# Load into the Prometheus instance scraping the API's /metrics endpoint.
+# Each environment should have its own rule evaluation/scrape scope.
+groups:
+  - name: schedules
+    rules:
+      - alert: ScheduleOverdue
+        expr: max(boardly_schedule_overdue) >= 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Multiple Schedules are overdue
+          description: Check PostgreSQL firing lag, row-level Schedule errors, and the repair sweep.
+      - alert: ScheduleOverdueOne
+        expr: max(boardly_schedule_overdue) >= 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: A Schedule remains overdue
+      - alert: ScheduleFiringLagHigh
+        expr: max(boardly_schedule_firing_lag_seconds) > 120
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Schedule firing lag exceeds two minutes
+      - alert: ScheduleProbeStopped
+        expr: sum(increase(boardly_schedule_probe_runs_total{result="ok"}[5m])) == 0 or absent(boardly_schedule_probe_runs_total{result="ok"})
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: No successful PostgreSQL Schedule probe
+      - alert: ScheduleSweepStopped
+        expr: sum(increase(boardly_schedule_sweep_passes_total[5m])) == 0 or absent(boardly_schedule_sweep_passes_total)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Schedule repair sweep has stopped
+      - alert: ScheduleBeatDegraded
+        expr: sum(increase(boardly_schedule_firings_total{path="sweep",outcome=~"materialized|skipped"}[30m])) / clamp_min(sum(increase(boardly_schedule_firings_total{path=~"beat|sweep",outcome=~"materialized|skipped"}[30m])), 1) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Repair sweep handles more than ten percent of firings
+          description: Check Redis availability, memory, scan enqueues, failed fire tasks and worker saturation.
+      - alert: ScheduleFireFailed
+        expr: sum(increase(boardly_schedule_tasks_total{task="fire",result="failed"}[15m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: A Schedule fire task exhausted its retries
+          description: PostgreSQL remains authoritative; verify that the sweep repaired the occurrence.

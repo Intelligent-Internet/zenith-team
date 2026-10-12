@@ -497,3 +497,15 @@ func runQueuedEvent(
 		Payload:        view.RunSnapshot,
 	}, nil
 }
+
+// MarkTaskRunScheduledInTx preserves Calendar admission checks for the first
+// attempt while its computer is offline. Retries use the ordinary Task lifecycle.
+// The caller owns the occurrence receipt in this same transaction.
+func MarkTaskRunScheduledInTx(ctx context.Context, q *db.Queries, run db.Run) error {
+	if err := q.MarkTaskRunScheduled(ctx, db.MarkTaskRunScheduledParams{
+		RunID: run.ID, TaskID: run.TaskID, CompanyID: run.CompanyID,
+	}); err != nil {
+		return fmt.Errorf("mark scheduled Task Run: %w", err)
+	}
+	return nil
+}

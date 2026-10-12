@@ -184,8 +184,8 @@ type RunService interface {
 	RequeueRunAfterClaimFailure(ctx context.Context, run db.Run) (*db.Run, error)
 	PromoteDueDeferredRunsForRuntimes(ctx context.Context, runtimeIDs []uuid.UUID) error
 	PromoteDueDeferredRuns(ctx context.Context) ([]db.Run, error)
-	StartRun(ctx context.Context, runID uuid.UUID, runtimeID uuid.UUID) (*db.Run, error)
-	ExtendRunPrepareLease(ctx context.Context, runID uuid.UUID, runtimeID uuid.UUID) error
+	StartRun(ctx context.Context, runID, runtimeID uuid.UUID) (*db.Run, error)
+	ExtendRunPrepareLease(ctx context.Context, runID, runtimeID uuid.UUID) error
 	MarkRunWaitingLocalDirectory(ctx context.Context, runID uuid.UUID) (*db.Run, error)
 	WaitForStudioAuth(ctx context.Context, runID uuid.UUID, waiting bool) (*db.Run, error)
 	CompleteRun(
@@ -342,6 +342,7 @@ type StaleRunOptions struct {
 }
 
 type QueuedRunExpiryOptions struct {
+	OnceWait time.Duration
 	TTL      time.Duration
 	MaxBatch int32
 }
@@ -429,7 +430,16 @@ func (s *DefaultRunService) ResolveRunOrigin(ctx context.Context, token string) 
 		originUserID = row.InvocationCallerID
 	}
 	if row.InvocationID.Valid {
-		if err := AuthorizeChannelInvocationInTx(ctx, s.Queries, RunTrigger{CompanyID: row.CompanyID, ConversationID: row.ConversationID, AgentID: row.AgentID, InvocationID: row.InvocationID}); err != nil {
+		if err := AuthorizeChannelInvocationInTx(
+			ctx,
+			s.Queries,
+			RunTrigger{
+				CompanyID:      row.CompanyID,
+				ConversationID: row.ConversationID,
+				AgentID:        row.AgentID,
+				InvocationID:   row.InvocationID,
+			},
+		); err != nil {
 			if errors.Is(err, ErrChannelInvocationDenied) || errors.Is(err, ErrRunAgentNotBound) {
 				return RunOrigin{}, ErrRunProofInvalid
 			}
@@ -842,7 +852,10 @@ func (s *DefaultRunService) ClaimRun(ctx context.Context, agentID, runtimeID uui
 		// releasing at commit is what makes the next claimer's count see the
 		// run this one dispatched. It waits on no other writer — see the
 		// query's comment for why it is advisory and not a row lock.
-		if err := q.LockAgentClaimSlot(ctx, db.LockAgentClaimSlotParams{AgentID: agentID, RuntimeID: runtimeID}); err != nil {
+		if err := q.LockAgentClaimSlot(
+			ctx,
+			db.LockAgentClaimSlotParams{AgentID: agentID, RuntimeID: runtimeID},
+		); err != nil {
 			return fmt.Errorf("lock agent for claim: %w", err)
 		}
 		storedCapacity, err := q.GetAgentClaimCapacity(ctx, agentID)
@@ -854,7 +867,10 @@ func (s *DefaultRunService) ClaimRun(ctx context.Context, agentID, runtimeID uui
 			}
 			return fmt.Errorf("read agent claim capacity: %w", err)
 		}
-		activeTaskLaneRuns, err := q.CountActiveTaskLaneRuns(ctx, db.CountActiveTaskLaneRunsParams{AgentID: agentID, RuntimeID: runtimeID})
+		activeTaskLaneRuns, err := q.CountActiveTaskLaneRuns(
+			ctx,
+			db.CountActiveTaskLaneRunsParams{AgentID: agentID, RuntimeID: runtimeID},
+		)
 		if err != nil {
 			return fmt.Errorf("count active task-lane runs: %w", err)
 		}
@@ -911,7 +927,15 @@ func (s *DefaultRunService) ClaimRun(ctx context.Context, agentID, runtimeID uui
 			return err
 		}
 		claimed = &run
-		return recordRunChangeInTx(ctx, q, &historyEvents, events.SystemActor(), EventRunDispatched, beforeHistory, run)
+		return recordRunChangeInTx(
+			ctx,
+			q,
+			&historyEvents,
+			events.SystemActor(),
+			EventRunDispatched,
+			beforeHistory,
+			run,
+		)
 	})
 	if err != nil {
 		if errors.Is(err, ErrRunConnectorSnapshotUnavailable) && unavailableSnapshotRunID != uuid.Nil {
@@ -1143,21 +1167,33 @@ func (s *DefaultRunService) FinalizeRunClaim(ctx context.Context, token db.Creat
 
 // RequeueRunAfterClaimFailure immediately releases an exact dispatched claim
 // whose payload finalization failed before the HTTP response was written. The
-// SQL CAS includes dispatched_at so a late handler cannot roll back a newer
+// SQL CAS includes updated_at so a late handler cannot roll back a newer
 // reclaim. This is not a fresh enqueue.
 func (s *DefaultRunService) RequeueRunAfterClaimFailure(ctx context.Context, run db.Run) (*db.Run, error) {
 	requeued, err := s.changeRun(ctx, run.ID, EventRunQueued, func(q *db.Queries) (db.Run, error) {
-		return q.RequeueRunAfterClaimFailure(ctx, db.RequeueRunAfterClaimFailureParams{ID: run.ID, RuntimeID: run.RuntimeID, UpdatedAt: run.UpdatedAt})
+		return q.RequeueRunAfterClaimFailure(
+			ctx,
+			db.RequeueRunAfterClaimFailureParams{
+				ID:        run.ID,
+				RuntimeID: run.RuntimeID,
+				UpdatedAt: run.UpdatedAt,
+			},
+		)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("requeue run after claim failure: %w", err)
 	}
 
-	PublishRuntimeWork(context.Background(), s.Bus, requeued)
+	if requeued.Status == "queued" {
+		PublishRuntimeWork(context.Background(), s.Bus, requeued)
+	} else {
+		s.NotifyRunFinished(requeued)
+	}
 	slog.Info(
-		"run requeued after claim finalization failure",
+		"run recovered after claim finalization failure",
 		"run_id", requeued.ID,
 		"runtime_id", requeued.RuntimeID.String(),
+		"status", requeued.Status,
 	)
 	return &requeued, nil
 }
@@ -1269,7 +1305,13 @@ func (s *DefaultRunService) MarkRunWaitingLocalDirectory(
 	runID uuid.UUID,
 ) (*db.Run, error) {
 	run, err := s.changeRun(ctx, runID, EventRunWaitingLocalDirectory, func(q *db.Queries) (db.Run, error) {
-		return q.MarkRunWaitingLocalDirectory(ctx, db.MarkRunWaitingLocalDirectoryParams{ID: runID, PrepareLeaseSecs: prepareLeaseDuration.Seconds()})
+		return q.MarkRunWaitingLocalDirectory(
+			ctx,
+			db.MarkRunWaitingLocalDirectoryParams{
+				ID:               runID,
+				PrepareLeaseSecs: prepareLeaseDuration.Seconds(),
+			},
+		)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mark run waiting_local_directory: %w", err)
@@ -1359,7 +1401,15 @@ func (s *DefaultRunService) CompleteRun(
 		if err := qtx.RetainOutputRunCompletion(ctx, run.ID); err != nil {
 			return fmt.Errorf("retain Output Run completion: %w", err)
 		}
-		if err := recordRunChangeInTx(ctx, qtx, &pending, events.SystemActor(), EventRunCompleted, beforeHistory, run); err != nil {
+		if err := recordRunChangeInTx(
+			ctx,
+			qtx,
+			&pending,
+			events.SystemActor(),
+			EventRunCompleted,
+			beforeHistory,
+			run,
+		); err != nil {
 			return err
 		}
 		transitioned = true
@@ -1550,12 +1600,28 @@ func (s *DefaultRunService) FailRun(
 				default:
 					retry := db.Run(child)
 					retried = &retry
-					if err := recordRunChangeInTx(ctx, qtx, &txPending, events.SystemActor(), EventRunQueued, nil, retry); err != nil {
+					if err := recordRunChangeInTx(
+						ctx,
+						qtx,
+						&txPending,
+						events.SystemActor(),
+						EventRunQueued,
+						nil,
+						retry,
+					); err != nil {
 						return err
 					}
 				}
 			}
-			if err := recordRunChangeInTx(ctx, qtx, &txPending, events.SystemActor(), EventRunFailed, beforeHistory, run); err != nil {
+			if err := recordRunChangeInTx(
+				ctx,
+				qtx,
+				&txPending,
+				events.SystemActor(),
+				EventRunFailed,
+				beforeHistory,
+				run,
+			); err != nil {
 				return err
 			}
 			txPromoted, err = s.promoteRunQueueInTx(ctx, qtx, &txPending, run, "")
@@ -1700,7 +1766,15 @@ func (s *DefaultRunService) cancelQueuedRunAfterConnectorSnapshotFailure(
 			return cancelErr
 		}
 		run = cancelled
-		if err := recordRunChangeInTx(ctx, qtx, &pending, events.SystemActor(), EventRunCancelled, beforeHistory[runID], run); err != nil {
+		if err := recordRunChangeInTx(
+			ctx,
+			qtx,
+			&pending,
+			events.SystemActor(),
+			EventRunCancelled,
+			beforeHistory[runID],
+			run,
+		); err != nil {
 			return err
 		}
 		transitioned = true
@@ -1741,7 +1815,12 @@ func (s *DefaultRunService) CancelRun(ctx context.Context, runID uuid.UUID, reas
 	return s.cancelRun(ctx, runID, reason, nil)
 }
 
-func (s *DefaultRunService) cancelRun(ctx context.Context, runID uuid.UUID, reason string, principal *auth.UserPrincipal) (*db.Run, error) {
+func (s *DefaultRunService) cancelRun(
+	ctx context.Context,
+	runID uuid.UUID,
+	reason string,
+	principal *auth.UserPrincipal,
+) (*db.Run, error) {
 	actor := events.SystemActor()
 	if principal != nil {
 		actor = events.UserActor(principal.UserID.String())
@@ -1764,7 +1843,13 @@ func (s *DefaultRunService) cancelRun(ctx context.Context, runID uuid.UUID, reas
 				}
 				return fmt.Errorf("lock Run cancellation company: %w", err)
 			}
-			member, err := qtx.GetCompanyMemberForUpdate(ctx, db.GetCompanyMemberForUpdateParams{CompanyID: principal.CompanyID, UserID: principal.UserID})
+			member, err := qtx.GetCompanyMemberForUpdate(
+				ctx,
+				db.GetCompanyMemberForUpdateParams{
+					CompanyID: principal.CompanyID,
+					UserID:    principal.UserID,
+				},
+			)
 			if errors.Is(err, pgx.ErrNoRows) || err == nil && member.Status != "active" {
 				return ErrRunNotFound
 			}
@@ -1815,7 +1900,15 @@ func (s *DefaultRunService) cancelRun(ctx context.Context, runID uuid.UUID, reas
 			return cancelErr
 		}
 		run = cancelled
-		if err := recordRunChangeInTx(ctx, qtx, &pending, actor, EventRunCancelled, beforeHistory[runID], run); err != nil {
+		if err := recordRunChangeInTx(
+			ctx,
+			qtx,
+			&pending,
+			actor,
+			EventRunCancelled,
+			beforeHistory[runID],
+			run,
+		); err != nil {
 			return err
 		}
 		transitioned = true
@@ -2131,12 +2224,28 @@ func (s *DefaultRunService) transitionFailedRuns(
 				return retryErr
 			}
 			if child != nil {
-				if err := recordRunChangeInTx(ctx, qtx, &pending, events.SystemActor(), EventRunQueued, nil, *child); err != nil {
+				if err := recordRunChangeInTx(
+					ctx,
+					qtx,
+					&pending,
+					events.SystemActor(),
+					EventRunQueued,
+					nil,
+					*child,
+				); err != nil {
 					return err
 				}
 				retries[run.ID] = *child
 			}
-			if err := recordRunChangeInTx(ctx, qtx, &pending, events.SystemActor(), EventRunFailed, beforeHistory[run.ID], run); err != nil {
+			if err := recordRunChangeInTx(
+				ctx,
+				qtx,
+				&pending,
+				events.SystemActor(),
+				EventRunFailed,
+				beforeHistory[run.ID],
+				run,
+			); err != nil {
 				return err
 			}
 		}
@@ -2262,13 +2371,18 @@ func (s *DefaultRunService) ExpireStaleQueuedRuns(
 	ctx context.Context,
 	options QueuedRunExpiryOptions,
 ) (FailedRunBatch, error) {
+	if options.OnceWait == 0 {
+		options.OnceWait = 7 * 24 * time.Hour
+	}
 	return s.transitionFailedRuns(
 		ctx,
 		func(qtx *db.Queries) ([]runFailureCandidate, error) {
 			rows, err := qtx.ListQueuedRunExpiryCandidates(
 				ctx,
 				db.ListQueuedRunExpiryCandidatesParams{
-					TtlSecs: options.TTL.Seconds(), MaxPerTick: options.MaxBatch,
+					TtlSecs:      options.TTL.Seconds(),
+					OnceWaitSecs: options.OnceWait.Seconds(),
+					MaxPerTick:   options.MaxBatch,
 				},
 			)
 			if err != nil {
@@ -2284,7 +2398,9 @@ func (s *DefaultRunService) ExpireStaleQueuedRuns(
 		},
 		func(qtx *db.Queries, runIDs []uuid.UUID) ([]db.Run, error) {
 			return qtx.ExpireStaleQueuedRuns(ctx, db.ExpireStaleQueuedRunsParams{
-				RunIds: runIDs, TtlSecs: options.TTL.Seconds(),
+				RunIds:       runIDs,
+				TtlSecs:      options.TTL.Seconds(),
+				OnceWaitSecs: options.OnceWait.Seconds(),
 			})
 		},
 	)

@@ -67,6 +67,7 @@ func TestSchemaEnforcesRealtimeProjectionAndAccessGenerationContracts(t *testing
 		"mailbox_drafts":               true,
 		"schedules":                    true,
 		"schedule_firings":             true,
+		"task_schedules":               true,
 		"company_groups":               true,
 	}
 	rows, err := pool.Query(ctx, `

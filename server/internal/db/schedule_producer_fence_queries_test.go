@@ -11,9 +11,9 @@ func TestDueScheduleDiscoveryPrecedesRestrictedScheduleLock(t *testing.T) {
 	source := queryFileSource(t, "schedules.sql")
 	targets := normalizedQuery(t, source, "ListDueScheduleLockTargets")
 	for _, fragment := range []string{
-		"schedules.status = 'active'",
-		"schedules.next_occurrence_at <= statement_clock.now_at",
-		"order by schedules.next_occurrence_at, schedules.id",
+		"status = 'active'",
+		"next_occurrence_at <= statement_timestamp() - make_interval",
+		"order by next_occurrence_at, id",
 		"limit sqlc.arg(page_size)::integer",
 	} {
 		if !strings.Contains(targets, fragment) {
@@ -26,7 +26,7 @@ func TestDueScheduleDiscoveryPrecedesRestrictedScheduleLock(t *testing.T) {
 
 	locked := normalizedQuery(t, source, "LockNextDueSchedule")
 	for _, fragment := range []string{
-		"schedules.id = any(sqlc.arg(schedule_ids)::uuid[])",
+		"schedules.id = sqlc.arg(schedule_id)::uuid",
 		"for update of schedules skip locked",
 	} {
 		if !strings.Contains(locked, fragment) {

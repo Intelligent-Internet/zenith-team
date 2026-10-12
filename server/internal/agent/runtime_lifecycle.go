@@ -21,6 +21,7 @@ import (
 
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/events"
+	"boardly.dev/boardly/server/internal/execution"
 	"boardly.dev/boardly/server/internal/inbox"
 	"boardly.dev/boardly/server/internal/util"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
@@ -625,6 +626,11 @@ func (s *DefaultRuntimeService) Heartbeat(
 			"runtime_id", runtime.ID.String(), "company_id", runtime.CompanyID.String(), "error", err)
 		pending = nil
 	}
+	execution.PublishRuntimeUnblocked(
+		ctx,
+		s.bus,
+		generated.Run{CompanyID: runtime.CompanyID, RuntimeID: runtime.ID},
+	)
 	s.publishAgentStatuses(ctx, runtime.CompanyID, runtime.ID)
 	s.publishPending(ctx, pending)
 	return nil

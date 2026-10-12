@@ -5,7 +5,6 @@ import {
   Clock3,
   Repeat2,
   SlidersHorizontal,
-  TriangleAlert,
 } from "@/shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 
@@ -46,6 +45,7 @@ export function ScheduleEditorTrigger({
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <TriggerTypeButton
+            disabled={Boolean(values.presetKey)}
             active={values.triggerType === "once"}
             description="Run once at an exact future date and time."
             icon={<CalendarDays aria-hidden className="size-5" />}
@@ -109,7 +109,6 @@ function RecurringScheduleEditor({
   values: ScheduleFormValues;
 }) {
   const activePreset = getCronPresetId(values.cronExpression);
-  const showDaylightSavingWarning = shouldWarnAboutDaylightSaving(values);
   const minuteInterval = /^\*\/(5|6|10|12|15|20|30) \* \* \* \*$/u.exec(
     values.cronExpression,
   )?.[1];
@@ -368,20 +367,6 @@ function RecurringScheduleEditor({
           </div>
         </div>
       )}
-
-      {showDaylightSavingWarning ? (
-        <div className="flex gap-3 rounded-lg border border-[var(--workspace-divider-strong)] bg-[var(--workspace-approval-soft)] p-4 text-[var(--workspace-native-approval)]">
-          <TriangleAlert
-            aria-hidden
-            className="mt-0.5 size-4 shrink-0 text-[var(--workspace-native-approval)]"
-          />
-          <p className="text-xs leading-5 text-[var(--workspace-native-approval)]">
-            This time zone changes clocks seasonally. Runs between 01:00 and
-            03:00 may be skipped during spring-forward or occur twice during
-            fall-back.
-          </p>
-        </div>
-      ) : null}
     </>
   );
 }
@@ -671,81 +656,16 @@ function readBoundedNumber(
     : fallback;
 }
 
-function shouldWarnAboutDaylightSaving(values: ScheduleFormValues) {
-  const fields = values.cronExpression.trim().split(/\s+/u);
-  if (fields.length !== 5 || !cronHourIncludesTransitionWindow(fields[1])) {
-    return false;
-  }
-  return timeZoneHasSeasonalOffset(values.timeZone.trim());
-}
-
-function cronHourIncludesTransitionWindow(field: string) {
-  const included = new Set<number>();
-  for (const item of field.split(",")) {
-    const [base, rawStep] = item.split("/");
-    const step = rawStep === undefined ? 1 : Number(rawStep);
-    if (!Number.isInteger(step) || step < 1) return false;
-    const bounds = base === "*" ? [0, 23] : base.split("-").map(Number);
-    if (
-      bounds.length > 2 ||
-      bounds.some(
-        (value) => !Number.isInteger(value) || value < 0 || value > 23,
-      )
-    ) {
-      return false;
-    }
-    const start = bounds[0];
-    const end = bounds.length === 1 ? start : bounds[1];
-    if (start > end) return false;
-    for (let hour = start; hour <= end; hour += step) included.add(hour);
-  }
-  return [1, 2, 3].some((hour) => included.has(hour));
-}
-
-function timeZoneHasSeasonalOffset(timeZone: string) {
-  if (!timeZone) return false;
-  try {
-    const year = new Date().getUTCFullYear();
-    return (
-      timeZoneOffsetMinutes(new Date(Date.UTC(year, 0, 15, 12)), timeZone) !==
-      timeZoneOffsetMinutes(new Date(Date.UTC(year, 6, 15, 12)), timeZone)
-    );
-  } catch {
-    return false;
-  }
-}
-
-function timeZoneOffsetMinutes(date: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    hour: "2-digit",
-    hourCycle: "h23",
-    minute: "2-digit",
-    month: "2-digit",
-    timeZone,
-    year: "numeric",
-  }).formatToParts(date);
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-  const zonedTime = Date.UTC(
-    Number(values.year),
-    Number(values.month) - 1,
-    Number(values.day),
-    Number(values.hour),
-    Number(values.minute),
-  );
-  return Math.round((zonedTime - date.getTime()) / 60_000);
-}
-
 function TriggerTypeButton({
   active,
+  disabled = false,
   description,
   icon,
   label,
   onClick,
 }: {
   active: boolean;
+  disabled?: boolean;
   description: string;
   icon: React.ReactNode;
   label: string;
@@ -762,9 +682,10 @@ function TriggerTypeButton({
       )}
     >
       <button
+        disabled={disabled}
         aria-pressed={active}
         className={cx(
-          "flex h-full w-full items-start gap-3 rounded-[20px] p-4 text-left transition hover:bg-[var(--workspace-hover-bg)]",
+          "flex h-full w-full items-start gap-3 rounded-[20px] p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-40 hover:bg-[var(--workspace-hover-bg)]",
           active
             ? "text-[var(--workspace-native-accent)]"
             : "text-[var(--workspace-native-text-muted)] hover:text-[var(--workspace-native-text)]",

@@ -1,3 +1,16 @@
+import type { CalendarEntryDraft } from "@/features/calendar/event-editor";
+import {
+  CalendarEventDialog,
+  type CalendarEventAnchor,
+} from "@/features/calendar/calendar-event-dialog";
+import { CalendarOptionPicker } from "@/features/calendar/calendar-pickers";
+import { useCalendarTheme } from "@/features/calendar/calendar-theme";
+import {
+  TaskScheduleFields,
+  taskScheduleValues,
+  taskScheduleTrigger,
+  localTaskTime,
+} from "@/features/calendar/task-schedule-fields";
 import {
   milestoneLabel,
   milestoneTypes,
@@ -5,6 +18,10 @@ import {
 import { useListProjectsQuery } from "../api/project-api";
 import { useRef, useState, type FormEvent } from "react";
 import {
+  Bell,
+  CalendarDays,
+  ChevronDown,
+  ListTodo,
   ArrowLeftRight,
   ArrowUpRight,
   ChevronRight,
@@ -143,8 +160,76 @@ export function NewTaskButton({
   );
 }
 
+export function CalendarTaskCreate({
+  companyId,
+  day,
+  hour = 9,
+  minute = 0,
+  anchor,
+  onClose,
+  onSelectType,
+  draft,
+}: {
+  companyId: string;
+  day: Date;
+  hour?: number;
+  minute?: number;
+  anchor: CalendarEventAnchor;
+  onClose: () => void;
+  draft?: CalendarEntryDraft;
+  onSelectType: (type: "event" | "reminder", draft: CalendarEntryDraft) => void;
+}) {
+  const theme = useCalendarTheme();
+  const [createTask, mutation] = useCreateWorkspaceTaskMutation();
+  const [scheduledAt] = useState(() =>
+    localTaskTime(
+      new Date(
+        Math.max(
+          new Date(
+            day.getFullYear(),
+            day.getMonth(),
+            day.getDate(),
+            hour,
+            minute,
+          ).getTime(),
+          Math.ceil((Date.now() + 3600000) / 60000) * 60000,
+        ),
+      ),
+    ),
+  );
+  return (
+    <CalendarEventDialog
+      anchor={anchor}
+      title="New task"
+      description="Schedule work on the assignee’s computer."
+      className="calendar-editor"
+      style={theme}
+      busy={mutation.isLoading}
+      onClose={onClose}
+    >
+      <NewTaskForm
+        companyId={companyId}
+        initialScheduledAt={scheduledAt}
+        calendar={{ onClose, onSelectType, draft }}
+        pending={mutation.isLoading}
+        expanded={false}
+        onToggleExpanded={() => {}}
+        onClose={onClose}
+        onSetUpAgent={async () => false}
+        onCreate={async (request) => {
+          await createTask({ companyId, request }).unwrap();
+          toast.success("Task scheduled");
+          onClose();
+        }}
+      />
+    </CalendarEventDialog>
+  );
+}
+
 function NewTaskForm({
   initialProjectId,
+  initialScheduledAt,
+  calendar,
   companyId,
   pending,
   expanded,
@@ -155,6 +240,15 @@ function NewTaskForm({
 }: {
   companyId: string;
   initialProjectId?: string;
+  initialScheduledAt?: string;
+  calendar?: {
+    onClose: () => void;
+    draft?: CalendarEntryDraft;
+    onSelectType: (
+      type: "event" | "reminder",
+      draft: CalendarEntryDraft,
+    ) => void;
+  };
   pending: boolean;
   expanded: boolean;
   onToggleExpanded: () => void;
@@ -187,11 +281,15 @@ function NewTaskForm({
   const allAgents =
     agentsQuery.currentData?.items.filter((agent) => !agent.archivedAt) ?? [];
   const taskAgents = allAgents;
-  const [mode, setMode] = useState<"agent" | "manual">("agent");
+  const [mode, setMode] = useState<"agent" | "manual">(
+    initialScheduledAt ? "manual" : "agent",
+  );
+  const [title, setTitle] = useState(calendar?.draft?.title ?? "");
+  const [description, setDescription] = useState(
+    calendar?.draft?.description ?? "",
+  );
   const [proposalOnly, setProposalOnly] = useState(false);
   const [reviewRequired, setReviewRequired] = useState(true);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [prompt, setPrompt] = useState("");
   const [agentId, setAgentId] = useState<string>();
   const [creatorId, setCreatorId] = useState<string>();
@@ -210,7 +308,11 @@ function NewTaskForm({
   const [assigneeId, setAssigneeId] = useState("");
   const otherAssignee = otherMembers.find((member) => member.id === assigneeId);
   // Only a Task of your own with an Agent starts a Run as it is created.
-  const startsRun = executorKind === "agent" && !otherAssignee;
+  const [scheduled, setScheduled] = useState(Boolean(initialScheduledAt));
+  const [scheduleValues, setScheduleValues] = useState(() =>
+    taskScheduleValues(undefined, initialScheduledAt),
+  );
+  const startsRun = executorKind === "agent" && !otherAssignee && !scheduled;
   // That Run needs "Run tasks with agents" on the chosen Project (ADR 0017).
   // Without it the server refuses the whole create, so the dialog gives that
   // reason and never sends the viewer to the Agent's setup, which would not
@@ -301,7 +403,17 @@ function NewTaskForm({
       const project = projectsQuery.currentData?.items.find(
         (item) => item.id === projectId,
       );
-      const request = `${project ? `Create the tasks in Project ${project.key} (${project.id}).\n\n` : ""}Help me turn this request into tasks. Clarify the outcome and delegate to the appropriate agents.\n\n${prompt.trim()}\n\nPriority: ${priority}. Milestone: ${milestone.replaceAll("_", " ")}.`;
+      let schedulingNote = "";
+      if (scheduled) {
+        try {
+          const trigger = taskScheduleTrigger(scheduleValues);
+          schedulingNote = `\n\nSchedule these tasks with zen task create using this trigger: ${JSON.stringify(trigger)}. Do not start them immediately.${otherAssignee ? ` Assign to member ${otherAssignee.id}; they must accept first.` : ""}`;
+        } catch {
+          setError("Choose a valid future run time before continuing.");
+          return;
+        }
+      }
+      const request = `${project ? `Create the tasks in Project ${project.key} (${project.id}).\n\n` : ""}Help me turn this request into tasks. Clarify the outcome and delegate to the appropriate agents.\n\n${prompt.trim()}\n\nPriority: ${priority}. Milestone: ${milestone.replaceAll("_", " ")}.${schedulingNote}`;
       dispatch(
         setConversationWorkspaceDraft({
           companyId,
@@ -325,6 +437,9 @@ function NewTaskForm({
       onCreate(
         {
           projectId,
+          ...(scheduled
+            ? { schedule: taskScheduleTrigger(scheduleValues) }
+            : {}),
           title: title.trim(),
           description: description.trim(),
           milestoneType: milestone,
@@ -379,6 +494,193 @@ function NewTaskForm({
       submitting.current = false;
     }
   }
+
+  if (calendar)
+    return (
+      <form className="personal-form" onSubmit={submit}>
+        <fieldset className="calendar-task-fields" disabled={pending}>
+          <div className="personal-tabs" aria-label="Entry type">
+            <button
+              type="button"
+              aria-pressed="false"
+              onClick={() =>
+                calendar.onSelectType("event", {
+                  title,
+                  description,
+                  startLocal: scheduleValues.runAtLocal,
+                })
+              }
+            >
+              <CalendarDays size={14} />
+              Event
+            </button>
+            <button
+              type="button"
+              aria-pressed="false"
+              onClick={() =>
+                calendar.onSelectType("reminder", {
+                  title,
+                  description,
+                  startLocal: scheduleValues.runAtLocal,
+                })
+              }
+            >
+              <Bell size={14} />
+              Reminder
+            </button>
+            <button type="button" aria-pressed="true">
+              <ListTodo size={14} />
+              Task
+            </button>
+          </div>
+          <input
+            autoFocus
+            required
+            className="personal-title-input"
+            aria-label="Task title"
+            placeholder="Add a task"
+            maxLength={200}
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <TaskScheduleFields
+            appearance="calendar"
+            values={scheduleValues}
+            onChange={setScheduleValues}
+          />
+          <div className="calendar-task-property">
+            <FolderOpen size={17} />
+            <CalendarOptionPicker
+              label="Project"
+              value={projectId}
+              options={[
+                { value: "", label: "Select a project" },
+                ...writableProjects.map((project) => ({
+                  value: project.id,
+                  label: project.title,
+                })),
+              ]}
+              onChange={setProjectId}
+            />
+          </div>
+          {projectsQuery.isError ? (
+            <p role="alert" className="personal-error">
+              Projects could not be loaded.{" "}
+              <button
+                type="button"
+                className="calendar-text-button"
+                onClick={() => void projectsQuery.refetch()}
+              >
+                Retry
+              </button>
+            </p>
+          ) : !projectsQuery.isLoading && !writableProjects.length ? (
+            <p className="personal-note">
+              You need a project with permission to create tasks.
+            </p>
+          ) : null}
+          <div className="calendar-task-property">
+            <Users size={17} />
+            <CalendarOptionPicker
+              label="Assignee"
+              value={otherAssignee?.id ?? ""}
+              options={[
+                { value: "", label: "Me" },
+                ...otherMembers.map((member) => ({
+                  value: member.id,
+                  label: member.name,
+                })),
+              ]}
+              disabled={!canAssign}
+              onChange={setAssigneeId}
+            />
+          </div>
+          <div className="calendar-task-property">
+            <span className="calendar-field-label">Execute with</span>
+            <TaskCreationAgentPicker
+              agents={taskAgents}
+              selected={executorKind === "agent" ? selectedAgent : undefined}
+              onSelect={(id) => {
+                setAgentId(id);
+                setExecutorKind("agent");
+              }}
+              onSelectSelf={() => setExecutorKind("user")}
+              selfLabel={otherAssignee?.name}
+              showAvailability={!otherAssignee}
+              label="Executed by"
+            />
+          </div>
+          <p className="personal-note">
+            Runs on{" "}
+            {otherAssignee
+              ? `${otherAssignee.name}’s computer after they accept`
+              : "your computer"}{" "}
+            at the scheduled time.
+          </p>
+          <button
+            type="button"
+            className="calendar-more-toggle"
+            aria-expanded={more}
+            onClick={() => setMore(!more)}
+          >
+            {more ? "Fewer details" : "More details"}
+            <ChevronDown size={14} />
+          </button>
+          {more && (
+            <div className="calendar-more-fields">
+              <label>
+                Notes
+                <textarea
+                  aria-label="Task description"
+                  placeholder="Add a little context…"
+                  maxLength={50000}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                />
+              </label>
+              <CalendarOptionPicker
+                label="Priority"
+                value={priority}
+                options={["low", "medium", "high", "urgent"].map((value) => ({
+                  value,
+                  label: value[0].toUpperCase() + value.slice(1),
+                }))}
+                onChange={(value) => setPriority(value as typeof priority)}
+              />
+              <CalendarOptionPicker
+                label="Milestone"
+                value={milestone}
+                options={milestoneTypes.map((value) => ({
+                  value,
+                  label: milestoneLabel(value),
+                }))}
+                onChange={(value) => setMilestone(value as typeof milestone)}
+              />
+            </div>
+          )}
+          {error && (
+            <p className="personal-error" role="alert">
+              {error}
+            </p>
+          )}
+          <footer className="personal-dialog-actions">
+            <button
+              type="button"
+              className="personal-button"
+              onClick={calendar.onClose}
+            >
+              Cancel
+            </button>
+            <button
+              className="personal-button personal-button--primary"
+              disabled={!canSubmit || pending}
+            >
+              {pending ? "Saving…" : "Save"}
+            </button>
+          </footer>
+        </fieldset>
+      </form>
+    );
 
   return (
     <form
@@ -512,6 +814,25 @@ function NewTaskForm({
             />
           </>
         )}
+        {mode === "manual" ? (
+          <div className="task-schedule-create">
+            <button
+              type="button"
+              className="task-create-chip"
+              aria-pressed={scheduled}
+              onClick={() => setScheduled(!scheduled)}
+            >
+              <CalendarDays size={14} />{" "}
+              {scheduled ? "Scheduled run" : "Schedule task"}
+            </button>
+            {scheduled ? (
+              <TaskScheduleFields
+                values={scheduleValues}
+                onChange={setScheduleValues}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {loading ? (
           <p role="status" className="new-task-hint">
             Loading agents…
@@ -540,17 +861,21 @@ function NewTaskForm({
                 ? existingDraft.trim()
                   ? `You have an unsent draft with ${selectedCreator?.name}. This request will be added below it.`
                   : "Continue in chat to review and send this request. Tasks are created through the agent conversation."
-                : otherAssignee
-                  ? executorKind === "user"
-                    ? `${otherAssignee.name} does this task themself. No agent run starts.`
-                    : `${otherAssignee.name} will be asked to start it on their computer.`
-                  : executorKind === "user"
-                    ? "Yours to do. No agent run starts when you create this task."
-                    : runRefused
-                      ? cannotRunTasksHereLabel()
-                      : selectedAgent
-                        ? newAgentTaskHint(selectedAgent)
-                        : null}
+                : scheduled
+                  ? otherAssignee
+                    ? `Saved for ${otherAssignee.name} to accept. The task starts at its scheduled time on their computer.`
+                    : "The task starts at its scheduled time on your computer."
+                  : otherAssignee
+                    ? executorKind === "user"
+                      ? `${otherAssignee.name} does this task themself. No agent run starts.`
+                      : `${otherAssignee.name} will be asked to start it on their computer.`
+                    : executorKind === "user"
+                      ? "Yours to do. No agent run starts when you create this task."
+                      : runRefused
+                        ? cannotRunTasksHereLabel()
+                        : selectedAgent
+                          ? newAgentTaskHint(selectedAgent)
+                          : null}
               {mode === "manual" && runRefused && managesChosenAccess ? (
                 <>
                   {" "}

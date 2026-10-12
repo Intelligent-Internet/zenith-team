@@ -16,7 +16,6 @@ func TestScheduleCancellationQueryFencesTheOwningSchedule(t *testing.T) {
 		"schedule_firings.schedule_id = sqlc.arg(schedule_id)::uuid",
 		"schedule_firings.company_id = runs.company_id",
 		"schedule_firings.conversation_id = runs.conversation_id",
-		"schedule_firings.run_id = runs.id",
 	} {
 		if !strings.Contains(query, fragment) {
 			t.Errorf("CancelQueuedScheduleRun does not contain %q: %s", fragment, query)
@@ -24,11 +23,11 @@ func TestScheduleCancellationQueryFencesTheOwningSchedule(t *testing.T) {
 	}
 }
 
-func TestScheduleCancellationQueryOnlyCancelsQueuedRuns(t *testing.T) {
+func TestScheduleCancellationQueryOnlyCancelsWaitingRuns(t *testing.T) {
 	t.Parallel()
 
 	query := normalizedQuery(t, queryFileSource(t, "runs.sql"), "CancelQueuedScheduleRun")
-	if !strings.Contains(query, "runs.status = 'queued'") {
-		t.Fatalf("CancelQueuedScheduleRun does not require queued status: %s", query)
+	if !strings.Contains(query, "runs.status in ('queued', 'deferred')") {
+		t.Fatalf("CancelQueuedScheduleRun does not require waiting status: %s", query)
 	}
 }

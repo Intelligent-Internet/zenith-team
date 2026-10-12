@@ -6253,6 +6253,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/companies/{companyId}/calendar/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List scheduled Tasks in a visible Calendar window */
+        get: operations["listCalendarTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/tasks/{taskId}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a Task schedule */
+        get: operations["getTaskSchedule"];
+        /** Create or edit future Task scheduling */
+        put: operations["updateTaskSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/tasks/{taskId}/schedule/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move or cancel one Task occurrence */
+        post: operations["updateTaskOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/tasks/{taskId}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or decline your Task assignment */
+        post: operations["decideTaskAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/tasks/{taskId}": {
         parameters: {
             query?: never;
@@ -10185,6 +10254,50 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        TaskCalendarSchedule: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            templateTaskId: string;
+            trigger: components["schemas"]["ScheduleTrigger"];
+            paused: boolean;
+            /** Format: int64 */
+            revision: number;
+        };
+        TaskCalendarOccurrence: {
+            task: components["schemas"]["Task"];
+            schedule: components["schemas"]["TaskCalendarSchedule"];
+            /** Format: date-time */
+            occurrenceAt: string;
+            /** Format: date-time */
+            runAt: string;
+            materialized: boolean;
+        };
+        TaskCalendarPage: {
+            occurrences: components["schemas"]["TaskCalendarOccurrence"][];
+            truncated: boolean;
+        };
+        TaskScheduleInput: {
+            expectedRevision: components["schemas"]["Revision"];
+            trigger?: components["schemas"]["ScheduleTrigger"];
+            /** @default false */
+            paused: boolean;
+        };
+        TaskOccurrenceInput: {
+            expectedRevision: components["schemas"]["Revision"];
+            /** Format: date-time */
+            occurrenceAt: string;
+            /** Format: date-time */
+            runAt?: string | null;
+            /** @default false */
+            cancel: boolean;
+            title?: string;
+            description?: string;
+        };
+        TaskAssignmentInput: {
+            expectedRevision: components["schemas"]["Revision"];
+            accept: boolean;
+        };
         BoardFileInput: {
             /** Format: uuid */
             attachmentId: string;
@@ -16968,6 +17081,18 @@ export interface components {
             permissions: components["schemas"]["ProjectPermission"][];
         };
         Task: {
+            /** @enum {string} */
+            assignmentStatus: "accepted" | "pending" | "declined";
+            /** Format: date-time */
+            scheduledAt: string | null;
+            /** Format: date-time */
+            scheduleFiredAt: string | null;
+            /** Format: uuid */
+            scheduleId: string | null;
+            /** Format: date-time */
+            scheduleOccurrenceAt: string | null;
+            /** @enum {string} */
+            scheduleDisposition: "" | "scheduled" | "started" | "skipped" | "missed" | "cancelled";
             /** Format: uuid */
             id: string;
             /**
@@ -17046,6 +17171,27 @@ export interface components {
              */
             access?: components["schemas"]["TaskAccess"];
         };
+        ScheduleOnceTrigger: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "once";
+            /** @description Future UTC minute; seconds and fractional seconds are zero. */
+            runAt: components["schemas"]["Timestamp"];
+        };
+        ScheduleCronTrigger: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "cron";
+            /** @description Five-field cron expression; intervals under five minutes are rejected. */
+            expression: string;
+            /** @description IANA time-zone name; `Local` is rejected. */
+            timeZone: string;
+        };
+        ScheduleTrigger: components["schemas"]["ScheduleOnceTrigger"] | components["schemas"]["ScheduleCronTrigger"];
         TaskResultPolicy: {
             /** @description Assigned before execution; approval endorses the proposal without applying it. */
             proposalOnly: boolean;
@@ -17268,27 +17414,6 @@ export interface components {
             /** Format: int32 */
             eventCount: number;
         };
-        ScheduleOnceTrigger: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "once";
-            /** @description Future UTC minute; seconds and fractional seconds are zero. */
-            runAt: components["schemas"]["Timestamp"];
-        };
-        ScheduleCronTrigger: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "cron";
-            /** @description Five-field cron expression; intervals under five minutes are rejected. */
-            expression: string;
-            /** @description IANA time-zone name; `Local` is rejected. */
-            timeZone: string;
-        };
-        ScheduleTrigger: components["schemas"]["ScheduleOnceTrigger"] | components["schemas"]["ScheduleCronTrigger"];
         ScheduleDraftFields: {
             /** @constant */
             schemaVersion: 1;
@@ -17301,6 +17426,14 @@ export interface components {
             sourceIds: string[];
         };
         ScheduleDraftRequest: components["schemas"]["ScheduleDraftFields"];
+        ScheduleOccurrenceDetail: {
+            at: components["schemas"]["Timestamp"];
+            utcOffsetSeconds: number;
+            repeatedLocalTime: boolean;
+            offsetChanged: boolean;
+            /** @description A matching local date and time skipped in the gap before this occurrence. */
+            skippedLocalTime: string | null;
+        };
         ScheduleSource: {
             /** Format: uuid */
             id: string;
@@ -17310,6 +17443,7 @@ export interface components {
             source: components["schemas"]["ConnectorSource"];
         };
         SchedulePreviewResponse: {
+            occurrenceDetails: components["schemas"]["ScheduleOccurrenceDetail"][];
             normalizedTrigger: components["schemas"]["ScheduleTrigger"];
             /**
              * @description The trigger in plain words, followed by the time zone, such as
@@ -17330,6 +17464,11 @@ export interface components {
          */
         ScheduleStatus: "draft" | "active" | "paused" | "completed" | "cancelled";
         Schedule: {
+            /**
+             * @description Present on definition mutations; reports the effect on the current Run.
+             * @enum {string}
+             */
+            runEffect?: "none" | "waiting_run_cancelled" | "running_run_continues";
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -17341,6 +17480,7 @@ export interface components {
             trigger: components["schemas"]["ScheduleTrigger"];
             sources: components["schemas"]["ScheduleSource"][];
             status: components["schemas"]["ScheduleStatus"];
+            /** @description Includes trigger_invalid and firing_failed when review is required. */
             pauseReason: string | null;
             nextRunAt: components["schemas"]["Timestamp"] | null;
             /**
@@ -17377,7 +17517,7 @@ export interface components {
         /** @enum {string} */
         ScheduleRunTrigger: "scheduled" | "manual";
         /** @enum {string} */
-        ScheduleRunDisposition: "materialized" | "superseded" | "skipped" | "needs_attention";
+        ScheduleRunDisposition: "materialized" | "superseded" | "skipped" | "needs_attention" | "cancelled";
         /**
          * @description The one run-status vocabulary, backed by the `runs_status_check`
          *     constraint and declared exactly once. Every surface that names a run
@@ -17389,6 +17529,14 @@ export interface components {
          */
         RunStatus: "queued" | "deferred" | "dispatched" | "waiting_local_directory" | "running" | "completed" | "failed" | "cancelled";
         ScheduleRunRecord: {
+            missedCount: number;
+            attempt: number | null;
+            runFailureReason: string | null;
+            runCancelReason: string | null;
+            /** @enum {string|null} */
+            runtimeStatus: "online" | "offline" | null;
+            runtimeLastSeenAt: components["schemas"]["Timestamp"] | null;
+            runtimeUnusableReason: string | null;
             /** Format: uuid */
             firingId: string;
             /** Format: uuid */
@@ -17406,7 +17554,7 @@ export interface components {
             reason: string | null;
             /**
              * Format: uuid
-             * @description Null for skipped or needs-attention firings.
+             * @description Latest attempt; null when no Run was materialized.
              */
             runId: string | null;
             runStatus: components["schemas"]["RunStatus"] | null;
@@ -37250,6 +37398,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    schedule?: components["schemas"]["ScheduleTrigger"];
                     /** Format: uuid */
                     projectId: string;
                     /**
@@ -37347,6 +37496,410 @@ export interface operations {
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    listCalendarTasks: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCalendarPage"];
+                };
+            };
+            /** @description Request refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getTaskSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                taskId: components["parameters"]["taskId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCalendarSchedule"];
+                };
+            };
+            /** @description Request refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateTaskSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                taskId: components["parameters"]["taskId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskScheduleInput"];
+            };
+        };
+        responses: {
+            /** @description Success. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskMutationResult"];
+                };
+            };
+            /** @description Request refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateTaskOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                taskId: components["parameters"]["taskId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskOccurrenceInput"];
+            };
+        };
+        responses: {
+            /** @description Success. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskMutationResult"];
+                };
+            };
+            /** @description Request refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    decideTaskAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                taskId: components["parameters"]["taskId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskAssignmentInput"];
+            };
+        };
+        responses: {
+            /** @description Success. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskMutationResult"];
+                };
+            };
+            /** @description Request refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request refused. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getTask: {
@@ -37862,6 +38415,8 @@ export interface operations {
                  */
                 cursor?: components["parameters"]["cursor"];
                 status?: components["schemas"]["ScheduleStatus"];
+                /** @description Exclude completed and cancelled definitions, including old presets. */
+                exclude_terminal?: boolean;
                 preset_key?: string;
             };
             header?: never;

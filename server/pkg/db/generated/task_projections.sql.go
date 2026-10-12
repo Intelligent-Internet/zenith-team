@@ -14,7 +14,7 @@ import (
 
 const getTaskProjectionForSystem = `-- name: GetTaskProjectionForSystem :one
 SELECT
-    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required,
+    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition,
     (
         task_project.visibility = 'restricted'
         AND (
@@ -206,6 +206,13 @@ func (q *Queries) GetTaskProjectionForSystem(ctx context.Context, arg GetTaskPro
 		&i.Task.WorkspaceGeneration,
 		&i.Task.ResultProposalOnly,
 		&i.Task.ResultReviewRequired,
+		&i.Task.AssignmentStatus,
+		&i.Task.ScheduledAt,
+		&i.Task.ScheduleFiredAt,
+		&i.Task.TaskScheduleID,
+		&i.Task.TaskScheduleGeneration,
+		&i.Task.ScheduleOccurrenceAt,
+		&i.Task.ScheduleDisposition,
 		&i.AssigneeOutsideProject,
 		&i.AssigneeDisplayName,
 		&i.AssigneeAvatarUrl,
@@ -270,22 +277,22 @@ WITH actor AS MATERIALIZED (
      AND grant_row.user_id = $6::uuid
      AND grant_row.project_id = access.project_id
      AND grant_row.updated_at >= actor.joined_at
-    WHERE (NOT $7::boolean OR access.project_id = $8::uuid)
+    WHERE (NOT $9::boolean OR access.project_id = $10::uuid)
       -- A read of one Task decides access on its Project only, not on
       -- every Project the caller reads.
       AND (
-          NOT $9::boolean
+          NOT $11::boolean
           OR access.project_id = (
               SELECT one_task.project_id
               FROM tasks AS one_task
               WHERE one_task.company_id = $5::uuid
-                AND one_task.id = $10::uuid
+                AND one_task.id = $12::uuid
           )
       )
     GROUP BY access.project_id, access.via, project.visibility, project.access_version, actor.joined_at
 )
 SELECT
-    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required,
+    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition,
     readable.visibility AS project_visibility,
     readable.access_version AS project_access_version,
     readable.via AS access_via,
@@ -416,32 +423,33 @@ LEFT JOIN LATERAL (
       AND task_dependencies.dependent_task_id = tasks.id
 ) AS dependency_counts ON true
 WHERE tasks.company_id = $5::uuid
- AND (NOT $7::boolean OR tasks.project_id = $8::uuid)
-  AND (
-      NOT $9::boolean
-      OR tasks.id = $10::uuid
-  )
+  AND (NOT $7::boolean OR tasks.id = ANY($8::uuid[]))
+ AND (NOT $9::boolean OR tasks.project_id = $10::uuid)
   AND (
       NOT $11::boolean
-      OR tasks.status = ANY($12::text[])
+      OR tasks.id = $12::uuid
   )
   AND (
       NOT $13::boolean
-      OR tasks.priority = ANY($14::text[])
+      OR tasks.status = ANY($14::text[])
   )
   AND (
       NOT $15::boolean
-      OR tasks.assignee_user_id = $16::uuid
+      OR tasks.priority = ANY($16::text[])
   )
   AND (
       NOT $17::boolean
-      OR tasks.executed_by_agent_id = $18::uuid
-      OR (tasks.id = $19::uuid
-          AND task_run_agents.agent_id = $18::uuid)
+      OR tasks.assignee_user_id = $18::uuid
   )
   AND (
-      NOT $20::boolean
-      OR $21::boolean =
+      NOT $19::boolean
+      OR tasks.executed_by_agent_id = $20::uuid
+      OR (tasks.id = $21::uuid
+          AND task_run_agents.agent_id = $20::uuid)
+  )
+  AND (
+      NOT $22::boolean
+      OR $23::boolean =
           (dependency_counts.unresolved_count = 0)
   )
 ORDER BY tasks.number DESC
@@ -454,6 +462,8 @@ type ListTaskProjectionsForActiveMemberParams struct {
 	ManagementRoles           []string      `json:"management_roles"`
 	CompanyID                 uuid.UUID     `json:"company_id"`
 	ActorUserID               uuid.UUID     `json:"actor_user_id"`
+	HasTaskIds                bool          `json:"has_task_ids"`
+	TaskIds                   []uuid.UUID   `json:"task_ids"`
 	HasProjectID              bool          `json:"has_project_id"`
 	ProjectID                 uuid.UUID     `json:"project_id"`
 	HasTaskID                 bool          `json:"has_task_id"`
@@ -544,6 +554,8 @@ func (q *Queries) ListTaskProjectionsForActiveMember(ctx context.Context, arg Li
 		arg.ManagementRoles,
 		arg.CompanyID,
 		arg.ActorUserID,
+		arg.HasTaskIds,
+		arg.TaskIds,
 		arg.HasProjectID,
 		arg.ProjectID,
 		arg.HasTaskID,
@@ -594,6 +606,13 @@ func (q *Queries) ListTaskProjectionsForActiveMember(ctx context.Context, arg Li
 			&i.Task.WorkspaceGeneration,
 			&i.Task.ResultProposalOnly,
 			&i.Task.ResultReviewRequired,
+			&i.Task.AssignmentStatus,
+			&i.Task.ScheduledAt,
+			&i.Task.ScheduleFiredAt,
+			&i.Task.TaskScheduleID,
+			&i.Task.TaskScheduleGeneration,
+			&i.Task.ScheduleOccurrenceAt,
+			&i.Task.ScheduleDisposition,
 			&i.ProjectVisibility,
 			&i.ProjectAccessVersion,
 			&i.AccessVia,

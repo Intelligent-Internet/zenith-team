@@ -826,3 +826,16 @@ message.
 Rollback deletes self messages, restores the plain self-connector check and
 drops the notation columns, then deletes Board channels and restores the
 000107 view and the 000070 discussion shape and identity triggers.
+
+## Scheduler and Calendar Tasks (000109)
+
+One additive upgrade from main's 000108 covers Scheduler retry receipts and
+Calendar Task definitions, assignment acceptance and occurrences. Existing Tasks
+remain accepted and unscheduled; date-only planning fields never start work.
+History and authored content are retained. Downgrade refuses to discard linked
+retries, cancellation receipts, Calendar definitions or assignment decisions.
+
+Main's migrations through 000108 are unchanged. Developer databases that ran
+the unshipped scheduler 000095/000097/000108 or Calendar 000096 have a different schema at the
+same number: preserve a backup and reconcile that local schema before startup;
+do not force its migration number or use it as a production upgrade baseline.

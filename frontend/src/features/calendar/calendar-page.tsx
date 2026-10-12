@@ -1,3 +1,12 @@
+import { CalendarTaskCreate } from "@/features/company-plan/components/new-task-button";
+import {
+  useCalendarTasksQuery,
+  useChangeTaskOccurrenceMutation,
+  type TaskCalendarOccurrence,
+} from "./task-calendar-api";
+import { taskCalendarEntry, taskCalendarEntryId } from "./task-calendar-entry";
+import { CalendarTaskDetails } from "./calendar-task-details";
+import { toast } from "@/shared/ui/sonner";
 import { useSearchParams } from "react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Search } from "@/shared/ui/icons";
@@ -12,7 +21,10 @@ import {
   type CalendarOccurrence,
 } from "./calendar-api";
 import { CalendarEventChip } from "./calendar-event-chip";
-import { calendarEventAnchor } from "./calendar-event-dialog";
+import {
+  calendarEventAnchor,
+  type CalendarEventAnchor,
+} from "./calendar-event-dialog";
 import { CalendarTimeGrid } from "./calendar-time-grid";
 import {
   addDays,
@@ -22,7 +34,11 @@ import {
   visibleDays,
   type CalendarView,
 } from "./calendar-dates";
-import { EventEditor, type EventEditorSelection } from "./event-editor";
+import {
+  EventEditor,
+  type EventEditorSelection,
+  type CalendarEntryDraft,
+} from "./event-editor";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import "./calendar.css";
 
@@ -54,7 +70,33 @@ export function CalendarPage() {
   const [search, setSearch] = useState("");
   const [showEvents, setShowEvents] = useState(true);
   const [showReminders, setShowReminders] = useState(true);
-  const [editor, setEditor] = useState<EventEditorSelection | null>(null);
+  const [showTasks, setShowTasks] = useState(true);
+  const [taskDetails, setTaskDetails] = useState<{
+    occurrence: TaskCalendarOccurrence;
+    anchor: CalendarEventAnchor;
+  } | null>(null);
+  const [moveTask] = useChangeTaskOccurrenceMutation();
+  const [editor, setEditor] = useState<
+    (EventEditorSelection & { task?: boolean }) | null
+  >(null);
+  function switchEntryType(
+    type: "event" | "reminder" | "task",
+    draft: CalendarEntryDraft,
+  ) {
+    if (!editor) return;
+    const [day, time] = draft.startLocal.split("T");
+    const [hour, minute] = (time ?? "09:00").split(":").map(Number);
+    setEditor({
+      ...editor,
+      day: dayAt(day),
+      hour,
+      minute,
+      allDay: false,
+      draft,
+      task: type === "task",
+      initialType: type === "task" ? undefined : type,
+    });
+  }
   const createButton = useRef<HTMLButtonElement>(null);
   const days = useMemo(() => visibleDays(date, view), [date, view]);
   const query = useCalendarEventsQuery(
@@ -65,6 +107,51 @@ export function CalendarPage() {
     },
     { refetchOnFocus: true },
   );
+  const taskQuery = useCalendarTasksQuery(
+    {
+      companyId: companyId ?? "",
+      from: addDays(days[0], -2).toISOString(),
+      to: addDays(days[days.length - 1], 3).toISOString(),
+    },
+    { skip: !companyId, refetchOnFocus: true },
+  );
+  const allItems = useMemo<CalendarOccurrence[]>(
+    () => [
+      ...(query.currentData?.items ?? []),
+      ...(taskQuery.currentData?.occurrences ?? []).map(taskCalendarEntry),
+    ],
+    [query.currentData, taskQuery.currentData],
+  );
+  const selectedTaskOccurrence = taskDetails
+    ? (taskQuery.currentData?.occurrences.find(
+        (item) =>
+          taskCalendarEntryId(item) ===
+          taskCalendarEntryId(taskDetails.occurrence),
+      ) ?? taskDetails.occurrence)
+    : null;
+  const loading =
+    (!query.currentData && query.isFetching) ||
+    (!taskQuery.currentData && taskQuery.isFetching);
+  const refreshing = query.isFetching || taskQuery.isFetching;
+  useEffect(() => {
+    const targetTaskId = searchParams.get("taskId");
+    if (!targetTaskId || !taskQuery.currentData) return;
+    const occurrence = taskQuery.currentData.occurrences.find(
+      (item) =>
+        item.task.id === targetTaskId &&
+        (!searchParams.get("date") ||
+          dateKey(new Date(item.runAt)) === searchParams.get("date")),
+    );
+    if (!occurrence || !createButton.current) return;
+    setEditor(null);
+    setTaskDetails({
+      occurrence,
+      anchor: calendarEventAnchor(createButton.current),
+    });
+    const next = new URLSearchParams(searchParams);
+    next.delete("taskId");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, taskQuery.currentData]);
   useEffect(() => {
     if (
       !targetEventId ||
@@ -98,7 +185,7 @@ export function CalendarPage() {
   ]);
   const items = useMemo(
     () =>
-      (query.currentData?.items ?? []).filter(
+      allItems.filter(
         (event) =>
           days.some((day) => onDay(event, day)) &&
           ((showPersonal &&
@@ -108,13 +195,18 @@ export function CalendarPage() {
               event.calendarType === "company" &&
               event.companyId === companyId)) &&
           (showDeclined || event.responseStatus !== "declined") &&
-          (event.type === "event" ? showEvents : showReminders) &&
+          (event.taskOccurrence
+            ? showTasks
+            : event.type === "event"
+              ? showEvents
+              : showReminders) &&
           `${event.title} ${event.description} ${event.location}`
             .toLowerCase()
             .includes(search.toLowerCase()),
       ),
     [
-      query.currentData,
+      allItems,
+      showTasks,
       days,
       showPersonal,
       showCompany,
@@ -143,6 +235,7 @@ export function CalendarPage() {
       (a, b) => counts.get(a)! - counts.get(b)!,
     )[0];
     setDate(selection.day);
+    setTaskDetails(null);
     setEditor({ ...selection, color });
   }
   const filtered =
@@ -150,14 +243,44 @@ export function CalendarPage() {
     !showPersonal ||
     (Boolean(companyId) && !showCompany) ||
     !showEvents ||
-    !showReminders;
+    !showReminders ||
+    !showTasks;
   const today = dateKey(new Date());
-  const open = (event: CalendarOccurrence, element: HTMLButtonElement) =>
+  const open = (event: CalendarOccurrence, element: HTMLButtonElement) => {
+    if (event.taskOccurrence) {
+      setEditor(null);
+      setTaskDetails({
+        occurrence: event.taskOccurrence,
+        anchor: calendarEventAnchor(element),
+      });
+      return;
+    }
+    setTaskDetails(null);
     setEditor({
       day: dayAt(event.occurrenceDate),
       event,
       anchor: calendarEventAnchor(element),
     });
+  };
+  async function moveOccurrence(id: string, at: Date) {
+    const entry = allItems.find((item) => item.id === id)?.taskOccurrence;
+    if (!entry) return;
+    try {
+      await moveTask({
+        companyId: entry.task.companyId,
+        taskId: entry.task.id,
+        input: {
+          expectedRevision: entry.task.revision,
+          occurrenceAt: entry.occurrenceAt,
+          runAt: at.toISOString(),
+          cancel: false,
+        },
+      }).unwrap();
+      toast.success("Task moved");
+    } catch (error) {
+      toast.error(getBoardlyQueryErrorMessage(error));
+    }
+  }
   function navigate(direction: number) {
     setDate(
       view === "Month"
@@ -185,6 +308,8 @@ export function CalendarPage() {
         setShowDeclined={setShowDeclined}
         showEvents={showEvents}
         setShowEvents={setShowEvents}
+        showTasks={showTasks}
+        setShowTasks={setShowTasks}
         showReminders={showReminders}
         setShowReminders={setShowReminders}
       />
@@ -254,6 +379,23 @@ export function CalendarPage() {
               .timeZone.replaceAll("_", " ")}
           </span>
         </div>
+        {taskQuery.isError ? (
+          <p className="personal-empty" role="alert">
+            {getBoardlyQueryErrorMessage(taskQuery.error)}{" "}
+            <button
+              className="personal-button"
+              onClick={() => void taskQuery.refetch()}
+            >
+              Retry tasks
+            </button>
+          </p>
+        ) : null}
+        {taskQuery.currentData?.truncated ? (
+          <p role="status">
+            Showing the first 2,000 occurrences. Select a shorter calendar
+            period.
+          </p>
+        ) : null}
         {query.isError ? (
           <div className="personal-empty" role="alert">
             <p>{getBoardlyQueryErrorMessage(query.error)}</p>
@@ -268,9 +410,9 @@ export function CalendarPage() {
         <div
           key={view}
           className={`calendar-view calendar-view--${view.toLowerCase()}`}
-          aria-busy={query.isFetching}
+          aria-busy={refreshing}
         >
-          {query.isFetching && (
+          {refreshing && (
             <span className="calendar-loading" role="status">
               Updating calendar…
             </span>
@@ -287,6 +429,33 @@ export function CalendarPage() {
                   const events = eventsByDay.get(dateKey(day)) ?? [];
                   return (
                     <div
+                      onDragOver={(event) => {
+                        if (
+                          event.dataTransfer.types.includes(
+                            "application/x-zenith-task",
+                          )
+                        )
+                          event.preventDefault();
+                      }}
+                      onDrop={(event) => {
+                        const id = event.dataTransfer.getData(
+                          "application/x-zenith-task",
+                        );
+                        if (!id) return;
+                        event.preventDefault();
+                        const original = allItems.find(
+                          (item) => item.id === id,
+                        );
+                        const at = new Date(day);
+                        const before = new Date(original?.startAt ?? day);
+                        at.setHours(
+                          before.getHours(),
+                          before.getMinutes(),
+                          0,
+                          0,
+                        );
+                        void moveOccurrence(id, at);
+                      }}
                       key={dateKey(day)}
                       className={`calendar-day ${day.getMonth() !== date.getMonth() ? "is-outside" : ""}`}
                     >
@@ -341,6 +510,7 @@ export function CalendarPage() {
           )}
           {view === "Week" && (
             <CalendarTimeGrid
+              onMoveTask={(id, at) => void moveOccurrence(id, at)}
               days={days}
               eventsByDay={eventsByDay}
               selectedDate={dateKey(date)}
@@ -362,8 +532,8 @@ export function CalendarPage() {
                   anchor: calendarEventAnchor(click.currentTarget),
                 })
               }
-              loading={!query.currentData && query.isFetching}
-              error={query.isError}
+              loading={loading}
+              error={query.isError || taskQuery.isError}
               filtered={filtered}
             />
           )}
@@ -379,15 +549,32 @@ export function CalendarPage() {
                   anchor: calendarEventAnchor(click.currentTarget),
                 })
               }
-              loading={!query.currentData && query.isFetching}
-              error={query.isError}
+              loading={loading}
+              error={query.isError || taskQuery.isError}
               filtered={filtered}
             />
           )}
         </div>
       </section>
       <CalendarUtilities />
-      {editor?.event && !editor.edit ? (
+      {taskDetails &&
+      selectedTaskOccurrence &&
+      selectedTaskOccurrence.task.companyId === companyId ? (
+        <CalendarTaskDetails
+          key={taskCalendarEntryId(taskDetails.occurrence)}
+          occurrence={selectedTaskOccurrence}
+          anchor={taskDetails.anchor}
+          onClose={() => setTaskDetails(null)}
+        />
+      ) : null}
+      {editor?.task && companyId ? (
+        <CalendarTaskCreate
+          companyId={companyId}
+          {...editor}
+          onClose={() => setEditor(null)}
+          onSelectType={switchEntryType}
+        />
+      ) : editor?.event && !editor.edit ? (
         <EventDetails
           event={editor.event}
           anchor={editor.anchor}
@@ -407,6 +594,11 @@ export function CalendarPage() {
             }
             companyId={editor.event?.companyId ?? companyId}
             {...editor}
+            onCreateTask={
+              !editor.event && companyId
+                ? (draft) => switchEntryType("task", draft)
+                : undefined
+            }
             onClose={() => setEditor(null)}
           />
         )

@@ -18,10 +18,6 @@ const timeSlots = Array.from({ length: 96 }, (_, index) => {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 });
 
-function themeContainer() {
-  return document.querySelector<HTMLElement>(".boardly-workspace-theme");
-}
-
 function formatDate(value: string) {
   return dayAt(value).toLocaleDateString(undefined, {
     weekday: "short",
@@ -63,6 +59,7 @@ function parseTime(value: string): string | null {
 export function CalendarDatePicker({
   label,
   value,
+  appearance = "calendar",
   min = "1900-01-01",
   max = "2199-12-31",
   disabled = false,
@@ -70,6 +67,7 @@ export function CalendarDatePicker({
 }: {
   label: string;
   value: string;
+  appearance?: "calendar" | "workspace";
   min?: string;
   max?: string;
   disabled?: boolean;
@@ -114,9 +112,16 @@ export function CalendarDatePicker({
           <span>{formatCompactDate(value)}</span>
         </button>
       </Popover.Trigger>
-      <Popover.Portal container={themeContainer()}>
+      <Popover.Portal
+        container={
+          appearance === "calendar"
+            ? document.querySelector(".boardly-workspace-theme")
+            : undefined
+        }
+      >
         <Popover.Content
-          style={theme}
+          style={appearance === "calendar" ? theme : undefined}
+          data-appearance={appearance}
           className="calendar-picker-popover calendar-date-popover"
           sideOffset={7}
           collisionPadding={12}
@@ -208,10 +213,12 @@ export function CalendarDatePicker({
 export function CalendarTimePicker({
   label,
   value,
+  appearance = "calendar",
   onChange,
 }: {
   label: string;
   value: string;
+  appearance?: "calendar" | "workspace";
   onChange: (time: string) => void;
 }) {
   const theme = useCalendarTheme();
@@ -265,9 +272,16 @@ export function CalendarTimePicker({
           <span>{formatTime(value)}</span>
         </button>
       </Popover.Trigger>
-      <Popover.Portal container={themeContainer()}>
+      <Popover.Portal
+        container={
+          appearance === "calendar"
+            ? document.querySelector(".boardly-workspace-theme")
+            : undefined
+        }
+      >
         <Popover.Content
-          style={theme}
+          style={appearance === "calendar" ? theme : undefined}
+          data-appearance={appearance}
           className="calendar-picker-popover calendar-time-popover"
           sideOffset={7}
           collisionPadding={12}
@@ -335,20 +349,23 @@ export function CalendarTimePicker({
 export function CalendarOptionPicker({
   label,
   value,
+  appearance = "calendar",
   options,
   onChange,
   disabled = false,
 }: {
   label: string;
   value: string;
+  appearance?: "calendar" | "workspace";
   options: { value: string; label: string; description?: string }[];
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
   const theme = useCalendarTheme();
+  const [open, setOpen] = useState(false);
   const selected = options.find((option) => option.value === value);
   return (
-    <Popover.Root>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
           type="button"
@@ -360,9 +377,16 @@ export function CalendarOptionPicker({
           <ChevronDown size={15} aria-hidden="true" />
         </button>
       </Popover.Trigger>
-      <Popover.Portal container={themeContainer()}>
+      <Popover.Portal
+        container={
+          appearance === "calendar"
+            ? document.querySelector(".boardly-workspace-theme")
+            : undefined
+        }
+      >
         <Popover.Content
-          style={theme}
+          style={appearance === "calendar" ? theme : undefined}
+          data-appearance={appearance}
           className="calendar-picker-popover calendar-option-popover"
           sideOffset={7}
           collisionPadding={12}

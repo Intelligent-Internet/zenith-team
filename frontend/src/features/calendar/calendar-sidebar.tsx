@@ -17,6 +17,8 @@ export function CalendarSidebar({
   setShowDeclined,
   showEvents,
   setShowEvents,
+  showTasks,
+  setShowTasks,
   showReminders,
   setShowReminders,
 }: {
@@ -34,6 +36,8 @@ export function CalendarSidebar({
   setShowDeclined: (value: boolean) => void;
   showEvents: boolean;
   setShowEvents: (value: boolean) => void;
+  showTasks: boolean;
+  setShowTasks: (value: boolean) => void;
   showReminders: boolean;
   setShowReminders: (value: boolean) => void;
 }) {
@@ -115,6 +119,14 @@ export function CalendarSidebar({
       </div>
       <div className="calendar-sidebar-section">
         <h2>Show</h2>
+        <label>
+          <input
+            type="checkbox"
+            checked={showTasks}
+            onChange={(event) => setShowTasks(event.target.checked)}
+          />
+          Tasks
+        </label>
         <label>
           <input
             type="checkbox"

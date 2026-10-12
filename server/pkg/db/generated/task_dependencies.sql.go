@@ -463,7 +463,7 @@ func (q *Queries) LockDependentTasksForProjectionChange(ctx context.Context, arg
 }
 
 const lockTaskDependencyEndpoints = `-- name: LockTaskDependencyEndpoints :many
-SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 FROM tasks
 JOIN task_access AS access
   ON access.company_id = tasks.company_id
@@ -530,6 +530,13 @@ func (q *Queries) LockTaskDependencyEndpoints(ctx context.Context, arg LockTaskD
 			&i.WorkspaceGeneration,
 			&i.ResultProposalOnly,
 			&i.ResultReviewRequired,
+			&i.AssignmentStatus,
+			&i.ScheduledAt,
+			&i.ScheduleFiredAt,
+			&i.TaskScheduleID,
+			&i.TaskScheduleGeneration,
+			&i.ScheduleOccurrenceAt,
+			&i.ScheduleDisposition,
 		); err != nil {
 			return nil, err
 		}

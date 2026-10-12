@@ -73,6 +73,10 @@ type runCLIOperation struct {
 	// workspace. Native Page captures are packaged by the daemon too;
 	// Agents cannot forward a prebuilt presentation directly.
 	Local bool
+	// ScheduledTaskOnly keeps CEO chat task creation from bypassing the
+	// reviewed Company Plan with an immediate Run. The server validates the
+	// schedule itself; this is the frozen channel's narrower write authority.
+	ScheduledTaskOnly bool
 }
 
 // errRunChannelResponseTooLarge is a server answer over
@@ -212,6 +216,7 @@ func runZenCommands(run Run, doc RunContext) []runCLICommand {
 	// one through the Company reads above and without them is not offered it.
 	if runTaskCreationAvailable(doc) {
 		create := zen(runTaskCreateUse, http.MethodPost, company+"/tasks")
+		create.Operation.ScheduledTaskOnly = doc.Agent.IsRoot && doc.ExecutionProfile.Task == nil
 		if project := runTaskProject(doc); project != nil {
 			commands = append(commands,
 				zen(runTaskCreateUse, http.MethodGet, company+"/projects/"+project.ID),
@@ -767,6 +772,15 @@ func (d *Daemon) runChannelHandler() http.HandlerFunc {
 			(pathOnly == runOutputPath(channel.run) && !runOutputNamesPresentation(request.Body) ||
 				runArtifactPath(channel.run, pathOnly))
 		operation, admitted := channel.policy.admit(request.Method, pathOnly, local)
+		if admitted && operation.ScheduledTaskOnly {
+			var input struct {
+				Schedule *struct {
+					Type string `json:"type"`
+				} `json:"schedule"`
+			}
+			admitted = json.Unmarshal(request.Body, &input) == nil && input.Schedule != nil &&
+				(input.Schedule.Type == "once" || input.Schedule.Type == "cron")
+		}
 		if !admitted {
 			// The refusal never reaches the server, so without this line only
 			// the agent's transcript would say why its command failed.

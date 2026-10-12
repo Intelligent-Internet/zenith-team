@@ -776,7 +776,7 @@ func (q *Queries) ListOutputItems(ctx context.Context, arg ListOutputItemsParams
 }
 
 const lockRunForOutputPresentation = `-- name: LockRunForOutputPresentation :one
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 FROM runs
 WHERE runs.id = $1::uuid
   AND runs.company_id = $2::uuid
@@ -830,6 +830,7 @@ func (q *Queries) LockRunForOutputPresentation(ctx context.Context, arg LockRunF
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }

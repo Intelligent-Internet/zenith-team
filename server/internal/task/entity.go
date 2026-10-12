@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/auth"
+	"boardly.dev/boardly/server/internal/schedule"
 	"boardly.dev/boardly/server/internal/util"
 	"boardly.dev/boardly/server/pkg/protocol"
 )
@@ -37,6 +38,7 @@ type CreateInput struct {
 	Labels        []string
 	StartDate     *string
 	DueDate       *string
+	Schedule      *schedule.Trigger
 	// Run is the scope of the Run a create comes from, nil for a member's
 	// own create. A Run files work only for the member it works for.
 	Run *RunScope
@@ -425,6 +427,13 @@ type Access struct {
 // Assignee is always a member; ExecutedBy is the executing Agent, or the
 // assignee again when they do the work themself.
 type Response struct {
+	ScheduleGeneration   int64         `json:"-"`
+	AssignmentStatus     string        `json:"assignmentStatus"`
+	ScheduledAt          *time.Time    `json:"scheduledAt"`
+	ScheduleFiredAt      *time.Time    `json:"scheduleFiredAt"`
+	ScheduleID           *uuid.UUID    `json:"scheduleId"`
+	ScheduleOccurrenceAt *time.Time    `json:"scheduleOccurrenceAt"`
+	ScheduleDisposition  string        `json:"scheduleDisposition"`
 	ID                   uuid.UUID     `json:"id"`
 	Key                  string        `json:"key"`
 	CompanyID            uuid.UUID     `json:"companyId"`

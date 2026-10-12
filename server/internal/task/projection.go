@@ -132,8 +132,8 @@ func systemProjectionParams(companyID, taskID uuid.UUID) generated.GetTaskProjec
 // notices a handoff closes, and the previous assignee's task_assigned
 // notices a change of assignee closes.
 // Company Plan reconciliation owns that transaction; Task still owns the
-// event names, the payload shape and the Inbox rules, and one system
-// projection read per Task serves both. The caller presents the returned
+// event names, the payload shape and the Inbox rules. The final system
+// projection, reread after any Calendar metadata write, serves both. The caller presents the returned
 // items after commit with inbox.PresentCreated; the durable rows and their
 // inbox.created events are staged here.
 func StageChangesInTx(
@@ -141,6 +141,7 @@ func StageChangesInTx(
 	q *generated.Queries,
 	pending *[]events.Event,
 	principal auth.UserPrincipal,
+	actor events.Actor,
 	changes []Change,
 ) ([]inbox.CreateResult, error) {
 	if len(changes) == 0 {
@@ -148,15 +149,67 @@ func StageChangesInTx(
 	}
 	var inboxResults []inbox.CreateResult
 	for _, change := range changes {
-		// The applier's own view is not used: a frame and an Inbox item carry
-		// no reader's access, and until the Company Plan apply is scoped by
-		// Project permission (ADR 0017, a later step) it may write Tasks in a
-		// Project the applier cannot read.
+		// Frames and Inbox items carry no reader-specific access. Company Plan
+		// already checked Project authority; each frame's audience is stamped
+		// in its producing transaction.
 		row, err := q.GetTaskProjectionForSystem(ctx, systemProjectionParams(principal.CompanyID, change.ID))
 		if err != nil {
 			return nil, fmt.Errorf("read Task change projection %s: %w", change.ID, err)
 		}
 		value := responseFromSystemProjectionRow(row)
+		calendarChanged := value.ScheduleID != nil && (change.BriefChanged || change.AssignmentChanged)
+		requireAcceptance := (change.Type == ChangeTypeCreated || change.PreviousAssignee.ID != value.Assignee.ID || calendarChanged) &&
+			value.Assignee.ID != principal.UserID
+		if change.UnclaimedScheduleRunCancelled {
+			value.ScheduleFiredAt = nil
+			value.ScheduleDisposition = "scheduled"
+			if value.Status == StatusInProgress {
+				value.Status = StatusTodo
+			}
+		}
+		if requireAcceptance {
+			value.AssignmentStatus = "pending"
+		}
+		if requireAcceptance || change.UnclaimedScheduleRunCancelled {
+			if _, err := updateTaskCalendarInTx(
+				ctx,
+				q,
+				value,
+				pending,
+				actor,
+			); err != nil {
+				return nil, err
+			}
+			row, err = q.GetTaskProjectionForSystem(
+				ctx,
+				systemProjectionParams(principal.CompanyID, change.ID),
+			)
+			if err != nil {
+				return nil, err
+			}
+			value = responseFromSystemProjectionRow(row)
+		}
+		if change.Type == ChangeTypeUpdated && calendarChanged {
+			if err := reviseTaskCalendarInTx(
+				ctx,
+				q,
+				pending,
+				value,
+				principal.UserID,
+				change.AssignmentChanged,
+			); err != nil {
+				return nil, err
+			}
+			row, err = q.GetTaskProjectionForSystem(
+				ctx,
+				systemProjectionParams(principal.CompanyID, change.ID),
+			)
+			if err != nil {
+				return nil, err
+			}
+			value = responseFromSystemProjectionRow(row)
+		}
+
 		var name string
 		var previous *Response
 		switch change.Type {
@@ -172,7 +225,7 @@ func StageChangesInTx(
 				change.Type,
 			)
 		}
-		if err := stageTaskEvent(ctx, q, pending, newTaskEvent(principal.UserID, name, value)); err != nil {
+		if err := stageTaskEvent(ctx, q, pending, newTaskEventForActor(actor, name, value)); err != nil {
 			return nil, err
 		}
 		created, err := createTaskInboxItems(ctx, q, pending, previous, value, principal.UserID, handoffOutcome{

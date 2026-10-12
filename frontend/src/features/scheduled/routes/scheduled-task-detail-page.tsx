@@ -12,11 +12,12 @@ import {
   X,
 } from "@/shared/ui/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useNavigate, useLocation } from "react-router";
 
 import { readSessionSnapshot } from "@/app/session/session";
 import {
   useCancelScheduleMutation,
+  useCancelWaitingScheduleRunMutation,
   useGetScheduleQuery,
   useLazyListScheduleRunsQuery,
   useListScheduleRunsQuery,
@@ -26,6 +27,8 @@ import {
   useResumeScheduleMutation,
   useRunScheduleNowMutation,
 } from "@/features/scheduled/api/scheduled-api";
+import { SchedulePreviewPanel } from "@/features/scheduled/components/schedule-editor-sources";
+import { createScheduleFormFromTask } from "@/features/scheduled/model/schedule-form";
 import { ScheduledGlassPanel } from "@/features/scheduled/components/scheduled-glass-panel";
 import { ScheduledPageShell } from "@/features/scheduled/components/scheduled-page-shell";
 import { ScheduledStatusPill } from "@/features/scheduled/components/scheduled-status-pill";
@@ -37,11 +40,14 @@ import {
   formatScheduleTrigger,
   scheduleRunLabel,
   scheduleRunTone,
+  scheduleRunReason,
+  scheduleRunEffectNotice,
   scheduleStatusLabel,
   scheduleStatusTone,
 } from "@/features/scheduled/model/schedule-format";
 import type {
   SchedulePreviewRequest,
+  SchedulePreviewResponse,
   ScheduleRunRecord,
   ScheduleRunNowRequest,
   ScheduledTask,
@@ -51,6 +57,13 @@ import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import { GradientCtaButton } from "@/shared/ui/gradient-cta-button";
 
 export function ScheduledTaskDetailPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [resumeReview, setResumeReview] = useState<{
+    preview: SchedulePreviewResponse;
+    revision: number;
+    scheduleId: string;
+  } | null>(null);
   const { scheduleId = "" } = useParams<{ scheduleId: string }>();
   const companyId = readSessionSnapshot().company?.id ?? "";
   const scheduleQuery = useGetScheduleQuery(
@@ -79,6 +92,8 @@ export function ScheduledTaskDetailPage() {
   const [pauseSchedule, pauseState] = usePauseScheduleMutation();
   const [resumeSchedule, resumeState] = useResumeScheduleMutation();
   const [cancelSchedule, cancelState] = useCancelScheduleMutation();
+  const [cancelWaitingRun, cancelWaitingState] =
+    useCancelWaitingScheduleRunMutation();
   const [runNow, runNowState] = useRunScheduleNowMutation();
   const [previewSchedule, previewState] = usePreviewScheduleMutation();
   const [runs, setRuns] = useState<ScheduleRunRecord[]>([]);
@@ -86,14 +101,18 @@ export function ScheduledTaskDetailPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const hasLoadedAdditionalRunPages = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(
+    typeof location.state?.scheduleNotice === "string"
+      ? location.state.scheduleNotice
+      : null,
+  );
   const [confirmCancel, setConfirmCancel] = useState(false);
   const pendingRunNow = useRef<{
     request: ScheduleRunNowRequest;
     scheduleId: string;
   } | null>(null);
   const schedule = scheduleQuery.currentData;
-  const { chatPanel, openRunChat } = useScheduleRunChatPanel({
+  const { agentName, chatPanel, openRunChat } = useScheduleRunChatPanel({
     companyId,
     runs,
     schedule,
@@ -103,7 +122,8 @@ export function ScheduledTaskDetailPage() {
     resumeState.isLoading ||
     cancelState.isLoading ||
     runNowState.isLoading ||
-    previewState.isLoading;
+    previewState.isLoading ||
+    cancelWaitingState.isLoading;
 
   useEffect(() => {
     hasLoadedAdditionalRunPages.current = false;
@@ -138,7 +158,18 @@ export function ScheduledTaskDetailPage() {
             : createRunNowRequest();
         attemptedRunNow = request;
         pendingRunNow.current = { request, scheduleId };
-        await runNow({ companyId, request, scheduleId }).unwrap();
+        const firing = await runNow({
+          companyId,
+          request,
+          scheduleId,
+        }).unwrap();
+        setRuns((current) =>
+          mergeScheduleRuns(
+            [firing],
+            current.filter((run) => run.firingId !== firing.firingId),
+          ),
+        );
+        openRunChat(firing);
         if (pendingRunNow.current?.request === request) {
           pendingRunNow.current = null;
         }
@@ -147,7 +178,7 @@ export function ScheduledTaskDetailPage() {
       }
 
       if (operation === "pause") {
-        await pauseSchedule({
+        const changed = await pauseSchedule({
           companyId,
           request: {
             expectedRevision: schedule.revision,
@@ -155,12 +186,19 @@ export function ScheduledTaskDetailPage() {
           },
           scheduleId,
         }).unwrap();
-        setActionNotice("Future occurrences are paused.");
+        setActionNotice(
+          [
+            "Future occurrences are paused.",
+            scheduleRunEffectNotice(changed.runEffect),
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
         return;
       }
 
       if (operation === "cancel") {
-        await cancelSchedule({
+        const changed = await cancelSchedule({
           companyId,
           request: {
             expectedRevision: schedule.revision,
@@ -169,14 +207,30 @@ export function ScheduledTaskDetailPage() {
           scheduleId,
         }).unwrap();
         setConfirmCancel(false);
-        setActionNotice("The schedule was cancelled.");
+        setActionNotice(
+          [
+            "The schedule was cancelled.",
+            scheduleRunEffectNotice(changed.runEffect),
+          ]
+            .filter(Boolean)
+            .join(" "),
+        );
         return;
       }
 
-      const preview = await previewSchedule({
-        companyId,
-        request: createPreviewRequest(schedule),
-      }).unwrap();
+      if (
+        !resumeReview ||
+        resumeReview.revision !== schedule.revision ||
+        resumeReview.scheduleId !== scheduleId
+      ) {
+        const preview = await previewSchedule({
+          companyId,
+          request: createPreviewRequest(schedule),
+        }).unwrap();
+        setResumeReview({ preview, revision: schedule.revision, scheduleId });
+        return;
+      }
+      const preview = resumeReview.preview;
       await resumeSchedule({
         companyId,
         request: {
@@ -186,8 +240,10 @@ export function ScheduledTaskDetailPage() {
         },
         scheduleId,
       }).unwrap();
+      setResumeReview(null);
       setActionNotice("The schedule is active again.");
     } catch (error) {
+      if (operation === "resume") setResumeReview(null);
       if (
         attemptedRunNow &&
         pendingRunNow.current?.request === attemptedRunNow &&
@@ -195,10 +251,45 @@ export function ScheduledTaskDetailPage() {
       ) {
         pendingRunNow.current = null;
       }
+      if (
+        operation === "run" &&
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "schedule_run_active" &&
+        runs.some(
+          (run) => run.runStatus === "queued" || run.runStatus === "deferred",
+        )
+      ) {
+        setActionError("A run is already waiting for your computer.");
+        return;
+      }
       setActionError(
         getScheduledTaskErrorMessage(
           error,
-          `Scheduled task could not be ${actionFailureVerb(operation)}.`,
+          `Schedule could not be ${actionFailureVerb(operation)}.`,
+        ),
+      );
+    }
+  };
+
+  const cancelOccurrence = async (run: ScheduleRunRecord) => {
+    if (!run.runId) return;
+    setActionError(null);
+    try {
+      await cancelWaitingRun({
+        companyId,
+        scheduleId,
+        runId: run.runId,
+      }).unwrap();
+      setActionNotice(
+        "The waiting run was cancelled. Future scheduled times are unchanged.",
+      );
+    } catch (error) {
+      setActionError(
+        getScheduledTaskErrorMessage(
+          error,
+          "The waiting run could not be cancelled.",
         ),
       );
     }
@@ -285,9 +376,49 @@ export function ScheduledTaskDetailPage() {
         </div>
       ) : null}
 
+      {resumeReview &&
+      resumeReview.scheduleId === scheduleId &&
+      schedule.status === "paused" ? (
+        <div className="grid gap-3">
+          <SchedulePreviewPanel
+            heading="Review before resuming"
+            agentName={agentName}
+            values={createScheduleFormFromTask(schedule)}
+            preview={resumeReview.preview}
+            onEditStep={() => navigate(`/scheduled/${scheduleId}/edit`)}
+          />
+          <div className="flex gap-3">
+            <button
+              className="workspace-action-button workspace-action-button--primary"
+              disabled={isActing}
+              onClick={() => void executeAction("resume")}
+              type="button"
+            >
+              Confirm and resume
+            </button>
+            <button
+              className="workspace-action-button"
+              onClick={() => setResumeReview(null)}
+              type="button"
+            >
+              Keep paused
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {schedule.status === "completed" && schedule.trigger.type === "once" ? (
+        <p className="text-sm text-[var(--workspace-native-text-muted)]">
+          The scheduled time has been recorded. Run history shows whether the
+          work is waiting, running or finished.
+        </p>
+      ) : null}
       {schedule.pauseReason ? (
         <p className="rounded-lg border border-[color-mix(in_srgb,var(--workspace-native-approval)_25%,transparent)] bg-[var(--workspace-approval-soft)] px-4 py-3 text-sm text-[var(--workspace-native-approval)]">
-          Paused because: {schedule.pauseReason.replace(/_/g, " ")}
+          Paused because: {schedule.pauseReason.replace(/_/g, " ")}.{" "}
+          <Link className="underline" to={`/scheduled/${scheduleId}/edit`}>
+            Review instructions, timing and connections
+          </Link>
         </p>
       ) : null}
 
@@ -313,11 +444,11 @@ export function ScheduledTaskDetailPage() {
               value={formatScheduleDateTime(schedule.nextRunAt, timeZone)}
             />
             <ScheduleFact
-              label="Last run"
+              label="Last occurrence recorded"
               value={
                 schedule.lastRunAt
                   ? formatScheduleDateTime(schedule.lastRunAt, timeZone)
-                  : "Not run yet"
+                  : "No occurrence recorded"
               }
             />
             <ScheduleFact label="Provider" value={schedule.provider} />
@@ -352,12 +483,14 @@ export function ScheduledTaskDetailPage() {
           </div>
         ) : (
           <p className="mt-4 rounded-md border border-dashed border-[var(--workspace-divider)] bg-[var(--workspace-control-bg)] p-4 text-sm text-[var(--workspace-native-text-muted)]">
-            This task does not use an external source.
+            This schedule does not use an external source.
           </p>
         )}
       </ScheduledGlassPanel>
 
       <ScheduleRunHistory
+        cancelling={cancelWaitingState.isLoading}
+        onCancelRun={(run) => void cancelOccurrence(run)}
         isError={runsQuery.isError}
         isLoading={runsQuery.isLoading}
         loadingMore={loadingMore}
@@ -501,6 +634,8 @@ function ScheduleFact({ label, value }: { label: string; value: string }) {
 }
 
 function ScheduleRunHistory({
+  cancelling,
+  onCancelRun,
   isError,
   isLoading,
   loadingMore,
@@ -511,6 +646,8 @@ function ScheduleRunHistory({
   runs,
   timeZone,
 }: {
+  cancelling: boolean;
+  onCancelRun: (run: ScheduleRunRecord) => void;
   isError: boolean;
   isLoading: boolean;
   loadingMore: boolean;
@@ -545,7 +682,8 @@ function ScheduleRunHistory({
             </h2>
           </div>
           <p className="mt-1 text-xs leading-5 text-[var(--workspace-native-text-muted)]">
-            Every scheduled or manual occurrence and its materialization state.
+            Each scheduled or manual occurrence and the latest attempt to run
+            it.
           </p>
         </div>
         <button
@@ -579,8 +717,22 @@ function ScheduleRunHistory({
         <div className="mt-5 grid gap-3">
           {orderedRuns.map((run) => (
             <ScheduleRunItem
+              cancelling={cancelling}
+              onCancelRun={onCancelRun}
               key={run.firingId}
               run={run}
+              newerRun={
+                run.disposition === "superseded"
+                  ? [...orderedRuns]
+                      .reverse()
+                      .find(
+                        (candidate) =>
+                          candidate.runId &&
+                          new Date(candidate.createdAt).getTime() >
+                            new Date(run.createdAt).getTime(),
+                      )
+                  : undefined
+              }
               timeZone={timeZone}
               onOpenChat={onOpenChat}
             />
@@ -606,12 +758,18 @@ function ScheduleRunHistory({
 }
 
 function ScheduleRunItem({
+  newerRun,
+  cancelling,
+  onCancelRun,
   onOpenChat,
   run,
   timeZone,
 }: {
+  cancelling: boolean;
+  onCancelRun: (run: ScheduleRunRecord) => void;
   onOpenChat: (run: ScheduleRunRecord) => void;
   run: ScheduleRunRecord;
+  newerRun?: ScheduleRunRecord;
   timeZone?: string;
 }) {
   return (
@@ -634,6 +792,27 @@ function ScheduleRunItem({
           <span className="text-xs text-[var(--workspace-native-text-muted)]">
             Recorded {formatScheduleDateTime(run.createdAt, timeZone)}
           </span>
+          {run.runId &&
+          (run.runStatus === "queued" || run.runStatus === "deferred") ? (
+            <button
+              className="workspace-action-button"
+              type="button"
+              disabled={cancelling}
+              onClick={() => onCancelRun(run)}
+            >
+              <X aria-hidden className="size-3.5" />
+              Cancel waiting run
+            </button>
+          ) : null}
+          {newerRun && resolveScheduleRunChatTarget(newerRun) ? (
+            <button
+              className="workspace-action-button"
+              type="button"
+              onClick={() => onOpenChat(newerRun)}
+            >
+              <History aria-hidden className="size-3.5" /> View newer run
+            </button>
+          ) : null}
           {resolveScheduleRunChatTarget(run) ? (
             <button
               className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--workspace-divider)] bg-[var(--workspace-control-bg)] px-3 text-xs font-bold text-[var(--workspace-native-text-muted)] transition hover:bg-[var(--workspace-hover-bg)] hover:text-[var(--workspace-native-text)]"
@@ -646,9 +825,26 @@ function ScheduleRunItem({
           ) : null}
         </div>
       </div>
-      {run.reason ? (
+      {run.attempt && run.attempt > 1 ? (
+        <p className="mt-2 text-xs text-[var(--workspace-native-text-muted)]">
+          Attempt {run.attempt}
+        </p>
+      ) : null}
+      {run.missedCount > 0 ? (
+        <p className="mt-2 text-xs text-[var(--workspace-native-text-muted)]">
+          {run.missedCount === 1000 ? "At least 1,000" : run.missedCount}{" "}
+          earlier occurrences were combined into this one.
+        </p>
+      ) : null}
+      {(run.runStatus === "queued" || run.runStatus === "deferred") &&
+      run.runtimeLastSeenAt ? (
+        <p className="mt-2 text-xs text-[var(--workspace-native-text-muted)]">
+          Computer last seen {formatScheduleDateTime(run.runtimeLastSeenAt)}
+        </p>
+      ) : null}
+      {scheduleRunReason(run) ? (
         <p className="mt-3 rounded-md border border-[color-mix(in_srgb,var(--workspace-native-approval)_25%,transparent)] bg-[var(--workspace-approval-soft)] px-3 py-2 text-xs leading-5 text-[var(--workspace-native-approval)]">
-          {run.reason.replace(/_/g, " ")}
+          {scheduleRunReason(run)}
         </p>
       ) : null}
     </ScheduledGlassPanel>
@@ -681,7 +877,8 @@ function isDefinitiveRunNowFailure(error: unknown) {
   return (
     typeof error.status === "number" &&
     error.status >= 400 &&
-    error.status < 500
+    error.status < 500 &&
+    error.status !== 408
   );
 }
 
@@ -735,7 +932,7 @@ function DetailErrorState({ onRetry }: { onRetry: () => void }) {
       >
         <div>
           <h2 className="text-xl font-semibold text-[var(--workspace-native-text)]">
-            Scheduled task unavailable
+            Schedule unavailable
           </h2>
           <p className="mt-2 text-sm text-[var(--workspace-native-text-muted)]">
             It may have changed, or you may no longer have access.

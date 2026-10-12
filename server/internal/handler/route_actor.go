@@ -125,6 +125,13 @@ var anyActorRoutes = []string{
 // every Project access route, Groups, Activity, Inbox, Team, sign-in, the daemon
 // plane and everything else no Run calls. Sorted by path, then method.
 var personActorRoutes = []string{
+	// Calendar Task decisions and edits are the person's own; Agents create
+	// scheduled work through the Run-scoped Task create route.
+	"GET /api/v1/companies/:companyId/calendar/tasks",
+	"GET /api/v1/companies/:companyId/tasks/:taskId/schedule",
+	"PUT /api/v1/companies/:companyId/tasks/:taskId/schedule",
+	"POST /api/v1/companies/:companyId/tasks/:taskId/schedule/occurrences",
+	"POST /api/v1/companies/:companyId/tasks/:taskId/assignment",
 	"GET /api/v1/attachments/:attachmentId/download",
 	"POST /api/v1/auth/daemon-session",
 	"POST /api/v1/auth/desktop/handoff/complete",

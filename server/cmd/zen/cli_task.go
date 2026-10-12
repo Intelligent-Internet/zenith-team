@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -17,6 +18,8 @@ import (
 // taskView is the subset of task.Response the tables render; JSON output
 // prints the server body untouched.
 type taskView struct {
+	AssignmentStatus     string   `json:"assignmentStatus"`
+	ScheduledAt          *string  `json:"scheduledAt"`
 	ProjectID            string   `json:"projectId"`
 	ID                   string   `json:"id"`
 	Key                  string   `json:"key"`
@@ -81,8 +84,9 @@ func newTaskCmd() *cobra.Command {
 		Short: "Create a task",
 		Long: "Creates a task owned by a member, who runs it on their own computer. " +
 			"Inside a Run the task belongs to the member the Run works for, and the Run's own agent " +
-			"does the work unless you name another agent or --executed-by-self; it starts right away " +
-			"on that member's computer when they have the agent set up. A Task Run files it in its " +
+			"does the work unless you name another agent or --executed-by-self. With --run-at or --cron " +
+			"it waits for the scheduled time; otherwise it starts right away when the member has the agent set up. " +
+			"CEO chat Runs require a schedule; immediate planned work uses Company Plan review. A Task Run files it in its " +
 			"own Project, the only one it can look up.",
 		Args: cobra.NoArgs,
 		RunE: runTaskCreate,
@@ -92,14 +96,19 @@ func newTaskCmd() *cobra.Command {
 	create.Flags().String("title", "", "task title (required)")
 	addContentFlags(create, "description", "task description")
 	create.Flags().String("milestone", "", "milestone type (required; see the company plan vocabulary)")
-	create.Flags().String("key", "", "stable task key such as ship_release; omit it and the server mints the {prefix}-{number} label, a shape a chosen key may not take")
+	create.Flags().
+		String("key", "", "stable task key such as ship_release; omit it and the server mints the {prefix}-{number} label, a shape a chosen key may not take")
 	create.Flags().String("status", "", "initial status (default backlog)")
 	create.Flags().String("priority", "", "priority")
 	create.Flags().String("labels", "", "comma-separated labels")
 	create.Flags().String("due-date", "", "due date YYYY-MM-DD")
+	create.Flags().String("run-at", "", "schedule one run at an RFC3339 timestamp, with whole-minute precision")
+	create.Flags().String("cron", "", "repeat with a five-field cron expression (minimum five minutes)")
+	create.Flags().String("time-zone", "", "IANA time zone for --cron, for example Asia/Ho_Chi_Minh")
+
 	create.Flags().String("start-date", "", "start date YYYY-MM-DD")
 	create.Flags().
-		String("assignee-user", "", "the member who owns the task and runs it on their computer (default: you; another member needs tasks.assign; not available inside a Run)")
+		String("assignee-user", "", "the member who owns the task and runs it on their computer (default: you; another member needs tasks.assign; inside a Run requires a schedule and recipient acceptance)")
 	create.Flags().
 		String("executed-by-agent", "", "the agent that does the work; it starts right away when you are the assignee and have it set up")
 	create.Flags().
@@ -352,12 +361,16 @@ func printTaskDetail(out io.Writer, raw json.RawMessage) error {
 		},
 		{
 			"executed by",
-			dashIfEmpty(item.ExecutedBy.Name) + " (" + item.ExecutedBy.Kind + " " + item.ExecutedBy.ID + ")",
+			dashIfEmpty(
+				item.ExecutedBy.Name,
+			) + " (" + item.ExecutedBy.Kind + " " + item.ExecutedBy.ID + ")",
 		},
 		{"ready to run", taskReadiness(item)},
 		{"conversation", item.ConversationID},
 		{"labels", dashIfEmpty(strings.Join(item.Labels, ", "))},
 		{"due", stringOrDash(item.DueDate)},
+		{"run at", stringOrDash(item.ScheduledAt)},
+		{"assignment", item.AssignmentStatus},
 		{"blocked by", strconv.FormatInt(item.BlockedByCount, 10)},
 		{"dependencies resolved", strconv.FormatBool(item.DependenciesResolved)},
 		{"revision", strconv.FormatInt(item.Revision, 10)},
@@ -481,13 +494,35 @@ func runTaskCreate(cmd *cobra.Command, _ []string) error {
 		"title":         flag("title"),
 		"milestoneType": flag("milestone"),
 	}
+	runAt, expression, zone := flag("run-at"), flag("cron"), flag("time-zone")
+	if runAt != "" && expression != "" {
+		return usagef("pass only one of --run-at or --cron")
+	}
+	switch {
+	case runAt != "":
+		at, err := time.Parse(time.RFC3339, runAt)
+		if err != nil || at.Second() != 0 || at.Nanosecond() != 0 {
+			return usagef("--run-at must be an RFC3339 timestamp with whole-minute precision")
+		}
+		if zone != "" {
+			return usagef("--time-zone is for --cron; --run-at already includes its offset")
+		}
+		body["schedule"] = map[string]any{"type": "once", "runAt": at.UTC().Format(time.RFC3339)}
+	case expression != "":
+		if zone == "" {
+			return usagef("--cron requires --time-zone")
+		}
+		body["schedule"] = map[string]any{"type": "cron", "expression": expression, "timeZone": zone}
+	case zone != "":
+		return usagef("--time-zone requires --cron")
+	}
 	// The assignee is always a member (ADR 0014). Unnamed, the server makes
 	// it the caller: the signed-in member, or in Agent mode the member the
 	// Run works for, whose daemon session carries the request. Naming a
 	// colleague needs tasks.assign, which the server checks; a Run never
 	// names one, since the work it files is its member's (D6).
 	if assigneeUserID := flag("assignee-user"); assigneeUserID != "" {
-		if client.context.mode == modeAgent {
+		if client.context.mode == modeAgent && flag("run-at") == "" && flag("cron") == "" {
 			return usagef(
 				"--assignee-user is not available inside a Run: the task belongs to the member the Run works for",
 			)

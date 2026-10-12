@@ -25,7 +25,12 @@ export function ProfileDailyBriefSection({ companyId }: { companyId: string }) {
   // no daily brief to show and must not be sent to a route that refuses them.
   const canManageSchedules = useCan("schedules.manage");
   const schedulesQuery = useListSchedulesQuery(
-    { companyId, limit: 1, preset_key: DAILY_BRIEF_PRESET_KEY },
+    {
+      companyId,
+      limit: 1,
+      preset_key: DAILY_BRIEF_PRESET_KEY,
+      exclude_terminal: true,
+    },
     { refetchOnFocus: true, skip: !companyId || !canManageSchedules },
   );
   const dailyBrief = schedulesQuery.currentData?.schedules[0];

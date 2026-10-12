@@ -46,14 +46,21 @@ const (
 // new assignment or a fresh blocker from a restated one; both are zero, and
 // ignored, for a created Task. Handoff says the write handed the Task's work
 // to another Agent and advanced its execution generation (ADR 0014), and
-// RunStopped that doing so cancelled a live Run.
+// RunStopped that doing so cancelled a live Run. BriefChanged and
+// AssignmentChanged describe actual edits, including assignment edits before
+// the first execution generation. UnclaimedScheduleRunCancelled is the exact
+// receipt from cancelling a waiting scheduled first attempt before a handoff;
+// it permits replacing that occurrence without replaying claimed work.
 type Change struct {
-	ID               uuid.UUID
-	Type             ChangeType
-	PreviousAssignee ActorRef
-	PreviousStatus   Status
-	Handoff          bool
-	RunStopped       bool
+	ID                            uuid.UUID
+	Type                          ChangeType
+	PreviousAssignee              ActorRef
+	PreviousStatus                Status
+	Handoff                       bool
+	RunStopped                    bool
+	BriefChanged                  bool
+	AssignmentChanged             bool
+	UnclaimedScheduleRunCancelled bool
 }
 
 // created and updated carry Response, the committed Task exactly as the REST

@@ -46,7 +46,7 @@ func TestSupersedeScheduleRunInTxRejectsAnotherSchedule(t *testing.T) {
 	}
 }
 
-func TestSupersedeScheduleRunInTxRejectsNonqueuedRuns(t *testing.T) {
+func TestSupersedeScheduleRunInTxRejectsNonwaitingRuns(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -57,7 +57,7 @@ func TestSupersedeScheduleRunInTxRejectsNonqueuedRuns(t *testing.T) {
 	queries := generated.New(pool)
 
 	for _, status := range []string{
-		"dispatched", "waiting_local_directory", "running", "deferred",
+		"dispatched", "waiting_local_directory", "running",
 		"completed", "failed", "cancelled",
 	} {
 		t.Run(status, func(t *testing.T) {
@@ -129,8 +129,15 @@ func TestLinkRunToScheduleFiringCopiesTheExactConnectorScope(t *testing.T) {
 		input.RunID).Scan(&selected, &revision, &digest); err != nil {
 		t.Fatalf("read the Run's exact Connector scope: %v", err)
 	}
-	if linked.ConnectorSelectionMode != "exact" || selected != connectorID || revision != 4 || digest != "reviewed-digest" {
-		t.Fatalf("linked mode %q, selection %s revision %d digest %q", linked.ConnectorSelectionMode, selected, revision, digest)
+	if linked.ConnectorSelectionMode != "exact" || selected != connectorID || revision != 4 ||
+		digest != "reviewed-digest" {
+		t.Fatalf(
+			"linked mode %q, selection %s revision %d digest %q",
+			linked.ConnectorSelectionMode,
+			selected,
+			revision,
+			digest,
+		)
 	}
 }
 
@@ -236,4 +243,184 @@ func cancellationTestRunStatus(
 		t.Fatalf("read Run status: %v", err)
 	}
 	return status
+}
+
+func TestCancelPendingTaskScheduleRunsPreservesClaimedAndManualWork(t *testing.T) {
+	h := newRunHarness(t)
+	ctx := t.Context()
+	for _, test := range []struct {
+		name      string
+		status    string
+		scheduled bool
+		want      string
+	}{
+		{"queued occurrence", "queued", true, "cancelled"},
+		{"deferred occurrence", "deferred", true, "cancelled"},
+		{"dispatched occurrence", "dispatched", true, "dispatched"},
+		{"running occurrence", "running", true, "running"},
+		{"preparing occurrence", "waiting_local_directory", true, "waiting_local_directory"},
+		{"manual queued work", "queued", false, "queued"},
+		{"manual deferred work", "deferred", false, "deferred"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var id uuid.UUID
+			if err := h.pool.QueryRow(
+				ctx,
+				`
+				INSERT INTO runs (company_id, agent_id, task_id, conversation_id, runtime_id,
+					execution_authorized_by_user_id, status, fire_at, run_type, task_execution_generation,
+					task_scheduled)
+				VALUES ($1, $2, $3, $4, $5, $6, $7,
+					CASE WHEN $7 = 'deferred' THEN now() + interval '1 hour' END, 'task', 1,
+					$8)
+				RETURNING id`,
+				h.fixture.CompanyA,
+				h.fixture.AgentA,
+				h.fixture.TaskA,
+				h.fixture.ConversationA,
+				h.fixture.RuntimeA,
+				h.fixture.UserA,
+				test.status,
+				test.scheduled,
+			).Scan(&id); err != nil {
+				t.Fatal(err)
+			}
+			defer dbtest.MustExec(t, ctx, h.pool, `DELETE FROM runs WHERE id=$1`, id)
+			var pending []events.Event
+			var cancelled []generated.Run
+			err := h.svc.runInTx(ctx, func(q *generated.Queries) error {
+				var err error
+				cancelled, err = CancelPendingTaskScheduleRunsInTx(
+					ctx,
+					q,
+					&pending,
+					TaskScheduleCancellation{
+						CompanyID: h.fixture.CompanyA,
+						TaskID:    h.fixture.TaskA,
+						Reason:    CancellationScheduleEdited,
+					},
+				)
+				return err
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := mustRun(t, h, id)
+			if got.Status != test.want {
+				t.Fatalf("Run status = %s, want %s", got.Status, test.want)
+			}
+			wantCount := 0
+			if test.want == "cancelled" {
+				wantCount = 1
+				if got.Error.String != CancellationScheduleEdited {
+					t.Fatalf("Run cancellation reason = %q", got.Error.String)
+				}
+			}
+			if len(cancelled) != wantCount {
+				t.Fatalf("cancelled count = %d, want %d", len(cancelled), wantCount)
+			}
+			count := 0
+			for _, event := range pending {
+				if event.Name == EventRunCancelled && event.RunID == id {
+					count++
+				}
+			}
+			if count != wantCount {
+				t.Fatalf("Run cancellation events = %d, want %d", count, wantCount)
+			}
+		})
+	}
+}
+
+func TestTaskScheduleClaimUsesDatabaseDueTime(t *testing.T) {
+	h := newRunHarness(t)
+	ctx := t.Context()
+	var scheduleID uuid.UUID
+	if err := h.pool.QueryRow(ctx, `
+		INSERT INTO task_schedules (company_id, project_id, template_task_id, trigger, template_title, template_description)
+		VALUES ($1, $2, $3, jsonb_build_object('type','once','runAt',now()+interval '1 hour'), 'Clock fence', '')
+		RETURNING id`, h.fixture.CompanyA, h.fixture.ProjectA, h.fixture.TaskA).Scan(&scheduleID); err != nil {
+		t.Fatal(err)
+	}
+	dbtest.MustExec(t, ctx, h.pool, `UPDATE tasks SET task_schedule_id=$2,
+		scheduled_at=now()+interval '1 hour', schedule_occurrence_at=now()+interval '1 hour',
+		schedule_disposition='started', schedule_fired_at=now() WHERE id=$1`, h.fixture.TaskA, scheduleID)
+	var run generated.Run
+	var pending []events.Event
+	err := h.svc.runInTx(ctx, func(q *generated.Queries) error {
+		var err error
+		run, err = EnqueueRunInTx(ctx, q, &pending, RunTrigger{
+			CompanyID:          h.fixture.CompanyA,
+			ConversationID:     h.fixture.ConversationA,
+			AgentID:            h.fixture.AgentA,
+			TaskID:             uuid.NullUUID{UUID: h.fixture.TaskA, Valid: true},
+			Source:             RunSourceExecution,
+			TriggerPrompt:      "clock fence",
+			ActorUserID:        h.fixture.UserA,
+			AuthorizedByUserID: h.fixture.UserA,
+		})
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE runs SET task_scheduled=true WHERE id=$1`,
+		run.ID,
+	)
+	fence := claimCandidateParams()
+	candidates, err := h.queries.ListQueuedClaimCandidatesByRuntimes(
+		ctx,
+		generated.ListQueuedClaimCandidatesByRuntimesParams{
+			RuntimeIds:                []uuid.UUID{h.fixture.RuntimeA},
+			ExecutePermission:         fence.ExecutePermission,
+			ReadPermission:            fence.ReadPermission,
+			CompanyDefaultPermissions: fence.CompanyDefaultPermissions,
+		},
+	)
+	if err != nil || len(candidates) != 0 {
+		t.Fatalf("future Task candidates = %v, %v; want none", candidates, err)
+	}
+	claimed, err := h.svc.ClaimRun(ctx, h.fixture.AgentA, h.fixture.RuntimeA)
+	if err != nil || claimed != nil {
+		t.Fatalf("future Task claim = %v, %v; want none", claimed, err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE tasks SET scheduled_at=now()-interval '1 minute' WHERE id=$1`,
+		h.fixture.TaskA,
+	)
+	dbtest.MustExec(t, ctx, h.pool, `UPDATE task_schedules SET generation=generation+1 WHERE id=$1`, scheduleID)
+	candidates, err = h.queries.ListQueuedClaimCandidatesByRuntimes(
+		ctx,
+		generated.ListQueuedClaimCandidatesByRuntimesParams{
+			RuntimeIds:                []uuid.UUID{h.fixture.RuntimeA},
+			ExecutePermission:         fence.ExecutePermission,
+			ReadPermission:            fence.ReadPermission,
+			CompanyDefaultPermissions: fence.CompanyDefaultPermissions,
+		},
+	)
+	if err != nil || len(candidates) != 0 {
+		t.Fatalf("obsolete occurrence candidates = %v, %v; want none", candidates, err)
+	}
+	claimed, err = h.svc.ClaimRun(ctx, h.fixture.AgentA, h.fixture.RuntimeA)
+	if err != nil || claimed != nil {
+		t.Fatalf("obsolete occurrence claim = %v, %v; want none", claimed, err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE tasks SET task_schedule_generation=task_schedule_generation+1 WHERE id=$1`,
+		h.fixture.TaskA,
+	)
+	claimed, err = h.svc.ClaimRun(ctx, h.fixture.AgentA, h.fixture.RuntimeA)
+	if err != nil || claimed == nil || claimed.ID != run.ID {
+		t.Fatalf("due Task claim = %v, %v; want Run %s", claimed, err, run.ID)
+	}
 }

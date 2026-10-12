@@ -361,7 +361,7 @@ func (q *Queries) GetScheduleCreateReplay(ctx context.Context, arg GetScheduleCr
 }
 
 const getScheduleFiringReplay = `-- name: GetScheduleFiringReplay :one
-SELECT schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version
+SELECT schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version, schedule_firings.missed_count
 FROM schedule_firings
 WHERE schedule_firings.company_id = $1::uuid
   AND schedule_firings.schedule_id = $2::uuid
@@ -412,22 +412,35 @@ func (q *Queries) GetScheduleFiringReplay(ctx context.Context, arg GetScheduleFi
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.MissedCount,
 	)
 	return i, err
 }
 
 const getScheduleFiringWithResult = `-- name: GetScheduleFiringWithResult :one
 SELECT
-    schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version,
+    schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version, schedule_firings.missed_count,
     input_message.seq AS message_seq,
+    runs.id AS latest_run_id,
+    runs.attempt AS run_attempt,
+    runs.failure_reason AS run_failure_reason,
+    runs.error AS run_cancel_reason,
+    runtimes.status AS runtime_status,
+    runtimes.last_seen_at AS runtime_last_seen_at,
+    runtimes.unusable_reason_code AS runtime_unusable_reason,
     runs.status AS run_status,
     COALESCE(terminal_output.content, '')::text AS output,
     (terminal_output.content IS NOT NULL)::boolean AS has_output
 FROM schedule_firings
-LEFT JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
- AND runs.company_id = schedule_firings.company_id
+LEFT JOIN runs ON runs.id = (
+    SELECT r.id FROM runs AS r
+    WHERE r.schedule_firing_id = schedule_firings.id AND r.company_id = schedule_firings.company_id
+    ORDER BY r.attempt DESC, r.id DESC LIMIT 1
+)
+LEFT JOIN runtimes
+  ON runtimes.id = runs.runtime_id
+ AND runtimes.company_id = runs.company_id
+ AND runtimes.owner_user_id = $1::uuid
 LEFT JOIN conversation_items AS input_message
   ON input_message.id = schedule_firings.message_id
  AND input_message.conversation_id = schedule_firings.conversation_id
@@ -442,28 +455,36 @@ LEFT JOIN LATERAL (
     ORDER BY conversation_items.seq DESC
     LIMIT 1
 ) AS terminal_output ON true
-WHERE schedule_firings.id = $1::uuid
-  AND schedule_firings.company_id = $2::uuid
+WHERE schedule_firings.id = $2::uuid
+  AND schedule_firings.company_id = $3::uuid
 `
 
 type GetScheduleFiringWithResultParams struct {
-	FiringID  uuid.UUID `json:"firing_id"`
-	CompanyID uuid.UUID `json:"company_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
+	FiringID    uuid.UUID `json:"firing_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
 }
 
 type GetScheduleFiringWithResultRow struct {
-	ScheduleFiring ScheduleFiring `json:"schedule_firing"`
-	MessageSeq     pgtype.Int8    `json:"message_seq"`
-	RunStatus      pgtype.Text    `json:"run_status"`
-	Output         string         `json:"output"`
-	HasOutput      bool           `json:"has_output"`
+	ScheduleFiring        ScheduleFiring     `json:"schedule_firing"`
+	MessageSeq            pgtype.Int8        `json:"message_seq"`
+	LatestRunID           uuid.NullUUID      `json:"latest_run_id"`
+	RunAttempt            pgtype.Int4        `json:"run_attempt"`
+	RunFailureReason      pgtype.Text        `json:"run_failure_reason"`
+	RunCancelReason       pgtype.Text        `json:"run_cancel_reason"`
+	RuntimeStatus         pgtype.Text        `json:"runtime_status"`
+	RuntimeLastSeenAt     pgtype.Timestamptz `json:"runtime_last_seen_at"`
+	RuntimeUnusableReason pgtype.Text        `json:"runtime_unusable_reason"`
+	RunStatus             pgtype.Text        `json:"run_status"`
+	Output                string             `json:"output"`
+	HasOutput             bool               `json:"has_output"`
 }
 
 // One firing with the result columns ListScheduleFiringsForCreator reads, so
 // a Run now answer, new or replayed, has the history's shape. The caller
 // holds the creator's locked Schedule.
 func (q *Queries) GetScheduleFiringWithResult(ctx context.Context, arg GetScheduleFiringWithResultParams) (GetScheduleFiringWithResultRow, error) {
-	row := q.db.QueryRow(ctx, getScheduleFiringWithResult, arg.FiringID, arg.CompanyID)
+	row := q.db.QueryRow(ctx, getScheduleFiringWithResult, arg.ActorUserID, arg.FiringID, arg.CompanyID)
 	var i GetScheduleFiringWithResultRow
 	err := row.Scan(
 		&i.ScheduleFiring.ID,
@@ -481,7 +502,15 @@ func (q *Queries) GetScheduleFiringWithResult(ctx context.Context, arg GetSchedu
 		&i.ScheduleFiring.CreatedAt,
 		&i.ScheduleFiring.UpdatedAt,
 		&i.ScheduleFiring.Version,
+		&i.ScheduleFiring.MissedCount,
 		&i.MessageSeq,
+		&i.LatestRunID,
+		&i.RunAttempt,
+		&i.RunFailureReason,
+		&i.RunCancelReason,
+		&i.RuntimeStatus,
+		&i.RuntimeLastSeenAt,
+		&i.RuntimeUnusableReason,
 		&i.RunStatus,
 		&i.Output,
 		&i.HasOutput,
@@ -610,16 +639,58 @@ func (q *Queries) GetScheduleForCreatorForUpdate(ctx context.Context, arg GetSch
 	return i, err
 }
 
+const getScheduleLag = `-- name: GetScheduleLag :one
+WITH due AS MATERIALIZED (
+ SELECT next_occurrence_at FROM schedules
+ WHERE status = 'active' AND next_occurrence_at <= statement_timestamp()
+ ORDER BY next_occurrence_at, id LIMIT 10000
+)
+SELECT COALESCE(EXTRACT(EPOCH FROM (statement_timestamp() - min(next_occurrence_at))), 0)::double precision AS lag_seconds,
+ count(*)::bigint AS due_count,
+ count(*) FILTER (WHERE next_occurrence_at <= statement_timestamp() - interval '60 seconds')::bigint AS overdue_count
+FROM due
+`
+
+type GetScheduleLagRow struct {
+	LagSeconds   float64 `json:"lag_seconds"`
+	DueCount     int64   `json:"due_count"`
+	OverdueCount int64   `json:"overdue_count"`
+}
+
+func (q *Queries) GetScheduleLag(ctx context.Context) (GetScheduleLagRow, error) {
+	row := q.db.QueryRow(ctx, getScheduleLag)
+	var i GetScheduleLagRow
+	err := row.Scan(&i.LagSeconds, &i.DueCount, &i.OverdueCount)
+	return i, err
+}
+
+const getScheduleLockTarget = `-- name: GetScheduleLockTarget :one
+SELECT id AS schedule_id, company_id, creator_user_id FROM schedules WHERE id = $1
+`
+
+type GetScheduleLockTargetRow struct {
+	ScheduleID    uuid.UUID `json:"schedule_id"`
+	CompanyID     uuid.UUID `json:"company_id"`
+	CreatorUserID uuid.UUID `json:"creator_user_id"`
+}
+
+func (q *Queries) GetScheduleLockTarget(ctx context.Context, id uuid.UUID) (GetScheduleLockTargetRow, error) {
+	row := q.db.QueryRow(ctx, getScheduleLockTarget, id)
+	var i GetScheduleLockTargetRow
+	err := row.Scan(&i.ScheduleID, &i.CompanyID, &i.CreatorUserID)
+	return i, err
+}
+
 const hasActiveScheduleRun = `-- name: HasActiveScheduleRun :one
 SELECT EXISTS (
     SELECT 1
     FROM schedule_firings
     JOIN runs
-      ON runs.id = schedule_firings.run_id
-     AND runs.schedule_firing_id = schedule_firings.id
+      ON runs.schedule_firing_id = schedule_firings.id
+     AND runs.company_id = schedule_firings.company_id
     WHERE schedule_firings.schedule_id = $1::uuid
       AND schedule_firings.company_id = $2::uuid
-      AND runs.status IN ('queued', 'dispatched', 'waiting_local_directory', 'running')
+      AND runs.status IN ('queued', 'deferred', 'dispatched', 'waiting_local_directory', 'running')
 )::boolean AS active
 `
 
@@ -822,7 +893,7 @@ func (q *Queries) InsertSchedule(ctx context.Context, arg InsertScheduleParams) 
 const insertScheduleFiring = `-- name: InsertScheduleFiring :one
 INSERT INTO schedule_firings (
     company_id, schedule_id, schedule_version, conversation_id,
-    message_id, run_id, occurrence_at, trigger, request_key, disposition, reason
+    message_id, run_id, occurrence_at, trigger, request_key, disposition, reason, missed_count
 )
 VALUES (
     $1::uuid,
@@ -835,9 +906,10 @@ VALUES (
     $8::text,
     $9::uuid,
     $10::text,
-    $11::text
+    $11::text,
+    $12::integer
 )
-RETURNING schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version
+RETURNING schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version, schedule_firings.missed_count
 `
 
 type InsertScheduleFiringParams struct {
@@ -852,6 +924,7 @@ type InsertScheduleFiringParams struct {
 	RequestKey      uuid.NullUUID      `json:"request_key"`
 	Disposition     string             `json:"disposition"`
 	Reason          pgtype.Text        `json:"reason"`
+	MissedCount     int32              `json:"missed_count"`
 }
 
 func (q *Queries) InsertScheduleFiring(ctx context.Context, arg InsertScheduleFiringParams) (ScheduleFiring, error) {
@@ -867,6 +940,7 @@ func (q *Queries) InsertScheduleFiring(ctx context.Context, arg InsertScheduleFi
 		arg.RequestKey,
 		arg.Disposition,
 		arg.Reason,
+		arg.MissedCount,
 	)
 	var i ScheduleFiring
 	err := row.Scan(
@@ -885,6 +959,7 @@ func (q *Queries) InsertScheduleFiring(ctx context.Context, arg InsertScheduleFi
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.MissedCount,
 	)
 	return i, err
 }
@@ -951,7 +1026,7 @@ WITH linked AS (
       AND runs.company_id = $3::uuid
       AND runs.conversation_id = $4::uuid
       AND runs.schedule_firing_id IS NULL
-    RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+    RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 ), selected AS (
     INSERT INTO run_connector_selections (
         run_id, connector_id, policy_revision, source, native_id, contract_digest
@@ -963,7 +1038,7 @@ WITH linked AS (
       ON sources.schedule_id = $5::uuid
      AND sources.company_id = linked.company_id
 )
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM linked
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM linked
 `
 
 type LinkRunToScheduleFiringParams struct {
@@ -1013,6 +1088,7 @@ type LinkRunToScheduleFiringRow struct {
 	ClaimedAt                   pgtype.Timestamptz `json:"claimed_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	FinishedAt                  pgtype.Timestamptz `json:"finished_at"`
+	TaskScheduled               bool               `json:"task_scheduled"`
 }
 
 // The Run takes the Schedule's reviewed Connector sources as its exact scope.
@@ -1066,37 +1142,152 @@ func (q *Queries) LinkRunToScheduleFiring(ctx context.Context, arg LinkRunToSche
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
 
-const listDueScheduleLockTargets = `-- name: ListDueScheduleLockTargets :many
-WITH statement_clock AS MATERIALIZED (
-    SELECT clock_timestamp()::timestamptz AS now_at
-)
-SELECT
-    schedules.id AS schedule_id,
-    schedules.company_id,
-    schedules.creator_user_id
+const listDriftedScheduleLockTargets = `-- name: ListDriftedScheduleLockTargets :many
+SELECT schedules.id AS schedule_id, schedules.company_id, schedules.creator_user_id
 FROM schedules
-CROSS JOIN statement_clock
-WHERE schedules.status = 'active'
-  AND schedules.next_occurrence_at <= statement_clock.now_at
-ORDER BY schedules.next_occurrence_at, schedules.id
-LIMIT $1::integer
+    WHERE schedules.status = 'active'
+      AND (
+          NOT EXISTS (
+              SELECT 1 FROM companies
+              WHERE companies.id = schedules.company_id
+                AND companies.deleting_at IS NULL
+          )
+          OR NOT EXISTS (
+              SELECT 1
+              FROM users
+              JOIN company_members
+                ON company_members.company_id = schedules.company_id
+               AND company_members.user_id = users.id
+               AND company_members.status = 'active'
+               AND company_members.role = ANY($1::text[])
+              WHERE users.id = schedules.creator_user_id
+                AND users.disabled_at IS NULL
+          )
+          OR NOT EXISTS (
+              SELECT 1
+              FROM agents
+              JOIN agent_runtime_bindings AS creator_binding
+                ON creator_binding.company_id = agents.company_id
+               AND creator_binding.agent_id = agents.id
+               AND creator_binding.user_id = schedules.creator_user_id
+              JOIN runtimes
+                ON runtimes.id = creator_binding.runtime_id
+               AND runtimes.company_id = creator_binding.company_id
+               AND runtimes.removed_at IS NULL
+               AND runtimes.owner_user_id = creator_binding.user_id
+              WHERE agents.id = schedules.agent_id
+                AND agents.company_id = schedules.company_id
+                AND agents.archived_at IS NULL
+                AND agents.provider = schedules.reviewed_provider
+          )
+          OR EXISTS (
+              SELECT 1
+              FROM schedule_sources
+              LEFT JOIN connector_catalog_items
+                ON connector_catalog_items.id = schedule_sources.connector_id
+               AND connector_catalog_items.company_id = schedule_sources.company_id
+               AND connector_catalog_items.provider = schedule_sources.provider
+               AND connector_catalog_items.source = schedule_sources.source
+               AND connector_catalog_items.native_id = schedule_sources.native_id
+              LEFT JOIN connector_policies
+                ON connector_policies.connector_id = schedule_sources.connector_id
+               AND connector_policies.company_id = schedule_sources.company_id
+              WHERE schedule_sources.schedule_id = schedules.id
+                AND (
+                    schedule_sources.company_id <> schedules.company_id
+                    OR schedule_sources.provider <> schedules.reviewed_provider
+                    OR connector_catalog_items.id IS NULL
+                    OR NOT connector_catalog_items.can_execute
+                    OR connector_catalog_items.status <> 'connected'
+                    OR connector_policies.connector_id IS NULL
+                    OR NOT connector_policies.desired_enabled
+                    OR connector_policies.review_required
+                    OR connector_policies.version <> schedule_sources.policy_revision
+                    OR connector_policies.reviewed_contract_digest
+                          IS DISTINCT FROM schedule_sources.reviewed_contract_digest
+                    OR connector_catalog_items.contract_digest
+                          IS DISTINCT FROM schedule_sources.reviewed_contract_digest
+                )
+          )
+      )
+
+ AND schedules.id > $2::uuid
+ORDER BY schedules.id
+LIMIT $3::integer
 `
 
-type ListDueScheduleLockTargetsRow struct {
+type ListDriftedScheduleLockTargetsParams struct {
+	ActorRoles []string  `json:"actor_roles"`
+	AfterID    uuid.UUID `json:"after_id"`
+	PageSize   int32     `json:"page_size"`
+}
+
+type ListDriftedScheduleLockTargetsRow struct {
 	ScheduleID    uuid.UUID `json:"schedule_id"`
 	CompanyID     uuid.UUID `json:"company_id"`
 	CreatorUserID uuid.UUID `json:"creator_user_id"`
 }
 
-// Due discovery is intentionally non-locking. The worker first takes sorted
-// Company and creator-membership producer fences, then passes this bounded set
-// to LockNextDueSchedule for the Schedule-row lock.
-func (q *Queries) ListDueScheduleLockTargets(ctx context.Context, pageSize int32) ([]ListDueScheduleLockTargetsRow, error) {
-	rows, err := q.db.Query(ctx, listDueScheduleLockTargets, pageSize)
+func (q *Queries) ListDriftedScheduleLockTargets(ctx context.Context, arg ListDriftedScheduleLockTargetsParams) ([]ListDriftedScheduleLockTargetsRow, error) {
+	rows, err := q.db.Query(ctx, listDriftedScheduleLockTargets, arg.ActorRoles, arg.AfterID, arg.PageSize)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDriftedScheduleLockTargetsRow{}
+	for rows.Next() {
+		var i ListDriftedScheduleLockTargetsRow
+		if err := rows.Scan(&i.ScheduleID, &i.CompanyID, &i.CreatorUserID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDueScheduleLockTargets = `-- name: ListDueScheduleLockTargets :many
+SELECT id AS schedule_id, company_id, creator_user_id, next_occurrence_at,
+       statement_timestamp()::timestamptz AS server_time
+FROM schedules
+WHERE status = 'active'
+  AND next_occurrence_at <= statement_timestamp() - make_interval(secs => $1::double precision)
+  AND ($2::timestamptz IS NULL OR
+       (next_occurrence_at, id) > ($2::timestamptz, $3::uuid))
+ORDER BY next_occurrence_at, id
+LIMIT $4::integer
+`
+
+type ListDueScheduleLockTargetsParams struct {
+	GraceSeconds float64            `json:"grace_seconds"`
+	AfterTime    pgtype.Timestamptz `json:"after_time"`
+	AfterID      uuid.UUID          `json:"after_id"`
+	PageSize     int32              `json:"page_size"`
+}
+
+type ListDueScheduleLockTargetsRow struct {
+	ScheduleID       uuid.UUID          `json:"schedule_id"`
+	CompanyID        uuid.UUID          `json:"company_id"`
+	CreatorUserID    uuid.UUID          `json:"creator_user_id"`
+	NextOccurrenceAt pgtype.Timestamptz `json:"next_occurrence_at"`
+	ServerTime       pgtype.Timestamptz `json:"server_time"`
+}
+
+// Discovery never holds authority locks for other companies.
+func (q *Queries) ListDueScheduleLockTargets(ctx context.Context, arg ListDueScheduleLockTargetsParams) ([]ListDueScheduleLockTargetsRow, error) {
+	rows, err := q.db.Query(ctx, listDueScheduleLockTargets,
+		arg.GraceSeconds,
+		arg.AfterTime,
+		arg.AfterID,
+		arg.PageSize,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1104,7 +1295,13 @@ func (q *Queries) ListDueScheduleLockTargets(ctx context.Context, pageSize int32
 	items := []ListDueScheduleLockTargetsRow{}
 	for rows.Next() {
 		var i ListDueScheduleLockTargetsRow
-		if err := rows.Scan(&i.ScheduleID, &i.CompanyID, &i.CreatorUserID); err != nil {
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.CompanyID,
+			&i.CreatorUserID,
+			&i.NextOccurrenceAt,
+			&i.ServerTime,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1117,8 +1314,15 @@ func (q *Queries) ListDueScheduleLockTargets(ctx context.Context, pageSize int32
 
 const listScheduleFiringsForCreator = `-- name: ListScheduleFiringsForCreator :many
 SELECT
-    schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version,
+    schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version, schedule_firings.missed_count,
     input_message.seq AS message_seq,
+    runs.id AS latest_run_id,
+    runs.attempt AS run_attempt,
+    runs.failure_reason AS run_failure_reason,
+    runs.error AS run_cancel_reason,
+    runtimes.status AS runtime_status,
+    runtimes.last_seen_at AS runtime_last_seen_at,
+    runtimes.unusable_reason_code AS runtime_unusable_reason,
     runs.status AS run_status,
     COALESCE(terminal_output.content, '')::text AS output,
     (terminal_output.content IS NOT NULL)::boolean AS has_output
@@ -1134,10 +1338,15 @@ JOIN company_members AS actor_membership
  AND actor_membership.user_id = $1::uuid
  AND actor_membership.status = 'active'
  AND actor_membership.role = ANY($2::text[])
-LEFT JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
- AND runs.company_id = schedule_firings.company_id
+LEFT JOIN runs ON runs.id = (
+    SELECT r.id FROM runs AS r
+    WHERE r.schedule_firing_id = schedule_firings.id AND r.company_id = schedule_firings.company_id
+    ORDER BY r.attempt DESC, r.id DESC LIMIT 1
+)
+LEFT JOIN runtimes
+  ON runtimes.id = runs.runtime_id
+ AND runtimes.company_id = runs.company_id
+ AND runtimes.owner_user_id = $1::uuid
 LEFT JOIN conversation_items AS input_message
   ON input_message.id = schedule_firings.message_id
  AND input_message.conversation_id = schedule_firings.conversation_id
@@ -1178,11 +1387,18 @@ type ListScheduleFiringsForCreatorParams struct {
 }
 
 type ListScheduleFiringsForCreatorRow struct {
-	ScheduleFiring ScheduleFiring `json:"schedule_firing"`
-	MessageSeq     pgtype.Int8    `json:"message_seq"`
-	RunStatus      pgtype.Text    `json:"run_status"`
-	Output         string         `json:"output"`
-	HasOutput      bool           `json:"has_output"`
+	ScheduleFiring        ScheduleFiring     `json:"schedule_firing"`
+	MessageSeq            pgtype.Int8        `json:"message_seq"`
+	LatestRunID           uuid.NullUUID      `json:"latest_run_id"`
+	RunAttempt            pgtype.Int4        `json:"run_attempt"`
+	RunFailureReason      pgtype.Text        `json:"run_failure_reason"`
+	RunCancelReason       pgtype.Text        `json:"run_cancel_reason"`
+	RuntimeStatus         pgtype.Text        `json:"runtime_status"`
+	RuntimeLastSeenAt     pgtype.Timestamptz `json:"runtime_last_seen_at"`
+	RuntimeUnusableReason pgtype.Text        `json:"runtime_unusable_reason"`
+	RunStatus             pgtype.Text        `json:"run_status"`
+	Output                string             `json:"output"`
+	HasOutput             bool               `json:"has_output"`
 }
 
 func (q *Queries) ListScheduleFiringsForCreator(ctx context.Context, arg ListScheduleFiringsForCreatorParams) ([]ListScheduleFiringsForCreatorRow, error) {
@@ -1219,7 +1435,15 @@ func (q *Queries) ListScheduleFiringsForCreator(ctx context.Context, arg ListSch
 			&i.ScheduleFiring.CreatedAt,
 			&i.ScheduleFiring.UpdatedAt,
 			&i.ScheduleFiring.Version,
+			&i.ScheduleFiring.MissedCount,
 			&i.MessageSeq,
+			&i.LatestRunID,
+			&i.RunAttempt,
+			&i.RunFailureReason,
+			&i.RunCancelReason,
+			&i.RuntimeStatus,
+			&i.RuntimeLastSeenAt,
+			&i.RuntimeUnusableReason,
 			&i.RunStatus,
 			&i.Output,
 			&i.HasOutput,
@@ -1278,6 +1502,40 @@ func (q *Queries) ListScheduleSources(ctx context.Context, arg ListScheduleSourc
 	return items, nil
 }
 
+const listScheduleWakeupTargets = `-- name: ListScheduleWakeupTargets :many
+SELECT DISTINCT runs.runtime_id, runs.company_id FROM runs
+JOIN schedule_firings f ON f.id = runs.schedule_firing_id AND f.company_id = runs.company_id
+JOIN runtimes ON runtimes.id = runs.runtime_id
+WHERE runs.status IN ('queued', 'deferred') AND f.disposition = 'materialized'
+ AND runtimes.status = 'online' AND runtimes.removed_at IS NULL
+LIMIT 5000
+`
+
+type ListScheduleWakeupTargetsRow struct {
+	RuntimeID uuid.UUID `json:"runtime_id"`
+	CompanyID uuid.UUID `json:"company_id"`
+}
+
+func (q *Queries) ListScheduleWakeupTargets(ctx context.Context) ([]ListScheduleWakeupTargetsRow, error) {
+	rows, err := q.db.Query(ctx, listScheduleWakeupTargets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListScheduleWakeupTargetsRow{}
+	for rows.Next() {
+		var i ListScheduleWakeupTargetsRow
+		if err := rows.Scan(&i.RuntimeID, &i.CompanyID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSchedulesForCreator = `-- name: ListSchedulesForCreator :many
 SELECT schedules.id, schedules.company_id, schedules.conversation_id, schedules.creator_user_id, schedules.request_key, schedules.agent_id, schedules.reviewed_provider, schedules.name, schedules.instructions, schedules.preset_key, schedules.trigger_type, schedules.run_at, schedules.cron_expression, schedules.timezone, schedules.next_occurrence_at, schedules.last_occurrence_at, schedules.status, schedules.pause_reason, schedules.created_at, schedules.updated_at, schedules.version
 FROM schedules
@@ -1292,30 +1550,32 @@ JOIN company_members AS actor_membership
  AND actor_membership.user_id = $1::uuid
  AND actor_membership.status = 'active'
  AND actor_membership.role = ANY($2::text[])
-WHERE schedules.company_id = $3::uuid
+WHERE (NOT $3::boolean OR schedules.status NOT IN ('completed', 'cancelled'))
+ AND schedules.company_id = $4::uuid
   AND schedules.creator_user_id = $1::uuid
   AND (
-      $4::text = ''
-      OR schedules.status = $4::text
-  )
-  AND (
       $5::text = ''
-      OR schedules.preset_key = $5::text
+      OR schedules.status = $5::text
   )
   AND (
-      NOT $6::boolean
+      $6::text = ''
+      OR schedules.preset_key = $6::text
+  )
+  AND (
+      NOT $7::boolean
       OR (schedules.created_at, schedules.id) < (
-          $7::timestamptz,
-          $8::uuid
+          $8::timestamptz,
+          $9::uuid
       )
   )
 ORDER BY schedules.created_at DESC, schedules.id DESC
-LIMIT $9::integer
+LIMIT $10::integer
 `
 
 type ListSchedulesForCreatorParams struct {
 	ActorUserID     uuid.UUID          `json:"actor_user_id"`
 	ActorRoles      []string           `json:"actor_roles"`
+	ExcludeTerminal bool               `json:"exclude_terminal"`
 	CompanyID       uuid.UUID          `json:"company_id"`
 	Status          string             `json:"status"`
 	PresetKey       string             `json:"preset_key"`
@@ -1329,6 +1589,7 @@ func (q *Queries) ListSchedulesForCreator(ctx context.Context, arg ListSchedules
 	rows, err := q.db.Query(ctx, listSchedulesForCreator,
 		arg.ActorUserID,
 		arg.ActorRoles,
+		arg.ExcludeTerminal,
 		arg.CompanyID,
 		arg.Status,
 		arg.PresetKey,
@@ -1366,6 +1627,73 @@ func (q *Queries) ListSchedulesForCreator(ctx context.Context, arg ListSchedules
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWaitingScheduleRuns = `-- name: ListWaitingScheduleRuns :many
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM runs
+JOIN schedule_firings f ON f.id = runs.schedule_firing_id AND f.company_id = runs.company_id
+WHERE f.schedule_id = $1 AND f.disposition = 'materialized'
+ AND runs.status IN ('queued', 'deferred')
+`
+
+func (q *Queries) ListWaitingScheduleRuns(ctx context.Context, scheduleID uuid.UUID) ([]Run, error) {
+	rows, err := q.db.Query(ctx, listWaitingScheduleRuns, scheduleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Run{}
+	for rows.Next() {
+		var i Run
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyID,
+			&i.AgentID,
+			&i.TaskID,
+			&i.ConversationID,
+			&i.RuntimeID,
+			&i.Status,
+			&i.Priority,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Error,
+			&i.FailureReason,
+			&i.Context,
+			&i.SessionID,
+			&i.SessionRolloutMissing,
+			&i.RetiredSessionID,
+			&i.Attempt,
+			&i.ParentRunID,
+			&i.ForceFreshSession,
+			&i.WaitReason,
+			&i.PrepareLeaseExpiresAt,
+			&i.FireAt,
+			&i.TaskExecutionGeneration,
+			&i.ScheduleFiringID,
+			&i.TranscriptThroughSeq,
+			&i.RunType,
+			&i.Revision,
+			&i.ExecutionAuthorizedByUserID,
+			&i.InvocationID,
+			&i.SourceTaskID,
+			&i.FinalAnswerItemKey,
+			&i.StudioEnabled,
+			&i.ConnectorSelectionMode,
+			&i.ConnectorSnapshotFrozenAt,
+			&i.QueuedAt,
+			&i.ClaimedAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -1444,15 +1772,6 @@ func (q *Queries) LockActiveScheduleAgent(ctx context.Context, arg LockActiveSch
 }
 
 const lockActiveScheduleRun = `-- name: LockActiveScheduleRun :one
-WITH locked_conversation AS MATERIALIZED (
-    SELECT conversations.id
-    FROM conversations
-    WHERE conversations.id = $3::uuid
-      AND conversations.company_id = $2::uuid
-      AND conversations.kind = 'schedule'
-      AND conversations.schedule_id = $1::uuid
-    FOR UPDATE OF conversations
-)
 SELECT
     schedule_firings.id AS firing_id,
     schedule_firings.company_id,
@@ -1462,17 +1781,15 @@ SELECT
     runs.status,
     runs.runtime_id,
     runs.updated_at AS run_updated_at
-FROM locked_conversation
-JOIN schedule_firings
-  ON schedule_firings.schedule_id = $1::uuid
- AND schedule_firings.company_id = $2::uuid
- AND schedule_firings.conversation_id = locked_conversation.id
+FROM schedule_firings
 JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
+  ON runs.schedule_firing_id = schedule_firings.id
  AND runs.company_id = schedule_firings.company_id
  AND runs.conversation_id = schedule_firings.conversation_id
-WHERE runs.status IN ('queued', 'dispatched', 'waiting_local_directory', 'running')
+WHERE schedule_firings.schedule_id = $1::uuid
+ AND schedule_firings.company_id = $2::uuid
+ AND schedule_firings.conversation_id = $3::uuid
+ AND runs.status IN ('queued', 'deferred', 'dispatched', 'waiting_local_directory', 'running')
 ORDER BY schedule_firings.occurrence_at DESC, schedule_firings.id DESC
 FOR UPDATE OF schedule_firings, runs
 LIMIT 1
@@ -1511,192 +1828,6 @@ func (q *Queries) LockActiveScheduleRun(ctx context.Context, arg LockActiveSched
 	return i, err
 }
 
-const lockNextDriftedSchedule = `-- name: LockNextDriftedSchedule :one
-WITH candidate AS MATERIALIZED (
-    SELECT schedules.id
-    FROM schedules
-    WHERE schedules.status = 'active'
-      AND (
-          NOT EXISTS (
-              SELECT 1 FROM companies
-              WHERE companies.id = schedules.company_id
-                AND companies.deleting_at IS NULL
-          )
-          OR NOT EXISTS (
-              SELECT 1
-              FROM users
-              JOIN company_members
-                ON company_members.company_id = schedules.company_id
-               AND company_members.user_id = users.id
-               AND company_members.status = 'active'
-               AND company_members.role = ANY($1::text[])
-              WHERE users.id = schedules.creator_user_id
-                AND users.disabled_at IS NULL
-          )
-          OR NOT EXISTS (
-              SELECT 1
-              FROM agents
-              JOIN agent_runtime_bindings AS creator_binding
-                ON creator_binding.company_id = agents.company_id
-               AND creator_binding.agent_id = agents.id
-               AND creator_binding.user_id = schedules.creator_user_id
-              JOIN runtimes
-                ON runtimes.id = creator_binding.runtime_id
-               AND runtimes.company_id = creator_binding.company_id
-               AND runtimes.removed_at IS NULL
-               AND runtimes.owner_user_id = creator_binding.user_id
-              WHERE agents.id = schedules.agent_id
-                AND agents.company_id = schedules.company_id
-                AND agents.archived_at IS NULL
-                AND agents.provider = schedules.reviewed_provider
-          )
-          OR EXISTS (
-              SELECT 1
-              FROM schedule_sources
-              LEFT JOIN connector_catalog_items
-                ON connector_catalog_items.id = schedule_sources.connector_id
-               AND connector_catalog_items.company_id = schedule_sources.company_id
-               AND connector_catalog_items.provider = schedule_sources.provider
-               AND connector_catalog_items.source = schedule_sources.source
-               AND connector_catalog_items.native_id = schedule_sources.native_id
-              LEFT JOIN connector_policies
-                ON connector_policies.connector_id = schedule_sources.connector_id
-               AND connector_policies.company_id = schedule_sources.company_id
-              WHERE schedule_sources.schedule_id = schedules.id
-                AND (
-                    schedule_sources.company_id <> schedules.company_id
-                    OR schedule_sources.provider <> schedules.reviewed_provider
-                    OR connector_catalog_items.id IS NULL
-                    OR NOT connector_catalog_items.can_execute
-                    OR connector_catalog_items.status <> 'connected'
-                    OR connector_policies.connector_id IS NULL
-                    OR NOT connector_policies.desired_enabled
-                    OR connector_policies.review_required
-                    OR connector_policies.version <> schedule_sources.policy_revision
-                    OR connector_policies.reviewed_contract_digest
-                          IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-                    OR connector_catalog_items.contract_digest
-                          IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-                )
-          )
-      )
-    ORDER BY schedules.updated_at, schedules.id
-    FOR UPDATE OF schedules SKIP LOCKED
-    LIMIT 1
-)
-SELECT
-    schedules.id, schedules.company_id, schedules.conversation_id, schedules.creator_user_id, schedules.request_key, schedules.agent_id, schedules.reviewed_provider, schedules.name, schedules.instructions, schedules.preset_key, schedules.trigger_type, schedules.run_at, schedules.cron_expression, schedules.timezone, schedules.next_occurrence_at, schedules.last_occurrence_at, schedules.status, schedules.pause_reason, schedules.created_at, schedules.updated_at, schedules.version,
-    (companies.id IS NOT NULL)::boolean AS company_valid,
-    (
-        users.id IS NOT NULL
-        AND creator_membership.user_id IS NOT NULL
-    )::boolean AS creator_valid,
-    (
-        agents.id IS NOT NULL
-        AND runtimes.id IS NOT NULL
-    )::boolean AS agent_valid,
-    (agents.provider = schedules.reviewed_provider)::boolean AS provider_matches,
-    NOT EXISTS (
-        SELECT 1
-        FROM schedule_sources
-        LEFT JOIN connector_catalog_items
-          ON connector_catalog_items.id = schedule_sources.connector_id
-         AND connector_catalog_items.company_id = schedule_sources.company_id
-         AND connector_catalog_items.provider = schedule_sources.provider
-         AND connector_catalog_items.source = schedule_sources.source
-         AND connector_catalog_items.native_id = schedule_sources.native_id
-        LEFT JOIN connector_policies
-          ON connector_policies.connector_id = schedule_sources.connector_id
-         AND connector_policies.company_id = schedule_sources.company_id
-        WHERE schedule_sources.schedule_id = schedules.id
-          AND (
-              schedule_sources.company_id <> schedules.company_id
-              OR schedule_sources.provider <> schedules.reviewed_provider
-              OR connector_catalog_items.id IS NULL
-              OR NOT connector_catalog_items.can_execute
-              OR connector_catalog_items.status <> 'connected'
-              OR connector_policies.connector_id IS NULL
-              OR NOT connector_policies.desired_enabled
-              OR connector_policies.review_required
-              OR connector_policies.version <> schedule_sources.policy_revision
-              OR connector_policies.reviewed_contract_digest
-                    IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-              OR connector_catalog_items.contract_digest
-                    IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-          )
-    )::boolean AS sources_match
-FROM candidate
-JOIN schedules ON schedules.id = candidate.id
-LEFT JOIN companies
-  ON companies.id = schedules.company_id
- AND companies.deleting_at IS NULL
-LEFT JOIN users
-  ON users.id = schedules.creator_user_id
- AND users.disabled_at IS NULL
-LEFT JOIN company_members AS creator_membership
-  ON creator_membership.company_id = schedules.company_id
- AND creator_membership.user_id = schedules.creator_user_id
- AND creator_membership.status = 'active'
- AND creator_membership.role = ANY($1::text[])
-LEFT JOIN agents
-  ON agents.id = schedules.agent_id
- AND agents.company_id = schedules.company_id
- AND agents.archived_at IS NULL
-LEFT JOIN agent_runtime_bindings AS creator_binding
-  ON creator_binding.company_id = agents.company_id
- AND creator_binding.agent_id = agents.id
- AND creator_binding.user_id = schedules.creator_user_id
-LEFT JOIN runtimes
-  ON runtimes.id = creator_binding.runtime_id
- AND runtimes.company_id = creator_binding.company_id
- AND runtimes.removed_at IS NULL
- AND runtimes.owner_user_id = creator_binding.user_id
-`
-
-type LockNextDriftedScheduleRow struct {
-	Schedule        Schedule    `json:"schedule"`
-	CompanyValid    bool        `json:"company_valid"`
-	CreatorValid    bool        `json:"creator_valid"`
-	AgentValid      bool        `json:"agent_valid"`
-	ProviderMatches bool        `json:"provider_matches"`
-	SourcesMatch    pgtype.Bool `json:"sources_match"`
-}
-
-// The creator's binding of the Agent (ADR 0014): no binding, no runtime.
-func (q *Queries) LockNextDriftedSchedule(ctx context.Context, actorRoles []string) (LockNextDriftedScheduleRow, error) {
-	row := q.db.QueryRow(ctx, lockNextDriftedSchedule, actorRoles)
-	var i LockNextDriftedScheduleRow
-	err := row.Scan(
-		&i.Schedule.ID,
-		&i.Schedule.CompanyID,
-		&i.Schedule.ConversationID,
-		&i.Schedule.CreatorUserID,
-		&i.Schedule.RequestKey,
-		&i.Schedule.AgentID,
-		&i.Schedule.ReviewedProvider,
-		&i.Schedule.Name,
-		&i.Schedule.Instructions,
-		&i.Schedule.PresetKey,
-		&i.Schedule.TriggerType,
-		&i.Schedule.RunAt,
-		&i.Schedule.CronExpression,
-		&i.Schedule.Timezone,
-		&i.Schedule.NextOccurrenceAt,
-		&i.Schedule.LastOccurrenceAt,
-		&i.Schedule.Status,
-		&i.Schedule.PauseReason,
-		&i.Schedule.CreatedAt,
-		&i.Schedule.UpdatedAt,
-		&i.Schedule.Version,
-		&i.CompanyValid,
-		&i.CreatorValid,
-		&i.AgentValid,
-		&i.ProviderMatches,
-		&i.SourcesMatch,
-	)
-	return i, err
-}
-
 const lockNextDueSchedule = `-- name: LockNextDueSchedule :one
 WITH statement_clock AS MATERIALIZED (
     SELECT clock_timestamp()::timestamptz AS now_at
@@ -1705,8 +1836,8 @@ WITH statement_clock AS MATERIALIZED (
     FROM schedules
     CROSS JOIN statement_clock
     WHERE schedules.status = 'active'
-      AND schedules.next_occurrence_at <= statement_clock.now_at
-      AND schedules.id = ANY($2::uuid[])
+      AND ($2::boolean OR schedules.next_occurrence_at <= statement_clock.now_at)
+      AND schedules.id = $3::uuid
     ORDER BY schedules.next_occurrence_at, schedules.id
     FOR UPDATE OF schedules SKIP LOCKED
     LIMIT 1
@@ -1723,7 +1854,7 @@ SELECT
         agents.id IS NOT NULL
         AND runtimes.id IS NOT NULL
     )::boolean AS agent_valid,
-    (agents.provider = schedules.reviewed_provider)::boolean AS provider_matches,
+    COALESCE(agents.provider = schedules.reviewed_provider, false)::boolean AS provider_matches,
     NOT EXISTS (
         SELECT 1
         FROM schedule_sources
@@ -1783,8 +1914,9 @@ LEFT JOIN runtimes
 `
 
 type LockNextDueScheduleParams struct {
-	ActorRoles  []string    `json:"actor_roles"`
-	ScheduleIds []uuid.UUID `json:"schedule_ids"`
+	ActorRoles    []string  `json:"actor_roles"`
+	IncludeNotDue bool      `json:"include_not_due"`
+	ScheduleID    uuid.UUID `json:"schedule_id"`
 }
 
 type LockNextDueScheduleRow struct {
@@ -1799,7 +1931,7 @@ type LockNextDueScheduleRow struct {
 
 // The creator's binding of the Agent (ADR 0014): no binding, no runtime.
 func (q *Queries) LockNextDueSchedule(ctx context.Context, arg LockNextDueScheduleParams) (LockNextDueScheduleRow, error) {
-	row := q.db.QueryRow(ctx, lockNextDueSchedule, arg.ActorRoles, arg.ScheduleIds)
+	row := q.db.QueryRow(ctx, lockNextDueSchedule, arg.ActorRoles, arg.IncludeNotDue, arg.ScheduleID)
 	var i LockNextDueScheduleRow
 	err := row.Scan(
 		&i.Schedule.ID,
@@ -1831,6 +1963,90 @@ func (q *Queries) LockNextDueSchedule(ctx context.Context, arg LockNextDueSchedu
 		&i.SourcesMatch,
 	)
 	return i, err
+}
+
+const lockScheduleConversation = `-- name: LockScheduleConversation :exec
+SELECT id FROM conversations
+WHERE id = $1::uuid AND company_id = $2::uuid
+  AND kind = 'schedule' AND schedule_id = $3::uuid
+FOR UPDATE
+`
+
+type LockScheduleConversationParams struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+	CompanyID      uuid.UUID `json:"company_id"`
+	ScheduleID     uuid.UUID `json:"schedule_id"`
+}
+
+func (q *Queries) LockScheduleConversation(ctx context.Context, arg LockScheduleConversationParams) error {
+	_, err := q.db.Exec(ctx, lockScheduleConversation, arg.ConversationID, arg.CompanyID, arg.ScheduleID)
+	return err
+}
+
+const lockSchedulesForAgentArchive = `-- name: LockSchedulesForAgentArchive :many
+SELECT schedules.id, schedules.company_id, schedules.conversation_id, schedules.creator_user_id, schedules.request_key, schedules.agent_id, schedules.reviewed_provider, schedules.name, schedules.instructions, schedules.preset_key, schedules.trigger_type, schedules.run_at, schedules.cron_expression, schedules.timezone, schedules.next_occurrence_at, schedules.last_occurrence_at, schedules.status, schedules.pause_reason, schedules.created_at, schedules.updated_at, schedules.version FROM schedules
+WHERE company_id = $1::uuid AND agent_id = $2::uuid
+ORDER BY creator_user_id, id
+FOR UPDATE
+`
+
+type LockSchedulesForAgentArchiveParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	AgentID   uuid.UUID `json:"agent_id"`
+}
+
+// Called only after the Agent mutation's exclusive Company fence.
+func (q *Queries) LockSchedulesForAgentArchive(ctx context.Context, arg LockSchedulesForAgentArchiveParams) ([]Schedule, error) {
+	rows, err := q.db.Query(ctx, lockSchedulesForAgentArchive, arg.CompanyID, arg.AgentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Schedule{}
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyID,
+			&i.ConversationID,
+			&i.CreatorUserID,
+			&i.RequestKey,
+			&i.AgentID,
+			&i.ReviewedProvider,
+			&i.Name,
+			&i.Instructions,
+			&i.PresetKey,
+			&i.TriggerType,
+			&i.RunAt,
+			&i.CronExpression,
+			&i.Timezone,
+			&i.NextOccurrenceAt,
+			&i.LastOccurrenceAt,
+			&i.Status,
+			&i.PauseReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Version,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const pauseArchivedAgentSchedule = `-- name: PauseArchivedAgentSchedule :exec
+UPDATE schedules SET status = 'paused', pause_reason = 'agent_unavailable',
+ version = version + 1, updated_at = clock_timestamp()
+WHERE id = $1 AND status IN ('active', 'paused') AND version < 9007199254740991
+`
+
+func (q *Queries) PauseArchivedAgentSchedule(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, pauseArchivedAgentSchedule, id)
+	return err
 }
 
 const pauseInvalidDueSchedule = `-- name: PauseInvalidDueSchedule :one
@@ -2201,6 +2417,16 @@ func (q *Queries) ScheduleAgentNeedsCreatorBinding(ctx context.Context, arg Sche
 	return needs_binding, err
 }
 
+const setScheduleTransactionTimeouts = `-- name: SetScheduleTransactionTimeouts :exec
+SELECT set_config('lock_timeout', $1::text, true),
+       set_config('statement_timeout', '10s', true)
+`
+
+func (q *Queries) SetScheduleTransactionTimeouts(ctx context.Context, lockTimeout string) error {
+	_, err := q.db.Exec(ctx, setScheduleTransactionTimeouts, lockTimeout)
+	return err
+}
+
 const updateScheduleDefinition = `-- name: UpdateScheduleDefinition :one
 WITH statement_clock AS MATERIALIZED (
     SELECT clock_timestamp()::timestamptz AS now_at
@@ -2306,7 +2532,7 @@ FROM statement_clock
 WHERE schedule_firings.id = $3::uuid
   AND schedule_firings.company_id = $4::uuid
   AND schedule_firings.version < 9007199254740991
-RETURNING schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version
+RETURNING schedule_firings.id, schedule_firings.company_id, schedule_firings.schedule_id, schedule_firings.schedule_version, schedule_firings.conversation_id, schedule_firings.message_id, schedule_firings.run_id, schedule_firings.occurrence_at, schedule_firings.trigger, schedule_firings.request_key, schedule_firings.disposition, schedule_firings.reason, schedule_firings.created_at, schedule_firings.updated_at, schedule_firings.version, schedule_firings.missed_count
 `
 
 type UpdateScheduleFiringDispositionParams struct {
@@ -2340,6 +2566,7 @@ func (q *Queries) UpdateScheduleFiringDisposition(ctx context.Context, arg Updat
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.MissedCount,
 	)
 	return i, err
 }

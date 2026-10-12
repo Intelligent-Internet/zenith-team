@@ -39,6 +39,13 @@ func CheckMessageRunInTx(
 	if err := requireAssigneeExecuteInTx(ctx, queries, row); err != nil {
 		return false, err
 	}
+	if (row.AssignmentStatus == "pending" || row.AssignmentStatus == "declined") ||
+		row.ScheduleDisposition == "scheduled" ||
+		row.ScheduleDisposition == "cancelled" ||
+		row.ScheduleDisposition == "missed" ||
+		row.ScheduleDisposition == "skipped" {
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -118,6 +125,10 @@ func PrepareContinuationRunInTx(
 	pending *[]events.Event,
 	row generated.Task,
 ) (bool, error) {
+	if (row.AssignmentStatus == "pending" || row.AssignmentStatus == "declined") ||
+		row.ScheduleDisposition == "scheduled" {
+		return false, nil
+	}
 	allowed, update := taskContinuationRunStatusPolicy(Status(row.Status))
 	if !allowed {
 		return false, nil
@@ -130,7 +141,16 @@ func PrepareContinuationRunInTx(
 	}
 	target := taskFromRow(row)
 	target.Status = StatusInProgress
-	updated, err := updateTask(ctx, queries, target, row.Version, pending, events.SystemActor(), false, projectWriteFence{})
+	updated, err := updateTask(
+		ctx,
+		queries,
+		target,
+		row.Version,
+		pending,
+		events.SystemActor(),
+		false,
+		projectWriteFence{},
+	)
 	if err != nil {
 		return false, fmt.Errorf("move Task into progress for continuation Run: %w", err)
 	}

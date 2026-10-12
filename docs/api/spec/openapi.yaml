@@ -217,6 +217,18 @@ components:
         the route accepts a Run and the request carries a live Run proof of
         its person.
   schemas:
+    TaskCalendarSchedule:
+      $ref: './tasks.yaml#/schemas/TaskCalendarSchedule'
+    TaskCalendarOccurrence:
+      $ref: './tasks.yaml#/schemas/TaskCalendarOccurrence'
+    TaskCalendarPage:
+      $ref: './tasks.yaml#/schemas/TaskCalendarPage'
+    TaskScheduleInput:
+      $ref: './tasks.yaml#/schemas/TaskScheduleInput'
+    TaskOccurrenceInput:
+      $ref: './tasks.yaml#/schemas/TaskOccurrenceInput'
+    TaskAssignmentInput:
+      $ref: './tasks.yaml#/schemas/TaskAssignmentInput'
     BoardFileInput:
       $ref: "./whiteboards.yaml#/schemas/BoardFileInput"
     BoardFile:
@@ -1117,6 +1129,14 @@ paths:
     $ref: './tasks.yaml#/paths/companies_companyId_company_plan_apply'
   /api/v1/companies/{companyId}/tasks:
     $ref: './tasks.yaml#/paths/companies_companyId_tasks'
+  /api/v1/companies/{companyId}/calendar/tasks:
+    $ref: './tasks.yaml#/paths/companies_companyId_calendar_tasks'
+  /api/v1/companies/{companyId}/tasks/{taskId}/schedule:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_schedule'
+  /api/v1/companies/{companyId}/tasks/{taskId}/schedule/occurrences:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_schedule_occurrences'
+  /api/v1/companies/{companyId}/tasks/{taskId}/assignment:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_assignment'
   /api/v1/companies/{companyId}/tasks/{taskId}:
     $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId'
   /api/v1/companies/{companyId}/tasks/{taskId}/dependencies:

@@ -15,7 +15,8 @@ browser ──┐         │
           ├─ HTTP + WebSocket ─ Go/Gin server ─┼─ object storage (file bytes)
 desktop ──┘                     │              │
                                 │              └─ Redis (realtime relay,
-                                │                        claim-empty cache)
+                                │                        claim-empty cache,
+                                │                        scheduler beat)
                                 │
                         daemon (boardly CLI) ─ codex | claude
 ```
@@ -200,7 +201,7 @@ See
 | Module | PostgreSQL authority | Run seam |
 | --- | --- | --- |
 | Provider capabilities (`internal/agent`) | Latest Runtime-scoped Connector and Plugin discovery, plus Company Connector policy | `execution` asks the Connector module to freeze the reviewed executable contract during claim. An exact selection freezes in full or the Run is cancelled; Plugin state never grants execution. |
-| Schedules (`internal/schedule`) | Creator-private one-shot/cron definitions, exact reviewed sources, lifecycle, and firing receipts | A Schedule owns one private `schedule` Conversation. Its capacity-exempt Runs never consume Task slots; the worker calls transaction participants in `conversation` and `execution` to materialize, supersede, or invalidate them without creating a Task. |
+| Schedules (`internal/schedule`) | Creator-private one-shot/cron definitions, exact reviewed sources, lifecycle, firing receipts, Asynq beat and PG repair | A Schedule owns one private `schedule` Conversation. Its capacity-exempt Runs never consume Task slots; the worker calls transaction participants in `conversation` and `execution` to materialize, supersede, or invalidate them without creating a Task. |
 | Task outcomes (`internal/task`) | Department/milestone/execution routing, Task execution generation, pending done/failed report events, and generation-fenced merge jobs | An exact live Task Run may declare the business outcome `failed`. A person can confirm pending upward reports; Proactive Mode may instead lease a completed Task merge to that Run's daemon and automatically send the resulting upward report through the selected root-Agent Conversation. |
 | Company Email (`internal/mailbox`) | One mailbox identity, retained inbound metadata, and Run-bound outbound draft groups with their durable send queue | A live direct or Task Run may create Agent Mail drafts. A person reviews and queues them; the leased worker performs delivery. |
 
@@ -252,7 +253,8 @@ Two WebSocket planes, each owning its own types:
   list of what reaches a browser. Post-commit `run.message_created` and other relayed
   entity/signal events use the sharded Redis stream across server processes,
   so every eligible connected client can receive completed transcript items.
-  With no Redis the relayed plane degrades to single-node in-process fanout.
+  The relay retains its local fanout path; API startup requires Redis for the
+  scheduler, even with a single replica.
 - **Daemon plane** (`internal/daemonws`, `/api/v1/daemon/ws`) — heartbeats,
   wakeups when work becomes claimable, RPC correlation for WS-first claiming,
   and one-at-a-time durable transcript appends.

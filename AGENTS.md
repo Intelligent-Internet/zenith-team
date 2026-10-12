@@ -107,12 +107,19 @@ server/internal/
 │                     execution and confirmed handoffs.
 │                     It also owns upward done/
 │                     failed outcome reports and the Run-proven Agent
-│                     business-failure transition. `failed` and `error`
+│                     business-failure transition. It also owns Calendar Task
+│                     schedules: assignee acceptance, recurring templates,
+│                     occurrence edits and the shared Asynq Task worker.
+│                     These are ordinary Project Tasks using Task capacity;
+│                     Connector Schedules retain their separate non-task lane. `failed` and `error`
 │                     are server-owned Task states, never ordinary PATCH
 │                     values.
 ├── schedule/         Creator-private one-shot and cron definitions,
 │                     exact reviewed Connector sources, firing receipts,
-│                     and the due worker. A Schedule owns one `schedule`
+│                     Asynq scan/fire handlers, and the independent repair
+│                     sweep. PostgreSQL
+│                     owns firing truth; cmd/server composes the shared Redis
+│                     queue lifecycle. A Schedule owns one `schedule`
 │                     Conversation and its Runs use a capacity-exempt
 │                     non-task lane. Transaction-participant seams in
 │                     conversation/ and execution/ materialize or cancel
@@ -555,6 +562,13 @@ isolated database + fixture per caller.
   to dev stays in `deploy.yaml`.
 - Preserve unrelated user changes and never commit credentials or generated
   build output.
+
+## Local development cleanup
+
+After finishing work, stop the backend and frontend development processes so
+the user can start their own test session. This includes the Electron development
+launcher when used. Verify that the backend and frontend ports (8788 and 5173 by
+default) have no remaining listeners. Leave infrastructure containers running.
 
 ## Verification
 

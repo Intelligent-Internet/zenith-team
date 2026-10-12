@@ -636,7 +636,10 @@ schema and payload cleanup.
   reads return: a `chatgpt.com` logo loads only in a ChatGPT session, so a
   loadable stand-in wins when there is one (D26).
 - `internal/schedule` owns creator-private one-shot/cron definitions, exact
-  reviewed Connector sources, replay-safe firing receipts, and the due worker.
+  reviewed Connector sources, replay-safe firing receipts, creator-private
+  attention, the Asynq scan/fire handlers, and the independent repair sweep.
+  `cmd/server/schedule_beat.go` composes the shared-client queue lifecycle;
+  PostgreSQL alone owns firing truth and retry lineage.
   Each Schedule owns one `schedule` Conversation whose Runs use a
   capacity-exempt non-task lane. The Schedule transaction calls narrow
   transaction participants in `conversation` and `execution` to materialize,
@@ -686,6 +689,11 @@ schema and payload cleanup.
   A job records whether authority came from Proactive Mode or an explicit
   person review; desktop acceptance uses the same durable claim, lease, and
   atomic Task-result fence as automated merging.
+  Explicit standalone scheduled-Task requests in CEO chats use `zen task create`
+  without Company Context review. The daemon's frozen channel admits that write
+  only with a one-shot or cron schedule; immediate CEO-proposed work still uses
+  the reviewed Company Plan. The ordinary Task service validates the schedule,
+  member assignment and Project access, and defers execution until it is due.
   `failed` and `error` are server-owned states; ordinary Task mutations cannot
   select them. The package owns Task-message admission and the generation/
   assignment/status-fenced projection from terminal Runs back into Task state.
@@ -852,7 +860,7 @@ server/
 │   │                    fence; reads decide access in the statement via
 │   │                    project_access
 │   ├── schedule/         creator-private definitions and lifecycle,
-│   │                    source review, firing receipts, and due worker;
+│   │                    source review, firing receipts, Asynq handlers and repair;
 │   │                    materializes capacity-exempt Runs through a
 │   │                    private Schedule Conversation, never a Task
 │   ├── workflow/        the release-owned Workflow catalog: parses and
@@ -1031,8 +1039,8 @@ server/
 │   │                    link the Workflow bytes. Imports internal/mcp/tools
 │   │                    and contentbundle, so boardly-mcp stays sealed
 │   ├── infra/           technology adapters: cloudrun/ (public application
-│   │                    build/deploy), email/, redis/ (optional; nil
-│   │                    client when unconfigured), storage/ (S3-compatible
+│   │                    build/deploy), email/, redis/ (required shared client),
+│   │                    storage/ (S3-compatible
 │   │                    ObjectStorage and Cloudflare KV route projections),
 │   │                    stripe/, and SSRF-safe Commerce origin proof in siteverify/
 │   ├── config/          env configuration, logger construction, secret
@@ -1078,8 +1086,8 @@ Studio reservation and fresh admission rather than replaying an expired dispatch
 Readiness checks the subscription with a round trip. Subscription/heartbeat failure
 stops the supervised relay worker and drains the API; process restart reestablishes
 subscriptions and daemon connections. Shutdown removes only its own socket members;
-crashed-process members expire. Single-replica deployments without Redis retain
-the local hub path (configuration rejects multiple replicas without Redis).
+crashed-process members expire. The hub retains its local path, while server
+configuration now requires Redis for the scheduler in every deployment.
 
 All API replicas must run the relay-aware build. During the first rolling upgrade,
 sockets on older replicas are not discoverable until their daemons reconnect to
@@ -1245,3 +1253,19 @@ after the binding is removed; any queued prompt still passes its own execution
 authority check before promotion. The reconciler never invents an authenticated
 principal, and never starts discovery or retries
 a failed phase. Explicit POST remains the start and retry path.
+
+### Calendar Task scheduling
+
+`internal/task/calendar.go` owns acceptance, schedules and bounded Calendar
+reads. `calendar_worker.go` materializes each recurring occurrence as a new Task
+and Task Conversation and starts it through the ordinary Task execution path.
+Company Plan uses `DetachDeletedCalendarTemplatesInTx` before deleting a template
+to detach retained occurrences and cancel only their unclaimed first attempts;
+the Plan owns the combined Task history snapshots.
+`calendar_beat.go` uses the existing Schedule Asynq queue to distribute identity-only
+jobs; PostgreSQL receipts and Company transaction fences make duplicate deliveries
+safe. `handler/task_calendar.go` is the HTTP boundary. Connector Schedules remain
+creator-private and use the non-task lane; Task schedules use Project access and
+Task capacity. Migration 000097 is additive and preserves legacy Task acceptance.
+The detailed behavior and operating limits live in
+[`docs/specs/scheduler/TASK-CALENDAR.md`](../docs/specs/scheduler/TASK-CALENDAR.md).

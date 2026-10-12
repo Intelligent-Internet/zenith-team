@@ -191,6 +191,7 @@ var expectedBusinessTables = []string{
 	"task_report_events",
 	"task_result_items",
 	"task_result_sets",
+	"task_schedules",
 	"tasks",
 	"users",
 	"wiki_artifact_refs",
@@ -402,6 +403,7 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"task_merge_jobs":                    true,
 	"task_report_batches":                false,
 	"task_report_events":                 false,
+	"task_schedules":                     true,
 	"tasks":                              true,
 	"users":                              true,
 
@@ -761,7 +763,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"error", "failure_reason", "context",
 			"session_id", "session_rollout_missing", "retired_session_id",
 			"attempt", "parent_run_id", "force_fresh_session",
-			"wait_reason", "prepare_lease_expires_at", "fire_at",
+			"wait_reason", "prepare_lease_expires_at", "fire_at", "task_scheduled",
 			"task_execution_generation",
 			// 000054: the Connector scope; its rows live in run_connector_selections
 			// and run_connector_snapshots.
@@ -883,6 +885,13 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"labels",
 			"start_date",
 			"due_date",
+			"assignment_status",
+			"scheduled_at",
+			"schedule_fired_at",
+			"task_schedule_id",
+			"task_schedule_generation",
+			"schedule_occurrence_at",
+			"schedule_disposition",
 			// The workspace identity a confirmed handoff advances, so the
 			// next assignee's daemon prepares a fresh root.
 			"workspace_generation",
@@ -931,6 +940,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 				table == "conversation_agents" ||
 				table == "conversation_channels" ||
 				table == "model_prices" ||
+				table == "task_schedules" ||
 				strings.HasPrefix(table, "analytics_") ||
 				table == "conversation_human_directs" ||
 				table == "conversation_members" ||
@@ -2126,7 +2136,14 @@ func TestArtifactSuggestionsMigrationBackfillsExistingOutputs(t *testing.T) {
 	f := dbtest.SeedFixture(t, ctx, pool)
 	// The delivery predates a handoff; its frozen generation must not follow
 	// the current Task when the new columns are populated.
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET task_execution_generation=3,execution_authorized_by_user_id=$2 WHERE id=$1`, f.RunA, f.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET task_execution_generation=3,execution_authorized_by_user_id=$2 WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+	)
 	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET execution_generation=4 WHERE id=$1`, f.TaskA)
 	dbtest.MustExec(t, ctx, pool, `UPDATE projects SET visibility='restricted' WHERE id=$1`, f.ProjectA)
 	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role)
@@ -2213,7 +2230,8 @@ func TestDocumentAgentsMigrationPreservesDocumentHistory(t *testing.T) {
 		(company_id,page_id,sequence,actor_type,change_type,delta,checkpoint,label)
 		VALUES($1,$2,1,'system','initial',''::bytea,'existing snapshot'::bytea,'Before upgrade')`, f.CompanyA, pageID)
 	var originalReaders string
-	if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).Scan(&originalReaders); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).
+		Scan(&originalReaders); err != nil {
 		t.Fatal(err)
 	}
 	for _, step := range []struct {
@@ -2237,7 +2255,8 @@ func TestDocumentAgentsMigrationPreservesDocumentHistory(t *testing.T) {
 			assertTableDoesNotExist(t, ctx, pool, "document_writing_requests")
 			assertTableOmitsColumns(t, ctx, pool, "conversations", []string{"document_thread_id"})
 			var readers string
-			if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).Scan(&readers); err != nil {
+			if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).
+				Scan(&readers); err != nil {
 				t.Fatal(err)
 			}
 			if readers != originalReaders {

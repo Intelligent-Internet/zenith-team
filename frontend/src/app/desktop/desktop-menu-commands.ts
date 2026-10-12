@@ -166,7 +166,7 @@ export const desktopCommandActions: DesktopCommandAction[] = [
     id: "scheduled",
     group: "Tools",
     icon: CalendarClock,
-    label: "Open Scheduled tasks",
+    label: "Open Schedules",
     description: "Recurring and one-time Agent work",
     route: "/scheduled",
     requires: "schedules.manage",

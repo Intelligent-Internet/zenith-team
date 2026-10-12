@@ -10,6 +10,7 @@ func TestLoadLocalStorageUsesSiloDefaults(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(mapLookup(map[string]string{
+		"APP_REDIS_URL":    "redis://localhost:6379/0",
 		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
 		"AUTH_CSRF_SECRET": "01234567890123456789012345678901",
 		"STORAGE_DRIVER":   "local",
@@ -30,6 +31,7 @@ func TestLoadLocalStorageAllowsExplicitS3Overrides(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(mapLookup(map[string]string{
+		"APP_REDIS_URL":                "redis://localhost:6379/0",
 		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
 		"AUTH_CSRF_SECRET":             "01234567890123456789012345678901",
 		"STORAGE_DRIVER":               "local",

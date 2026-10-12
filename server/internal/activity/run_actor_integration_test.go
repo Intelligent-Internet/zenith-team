@@ -23,6 +23,7 @@ import (
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/execution"
+	"boardly.dev/boardly/server/internal/schedule"
 	"boardly.dev/boardly/server/internal/task"
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
@@ -341,6 +342,17 @@ func TestTaskCreatedInARunNamesBothCreatorsAndTheRun(t *testing.T) {
 	rows, mark = w.rowsSince(t, mark)
 	w.assertTheRunWroteThem(t, rows, origin,
 		"task.created", "conversation.created", "run.queued", "message.created", "conversation.updated")
+
+	at := time.Now().UTC().Add(time.Hour).Truncate(time.Minute)
+	if _, err := tasks.Create(w.ctx, w.owner, task.CreateInput{
+		ProjectID: w.fixture.ProjectA, Title: "Scheduled from Eli's Run", ExecutedBy: &executor,
+		MilestoneType: task.MilestoneTypeProduct, Status: task.StatusTodo, Run: scope(origin),
+		Schedule: &schedule.Trigger{Type: schedule.TriggerTypeOnce, RunAt: &at},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	rows, mark = w.rowsSince(t, mark)
+	w.assertTheRunWroteThem(t, rows, origin, "task.created", "task.updated", "conversation.created")
 
 	if _, err := tasks.Create(w.ctx, w.owner, task.CreateInput{
 		ProjectID: w.fixture.ProjectA, Key: "own_task", Title: "Own Task",

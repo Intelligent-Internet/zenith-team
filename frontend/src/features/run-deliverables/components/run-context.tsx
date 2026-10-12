@@ -57,7 +57,7 @@ export function RunContext({
           </Link>
         ) : null}
         <Link to={conversation}>
-          {run.runType === "schedule" ? "Scheduled tasks" : "Open conversation"}
+          {run.runType === "schedule" ? "Schedules" : "Open conversation"}
         </Link>
       </nav>
       <h1>{run.source?.title ?? "Run details"}</h1>

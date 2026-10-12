@@ -8,6 +8,7 @@ import (
 	"boardly.dev/boardly/server/internal/conversation"
 
 	"boardly.dev/boardly/server/internal/events"
+	"boardly.dev/boardly/server/internal/util"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
 
@@ -24,17 +25,24 @@ func taskFromRow(row generated.Task) Response {
 		completedAt = &value
 	}
 	return Response{
-		ID:             row.ID,
-		Key:            row.Key,
-		ProjectID:      row.ProjectID,
-		CompanyID:      row.CompanyID,
-		MilestoneType:  MilestoneType(row.MilestoneType),
-		ConversationID: row.ConversationID,
-		Number:         row.Number,
-		Title:          row.Title,
-		Description:    row.Description,
-		Status:         Status(row.Status),
-		Priority:       Priority(row.Priority),
+		ScheduleGeneration:   row.TaskScheduleGeneration,
+		AssignmentStatus:     row.AssignmentStatus,
+		ScheduledAt:          calendarTime(row.ScheduledAt),
+		ScheduleFiredAt:      calendarTime(row.ScheduleFiredAt),
+		ScheduleID:           util.NullUUIDPtr(row.TaskScheduleID),
+		ScheduleOccurrenceAt: calendarTime(row.ScheduleOccurrenceAt),
+		ScheduleDisposition:  row.ScheduleDisposition,
+		ID:                   row.ID,
+		Key:                  row.Key,
+		ProjectID:            row.ProjectID,
+		CompanyID:            row.CompanyID,
+		MilestoneType:        MilestoneType(row.MilestoneType),
+		ConversationID:       row.ConversationID,
+		Number:               row.Number,
+		Title:                row.Title,
+		Description:          row.Description,
+		Status:               Status(row.Status),
+		Priority:             Priority(row.Priority),
 		Labels: append(
 			[]string{},
 			row.Labels...),

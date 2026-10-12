@@ -764,6 +764,90 @@ func TestScheduleServiceRunNowReplaysCommittedFiringAfterScheduleIsPaused(t *tes
 	}
 }
 
+func TestScheduleHistoryAndReplayRespectCurrentRuntimeOwnership(t *testing.T) {
+	t.Parallel()
+	for _, status := range []string{"queued", "completed", "failed"} {
+		t.Run(status, func(t *testing.T) {
+			t.Parallel()
+			pool, store, fixture := startSchedulePostgres(t)
+			ctx := t.Context()
+			service := newScheduleTestService(t, store)
+			principal := companyPrincipal(fixture.UserA, fixture.CompanyA)
+			created := createDueSchedule(t, ctx, pool, service, principal, fixture.AgentA)
+			input := RunNowInput{RequestKey: dbtest.NewUUID(t)}
+			first, err := service.RunNow(ctx, principal, created.Schedule.ID, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if first.Firing.RunID == nil || first.Firing.RuntimeStatus == nil ||
+				first.Firing.RuntimeLastSeenAt == nil {
+				t.Fatalf("RunNow() = %+v, want Run and creator-owned runtime metadata", first.Firing)
+			}
+			dbtest.MustExec(t, ctx, pool, `
+				UPDATE runs SET status=$2,
+				    failure_reason=CASE WHEN $2='failed' THEN 'runtime_offline' ELSE NULL END
+				WHERE id=$1`, *first.Firing.RunID, status)
+
+			for _, owner := range []struct {
+				name    string
+				id      any
+				visible bool
+			}{
+				{"creator", fixture.UserA, true},
+				{"another member", fixture.UserB, false},
+				{"no registrant", nil, false},
+			} {
+				t.Run(owner.name, func(t *testing.T) {
+					// Registration can replace the owner of the same runtime row;
+					// historical Runs must not expose its new registrant's live state.
+					dbtest.MustExec(t, ctx, pool, `
+						UPDATE runtimes SET owner_user_id=$2, status='offline',
+						    last_seen_at=clock_timestamp(),
+						    unusable_reason_code='below_minimum_version',
+						    unusable_reason_message='Update required'
+						WHERE id=(SELECT runtime_id FROM runs WHERE id=$1)`, *first.Firing.RunID, owner.id)
+					history, err := service.ListFirings(
+						ctx,
+						principal,
+						created.Schedule.ID,
+						FiringListOptions{},
+					)
+					if err != nil || len(history.Firings) != 1 {
+						t.Fatalf("ListFirings() = %+v, %v; want retained history", history, err)
+					}
+					replay, err := service.RunNow(ctx, principal, created.Schedule.ID, input)
+					if err != nil || replay.Created {
+						t.Fatalf("RunNow(replay) = %+v, %v; want retained firing", replay, err)
+					}
+					for _, firing := range []Firing{history.Firings[0], replay.Firing} {
+						if firing.ID != first.Firing.ID || firing.RunID == nil ||
+							*firing.RunID != *first.Firing.RunID ||
+							firing.RunStatus == nil ||
+							*firing.RunStatus != status {
+							t.Errorf(
+								"firing = %+v, want original firing and %s Run",
+								firing,
+								status,
+							)
+						}
+						if (firing.RuntimeStatus != nil) != owner.visible ||
+							(firing.RuntimeLastSeenAt != nil) != owner.visible ||
+							(firing.RuntimeUnusableReason != nil) != owner.visible {
+							t.Errorf(
+								"runtime metadata = (%v, %v, %v), want visible=%v",
+								firing.RuntimeStatus,
+								firing.RuntimeLastSeenAt,
+								firing.RuntimeUnusableReason,
+								owner.visible,
+							)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
 func startSchedulePostgres(t *testing.T) (*pgxpool.Pool, *db.Store, dbtest.Fixture) {
 	t.Helper()
 	pool, _ := dbtest.StartPostgres(t)

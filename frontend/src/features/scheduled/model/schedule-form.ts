@@ -186,11 +186,11 @@ export function getScheduleStepError(
   values: ScheduleFormValues,
 ) {
   if (step === 1) {
-    if (!values.name.trim()) return "Give this scheduled task a name.";
+    if (!values.name.trim()) return "Give this schedule a name.";
     if (!values.instructions.trim()) {
       return "Describe what the agent should do on every run.";
     }
-    if (!values.agentId) return "Choose the agent that will run this task.";
+    if (!values.agentId) return "Choose the agent that will run this schedule.";
     return null;
   }
 
@@ -216,7 +216,7 @@ export function getScheduleStepError(
       return "Choose a valid future date and time.";
     }
     if (runAt.getTime() <= Date.now()) {
-      return "One-time tasks must be scheduled in the future.";
+      return "One-time schedules must be scheduled in the future.";
     }
     return null;
   }

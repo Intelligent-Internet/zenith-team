@@ -1,3 +1,4 @@
+import { scheduleRunEffectNotice } from "@/features/scheduled/model/schedule-format";
 import {
   Check,
   ChevronLeft,
@@ -60,7 +61,7 @@ const editorSteps: Array<{
   id: EditorStep;
   label: string;
 }> = [
-  { description: "Instruction and owner", id: 1, label: "Task" },
+  { description: "Instruction and owner", id: 1, label: "Schedule" },
   { description: "Once or cron", id: 2, label: "Trigger" },
   { description: "Access and review", id: 3, label: "Sources" },
 ];
@@ -383,12 +384,20 @@ export function ScheduledTaskEditorPage() {
       }
       navigate(`/scheduled/${encodeURIComponent(saved.id)}`, {
         replace: true,
+        state: {
+          scheduleNotice: [
+            "Schedule saved.",
+            scheduleRunEffectNotice(saved.runEffect),
+          ]
+            .filter(Boolean)
+            .join(" "),
+        },
       });
     } catch (error) {
       setFormError(
         getScheduledTaskErrorMessage(
           error,
-          `Scheduled task could not be ${isEditing ? "updated" : "created"}.`,
+          `Schedule could not be ${isEditing ? "updated" : "created"}.`,
         ),
       );
     }
@@ -415,10 +424,10 @@ export function ScheduledTaskEditorPage() {
 
   return (
     <ScheduledPageShell
-      title={isEditing ? "Edit scheduled task" : "Create scheduled task"}
+      title={isEditing ? "Edit schedule" : "Create schedule"}
       description={
         dailyBriefPreset
-          ? "Daily Brief is a reusable preset. You can change every field before saving."
+          ? "Daily Brief is a recurring preset. Review its instructions, timing and sources before saving."
           : "Configure a reusable instruction, any supported time, and the exact sources the agent may access."
       }
       actions={

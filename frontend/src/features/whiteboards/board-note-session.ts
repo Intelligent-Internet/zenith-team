@@ -23,8 +23,10 @@ export type NoteDraft = {
   update: string;
   text?: string;
   inflight?: TextInput;
+  retries?: TextInput[];
   stamp?: string;
 };
+type StoredNoteDraft = { key: string; value: NoteDraft };
 export type NoteStatus =
   "loading" | "saved" | "saving" | "offline" | "conflict" | "failed";
 /** The server's plain-text limit for one note. */
@@ -69,6 +71,7 @@ export class BoardNoteSession {
   private pending: Uint8Array[] = [];
   private inflight?: TextInput;
   private inflightUpdate?: Uint8Array;
+  private retries: TextInput[] = [];
   private sending?: Promise<void>;
   private timer?: ReturnType<typeof setTimeout>;
   private listeners = new Set<() => void>();
@@ -80,9 +83,9 @@ export class BoardNoteSession {
   // Set once the saved note and any local draft are merged. Until then this
   // session neither writes nor removes the stored draft.
   private hydrated = false;
-  // A stored draft found before the note loaded, kept for recovery.
-  private recovered?: NoteDraft;
-  // The stamp of the stored row this session last wrote or adopted.
+  // Keep source rows until their updates are saved in this session's row.
+  private recovered: StoredNoteDraft[] = [];
+  // The stamp of the stored row this session last wrote.
   private stamp?: string;
   // The note itself refuses this draft (deleted or restored, or blocked).
   private blocked = false;
@@ -92,6 +95,7 @@ export class BoardNoteSession {
   revision = 0;
   ready: Promise<void>;
   readonly key: string;
+  private readonly draftKey: string;
   constructor(
     readonly scope: BoardScope,
     readonly itemId: string,
@@ -101,6 +105,8 @@ export class BoardNoteSession {
     private recoverDraft = true,
   ) {
     this.key = `${userId}:${boardScopeKey(scope)}:note:v1:${itemId}:${lifecycleRevision}`;
+    // Concurrent tabs never replace each other's unacknowledged updates.
+    this.draftKey = `${this.key}:${crypto.randomUUID()}`;
     this.ready = this.initialize();
   }
   subscribe = (listener: () => void) => {
@@ -121,11 +127,13 @@ export class BoardNoteSession {
     return this.hydrated ? noteText(this.doc).toString() : "";
   }
   get dirty() {
-    return this.pending.length > 0 || !!this.inflight;
+    return (
+      this.pending.length > 0 || !!this.inflight || this.retries.length > 0
+    );
   }
   /** Unsaved text exists, merged or still waiting for the note to load. */
   get hasDraft() {
-    return this.dirty || !!this.recovered;
+    return this.dirty || this.recovered.length > 0;
   }
   /** Writing, or waiting to write; a session in this state is never released. */
   get busy() {
@@ -139,10 +147,17 @@ export class BoardNoteSession {
   /** The unsaved text to export: plain text, or the raw draft if unreadable. */
   draftExport(): { content: string; json: boolean } {
     if (this.hydrated) return { content: this.text, json: false };
-    if (this.recovered?.text !== undefined)
-      return { content: this.recovered.text, json: false };
+    if (
+      this.recovered.length === 1 &&
+      this.recovered[0].value.text !== undefined
+    )
+      return { content: this.recovered[0].value.text, json: false };
     return {
-      content: JSON.stringify(this.recovered ?? {}, null, 2),
+      content: JSON.stringify(
+        this.recovered.map((row) => row.value),
+        null,
+        2,
+      ),
       json: true,
     };
   }
@@ -157,16 +172,20 @@ export class BoardNoteSession {
       saved.catch(() => {});
       const recovered = this.recoverDraft
         ? await readBoardDrafts<NoteDraft>(this.key).then(
-            (rows) => rows.find((row) => row.key === this.key)?.value,
+            (rows) =>
+              rows.filter(
+                (row) =>
+                  row.key === this.key || row.key.startsWith(`${this.key}:`),
+              ),
             () => {
               this.error =
                 "Local recovery is unavailable. Keep this note open until Saved.";
-              return undefined;
+              return [];
             },
           )
-        : undefined;
+        : [];
       if (this.disposed) return;
-      if (recovered) {
+      if (recovered.length) {
         this.recovered = recovered;
         this.emit();
       }
@@ -184,18 +203,19 @@ export class BoardNoteSession {
         trackedOrigins: new Set([this.localOrigin]),
         captureTimeout: 500,
       });
-      if (recovered?.update) {
-        const update = decodeBoardUpdate(recovered.update);
-        Y.applyUpdate(this.doc, update, "recovery");
-        this.pending.push(update);
+      const retries = new Map<string, TextInput>();
+      for (const { value } of this.recovered) {
+        if (value.update) {
+          const update = decodeBoardUpdate(value.update);
+          Y.applyUpdate(this.doc, update, "recovery");
+          this.pending.push(update);
+        }
+        for (const input of [value.inflight, ...(value.retries ?? [])]) {
+          if (input) retries.set(input.requestKey, input);
+        }
       }
-      if (recovered?.inflight) {
-        this.inflight = recovered.inflight;
-        this.inflightUpdate = decodeBoardUpdate(recovered.inflight.update);
-      }
-      // An adopted row is this session's to replace or remove from now on.
-      if (recovered) this.stamp = recovered.stamp ?? "";
-      this.recovered = undefined;
+      // Requests with unknown outcomes keep their original receipt keys.
+      this.retries = [...retries.values()];
       this.hydrated = true;
       this.doc.on("update", this.onUpdate);
       this.status = this.dirty ? "saving" : "saved";
@@ -304,14 +324,8 @@ export class BoardNoteSession {
   async discard() {
     if (!this.hydrated) {
       // A draft that never loaded is removed only by this explicit choice.
-      if (!this.recovered) return;
-      const stamp = this.recovered.stamp ?? "";
-      this.recovered = undefined;
+      await this.clearRecoveredDrafts(this.recovered);
       this.emit();
-      await deleteBoardDraft<NoteDraft>(
-        this.key,
-        (row) => (row.stamp ?? "") === stamp,
-      );
       return;
     }
     clearTimeout(this.timer);
@@ -319,6 +333,7 @@ export class BoardNoteSession {
     this.pending = [];
     this.inflight = undefined;
     this.inflightUpdate = undefined;
+    this.retries = [];
     // Show the saved text again; the discarded edits leave this document.
     this.doc.off("update", this.onUpdate);
     this.undoManager?.destroy();
@@ -338,10 +353,22 @@ export class BoardNoteSession {
     await this.persist();
     this.emit();
   }
+  private async clearRecoveredDrafts(rows: StoredNoteDraft[]) {
+    await Promise.all(
+      rows.map(({ key, value }) =>
+        deleteBoardDraft<NoteDraft>(
+          key,
+          (current) => (current.stamp ?? "") === (value.stamp ?? ""),
+        ),
+      ),
+    );
+    if (this.recovered === rows) this.recovered = [];
+  }
   private persist() {
     // A read-only session does not own or remove an earlier writable draft,
     // and a session that has not merged the stored draft must not replace it.
     if (!this.recoverDraft || !this.hydrated) return Promise.resolve();
+    const recovered = this.recovered;
     let write: () => Promise<void>;
     if (this.dirty) {
       const value: NoteDraft = {
@@ -350,18 +377,25 @@ export class BoardNoteSession {
           Y.encodeStateAsUpdate(this.doc, Y.encodeStateVector(this.accepted)),
         ),
         inflight: this.inflight,
+        retries: this.retries,
         stamp: crypto.randomUUID(),
       };
       this.stamp = value.stamp;
-      write = () => writeBoardDraft(this.key, value);
+      write = async () => {
+        // Durably copy all adopted updates before retiring their old rows.
+        await writeBoardDraft(this.draftKey, value);
+        await this.clearRecoveredDrafts(recovered);
+      };
     } else {
       const owned = this.stamp;
-      if (owned === undefined) return this.writeChain;
-      write = () =>
-        deleteBoardDraft<NoteDraft>(
-          this.key,
-          (row) => (row.stamp ?? "") === owned,
-        );
+      write = async () => {
+        if (owned !== undefined)
+          await deleteBoardDraft<NoteDraft>(
+            this.draftKey,
+            (row) => (row.stamp ?? "") === owned,
+          );
+        await this.clearRecoveredDrafts(recovered);
+      };
     }
     this.writeChain = this.writeChain
       .catch(() => {})
@@ -401,6 +435,10 @@ export class BoardNoteSession {
     if (this.dirty) return this.flush();
   }
   private async send() {
+    if (!this.inflight && this.retries.length) {
+      [this.inflight, ...this.retries] = this.retries;
+      this.inflightUpdate = decodeBoardUpdate(this.inflight.update);
+    }
     if (!this.inflight) {
       this.inflightUpdate = Y.mergeUpdates(this.pending);
       this.pending = [];

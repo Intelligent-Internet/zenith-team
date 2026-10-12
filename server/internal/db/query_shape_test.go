@@ -148,6 +148,7 @@ var unguardedActorQueries = map[string]string{
 	"GetCompanyUsageTotals":                    usageTotals,
 	"ListCompanyUsageAgents":                   usageTotals,
 	"ListScheduleFiringsForCreator":            schedules,
+	"GetScheduleFiringWithResult":              schedules,
 	"UpdateScheduleConversationDefinition":     schedules,
 	"LockCalendarConversation":                 "not swept: the creator's own direct chat; calendar is unchanged on purpose",
 	"DeleteCompanyProjectGrantsForUser":        "not swept: removes a departing member's grants; it decides access, it reads nothing for them",

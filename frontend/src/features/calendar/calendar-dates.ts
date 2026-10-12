@@ -1,3 +1,5 @@
+import type { TaskDto } from "@/shared/api/types";
+import { taskWorkStatusLabel } from "@/features/company-plan/model/task-work-state";
 import type { CalendarOccurrence } from "./calendar-api";
 
 export type CalendarView = "Month" | "Week" | "Day" | "Agenda";
@@ -63,7 +65,27 @@ export function periodLabel(date: Date, view: CalendarView, days: Date[]) {
     : format.formatRange(days[0], days[days.length - 1]);
 }
 
+export function taskScheduleStateLabel(task: TaskDto) {
+  if (task.scheduleDisposition === "started" || task.status === "done") {
+    return taskWorkStatusLabel(task);
+  }
+  const disposition = task.scheduleDisposition;
+  return disposition.charAt(0).toUpperCase() + disposition.slice(1);
+}
+
 export function timeRangeLabel(event: CalendarOccurrence) {
+  if (event.taskOccurrence) {
+    const { task, schedule } = event.taskOccurrence;
+    const disposition = task.scheduleDisposition;
+    if (disposition === "scheduled") {
+      if (schedule.paused) return `Paused · ${timeLabel(event)}`;
+      if (task.assignmentStatus !== "accepted") {
+        return `${task.assignmentStatus === "pending" ? "Awaiting acceptance" : "Declined"} · ${timeLabel(event)}`;
+      }
+      return `Runs at ${timeLabel(event)}`;
+    }
+    return `${taskScheduleStateLabel(task)} · ${timeLabel(event)}`;
+  }
   if (event.allDay) return "All day";
   const start = new Date(event.startAt);
   const end = new Date(event.endAt);

@@ -119,8 +119,11 @@ func TestRegisterRuntimesCommitsTheWholeRosterInOneTransaction(t *testing.T) {
 	// because SQL reads it; the metadata document never repeats it.
 	var metadataRaw []byte
 	var deviceName *string
-	if err := pool.QueryRow(ctx,
-		`SELECT metadata, device_name FROM runtimes WHERE id = $1`, codex.ID).Scan(&metadataRaw, &deviceName); err != nil {
+	if err := pool.QueryRow(
+		ctx,
+		`SELECT metadata, device_name FROM runtimes WHERE id = $1`,
+		codex.ID,
+	).Scan(&metadataRaw, &deviceName); err != nil {
 		t.Fatalf("read codex runtime metadata: %v", err)
 	}
 	var metadata map[string]string
@@ -341,8 +344,15 @@ func TestDeregisterRuntimesInTxWritesRollBackWithTheTransaction(t *testing.T) {
 
 	errAbort := errors.New("abort after the offline write")
 	err := store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
-		offlined, err := deregisterRuntimesInTx(ctx, tx, auth.UserPrincipal{UserID: fixture.UserA},
-			RuntimeDeregistration{DaemonID: fixture.DaemonA, RuntimeIDs: []string{fixture.RuntimeA.String()}})
+		offlined, err := deregisterRuntimesInTx(
+			ctx,
+			tx,
+			auth.UserPrincipal{UserID: fixture.UserA},
+			RuntimeDeregistration{
+				DaemonID:   fixture.DaemonA,
+				RuntimeIDs: []string{fixture.RuntimeA.String()},
+			},
+		)
 		if err != nil {
 			t.Fatalf("deregisterRuntimesInTx() error = %v", err)
 		}
@@ -581,7 +591,7 @@ func TestHeartbeatTouchesLivenessAndKeepsDenialSemantics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	fixture := dbtest.SeedFixture(t, ctx, pool)
-	service, log := mustRuntimeLifecycleService(t, store)
+	service, log, wakeups := mustRemovalService(t, store)
 	dbtest.MustExec(t, ctx, pool,
 		`UPDATE runtimes SET status = 'offline', last_seen_at = now() - interval '10 minutes'
 		 WHERE id = $1`, fixture.RuntimeA)
@@ -621,7 +631,12 @@ func TestHeartbeatTouchesLivenessAndKeepsDenialSemantics(t *testing.T) {
 
 	// The member's beat brings the runtime online and broadcasts the
 	// recomputed availability once.
-	if err := service.Heartbeat(ctx, auth.UserPrincipal{UserID: fixture.UserA}, fixture.RuntimeA, fixture.DaemonA); err != nil {
+	if err := service.Heartbeat(
+		ctx,
+		auth.UserPrincipal{UserID: fixture.UserA},
+		fixture.RuntimeA,
+		fixture.DaemonA,
+	); err != nil {
 		t.Fatalf("Heartbeat() error = %v", err)
 	}
 	var status string
@@ -641,12 +656,26 @@ func TestHeartbeatTouchesLivenessAndKeepsDenialSemantics(t *testing.T) {
 		t.Fatalf("agent.status events = %+v, want one available entry for AgentA", statuses)
 	}
 
+	work := wakeups.snapshot()
+	if len(work) != 1 || work[0].Payload.RuntimeID != fixture.RuntimeA.String() || work[0].Payload.RunID != "" {
+		t.Fatalf("return-online wakeups = %+v, want one runtime-wide cache invalidation", work)
+	}
+
 	// A beat over an already-online runtime is silent: liveness only.
-	if err := service.Heartbeat(ctx, auth.UserPrincipal{UserID: fixture.UserA}, fixture.RuntimeA, fixture.DaemonA); err != nil {
+	if err := service.Heartbeat(
+		ctx,
+		auth.UserPrincipal{UserID: fixture.UserA},
+		fixture.RuntimeA,
+		fixture.DaemonA,
+	); err != nil {
 		t.Fatalf("second Heartbeat() error = %v", err)
 	}
 	if statuses := agentStatusEvents(log, fixture.CompanyA); len(statuses) != 1 {
 		t.Fatalf("agent.status events after steady-state heartbeat = %d, want still 1", len(statuses))
+	}
+
+	if work := wakeups.snapshot(); len(work) != 1 {
+		t.Fatalf("steady-state wakeups = %+v, want no duplicate wakeup", work)
 	}
 
 	// The fact that silence is judged from: the touch reports the status the
@@ -762,7 +791,12 @@ func TestRegisterRuntimesWithUnusableReasonForcesOfflineProjectsAndClears(t *tes
 	codex, claude := registered[0], registered[1]
 	if codex.ID != fixture.RuntimeA || codex.Status != "offline" || codex.ProviderVersion != "0.90.0" ||
 		codex.UnusableReason == nil || *codex.UnusableReason != reason {
-		t.Fatalf("codex runtime = %+v (reason %+v), want offline carrying %+v", codex, codex.UnusableReason, reason)
+		t.Fatalf(
+			"codex runtime = %+v (reason %+v), want offline carrying %+v",
+			codex,
+			codex.UnusableReason,
+			reason,
+		)
 	}
 	if claude.Status != "online" || claude.UnusableReason != nil {
 		t.Fatalf("claude runtime = %+v, want online and unaffected", claude)
@@ -793,12 +827,20 @@ func TestRegisterRuntimesWithUnusableReasonForcesOfflineProjectsAndClears(t *tes
 	// online, and therefore announces nothing.
 	dbtest.MustExec(t, ctx, pool,
 		`UPDATE runtimes SET last_seen_at = now() - interval '10 minutes' WHERE id = $1`, fixture.RuntimeA)
-	if err := service.Heartbeat(ctx, auth.UserPrincipal{UserID: fixture.UserA}, fixture.RuntimeA, fixture.DaemonA); err != nil {
+	if err := service.Heartbeat(
+		ctx,
+		auth.UserPrincipal{UserID: fixture.UserA},
+		fixture.RuntimeA,
+		fixture.DaemonA,
+	); err != nil {
 		t.Fatalf("Heartbeat() error = %v", err)
 	}
 	var lastSeen time.Time
-	if err := pool.QueryRow(ctx,
-		`SELECT status, last_seen_at FROM runtimes WHERE id = $1`, fixture.RuntimeA).Scan(&status, &lastSeen); err != nil {
+	if err := pool.QueryRow(
+		ctx,
+		`SELECT status, last_seen_at FROM runtimes WHERE id = $1`,
+		fixture.RuntimeA,
+	).Scan(&status, &lastSeen); err != nil {
 		t.Fatalf("read codex row after heartbeat: %v", err)
 	}
 	if status != "offline" || time.Since(lastSeen) > time.Minute {
@@ -835,7 +877,10 @@ func TestRegisterRuntimesWithUnusableReasonForcesOfflineProjectsAndClears(t *tes
 	statuses = agentStatusEvents(log, fixture.CompanyA)
 	if len(statuses) != 2 || len(statuses[1].Agents) != 1 ||
 		statuses[1].Agents[0].AgentID != fixture.AgentA || !statuses[1].Agents[0].RuntimeAvailable {
-		t.Fatalf("agent.status events after the upgrade = %+v, want AgentA available in a second frame", statuses)
+		t.Fatalf(
+			"agent.status events after the upgrade = %+v, want AgentA available in a second frame",
+			statuses,
+		)
 	}
 	rows, err = ListProjectionsForMember(ctx, store.Queries(), owner, ListOptions{})
 	if err != nil || len(rows) != 1 || !rows[0].RuntimeAvailable || rows[0].UnavailableReason != nil {

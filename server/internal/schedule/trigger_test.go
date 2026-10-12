@@ -6,6 +6,36 @@ import (
 	"time"
 )
 
+func TestStoredCronDoesNotRepeatReviewCadenceValidation(t *testing.T) {
+	t.Parallel()
+	trigger := Trigger{
+		Type:       TriggerTypeCron,
+		Expression: stringPointer("2,58 1,3 * * *"),
+		TimeZone:   stringPointer("Europe/Berlin"),
+	}
+	after := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	if _, err := PreviewTrigger(trigger, after, 5); err == nil {
+		t.Fatal("review must reject the upcoming four-minute DST gap")
+	}
+	if _, err := nextOccurrence(trigger, after); err != nil {
+		t.Fatalf("previously reviewed cron must keep firing: %v", err)
+	}
+}
+
+func TestStoredOccurrenceSurvivesTimeZoneRuleChange(t *testing.T) {
+	t.Parallel()
+	trigger := Trigger{
+		Type:       TriggerTypeCron,
+		Expression: stringPointer("0 9 * * *"),
+		TimeZone:   stringPointer("UTC"),
+	}
+	stored := time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC)
+	got, err := latestDueOccurrence(trigger, stored, stored.Add(2*time.Hour))
+	if err != nil || !got.Equal(stored) {
+		t.Fatalf("latestDueOccurrence() = %v, %v, want stored %v", got, err, stored)
+	}
+}
+
 func TestPreviewTriggerAcceptsOneShotAndStandardCron(t *testing.T) {
 	t.Parallel()
 	after := time.Date(2026, time.August, 17, 0, 0, 0, 0, time.UTC)
@@ -297,4 +327,37 @@ func TestPreviewTriggerUsesPOSIXDayOfMonthOrDayOfWeekSemantics(t *testing.T) {
 
 func stringPointer(value string) *string {
 	return &value
+}
+
+func TestPreviewReportsDSTAtTheActualLocalTimes(t *testing.T) {
+	for _, test := range []struct {
+		name, expression, zone, after string
+		repeated, skipped             bool
+	}{
+		{"New York repeat", "30 1 * * *", "America/New_York", "2026-11-01T00:00:00Z", true, false},
+		{"Berlin repeat", "30 2 * * *", "Europe/Berlin", "2026-10-25T00:00:00Z", true, false},
+		{"New York gap", "30 2 * * *", "America/New_York", "2026-03-08T00:00:00Z", false, true},
+		{"Cairo midnight gap", "0 0 * * *", "Africa/Cairo", "2026-04-23T21:00:00Z", false, true},
+		{"Santiago midnight gap", "0 0 * * *", "America/Santiago", "2026-09-06T02:00:00Z", false, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			after, err := time.Parse(time.RFC3339, test.after)
+			if err != nil {
+				t.Fatal(err)
+			}
+			preview, err := PreviewTrigger(
+				Trigger{Type: TriggerTypeCron, Expression: &test.expression, TimeZone: &test.zone},
+				after,
+				1,
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			detail := preview.OccurrenceDetails[0]
+			if detail.RepeatedLocalTime != test.repeated ||
+				(detail.SkippedLocalTime != nil) != test.skipped {
+				t.Fatalf("DST metadata: %+v", detail)
+			}
+		})
+	}
 }

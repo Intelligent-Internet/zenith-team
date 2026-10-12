@@ -202,11 +202,34 @@ WHERE runs.agent_id = sqlc.arg(agent_id)::uuid
 -- nothing. The function reads the candidate's own row, one call per
 -- candidate. Go binds the permissions and the default set; SQL names none of
 -- them. Keep it identical in ListQueuedClaimCandidatesByRuntimes too.
+-- Scalar schedule lookups stay correlated to each candidate. EXISTS under
+-- these OR arms can become hashed subplans that scan all schedule history.
 -- name: SelectClaimableRun :one
     SELECT candidate.* FROM runs AS candidate
     WHERE candidate.agent_id = sqlc.arg(agent_id)::uuid
       AND candidate.runtime_id = sqlc.arg(runtime_id)::uuid
       AND candidate.status = 'queued'
+      AND (NOT candidate.task_scheduled OR (
+          SELECT 1 FROM tasks calendar_task
+          JOIN task_schedules calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+          JOIN tasks calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+          WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+            AND calendar_task.scheduled_at <= now()
+            AND calendar_task.task_schedule_generation = calendar_schedule.generation
+            AND calendar_task.assignment_status = 'accepted' AND calendar_template.assignment_status = 'accepted'
+            AND NOT calendar_schedule.paused
+          LIMIT 1
+      ) IS NOT NULL)
+      AND (candidate.schedule_firing_id IS NULL OR (
+          SELECT 1
+          FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+            AND firing.disposition = 'materialized'
+            AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+          LIMIT 1
+      ) IS NOT NULL)
       AND EXISTS (
           SELECT 1
           FROM runtimes AS fence
@@ -290,6 +313,27 @@ RETURNING *;
 SELECT DISTINCT candidate.runtime_id, candidate.agent_id FROM runs AS candidate
 WHERE candidate.runtime_id = ANY(@runtime_ids::uuid[])
   AND candidate.status = 'queued'
+      AND (NOT candidate.task_scheduled OR (
+          SELECT 1 FROM tasks calendar_task
+          JOIN task_schedules calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+          JOIN tasks calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+          WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+            AND calendar_task.scheduled_at <= now()
+            AND calendar_task.task_schedule_generation = calendar_schedule.generation
+            AND calendar_task.assignment_status = 'accepted' AND calendar_template.assignment_status = 'accepted'
+            AND NOT calendar_schedule.paused
+          LIMIT 1
+      ) IS NOT NULL)
+  AND (candidate.schedule_firing_id IS NULL OR (
+      SELECT 1
+      FROM schedule_firings AS firing
+      JOIN schedules AS schedule
+        ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+      WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+        AND firing.disposition = 'materialized'
+        AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+      LIMIT 1
+  ) IS NOT NULL)
   AND EXISTS (
       SELECT 1
       FROM runtimes AS fence
@@ -385,6 +429,15 @@ WHERE id IN (
     SELECT id FROM runs
     WHERE runtime_id = ANY(@runtime_ids::uuid[])
       AND status = 'dispatched'
+      AND (runs.schedule_firing_id IS NULL OR EXISTS (
+          SELECT 1
+          FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND firing.disposition = 'materialized'
+            AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+      ))
       AND updated_at < now() - make_interval(secs => @claim_recovery_secs::double precision)
       AND (prepare_lease_expires_at IS NULL OR prepare_lease_expires_at < now())
     ORDER BY priority DESC, updated_at ASC
@@ -488,7 +541,7 @@ WITH parent AS MATERIALIZED (
         session_id,
         attempt, parent_run_id, force_fresh_session, fire_at, queued_at,
         task_execution_generation, connector_selection_mode, run_type, revision, invocation_id,
-        source_task_id, studio_enabled
+        source_task_id, studio_enabled, schedule_firing_id
     )
     SELECT
         p.company_id, p.agent_id, p.task_id, p.conversation_id,
@@ -502,9 +555,18 @@ WITH parent AS MATERIALIZED (
         @force_fresh_session::boolean, sqlc.narg(fire_at),
         CASE WHEN sqlc.narg(fire_at)::timestamptz IS NULL THEN now() ELSE NULL END,
         p.task_execution_generation, p.connector_selection_mode, p.run_type, p.revision, p.invocation_id,
-        p.source_task_id, p.studio_enabled
+        p.source_task_id, p.studio_enabled, p.schedule_firing_id
     FROM parent AS p
-    WHERE EXISTS (SELECT 1 FROM current_binding)
+    WHERE (p.schedule_firing_id IS NULL OR EXISTS (
+        SELECT 1
+        FROM schedule_firings AS firing
+        JOIN schedules AS schedule
+          ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+        WHERE firing.id = p.schedule_firing_id AND firing.company_id = p.company_id
+          AND firing.disposition = 'materialized'
+          AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+    ))
+      AND EXISTS (SELECT 1 FROM current_binding)
       AND (p.task_id IS NULL OR EXISTS (SELECT 1 FROM eligible_task))
     RETURNING *
 ), inherited_skills AS (
@@ -530,12 +592,38 @@ SELECT * FROM retry;
 -- updated_at) — CAS on the claim we actually made. A dispatched row is by
 -- definition not started, so there is no second predicate to write.
 -- name: RequeueRunAfterClaimFailure :one
+WITH recovery AS MATERIALIZED (
+    SELECT candidate.id,
+    (NOT candidate.task_scheduled OR EXISTS (
+        SELECT 1 FROM tasks AS calendar_task
+        JOIN task_schedules AS calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+        JOIN tasks AS calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+        WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+          AND calendar_task.task_schedule_generation = calendar_schedule.generation
+          AND calendar_task.assignment_status = 'accepted'
+          AND calendar_template.assignment_status = 'accepted'
+          AND NOT calendar_schedule.paused
+    )) AND (candidate.schedule_firing_id IS NULL OR EXISTS (
+        SELECT 1
+        FROM schedule_firings AS firing
+        JOIN schedules AS schedule
+          ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+        WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+          AND firing.disposition = 'materialized'
+          AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+    )) AS can_requeue
+    FROM runs AS candidate WHERE candidate.id = $1
+)
 UPDATE runs
-SET status = 'queued', claimed_at = NULL, queued_at = COALESCE(queued_at, now()), prepare_lease_expires_at = NULL,
+SET status = CASE WHEN recovery.can_requeue THEN 'queued' ELSE 'cancelled' END,
+    finished_at = CASE WHEN recovery.can_requeue THEN NULL ELSE now() END,
+    error = CASE WHEN recovery.can_requeue THEN NULL ELSE 'schedule_invalidated' END,
+    claimed_at = NULL, queued_at = COALESCE(runs.queued_at, now()), prepare_lease_expires_at = NULL,
     updated_at = now()
-WHERE id = $1 AND runtime_id = $2 AND status = 'dispatched'
-  AND updated_at = $3
-RETURNING *;
+FROM recovery
+WHERE runs.id = recovery.id AND runs.runtime_id = $2 AND runs.status = 'dispatched'
+  AND runs.updated_at = $3
+RETURNING runs.*;
 
 -- name: ExtendRunPrepareLease :one
 UPDATE runs
@@ -646,8 +734,7 @@ WHERE runs.id = sqlc.arg(run_id)::uuid
   AND schedule_firings.schedule_id = sqlc.arg(schedule_id)::uuid
   AND schedule_firings.company_id = runs.company_id
   AND schedule_firings.conversation_id = runs.conversation_id
-  AND schedule_firings.run_id = runs.id
-  AND runs.status = 'queued'
+  AND runs.status IN ('queued', 'deferred')
 RETURNING runs.*;
 
 -- name: ListActiveRunConversationIDsForCompanyUser :many
@@ -855,8 +942,19 @@ RETURNING *;
 -- name: ListQueuedRunExpiryCandidates :many
 SELECT runs.id, runs.company_id, runs.conversation_id
 FROM runs
-WHERE runs.status = 'queued'
-  AND runs.created_at < now() - make_interval(secs => @ttl_secs::double precision)
+WHERE runs.status IN ('queued', 'deferred')
+  AND (
+      (runs.schedule_firing_id IS NULL AND NOT runs.task_scheduled AND runs.status = 'queued'
+       AND runs.created_at < now() - make_interval(secs => @ttl_secs::double precision))
+      OR EXISTS (
+          SELECT 1 FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND schedule.trigger_type = 'once'
+            AND firing.created_at < now() - make_interval(secs => @once_wait_secs::double precision)
+      )
+  )
 ORDER BY runs.created_at, runs.id
 LIMIT @max_per_tick;
 
@@ -865,11 +963,22 @@ UPDATE runs
 SET status = 'failed',
     finished_at = now(),
     error = 'run expired in queue', failure_reason = 'queued_expired',
-    prepare_lease_expires_at = NULL,
+    prepare_lease_expires_at = NULL, fire_at = NULL, wait_reason = NULL,
     updated_at = now()
 WHERE id = ANY(sqlc.arg(run_ids)::uuid[])
-  AND status = 'queued'
-  AND created_at < now() - make_interval(secs => @ttl_secs::double precision)
+  AND status IN ('queued', 'deferred')
+  AND (
+      (runs.schedule_firing_id IS NULL AND NOT runs.task_scheduled AND runs.status = 'queued'
+       AND runs.created_at < now() - make_interval(secs => @ttl_secs::double precision))
+      OR EXISTS (
+          SELECT 1 FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND schedule.trigger_type = 'once'
+            AND firing.created_at < now() - make_interval(secs => @once_wait_secs::double precision)
+      )
+  )
 RETURNING *;
 
 -- name: ListRuntimeRecoveryFailureCandidates :many
@@ -1205,6 +1314,18 @@ WHERE runs.company_id = sqlc.arg(company_id)::uuid
   AND runs.status IN ('queued', 'dispatched', 'running', 'waiting_local_directory', 'deferred')
 ORDER BY runs.conversation_id, runs.id;
 
+-- The caller holds the Task Conversation before locking these Runs. Filtering
+-- under the row lock preserves any Run a daemon already dispatched while the
+-- Calendar mutation waited for its locks.
+-- name: LockPendingTaskScheduleRuns :many
+SELECT runs.* FROM runs
+WHERE runs.company_id = sqlc.arg(company_id)::uuid
+  AND runs.task_id = sqlc.arg(task_id)::uuid
+  AND runs.task_scheduled
+  AND runs.status IN ('queued', 'deferred')
+ORDER BY runs.conversation_id, runs.id
+FOR UPDATE;
+
 -- name: ListActiveRunIDsInConversationsForUpdate :many
 SELECT id FROM runs WHERE company_id = sqlc.arg(company_id)::uuid
   AND conversation_id = ANY(sqlc.arg(conversation_ids)::uuid[])
@@ -1304,3 +1425,8 @@ WHERE conversations.company_id = sqlc.arg(company_id)::uuid
   AND items.state = 'queued'
 ORDER BY 1;
 
+
+-- name: MarkTaskRunScheduled :exec
+UPDATE runs SET task_scheduled = true
+WHERE id = sqlc.arg(run_id) AND task_id = sqlc.arg(task_id) AND company_id = sqlc.arg(company_id)
+    AND status = 'queued';

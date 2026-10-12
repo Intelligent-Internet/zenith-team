@@ -56,6 +56,7 @@ export function sanitizeNotificationPath(
       url.pathname !== "/approvals" &&
       url.pathname !== "/revenue" &&
       url.pathname !== "/analytics" &&
+      !isScheduleDetailPath(url.pathname) &&
       !isRuntimeDetailPath(url.pathname) &&
       !boardPath.test(url.pathname)
     ) {
@@ -237,6 +238,12 @@ function isRuntimeDetailPath(pathname: string): boolean {
   return Boolean(resolveSettingsRoute(pathname).runtimeId);
 }
 
+function isScheduleDetailPath(pathname: string): boolean {
+  return /^\/scheduled\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    pathname,
+  );
+}
+
 function hasRequiredNotificationTarget(
   url: URL,
   kind: NotificationKind,
@@ -297,6 +304,9 @@ function hasRequiredNotificationTarget(
   }
   if (kind === "runtime_offline") {
     return isRuntimeDetailPath(url.pathname);
+  }
+  if (kind === "blocker" && isScheduleDetailPath(url.pathname)) {
+    return !url.search;
   }
   // Every notice about a Task links to the Task alone (ADR 0014).
   if (

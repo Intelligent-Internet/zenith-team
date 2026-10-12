@@ -44,7 +44,16 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/reearth/ygo v1.50.0
+require (
+	github.com/hibiken/asynq v0.26.0
+	github.com/reearth/ygo v1.50.0
+)
+
+require (
+	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/spf13/cast v1.10.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
+)
 
 require golang.org/x/image v0.46.0
 

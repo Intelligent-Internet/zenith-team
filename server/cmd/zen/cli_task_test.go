@@ -141,9 +141,17 @@ func TestTaskCreateLeavesTheKeyToTheServerAndNamesBothHalvesOfTheAssignment(t *t
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case strings.HasSuffix(r.URL.Path, "/projects"):
-			_, _ = w.Write([]byte(`{"items":[{"id":"0198aa00-0000-7000-8000-00000000c001","key":"work","title":"Work","revision":1}]}`))
+			_, _ = w.Write(
+				[]byte(
+					`{"items":[{"id":"0198aa00-0000-7000-8000-00000000c001","key":"work","title":"Work","revision":1}]}`,
+				),
+			)
 		case r.URL.Path == "/api/v1/companies/"+testCompanyID && r.Method == http.MethodGet:
-			_, _ = w.Write([]byte(`{"id":"` + testCompanyID + `","name":"Acme","slug":"acme","taskPrefix":"ENG","role":"owner","revision":1}`))
+			_, _ = w.Write(
+				[]byte(
+					`{"id":"` + testCompanyID + `","name":"Acme","slug":"acme","taskPrefix":"ENG","role":"owner","revision":1}`,
+				),
+			)
 		case r.URL.Path == "/api/v1/me":
 			t.Error("task create asked /me; the server already defaults the assignee to the caller")
 			http.NotFound(w, r)
@@ -462,7 +470,10 @@ func TestTaskReadsInsideARunRelayTheRefusalOfAnotherMembersTask(t *testing.T) {
 		// With --output json the same refusal is one object an Agent can
 		// branch on: the code, the sentence, and the exit code.
 		var printed commandErrorBody
-		if decodeErr := json.Unmarshal([]byte(formatCommandError(err, false, outputJSON)), &printed); decodeErr != nil {
+		if decodeErr := json.Unmarshal(
+			[]byte(formatCommandError(err, false, outputJSON)),
+			&printed,
+		); decodeErr != nil {
 			t.Fatalf("zen %v JSON error does not decode: %v", command, decodeErr)
 		}
 		if want := (commandErrorDetail{
@@ -492,7 +503,10 @@ func TestTaskReadsInsideARunRelayTheRefusalOfAnotherMembersTask(t *testing.T) {
 // under --output json: no code, the CLI's own message, and its exit code.
 func TestJSONCommandErrorForALocalFailure(t *testing.T) {
 	var printed commandErrorBody
-	if err := json.Unmarshal([]byte(formatCommandError(usagef("a task id or key is required"), false, outputJSON)), &printed); err != nil {
+	if err := json.Unmarshal(
+		[]byte(formatCommandError(usagef("a task id or key is required"), false, outputJSON)),
+		&printed,
+	); err != nil {
 		t.Fatalf("JSON error does not decode: %v", err)
 	}
 	if want := (commandErrorDetail{Message: "a task id or key is required", ExitCode: exitValidation}); printed.Error != want {
@@ -527,7 +541,13 @@ func TestTaskReadsInsideARunRefuseANameThatIsNotOnePathSegment(t *testing.T) {
 			channel.requests = nil
 			_, err := executeCLI(t, newRootCmd, "task", command, name)
 			if err == nil || exitCodeFor(err) != exitValidation {
-				t.Fatalf("zen task %s %q = %v (exit %d), want a usage error", command, name, err, exitCodeFor(err))
+				t.Fatalf(
+					"zen task %s %q = %v (exit %d), want a usage error",
+					command,
+					name,
+					err,
+					exitCodeFor(err),
+				)
 			}
 			if len(channel.requests) != 0 {
 				t.Fatalf("zen task %s %q reached the channel: %+v", command, name, channel.requests)
@@ -699,5 +719,41 @@ func TestTaskReadinessSaysTheAssigneeMayNotRunTasksThere(t *testing.T) {
 	item.Execution.UnreadyReason = &reason
 	if got, want := taskReadiness(item), "no — the assignee may not run tasks in this work"; got != want {
 		t.Fatalf("readiness = %q, want %q", got, want)
+	}
+}
+
+func TestTaskCreateScheduledAssignmentFromAgent(t *testing.T) {
+	const recipient = "0198aa00-0000-7000-8000-00000000aaaa"
+	var body map[string]any
+	channel := newFakeRunChannel(t, func(request runchannel.Request) (int, string) {
+		if request.Method == http.MethodGet {
+			return 200, `{"id":"` + testRunProjectID + `","key":"work","title":"Work","revision":1}`
+		}
+		if err := json.Unmarshal(request.Body, &body); err != nil {
+			t.Fatal(err)
+		}
+		return 201, sampleTask
+	})
+	seedAgentShell(t, channel, testRunTaskID, []string{"zen task create"})
+	_, err := executeCLI(
+		t,
+		newRootCmd,
+		"task",
+		"create",
+		"--title",
+		"Scheduled report",
+		"--milestone",
+		"product",
+		"--assignee-user",
+		recipient,
+		"--run-at",
+		"2026-12-01T09:00:00Z",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trigger, ok := body["schedule"].(map[string]any)
+	if !ok || trigger["type"] != "once" || trigger["runAt"] != "2026-12-01T09:00:00Z" {
+		t.Fatalf("schedule = %#v", body["schedule"])
 	}
 }

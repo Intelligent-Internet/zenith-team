@@ -13,7 +13,7 @@ import (
 
 const getTaskWorkspaceAnchor = `-- name: GetTaskWorkspaceAnchor :one
 SELECT
-    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required,
+    tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition,
     conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id,
     COALESCE((
         SELECT max(conversation_items.seq)
@@ -85,6 +85,13 @@ func (q *Queries) GetTaskWorkspaceAnchor(ctx context.Context, arg GetTaskWorkspa
 		&i.Task.WorkspaceGeneration,
 		&i.Task.ResultProposalOnly,
 		&i.Task.ResultReviewRequired,
+		&i.Task.AssignmentStatus,
+		&i.Task.ScheduledAt,
+		&i.Task.ScheduleFiredAt,
+		&i.Task.TaskScheduleID,
+		&i.Task.TaskScheduleGeneration,
+		&i.Task.ScheduleOccurrenceAt,
+		&i.Task.ScheduleDisposition,
 		&i.Conversation.ID,
 		&i.Conversation.CompanyID,
 		&i.Conversation.Kind,

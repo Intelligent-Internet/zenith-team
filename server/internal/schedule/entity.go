@@ -93,15 +93,16 @@ type PreviewInput struct {
 }
 
 type PreviewResult struct {
-	AgentID          uuid.UUID   `json:"agentId"`
-	ReviewedProvider string      `json:"reviewedProvider"`
-	Name             string      `json:"name"`
-	Instructions     string      `json:"instructions"`
-	PresetKey        *string     `json:"presetKey"`
-	Trigger          Trigger     `json:"trigger"`
-	Sources          []Source    `json:"sources"`
-	Occurrences      []time.Time `json:"occurrences"`
-	ReviewDigest     string      `json:"reviewDigest"`
+	OccurrenceDetails []OccurrenceDetail `json:"occurrenceDetails"`
+	AgentID           uuid.UUID          `json:"agentId"`
+	ReviewedProvider  string             `json:"reviewedProvider"`
+	Name              string             `json:"name"`
+	Instructions      string             `json:"instructions"`
+	PresetKey         *string            `json:"presetKey"`
+	Trigger           Trigger            `json:"trigger"`
+	Sources           []Source           `json:"sources"`
+	Occurrences       []time.Time        `json:"occurrences"`
+	ReviewDigest      string             `json:"reviewDigest"`
 }
 
 type CreateInput struct {
@@ -152,7 +153,8 @@ type ReviewRevisionInput struct {
 }
 
 type MutationResult struct {
-	Schedule Response
+	RunEffect string
+	Schedule  Response
 }
 
 type ListCursor struct {
@@ -161,10 +163,11 @@ type ListCursor struct {
 }
 
 type ListOptions struct {
-	Limit     int
-	After     *ListCursor
-	Status    *Status
-	PresetKey *string
+	ExcludeTerminal bool
+	Limit           int
+	After           *ListCursor
+	Status          *Status
+	PresetKey       *string
 }
 
 type Page struct {
@@ -183,29 +186,37 @@ type FiringDisposition string
 
 const (
 	FiringDispositionMaterialized   FiringDisposition = "materialized"
+	FiringDispositionCancelled      FiringDisposition = "cancelled"
 	FiringDispositionSuperseded     FiringDisposition = "superseded"
 	FiringDispositionSkipped        FiringDisposition = "skipped"
 	FiringDispositionNeedsAttention FiringDisposition = "needs_attention"
 )
 
 type Firing struct {
-	ID              uuid.UUID         `json:"id"`
-	CompanyID       uuid.UUID         `json:"companyId"`
-	ScheduleID      uuid.UUID         `json:"scheduleId"`
-	ScheduleVersion int64             `json:"scheduleVersion"`
-	ConversationID  uuid.UUID         `json:"conversationId"`
-	MessageID       *uuid.UUID        `json:"messageId"`
-	MessageSeq      *int64            `json:"messageSeq"`
-	RunID           *uuid.UUID        `json:"runId"`
-	OccurrenceAt    time.Time         `json:"occurrenceAt"`
-	Trigger         FiringTrigger     `json:"trigger"`
-	Disposition     FiringDisposition `json:"disposition"`
-	Reason          *string           `json:"reason"`
-	RunStatus       *string           `json:"runStatus"`
-	Output          *string           `json:"output"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	UpdatedAt       time.Time         `json:"updatedAt"`
-	Revision        int64             `json:"revision"`
+	MissedCount           int32             `json:"missedCount"`
+	Attempt               *int32            `json:"attempt"`
+	RunFailureReason      *string           `json:"runFailureReason"`
+	RunCancelReason       *string           `json:"runCancelReason"`
+	RuntimeStatus         *string           `json:"runtimeStatus"`
+	RuntimeLastSeenAt     *time.Time        `json:"runtimeLastSeenAt"`
+	RuntimeUnusableReason *string           `json:"runtimeUnusableReason"`
+	ID                    uuid.UUID         `json:"id"`
+	CompanyID             uuid.UUID         `json:"companyId"`
+	ScheduleID            uuid.UUID         `json:"scheduleId"`
+	ScheduleVersion       int64             `json:"scheduleVersion"`
+	ConversationID        uuid.UUID         `json:"conversationId"`
+	MessageID             *uuid.UUID        `json:"messageId"`
+	MessageSeq            *int64            `json:"messageSeq"`
+	RunID                 *uuid.UUID        `json:"runId"`
+	OccurrenceAt          time.Time         `json:"occurrenceAt"`
+	Trigger               FiringTrigger     `json:"trigger"`
+	Disposition           FiringDisposition `json:"disposition"`
+	Reason                *string           `json:"reason"`
+	RunStatus             *string           `json:"runStatus"`
+	Output                *string           `json:"output"`
+	CreatedAt             time.Time         `json:"createdAt"`
+	UpdatedAt             time.Time         `json:"updatedAt"`
+	Revision              int64             `json:"revision"`
 }
 
 type FiringCursor struct {
@@ -242,7 +253,7 @@ func normalizePreviewInput(input PreviewInput) (PreviewInput, error) {
 		return PreviewInput{}, ErrInvalidInput
 	}
 	preset, ok := normalizeOptionalCode(input.PresetKey)
-	if !ok {
+	if !ok || preset != nil && input.Trigger.Type == TriggerTypeOnce {
 		return PreviewInput{}, ErrInvalidInput
 	}
 	input.PresetKey = preset

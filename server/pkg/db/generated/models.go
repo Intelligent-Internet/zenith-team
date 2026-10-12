@@ -2321,6 +2321,7 @@ type Run struct {
 	ClaimedAt                   pgtype.Timestamptz `json:"claimed_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	FinishedAt                  pgtype.Timestamptz `json:"finished_at"`
+	TaskScheduled               bool               `json:"task_scheduled"`
 }
 
 type RunConnectorSelection struct {
@@ -2465,6 +2466,7 @@ type ScheduleFiring struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	Version         int64              `json:"version"`
+	MissedCount     int32              `json:"missed_count"`
 }
 
 type ScheduleSource struct {
@@ -2576,32 +2578,39 @@ type SocialTarget struct {
 }
 
 type Task struct {
-	ID                   uuid.UUID          `json:"id"`
-	CompanyID            uuid.UUID          `json:"company_id"`
-	ConversationID       uuid.UUID          `json:"conversation_id"`
-	Number               int64              `json:"number"`
-	Title                string             `json:"title"`
-	Description          string             `json:"description"`
-	Status               string             `json:"status"`
-	Priority             string             `json:"priority"`
-	Labels               []string           `json:"labels"`
-	StartDate            pgtype.Date        `json:"start_date"`
-	DueDate              pgtype.Date        `json:"due_date"`
-	AssigneeUserID       uuid.UUID          `json:"assignee_user_id"`
-	ExecutedByAgentID    uuid.NullUUID      `json:"executed_by_agent_id"`
-	CreatorUserID        uuid.NullUUID      `json:"creator_user_id"`
-	CreatorAgentID       uuid.NullUUID      `json:"creator_agent_id"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
-	Version              int64              `json:"version"`
-	MilestoneType        string             `json:"milestone_type"`
-	ExecutionGeneration  int64              `json:"execution_generation"`
-	Key                  string             `json:"key"`
-	ProjectID            uuid.UUID          `json:"project_id"`
-	WorkspaceGeneration  int32              `json:"workspace_generation"`
-	ResultProposalOnly   bool               `json:"result_proposal_only"`
-	ResultReviewRequired bool               `json:"result_review_required"`
+	ID                     uuid.UUID          `json:"id"`
+	CompanyID              uuid.UUID          `json:"company_id"`
+	ConversationID         uuid.UUID          `json:"conversation_id"`
+	Number                 int64              `json:"number"`
+	Title                  string             `json:"title"`
+	Description            string             `json:"description"`
+	Status                 string             `json:"status"`
+	Priority               string             `json:"priority"`
+	Labels                 []string           `json:"labels"`
+	StartDate              pgtype.Date        `json:"start_date"`
+	DueDate                pgtype.Date        `json:"due_date"`
+	AssigneeUserID         uuid.UUID          `json:"assignee_user_id"`
+	ExecutedByAgentID      uuid.NullUUID      `json:"executed_by_agent_id"`
+	CreatorUserID          uuid.NullUUID      `json:"creator_user_id"`
+	CreatorAgentID         uuid.NullUUID      `json:"creator_agent_id"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	CompletedAt            pgtype.Timestamptz `json:"completed_at"`
+	Version                int64              `json:"version"`
+	MilestoneType          string             `json:"milestone_type"`
+	ExecutionGeneration    int64              `json:"execution_generation"`
+	Key                    string             `json:"key"`
+	ProjectID              uuid.UUID          `json:"project_id"`
+	WorkspaceGeneration    int32              `json:"workspace_generation"`
+	ResultProposalOnly     bool               `json:"result_proposal_only"`
+	ResultReviewRequired   bool               `json:"result_review_required"`
+	AssignmentStatus       string             `json:"assignment_status"`
+	ScheduledAt            pgtype.Timestamptz `json:"scheduled_at"`
+	ScheduleFiredAt        pgtype.Timestamptz `json:"schedule_fired_at"`
+	TaskScheduleID         uuid.NullUUID      `json:"task_schedule_id"`
+	TaskScheduleGeneration int64              `json:"task_schedule_generation"`
+	ScheduleOccurrenceAt   pgtype.Timestamptz `json:"schedule_occurrence_at"`
+	ScheduleDisposition    string             `json:"schedule_disposition"`
 }
 
 type TaskAccess struct {
@@ -2704,6 +2713,22 @@ type TaskRunAgent struct {
 	TaskID    uuid.UUID `json:"task_id"`
 	CompanyID uuid.UUID `json:"company_id"`
 	AgentID   uuid.UUID `json:"agent_id"`
+}
+
+type TaskSchedule struct {
+	ID                  uuid.UUID          `json:"id"`
+	CompanyID           uuid.UUID          `json:"company_id"`
+	ProjectID           uuid.UUID          `json:"project_id"`
+	TemplateTaskID      uuid.UUID          `json:"template_task_id"`
+	Trigger             []byte             `json:"trigger"`
+	TemplateTitle       string             `json:"template_title"`
+	TemplateDescription string             `json:"template_description"`
+	NextOccurrenceAt    pgtype.Timestamptz `json:"next_occurrence_at"`
+	Paused              bool               `json:"paused"`
+	Version             int64              `json:"version"`
+	Generation          int64              `json:"generation"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

@@ -127,6 +127,13 @@ func TestProjectsSchemaEnforcesTaskAndDependencyScope(t *testing.T) {
 	if count != 0 {
 		t.Fatalf("dependencies after prerequisite deletion = %d, want 0", count)
 	}
+	calendarSQL, err := migrations.Files.ReadFile("000109_scheduler.down.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = pool.Exec(ctx, string(calendarSQL)); err != nil {
+		t.Fatal(err)
+	}
 	for _, name := range []string{
 		"000108_whiteboard_collaboration.down.sql",
 		"000107_company_whiteboards.down.sql",

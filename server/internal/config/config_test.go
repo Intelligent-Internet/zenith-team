@@ -41,8 +41,8 @@ func TestLoadAppliesSafeSingleNodeDefaults(t *testing.T) {
 			cfg.Auth.EmailVerification,
 		)
 	}
-	if cfg.RedisURL != "" {
-		t.Errorf("RedisURL = %q, want empty", cfg.RedisURL)
+	if cfg.RedisURL != "redis://localhost:6379/0" {
+		t.Errorf("RedisURL = %q, want configured Redis", cfg.RedisURL)
 	}
 	if cfg.APIReplicas != 1 {
 		t.Errorf("APIReplicas = %d, want 1", cfg.APIReplicas)
@@ -516,6 +516,7 @@ func TestLoadRequiresRedisForMultipleAPIReplicas(t *testing.T) {
 	_, err := Load(configuredLookup(map[string]string{
 		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
 		"APP_API_REPLICAS": "2",
+		"APP_REDIS_URL":    "",
 	}))
 	if err == nil {
 		t.Fatal("Load() error = nil, want Redis requirement error")
@@ -1058,6 +1059,7 @@ func mapLookup(values map[string]string) LookupEnv {
 func configuredLookup(values map[string]string) LookupEnv {
 	merged := map[string]string{
 		"AUTH_CSRF_SECRET":  "01234567890123456789012345678901",
+		"APP_REDIS_URL":     "redis://localhost:6379/0",
 		"STORAGE_S3_BUCKET": "boardly-test",
 		"STORAGE_S3_REGION": "us-east-1",
 	}
@@ -1121,5 +1123,20 @@ func TestLoadStudioAPIOrigin(t *testing.T) {
 				t.Fatalf("StudioAPIOrigin = %q, want %q", cfg.StudioAPIOrigin, test.want)
 			}
 		})
+	}
+}
+
+func TestScheduleQueueConfiguration(t *testing.T) {
+	for _, values := range []map[string]string{
+		{"APP_REDIS_URL": ""},
+		{"APP_SCHEDULE_WORKERS": "9"},
+		{"APP_SCHEDULE_WORKERS": "65", "APP_DATABASE_MAX_CONNS": "300"},
+		{"APP_SCHEDULE_SWEEP_SECONDS": "9"},
+		{"APP_SCHEDULE_SWEEP_SECONDS": "61"},
+	} {
+		values["APP_DATABASE_URL"] = "postgres://localhost/test"
+		if _, err := Load(configuredLookup(values)); err == nil {
+			t.Errorf("accepted invalid Schedule configuration: %v", values)
+		}
 	}
 }

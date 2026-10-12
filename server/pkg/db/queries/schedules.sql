@@ -332,7 +332,8 @@ JOIN company_members AS actor_membership
  AND actor_membership.user_id = sqlc.arg(actor_user_id)::uuid
  AND actor_membership.status = 'active'
  AND actor_membership.role = ANY(sqlc.arg(actor_roles)::text[])
-WHERE schedules.company_id = sqlc.arg(company_id)::uuid
+WHERE (NOT sqlc.arg(exclude_terminal)::boolean OR schedules.status NOT IN ('completed', 'cancelled'))
+ AND schedules.company_id = sqlc.arg(company_id)::uuid
   AND schedules.creator_user_id = sqlc.arg(actor_user_id)::uuid
   AND (
       sqlc.arg(status)::text = ''
@@ -445,11 +446,11 @@ SELECT EXISTS (
     SELECT 1
     FROM schedule_firings
     JOIN runs
-      ON runs.id = schedule_firings.run_id
-     AND runs.schedule_firing_id = schedule_firings.id
+      ON runs.schedule_firing_id = schedule_firings.id
+     AND runs.company_id = schedule_firings.company_id
     WHERE schedule_firings.schedule_id = sqlc.arg(schedule_id)::uuid
       AND schedule_firings.company_id = sqlc.arg(company_id)::uuid
-      AND runs.status IN ('queued', 'dispatched', 'waiting_local_directory', 'running')
+      AND runs.status IN ('queued', 'deferred', 'dispatched', 'waiting_local_directory', 'running')
 )::boolean AS active;
 
 -- name: CancelSchedule :one
@@ -471,23 +472,24 @@ WHERE schedules.id = sqlc.arg(schedule_id)::uuid
   AND schedules.status IN ('draft', 'active', 'paused')
 RETURNING schedules.*;
 
--- Due discovery is intentionally non-locking. The worker first takes sorted
--- Company and creator-membership producer fences, then passes this bounded set
--- to LockNextDueSchedule for the Schedule-row lock.
+-- Discovery never holds authority locks for other companies.
 -- name: ListDueScheduleLockTargets :many
-WITH statement_clock AS MATERIALIZED (
-    SELECT clock_timestamp()::timestamptz AS now_at
-)
-SELECT
-    schedules.id AS schedule_id,
-    schedules.company_id,
-    schedules.creator_user_id
+SELECT id AS schedule_id, company_id, creator_user_id, next_occurrence_at,
+       statement_timestamp()::timestamptz AS server_time
 FROM schedules
-CROSS JOIN statement_clock
-WHERE schedules.status = 'active'
-  AND schedules.next_occurrence_at <= statement_clock.now_at
-ORDER BY schedules.next_occurrence_at, schedules.id
+WHERE status = 'active'
+  AND next_occurrence_at <= statement_timestamp() - make_interval(secs => sqlc.arg(grace_seconds)::double precision)
+  AND (sqlc.narg(after_time)::timestamptz IS NULL OR
+       (next_occurrence_at, id) > (sqlc.narg(after_time)::timestamptz, sqlc.arg(after_id)::uuid))
+ORDER BY next_occurrence_at, id
 LIMIT sqlc.arg(page_size)::integer;
+
+-- name: GetScheduleLockTarget :one
+SELECT id AS schedule_id, company_id, creator_user_id FROM schedules WHERE id = $1;
+
+-- name: SetScheduleTransactionTimeouts :exec
+SELECT set_config('lock_timeout', sqlc.arg(lock_timeout)::text, true),
+       set_config('statement_timeout', '10s', true);
 
 -- name: LockNextDueSchedule :one
 WITH statement_clock AS MATERIALIZED (
@@ -497,8 +499,8 @@ WITH statement_clock AS MATERIALIZED (
     FROM schedules
     CROSS JOIN statement_clock
     WHERE schedules.status = 'active'
-      AND schedules.next_occurrence_at <= statement_clock.now_at
-      AND schedules.id = ANY(sqlc.arg(schedule_ids)::uuid[])
+      AND (sqlc.arg(include_not_due)::boolean OR schedules.next_occurrence_at <= statement_clock.now_at)
+      AND schedules.id = sqlc.arg(schedule_id)::uuid
     ORDER BY schedules.next_occurrence_at, schedules.id
     FOR UPDATE OF schedules SKIP LOCKED
     LIMIT 1
@@ -515,7 +517,7 @@ SELECT
         agents.id IS NOT NULL
         AND runtimes.id IS NOT NULL
     )::boolean AS agent_valid,
-    (agents.provider = schedules.reviewed_provider)::boolean AS provider_matches,
+    COALESCE(agents.provider = schedules.reviewed_provider, false)::boolean AS provider_matches,
     NOT EXISTS (
         SELECT 1
         FROM schedule_sources
@@ -574,16 +576,13 @@ LEFT JOIN runtimes
  AND runtimes.removed_at IS NULL
  AND runtimes.owner_user_id = creator_binding.user_id;
 
+-- name: LockScheduleConversation :exec
+SELECT id FROM conversations
+WHERE id = sqlc.arg(conversation_id)::uuid AND company_id = sqlc.arg(company_id)::uuid
+  AND kind = 'schedule' AND schedule_id = sqlc.arg(schedule_id)::uuid
+FOR UPDATE;
+
 -- name: LockActiveScheduleRun :one
-WITH locked_conversation AS MATERIALIZED (
-    SELECT conversations.id
-    FROM conversations
-    WHERE conversations.id = sqlc.arg(conversation_id)::uuid
-      AND conversations.company_id = sqlc.arg(company_id)::uuid
-      AND conversations.kind = 'schedule'
-      AND conversations.schedule_id = sqlc.arg(schedule_id)::uuid
-    FOR UPDATE OF conversations
-)
 SELECT
     schedule_firings.id AS firing_id,
     schedule_firings.company_id,
@@ -593,25 +592,22 @@ SELECT
     runs.status,
     runs.runtime_id,
     runs.updated_at AS run_updated_at
-FROM locked_conversation
-JOIN schedule_firings
-  ON schedule_firings.schedule_id = sqlc.arg(schedule_id)::uuid
- AND schedule_firings.company_id = sqlc.arg(company_id)::uuid
- AND schedule_firings.conversation_id = locked_conversation.id
+FROM schedule_firings
 JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
+  ON runs.schedule_firing_id = schedule_firings.id
  AND runs.company_id = schedule_firings.company_id
  AND runs.conversation_id = schedule_firings.conversation_id
-WHERE runs.status IN ('queued', 'dispatched', 'waiting_local_directory', 'running')
+WHERE schedule_firings.schedule_id = sqlc.arg(schedule_id)::uuid
+ AND schedule_firings.company_id = sqlc.arg(company_id)::uuid
+ AND schedule_firings.conversation_id = sqlc.arg(conversation_id)::uuid
+ AND runs.status IN ('queued', 'deferred', 'dispatched', 'waiting_local_directory', 'running')
 ORDER BY schedule_firings.occurrence_at DESC, schedule_firings.id DESC
 FOR UPDATE OF schedule_firings, runs
 LIMIT 1;
 
--- name: LockNextDriftedSchedule :one
-WITH candidate AS MATERIALIZED (
-    SELECT schedules.id
-    FROM schedules
+-- name: ListDriftedScheduleLockTargets :many
+SELECT schedules.id AS schedule_id, schedules.company_id, schedules.creator_user_id
+FROM schedules
     WHERE schedules.status = 'active'
       AND (
           NOT EXISTS (
@@ -677,78 +673,10 @@ WITH candidate AS MATERIALIZED (
                 )
           )
       )
-    ORDER BY schedules.updated_at, schedules.id
-    FOR UPDATE OF schedules SKIP LOCKED
-    LIMIT 1
-)
-SELECT
-    sqlc.embed(schedules),
-    (companies.id IS NOT NULL)::boolean AS company_valid,
-    (
-        users.id IS NOT NULL
-        AND creator_membership.user_id IS NOT NULL
-    )::boolean AS creator_valid,
-    (
-        agents.id IS NOT NULL
-        AND runtimes.id IS NOT NULL
-    )::boolean AS agent_valid,
-    (agents.provider = schedules.reviewed_provider)::boolean AS provider_matches,
-    NOT EXISTS (
-        SELECT 1
-        FROM schedule_sources
-        LEFT JOIN connector_catalog_items
-          ON connector_catalog_items.id = schedule_sources.connector_id
-         AND connector_catalog_items.company_id = schedule_sources.company_id
-         AND connector_catalog_items.provider = schedule_sources.provider
-         AND connector_catalog_items.source = schedule_sources.source
-         AND connector_catalog_items.native_id = schedule_sources.native_id
-        LEFT JOIN connector_policies
-          ON connector_policies.connector_id = schedule_sources.connector_id
-         AND connector_policies.company_id = schedule_sources.company_id
-        WHERE schedule_sources.schedule_id = schedules.id
-          AND (
-              schedule_sources.company_id <> schedules.company_id
-              OR schedule_sources.provider <> schedules.reviewed_provider
-              OR connector_catalog_items.id IS NULL
-              OR NOT connector_catalog_items.can_execute
-              OR connector_catalog_items.status <> 'connected'
-              OR connector_policies.connector_id IS NULL
-              OR NOT connector_policies.desired_enabled
-              OR connector_policies.review_required
-              OR connector_policies.version <> schedule_sources.policy_revision
-              OR connector_policies.reviewed_contract_digest
-                    IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-              OR connector_catalog_items.contract_digest
-                    IS DISTINCT FROM schedule_sources.reviewed_contract_digest
-          )
-    )::boolean AS sources_match
-FROM candidate
-JOIN schedules ON schedules.id = candidate.id
-LEFT JOIN companies
-  ON companies.id = schedules.company_id
- AND companies.deleting_at IS NULL
-LEFT JOIN users
-  ON users.id = schedules.creator_user_id
- AND users.disabled_at IS NULL
-LEFT JOIN company_members AS creator_membership
-  ON creator_membership.company_id = schedules.company_id
- AND creator_membership.user_id = schedules.creator_user_id
- AND creator_membership.status = 'active'
- AND creator_membership.role = ANY(sqlc.arg(actor_roles)::text[])
-LEFT JOIN agents
-  ON agents.id = schedules.agent_id
- AND agents.company_id = schedules.company_id
- AND agents.archived_at IS NULL
--- The creator's binding of the Agent (ADR 0014): no binding, no runtime.
-LEFT JOIN agent_runtime_bindings AS creator_binding
-  ON creator_binding.company_id = agents.company_id
- AND creator_binding.agent_id = agents.id
- AND creator_binding.user_id = schedules.creator_user_id
-LEFT JOIN runtimes
-  ON runtimes.id = creator_binding.runtime_id
- AND runtimes.company_id = creator_binding.company_id
- AND runtimes.removed_at IS NULL
- AND runtimes.owner_user_id = creator_binding.user_id;
+
+ AND schedules.id > sqlc.arg(after_id)::uuid
+ORDER BY schedules.id
+LIMIT sqlc.arg(page_size)::integer;
 
 -- name: GetScheduleFiringReplay :one
 SELECT schedule_firings.*
@@ -775,14 +703,26 @@ WHERE schedule_firings.company_id = sqlc.arg(company_id)::uuid
 SELECT
     sqlc.embed(schedule_firings),
     input_message.seq AS message_seq,
+    runs.id AS latest_run_id,
+    runs.attempt AS run_attempt,
+    runs.failure_reason AS run_failure_reason,
+    runs.error AS run_cancel_reason,
+    runtimes.status AS runtime_status,
+    runtimes.last_seen_at AS runtime_last_seen_at,
+    runtimes.unusable_reason_code AS runtime_unusable_reason,
     runs.status AS run_status,
     COALESCE(terminal_output.content, '')::text AS output,
     (terminal_output.content IS NOT NULL)::boolean AS has_output
 FROM schedule_firings
-LEFT JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
- AND runs.company_id = schedule_firings.company_id
+LEFT JOIN runs ON runs.id = (
+    SELECT r.id FROM runs AS r
+    WHERE r.schedule_firing_id = schedule_firings.id AND r.company_id = schedule_firings.company_id
+    ORDER BY r.attempt DESC, r.id DESC LIMIT 1
+)
+LEFT JOIN runtimes
+  ON runtimes.id = runs.runtime_id
+ AND runtimes.company_id = runs.company_id
+ AND runtimes.owner_user_id = sqlc.arg(actor_user_id)::uuid
 LEFT JOIN conversation_items AS input_message
   ON input_message.id = schedule_firings.message_id
  AND input_message.conversation_id = schedule_firings.conversation_id
@@ -803,7 +743,7 @@ WHERE schedule_firings.id = sqlc.arg(firing_id)::uuid
 -- name: InsertScheduleFiring :one
 INSERT INTO schedule_firings (
     company_id, schedule_id, schedule_version, conversation_id,
-    message_id, run_id, occurrence_at, trigger, request_key, disposition, reason
+    message_id, run_id, occurrence_at, trigger, request_key, disposition, reason, missed_count
 )
 VALUES (
     sqlc.arg(company_id)::uuid,
@@ -816,7 +756,8 @@ VALUES (
     sqlc.arg(trigger)::text,
     sqlc.narg(request_key)::uuid,
     sqlc.arg(disposition)::text,
-    sqlc.narg(reason)::text
+    sqlc.narg(reason)::text,
+    sqlc.arg(missed_count)::integer
 )
 RETURNING schedule_firings.*;
 
@@ -913,6 +854,13 @@ RETURNING schedule_firings.*;
 SELECT
     sqlc.embed(schedule_firings),
     input_message.seq AS message_seq,
+    runs.id AS latest_run_id,
+    runs.attempt AS run_attempt,
+    runs.failure_reason AS run_failure_reason,
+    runs.error AS run_cancel_reason,
+    runtimes.status AS runtime_status,
+    runtimes.last_seen_at AS runtime_last_seen_at,
+    runtimes.unusable_reason_code AS runtime_unusable_reason,
     runs.status AS run_status,
     COALESCE(terminal_output.content, '')::text AS output,
     (terminal_output.content IS NOT NULL)::boolean AS has_output
@@ -928,10 +876,15 @@ JOIN company_members AS actor_membership
  AND actor_membership.user_id = sqlc.arg(actor_user_id)::uuid
  AND actor_membership.status = 'active'
  AND actor_membership.role = ANY(sqlc.arg(actor_roles)::text[])
-LEFT JOIN runs
-  ON runs.id = schedule_firings.run_id
- AND runs.schedule_firing_id = schedule_firings.id
- AND runs.company_id = schedule_firings.company_id
+LEFT JOIN runs ON runs.id = (
+    SELECT r.id FROM runs AS r
+    WHERE r.schedule_firing_id = schedule_firings.id AND r.company_id = schedule_firings.company_id
+    ORDER BY r.attempt DESC, r.id DESC LIMIT 1
+)
+LEFT JOIN runtimes
+  ON runtimes.id = runs.runtime_id
+ AND runtimes.company_id = runs.company_id
+ AND runtimes.owner_user_id = sqlc.arg(actor_user_id)::uuid
 LEFT JOIN conversation_items AS input_message
   ON input_message.id = schedule_firings.message_id
  AND input_message.conversation_id = schedule_firings.conversation_id
@@ -958,3 +911,40 @@ WHERE schedules.id = sqlc.arg(schedule_id)::uuid
   )
 ORDER BY schedule_firings.occurrence_at DESC, schedule_firings.id DESC
 LIMIT sqlc.arg(page_size)::integer;
+
+-- name: ListWaitingScheduleRuns :many
+SELECT runs.* FROM runs
+JOIN schedule_firings f ON f.id = runs.schedule_firing_id AND f.company_id = runs.company_id
+WHERE f.schedule_id = $1 AND f.disposition = 'materialized'
+ AND runs.status IN ('queued', 'deferred');
+
+-- name: GetScheduleLag :one
+WITH due AS MATERIALIZED (
+ SELECT next_occurrence_at FROM schedules
+ WHERE status = 'active' AND next_occurrence_at <= statement_timestamp()
+ ORDER BY next_occurrence_at, id LIMIT 10000
+)
+SELECT COALESCE(EXTRACT(EPOCH FROM (statement_timestamp() - min(next_occurrence_at))), 0)::double precision AS lag_seconds,
+ count(*)::bigint AS due_count,
+ count(*) FILTER (WHERE next_occurrence_at <= statement_timestamp() - interval '60 seconds')::bigint AS overdue_count
+FROM due;
+
+-- name: ListScheduleWakeupTargets :many
+SELECT DISTINCT runs.runtime_id, runs.company_id FROM runs
+JOIN schedule_firings f ON f.id = runs.schedule_firing_id AND f.company_id = runs.company_id
+JOIN runtimes ON runtimes.id = runs.runtime_id
+WHERE runs.status IN ('queued', 'deferred') AND f.disposition = 'materialized'
+ AND runtimes.status = 'online' AND runtimes.removed_at IS NULL
+LIMIT 5000;
+
+-- Called only after the Agent mutation's exclusive Company fence.
+-- name: LockSchedulesForAgentArchive :many
+SELECT schedules.* FROM schedules
+WHERE company_id = sqlc.arg(company_id)::uuid AND agent_id = sqlc.arg(agent_id)::uuid
+ORDER BY creator_user_id, id
+FOR UPDATE;
+
+-- name: PauseArchivedAgentSchedule :exec
+UPDATE schedules SET status = 'paused', pause_reason = 'agent_unavailable',
+ version = version + 1, updated_at = clock_timestamp()
+WHERE id = $1 AND status IN ('active', 'paused') AND version < 9007199254740991;

@@ -169,6 +169,7 @@ type scheduleCronTriggerResponse struct {
 func (scheduleCronTriggerResponse) isScheduleTriggerResponse() {}
 
 type scheduleResponse struct {
+	RunEffect    string                   `json:"runEffect,omitempty"`
 	ID           uuid.UUID                `json:"id"`
 	AgentID      uuid.UUID                `json:"agentId"`
 	Name         string                   `json:"name"`
@@ -221,12 +222,13 @@ func (r *scheduleResponse) UnmarshalJSON(data []byte) error {
 }
 
 type schedulePreviewResponse struct {
-	NormalizedTrigger scheduleTriggerResponse  `json:"normalizedTrigger"`
-	HumanSchedule     string                   `json:"humanSchedule"`
-	NextOccurrences   []string                 `json:"nextOccurrences"`
-	Provider          string                   `json:"provider"`
-	Sources           []scheduleSourceResponse `json:"sources"`
-	ReviewDigest      string                   `json:"reviewDigest"`
+	OccurrenceDetails []schedule.OccurrenceDetail `json:"occurrenceDetails"`
+	NormalizedTrigger scheduleTriggerResponse     `json:"normalizedTrigger"`
+	HumanSchedule     string                      `json:"humanSchedule"`
+	NextOccurrences   []string                    `json:"nextOccurrences"`
+	Provider          string                      `json:"provider"`
+	Sources           []scheduleSourceResponse    `json:"sources"`
+	ReviewDigest      string                      `json:"reviewDigest"`
 }
 
 type schedulePageResponse struct {
@@ -235,18 +237,25 @@ type schedulePageResponse struct {
 }
 
 type scheduleFiringResponse struct {
-	FiringID       uuid.UUID                  `json:"firingId"`
-	ConversationID uuid.UUID                  `json:"conversationId"`
-	MessageID      *uuid.UUID                 `json:"messageId"`
-	MessageSeq     *int64                     `json:"messageSeq"`
-	OccurrenceAt   string                     `json:"occurrenceAt"`
-	Trigger        schedule.FiringTrigger     `json:"trigger"`
-	Disposition    schedule.FiringDisposition `json:"disposition"`
-	Reason         *string                    `json:"reason"`
-	RunID          *uuid.UUID                 `json:"runId"`
-	RunStatus      *string                    `json:"runStatus"`
-	Output         *string                    `json:"output"`
-	CreatedAt      string                     `json:"createdAt"`
+	MissedCount           int32                      `json:"missedCount"`
+	Attempt               *int32                     `json:"attempt"`
+	RunFailureReason      *string                    `json:"runFailureReason"`
+	RunCancelReason       *string                    `json:"runCancelReason"`
+	RuntimeStatus         *string                    `json:"runtimeStatus"`
+	RuntimeLastSeenAt     *string                    `json:"runtimeLastSeenAt"`
+	RuntimeUnusableReason *string                    `json:"runtimeUnusableReason"`
+	FiringID              uuid.UUID                  `json:"firingId"`
+	ConversationID        uuid.UUID                  `json:"conversationId"`
+	MessageID             *uuid.UUID                 `json:"messageId"`
+	MessageSeq            *int64                     `json:"messageSeq"`
+	OccurrenceAt          string                     `json:"occurrenceAt"`
+	Trigger               schedule.FiringTrigger     `json:"trigger"`
+	Disposition           schedule.FiringDisposition `json:"disposition"`
+	Reason                *string                    `json:"reason"`
+	RunID                 *uuid.UUID                 `json:"runId"`
+	RunStatus             *string                    `json:"runStatus"`
+	Output                *string                    `json:"output"`
+	CreatedAt             string                     `json:"createdAt"`
 }
 
 type scheduleFiringPageResponse struct {
@@ -425,7 +434,9 @@ func (h *Handler) updateSchedule(c *gin.Context) {
 		writeScheduleError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, scheduleToResponse(result.Schedule))
+	response := scheduleToResponse(result.Schedule)
+	response.RunEffect = result.RunEffect
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) pauseSchedule(c *gin.Context) {
@@ -498,7 +509,9 @@ func (h *Handler) scheduleLifecycle(c *gin.Context, operation string) {
 		writeScheduleError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, scheduleToResponse(result.Schedule))
+	response := scheduleToResponse(result.Schedule)
+	response.RunEffect = result.RunEffect
+	c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) runScheduleNow(c *gin.Context) {
@@ -639,9 +652,9 @@ func schedulePreviewToResponse(value schedule.PreviewResult) schedulePreviewResp
 		}
 	}
 	return schedulePreviewResponse{
-		NormalizedTrigger: scheduleTriggerToResponse(value.Trigger),
-		HumanSchedule:     humanSchedule(value.Trigger),
-		NextOccurrences:   occurrences, Provider: value.ReviewedProvider,
+		NormalizedTrigger: scheduleTriggerToResponse(value.Trigger), OccurrenceDetails: value.OccurrenceDetails,
+		HumanSchedule:   humanSchedule(value.Trigger),
+		NextOccurrences: occurrences, Provider: value.ReviewedProvider,
 		Sources: sources, ReviewDigest: value.ReviewDigest,
 	}
 }
@@ -659,12 +672,25 @@ func scheduleTriggerToResponse(value schedule.Trigger) scheduleTriggerResponse {
 
 func scheduleFiringToResponse(value schedule.Firing) scheduleFiringResponse {
 	return scheduleFiringResponse{
-		FiringID: value.ID, ConversationID: value.ConversationID, MessageID: value.MessageID,
-		MessageSeq:   value.MessageSeq,
-		OccurrenceAt: protocol.FormatWireTime(value.OccurrenceAt),
-		Trigger:      value.Trigger, Disposition: value.Disposition, Reason: value.Reason,
-		RunID: value.RunID, RunStatus: value.RunStatus, Output: value.Output,
-		CreatedAt: protocol.FormatWireTime(value.CreatedAt),
+		MissedCount:           value.MissedCount,
+		Attempt:               value.Attempt,
+		RunFailureReason:      value.RunFailureReason,
+		RunCancelReason:       value.RunCancelReason,
+		RuntimeStatus:         value.RuntimeStatus,
+		RuntimeLastSeenAt:     protocol.FormatOptionalWireTime(value.RuntimeLastSeenAt),
+		RuntimeUnusableReason: value.RuntimeUnusableReason,
+		FiringID:              value.ID,
+		ConversationID:        value.ConversationID,
+		MessageID:             value.MessageID,
+		MessageSeq:            value.MessageSeq,
+		OccurrenceAt:          protocol.FormatWireTime(value.OccurrenceAt),
+		Trigger:               value.Trigger,
+		Disposition:           value.Disposition,
+		Reason:                value.Reason,
+		RunID:                 value.RunID,
+		RunStatus:             value.RunStatus,
+		Output:                value.Output,
+		CreatedAt:             protocol.FormatWireTime(value.CreatedAt),
 	}
 }
 
@@ -794,13 +820,25 @@ func parseScheduleListOptions(c *gin.Context) (schedule.ListOptions, error) {
 	if err != nil {
 		return schedule.ListOptions{}, schedule.ErrInvalidInput
 	}
-	allowed := map[string]bool{"cursor": true, "limit": true, "preset_key": true, "status": true}
+	allowed := map[string]bool{
+		"cursor":           true,
+		"limit":            true,
+		"preset_key":       true,
+		"status":           true,
+		"exclude_terminal": true,
+	}
 	for key, values := range query {
 		if !allowed[key] || len(values) != 1 || values[0] == "" {
 			return schedule.ListOptions{}, schedule.ErrInvalidInput
 		}
 	}
 	options := schedule.ListOptions{Limit: defaultScheduleLimit}
+	if value := query.Get("exclude_terminal"); value != "" {
+		if value != "true" && value != "false" {
+			return schedule.ListOptions{}, schedule.ErrInvalidInput
+		}
+		options.ExcludeTerminal = value == "true"
+	}
 	if value := query.Get("limit"); value != "" {
 		limit, err := strconv.Atoi(value)
 		if err != nil || strconv.Itoa(limit) != value || limit < 1 || limit > maximumScheduleLimit {

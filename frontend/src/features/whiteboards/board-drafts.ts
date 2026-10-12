@@ -53,9 +53,8 @@ export async function writeBoardDraft(key: string, value: unknown) {
     transaction.onabort = transaction.onerror = () => reject(transaction.error);
   });
 }
-// Several tabs of one account share a note's draft row. A tab removes the row
-// only while it still holds what that tab wrote or adopted; a newer draft that
-// another tab wrote after it stays for that tab to save or recover.
+// Recovery may adopt another session's row. Remove only the captured write;
+// newer edits from that session must remain available to save or recover.
 export async function deleteBoardDraft<T>(
   key: string,
   owned: (value: T) => boolean,

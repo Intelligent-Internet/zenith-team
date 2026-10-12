@@ -27,7 +27,7 @@ needs — usually one, sometimes a few. Do not read them all.
 
 | Open | When the work is about |
 |---|---|
-| `references/tasks.md` | Your Task: reading it, its dependencies, declaring a business failure, filing follow-up work |
+| `references/tasks.md` | Tasks: reading your work, dependencies, declaring a business failure, filing follow-up work, or scheduling an explicitly requested Task |
 | `references/conversations.md` | What the founder and the Agent said, and the durable provider transcript |
 | `references/outputs.md` | Presenting the result files so the person sees them under the Task and in the chat |
 | `references/project-pages.md` | Composing research, campaigns and other native Project result Pages; updating the Overview with focused blocks and live references |

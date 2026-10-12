@@ -1,19 +1,15 @@
 package handler
 
 import (
-	"context"
 	"errors"
-	"net"
 	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgconn"
 
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/conversation"
@@ -26,13 +22,13 @@ import (
 const maxDiscussionRequestBytes = 128 << 10
 
 type createHumanConversationRequest struct {
-	AgentIDs    []string `json:"agentIds" binding:"required_without_all=PeerUserID PeerUserIDs,omitempty,min=1,max=20,unique,dive,uuid"`
-	PeerUserID  string   `json:"peerUserId" binding:"required_without_all=PeerUserIDs AgentIDs,excluded_with=PeerUserIDs,omitempty,uuid"`
+	AgentIDs    []string `json:"agentIds"    binding:"required_without_all=PeerUserID PeerUserIDs,omitempty,min=1,max=20,unique,dive,uuid"`
+	PeerUserID  string   `json:"peerUserId"  binding:"required_without_all=PeerUserIDs AgentIDs,excluded_with=PeerUserIDs,omitempty,uuid"`
 	PeerUserIDs []string `json:"peerUserIds" binding:"required_without_all=PeerUserID AgentIDs,excluded_with=PeerUserID,omitempty,min=1,max=49,unique,dive,uuid"`
 }
 type inviteHumanConversationRequest struct {
 	MemberUserIDs []string `json:"memberUserIds" binding:"required_without=AgentIDs,omitempty,min=1,max=50,unique,dive,uuid"`
-	AgentIDs      []string `json:"agentIds" binding:"required_without=MemberUserIDs,omitempty,min=1,max=20,unique,dive,uuid"`
+	AgentIDs      []string `json:"agentIds"      binding:"required_without=MemberUserIDs,omitempty,min=1,max=20,unique,dive,uuid"`
 }
 
 type createChannelRequest struct {
@@ -54,8 +50,8 @@ type sendDiscussionRequest struct {
 	RequestKey    string                      `json:"requestKey"    binding:"required,uuid"`
 	Body          conversation.DiscussionBody `json:"body"          binding:"required"`
 	AttachmentIDs []string                    `json:"attachmentIds" binding:"max=20,unique,dive,uuid"`
-	ArtifactIDs   []string                    `json:"artifactIds" binding:"max=10,unique,dive,uuid"`
-	ThreadRootID  *string                     `json:"threadRootId" binding:"omitnil,uuid"`
+	ArtifactIDs   []string                    `json:"artifactIds"   binding:"max=10,unique,dive,uuid"`
+	ThreadRootID  *string                     `json:"threadRootId"  binding:"omitnil,uuid"`
 }
 type queryDiscussionStatesRequest struct {
 	ConversationIDs []string `json:"conversationIds" binding:"required,min=1,max=50,unique,dive,uuid"`
@@ -68,8 +64,8 @@ type discussionStatesResponse struct {
 // this zero-inclusive bound beside the generation-aware state CAS.
 type updateDiscussionStateRequest struct {
 	NotificationLevel *string         `json:"notificationLevel" binding:"omitempty,oneof=all mentions muted"`
-	ExpectedRevision  optional[int64] `json:"expectedRevision" binding:"omitnil,required"`
-	Pinned            optional[bool]  `json:"pinned"           binding:"required_without_all=Hidden NotificationLevel"`
+	ExpectedRevision  optional[int64] `json:"expectedRevision"  binding:"omitnil,required"`
+	Pinned            optional[bool]  `json:"pinned"            binding:"required_without_all=Hidden NotificationLevel"`
 	Hidden            optional[bool]  `json:"hidden"`
 }
 
@@ -681,11 +677,7 @@ var discussionErrorMappings = []errorMapping{
 }
 
 func writeDiscussionError(c *gin.Context, err error) {
-	var databaseError *pgconn.PgError
-	var networkError net.Error
-	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, db.ErrCommitUnknown) ||
-		errors.As(err, &networkError) ||
-		(errors.As(err, &databaseError) && (strings.HasPrefix(databaseError.Code, "08") || slices.Contains([]string{"40001", "40P01", "53300", "57P01", "57P02", "57P03"}, databaseError.Code))) {
+	if db.IsTransient(err) {
 		err = conversation.ErrDiscussionUnavailable
 	}
 	if errors.Is(err, conversation.ErrDiscussionUnavailable) {
@@ -740,7 +732,15 @@ func (h *Handler) inviteHumanConversationMembers(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.HumanConversationService.InviteHumanDirectMembers(c.Request.Context(), p, id, conversation.InviteHumanDirectInput{MemberUserIDs: discussionUUIDs(body.MemberUserIDs), AgentIDs: discussionUUIDs(body.AgentIDs)})
+	result, err := h.HumanConversationService.InviteHumanDirectMembers(
+		c.Request.Context(),
+		p,
+		id,
+		conversation.InviteHumanDirectInput{
+			MemberUserIDs: discussionUUIDs(body.MemberUserIDs),
+			AgentIDs:      discussionUUIDs(body.AgentIDs),
+		},
+	)
 	if err != nil {
 		writeDiscussionError(c, err)
 		return

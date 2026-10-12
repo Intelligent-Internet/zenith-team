@@ -347,6 +347,7 @@ paths:
               type: object
               required: [projectId, milestoneType, title]
               properties:
+                schedule: { $ref: './schedules.yaml#/schemas/ScheduleTrigger' }
                 projectId: { type: string, format: uuid }
                 key:
                   type: string
@@ -1145,6 +1146,248 @@ paths:
               schema: { $ref: './_common.yaml#/schemas/Error' }
         '500': { $ref: './_common.yaml#/responses/InternalError' }
 
+  companies_companyId_calendar_tasks:
+    get:
+      tags: [tasks]
+      operationId: listCalendarTasks
+      summary: List scheduled Tasks in a visible Calendar window
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskCalendarPage' }
+        '400':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  companies_companyId_tasks_taskId_schedule:
+    get:
+      tags: [tasks]
+      operationId: getTaskSchedule
+      summary: Read a Task schedule
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskCalendarSchedule' }
+        '400':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    put:
+      tags: [tasks]
+      operationId: updateTaskSchedule
+      summary: Create or edit future Task scheduling
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/TaskScheduleInput' }
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  companies_companyId_tasks_taskId_schedule_occurrences:
+    post:
+      tags: [tasks]
+      operationId: updateTaskOccurrence
+      summary: Move or cancel one Task occurrence
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/TaskOccurrenceInput' }
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  companies_companyId_tasks_taskId_assignment:
+    post:
+      tags: [tasks]
+      operationId: decideTaskAssignment
+      summary: Accept or decline your Task assignment
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/TaskAssignmentInput' }
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: Request refused.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
 parameters:
   taskReference:
     name: taskId
@@ -1609,6 +1852,12 @@ schemas:
   Task:
     type: object
     required:
+      - assignmentStatus
+      - scheduledAt
+      - scheduleFiredAt
+      - scheduleId
+      - scheduleOccurrenceAt
+      - scheduleDisposition
       - id
       - key
       - companyId
@@ -1635,6 +1884,12 @@ schemas:
       - completedAt
       - revision
     properties:
+      assignmentStatus: { type: string, enum: [accepted, pending, declined] }
+      scheduledAt: { type: [string, "null"], format: date-time }
+      scheduleFiredAt: { type: [string, "null"], format: date-time }
+      scheduleId: { type: [string, "null"], format: uuid }
+      scheduleOccurrenceAt: { type: [string, "null"], format: date-time }
+      scheduleDisposition: { type: string, enum: ['', scheduled, started, skipped, missed, cancelled] }
       id: { type: string, format: uuid }
       key:
         type: string
@@ -1809,3 +2064,53 @@ schemas:
     oneOf:
       - { type: string, format: date }
       - { type: "null" }
+
+  TaskCalendarSchedule:
+    type: object
+    required: [id, templateTaskId, trigger, paused, revision]
+    properties:
+      id: { type: string, format: uuid }
+      templateTaskId: { type: string, format: uuid }
+      trigger: { $ref: './schedules.yaml#/schemas/ScheduleTrigger' }
+      paused: { type: boolean }
+      revision: { type: integer, format: int64 }
+  TaskCalendarOccurrence:
+    type: object
+    required: [task, schedule, occurrenceAt, runAt, materialized]
+    properties:
+      task: { $ref: '#/schemas/Task' }
+      schedule: { $ref: '#/schemas/TaskCalendarSchedule' }
+      occurrenceAt: { type: string, format: date-time }
+      runAt: { type: string, format: date-time }
+      materialized: { type: boolean }
+  TaskCalendarPage:
+    type: object
+    required: [occurrences, truncated]
+    properties:
+      occurrences:
+        type: array
+        items: { $ref: '#/schemas/TaskCalendarOccurrence' }
+      truncated: { type: boolean }
+  TaskScheduleInput:
+    type: object
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      trigger: { $ref: './schedules.yaml#/schemas/ScheduleTrigger' }
+      paused: { type: boolean, default: false }
+  TaskOccurrenceInput:
+    type: object
+    required: [expectedRevision, occurrenceAt]
+    properties:
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      occurrenceAt: { type: string, format: date-time }
+      runAt: { type: [string, "null"], format: date-time }
+      cancel: { type: boolean, default: false }
+      title: { type: string, maxLength: 200 }
+      description: { type: string, maxLength: 50000 }
+  TaskAssignmentInput:
+    type: object
+    required: [expectedRevision, accept]
+    properties:
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      accept: { type: boolean }

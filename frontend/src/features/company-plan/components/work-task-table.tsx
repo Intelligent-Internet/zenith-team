@@ -51,8 +51,9 @@ export function WorkTaskTable({
         {variant === "default" ? (
           <colgroup>
             <col style={{ width: "5%" }} />
-            <col style={{ width: "43%" }} />
-            <col style={{ width: "19%" }} />
+            <col style={{ width: "30%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "17%" }} />
             <col style={{ width: "16%" }} />
             <col style={{ width: "12%" }} />
             <col style={{ width: "5%" }} />
@@ -60,6 +61,7 @@ export function WorkTaskTable({
         ) : variant === "project" ? (
           <colgroup>
             <col />
+            <col className="work-table-time-column" />
             <col className="work-table-status-column" />
             <col className="work-table-agent-column" />
           </colgroup>
@@ -72,6 +74,7 @@ export function WorkTaskTable({
           >
             {variant === "default" ? <th scope="col">Priority</th> : null}
             <th scope="col">Task</th>
+            <th scope="col">Run time</th>
             <th scope="col">Status</th>
             <th scope="col">{variant === "project" ? "Agent" : "Assignee"}</th>
             {variant !== "project" ? (
@@ -133,6 +136,31 @@ export function WorkTaskTable({
                     </span>
                   ) : null}
                 </button>
+              </td>
+              <td>
+                <span className="task-calendar-time">
+                  {task.scheduledAt
+                    ? new Date(task.scheduledAt).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Not scheduled"}
+                </span>
+                {task.scheduleDisposition &&
+                task.scheduleDisposition !== "scheduled" ? (
+                  <small className="task-calendar-time">
+                    Run {task.scheduleDisposition}
+                  </small>
+                ) : null}
+                {task.assignmentStatus !== "accepted" ? (
+                  <small>
+                    {task.assignmentStatus === "pending"
+                      ? "Awaiting acceptance"
+                      : "Declined"}
+                  </small>
+                ) : null}
               </td>
               <td>
                 <span

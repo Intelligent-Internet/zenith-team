@@ -339,7 +339,10 @@ function refreshRealtimeDomains({
     directConversations: [{ type: "Conversation", id: companyId }],
     runtimes: [{ type: "Runtime", id: companyId }],
     plugins: [{ type: "Plugin", id: companyId }],
-    tasks: [{ type: "Task", id: `${companyId}:list` }],
+    tasks: [
+      { type: "Task", id: `${companyId}:list` },
+      { type: "Calendar", id: `${companyId}:tasks` },
+    ],
     taskDependencies: [{ type: "Task", id: `${companyId}:dependencies` }],
     taskWorkspaces: [
       { type: "Task", id: `${companyId}:workspace` },

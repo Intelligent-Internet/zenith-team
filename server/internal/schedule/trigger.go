@@ -3,7 +3,6 @@
 package schedule
 
 import (
-	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -45,14 +44,55 @@ type Trigger struct {
 	TimeZone   *string     `json:"timeZone,omitempty"`
 }
 
+type OccurrenceDetail struct {
+	At                time.Time `json:"at"`
+	UTCOffsetSeconds  int       `json:"utcOffsetSeconds"`
+	RepeatedLocalTime bool      `json:"repeatedLocalTime"`
+	OffsetChanged     bool      `json:"offsetChanged"`
+	SkippedLocalTime  *string   `json:"skippedLocalTime"`
+}
+
 type TriggerPreview struct {
-	Trigger     Trigger     `json:"trigger"`
-	Occurrences []time.Time `json:"occurrences"`
+	OccurrenceDetails []OccurrenceDetail `json:"occurrenceDetails"`
+	Trigger           Trigger            `json:"trigger"`
+	Occurrences       []time.Time        `json:"occurrences"`
 }
 
 type parsedTrigger struct {
 	trigger  Trigger
 	schedule cron.Schedule
+}
+
+// StoredOccurrences expands an already validated trigger within a bounded
+// window. Task Calendar uses the same time-zone and DST semantics as Schedules.
+func StoredOccurrences(trigger Trigger, from, to time.Time, limit int) ([]time.Time, error) {
+	parsed, err := parseStoredTrigger(trigger)
+	if err != nil {
+		return nil, err
+	}
+	result := []time.Time{}
+	if trigger.Type == TriggerTypeOnce {
+		at := trigger.RunAt.UTC()
+		if !at.Before(from) && at.Before(to) {
+			result = append(result, at)
+		}
+		return result, nil
+	}
+	for at := parsed.schedule.Next(from.Add(-time.Nanosecond)).UTC(); !at.IsZero() && at.Before(to) && len(result) < limit; at = parsed.schedule.Next(at).UTC() {
+		result = append(result, at)
+	}
+	return result, nil
+}
+
+// AdvanceStoredTrigger skips a downtime backlog without iterating every missed
+// occurrence. Callers retain the latest occurrence and the skipped count.
+func AdvanceStoredTrigger(trigger Trigger, next, now time.Time) (time.Time, time.Time, int32, error) {
+	latest, err := latestDueOccurrence(trigger, next, now)
+	if err != nil {
+		return time.Time{}, time.Time{}, 0, err
+	}
+	following, err := nextOccurrence(trigger, latest)
+	return latest, following, missedOccurrences(trigger, next, latest), err
 }
 
 func PreviewTrigger(trigger Trigger, after time.Time, limit int) (TriggerPreview, error) {
@@ -73,7 +113,11 @@ func PreviewTrigger(trigger Trigger, after time.Time, limit int) (TriggerPreview
 	if err != nil {
 		return TriggerPreview{}, err
 	}
-	return TriggerPreview{Trigger: parsed.trigger, Occurrences: occurrences}, nil
+	return TriggerPreview{
+		Trigger:           parsed.trigger,
+		Occurrences:       occurrences,
+		OccurrenceDetails: occurrenceDetails(parsed.trigger, after, occurrences),
+	}, nil
 }
 
 func parseTrigger(trigger Trigger, after time.Time) (parsedTrigger, error) {
@@ -95,7 +139,7 @@ func parseStoredTrigger(trigger Trigger) (parsedTrigger, error) {
 		}
 		return parseOneShotTrigger(trigger, trigger.RunAt.Add(-time.Minute))
 	case TriggerTypeCron:
-		return parseCronTrigger(trigger, time.Now().UTC())
+		return parseCronExpression(trigger)
 	default:
 		return parsedTrigger{}, ErrInvalidStoredState
 	}
@@ -113,6 +157,17 @@ func parseOneShotTrigger(trigger Trigger, after time.Time) (parsedTrigger, error
 }
 
 func parseCronTrigger(trigger Trigger, after time.Time) (parsedTrigger, error) {
+	parsed, err := parseCronExpression(trigger)
+	if err != nil {
+		return parsedTrigger{}, err
+	}
+	if err := validateCronCadence(parsed.schedule, after); err != nil {
+		return parsedTrigger{}, err
+	}
+	return parsed, nil
+}
+
+func parseCronExpression(trigger Trigger) (parsedTrigger, error) {
 	if trigger.RunAt != nil || trigger.Expression == nil || trigger.TimeZone == nil {
 		return parsedTrigger{}, ErrInvalidInput
 	}
@@ -141,9 +196,6 @@ func parseCronTrigger(trigger Trigger, after time.Time) (parsedTrigger, error) {
 	schedule, err := parser.Parse("CRON_TZ=" + timeZone + " " + expression)
 	if err != nil {
 		return parsedTrigger{}, ErrInvalidInput
-	}
-	if err := validateCronCadence(schedule, after); err != nil {
-		return parsedTrigger{}, err
 	}
 	return parsedTrigger{
 		trigger: Trigger{
@@ -194,14 +246,18 @@ func triggerOccurrences(parsed parsedTrigger, after time.Time, limit int) ([]tim
 }
 
 func nextOccurrence(trigger Trigger, after time.Time) (time.Time, error) {
-	preview, err := PreviewTrigger(trigger, after, 1)
+	parsed, err := parseStoredTrigger(trigger)
 	if err != nil {
 		return time.Time{}, err
 	}
-	if len(preview.Occurrences) != 1 {
-		return time.Time{}, errors.New("Schedule trigger returned no next occurrence")
+	if parsed.trigger.Type == TriggerTypeOnce {
+		return parsed.trigger.RunAt.UTC(), nil
 	}
-	return preview.Occurrences[0], nil
+	next := parsed.schedule.Next(after).UTC()
+	if next.IsZero() {
+		return time.Time{}, ErrInvalidStoredState
+	}
+	return next, nil
 }
 
 // latestDueOccurrence collapses any downtime backlog to the closest missed
@@ -219,7 +275,7 @@ func latestDueOccurrence(trigger Trigger, storedNext, serverTime time.Time) (tim
 		return storedNext, nil
 	}
 	if previous := parsed.schedule.Next(storedNext.Add(-time.Minute)); !previous.Equal(storedNext) {
-		return time.Time{}, ErrInvalidStoredState
+		return storedNext, nil
 	}
 
 	window := minimumRecurringInterval
@@ -249,4 +305,77 @@ func latestDueOccurrence(trigger Trigger, storedNext, serverTime time.Time) (tim
 		return time.Time{}, ErrInvalidStoredState
 	}
 	return latest, nil
+}
+
+// missedOccurrences is bounded even after years offline. A saturated value is
+// presented as "1000+"; finding the latest due time remains logarithmic.
+func missedOccurrences(trigger Trigger, storedNext, firedAt time.Time) int32 {
+	if trigger.Type == TriggerTypeOnce || !storedNext.Before(firedAt) {
+		return 0
+	}
+	parsed, err := parseStoredTrigger(trigger)
+	if err != nil {
+		return 0
+	}
+	var count int32
+	for at := storedNext; at.Before(firedAt) && count < 1000; at = parsed.schedule.Next(at) {
+		if at.IsZero() {
+			break
+		}
+		count++
+	}
+	return count
+}
+
+// occurrenceDetails uses the location's actual transition bounds, including
+// midnight and non-hour changes. Cron runs in UTC here only to match wall-clock
+// fields inside a gap; it never changes the scheduling algorithm.
+func occurrenceDetails(trigger Trigger, after time.Time, occurrences []time.Time) []OccurrenceDetail {
+	result := make([]OccurrenceDetail, 0, len(occurrences))
+	location := time.UTC
+	var wallCron cron.Schedule
+	if trigger.TimeZone != nil {
+		location, _ = time.LoadLocation(*trigger.TimeZone)
+		parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		wallCron, _ = parser.Parse("CRON_TZ=UTC " + *trigger.Expression)
+	}
+	previous := after
+	for _, at := range occurrences {
+		local := at.In(location)
+		_, offset := local.Zone()
+		_, previousOffset := previous.In(location).Zone()
+		detail := OccurrenceDetail{At: at, UTCOffsetSeconds: offset, OffsetChanged: offset != previousOffset}
+		start, end := local.ZoneBounds()
+		if !start.IsZero() {
+			_, before := start.Add(-time.Second).In(location).Zone()
+			detail.RepeatedLocalTime = before > offset &&
+				at.Before(start.Add(time.Duration(before-offset)*time.Second))
+		}
+		if !end.IsZero() {
+			_, next := end.In(location).Zone()
+			detail.RepeatedLocalTime = detail.RepeatedLocalTime ||
+				next < offset && !at.Before(end.Add(-time.Duration(offset-next)*time.Second))
+		}
+		for cursor := previous; wallCron != nil; {
+			_, boundary := cursor.In(location).ZoneBounds()
+			if boundary.IsZero() || !boundary.After(cursor) || boundary.After(at) {
+				break
+			}
+			_, before := boundary.Add(-time.Second).In(location).Zone()
+			_, next := boundary.In(location).Zone()
+			if next > before {
+				gapStart := boundary.UTC().Add(time.Duration(before) * time.Second)
+				gapEnd := boundary.UTC().Add(time.Duration(next) * time.Second)
+				missing := wallCron.Next(gapStart.Add(-time.Nanosecond))
+				if !missing.IsZero() && missing.Before(gapEnd) {
+					value := missing.Format("2006-01-02 15:04")
+					detail.SkippedLocalTime = &value
+				}
+			}
+			cursor = boundary
+		}
+		result = append(result, detail)
+		previous = at
+	}
+	return result
 }

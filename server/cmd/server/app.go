@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5"
 
 	"boardly.dev/boardly/server/internal/account"
@@ -40,6 +41,7 @@ import (
 	"boardly.dev/boardly/server/internal/infra/storage"
 	"boardly.dev/boardly/server/internal/platformbundle"
 	"boardly.dev/boardly/server/internal/realtime"
+	"boardly.dev/boardly/server/internal/schedule"
 	"boardly.dev/boardly/server/internal/social"
 	"boardly.dev/boardly/server/internal/task"
 	"boardly.dev/boardly/server/internal/telemetry"
@@ -528,7 +530,25 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct Conversation service: %w", err)
 	}
-	scheduleParts, err := newScheduleComponents(databaseStore, bus, logger)
+	scheduleParts, err := newScheduleComponents(databaseStore, bus, logger, registry, cfg.ScheduleSweepInterval)
+	if err != nil {
+		return err
+	}
+	taskCalendarService := task.NewCalendarService(taskService)
+	scheduleClient := asynq.NewClientFromRedisClient(redisClient)
+	taskCalendarBeat := &task.CalendarBeat{
+		Service: taskCalendarService,
+		Client:  scheduleClient,
+		OnError: func(ctx context.Context, err error) {
+			logger.ErrorContext(ctx, "Task calendar job failed", "error", err)
+		},
+	}
+	scheduleBeat := &schedule.Beat{
+		Queries: databaseStore.Queries(), Worker: scheduleParts.firingWorker, Client: scheduleClient,
+		ScanTasks: taskCalendarBeat.Scan, ExtraHandler: taskCalendarBeat,
+		ObserveTask: registry.ObserveScheduleTask, ObserveEnqueue: registry.ObserveScheduleEnqueue,
+	}
+	scheduleQueue, err := newScheduleQueue(redisClient, scheduleBeat, registry, logger, cfg.ScheduleWorkers)
 	if err != nil {
 		return err
 	}
@@ -796,6 +816,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		AnalyticsService:       usageService,
 		CompanyResourceService: companyResourceService,
 		TaskService:            taskService,
+		TaskCalendarService:    taskCalendarService,
 		ProjectService:         projectService,
 		GroupService:           groupService,
 		CanvasService: canvas.NewCanvasService(
@@ -944,7 +965,18 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		repeating("attachment-cleanup", attachmentCleanupInterval, attachmentCleanup.Tick),
 		repeating("crash-report-retention", crashRetentionInterval, crashReportRetention.Tick),
 		humanInputWorker,
-		{name: "schedule-firing", run: scheduleParts.firingWorker.Run},
+		{name: "schedule-sweep", run: scheduleParts.firingWorker.Run},
+		{name: "schedule-queue", run: scheduleQueue.Run},
+		repeating("schedule-lag-probe", 15*time.Second, func(ctx context.Context) {
+			probeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			lag, err := databaseStore.Queries().GetScheduleLag(probeCtx)
+			registry.ObserveScheduleProbe(lag.LagSeconds, lag.DueCount, lag.OverdueCount, err)
+			if err != nil {
+				logger.Warn("Schedule lag probe failed", "component", "schedule", "error", err)
+			}
+			scheduleQueue.probe(probeCtx)
+		}),
 		{name: "task-report-dispatch", run: taskReportDispatcher.Run},
 		{name: "task-merge-reconcile", run: taskMergeReconciler.Run},
 	}

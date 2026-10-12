@@ -431,6 +431,16 @@ func buildRunSystemPromptWithCLI(
 	appendRunConnectorPolicy(&builder, doc)
 	appendWorkspaceMemoryInstructions(&builder, memory, doc.ExecutionProfile.Task != nil)
 	appendRunCLIInstructions(&builder, cli)
+	if cliCommandAdmitted(cli, runTaskCreateUse) {
+		builder.WriteString(
+			"\n\nScheduled Tasks: when the user explicitly asks to run work later or repeatedly, use zen task create with --run-at <future RFC3339 timestamp with offset and whole-minute precision>, or --cron <five-field expression> --time-zone <IANA zone> (minimum five-minute cadence). Use --project for an existing Project in a chat, and --executed-by-agent with the requested Agent's id from zen agent list. The assignee is the member this Run works for, not that Agent; --assignee-user may propose scheduled work to another member, who must accept it themselves before it runs. Read zen task create --help for required fields. This creates a real Task visible in Calendar and queues no immediate Run; do not substitute an event, reminder or Connector Schedule. Report the created Task and saved schedule from the command response; do not claim the work has run. No schedule means immediate work, so never omit the schedule from a scheduling request.\n",
+		)
+		if doc.Agent.IsRoot && doc.ExecutionProfile.Task == nil {
+			builder.WriteString(
+				"In a CEO chat, zen task create requires a schedule and is only for this explicit standalone scheduled-Task request. It does not require Company Context review. Immediate work and Company Plan proposals still require the reviewed Company Plan flow.\n",
+			)
+		}
+	}
 	appendConversationParticipants(&builder, doc, cli)
 	if studioEnabledForRun(doc) {
 		builder.WriteString(

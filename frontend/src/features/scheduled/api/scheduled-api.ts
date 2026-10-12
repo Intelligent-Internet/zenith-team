@@ -1,3 +1,4 @@
+import { runService } from "@/shared/api/run.service";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import { connectorService } from "@/shared/api/connector.service";
 import { agentDirectoryService } from "@/shared/api/agent-directory.service";
@@ -19,6 +20,7 @@ import {
 } from "@/shared/api/schedule.service";
 import type {
   AgentPage,
+  RunDto,
   ConnectorCatalogResponseV1,
   ConnectorProvider,
   PluginCatalogResponseV1,
@@ -54,7 +56,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, ...request }) =>
         executeBoardlyQuery(
           () => scheduleService.list(companyId, request),
-          "Scheduled tasks could not be loaded.",
+          "Schedules could not be loaded.",
           { retry: true },
         ),
     }),
@@ -66,7 +68,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.get(companyId, scheduleId),
-          "Scheduled task could not be loaded.",
+          "Schedule could not be loaded.",
           { retry: true },
         ),
     }),
@@ -90,7 +92,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request }) =>
         executeBoardlyQuery(
           () => scheduleService.create(companyId, request),
-          "Scheduled task could not be created.",
+          "Schedule could not be created.",
         ),
     }),
     updateSchedule: builder.mutation<
@@ -101,7 +103,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.update(companyId, scheduleId, request),
-          "Scheduled task could not be updated.",
+          "Schedule could not be updated.",
         ),
     }),
     pauseSchedule: builder.mutation<
@@ -112,7 +114,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.pause(companyId, scheduleId, request),
-          "Scheduled task could not be paused.",
+          "Schedule could not be paused.",
         ),
     }),
     resumeSchedule: builder.mutation<
@@ -123,7 +125,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.resume(companyId, scheduleId, request),
-          "Scheduled task could not be resumed.",
+          "Schedule could not be resumed.",
         ),
     }),
     cancelSchedule: builder.mutation<
@@ -134,7 +136,18 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.cancel(companyId, scheduleId, request),
-          "Scheduled task could not be cancelled.",
+          "Schedule could not be cancelled.",
+        ),
+    }),
+    cancelWaitingScheduleRun: builder.mutation<
+      RunDto,
+      CompanyScheduleArguments & { runId: string }
+    >({
+      invalidatesTags: scheduleMutationTags,
+      queryFn: ({ companyId, runId }) =>
+        executeBoardlyQuery(
+          () => runService.cancelRun(companyId, runId),
+          "The waiting run could not be cancelled.",
         ),
     }),
     runScheduleNow: builder.mutation<ScheduleRunRecord, RunScheduleArguments>({
@@ -145,7 +158,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, request, scheduleId }) =>
         executeBoardlyQuery(
           () => scheduleService.runNow(companyId, scheduleId, request),
-          "Scheduled task could not be run now.",
+          "Schedule could not be run now.",
         ),
     }),
     listScheduleRuns: builder.query<
@@ -160,7 +173,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       queryFn: ({ companyId, scheduleId, ...request }) =>
         executeBoardlyQuery(
           () => scheduleService.listRuns(companyId, scheduleId, request),
-          "Scheduled task history could not be loaded.",
+          "Schedule history could not be loaded.",
           { retry: true },
         ),
     }),
@@ -210,7 +223,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
             agentDirectoryService.listAgents(companyId, {
               includeArchived: false,
             }),
-          "Agents could not be loaded for this scheduled task.",
+          "Agents could not be loaded for this schedule.",
           { retry: true },
         ),
     }),
@@ -224,6 +237,7 @@ function scheduleMutationTags(
   { companyId, scheduleId }: CompanyScheduleArguments,
 ) {
   return [
+    { id: `${companyId}:${scheduleId}:runs`, type: "Run" as const },
     { id: `${companyId}:list`, type: "Schedule" as const },
     { id: scheduleId, type: "Schedule" as const },
   ];
@@ -231,6 +245,7 @@ function scheduleMutationTags(
 
 export const {
   useCancelScheduleMutation,
+  useCancelWaitingScheduleRunMutation,
   useCreateScheduleMutation,
   useGetScheduleQuery,
   useLazyListSchedulesQuery,

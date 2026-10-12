@@ -247,6 +247,15 @@
   color: var(--workspace-text);
   box-shadow: var(--calendar-popover-shadow);
   font-size: 12px;
+  max-height: var(--radix-popover-content-available-height);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.calendar-picker-popover[data-appearance="workspace"] {
+  z-index: 240;
+  --personal-accent: var(--workspace-native-accent);
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
 }
 .calendar-date-popover {
   width: min(300px, calc(100vw - 24px));
@@ -678,7 +687,7 @@
 }
 
 /* Radix positions the wrapper beside the selected slot or event. */
-.calendar-event-dialog {
+.personal-dialog.calendar-event-dialog {
   position: relative;
   left: auto;
   top: auto;
@@ -912,7 +921,7 @@
   }
 }
 @media (max-width: 640px) {
-  .calendar-event-dialog {
+  .personal-dialog.calendar-event-dialog {
     width: calc(100vw - 32px);
     padding: 16px;
   }
@@ -940,7 +949,7 @@
   }
 }
 
-.calendar-detail-dialog {
+.calendar-event-dialog.calendar-detail-dialog {
   width: min(380px, calc(100vw - 32px));
   padding: 22px;
 }

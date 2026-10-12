@@ -80,8 +80,11 @@ func TestStudioEditorsOnOneRuntimeUseDifferentAgentProfiles(t *testing.T) {
 					result.Probe.StudioAccountID != want {
 					t.Fatalf("wrong editor account: %s", raw)
 				}
-			case <-time.After(5 * time.Second):
-				t.Fatal("editor did not answer")
+			// accept bounds a probe at 15 seconds. Allow that response plus
+			// scheduling headroom when CI starts Node under parallel race tests;
+			// a production timeout still fails the response assertions above.
+			case <-time.After(30 * time.Second):
+				t.Fatalf("editor for agent %s did not answer", agent)
 			}
 		}
 	}

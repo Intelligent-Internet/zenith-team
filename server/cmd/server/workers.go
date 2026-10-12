@@ -234,18 +234,27 @@ func newScheduleFiringIssueHandler(logger *slog.Logger) func(schedule.FiringIssu
 		logger = slog.Default()
 	}
 	return func(issue schedule.FiringIssue) {
-		errorCode := "invalid_stored_state"
-		switch issue {
-		case schedule.FiringIssueScanFailed,
-			schedule.FiringIssueMaterializeFailed,
-			schedule.FiringIssueInvalidStoredState:
-			errorCode = string(issue)
+		fields := []any{
+			"component",
+			"schedule",
+			"path",
+			issue.Path,
+			"schedule_id",
+			issue.ScheduleID,
+			"company_id",
+			issue.CompanyID,
+			"error_code",
+			issue.Code,
+			"error",
+			issue.Err,
 		}
-		logger.Warn(
-			"Schedule firing processing failed",
-			"component", "schedule-firing",
-			"error_code", errorCode,
-			"operation", "materialize_due_schedule_runs",
-		)
+		if len(issue.Stack) > 0 {
+			fields = append(fields, "stack", string(issue.Stack))
+		}
+		if issue.Code == "noop" || issue.Code == "duplicate" {
+			logger.Debug("Schedule firing", fields...)
+			return
+		}
+		logger.Warn("Schedule firing needs attention", fields...)
 	}
 }

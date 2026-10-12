@@ -144,6 +144,7 @@ func fullyWiredHandler() Handler {
 		MailboxDraftService:      &mailbox.DefaultDraftService{},
 		MailboxWebhookVerifier:   &mailboxWebhookVerifierStub{},
 		ScheduleService:          &schedule.DefaultScheduleService{},
+		TaskCalendarService:      &task.DefaultCalendarService{},
 		TaskReportService:        &task.DefaultReportService{},
 		TaskMergeService:         routeTableTaskMerge{},
 		RunService:               &execution.DefaultRunService{},
@@ -780,6 +781,11 @@ func (routeTableInbox) ReadConversation(
 // by pasting whatever the failure printed: an unexpected line is usually a real
 // new endpoint that wants review, and a missing line is usually a lost wire.
 var wantRouteTable = []string{
+	"GET /api/v1/companies/:companyId/calendar/tasks",
+	"GET /api/v1/companies/:companyId/tasks/:taskId/schedule",
+	"PUT /api/v1/companies/:companyId/tasks/:taskId/schedule",
+	"POST /api/v1/companies/:companyId/tasks/:taskId/schedule/occurrences",
+	"POST /api/v1/companies/:companyId/tasks/:taskId/assignment",
 	"PUT /api/v1/companies/:companyId/artifacts/:artifactId/review/items/:outputItemId/document/history/:sequence/name",
 	"POST /api/v1/companies/:companyId/artifacts/:artifactId/review/items/:outputItemId/document/history/:sequence/restore",
 	"GET /api/v1/companies/:companyId/artifacts/:artifactId/review/items/:outputItemId/document/history/:sequence",

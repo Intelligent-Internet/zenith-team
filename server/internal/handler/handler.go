@@ -12,6 +12,8 @@ import (
 	"net/netip"
 	"slices"
 
+	"boardly.dev/boardly/server/internal/task"
+
 	"boardly.dev/boardly/server/internal/agent"
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/calendar"
@@ -108,6 +110,7 @@ type Handler struct {
 	MailboxWebhookVerifier   MailboxWebhookVerifier
 	MailboxWebhookObserver   MailboxWebhookObserver
 	ScheduleService          ScheduleService
+	TaskCalendarService      task.CalendarService
 	TaskReportService        TaskReportService
 	TaskMergeService         TaskMergeService
 	CommerceService          CommerceService

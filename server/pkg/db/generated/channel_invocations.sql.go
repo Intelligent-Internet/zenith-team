@@ -400,7 +400,7 @@ func (q *Queries) InsertChannelInvocationPrompt(ctx context.Context, arg InsertC
 }
 
 const listActiveInvocationRuns = `-- name: ListActiveInvocationRuns :many
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM runs WHERE invocation_id=$1 AND status IN ('queued','deferred','dispatched','waiting_local_directory','running') ORDER BY conversation_id,id
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM runs WHERE invocation_id=$1 AND status IN ('queued','deferred','dispatched','waiting_local_directory','running') ORDER BY conversation_id,id
 `
 
 func (q *Queries) ListActiveInvocationRuns(ctx context.Context, invocationID uuid.NullUUID) ([]Run, error) {
@@ -451,6 +451,7 @@ func (q *Queries) ListActiveInvocationRuns(ctx context.Context, invocationID uui
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -701,7 +702,7 @@ SELECT v.id, v.company_id, v.channel_id, v.conversation_id, v.agent_id, v.trigge
           WHERE source.invocation_id=v.id AND approval.status='pending' AND approval.origin_user_id=$1::uuid)::uuid[] AS input_request_ids
 FROM channel_invocations v JOIN agents a ON a.id=v.agent_id
 LEFT JOIN users u ON u.id=a.created_by_user_id
-LEFT JOIN LATERAL (SELECT rr.id, rr.company_id, rr.agent_id, rr.task_id, rr.conversation_id, rr.runtime_id, rr.status, rr.priority, rr.created_at, rr.updated_at, rr.error, rr.failure_reason, rr.context, rr.session_id, rr.session_rollout_missing, rr.retired_session_id, rr.attempt, rr.parent_run_id, rr.force_fresh_session, rr.wait_reason, rr.prepare_lease_expires_at, rr.fire_at, rr.task_execution_generation, rr.schedule_firing_id, rr.transcript_through_seq, rr.run_type, rr.revision, rr.execution_authorized_by_user_id, rr.invocation_id, rr.source_task_id, rr.final_answer_item_key, rr.studio_enabled, rr.connector_selection_mode, rr.connector_snapshot_frozen_at, rr.queued_at, rr.claimed_at, rr.started_at, rr.finished_at FROM runs rr WHERE rr.invocation_id=v.id ORDER BY rr.created_at DESC,rr.id DESC LIMIT 1) r ON true
+LEFT JOIN LATERAL (SELECT rr.id, rr.company_id, rr.agent_id, rr.task_id, rr.conversation_id, rr.runtime_id, rr.status, rr.priority, rr.created_at, rr.updated_at, rr.error, rr.failure_reason, rr.context, rr.session_id, rr.session_rollout_missing, rr.retired_session_id, rr.attempt, rr.parent_run_id, rr.force_fresh_session, rr.wait_reason, rr.prepare_lease_expires_at, rr.fire_at, rr.task_execution_generation, rr.schedule_firing_id, rr.transcript_through_seq, rr.run_type, rr.revision, rr.execution_authorized_by_user_id, rr.invocation_id, rr.source_task_id, rr.final_answer_item_key, rr.studio_enabled, rr.connector_selection_mode, rr.connector_snapshot_frozen_at, rr.queued_at, rr.claimed_at, rr.started_at, rr.finished_at, rr.task_scheduled FROM runs rr WHERE rr.invocation_id=v.id ORDER BY rr.created_at DESC,rr.id DESC LIMIT 1) r ON true
 LEFT JOIN runtimes rt ON rt.id=r.runtime_id AND rt.owner_user_id=$1::uuid
 WHERE v.company_id=$2::uuid AND v.channel_id=$3::uuid
 ORDER BY v.created_at DESC,v.id DESC LIMIT 200
@@ -871,7 +872,7 @@ func (q *Queries) NextChannelInvocation(ctx context.Context, conversationID uuid
 
 const refreshChannelRunContext = `-- name: RefreshChannelRunContext :one
 UPDATE runs SET context=$1::jsonb
-WHERE id=$2::uuid AND invocation_id IS NOT NULL AND status='dispatched' RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+WHERE id=$2::uuid AND invocation_id IS NOT NULL AND status='dispatched' RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type RefreshChannelRunContextParams struct {
@@ -921,6 +922,7 @@ func (q *Queries) RefreshChannelRunContext(ctx context.Context, arg RefreshChann
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }

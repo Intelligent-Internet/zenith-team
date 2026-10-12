@@ -380,6 +380,8 @@ var wantCheckConstraints = []string{
 	"runtimes_provider_sign_in_check",
 	"runtimes_status_check",
 	"runtimes_unusable_reason_check",
+	"schedule_firings_cancelled_run_check",
+	"schedule_firings_missed_count_check",
 	"schedule_firings_disposition_check",
 	"schedule_firings_materialization_check",
 	"schedule_firings_reason_check",
@@ -405,11 +407,15 @@ var wantCheckConstraints = []string{
 	"task_report_batches_delivery_type_check",
 	"task_report_events_completion_source_check",
 	"task_report_events_failure_origin_check",
+	"task_schedules_generation_check",
 	// D31: a Task a Run creates names its person and the creating Agent.
 	"tasks_creator_present_check",
 	"tasks_milestone_type_check",
 	"tasks_priority_check",
 	"tasks_status_check",
+	"tasks_assignment_status_check",
+	"tasks_schedule_disposition_check",
+	"tasks_task_schedule_generation_check",
 }
 
 // TestSchemaKeepsOnlyEnumAndStructuralCheckConstraints pins the constraint

@@ -278,10 +278,10 @@ func (scope *RunScope) admitRead(ctx context.Context, q *generated.Queries, valu
 }
 
 // admitCreate refuses a Run's create of a Task that would not be its
-// member's, or in a Project the Run may not read. A Run files work only for
-// the member it works for, so the assignee — named, or the caller by
-// default — must be that member, and only where the delegate rule lets it
-// read (run_permission_held, D31): a Task Run only in its own Task's
+// member's, or in a Project the Run may not read. An ordinary create names
+// the member it works for. A scheduled create may name another member, but
+// waits for that assignee's acceptance and executes only on their binding.
+// Both require the delegate rule to admit the Project (run_permission_held, D31): a Task Run only in its own Task's
 // Project, any other Run where its Authorizer may write. Either refusal is
 // the plain ErrOutsideRunScope a read gets, asked before the Project is
 // locked or the member's own access to it is read, so a create in a Project
@@ -297,7 +297,7 @@ func (scope *RunScope) admitCreate(
 	if scope == nil {
 		return nil
 	}
-	if input.Assignee.ID != scope.UserID {
+	if input.Assignee.ID != scope.UserID && input.Schedule == nil {
 		return ErrOutsideRunScope
 	}
 	return scope.AdmitProject(ctx, q, companyID, input.ProjectID)

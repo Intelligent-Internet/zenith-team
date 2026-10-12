@@ -233,11 +233,13 @@ export function ArtifactReview({
       ? projectScope
       : undefined);
   const historyVersionId = workingVersion?.id ?? versionId;
-  // Canvas reads canonical shared content; Edit only changes write access.
-  // Company Wiki keeps its separate published/draft boundary.
-  const liveEditing = companyWikiPageId
-    ? editing && canPublishWiki
-    : !!outputDocumentScope || !!workingVersion?.wikiPageId;
+  // Default to shared content, but keep explicit saved-version selections.
+  // Document editing controls write access independently of this view choice.
+  const liveEditing =
+    editing &&
+    (companyWikiPageId
+      ? canPublishWiki
+      : !!outputDocumentScope || !!workingVersion?.wikiPageId);
   const draftKey = `${historyVersionId}:${selectedOutputDocument?.pageId ?? ""}:${documentReload}`;
   const handleDraftReady = useCallback(
     () => setReadyDraftKey(draftKey),

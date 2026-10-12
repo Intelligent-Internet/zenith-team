@@ -217,15 +217,35 @@ func TestTaskMetadataPersistsAcrossProjectionsAndRevisionFences(t *testing.T) {
 func assertTaskHistoryState(t *testing.T, raw json.RawMessage, want Response) {
 	t.Helper()
 	expected := map[string]any{
-		"id": want.ID, "companyId": want.CompanyID, "projectId": want.ProjectID, "key": want.Key, "number": want.Number,
-		"title": want.Title, "description": want.Description, "status": want.Status,
-		"priority": want.Priority, "labels": want.Labels, "startDate": want.StartDate, "dueDate": want.DueDate,
-		"assigneeUserId": want.Assignee.ID, "executedByAgentId": nil,
-		"creatorUserId": nil, "creatorAgentId": nil,
-		"milestoneType":  want.MilestoneType,
-		"conversationId": want.ConversationID, "completedAt": want.CompletedAt,
-		"prerequisiteIds": []string{}, "revision": want.Revision,
-		"createdAt": want.CreatedAt, "updatedAt": want.UpdatedAt,
+		"id":                   want.ID,
+		"companyId":            want.CompanyID,
+		"projectId":            want.ProjectID,
+		"key":                  want.Key,
+		"number":               want.Number,
+		"title":                want.Title,
+		"description":          want.Description,
+		"status":               want.Status,
+		"priority":             want.Priority,
+		"labels":               want.Labels,
+		"startDate":            want.StartDate,
+		"dueDate":              want.DueDate,
+		"assignmentStatus":     want.AssignmentStatus,
+		"scheduledAt":          want.ScheduledAt,
+		"scheduleOccurrenceAt": want.ScheduleOccurrenceAt,
+		"scheduleFiredAt":      want.ScheduleFiredAt,
+		"scheduleDisposition":  want.ScheduleDisposition,
+		"schedule":             nil,
+		"assigneeUserId":       want.Assignee.ID,
+		"executedByAgentId":    nil,
+		"creatorUserId":        nil,
+		"creatorAgentId":       nil,
+		"milestoneType":        want.MilestoneType,
+		"conversationId":       want.ConversationID,
+		"completedAt":          want.CompletedAt,
+		"prerequisiteIds":      []string{},
+		"revision":             want.Revision,
+		"createdAt":            want.CreatedAt,
+		"updatedAt":            want.UpdatedAt,
 	}
 	if want.ExecutedBy.Kind == ActorAgent {
 		expected["executedByAgentId"] = want.ExecutedBy.ID
@@ -247,7 +267,7 @@ func assertTaskHistoryState(t *testing.T, raw json.RawMessage, want Response) {
 	if err := json.Unmarshal(encoded, &normalized); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"createdAt", "updatedAt", "completedAt"} {
+	for _, key := range []string{"createdAt", "updatedAt", "completedAt", "scheduledAt", "scheduleOccurrenceAt", "scheduleFiredAt"} {
 		if normalized[key] == nil {
 			continue
 		}

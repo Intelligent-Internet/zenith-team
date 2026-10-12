@@ -52,7 +52,7 @@ export function useScheduleRunChatPanel({
         agent?.title ??
         `${schedule?.provider === "claude" ? "Claude" : "Codex"} Agent`,
       available: agent?.runtimeAvailable ?? true,
-      currentWork: schedule?.name ?? "Scheduled task",
+      currentWork: schedule?.name ?? "Schedule",
       href: schedule ? `/scheduled/${schedule.id}` : "/scheduled",
       iconSrc: "",
       label: agent?.name ?? "Scheduled Agent",
@@ -134,7 +134,11 @@ export function useScheduleRunChatPanel({
     teams,
   });
 
-  return { chatPanel, openRunChat };
+  return {
+    agentName: agent?.name ?? "Scheduled Agent",
+    chatPanel,
+    openRunChat,
+  };
 }
 
 function ScheduleRunChatLoadError({

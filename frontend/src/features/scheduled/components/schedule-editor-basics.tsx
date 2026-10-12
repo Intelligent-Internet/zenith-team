@@ -50,7 +50,7 @@ export function ScheduleEditorBasics({
     <div className="grid gap-6">
       <EditorField
         description="A clear name makes this schedule easy to find later."
-        label="Task name"
+        label="Schedule name"
         error={invalidField === "name" ? error : null}
         errorId="schedule-name-error"
         required
@@ -63,7 +63,7 @@ export function ScheduleEditorBasics({
             aria-describedby={
               invalidField === "name" ? "schedule-name-error" : undefined
             }
-            aria-label="Task name"
+            aria-label="Schedule name"
             autoFocus
             className={scheduledNativeControlClassName}
             maxLength={240}

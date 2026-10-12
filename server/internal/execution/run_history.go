@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"boardly.dev/boardly/server/internal/activity"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/util"
 	db "boardly.dev/boardly/server/pkg/db/generated"
-	"github.com/google/uuid"
 )
 
 // ObserveRunsInTx captures exact preimages after the caller's Company,
@@ -30,7 +31,12 @@ func ObserveRunsInTx(ctx context.Context, q *db.Queries, ids []uuid.UUID) (map[u
 	return snapshots, nil
 }
 
-func (s *DefaultRunService) changeRun(ctx context.Context, id uuid.UUID, action string, mutate func(*db.Queries) (db.Run, error)) (db.Run, error) {
+func (s *DefaultRunService) changeRun(
+	ctx context.Context,
+	id uuid.UUID,
+	action string,
+	mutate func(*db.Queries) (db.Run, error),
+) (db.Run, error) {
 	var run db.Run
 	var pending []events.Event
 	err := s.runInTx(ctx, func(q *db.Queries) error {
@@ -38,7 +44,16 @@ func (s *DefaultRunService) changeRun(ctx context.Context, id uuid.UUID, action 
 		if err != nil {
 			return err
 		}
-		if base.InvocationID.Valid {
+		recoveringCalendarClaim := base.TaskScheduled && action == EventRunQueued
+		if recoveringCalendarClaim {
+			// Calendar edits skip dispatched children, so their Conversation
+			// lock alone cannot fence recovery. A shared Company lock serializes
+			// with definition/consent edits before observing or locking the Run.
+			if _, err := q.LockCompanyForMembershipRead(ctx, base.CompanyID); err != nil {
+				return fmt.Errorf("lock Company for Calendar claim recovery: %w", err)
+			}
+		}
+		if base.InvocationID.Valid || base.ScheduleFiringID.Valid || recoveringCalendarClaim {
 			if err := lockTerminalRunConversation(ctx, q, base); err != nil {
 				return err
 			}
@@ -55,6 +70,9 @@ func (s *DefaultRunService) changeRun(ctx context.Context, id uuid.UUID, action 
 		run, err = mutate(q)
 		if err != nil {
 			return err
+		}
+		if action == EventRunQueued && run.Status == "cancelled" {
+			action = EventRunCancelled
 		}
 		return recordRunChangeInTx(ctx, q, &pending, events.SystemActor(), action, before[id], run)
 	})
@@ -95,7 +113,15 @@ func (s *DefaultRunService) promoteDueDeferredRuns(ctx context.Context, runtimeI
 			return err
 		}
 		for _, run := range runs {
-			if err := recordRunChangeInTx(ctx, q, &pending, events.SystemActor(), EventRunQueued, before[run.ID], run); err != nil {
+			if err := recordRunChangeInTx(
+				ctx,
+				q,
+				&pending,
+				events.SystemActor(),
+				EventRunQueued,
+				before[run.ID],
+				run,
+			); err != nil {
 				return err
 			}
 		}

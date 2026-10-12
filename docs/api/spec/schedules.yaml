@@ -53,6 +53,11 @@ paths:
           in: query
           required: false
           schema: { $ref: '#/schemas/ScheduleStatus' }
+        - name: exclude_terminal
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+          description: Exclude completed and cancelled definitions, including old presets.
         - name: preset_key
           in: query
           required: false
@@ -476,6 +481,10 @@ schemas:
       - createdAt
       - updatedAt
     properties:
+      runEffect:
+        type: string
+        enum: [none, waiting_run_cancelled, running_run_continues]
+        description: Present on definition mutations; reports the effect on the current Run.
       id: { type: string, format: uuid }
       agentId: { type: string, format: uuid }
       name: { type: string }
@@ -487,7 +496,9 @@ schemas:
         type: array
         items: { $ref: '#/schemas/ScheduleSource' }
       status: { $ref: '#/schemas/ScheduleStatus' }
-      pauseReason: { type: [string, "null"] }
+      pauseReason:
+        type: [string, "null"]
+        description: Includes trigger_invalid and firing_failed when review is required.
       nextRunAt:
         oneOf:
           - { $ref: './_common.yaml#/schemas/Timestamp' }
@@ -506,8 +517,11 @@ schemas:
   SchedulePreviewResponse:
     type: object
     required:
-      [normalizedTrigger, humanSchedule, nextOccurrences, provider, sources, reviewDigest]
+      [normalizedTrigger, humanSchedule, nextOccurrences, occurrenceDetails, provider, sources, reviewDigest]
     properties:
+      occurrenceDetails:
+        type: array
+        items: { $ref: '#/schemas/ScheduleOccurrenceDetail' }
       normalizedTrigger: { $ref: '#/schemas/ScheduleTrigger' }
       humanSchedule:
         type: string
@@ -524,6 +538,18 @@ schemas:
         items: { $ref: '#/schemas/ScheduleSource' }
       reviewDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
 
+  ScheduleOccurrenceDetail:
+    type: object
+    required: [at, utcOffsetSeconds, repeatedLocalTime, offsetChanged, skippedLocalTime]
+    properties:
+      at: { $ref: './_common.yaml#/schemas/Timestamp' }
+      utcOffsetSeconds: { type: integer }
+      repeatedLocalTime: { type: boolean }
+      offsetChanged: { type: boolean }
+      skippedLocalTime:
+        type: [string, "null"]
+        description: A matching local date and time skipped in the gap before this occurrence.
+
   SchedulePage:
     type: object
     required: [schedules, nextCursor]
@@ -539,7 +565,7 @@ schemas:
 
   ScheduleRunDisposition:
     type: string
-    enum: [materialized, superseded, skipped, needs_attention]
+    enum: [materialized, superseded, skipped, needs_attention, cancelled]
 
   ScheduleRunRecord:
     type: object
@@ -556,7 +582,24 @@ schemas:
       - runStatus
       - output
       - createdAt
+      - missedCount
+      - attempt
+      - runFailureReason
+      - runCancelReason
+      - runtimeStatus
+      - runtimeLastSeenAt
+      - runtimeUnusableReason
     properties:
+      missedCount: { type: integer, minimum: 0, maximum: 1000 }
+      attempt: { type: [integer, "null"], minimum: 1 }
+      runFailureReason: { type: [string, "null"] }
+      runCancelReason: { type: [string, "null"] }
+      runtimeStatus: { type: [string, "null"], enum: [online, offline, null] }
+      runtimeLastSeenAt:
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      runtimeUnusableReason: { type: [string, "null"] }
       firingId: { type: string, format: uuid }
       conversationId: { type: string, format: uuid }
       messageId:
@@ -569,7 +612,7 @@ schemas:
       disposition: { $ref: '#/schemas/ScheduleRunDisposition' }
       reason: { type: [string, "null"] }
       runId:
-        {"type": ["string", "null"], "format": "uuid", "description": "Null for skipped or needs-attention firings."}
+        {"type": ["string", "null"], "format": "uuid", "description": "Latest attempt; null when no Run was materialized."}
       runStatus:
         oneOf:
           - { $ref: './_common.yaml#/schemas/RunStatus' }

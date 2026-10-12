@@ -17,6 +17,7 @@ import (
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
+	"boardly.dev/boardly/server/internal/schedule"
 	"boardly.dev/boardly/server/internal/util"
 	provideragent "boardly.dev/boardly/server/pkg/agent"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
@@ -631,6 +632,15 @@ func (s *DefaultAgentService) mutateArchiveState(
 		if archive {
 			if activeDirectReport(graph, agentID) {
 				return ErrArchiveBlocked
+			}
+			if err := schedule.PauseAgentSchedulesInTx(
+				ctx,
+				tx,
+				&pending,
+				principal.CompanyID,
+				agentID,
+			); err != nil {
+				return err
 			}
 			blocked, lockErr := lockActiveAssignments(ctx, tx, principal.CompanyID, agentID)
 			if lockErr != nil {

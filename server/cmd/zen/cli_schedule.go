@@ -24,6 +24,12 @@ func newScheduleCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runScheduleGet,
 	}
+	preview := &cobra.Command{
+		Use:   "preview <schedule-id>",
+		Short: "Review the current definition, connections and upcoming times before resuming",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runSchedulePreview,
+	}
 	runs := &cobra.Command{
 		Use:   "runs <schedule-id>",
 		Short: "List a schedule's firings",
@@ -36,7 +42,7 @@ func newScheduleCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE:  runScheduleRunNow,
 	}
-	cmd.AddCommand(list, get, runs, runNow)
+	cmd.AddCommand(list, get, preview, runs, runNow)
 	for _, operation := range []string{"pause", "resume", "cancel"} {
 		operationCmd := &cobra.Command{
 			Use:   operation + " <schedule-id>",
@@ -47,9 +53,49 @@ func newScheduleCmd() *cobra.Command {
 			},
 		}
 		addRevisionFlag(operationCmd)
+		if operation == "resume" {
+			operationCmd.Flags().
+				String("review-digest", "", "digest reviewed with zen schedule preview (required)")
+		}
 		cmd.AddCommand(operationCmd)
 	}
 	return cmd
+}
+
+func runSchedulePreview(cmd *cobra.Command, args []string) error {
+	client, scheduleID, err := scheduleTarget(cmd, args)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	var definition map[string]json.RawMessage
+	if err := client.get(ctx, client.companyPath("schedules", scheduleID), &definition); err != nil {
+		return err
+	}
+	var sources []struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(definition["sources"], &sources); err != nil {
+		return fmt.Errorf("decode schedule sources: %w", err)
+	}
+	sourceIDs := make([]string, len(sources))
+	for index, source := range sources {
+		sourceIDs[index] = source.ID
+	}
+	body := map[string]any{"schemaVersion": 1, "sourceIds": sourceIDs}
+	for _, field := range []string{"agentId", "name", "instructions", "presetKey", "trigger"} {
+		body[field] = definition[field]
+	}
+	var preview json.RawMessage
+	if err := client.post(ctx, client.companyPath("schedules", "preview"), body, &preview); err != nil {
+		return err
+	}
+	result, err := json.Marshal(map[string]any{"schedule": definition, "preview": preview})
+	if err != nil {
+		return fmt.Errorf("encode schedule review: %w", err)
+	}
+	return printResult(cmd, result, nil)
 }
 
 func runScheduleList(cmd *cobra.Command, _ []string) error {
@@ -160,6 +206,16 @@ func runScheduleRunNow(cmd *cobra.Command, args []string) error {
 }
 
 func runScheduleLifecycle(cmd *cobra.Command, args []string, operation string) error {
+	var digest string
+	if operation == "resume" {
+		digest, _ = cmd.Flags().GetString("review-digest")
+		if digest == "" {
+			return fmt.Errorf(
+				"review with zen schedule preview %s, then resume with --review-digest and --revision from that review",
+				args[0],
+			)
+		}
+	}
 	client, scheduleID, err := scheduleTarget(cmd, args)
 	if err != nil {
 		return err
@@ -172,7 +228,11 @@ func runScheduleLifecycle(cmd *cobra.Command, args []string, operation string) e
 		return err
 	}
 	var raw json.RawMessage
-	if err := client.post(ctx, path+"/"+operation, map[string]any{"schemaVersion": 1, "expectedRevision": revision}, &raw); err != nil {
+	body := map[string]any{"schemaVersion": 1, "expectedRevision": revision}
+	if operation == "resume" {
+		body["reviewDigest"] = digest
+	}
+	if err := client.post(ctx, path+"/"+operation, body, &raw); err != nil {
 		return err
 	}
 	return printResult(cmd, raw, nil)

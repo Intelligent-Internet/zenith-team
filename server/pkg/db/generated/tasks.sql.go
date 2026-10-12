@@ -19,7 +19,7 @@ SET updated_at = clock_timestamp(),
 WHERE tasks.id = $1::uuid
   AND tasks.company_id = $2::uuid
   AND tasks.version = $3::bigint
-RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 `
 
 type AdvanceTaskRevisionAfterDependencyChangeParams struct {
@@ -62,6 +62,13 @@ func (q *Queries) AdvanceTaskRevisionAfterDependencyChange(ctx context.Context, 
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
@@ -115,7 +122,7 @@ func (q *Queries) DeleteCompanyPlanTask(ctx context.Context, arg DeleteCompanyPl
 }
 
 const getTaskByConversation = `-- name: GetTaskByConversation :one
-SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 FROM tasks
 WHERE tasks.conversation_id = $1::uuid
   AND tasks.company_id = $2::uuid
@@ -161,12 +168,19 @@ func (q *Queries) GetTaskByConversation(ctx context.Context, arg GetTaskByConver
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
 
 const getTaskForActiveMember = `-- name: GetTaskForActiveMember :one
-SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 FROM tasks
 JOIN project_access AS access
   ON access.company_id = tasks.company_id
@@ -216,12 +230,19 @@ func (q *Queries) GetTaskForActiveMember(ctx context.Context, arg GetTaskForActi
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
 
 const getTaskForCompanyByIDForUpdate = `-- name: GetTaskForCompanyByIDForUpdate :one
-SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 FROM tasks
 JOIN companies ON companies.id = tasks.company_id
 WHERE tasks.id = $1::uuid
@@ -265,6 +286,13 @@ func (q *Queries) GetTaskForCompanyByIDForUpdate(ctx context.Context, arg GetTas
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
@@ -430,9 +458,9 @@ WITH statement_clock AS MATERIALIZED (
               AND agents.archived_at IS NULL
         )
     )
-    RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+    RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 )
-SELECT inserted_task.id, inserted_task.company_id, inserted_task.conversation_id, inserted_task.number, inserted_task.title, inserted_task.description, inserted_task.status, inserted_task.priority, inserted_task.labels, inserted_task.start_date, inserted_task.due_date, inserted_task.assignee_user_id, inserted_task.executed_by_agent_id, inserted_task.creator_user_id, inserted_task.creator_agent_id, inserted_task.created_at, inserted_task.updated_at, inserted_task.completed_at, inserted_task.version, inserted_task.milestone_type, inserted_task.execution_generation, inserted_task.key, inserted_task.project_id, inserted_task.workspace_generation, inserted_task.result_proposal_only, inserted_task.result_review_required
+SELECT inserted_task.id, inserted_task.company_id, inserted_task.conversation_id, inserted_task.number, inserted_task.title, inserted_task.description, inserted_task.status, inserted_task.priority, inserted_task.labels, inserted_task.start_date, inserted_task.due_date, inserted_task.assignee_user_id, inserted_task.executed_by_agent_id, inserted_task.creator_user_id, inserted_task.creator_agent_id, inserted_task.created_at, inserted_task.updated_at, inserted_task.completed_at, inserted_task.version, inserted_task.milestone_type, inserted_task.execution_generation, inserted_task.key, inserted_task.project_id, inserted_task.workspace_generation, inserted_task.result_proposal_only, inserted_task.result_review_required, inserted_task.assignment_status, inserted_task.scheduled_at, inserted_task.schedule_fired_at, inserted_task.task_schedule_id, inserted_task.task_schedule_generation, inserted_task.schedule_occurrence_at, inserted_task.schedule_disposition
 FROM inserted_task
 JOIN inserted_conversation
   ON inserted_conversation.id = inserted_task.conversation_id
@@ -463,32 +491,39 @@ type InsertTaskWithConversationParams struct {
 }
 
 type InsertTaskWithConversationRow struct {
-	ID                   uuid.UUID          `json:"id"`
-	CompanyID            uuid.UUID          `json:"company_id"`
-	ConversationID       uuid.UUID          `json:"conversation_id"`
-	Number               int64              `json:"number"`
-	Title                string             `json:"title"`
-	Description          string             `json:"description"`
-	Status               string             `json:"status"`
-	Priority             string             `json:"priority"`
-	Labels               []string           `json:"labels"`
-	StartDate            pgtype.Date        `json:"start_date"`
-	DueDate              pgtype.Date        `json:"due_date"`
-	AssigneeUserID       uuid.UUID          `json:"assignee_user_id"`
-	ExecutedByAgentID    uuid.NullUUID      `json:"executed_by_agent_id"`
-	CreatorUserID        uuid.NullUUID      `json:"creator_user_id"`
-	CreatorAgentID       uuid.NullUUID      `json:"creator_agent_id"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
-	Version              int64              `json:"version"`
-	MilestoneType        string             `json:"milestone_type"`
-	ExecutionGeneration  int64              `json:"execution_generation"`
-	Key                  string             `json:"key"`
-	ProjectID            uuid.UUID          `json:"project_id"`
-	WorkspaceGeneration  int32              `json:"workspace_generation"`
-	ResultProposalOnly   bool               `json:"result_proposal_only"`
-	ResultReviewRequired bool               `json:"result_review_required"`
+	ID                     uuid.UUID          `json:"id"`
+	CompanyID              uuid.UUID          `json:"company_id"`
+	ConversationID         uuid.UUID          `json:"conversation_id"`
+	Number                 int64              `json:"number"`
+	Title                  string             `json:"title"`
+	Description            string             `json:"description"`
+	Status                 string             `json:"status"`
+	Priority               string             `json:"priority"`
+	Labels                 []string           `json:"labels"`
+	StartDate              pgtype.Date        `json:"start_date"`
+	DueDate                pgtype.Date        `json:"due_date"`
+	AssigneeUserID         uuid.UUID          `json:"assignee_user_id"`
+	ExecutedByAgentID      uuid.NullUUID      `json:"executed_by_agent_id"`
+	CreatorUserID          uuid.NullUUID      `json:"creator_user_id"`
+	CreatorAgentID         uuid.NullUUID      `json:"creator_agent_id"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	CompletedAt            pgtype.Timestamptz `json:"completed_at"`
+	Version                int64              `json:"version"`
+	MilestoneType          string             `json:"milestone_type"`
+	ExecutionGeneration    int64              `json:"execution_generation"`
+	Key                    string             `json:"key"`
+	ProjectID              uuid.UUID          `json:"project_id"`
+	WorkspaceGeneration    int32              `json:"workspace_generation"`
+	ResultProposalOnly     bool               `json:"result_proposal_only"`
+	ResultReviewRequired   bool               `json:"result_review_required"`
+	AssignmentStatus       string             `json:"assignment_status"`
+	ScheduledAt            pgtype.Timestamptz `json:"scheduled_at"`
+	ScheduleFiredAt        pgtype.Timestamptz `json:"schedule_fired_at"`
+	TaskScheduleID         uuid.NullUUID      `json:"task_schedule_id"`
+	TaskScheduleGeneration int64              `json:"task_schedule_generation"`
+	ScheduleOccurrenceAt   pgtype.Timestamptz `json:"schedule_occurrence_at"`
+	ScheduleDisposition    string             `json:"schedule_disposition"`
 }
 
 func (q *Queries) InsertTaskWithConversation(ctx context.Context, arg InsertTaskWithConversationParams) (InsertTaskWithConversationRow, error) {
@@ -543,12 +578,19 @@ func (q *Queries) InsertTaskWithConversation(ctx context.Context, arg InsertTask
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
 
 const listTasksForActiveMember = `-- name: ListTasksForActiveMember :many
-SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+SELECT tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 FROM tasks
 JOIN project_access AS access
   ON access.company_id = tasks.company_id
@@ -654,6 +696,13 @@ func (q *Queries) ListTasksForActiveMember(ctx context.Context, arg ListTasksFor
 			&i.WorkspaceGeneration,
 			&i.ResultProposalOnly,
 			&i.ResultReviewRequired,
+			&i.AssignmentStatus,
+			&i.ScheduledAt,
+			&i.ScheduleFiredAt,
+			&i.TaskScheduleID,
+			&i.TaskScheduleGeneration,
+			&i.ScheduleOccurrenceAt,
+			&i.ScheduleDisposition,
 		); err != nil {
 			return nil, err
 		}
@@ -934,7 +983,7 @@ WHERE tasks.id = $13::uuid
           $20::text[]
       )
   )
-RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 `
 
 type UpdateTaskParams struct {
@@ -1011,6 +1060,13 @@ func (q *Queries) UpdateTask(ctx context.Context, arg UpdateTaskParams) (Task, e
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }
@@ -1052,7 +1108,7 @@ WHERE runs.id = $2::uuid
           )
       )
   )
-RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required
+RETURNING tasks.id, tasks.company_id, tasks.conversation_id, tasks.number, tasks.title, tasks.description, tasks.status, tasks.priority, tasks.labels, tasks.start_date, tasks.due_date, tasks.assignee_user_id, tasks.executed_by_agent_id, tasks.creator_user_id, tasks.creator_agent_id, tasks.created_at, tasks.updated_at, tasks.completed_at, tasks.version, tasks.milestone_type, tasks.execution_generation, tasks.key, tasks.project_id, tasks.workspace_generation, tasks.result_proposal_only, tasks.result_review_required, tasks.assignment_status, tasks.scheduled_at, tasks.schedule_fired_at, tasks.task_schedule_id, tasks.task_schedule_generation, tasks.schedule_occurrence_at, tasks.schedule_disposition
 `
 
 type UpdateTaskForRunTerminalParams struct {
@@ -1100,6 +1156,13 @@ func (q *Queries) UpdateTaskForRunTerminal(ctx context.Context, arg UpdateTaskFo
 		&i.WorkspaceGeneration,
 		&i.ResultProposalOnly,
 		&i.ResultReviewRequired,
+		&i.AssignmentStatus,
+		&i.ScheduledAt,
+		&i.ScheduleFiredAt,
+		&i.TaskScheduleID,
+		&i.TaskScheduleGeneration,
+		&i.ScheduleOccurrenceAt,
+		&i.ScheduleDisposition,
 	)
 	return i, err
 }

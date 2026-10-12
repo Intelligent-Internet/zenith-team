@@ -23,7 +23,9 @@ export function CalendarTimeGrid({
   onSelectDate,
   onOpen,
   onCreate,
+  onMoveTask,
 }: {
+  onMoveTask?: (id: string, at: Date) => void;
   days: Date[];
   eventsByDay: Map<string, CalendarOccurrence[]>;
   selectedDate: string;
@@ -155,6 +157,32 @@ export function CalendarTimeGrid({
             const positions = layouts.get(dateKey(day)) ?? [];
             return (
               <div
+                onDragOver={(event) => {
+                  if (
+                    onMoveTask &&
+                    event.dataTransfer.types.includes(
+                      "application/x-zenith-task",
+                    )
+                  )
+                    event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  const id = event.dataTransfer.getData(
+                    "application/x-zenith-task",
+                  );
+                  if (!id || !onMoveTask) return;
+                  event.preventDefault();
+                  const offset =
+                    event.clientY -
+                    event.currentTarget.getBoundingClientRect().top;
+                  const minutes = Math.max(
+                    0,
+                    Math.min(1425, Math.round((offset / hourHeight) * 4) * 15),
+                  );
+                  const at = new Date(day);
+                  at.setMinutes(minutes, 0, 0);
+                  onMoveTask(id, at);
+                }}
                 className={`calendar-time-column ${dateKey(day) === today ? "is-today" : ""}`}
                 key={dateKey(day)}
               >

@@ -88,13 +88,11 @@ func runOutputPresentationAvailable(doc RunContext) bool {
 // runTaskCreationAvailable is the CLI authority for `zen task create` (ADR
 // 0014 D6). Creating Tasks is work coordination, so the same switch that
 // withholds Task failure and drafting withholds it. Task creation has
-// no MCP tool to derive it from. The root Agent outside a Task plans the
-// Company, and its work reaches other Agents only through a Company Plan
-// the founder reviews before any of it starts, so it is not offered a
-// create that starts Agent work at once.
+// no MCP tool to derive it from. The root Agent outside a Task may create
+// explicitly requested scheduled work; its channel row requires a schedule
+// so immediate work still goes through the reviewed Company Plan.
 func runTaskCreationAvailable(doc RunContext) bool {
-	return runToolPolicy(doc) == "" &&
-		(doc.ExecutionProfile.Task != nil || !doc.Agent.IsRoot) &&
+	return runToolPolicy(doc) == "" && !isCompanyInitializationRun(doc) &&
 		!slices.Contains(doc.Agent.Capabilities.DisabledBuiltIns, "coordination")
 }
 

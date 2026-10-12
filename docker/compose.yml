@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction", "--maxmemory", "256mb"]
     ports:
       - "${APP_REDIS_PORT:-6379}:6379"
     volumes:

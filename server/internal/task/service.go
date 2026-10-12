@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -236,7 +237,8 @@ func (s *DefaultTaskService) createTaskWithExecutionInTx(
 	// Run, as it admits no message; a Task assigned to someone else
 	// waits for them (ADR 0014).
 	enqueueAssignment, transition := false, false
-	if startExecution && normalized.ExecutedBy.Kind == ActorAgent && normalized.Assignee.ID == principal.UserID {
+	if startExecution && normalized.Schedule == nil && normalized.ExecutedBy.Kind == ActorAgent &&
+		normalized.Assignee.ID == principal.UserID {
 		enqueueAssignment, transition = taskMessageRunStatusPolicy(normalized.Status)
 	}
 	if transition {
@@ -272,6 +274,49 @@ func (s *DefaultTaskService) createTaskWithExecutionInTx(
 	)
 	if err != nil {
 		return effects, err
+	}
+
+	var calendarBefore *activity.Snapshot
+	if normalized.Schedule != nil || normalized.Assignee.ID != principal.UserID {
+		calendarBefore, err = activity.ObserveInTx(ctx, tx, Topic, value.ID)
+		if err != nil {
+			return effects, err
+		}
+	}
+	if normalized.Assignee.ID != principal.UserID {
+		row, err := tx.SetTaskAssignment(
+			ctx,
+			generated.SetTaskAssignmentParams{
+				CompanyID:        principal.CompanyID,
+				TaskID:           value.ID,
+				AssignmentStatus: "pending",
+			},
+		)
+		if err != nil {
+			return effects, err
+		}
+		value = taskFromRow(row)
+	}
+	if normalized.Schedule != nil {
+		value, err = createTaskCalendarInTx(ctx, tx, value, *normalized.Schedule)
+		if err != nil {
+			return effects, err
+		}
+	}
+
+	if calendarBefore != nil {
+		if err := activity.RecordInTx(
+			ctx,
+			tx,
+			&effects.pending,
+			normalized.Run.actor(principal.UserID),
+			EventUpdated,
+			calendarBefore,
+			Topic,
+			value.ID,
+		); err != nil {
+			return effects, err
+		}
 	}
 
 	// The Conversation is announced before anything is written in it.
@@ -663,7 +708,7 @@ func (s *DefaultTaskService) Update(
 		// a failed Task reopened by a handoff meets the same
 		// active-generation check as any reopen.
 		newAgentAssignment := handoff && target.ExecutedBy.Kind == ActorAgent &&
-			target.Assignee.ID == principal.UserID
+			target.Assignee.ID == principal.UserID && current.ScheduleID == nil
 		if newAgentAssignment {
 			var transition bool
 			newAgentAssignment, transition = taskMessageRunStatusPolicy(target.Status)
@@ -733,6 +778,20 @@ func (s *DefaultTaskService) Update(
 		// previous computer's Runs, merges and workspace lose their hold.
 		// Queued Messages stay: the next Run reads them.
 		outcome := handoffOutcome{advanced: advanceGeneration}
+		var calendarReset bool
+		if handoff && target.ScheduleID != nil {
+			target, calendarReset, err = cancelPendingCalendarRunInTx(
+				ctx,
+				tx,
+				&pending,
+				target,
+				execution.CancellationScheduleEdited,
+			)
+			if err != nil {
+				return err
+			}
+			outcome.runStopped = calendarReset
+		}
 		if advanceGeneration {
 			cancelled, err := execution.CancelTaskRunsForHandoffInTx(
 				ctx,
@@ -745,7 +804,7 @@ func (s *DefaultTaskService) Update(
 			if err != nil {
 				return fmt.Errorf("cancel Task Runs for handoff: %w", err)
 			}
-			outcome.runStopped = len(cancelled) > 0
+			outcome.runStopped = outcome.runStopped || len(cancelled) > 0
 		}
 
 		if normalized.Status != nil && *normalized.Status == StatusDone {
@@ -777,6 +836,42 @@ func (s *DefaultTaskService) Update(
 		if err != nil {
 			return err
 		}
+		if handoff ||
+			((updated.Title != current.Title || updated.Description != current.Description) && updated.Assignee.ID != principal.UserID && updated.ScheduleID != nil) {
+			state := "accepted"
+			if updated.Assignee.ID != principal.UserID {
+				state = "pending"
+			}
+			updated.AssignmentStatus = state
+			if calendarReset {
+				updated.ScheduleFiredAt = target.ScheduleFiredAt
+				updated.ScheduleDisposition = target.ScheduleDisposition
+			}
+			updated, err = updateTaskCalendarInTx(
+				ctx,
+				tx,
+				updated,
+				&pending,
+				events.UserActor(principal.UserID.String()),
+			)
+			if err != nil {
+				return err
+			}
+		}
+
+		if handoff || updated.Title != current.Title || updated.Description != current.Description {
+			if err := reviseTaskCalendarInTx(
+				ctx,
+				tx,
+				&pending,
+				updated,
+				principal.UserID,
+				handoff,
+			); err != nil {
+				return err
+			}
+		}
+
 		// Each nudge about a colleague's queued Message went to the assignee
 		// of the moment. After a handoff that member can no longer start the
 		// Run that carries it, so the nudges close.
@@ -965,6 +1060,30 @@ func (s *DefaultTaskService) startTaskExecutionInTx(
 	}
 	if err := ensureTaskExecutionEligible(ctx, tx, principal.CompanyID, taskID); err != nil {
 		return effects, err
+	}
+
+	// An explicit start supersedes a cancelled, skipped or missed occurrence
+	// too. Its later chat and continuation Runs must see that work has begun.
+	startingOccurrence := current.ScheduleDisposition != "" && current.ScheduleDisposition != "started"
+	if current.AssignmentStatus != "accepted" || startingOccurrence {
+		current.AssignmentStatus = "accepted"
+		if startingOccurrence {
+			current.ScheduleDisposition = "started"
+			if current.ScheduleFiredAt == nil {
+				now := time.Now().UTC()
+				current.ScheduleFiredAt = &now
+			}
+		}
+		current, err = updateTaskCalendarInTx(
+			ctx,
+			tx,
+			current,
+			&effects.pending,
+			events.UserActor(principal.UserID.String()),
+		)
+		if err != nil {
+			return effects, err
+		}
 	}
 
 	target := current

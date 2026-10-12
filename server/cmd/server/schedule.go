@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/execution"
 	"boardly.dev/boardly/server/internal/schedule"
+	"boardly.dev/boardly/server/internal/telemetry"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
 
@@ -23,6 +25,8 @@ func newScheduleComponents(
 	store *db.Store,
 	bus *events.Bus,
 	logger *slog.Logger,
+	registry *telemetry.Registry,
+	interval time.Duration,
 ) (scheduleComponents, error) {
 	conversationUpdater := schedule.ConversationUpdaterFunc(func(
 		ctx context.Context,
@@ -105,7 +109,11 @@ func newScheduleComponents(
 	})
 
 	service, err := schedule.NewScheduleService(schedule.ServiceOptions{
-		Store: store, Bus: bus, ConversationUpdater: conversationUpdater, Materializer: materializer,
+		Store:               store,
+		Bus:                 bus,
+		ConversationUpdater: conversationUpdater,
+		Materializer:        materializer,
+		OnFired:             registry.ObserveScheduleFiring,
 	})
 	if err != nil {
 		return scheduleComponents{}, fmt.Errorf("construct Schedule service: %w", err)
@@ -115,7 +123,10 @@ func newScheduleComponents(
 			Store: store, Bus: bus, Materializer: materializer,
 			Superseder: superseder, Invalidator: invalidator,
 		},
-		schedule.FiringWorkerOptions{OnIssue: newScheduleFiringIssueHandler(logger)},
+		schedule.FiringWorkerOptions{
+			SweepInterval: interval, OnIssue: newScheduleFiringIssueHandler(logger),
+			OnFired: registry.ObserveScheduleFiring, OnPass: registry.ObserveScheduleSweep,
+		},
 	)
 	if err != nil {
 		return scheduleComponents{}, fmt.Errorf("construct Schedule firing worker: %w", err)

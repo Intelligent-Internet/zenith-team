@@ -54,6 +54,12 @@ services:
       APP_API_REPLICAS: ${APP_API_REPLICAS:-1}
       APP_REDIS_URL: ${APP_REDIS_URL:-redis://redis:6379/0}
       APP_SHUTDOWN_TIMEOUT_SECONDS: ${APP_SHUTDOWN_TIMEOUT_SECONDS:-15}
+      # --- Scheduler config; tune here, no secrets or .env entries needed ---
+      # Workers must be at most one third of the per-process DB pool maximum.
+      APP_SCHEDULE_WORKERS: "8"
+      APP_SCHEDULE_SWEEP_SECONDS: "30"
+      APP_DATABASE_MAX_CONNS: "25"
+      APP_DATABASE_MIN_CONNS: "5"
       # --- Email verification (all core values together, or none) ---
       AUTH_EMAIL_PROVIDER: ${AUTH_EMAIL_PROVIDER:-}
       AUTH_RESEND_API_KEY: ${AUTH_RESEND_API_KEY:-}
@@ -156,9 +162,10 @@ services:
 
   redis:
     image: redis:7.4-alpine
+    mem_limit: 1g
     restart: unless-stopped
     logging: *json-logging
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--maxmemory-policy", "noeviction", "--maxmemory", "256mb"]
     volumes:
       - redis-data:/data
     healthcheck:

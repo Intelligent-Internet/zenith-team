@@ -22,7 +22,7 @@ SET status = 'cancelled',
 WHERE id = $2::uuid
   AND status = 'queued'
   AND connector_snapshot_frozen_at IS NULL
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type CancelQueuedRunAfterConnectorSnapshotFailureParams struct {
@@ -78,6 +78,7 @@ func (q *Queries) CancelQueuedRunAfterConnectorSnapshotFailure(ctx context.Conte
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -98,9 +99,8 @@ WHERE runs.id = $2::uuid
   AND schedule_firings.schedule_id = $6::uuid
   AND schedule_firings.company_id = runs.company_id
   AND schedule_firings.conversation_id = runs.conversation_id
-  AND schedule_firings.run_id = runs.id
-  AND runs.status = 'queued'
-RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+  AND runs.status IN ('queued', 'deferred')
+RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 `
 
 type CancelQueuedScheduleRunParams struct {
@@ -161,6 +161,7 @@ func (q *Queries) CancelQueuedScheduleRun(ctx context.Context, arg CancelQueuedS
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -173,7 +174,7 @@ SET status = 'cancelled',
     wait_reason = NULL, prepare_lease_expires_at = NULL, fire_at = NULL,
     updated_at = now()
 WHERE id = $1 AND status IN ('queued', 'dispatched', 'running', 'waiting_local_directory', 'deferred')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type CancelRunParams struct {
@@ -223,6 +224,7 @@ func (q *Queries) CancelRun(ctx context.Context, arg CancelRunParams) (Run, erro
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -279,9 +281,9 @@ WITH RECURSIVE authored_run_lineage AS (
     WHERE runs.company_id = $1::uuid
       AND runs.status IN ('queued', 'dispatched', 'running', 'waiting_local_directory', 'deferred')
       AND runs.id IN (SELECT authored_run_lineage.id FROM authored_run_lineage)
-    RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+    RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 )
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 FROM cancelled
 ORDER BY created_at, id
 `
@@ -331,6 +333,7 @@ type CancelRunsForCompanyUserRow struct {
 	ClaimedAt                   pgtype.Timestamptz `json:"claimed_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	FinishedAt                  pgtype.Timestamptz `json:"finished_at"`
+	TaskScheduled               bool               `json:"task_scheduled"`
 }
 
 // A Run is the user's when their own words are in it, it is private work in a
@@ -385,6 +388,7 @@ func (q *Queries) CancelRunsForCompanyUser(ctx context.Context, arg CancelRunsFo
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -403,7 +407,7 @@ UPDATE runs SET status = 'dispatched',
     updated_at = now()
 WHERE id = $2::uuid AND agent_id = $3::uuid
   AND runtime_id = $4::uuid AND status = 'queued'
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type ClaimRunParams struct {
@@ -460,6 +464,7 @@ func (q *Queries) ClaimRun(ctx context.Context, arg ClaimRunParams) (Run, error)
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -475,7 +480,7 @@ SET status = 'completed',
     prepare_lease_expires_at = NULL,
     updated_at = now()
 WHERE id = $1 AND status = 'running'
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type CompleteRunParams struct {
@@ -535,6 +540,7 @@ func (q *Queries) CompleteRun(ctx context.Context, arg CompleteRunParams) (Run, 
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -680,7 +686,7 @@ func (q *Queries) CountInFlightRunsByRuntime(ctx context.Context, runtimeIds []u
 
 const createRetryRun = `-- name: CreateRetryRun :one
 WITH parent AS MATERIALIZED (
-    SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+    SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
     FROM runs
     WHERE runs.id = $1
       AND runs.status = 'failed'
@@ -727,7 +733,7 @@ WITH parent AS MATERIALIZED (
         session_id,
         attempt, parent_run_id, force_fresh_session, fire_at, queued_at,
         task_execution_generation, connector_selection_mode, run_type, revision, invocation_id,
-        source_task_id, studio_enabled
+        source_task_id, studio_enabled, schedule_firing_id
     )
     SELECT
         p.company_id, p.agent_id, p.task_id, p.conversation_id,
@@ -741,11 +747,20 @@ WITH parent AS MATERIALIZED (
         $3::boolean, $2,
         CASE WHEN $2::timestamptz IS NULL THEN now() ELSE NULL END,
         p.task_execution_generation, p.connector_selection_mode, p.run_type, p.revision, p.invocation_id,
-        p.source_task_id, p.studio_enabled
+        p.source_task_id, p.studio_enabled, p.schedule_firing_id
     FROM parent AS p
-    WHERE EXISTS (SELECT 1 FROM current_binding)
+    WHERE (p.schedule_firing_id IS NULL OR EXISTS (
+        SELECT 1
+        FROM schedule_firings AS firing
+        JOIN schedules AS schedule
+          ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+        WHERE firing.id = p.schedule_firing_id AND firing.company_id = p.company_id
+          AND firing.disposition = 'materialized'
+          AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+    ))
+      AND EXISTS (SELECT 1 FROM current_binding)
       AND (p.task_id IS NULL OR EXISTS (SELECT 1 FROM eligible_task))
-    RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+    RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 ), inherited_skills AS (
     INSERT INTO run_skills (company_id, run_id, version_id)
     SELECT retry.company_id, retry.id, run_skills.version_id
@@ -763,7 +778,7 @@ WITH parent AS MATERIALIZED (
     FROM retry
     JOIN run_connector_selections AS selected ON selected.run_id = retry.parent_run_id
 )
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM retry
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM retry
 `
 
 type CreateRetryRunParams struct {
@@ -811,6 +826,7 @@ type CreateRetryRunRow struct {
 	ClaimedAt                   pgtype.Timestamptz `json:"claimed_at"`
 	StartedAt                   pgtype.Timestamptz `json:"started_at"`
 	FinishedAt                  pgtype.Timestamptz `json:"finished_at"`
+	TaskScheduled               bool               `json:"task_scheduled"`
 }
 
 // Retry child. Clones the failed
@@ -880,6 +896,7 @@ func (q *Queries) CreateRetryRun(ctx context.Context, arg CreateRetryRunParams) 
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -926,7 +943,7 @@ WHERE source.id = $4 AND source.company_id = $1
   AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM advanced_task))
   AND source.kind IN ('task','direct','schedule','channel_agent')
   AND (source.kind <> 'task' OR source_task.id IS NOT NULL)
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type CreateRunParams struct {
@@ -1029,6 +1046,7 @@ func (q *Queries) CreateRun(ctx context.Context, arg CreateRunParams) (Run, erro
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -1038,21 +1056,33 @@ UPDATE runs
 SET status = 'failed',
     finished_at = now(),
     error = 'run expired in queue', failure_reason = 'queued_expired',
-    prepare_lease_expires_at = NULL,
+    prepare_lease_expires_at = NULL, fire_at = NULL, wait_reason = NULL,
     updated_at = now()
 WHERE id = ANY($1::uuid[])
-  AND status = 'queued'
-  AND created_at < now() - make_interval(secs => $2::double precision)
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+  AND status IN ('queued', 'deferred')
+  AND (
+      (runs.schedule_firing_id IS NULL AND NOT runs.task_scheduled AND runs.status = 'queued'
+       AND runs.created_at < now() - make_interval(secs => $2::double precision))
+      OR EXISTS (
+          SELECT 1 FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND schedule.trigger_type = 'once'
+            AND firing.created_at < now() - make_interval(secs => $3::double precision)
+      )
+  )
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type ExpireStaleQueuedRunsParams struct {
-	RunIds  []uuid.UUID `json:"run_ids"`
-	TtlSecs float64     `json:"ttl_secs"`
+	RunIds       []uuid.UUID `json:"run_ids"`
+	TtlSecs      float64     `json:"ttl_secs"`
+	OnceWaitSecs float64     `json:"once_wait_secs"`
 }
 
 func (q *Queries) ExpireStaleQueuedRuns(ctx context.Context, arg ExpireStaleQueuedRunsParams) ([]Run, error) {
-	rows, err := q.db.Query(ctx, expireStaleQueuedRuns, arg.RunIds, arg.TtlSecs)
+	rows, err := q.db.Query(ctx, expireStaleQueuedRuns, arg.RunIds, arg.TtlSecs, arg.OnceWaitSecs)
 	if err != nil {
 		return nil, err
 	}
@@ -1099,6 +1129,7 @@ func (q *Queries) ExpireStaleQueuedRuns(ctx context.Context, arg ExpireStaleQueu
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -1145,7 +1176,7 @@ SET status = 'failed', error = $2,
     prepare_lease_expires_at = NULL,
     updated_at = now()
 WHERE id = $1 AND status IN ('dispatched', 'running', 'waiting_local_directory')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type FailRunParams struct {
@@ -1206,6 +1237,7 @@ func (q *Queries) FailRun(ctx context.Context, arg FailRunParams) (Run, error) {
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -1220,7 +1252,7 @@ SET status = 'failed',
 WHERE id = ANY($1::uuid[])
   AND status IN ('dispatched', 'running', 'waiting_local_directory')
   AND runtime_id IN (SELECT id FROM runtimes WHERE status = 'offline')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 func (q *Queries) FailRunsForOfflineRuntimes(ctx context.Context, runIds []uuid.UUID) ([]Run, error) {
@@ -1271,6 +1303,7 @@ func (q *Queries) FailRunsForOfflineRuntimes(ctx context.Context, runIds []uuid.
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -1306,7 +1339,7 @@ WHERE id = ANY($1::uuid[])
           )
       )
   )
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type FailStaleRunsParams struct {
@@ -1369,6 +1402,7 @@ func (q *Queries) FailStaleRuns(ctx context.Context, arg FailStaleRunsParams) ([
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -1456,7 +1490,7 @@ func (q *Queries) GetLastRunSessionForConversation(ctx context.Context, arg GetL
 }
 
 const getLatestRunForConversation = `-- name: GetLatestRunForConversation :one
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM runs
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM runs
 WHERE conversation_id = $1
 ORDER BY created_at DESC, id DESC
 LIMIT 1
@@ -1504,12 +1538,13 @@ func (q *Queries) GetLatestRunForConversation(ctx context.Context, conversationI
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
 
 const getRun = `-- name: GetRun :one
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM runs WHERE id = $1
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM runs WHERE id = $1
 `
 
 func (q *Queries) GetRun(ctx context.Context, id uuid.UUID) (Run, error) {
@@ -1554,6 +1589,7 @@ func (q *Queries) GetRun(ctx context.Context, id uuid.UUID) (Run, error) {
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -1617,7 +1653,7 @@ func (q *Queries) GetRunAgentBrief(ctx context.Context, arg GetRunAgentBriefPara
 }
 
 const getRunInCompany = `-- name: GetRunInCompany :one
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM runs WHERE id = $1 AND company_id = $2
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM runs WHERE id = $1 AND company_id = $2
 `
 
 type GetRunInCompanyParams struct {
@@ -1667,6 +1703,7 @@ func (q *Queries) GetRunInCompany(ctx context.Context, arg GetRunInCompanyParams
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -1862,7 +1899,7 @@ func (q *Queries) ListActiveRunIDsInConversationsForUpdate(ctx context.Context, 
 }
 
 const listActiveRunsForProjectAuthorizer = `-- name: ListActiveRunsForProjectAuthorizer :many
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at FROM conversations
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM conversations
 JOIN runs ON runs.company_id = conversations.company_id AND runs.conversation_id = conversations.id
 WHERE conversations.company_id = $1::uuid
   AND conversations.project_id = $2::uuid
@@ -1929,6 +1966,7 @@ func (q *Queries) ListActiveRunsForProjectAuthorizer(ctx context.Context, arg Li
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -1941,7 +1979,7 @@ func (q *Queries) ListActiveRunsForProjectAuthorizer(ctx context.Context, arg Li
 }
 
 const listActiveRunsForRuntimeOwner = `-- name: ListActiveRunsForRuntimeOwner :many
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at FROM runs
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM runs
 JOIN runtimes ON runtimes.id = runs.runtime_id
 WHERE runs.company_id = $1::uuid
   AND runtimes.owner_user_id = $2::uuid
@@ -2003,6 +2041,7 @@ func (q *Queries) ListActiveRunsForRuntimeOwner(ctx context.Context, arg ListAct
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -2015,7 +2054,7 @@ func (q *Queries) ListActiveRunsForRuntimeOwner(ctx context.Context, arg ListAct
 }
 
 const listActiveRunsForTaskHandoff = `-- name: ListActiveRunsForTaskHandoff :many
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at FROM runs
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM runs
 WHERE runs.company_id = $1::uuid
   AND runs.task_id = $2::uuid
   AND runs.status IN ('queued', 'dispatched', 'running', 'waiting_local_directory', 'deferred')
@@ -2079,6 +2118,7 @@ func (q *Queries) ListActiveRunsForTaskHandoff(ctx context.Context, arg ListActi
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -2124,7 +2164,7 @@ func (q *Queries) ListOfflineRuntimeFailureCandidates(ctx context.Context) ([]Li
 }
 
 const listPendingRunsForBindings = `-- name: ListPendingRunsForBindings :many
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at FROM runs WHERE company_id = $1::uuid
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM runs WHERE company_id = $1::uuid
   AND runtime_id = $2::uuid
   AND execution_authorized_by_user_id = $3::uuid
   AND agent_id = ANY($4::uuid[])
@@ -2193,6 +2233,7 @@ func (q *Queries) ListPendingRunsForBindings(ctx context.Context, arg ListPendin
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -2360,6 +2401,27 @@ const listQueuedClaimCandidatesByRuntimes = `-- name: ListQueuedClaimCandidatesB
 SELECT DISTINCT candidate.runtime_id, candidate.agent_id FROM runs AS candidate
 WHERE candidate.runtime_id = ANY($1::uuid[])
   AND candidate.status = 'queued'
+      AND (NOT candidate.task_scheduled OR (
+          SELECT 1 FROM tasks calendar_task
+          JOIN task_schedules calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+          JOIN tasks calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+          WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+            AND calendar_task.scheduled_at <= now()
+            AND calendar_task.task_schedule_generation = calendar_schedule.generation
+            AND calendar_task.assignment_status = 'accepted' AND calendar_template.assignment_status = 'accepted'
+            AND NOT calendar_schedule.paused
+          LIMIT 1
+      ) IS NOT NULL)
+  AND (candidate.schedule_firing_id IS NULL OR (
+      SELECT 1
+      FROM schedule_firings AS firing
+      JOIN schedules AS schedule
+        ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+      WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+        AND firing.disposition = 'materialized'
+        AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+      LIMIT 1
+  ) IS NOT NULL)
   AND EXISTS (
       SELECT 1
       FROM runtimes AS fence
@@ -2445,15 +2507,27 @@ func (q *Queries) ListQueuedClaimCandidatesByRuntimes(ctx context.Context, arg L
 const listQueuedRunExpiryCandidates = `-- name: ListQueuedRunExpiryCandidates :many
 SELECT runs.id, runs.company_id, runs.conversation_id
 FROM runs
-WHERE runs.status = 'queued'
-  AND runs.created_at < now() - make_interval(secs => $1::double precision)
+WHERE runs.status IN ('queued', 'deferred')
+  AND (
+      (runs.schedule_firing_id IS NULL AND NOT runs.task_scheduled AND runs.status = 'queued'
+       AND runs.created_at < now() - make_interval(secs => $1::double precision))
+      OR EXISTS (
+          SELECT 1 FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND schedule.trigger_type = 'once'
+            AND firing.created_at < now() - make_interval(secs => $2::double precision)
+      )
+  )
 ORDER BY runs.created_at, runs.id
-LIMIT $2
+LIMIT $3
 `
 
 type ListQueuedRunExpiryCandidatesParams struct {
-	TtlSecs    float64 `json:"ttl_secs"`
-	MaxPerTick int32   `json:"max_per_tick"`
+	TtlSecs      float64 `json:"ttl_secs"`
+	OnceWaitSecs float64 `json:"once_wait_secs"`
+	MaxPerTick   int32   `json:"max_per_tick"`
 }
 
 type ListQueuedRunExpiryCandidatesRow struct {
@@ -2463,7 +2537,7 @@ type ListQueuedRunExpiryCandidatesRow struct {
 }
 
 func (q *Queries) ListQueuedRunExpiryCandidates(ctx context.Context, arg ListQueuedRunExpiryCandidatesParams) ([]ListQueuedRunExpiryCandidatesRow, error) {
-	rows, err := q.db.Query(ctx, listQueuedRunExpiryCandidates, arg.TtlSecs, arg.MaxPerTick)
+	rows, err := q.db.Query(ctx, listQueuedRunExpiryCandidates, arg.TtlSecs, arg.OnceWaitSecs, arg.MaxPerTick)
 	if err != nil {
 		return nil, err
 	}
@@ -3006,7 +3080,7 @@ func (q *Queries) LockAgentClaimSlot(ctx context.Context, arg LockAgentClaimSlot
 }
 
 const lockLiveHumanInputOriginRun = `-- name: LockLiveHumanInputOriginRun :one
-SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 FROM runs
 WHERE runs.id = $1::uuid
   AND runs.company_id = $2::uuid
@@ -3077,13 +3151,92 @@ func (q *Queries) LockLiveHumanInputOriginRun(ctx context.Context, arg LockLiveH
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
 
+const lockPendingTaskScheduleRuns = `-- name: LockPendingTaskScheduleRuns :many
+SELECT runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled FROM runs
+WHERE runs.company_id = $1::uuid
+  AND runs.task_id = $2::uuid
+  AND runs.task_scheduled
+  AND runs.status IN ('queued', 'deferred')
+ORDER BY runs.conversation_id, runs.id
+FOR UPDATE
+`
+
+type LockPendingTaskScheduleRunsParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	TaskID    uuid.UUID `json:"task_id"`
+}
+
+// The caller holds the Task Conversation before locking these Runs. Filtering
+// under the row lock preserves any Run a daemon already dispatched while the
+// Calendar mutation waited for its locks.
+func (q *Queries) LockPendingTaskScheduleRuns(ctx context.Context, arg LockPendingTaskScheduleRunsParams) ([]Run, error) {
+	rows, err := q.db.Query(ctx, lockPendingTaskScheduleRuns, arg.CompanyID, arg.TaskID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Run{}
+	for rows.Next() {
+		var i Run
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyID,
+			&i.AgentID,
+			&i.TaskID,
+			&i.ConversationID,
+			&i.RuntimeID,
+			&i.Status,
+			&i.Priority,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Error,
+			&i.FailureReason,
+			&i.Context,
+			&i.SessionID,
+			&i.SessionRolloutMissing,
+			&i.RetiredSessionID,
+			&i.Attempt,
+			&i.ParentRunID,
+			&i.ForceFreshSession,
+			&i.WaitReason,
+			&i.PrepareLeaseExpiresAt,
+			&i.FireAt,
+			&i.TaskExecutionGeneration,
+			&i.ScheduleFiringID,
+			&i.TranscriptThroughSeq,
+			&i.RunType,
+			&i.Revision,
+			&i.ExecutionAuthorizedByUserID,
+			&i.InvocationID,
+			&i.SourceTaskID,
+			&i.FinalAnswerItemKey,
+			&i.StudioEnabled,
+			&i.ConnectorSelectionMode,
+			&i.ConnectorSnapshotFrozenAt,
+			&i.QueuedAt,
+			&i.ClaimedAt,
+			&i.StartedAt,
+			&i.FinishedAt,
+			&i.TaskScheduled,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockRunForTerminalTranscript = `-- name: LockRunForTerminalTranscript :one
 
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 FROM runs
 WHERE id = $1
 FOR UPDATE
@@ -3135,6 +3288,7 @@ func (q *Queries) LockRunForTerminalTranscript(ctx context.Context, runID uuid.U
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -3165,7 +3319,7 @@ func (q *Queries) LockRunHistoryRows(ctx context.Context, runIds []uuid.UUID) ([
 }
 
 const lockRunningRunForTranscript = `-- name: LockRunningRunForTranscript :one
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 FROM runs
 WHERE id = $1
   AND runtime_id = $2
@@ -3220,6 +3374,7 @@ func (q *Queries) LockRunningRunForTranscript(ctx context.Context, arg LockRunni
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -3230,7 +3385,7 @@ SET status = 'waiting_local_directory', wait_reason = 'local_directory_busy',
     prepare_lease_expires_at = now() + make_interval(secs => $2::double precision),
     updated_at = now()
 WHERE id = $1 AND status = 'dispatched'
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type MarkRunWaitingLocalDirectoryParams struct {
@@ -3280,8 +3435,26 @@ func (q *Queries) MarkRunWaitingLocalDirectory(ctx context.Context, arg MarkRunW
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
+}
+
+const markTaskRunScheduled = `-- name: MarkTaskRunScheduled :exec
+UPDATE runs SET task_scheduled = true
+WHERE id = $1 AND task_id = $2 AND company_id = $3
+    AND status = 'queued'
+`
+
+type MarkTaskRunScheduledParams struct {
+	RunID     uuid.UUID     `json:"run_id"`
+	TaskID    uuid.NullUUID `json:"task_id"`
+	CompanyID uuid.UUID     `json:"company_id"`
+}
+
+func (q *Queries) MarkTaskRunScheduled(ctx context.Context, arg MarkTaskRunScheduledParams) error {
+	_, err := q.db.Exec(ctx, markTaskRunScheduled, arg.RunID, arg.TaskID, arg.CompanyID)
+	return err
 }
 
 const pinRunSession = `-- name: PinRunSession :exec
@@ -3304,7 +3477,7 @@ func (q *Queries) PinRunSession(ctx context.Context, arg PinRunSessionParams) er
 const promoteDueDeferredRunsByIDs = `-- name: PromoteDueDeferredRunsByIDs :many
 UPDATE runs SET status = 'queued', queued_at = now(), fire_at = NULL, wait_reason = NULL, updated_at = now()
 WHERE id = ANY($1::uuid[]) AND status = 'deferred'
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 func (q *Queries) PromoteDueDeferredRunsByIDs(ctx context.Context, runIds []uuid.UUID) ([]Run, error) {
@@ -3355,6 +3528,7 @@ func (q *Queries) PromoteDueDeferredRunsByIDs(ctx context.Context, runIds []uuid
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -3374,13 +3548,22 @@ WHERE id IN (
     SELECT id FROM runs
     WHERE runtime_id = ANY($2::uuid[])
       AND status = 'dispatched'
+      AND (runs.schedule_firing_id IS NULL OR EXISTS (
+          SELECT 1
+          FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = runs.schedule_firing_id AND firing.company_id = runs.company_id
+            AND firing.disposition = 'materialized'
+            AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+      ))
       AND updated_at < now() - make_interval(secs => $3::double precision)
       AND (prepare_lease_expires_at IS NULL OR prepare_lease_expires_at < now())
     ORDER BY priority DESC, updated_at ASC
     LIMIT $4::int
     FOR UPDATE SKIP LOCKED
 )
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type ReclaimStaleDispatchedRunsForRuntimesParams struct {
@@ -3449,6 +3632,7 @@ func (q *Queries) ReclaimStaleDispatchedRunsForRuntimes(ctx context.Context, arg
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -3471,7 +3655,7 @@ SET status = 'failed',
 WHERE id = ANY($1::uuid[])
   AND runtime_id = $2::uuid
   AND status IN ('dispatched', 'running', 'waiting_local_directory')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type RecoverOrphanedRunsForRuntimeParams struct {
@@ -3527,6 +3711,7 @@ func (q *Queries) RecoverOrphanedRunsForRuntime(ctx context.Context, arg Recover
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -3539,12 +3724,38 @@ func (q *Queries) RecoverOrphanedRunsForRuntime(ctx context.Context, arg Recover
 }
 
 const requeueRunAfterClaimFailure = `-- name: RequeueRunAfterClaimFailure :one
+WITH recovery AS MATERIALIZED (
+    SELECT candidate.id,
+    (NOT candidate.task_scheduled OR EXISTS (
+        SELECT 1 FROM tasks AS calendar_task
+        JOIN task_schedules AS calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+        JOIN tasks AS calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+        WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+          AND calendar_task.task_schedule_generation = calendar_schedule.generation
+          AND calendar_task.assignment_status = 'accepted'
+          AND calendar_template.assignment_status = 'accepted'
+          AND NOT calendar_schedule.paused
+    )) AND (candidate.schedule_firing_id IS NULL OR EXISTS (
+        SELECT 1
+        FROM schedule_firings AS firing
+        JOIN schedules AS schedule
+          ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+        WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+          AND firing.disposition = 'materialized'
+          AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+    )) AS can_requeue
+    FROM runs AS candidate WHERE candidate.id = $1
+)
 UPDATE runs
-SET status = 'queued', claimed_at = NULL, queued_at = COALESCE(queued_at, now()), prepare_lease_expires_at = NULL,
+SET status = CASE WHEN recovery.can_requeue THEN 'queued' ELSE 'cancelled' END,
+    finished_at = CASE WHEN recovery.can_requeue THEN NULL ELSE now() END,
+    error = CASE WHEN recovery.can_requeue THEN NULL ELSE 'schedule_invalidated' END,
+    claimed_at = NULL, queued_at = COALESCE(runs.queued_at, now()), prepare_lease_expires_at = NULL,
     updated_at = now()
-WHERE id = $1 AND runtime_id = $2 AND status = 'dispatched'
-  AND updated_at = $3
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+FROM recovery
+WHERE runs.id = recovery.id AND runs.runtime_id = $2 AND runs.status = 'dispatched'
+  AND runs.updated_at = $3
+RETURNING runs.id, runs.company_id, runs.agent_id, runs.task_id, runs.conversation_id, runs.runtime_id, runs.status, runs.priority, runs.created_at, runs.updated_at, runs.error, runs.failure_reason, runs.context, runs.session_id, runs.session_rollout_missing, runs.retired_session_id, runs.attempt, runs.parent_run_id, runs.force_fresh_session, runs.wait_reason, runs.prepare_lease_expires_at, runs.fire_at, runs.task_execution_generation, runs.schedule_firing_id, runs.transcript_through_seq, runs.run_type, runs.revision, runs.execution_authorized_by_user_id, runs.invocation_id, runs.source_task_id, runs.final_answer_item_key, runs.studio_enabled, runs.connector_selection_mode, runs.connector_snapshot_frozen_at, runs.queued_at, runs.claimed_at, runs.started_at, runs.finished_at, runs.task_scheduled
 `
 
 type RequeueRunAfterClaimFailureParams struct {
@@ -3598,6 +3809,7 @@ func (q *Queries) RequeueRunAfterClaimFailure(ctx context.Context, arg RequeueRu
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -3612,7 +3824,7 @@ WHERE company_id = $2::uuid
   AND agent_id = ANY($5::uuid[])
   AND id = ANY($6::uuid[])
   AND status IN ('queued', 'deferred')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type RetargetPendingRunsForBindingsParams struct {
@@ -3684,6 +3896,7 @@ func (q *Queries) RetargetPendingRunsForBindings(ctx context.Context, arg Retarg
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -3744,10 +3957,31 @@ func (q *Queries) RunConversationExecutePermitted(ctx context.Context, arg RunCo
 }
 
 const selectClaimableRun = `-- name: SelectClaimableRun :one
-    SELECT candidate.id, candidate.company_id, candidate.agent_id, candidate.task_id, candidate.conversation_id, candidate.runtime_id, candidate.status, candidate.priority, candidate.created_at, candidate.updated_at, candidate.error, candidate.failure_reason, candidate.context, candidate.session_id, candidate.session_rollout_missing, candidate.retired_session_id, candidate.attempt, candidate.parent_run_id, candidate.force_fresh_session, candidate.wait_reason, candidate.prepare_lease_expires_at, candidate.fire_at, candidate.task_execution_generation, candidate.schedule_firing_id, candidate.transcript_through_seq, candidate.run_type, candidate.revision, candidate.execution_authorized_by_user_id, candidate.invocation_id, candidate.source_task_id, candidate.final_answer_item_key, candidate.studio_enabled, candidate.connector_selection_mode, candidate.connector_snapshot_frozen_at, candidate.queued_at, candidate.claimed_at, candidate.started_at, candidate.finished_at FROM runs AS candidate
+    SELECT candidate.id, candidate.company_id, candidate.agent_id, candidate.task_id, candidate.conversation_id, candidate.runtime_id, candidate.status, candidate.priority, candidate.created_at, candidate.updated_at, candidate.error, candidate.failure_reason, candidate.context, candidate.session_id, candidate.session_rollout_missing, candidate.retired_session_id, candidate.attempt, candidate.parent_run_id, candidate.force_fresh_session, candidate.wait_reason, candidate.prepare_lease_expires_at, candidate.fire_at, candidate.task_execution_generation, candidate.schedule_firing_id, candidate.transcript_through_seq, candidate.run_type, candidate.revision, candidate.execution_authorized_by_user_id, candidate.invocation_id, candidate.source_task_id, candidate.final_answer_item_key, candidate.studio_enabled, candidate.connector_selection_mode, candidate.connector_snapshot_frozen_at, candidate.queued_at, candidate.claimed_at, candidate.started_at, candidate.finished_at, candidate.task_scheduled FROM runs AS candidate
     WHERE candidate.agent_id = $1::uuid
       AND candidate.runtime_id = $2::uuid
       AND candidate.status = 'queued'
+      AND (NOT candidate.task_scheduled OR (
+          SELECT 1 FROM tasks calendar_task
+          JOIN task_schedules calendar_schedule ON calendar_schedule.id = calendar_task.task_schedule_id
+          JOIN tasks calendar_template ON calendar_template.id = calendar_schedule.template_task_id
+          WHERE calendar_task.id = candidate.task_id AND calendar_task.company_id = candidate.company_id
+            AND calendar_task.scheduled_at <= now()
+            AND calendar_task.task_schedule_generation = calendar_schedule.generation
+            AND calendar_task.assignment_status = 'accepted' AND calendar_template.assignment_status = 'accepted'
+            AND NOT calendar_schedule.paused
+          LIMIT 1
+      ) IS NOT NULL)
+      AND (candidate.schedule_firing_id IS NULL OR (
+          SELECT 1
+          FROM schedule_firings AS firing
+          JOIN schedules AS schedule
+            ON schedule.id = firing.schedule_id AND schedule.company_id = firing.company_id
+          WHERE firing.id = candidate.schedule_firing_id AND firing.company_id = candidate.company_id
+            AND firing.disposition = 'materialized'
+            AND (schedule.trigger_type <> 'once' OR firing.created_at > now() - interval '7 days')
+          LIMIT 1
+      ) IS NOT NULL)
       AND EXISTS (
           SELECT 1
           FROM runtimes AS fence
@@ -3851,6 +4085,8 @@ type SelectClaimableRunParams struct {
 // nothing. The function reads the candidate's own row, one call per
 // candidate. Go binds the permissions and the default set; SQL names none of
 // them. Keep it identical in ListQueuedClaimCandidatesByRuntimes too.
+// Scalar schedule lookups stay correlated to each candidate. EXISTS under
+// these OR arms can become hashed subplans that scan all schedule history.
 func (q *Queries) SelectClaimableRun(ctx context.Context, arg SelectClaimableRunParams) (Run, error) {
 	row := q.db.QueryRow(ctx, selectClaimableRun,
 		arg.AgentID,
@@ -3900,12 +4136,13 @@ func (q *Queries) SelectClaimableRun(ctx context.Context, arg SelectClaimableRun
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
 
 const selectDueDeferredRunsForUpdate = `-- name: SelectDueDeferredRunsForUpdate :many
-SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at FROM runs
+SELECT id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled FROM runs
 WHERE status = 'deferred' AND fire_at <= now()
   AND (NOT $1::boolean OR runtime_id = ANY($2::uuid[]))
 ORDER BY id FOR UPDATE SKIP LOCKED
@@ -3965,6 +4202,7 @@ func (q *Queries) SelectDueDeferredRunsForUpdate(ctx context.Context, arg Select
 			&i.ClaimedAt,
 			&i.StartedAt,
 			&i.FinishedAt,
+			&i.TaskScheduled,
 		); err != nil {
 			return nil, err
 		}
@@ -3983,7 +4221,7 @@ SET status = 'running', wait_reason = NULL,
     prepare_lease_expires_at = NULL, updated_at = now()
 WHERE id = $1 AND runtime_id = $2
   AND status IN ('dispatched', 'waiting_local_directory')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type StartRunParams struct {
@@ -4036,6 +4274,7 @@ func (q *Queries) StartRun(ctx context.Context, arg StartRunParams) (Run, error)
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -4046,7 +4285,7 @@ SET transcript_through_seq = $1,
     final_answer_item_key = COALESCE($2::text, final_answer_item_key),
     updated_at = clock_timestamp()
 WHERE id = $3
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type UpdateRunTranscriptHeadParams struct {
@@ -4099,6 +4338,7 @@ func (q *Queries) UpdateRunTranscriptHead(ctx context.Context, arg UpdateRunTran
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }
@@ -4108,7 +4348,7 @@ UPDATE runs SET wait_reason = CASE WHEN $1::boolean
     THEN 'studio_auth_required' ELSE NULL END, updated_at = now()
 WHERE id = $2::uuid AND status = 'running'
   AND (wait_reason IS NULL OR wait_reason = 'studio_auth_required')
-RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at
+RETURNING id, company_id, agent_id, task_id, conversation_id, runtime_id, status, priority, created_at, updated_at, error, failure_reason, context, session_id, session_rollout_missing, retired_session_id, attempt, parent_run_id, force_fresh_session, wait_reason, prepare_lease_expires_at, fire_at, task_execution_generation, schedule_firing_id, transcript_through_seq, run_type, revision, execution_authorized_by_user_id, invocation_id, source_task_id, final_answer_item_key, studio_enabled, connector_selection_mode, connector_snapshot_frozen_at, queued_at, claimed_at, started_at, finished_at, task_scheduled
 `
 
 type WaitForStudioAuthParams struct {
@@ -4160,6 +4400,7 @@ func (q *Queries) WaitForStudioAuth(ctx context.Context, arg WaitForStudioAuthPa
 		&i.ClaimedAt,
 		&i.StartedAt,
 		&i.FinishedAt,
+		&i.TaskScheduled,
 	)
 	return i, err
 }

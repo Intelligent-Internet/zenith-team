@@ -82,6 +82,7 @@ fail fast with a named variable in the error. Durations use Go syntax
 | Variable | Rule |
 | --- | --- |
 | `APP_DATABASE_URL` | PostgreSQL DSN, e.g. `postgresql://boardly:pass@host:5432/boardly` |
+| `APP_REDIS_URL` | Required for every API instance; bundled Compose supplies `redis://redis:6379/0` |
 | `AUTH_CSRF_SECRET` | At least 32 bytes; signs CSRF, session, and Run capability tokens — rotation invalidates all three |
 
 ### Core process
@@ -91,8 +92,7 @@ fail fast with a named variable in the error. Durations use Go syntax
 | `APP_HTTP_ADDR` | `:8788` | Listen address |
 | `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `APP_SHUTDOWN_TIMEOUT_SECONDS` | `15` | Graceful drain budget; keep below the orchestrator stop grace period |
-| `APP_API_REPLICAS` | `1` | Above 1 makes Redis mandatory and readiness fail-closed on relay health |
-| `APP_REDIS_URL` | empty | Required when `APP_API_REPLICAS > 1`; optional accelerator for a single node |
+| `APP_API_REPLICAS` | `1` | Above 1 makes readiness fail-closed on cross-replica relay health |
 | `APP_DAEMON_ID_REQUIRED` | `false` | `true` refuses daemon-plane runtime requests without `X-Boardly-Daemon-ID` (`400 invalid_request`); `false` admits them with a warning log while old daemons upgrade |
 | `AUTH_WEB_ORIGINS` | `http://localhost:5173` | Comma-separated exact canonical renderer origins; non-loopback HTTP is rejected and packaged Electron may use only `boardly-app://renderer` |
 | `AUTH_WEB_APP_ORIGIN` | empty | Required when email verification or Google OAuth is enabled; must appear in `AUTH_WEB_ORIGINS` |
@@ -561,8 +561,10 @@ pg_restore --clean --if-exists -U boardly -d boardly ./boardly-YYYY-MM-DD.dump
 
 For attachments, prefer bucket versioning plus lifecycle rules or cross-region
 replication; `aws s3 sync`/`mc mirror` works for periodic copies.
-Redis holds only transient relay and claim-cache state and needs no backup; a
-flush costs at most a reconnect and a brief fanout gap.
+Redis holds reconstructible relay, claim-cache and scheduler queue state.
+PostgreSQL remains the firing ledger; a flush can delay scheduled work until
+the independent repair sweep, and transient realtime delivery can be interrupted.
+Use AOF and `noeviction`; a Redis backup is not a substitute for PostgreSQL.
 
 ## Retention defaults
 
@@ -590,3 +592,49 @@ Current retention behavior, restated for operators:
   [observability spec](../docs/specs/observability/PRD.md)); opt-in crash/freeze reports
   retain 30 days and contain no prompt, message, path, email, or tool
   payload.
+
+## Scheduler upgrade and operation
+
+The scheduler runs inside each API process; self-hosting adds no worker binary.
+Keep at least one API process running with CPU available for background work;
+request-only execution or scaling all replicas to zero stops both the timer
+and the repair sweep. The bundled Compose stack runs continuously. User machines
+need only outbound HTTPS/WSS to the API, never direct PostgreSQL or Redis access.
+
+Migration **000109** is the single Scheduler upgrade after main's schema 000108.
+It retains old Task, Schedule, firing, Run and message rows, backfills missing
+retry links and adds Calendar Task schedules and cancelled dispositions/missed
+counts. Existing Tasks remain accepted and unscheduled; planning dates never
+start them automatically. Main's earlier migrations are unchanged. If the
+deployment is older than 000108, review its other pending main migrations too.
+The down migration refuses a lossy conversion rather than clearing history.
+Back up first, stop old API writers,
+apply the migration once, then start the new replicas: old lifecycle writers
+do not understand the new cancellation/retry contract. Do not combine this
+upgrade with a mixed-version lifecycle rollout.
+
+`APP_SCHEDULE_WORKERS` defaults to 8 (1–64 and at most one third of the DB pool).
+`APP_SCHEDULE_SWEEP_SECONDS` defaults to 30 (10–60). The beat ticks every 10 s;
+the PostgreSQL repair sweep handles due work independently of Redis. Redis
+failure still participates in the existing API readiness check, so daemon
+claims may wait for readiness recovery even while the sweep records work.
+
+The production Compose file sets both scheduler settings and
+`APP_DATABASE_MAX_CONNS`/`APP_DATABASE_MIN_CONNS` directly. Tune these ordinary
+configuration values there; no scheduler entry in `deploy/.env` is needed.
+Pool limits are per replica, so account for the total database connections when
+increasing the replica count. External database/Redis URLs that contain
+credentials remain in `.env` or the deployment's secret manager.
+
+The production Compose file configures AOF, `appendfsync everysec`, `noeviction`
+and a 256 MB Redis data memory limit. It sets a 1 GB container limit for
+rewrite/allocator headroom. Tune both limits directly in Compose. Give each environment a
+separate Redis database or instance, keep it private, and retain orchestrator
+stop grace above `APP_SHUTDOWN_TIMEOUT_SECONDS` (the bundled stack uses 30 s).
+
+Load [alerts/schedules.yml](alerts/schedules.yml) in the existing Prometheus
+rule configuration. Alert on lag/overdue work and stale probes separately from
+readiness. Increasing sweep share points to a degraded beat; inspect Redis
+memory/availability and queue retries. Never repair a queue outage by deleting
+PostgreSQL firing receipts. See the [scheduler runbook](../docs/specs/scheduler/TECH.md)
+and [verification](../docs/specs/scheduler/VERIFICATION.md).

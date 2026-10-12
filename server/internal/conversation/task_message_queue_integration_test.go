@@ -296,6 +296,9 @@ func TestQueuedTaskMessageNudgeClosesWhenTheMessageStopsWaiting(t *testing.T) {
 	}
 	deleteItem(second)
 
+	// Carol has accepted the handoff before colleagues queue more work.
+	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET assignment_status = 'accepted' WHERE id = $1`, fixture.TaskA)
+
 	// A write that skips the handoff makes the writer the assignee, so a
 	// nudge to Carol is still open when promotion carries the Message as the
 	// writer's own prompt.

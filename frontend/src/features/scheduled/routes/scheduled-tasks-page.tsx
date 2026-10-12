@@ -99,7 +99,7 @@ export function ScheduledTasksPage() {
       setSchedules((current) => mergeSchedules(current, page.schedules));
       setNextCursor(page.nextCursor);
     } catch {
-      setPageError("More scheduled tasks could not be loaded.");
+      setPageError("More schedules could not be loaded.");
     } finally {
       setLoadingMore(false);
     }
@@ -129,7 +129,7 @@ export function ScheduledTasksPage() {
           onClick={() => navigate("/scheduled/new")}
         >
           <Plus aria-hidden className="size-4" />
-          New scheduled task
+          New schedule
         </GradientCtaButton>
       }
     >
@@ -137,13 +137,13 @@ export function ScheduledTasksPage() {
         <ScheduledGlassPanel contentClassName="p-4">
           <div className="flex flex-wrap items-center gap-3">
             <label className="min-w-0 flex-1 basis-56">
-              <span className="sr-only">Search scheduled tasks</span>
+              <span className="sr-only">Search schedules</span>
               <ScheduledFieldControl
                 compact
                 icon={<Search className="size-4" />}
               >
                 <input
-                  aria-label="Search scheduled tasks"
+                  aria-label="Search schedules"
                   className={scheduledNativeControlClassName}
                   placeholder="Search schedules"
                   value={query}
@@ -152,9 +152,9 @@ export function ScheduledTasksPage() {
               </ScheduledFieldControl>
             </label>
             <button
-              aria-label="Refresh scheduled tasks"
+              aria-label="Refresh schedules"
               className="scheduled-toolbar-refresh inline-flex shrink-0 items-center justify-center gap-2 border border-[var(--workspace-divider-strong)] bg-[var(--workspace-panel-bg)] px-3 text-[var(--workspace-native-text)] transition-colors hover:bg-[var(--workspace-hover-bg)] focus-visible:bg-[var(--workspace-hover-bg)]"
-              title="Refresh scheduled tasks"
+              title="Refresh schedules"
               type="button"
               onClick={() => void schedulesQuery.refetch()}
             >
@@ -275,7 +275,7 @@ function ScheduleListState({
 }) {
   if (isLoading) {
     return (
-      <div className="grid gap-3" aria-label="Loading scheduled tasks">
+      <div className="grid gap-3" aria-label="Loading schedules">
         {[0, 1, 2].map((index) => (
           <div
             className="h-32 animate-pulse rounded-lg border border-[var(--workspace-divider)] bg-[var(--workspace-control-bg)]"
@@ -294,7 +294,7 @@ function ScheduleListState({
       >
         <div>
           <h2 className="text-lg font-semibold text-[var(--workspace-native-text)]">
-            Scheduled tasks are unavailable
+            Schedules are unavailable
           </h2>
           <p className="mt-2 text-sm text-[var(--workspace-native-text-muted)]">
             Zenith Team could not load the current schedule state.
@@ -319,14 +319,12 @@ function ScheduleListState({
             <Clock3 aria-hidden className="size-5" />
           </span>
           <h2 className="mt-4 text-lg font-semibold text-[var(--workspace-native-text)]">
-            {hasFilters
-              ? "No schedules match this view"
-              : "No scheduled tasks yet"}
+            {hasFilters ? "No schedules match this view" : "No schedules yet"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--workspace-native-text-muted)]">
             {hasFilters
               ? "Change the search or status filter to see another schedule."
-              : "Create a one-time task, use a familiar preset, or enter any five-field cron expression."}
+              : "Create a one-time schedule, use a familiar preset, or enter any five-field cron expression."}
           </p>
           {hasFilters ? (
             <button

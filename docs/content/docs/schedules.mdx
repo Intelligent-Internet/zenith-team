@@ -7,7 +7,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 A schedule is a creator-private, server-authoritative definition of agent work that fires on its own — `once` at an exact future minute, or `cron` on a recurring cadence. It points at one [agent](/agents), one reviewed [provider](/providers), and an exact reviewed set of [connector](/connectors-and-plugins) sources, and it owns one schedule [conversation](/conversations), so every firing lands in the same ordered thread.
 
-The server owns due time and firing replay. A closed laptop never loses an occurrence: the firing is recorded and its [run](/runs) waits queued until a runtime claims it.
+The server owns due time and firing replay. A closed laptop can leave a recorded [run](/runs) waiting for your computer. Recurring work waits until claimed, cancelled or replaced by a newer occurrence. One-time work waits at most seven days from its recorded occurrence. Zenith Team cannot wake a sleeping computer.
 
 ## Parts of a schedule
 
@@ -18,7 +18,7 @@ The server owns due time and firing replay. A closed laptop never loses an occur
 | **Agent** | The one agent that executes each firing, on your own computer where you set it up; the reviewed provider is the agent's. An agent you have not set up is refused until you do |
 | **Trigger** | Exactly one of `once` — a future exact UTC minute — or `cron` — a five-field expression plus an IANA time zone |
 | **Sources** | The exact reviewed connector set, up to 128 entries; an empty set deliberately grants no external connector |
-| **Preset key** | Optional lowercase key; at most one non-cancelled schedule per creator per preset |
+| **Preset key** | Optional lowercase key; recurring only; at most one active or paused schedule per creator per preset |
 
 The two trigger shapes behave differently at the end of their life:
 
@@ -37,14 +37,14 @@ Cron cadence is bounded: occurrences must be at least 5 minutes apart, embedded 
 |---|---|
 | `active` | The server materializes occurrences at the next due time |
 | `paused` | Kept but not firing; `pauseReason` records why |
-| `completed` | A `once` schedule after its firing. Terminal |
+| `completed` | A `once` schedule after its time was recorded. Terminal; this does not mean its Run succeeded |
 | `cancelled` | Terminal |
 
-`user_paused` means you paused it. Zenith Team pauses a schedule itself when its assumptions break — `agent_unavailable`, `provider_changed`, `source_changed`, `company_changed`, `creator_changed` — or when a firing needs attention. Editing a live definition requires the current revision and a fresh review digest; `completed` and `cancelled` schedules refuse every change.
+`user_paused` means you paused it. Zenith Team pauses a schedule itself when its assumptions break — `agent_unavailable`, `provider_changed`, `source_changed`, `company_changed`, `creator_changed`, `trigger_invalid`, `firing_failed` — or when a firing needs attention. Editing a live definition requires the current revision and a fresh review digest; `completed` and `cancelled` schedules refuse every change.
 
 ## Review before activation
 
-The whole definition — name, instructions, agent, provider, trigger, and connector sources — is previewed as one digest, together with the next five occurrences and the trigger in plain words, such as `Every weekday at 09:00 · Asia/Ho_Chi_Minh`. Every write that changes what will run must echo that exact digest: creating a schedule (it is created `active`), updating it, and resuming it after a pause. A stale echo is refused.
+The whole definition — name, instructions, agent, provider, trigger, and connector sources — is previewed as one digest, together with the next five occurrences and the trigger in plain words, such as `Every weekday at 09:00 · Asia/Ho_Chi_Minh`. Each preview shows UTC offsets and repeated or skipped local times around daylight-saving changes. Resume opens this review before its confirmation. Every write that changes what will run must echo that exact digest: creating a schedule (it is created `active`), updating it, and resuming it after a pause. A stale echo is refused.
 
 A provider change, an agent swap, or a connector-policy change therefore can never silently broaden scheduled authority: you review the new digest, or the schedule does not run. This is the same digest the editor shows you before you confirm — what you reviewed is what fires.
 
@@ -56,10 +56,11 @@ Every occurrence produces a durable firing receipt, and the receipts are replay-
 |---|---|
 | `materialized` | The occurrence became a message and a run on the schedule's conversation |
 | `skipped` | A run from a previous occurrence was still executing (`run_active`); nothing new started |
-| `superseded` | A later occurrence replaced this one while its run was still only queued |
+| `superseded` | A later occurrence replaced this one while its Run was queued or deferred |
 | `needs_attention` | Materialization was blocked; the schedule pauses and the reason is recorded |
+| `cancelled` | This occurrence was stopped by Pause, Cancel or Edit; any running attempt may finish but cannot retry |
 
-After downtime, a missed cron backlog collapses to the single latest due occurrence — Zenith Team fires once, not once per missed slot. **Run now** works only on an `active` schedule and refuses while a run from the schedule is still in flight. Timed firings and **Run now** both count as the schedule's last run; **Run now** leaves the next timed occurrence where it was.
+After downtime, a missed cron backlog collapses to the single latest due occurrence — Zenith Team fires once, not once per missed slot. History shows the missed count, capped at 1,000. **Run now** works only on an `active` schedule and refuses while a run from the schedule is still in flight. Timed firings and **Run now** both count as the schedule's last run; **Run now** leaves the next timed occurrence where it was.
 
 A firing materializes a capacity-exempt run: it never waits for or occupies the agent's [task-lane capacity](/runs#lanes-and-capacity), and it never creates a task.
 
@@ -71,17 +72,26 @@ The selected connector set is checked again when the run is claimed. It is froze
 
 ## Privacy
 
-Schedules are creator-private: lists, reads, and every mutation are scoped to the member who created the schedule, and the API surface is owner-gated. The schedule's conversation is creator-private as well.
+Schedules are creator-private: lists, reads, and every mutation are scoped to the member who created the schedule, and the API surface requires `schedules.manage`. The schedule's conversation is creator-private as well.
 
-## The Scheduled surface
+## The Schedules surface
 
-The **Schedules** page (route `/scheduled`; in Zenith Team Desktop also the **Scheduled** button in the title bar, or **Open scheduled tasks** in the command palette) lists your schedules with a status filter. **New scheduled task** opens the editor (`/scheduled/new`); a recurring [workflow](/workflows)'s **Schedule it** opens the same editor prefilled, with no preset key; a schedule's detail page shows its run history and offers **Run now**, **Pause**, **Resume**, and **Cancel** — with a paused schedule showing **Paused because:** and its reason.
+The **Schedules** page (route `/scheduled`, or **Open schedules** in the desktop command palette) lists your schedules with a status filter. **New schedule** opens the editor (`/scheduled/new`); a recurring [workflow](/workflows)'s **Schedule it** opens the same editor prefilled, with no preset key; a schedule's detail page shows its run history and offers **Run now**, **Pause**, **Resume**, and **Cancel** — with a paused schedule showing **Paused because:** and its reason.
+
+Pause, Cancel and saving an Edit cancel a waiting Run in the same operation. An already dispatched or running attempt may finish, but cannot retry the stopped occurrence. **Time recorded** on a one-time definition is separate from its Run status; use **Cancel waiting run** to stop its queued work. History includes the latest attempt, computer last-seen time and replacement/cancellation reasons. A source or authority problem sends a private Inbox item to the creator.
 
 <Callout type="warning">
 Cancelling a schedule is irreversible. A `cancelled` schedule can never be resumed or edited — create a new schedule instead. Pausing is the reversible way to stop firings.
 </Callout>
 
 ## Next steps
+
+The human CLI can inspect and control schedules with `zen schedule list`,
+`get`, `runs`, `run-now`, `pause`, and `cancel`. Before resuming, run
+`zen schedule preview <schedule-id>` and review the definition, provider,
+connections and next times. Then run `zen schedule resume <schedule-id>
+--revision <reviewed-revision> --review-digest <reviewed-digest>` using that
+review's values. The server rejects stale reviews.
 
 - **[Connectors and plugins](/connectors-and-plugins)** — the reviewed contracts a schedule's sources point at.
 - **[Runs](/runs)** — what happens after a firing materializes its run.

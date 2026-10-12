@@ -19,6 +19,7 @@ import (
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/execution"
+	"boardly.dev/boardly/server/internal/schedule"
 	"boardly.dev/boardly/server/internal/task"
 )
 
@@ -94,6 +95,7 @@ func (r *taskResultPolicyRequest) input() *task.ResultPolicy {
 // createTaskRequest: assignee and executedBy are both optional (ADR 0014).
 // An omitted assignee is the caller; an omitted executedBy is the assignee.
 type createTaskRequest struct {
+	Schedule      *schedule.Trigger        `json:"schedule"`
 	ResultPolicy  *taskResultPolicyRequest `json:"resultPolicy"`
 	ProjectID     string                   `json:"projectId"     binding:"required,uuid"`
 	Labels        json.RawMessage          `json:"labels"`
@@ -173,6 +175,7 @@ func (h *Handler) registerTaskRoutes(group *gin.RouterGroup) {
 		middleware.RequireUserAuth(h.AuthService),
 		middleware.RequireCompanyMember(h.CompanyService),
 	)
+	h.registerTaskCalendarRoutes(companyRoutes)
 	companyRoutes.GET("/task-dependencies", h.listTaskDependencyGraph)
 	routes := companyRoutes.Group("/tasks")
 	routes.GET("", h.listTasks)
@@ -318,7 +321,7 @@ func (h *Handler) createTask(c *gin.Context) {
 		MilestoneType: request.MilestoneType, Title: request.Title,
 		Description: description, Status: task.Status(statusValue), Priority: task.Priority(priorityValue),
 		Assignee: assignee, Labels: labels, StartDate: startDate.Value, DueDate: dueDate.Value,
-		Run: run, AttachmentIDs: attachmentIDs,
+		Run: run, AttachmentIDs: attachmentIDs, Schedule: request.Schedule,
 	}
 	if executedByPresent {
 		input.ExecutedBy = &executedBy
@@ -503,6 +506,22 @@ func (h *Handler) startTaskExecution(c *gin.Context) {
 	if err != nil {
 		writeRequestError(c, err)
 		return
+	}
+	scope, ok := h.taskRunScope(c, principal)
+	if !ok {
+		return
+	}
+	if scope != nil {
+		value, err := h.TaskService.Get(c.Request.Context(), principal, taskID, scope)
+		if err != nil {
+			writeTaskError(c, err)
+			return
+		}
+		if value.AssignmentStatus == "pending" || value.AssignmentStatus == "declined" ||
+			value.ScheduleDisposition == "scheduled" {
+			writeTaskError(c, task.ErrOutsideRunScope)
+			return
+		}
 	}
 	result, err := h.TaskService.StartExecution(c.Request.Context(), principal, taskID, task.StartExecutionInput{
 		ExpectedRevision: request.ExpectedRevision,

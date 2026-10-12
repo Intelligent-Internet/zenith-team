@@ -45,7 +45,7 @@ import {
   geometryOf,
 } from "./board-scene-session";
 import { BoardNoteSession, type NoteDraft } from "./board-note-session";
-import { readBoardDrafts, writeBoardDraft } from "./board-drafts";
+import { deleteBoardDraft, readBoardDrafts } from "./board-drafts";
 import { BoardHydration } from "./board-hydration";
 import {
   BoardNode,
@@ -1469,7 +1469,10 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
           </button>
           <button
             onClick={() =>
-              void writeBoardDraft(row.key, undefined)
+              void deleteBoardDraft<NoteDraft>(
+                row.key,
+                (value) => (value.stamp ?? "") === (row.value.stamp ?? ""),
+              )
                 .then(() => {
                   orphanNotesRef.current = orphanNotesRef.current.filter(
                     (draft) => draft.key !== row.key,

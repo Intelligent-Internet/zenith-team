@@ -13,7 +13,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/events"
+	"boardly.dev/boardly/server/internal/schedule"
+	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
 
 func TestUpdateAgentAtomicallyPersistsCanonicalLifecycle(t *testing.T) {
@@ -489,7 +492,11 @@ func seedAgentTask(
 		t.Fatalf("begin agent task seed: %v", err)
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
-	if _, err := tx.Exec(ctx, `INSERT INTO projects(company_id,key,title) VALUES ($1,'work','Work') ON CONFLICT (company_id,key) DO NOTHING`, fixture.companyID); err != nil {
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO projects(company_id,key,title) VALUES ($1,'work','Work') ON CONFLICT (company_id,key) DO NOTHING`,
+		fixture.companyID,
+	); err != nil {
 		t.Fatal(err)
 	}
 	// The circular task <-> conversation FK is DEFERRABLE and validates at
@@ -683,5 +690,120 @@ func TestCreateAgentPersistsCapAndFencesThinkingLevelToTheProvider(t *testing.T)
 	}
 	if kept.Provider != "claude" || kept.ThinkingLevel == nil || *kept.ThinkingLevel != claudeLevel {
 		t.Fatalf("Update(claude template) = provider %q level %v", kept.Provider, kept.ThinkingLevel)
+	}
+}
+
+func TestArchiveAgentDropsWaitingScheduleRun(t *testing.T) {
+	pool, store := startAgentPostgres(t)
+	ctx := context.Background()
+	fixture := seedAgentCompany(t, ctx, pool, "owner")
+	agentID := seedLifecycleAgent(t, ctx, pool, fixture.companyID, fixture.rootAgentID, "Scheduled Agent")
+	mustAgentExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO agent_runtime_bindings(company_id,agent_id,user_id,runtime_id,provider) VALUES($1,$2,$3,$4,'codex')`,
+		fixture.companyID,
+		agentID,
+		fixture.userID,
+		fixture.runtimeID,
+	)
+	bus := mustAgentTestBus(t)
+	schedules, err := schedule.NewScheduleService(schedule.ServiceOptions{
+		Store: store,
+		Bus:   bus,
+		ConversationUpdater: schedule.ConversationUpdaterFunc(
+			func(context.Context, *generated.Queries, *[]events.Event, schedule.UpdateConversationInput) error {
+				return nil
+			},
+		),
+		Materializer: schedule.MaterializerFunc(
+			func(ctx context.Context, q *generated.Queries, pending *[]events.Event, input schedule.MaterializeInput) (schedule.MaterializeResult, error) {
+				result, err := conversation.MaterializeScheduleRunInTx(
+					ctx,
+					q,
+					pending,
+					conversation.ScheduleRunInput{
+						ScheduleID:     input.ScheduleID,
+						CompanyID:      input.CompanyID,
+						ConversationID: input.ConversationID,
+						CreatorUserID:  input.CreatorUserID,
+						AgentID:        input.AgentID,
+						Provider:       input.Provider,
+						Instructions:   input.Instructions,
+						OccurrenceAt:   input.OccurrenceAt,
+					},
+				)
+				return schedule.MaterializeResult{
+					Disposition: schedule.FiringDispositionMaterialized,
+					RunID:       result.RunID,
+					MessageID:   result.MessageID,
+				}, err
+			},
+		),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expression, zone := "0 9 * * *", "UTC"
+	trigger := schedule.Trigger{Type: schedule.TriggerTypeCron, Expression: &expression, TimeZone: &zone}
+	preview, err := schedules.Preview(
+		ctx,
+		fixture.principal,
+		schedule.PreviewInput{
+			AgentID:      agentID,
+			Name:         "Archive me",
+			Instructions: "Read updates",
+			Trigger:      trigger,
+			ConnectorIDs: []uuid.UUID{},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := schedules.Create(
+		ctx,
+		fixture.principal,
+		schedule.CreateInput{
+			RequestKey:   uuid.Must(uuid.NewV7()),
+			AgentID:      agentID,
+			Name:         preview.Name,
+			Instructions: preview.Instructions,
+			Trigger:      trigger,
+			Status:       schedule.StatusActive,
+			ReviewDigest: preview.ReviewDigest,
+			ConnectorIDs: []uuid.UUID{},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fired, err := schedules.RunNow(
+		ctx,
+		fixture.principal,
+		created.Schedule.ID,
+		schedule.RunNowInput{RequestKey: uuid.Must(uuid.NewV7())},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, _ := mustAgentService(t, store)
+	if _, err := service.Archive(ctx, fixture.principal, agentID, RevisionInput{ExpectedRevision: 1}); err != nil {
+		t.Fatal(err)
+	}
+	run, err := store.Queries().GetRun(ctx, *fired.Firing.RunID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if run.Status != "cancelled" {
+		t.Fatalf("Run remains %s", run.Status)
+	}
+	current, err := schedules.Get(ctx, fixture.principal, created.Schedule.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.Status != schedule.StatusPaused || current.PauseReason == nil ||
+		*current.PauseReason != "agent_unavailable" {
+		t.Fatalf("Schedule after archive: %+v", current)
 	}
 }

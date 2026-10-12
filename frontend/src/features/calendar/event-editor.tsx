@@ -8,6 +8,7 @@ import {
   Check,
   ChevronDown,
   Map,
+  ListTodo,
   EllipsisVertical,
   Trash2,
 } from "@/shared/ui/icons";
@@ -58,6 +59,11 @@ function dayDifference(next: string, previous: string) {
   );
 }
 
+export type CalendarEntryDraft = Pick<
+  CalendarInput,
+  "title" | "description" | "startLocal"
+>;
+
 export type EventEditorSelection = {
   day: Date;
   anchor: CalendarEventAnchor;
@@ -68,6 +74,8 @@ export type EventEditorSelection = {
   event?: CalendarOccurrence;
   companyId?: string;
   edit?: boolean;
+  initialType?: "event" | "reminder";
+  draft?: CalendarEntryDraft;
 };
 function initialInput(
   day: Date,
@@ -139,15 +147,25 @@ export function EventEditor({
   event,
   onClose,
   companyId,
-}: EventEditorSelection & { onClose: () => void }) {
+  initialType,
+  draft,
+  onCreateTask,
+}: EventEditorSelection & {
+  onClose: () => void;
+  onCreateTask?: (draft: CalendarEntryDraft) => void;
+}) {
   const theme = useCalendarTheme();
   const contextCompanyId = event?.companyId ?? companyId;
   const catalog = useCalendarCatalogQuery(contextCompanyId ?? undefined, {
     refetchOnMountOrArgChange: 60,
   });
-  const [input, setInput] = useState(() =>
-    initialInput(day, hour, minute, allDay, event, color),
-  );
+  const [input, setInput] = useState(() => ({
+    ...initialInput(day, hour, minute, allDay, event, color),
+    ...(initialType && !event ? { type: initialType } : {}),
+    ...(!event && draft
+      ? { title: draft.title, description: draft.description }
+      : {}),
+  }));
   const [endDateOpen, setEndDateOpen] = useState(false);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -419,6 +437,16 @@ export function EventEditor({
                 {type === "event" ? "Event" : "Reminder"}
               </button>
             ))}
+            {onCreateTask && (
+              <button
+                type="button"
+                aria-pressed="false"
+                onClick={() => onCreateTask(input)}
+              >
+                <ListTodo size={14} />
+                Task
+              </button>
+            )}
           </div>
           <label>
             <span className="sr-only">Title</span>

@@ -54,7 +54,11 @@ func (s *DefaultPlanService) ApplyCompanyPlan(
 				return ErrForbidden
 			}
 			locked, err := lockPlanForApply(ctx, q, planScopeRule{
-				actor: approval.CompanyPlanActor{Principal: principal}, base: &artifact.Base, writeNeeded: true,
+				actor: approval.CompanyPlanActor{
+					Principal: principal,
+				},
+				base:        &artifact.Base,
+				writeNeeded: true,
 			}, artifact)
 			if errors.Is(err, errPlanSlugChanged) || errors.Is(err, errPlanStale) {
 				return ErrPlanConflict
@@ -148,7 +152,9 @@ func (s *DefaultPlanService) PrepareCompanyPlanApply(
 		return approval.PreparedCompanyPlanAction{}, err
 	}
 	artifact.Base = locked.snapshot()
-	changes := append(planProjectChanges(artifact.Desired, projects), computeCompanyPlanChanges(artifact.Desired, tasks, dependencies)...)
+	changes := append(
+		planProjectChanges(artifact.Desired, projects),
+		computeCompanyPlanChanges(artifact.Desired, tasks, dependencies)...)
 	canonical, err := json.Marshal(artifact)
 	if err != nil {
 		return approval.PreparedCompanyPlanAction{}, fmt.Errorf("encode canonical Company Plan action: %w", err)
@@ -315,6 +321,10 @@ func applyDesiredPlan(
 	// a live Run: the Task's Inbox rules tell the assignee and close its stale
 	// review notices.
 	handoffRunStopped := map[string]bool{}
+	// Preserve the first-attempt receipt before generic handoff cancellation
+	// also stops claimed Runs. Only an unclaimed scheduled attempt can be
+	// returned to its Calendar occurrence for the replacement Agent.
+	unclaimedScheduleRunCancelled := map[string]bool{}
 	// A restated status that crosses `done` flips every dependent's
 	// dependenciesResolved projection; the dependency walk announces them.
 	resolvedFlipTasks := map[string]bool{}
@@ -334,20 +344,46 @@ func applyDesiredPlan(
 				handoff := current.ExecutionGeneration > 0 &&
 					!samePlanUUID(current.ExecutedByAgentID, executedByAgentID)
 				if handoff {
-					cancelled, err := execution.CancelTaskRunsForHandoffInTx(ctx, q, pending, execution.TaskHandoff{
-						CompanyID: principal.CompanyID, TaskID: current.ID,
-					})
+					waiting, err := execution.CancelPendingTaskScheduleRunsInTx(
+						ctx,
+						q,
+						pending,
+						execution.TaskScheduleCancellation{
+							CompanyID: principal.CompanyID,
+							TaskID:    current.ID,
+							Reason:    execution.CancellationScheduleEdited,
+						},
+					)
 					if err != nil {
-						return nil, fmt.Errorf("cancel Task Runs for Company Plan handoff: %w", err)
+						return nil, fmt.Errorf(
+							"cancel waiting Calendar Run for Company Plan handoff: %w",
+							err,
+						)
 					}
-					handoffRunStopped[key] = len(cancelled) > 0
+					unclaimedScheduleRunCancelled[key] = len(waiting) > 0
+					cancelled, err := execution.CancelTaskRunsForHandoffInTx(
+						ctx,
+						q,
+						pending,
+						execution.TaskHandoff{
+							CompanyID: principal.CompanyID, TaskID: current.ID,
+						},
+					)
+					if err != nil {
+						return nil, fmt.Errorf(
+							"cancel Task Runs for Company Plan handoff: %w",
+							err,
+						)
+					}
+					handoffRunStopped[key] = len(waiting) > 0 || len(cancelled) > 0
 				}
 				// The handoff fences the earlier Runs out of any merge, so
 				// work that was in progress or in review starts fresh: the
 				// Task goes back to To do for its assignee to start, as a
 				// confirmed Task PATCH does.
 				status := target.Status
-				if handoff && (status == string(task.StatusInProgress) || status == string(task.StatusInReview)) {
+				if handoff &&
+					(status == string(task.StatusInProgress) || status == string(task.StatusInReview)) {
 					status = string(task.StatusTodo)
 				}
 				// The assignee, labels and dates are kept: a plan names none
@@ -372,16 +408,19 @@ func applyDesiredPlan(
 				}); err != nil {
 					return nil, mapPlanMutationError(fmt.Sprintf("update Task %q", key), err)
 				}
-				renamed, err := q.RenameCompanyPlanTaskConversation(ctx, generated.RenameCompanyPlanTaskConversationParams{
-					Title:                     target.Title,
-					CompanyID:                 principal.CompanyID,
-					ConversationID:            current.ConversationID,
-					FenceUserID:               principal.UserID,
-					FencePermission:           writePermission,
-					CompanyDefaultPermissions: fence.CompanyDefaultPermissions,
-					ManagementPermissions:     fence.ManagementPermissions,
-					ManagementRoles:           fence.ManagementRoles,
-				})
+				renamed, err := q.RenameCompanyPlanTaskConversation(
+					ctx,
+					generated.RenameCompanyPlanTaskConversationParams{
+						Title:                     target.Title,
+						CompanyID:                 principal.CompanyID,
+						ConversationID:            current.ConversationID,
+						FenceUserID:               principal.UserID,
+						FencePermission:           writePermission,
+						CompanyDefaultPermissions: fence.CompanyDefaultPermissions,
+						ManagementPermissions:     fence.ManagementPermissions,
+						ManagementRoles:           fence.ManagementRoles,
+					},
+				)
 				if err != nil {
 					return nil, fmt.Errorf("update Task conversation title: %w", err)
 				}
@@ -446,6 +485,22 @@ func applyDesiredPlan(
 	); err != nil {
 		return nil, err
 	}
+	var deletedTaskIDs []uuid.UUID
+	for _, key := range sortedPersistedTaskKeys(tasks) {
+		current := tasks[key]
+		if _, retained := desiredTasks[key]; !retained && !terminalTaskStatus(current.Status) {
+			deletedTaskIDs = append(deletedTaskIDs, current.ID)
+		}
+	}
+	if err := task.DetachDeletedCalendarTemplatesInTx(
+		ctx,
+		q,
+		pending,
+		principal.CompanyID,
+		deletedTaskIDs,
+	); err != nil {
+		return nil, err
+	}
 	for _, key := range sortedPersistedTaskKeys(tasks) {
 		current := tasks[key]
 		if _, ok := desiredTasks[key]; ok || terminalTaskStatus(current.Status) {
@@ -453,7 +508,13 @@ func applyDesiredPlan(
 		}
 		// The Task's live Runs end with it: once it is gone nothing would
 		// stop a queued one from being claimed for work nobody holds.
-		if _, err := execution.CancelDeletedTaskRunsInTx(ctx, q, pending, principal.CompanyID, current.ID); err != nil {
+		if _, err := execution.CancelDeletedTaskRunsInTx(
+			ctx,
+			q,
+			pending,
+			principal.CompanyID,
+			current.ID,
+		); err != nil {
 			return nil, fmt.Errorf("cancel the Runs of a deleted Task: %w", err)
 		}
 		detached, err := q.DetachDeletedTaskConversation(ctx, generated.DetachDeletedTaskConversationParams{
@@ -510,10 +571,24 @@ func applyDesiredPlan(
 			change.PreviousAssignee = planTaskAssignee(before.AssigneeUserID)
 			change.PreviousStatus = task.Status(before.Status)
 			change.RunStopped, change.Handoff = handoffRunStopped[key]
+			target := desiredTasks[key]
+			change.BriefChanged = before.Title != target.Title || before.Description != target.Description
+			change.AssignmentChanged = !samePlanUUID(
+				before.ExecutedByAgentID,
+				planTaskExecutedBy(planAgents[target.AgentID]),
+			)
+			change.UnclaimedScheduleRunCancelled = unclaimedScheduleRunCancelled[key]
 		}
 		taskChanges = append(taskChanges, change)
 	}
-	inboxResults, err := task.StageChangesInTx(ctx, q, pending, principal, taskChanges)
+	// Record the plan's metadata/dependency revision before Task reconciles
+	// Calendar metadata. Its transaction participants record those additional
+	// revisions themselves; observing their final revision again would write
+	// two history entries for the same subject revision.
+	if err := history.recordInTx(ctx, q, pending, applier.actor()); err != nil {
+		return nil, err
+	}
+	inboxResults, err := task.StageChangesInTx(ctx, q, pending, principal, applier.actor(), taskChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -523,9 +598,6 @@ func applyDesiredPlan(
 		}
 	}
 	if err := archivePlanProjects(ctx, q, pending, applier, desired, locked, result); err != nil {
-		return nil, err
-	}
-	if err := history.recordInTx(ctx, q, pending, applier.actor()); err != nil {
 		return nil, err
 	}
 	// Every frame the apply staged reaches the readers of its Project,

@@ -2,7 +2,9 @@ import { apiClient } from "@/lib/api-client";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
-export type CalendarOccurrence = components["schemas"]["CalendarOccurrence"];
+export type CalendarOccurrence = components["schemas"]["CalendarOccurrence"] & {
+  taskOccurrence?: import("./task-calendar-api").TaskCalendarOccurrence;
+};
 export type CalendarInput = components["schemas"]["CalendarInput"];
 export type CalendarCatalog = components["schemas"]["CalendarCatalog"];
 export type CalendarAttendee = components["schemas"]["CalendarAttendee"];

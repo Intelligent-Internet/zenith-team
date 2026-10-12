@@ -237,6 +237,7 @@ LEFT JOIN LATERAL (
       AND task_dependencies.dependent_task_id = tasks.id
 ) AS dependency_counts ON true
 WHERE tasks.company_id = sqlc.arg(company_id)::uuid
+  AND (NOT sqlc.arg(has_task_ids)::boolean OR tasks.id = ANY(sqlc.arg(task_ids)::uuid[]))
  AND (NOT sqlc.arg(has_project_id)::boolean OR tasks.project_id = sqlc.arg(project_id)::uuid)
   AND (
       NOT sqlc.arg(has_task_id)::boolean

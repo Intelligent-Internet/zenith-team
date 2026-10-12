@@ -86,6 +86,8 @@ type Config struct {
 	ShutdownTimeout        time.Duration
 	APIReplicas            int
 	RedisURL               string
+	ScheduleWorkers        int
+	ScheduleSweepInterval  time.Duration
 	RealtimeMetricsToken   string
 	// DaemonIDRequired makes daemon-plane runtime routes refuse a request
 	// that carries no X-Boardly-Daemon-ID (400 invalid_request). Off is the
@@ -137,8 +139,8 @@ func Load(lookup LookupEnv) (Config, error) {
 		return Config{}, err
 	}
 	redisURL := valueOrDefault(lookup, "APP_REDIS_URL", "")
-	if apiReplicas > 1 && redisURL == "" {
-		return Config{}, errors.New("APP_REDIS_URL is required when APP_API_REPLICAS is greater than 1")
+	if redisURL == "" {
+		return Config{}, errors.New("APP_REDIS_URL is required")
 	}
 	shutdownTimeout, err := positiveSeconds(lookup, "APP_SHUTDOWN_TIMEOUT_SECONDS", 15*time.Second)
 	if err != nil {
@@ -230,6 +232,22 @@ func Load(lookup LookupEnv) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	scheduleWorkers, err := positiveInt(lookup, "APP_SCHEDULE_WORKERS", 8)
+	if err != nil {
+		return Config{}, err
+	}
+	if scheduleWorkers > 64 || scheduleWorkers > int(databaseMaxConns)/3 {
+		return Config{}, errors.New(
+			"APP_SCHEDULE_WORKERS must be 1–64 and at most one third of APP_DATABASE_MAX_CONNS",
+		)
+	}
+	scheduleSweep, err := positiveSeconds(lookup, "APP_SCHEDULE_SWEEP_SECONDS", 30*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	if scheduleSweep < 10*time.Second || scheduleSweep > time.Minute {
+		return Config{}, errors.New("APP_SCHEDULE_SWEEP_SECONDS must be between 10 and 60")
+	}
 	databaseMinConns, err := positiveInt32(lookup, "APP_DATABASE_MIN_CONNS", 5)
 	if err != nil {
 		return Config{}, err
@@ -294,7 +312,9 @@ func Load(lookup LookupEnv) (Config, error) {
 	}
 	aiSecret := valueOrDefault(lookup, "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET", "")
 	if aiEnabled && len(aiSecret) < 32 {
-		return Config{}, errors.New("BOARDLY_HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when AI is enabled")
+		return Config{}, errors.New(
+			"BOARDLY_HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when AI is enabled",
+		)
 	}
 	liveKitConfig := LiveKitConfig{
 		AIEnabled: aiEnabled, AIWorkloadSecret: aiSecret,
@@ -319,11 +339,12 @@ func Load(lookup LookupEnv) (Config, error) {
 			MaxConnIdleTime:   databaseMaxConnIdleTime,
 			HealthCheckPeriod: databaseHealthCheckPeriod,
 		},
-		LogLevel:             logLevel,
-		CSRFSecret:           csrfSecret,
-		ShutdownTimeout:      shutdownTimeout,
-		APIReplicas:          apiReplicas,
-		RedisURL:             redisURL,
+		LogLevel:        logLevel,
+		CSRFSecret:      csrfSecret,
+		ShutdownTimeout: shutdownTimeout,
+		APIReplicas:     apiReplicas,
+		RedisURL:        redisURL,
+		ScheduleWorkers: scheduleWorkers, ScheduleSweepInterval: scheduleSweep,
 		RealtimeMetricsToken: valueOrDefault(lookup, "APP_REALTIME_METRICS_TOKEN", ""),
 		DaemonIDRequired:     daemonIDRequired,
 		Auth: AuthConfig{

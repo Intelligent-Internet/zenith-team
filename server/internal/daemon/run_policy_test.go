@@ -624,10 +624,9 @@ func TestBuildRunSystemPromptInjectsCEOCompanyPlanningPolicy(t *testing.T) {
 	}
 }
 
-// The CEO planning policy says the founder reviews proposed Tasks before any
-// Agent work starts. A CEO direct Run built from its real command catalog is
-// therefore never told about `zen task create`, which would start work at once.
-func TestCEODirectPromptOffersNoTaskCreation(t *testing.T) {
+// CEO chats expose scheduled creation without turning an explicit scheduling
+// request into onboarding or bypassing review for immediate planned work.
+func TestCEODirectPromptOffersScheduledTaskCreation(t *testing.T) {
 	t.Parallel()
 	doc := RunContext{
 		Agent:            RunAgentContext{Name: "Andrew", IsRoot: true},
@@ -640,8 +639,10 @@ func TestCEODirectPromptOffersNoTaskCreation(t *testing.T) {
 	if !strings.Contains(prompt, "CEO Company Planning Policy") || !strings.Contains(prompt, "- zen task list\n") {
 		t.Fatalf("CEO direct prompt lacks the planning policy or its reads:\n%s", prompt)
 	}
-	if strings.Contains(prompt, "zen task create") {
-		t.Fatalf("CEO direct prompt offers zen task create:\n%s", prompt)
+	for _, want := range []string{"- zen task create\n", "--run-at", "--cron", "--executed-by-agent", "zen task create requires a schedule", "It does not require Company Context review"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("CEO direct prompt missing %q", want)
+		}
 	}
 }
 

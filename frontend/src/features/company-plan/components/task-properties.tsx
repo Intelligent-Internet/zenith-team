@@ -1,3 +1,4 @@
+import { TaskScheduling } from "@/features/calendar/task-scheduling";
 import { TaskAssigneeField, TaskExecutorField } from "./task-assignment-fields";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { TaskProjectLabel } from "./project-controls";
@@ -125,6 +126,7 @@ export function TaskProperties({
       {variant === "detail" ? (
         <>
           <dl>
+            <TaskScheduling task={task} canEdit={canEdit} />
             {assignee}
             {priority}
             <Property label="Due date">
@@ -164,6 +166,7 @@ export function TaskProperties({
       ) : variant === "compact" ? (
         <>
           <dl>
+            <TaskScheduling task={task} canEdit={canEdit} />
             {assignee}
             {priority}
             <Property icon={<Clock3 />} label="Due date">
@@ -210,6 +213,7 @@ export function TaskProperties({
             </Property>
           </dl>
           <dl>
+            <TaskScheduling task={task} canEdit={canEdit} />
             <Property label="Start date">
               {dateInput("startDate", "Start date")}
             </Property>
