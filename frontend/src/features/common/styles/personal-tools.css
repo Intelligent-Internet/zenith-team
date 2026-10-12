@@ -1,0 +1,227 @@
+.boardly-workspace-theme {
+  --personal-accent: var(--workspace-native-accent);
+  --calendar-sage: #479d80;
+  --calendar-sky: #628de0;
+  --calendar-lavender: #9873cf;
+  --calendar-rose: #d87772;
+  --calendar-sand: #b99546;
+}
+.personal-button,
+.personal-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--workspace-control-size);
+  border: 1px solid var(--workspace-border);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-panel);
+  color: var(--workspace-text);
+  padding: 5px 12px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.personal-button:hover,
+.personal-icon-button:hover {
+  background: var(--workspace-panel-raised-bg);
+}
+.personal-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.personal-button--primary {
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  border-color: transparent;
+}
+.personal-button--primary:hover {
+  background: var(--workspace-accent-fill);
+  filter: brightness(0.95);
+}
+.personal-button--danger {
+  color: var(--workspace-native-danger);
+}
+.personal-icon-button {
+  width: var(--workspace-control-size);
+  min-height: var(--workspace-control-size);
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+  flex-shrink: 0;
+}
+.personal-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgb(0 0 0 / 0.3);
+  backdrop-filter: blur(3px);
+}
+.personal-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  border: 1px solid var(--workspace-border);
+  border-radius: var(--workspace-radius-overlay);
+  background: var(--workspace-panel);
+  color: var(--workspace-text);
+  box-shadow: var(--workspace-overlay-shadow);
+  padding: 24px;
+}
+.personal-dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.personal-dialog-heading h2 {
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin: 0 0 4px;
+}
+.personal-dialog-heading p,
+.personal-note {
+  color: var(--workspace-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.personal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.personal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--workspace-text-muted);
+  font-size: 12px;
+}
+.personal-form input:not([type="checkbox"]),
+.personal-form select,
+.personal-form textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 8px;
+  background: var(--workspace-panel-raised-bg);
+  color: var(--workspace-text);
+  font-size: 13px;
+}
+.personal-form textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+.personal-form .personal-title-input {
+  font-size: var(--workspace-text-page) !important;
+  padding: 8px 12px !important;
+  border-width: 1px !important;
+  border-radius: var(--workspace-radius-control) !important;
+  background: transparent !important;
+}
+.personal-form .personal-checkbox {
+  flex-direction: row;
+  align-items: center;
+}
+.personal-form input[type="checkbox"] {
+  accent-color: var(--personal-accent);
+}
+.personal-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.personal-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.personal-dialog-actions .personal-button--danger {
+  margin-right: auto;
+}
+.personal-error {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--workspace-native-danger);
+  padding: 10px 0;
+}
+.personal-tabs {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 10px;
+  width: fit-content;
+  background: var(--workspace-panel-raised-bg);
+}
+.personal-tabs button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--workspace-text-muted);
+  font-size: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.personal-tabs button[aria-pressed="true"] {
+  background: var(--workspace-panel);
+  color: var(--workspace-text);
+  box-shadow: none;
+}
+.personal-empty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--workspace-text-muted);
+}
+.personal-empty h2 {
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  color: var(--workspace-text);
+  font-weight: 600;
+}
+.personal-empty p {
+  font-size: 13px;
+  max-width: 330px;
+  line-height: 1.7;
+}
+.personal-button:focus-visible,
+.personal-icon-button:focus-visible,
+.personal-form :is(input, select, textarea):focus-visible,
+.personal-tabs button:focus-visible {
+  outline: 2px solid var(--personal-accent);
+  outline-offset: 3px;
+}
+@media (max-width: 520px) {
+  .personal-form-row {
+    grid-template-columns: 1fr;
+  }
+  .personal-dialog {
+    padding: 20px;
+  }
+}
+
+.personal-form > .personal-dialog-actions {
+  position: sticky;
+  bottom: -24px;
+  background: var(--workspace-panel);
+  padding: 14px 0 4px;
+  z-index: 1;
+  border-top: 1px solid var(--workspace-divider);
+}

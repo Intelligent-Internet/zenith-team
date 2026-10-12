@@ -1,0 +1,2 @@
+DROP INDEX conversation_user_states_archives_idx;
+ALTER TABLE conversation_user_states DROP COLUMN archived_at;

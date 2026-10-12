@@ -1,0 +1,393 @@
+.new-task-overlay {
+  z-index: 220;
+  background: rgb(0 0 0 / 42%);
+  backdrop-filter: blur(3px);
+}
+.new-task-dialog {
+  z-index: 221;
+  width: min(640px, calc(100vw - 32px));
+  max-width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-overlay, 14px);
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 20%);
+}
+.new-task-dialog[data-expanded="true"] {
+  width: min(940px, calc(100vw - 48px));
+  max-width: min(940px, calc(100vw - 48px));
+  height: min(760px, calc(100dvh - 64px));
+}
+.task-create-form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
+}
+.new-task-dialog[data-expanded="true"] .task-create-form {
+  height: 100%;
+}
+.new-task-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+}
+.new-task-header > span,
+.new-task-header > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.new-task-header > span {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+.new-task-header h2 {
+  margin: 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 600;
+  color: var(--workspace-native-text);
+}
+.new-task-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-page);
+  line-height: var(--workspace-leading-page);
+  cursor: pointer;
+}
+.new-task-close:hover {
+  background: var(--workspace-hover-bg);
+}
+.new-task-fields {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  border: 0;
+  padding: 4px 22px 18px;
+  margin: 0;
+  min-width: 0;
+}
+.task-create-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  color: var(--workspace-native-text-muted);
+}
+.new-task-fields
+  :is(.task-create-prompt, .task-create-description, .task-create-title) {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-native-text);
+  font-family: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.new-task-fields textarea {
+  flex: 1;
+  min-height: 170px;
+  resize: vertical;
+  line-height: 1.75;
+}
+.new-task-fields .task-create-title {
+  min-height: 32px;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.new-task-fields .task-create-description {
+  min-height: 130px;
+}
+.new-task-fields input::placeholder,
+.new-task-fields textarea::placeholder {
+  color: var(--workspace-native-text-muted);
+}
+.new-task-hint,
+.new-task-error {
+  margin: 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.new-task-error {
+  color: var(--workspace-native-danger);
+}
+.new-task-error button {
+  background: transparent;
+  border: 0;
+  color: var(--workspace-native-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.task-create-properties {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.task-create-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 28px;
+  max-width: 245px;
+  padding: 3px 8px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-family: inherit;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+button.task-create-chip {
+  cursor: pointer;
+}
+.task-create-chip > svg {
+  flex-shrink: 0;
+}
+.task-create-chip select {
+  min-width: 0;
+  max-width: 205px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+/* A choice the viewer cannot change, such as the assignee for someone who
+   may not assign tasks, reads as a plain value. */
+.task-create-chip select:disabled {
+  color: var(--workspace-native-text-muted);
+  cursor: default;
+}
+.task-create-chip option,
+.task-create-more option {
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+}
+.task-create-agent .task-create-agent-picker {
+  border-color: transparent;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.task-create-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 6px;
+  background: var(--workspace-control-bg);
+}
+.task-create-more label {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  min-width: 180px;
+}
+.task-create-more select {
+  padding: 7px 9px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 5px;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font-family: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.new-task-footer {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--workspace-divider);
+}
+.task-create-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-family: inherit;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  cursor: pointer;
+}
+.task-create-switch:hover {
+  color: var(--workspace-native-text);
+}
+.task-create-another {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+}
+.task-create-another input {
+  accent-color: var(--workspace-native-accent);
+}
+.new-task-dialog :is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--workspace-native-text-muted);
+  outline-offset: 2px;
+}
+.new-task-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.task-create-agent-menu {
+  z-index: 230;
+  width: min(340px, calc(100vw - 40px));
+  padding: 8px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 16%);
+  font-family: var(--workspace-font-body);
+}
+.task-create-agent-menu > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  border-bottom: 1px solid var(--workspace-divider);
+  color: var(--workspace-native-text-muted);
+}
+.task-create-agent-menu input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  outline: none;
+}
+.task-create-agent-options {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-top: 6px;
+}
+.task-create-agent-options button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  border-radius: 5px;
+  padding: 9px 7px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.task-create-agent-options button:hover {
+  background: var(--workspace-hover-bg);
+}
+.task-create-agent-options button:focus-visible {
+  background: var(--workspace-selected-bg);
+  outline: none;
+}
+.task-create-agent-options button > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.task-create-agent-options strong {
+  display: block;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 500;
+}
+.task-create-agent-options small {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+/* "Me" in the who-does-the-work picker: a person, the same size as the
+   Agent avatars beside it (30px in the list, 21px in the chip). */
+.task-create-self-avatar {
+  display: inline-grid;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+}
+.task-create-agent-picker .task-create-self-avatar {
+  width: 21px;
+  height: 21px;
+}
+.task-create-agent-status {
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.task-create-agent-status[data-online="true"] {
+  color: var(--workspace-native-success);
+}
+.task-create-agent-options p {
+  padding: 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+@media (max-width: 600px) {
+  .new-task-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .task-create-switch {
+    flex-basis: 100%;
+  }
+  .new-task-footer > button:last-child {
+    margin-left: auto;
+  }
+  .new-task-header > span {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

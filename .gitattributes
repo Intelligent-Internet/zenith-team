@@ -1,0 +1,30 @@
+# Pinned platform content must reach every build byte for byte on every OS
+# (ADR 0016). A Windows checkout with core.autocrlf=true would otherwise
+# rewrite it:
+#
+# - boardly-mcp matches each platform SKILL.md's `name:` and `description:`
+#   frontmatter lines byte for byte, so a CRLF copy is refused;
+# - platformbundle.Decode checks each tar's sha256 against its lock, so a
+#   converted tar is refused, and the server does not start.
+#
+# These rules cover only those paths. The rest of the repository keeps each
+# checkout's own line-ending settings.
+
+# The pinned artifact, written only by bundlectl import, and the golden
+# format-1 tar the tests compare against.
+server/internal/platformbundle/*.bundle.tar binary linguist-generated
+server/internal/platformbundle/testdata/*.tar binary
+
+# The lock (its canonical bytes are checked) and the harness SKILL.md laid
+# over the pinned files.
+server/internal/platformbundle/*.lock.json text eol=lf
+server/internal/platformbundle/harness/** text eol=lf
+
+# The compiled zenith-platform skill. Every file under it is text today; a
+# binary file added here needs its own rule.
+server/internal/mcp/tools/builtin/** text eol=lf
+
+# Managed Tool metadata is pinned inline in a single canonical JSON lock.
+server/internal/daemon/tool_releases/*.lock.json text eol=lf
+server/internal/daemon/studio_skill.md text eol=lf
+server/internal/daemon/studio_runtime.md text eol=lf

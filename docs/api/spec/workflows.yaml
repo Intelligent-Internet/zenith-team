@@ -1,0 +1,582 @@
+# Workflows — the release-owned catalog of ready-to-run templates.
+#
+# A Workflow is a card, a form and a brief template. The Workflows page
+# renders the form, renders the brief with the person's answers and launches
+# it as an ordinary Task (`createTask`) whose description names the playbook
+# the Task Run loads from the pinned `zenith-workflows` skill. Nothing in this
+# file writes: the catalog is read-only and identical for every Company.
+
+paths:
+  companies_companyId_workflows:
+    get:
+      tags: [workflows]
+      operationId: listWorkflows
+      summary: List the Workflow catalog (member)
+      description: |
+        Every Workflow this release ships, ordered by name. Each item is a
+        catalog card; the form, brief template and playbook reference are on
+        `getWorkflow`. The catalog is read from the same embedded files a
+        Task Run loads playbooks from, so it names exactly what ships. It is
+        identical for every Company and carries no Company data. The read is
+        a bounded collection: no filters, no pagination.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The catalog cards in name order.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/WorkflowSummary' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_workflows_workflowKey:
+    get:
+      tags: [workflows]
+      operationId: getWorkflow
+      summary: Read one Workflow with its form (member)
+      description: |
+        The card plus everything the launch dialog needs: highlights, the
+        form pages, the brief template, the Task milestone, the playbook
+        reference and, for a recurring Workflow, the Schedule template.
+
+        Rendering contract for `brief` and `schedule.instructions`: each
+        `{{fieldKey}}` placeholder (whitespace inside the braces allowed)
+        becomes the person's answer — the option label for `select`, the
+        option labels joined with ", " for `multi_select`, the trimmed text
+        otherwise. A line whose placeholders all rendered empty is dropped
+        whole, so optional fields leave no dangling label; runs of blank
+        lines then collapse to one, and the result is trimmed.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: workflowKey
+          in: path
+          required: true
+          description: The Workflow's kebab-case key.
+          schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 39 }
+      responses:
+        '200':
+          description: The Workflow.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Workflow' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: |
+            `404 company_not_found` or `404 workflow_not_found`. A key that does
+            not match the pattern is also `404 workflow_not_found`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_workflows_workflowKey_readiness:
+    get:
+      tags: [workflows]
+      operationId: getWorkflowReadiness
+      summary: Which of a Workflow's apps are ready for one Agent (member)
+      description: |
+        For each app the Workflow works best with, whether it will reach a
+        Run of this Agent the caller starts now. Apps are resolved on the
+        Runtime of the caller's own binding of the Agent (ADR 0014), the
+        computer such a Run executes on, through a server-owned table of
+        exact provider identities (never by name), and `ready` applies the
+        same rule as the Run claim: the app is connected, executable, enabled
+        by Company policy, reviewed, not denied for this Agent, and discovery
+        is fresh.
+
+        Any member may read the states. `connector` and `plugin` — what is
+        needed to connect, install or review the app — are included for
+        holders of `plugins.manage`, which every role holds because each
+        member connects and installs apps on their own computer, and
+        `connector` also for holders of `connectors.manage`, who review it
+        for the Company. A caller who
+        has not set the Agent up on one of their computers has no binding:
+        discovery is `unbound`, `runtimeId` is null and every app `unknown`,
+        and launching the Workflow would answer `409 agent_binding_required`.
+        A bound computer that was removed or has never reported discovery is
+        `missing`, also with every app `unknown`. A Workflow without app
+        hints returns an empty `apps`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: workflowKey
+          in: path
+          required: true
+          description: The Workflow's kebab-case key.
+          schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 39 }
+        - name: agent_id
+          in: query
+          required: true
+          description: The Agent the Workflow would run as.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: One readiness entry per app hint, in the Workflow's order.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/WorkflowReadiness' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 company_not_found`, `404 workflow_not_found` or `404 agent_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+schemas:
+  WorkflowAppState:
+    type: string
+    description: >-
+      `ready`: reaches a Run of this Agent now. `pending`: connected but not
+      yet verified or enabled (discovery is refreshing). `needs_connection`:
+      the app is offered but not connected. `review_required`: its tools
+      changed and an owner must review them. `disabled_for_agent`: turned off
+      in this Agent's capabilities. `provider_managed`: managed in the
+      provider (Claude.ai cloud connectors) and never available to Runs.
+      `not_offered`: the Agent's provider has no such app. `unknown`: the
+      caller has not set the Agent up, or their bound computer has not
+      reported discovery.
+    enum:
+      - ready
+      - pending
+      - needs_connection
+      - review_required
+      - disabled_for_agent
+      - provider_managed
+      - not_offered
+      - unknown
+
+  WorkflowDiscoveryState:
+    type: string
+    description: >-
+      `fresh` or `stale`: the discovery of the caller's bound computer, within
+      or past the Run claim's window. `missing`: the bound computer was
+      removed or has never reported. `unbound`: the caller has not set the
+      Agent up on one of their computers (ADR 0014).
+    enum: [fresh, stale, missing, unbound]
+
+  WorkflowAppConnector:
+    type: object
+    additionalProperties: false
+    required: [id, source, nativeId, name, status, action, toolCount, writeToolCount]
+    description: >-
+      The Connector behind this app on the caller's bound computer: a holder
+      of `plugins.manage` connects it there, and a holder of
+      `connectors.manage` also reviews it for the Company. `toolCount` is how many tools a Run can call from the app's
+      current observation (a Codex app's tools the provider reports enabled);
+      `writeToolCount` is how many of them can change data (not read-only).
+      Both are 0 when the app has not reported tools, which includes every
+      Claude source: its namespace lists MCP servers, not tools.
+    properties:
+      id: { type: string, format: uuid }
+      source: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorSource' }
+      nativeId: { type: string }
+      name: { type: string }
+      status: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorStatus' }
+      action: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorAction' }
+      toolCount: { type: integer, minimum: 0 }
+      writeToolCount: { type: integer, minimum: 0 }
+
+  WorkflowAppPlugin:
+    type: object
+    additionalProperties: false
+    required: [id, nativeId, name, installed, action]
+    properties:
+      id: { type: string, format: uuid }
+      nativeId: { type: string }
+      name: { type: string }
+      installed: { type: boolean }
+      action: { $ref: './connectors-and-plugins.yaml#/schemas/PluginAction' }
+
+  WorkflowAppReadiness:
+    type: object
+    additionalProperties: false
+    required: [app, state]
+    properties:
+      app: { $ref: '#/schemas/WorkflowConnectorType' }
+      state: { $ref: '#/schemas/WorkflowAppState' }
+      connector: { $ref: '#/schemas/WorkflowAppConnector' }
+      plugin: { $ref: '#/schemas/WorkflowAppPlugin' }
+      iconUrl:
+        type: string
+        format: uri
+        description: >-
+          The app's logo, visible to every member. The first that loads outside
+          a signed-in ChatGPT session (any `chatgpt.com` logo does not) of: the
+          winning Connector observation's icon, any other observed candidate's
+          icon, for a Codex app the icon of a Plugin installed on the caller's
+          bound computer that bundles it, the pinned Plugin's icon, or the icon
+          of a Codex Plugin or app with the same case-insensitive name observed
+          by one of the caller's own computers (ADR 0014); with none loadable,
+          the first of these present. Omitted when discovery `state` is
+          `unbound` or `missing`, or when no source has one.
+
+  WorkflowReadinessDiscovery:
+    type: object
+    additionalProperties: false
+    required: [state, observedAt]
+    properties:
+      state: { $ref: '#/schemas/WorkflowDiscoveryState' }
+      observedAt:
+        type: [string, "null"]
+        format: date-time
+        description: When the caller's bound computer last observed its apps; null unless discovery `state` is `fresh` or `stale`.
+
+  WorkflowReadiness:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, workflowKey, agentId, provider, runtimeId, discovery, apps]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      workflowKey: { type: string }
+      agentId: { type: string, format: uuid }
+      provider: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorProvider' }
+      runtimeId:
+        type: [string, "null"]
+        format: uuid
+        description: >-
+          The computer of the caller's binding of the Agent, where a Run they
+          start executes; null when discovery `state` is `unbound`. `provider`
+          is the Agent's own either way.
+      discovery: { $ref: '#/schemas/WorkflowReadinessDiscovery' }
+      apps:
+        type: array
+        maxItems: 6
+        items: { $ref: '#/schemas/WorkflowAppReadiness' }
+
+  WorkflowCategory:
+    type: string
+    description: Catalog section. The enum order is the page order.
+    enum:
+      - finance
+      - legal
+      - sales
+      - marketing
+      - research
+      - productivity
+      - writing
+      - recruiting
+      - media
+      - ecommerce
+      - product
+      - real_estate
+
+  WorkflowDeliverableType:
+    type: string
+    description: What a Workflow hands back, for presentation. The playbook owns the contract.
+    enum:
+      - report
+      - document
+      - spreadsheet
+      - presentation
+      - pdf
+      - csv
+      - image
+      - video
+      - web_app
+      - email_drafts
+
+  WorkflowConnectorType:
+    type: string
+    description: >-
+      An external app the Workflow works best with. `getWorkflowReadiness`
+      resolves it to exact provider identities on the caller's bound computer; Connector
+      authority stays with Company Connector policy and nothing here grants it.
+    enum:
+      - gmail
+      - google_calendar
+      - google_drive
+      - slack
+      - notion
+      - linear
+      - jira
+      - asana
+      - clickup
+      - github
+      - hubspot
+      - salesforce
+      - apollo
+      - gong
+      - fireflies
+      - zendesk
+      - stripe
+      - shopify
+      - xero
+      - linkedin
+      - figma
+      - firecrawl
+      - ashby
+      - typeform
+
+  WorkflowFieldType:
+    type: string
+    enum: [text, textarea, select, multi_select, date, url]
+
+  WorkflowIconType:
+    type: string
+    description: An Iconsax Outline glyph the client bundles for workflow cards.
+    enum:
+      - award
+      - book-open
+      - box
+      - box-tick
+      - briefcase
+      - brush
+      - building
+      - buildings-2
+      - calendar-2
+      - calendar-tick
+      - card
+      - chart-2
+      - clock
+      - code
+      - coin
+      - color-swatch
+      - cpu
+      - crown
+      - designtools
+      - direct-inbox
+      - discover
+      - document-code
+      - document-like
+      - document-normal
+      - document-text
+      - dollar-circle
+      - driver
+      - edit-2
+      - flag
+      - flash
+      - gallery
+      - global
+      - gps
+      - graph
+      - hashtag
+      - hierarchy
+      - key
+      - lamp-on
+      - layer
+      - magic-star
+      - map
+      - message-question
+      - message-text
+      - messages
+      - microphone
+      - monitor
+      - monitor-recorder
+      - note-text
+      - people
+      - profile-2user
+      - receipt-2
+      - repeat-arrow
+      - routing-2
+      - scan
+      - search-zoom-in-1
+      - send-2
+      - shield-security
+      - shield-tick
+      - sms
+      - speedometer
+      - star
+      - status
+      - stickynote
+      - tag
+      - task-square
+      - text-block
+      - timer-start
+      - user-add
+      - user-tag
+      - video
+      - volume-high
+      - wallet
+
+  WorkflowSummary:
+    type: object
+    additionalProperties: false
+    required: [key, name, description, categories, icon, deliverables, connectors, recurring, featured]
+    description: >-
+      One catalog card. `icon` is an Iconsax Outline glyph name the client
+      bundles; `recurring` means the Workflow also offers a Schedule
+      template; `featured` places it in the page's Featured section.
+    properties:
+      key: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 39, example: contract-review }
+      name: { type: string, example: Contract review }
+      description: { type: string }
+      categories:
+        type: array
+        minItems: 1
+        maxItems: 3
+        description: The first category is the primary section.
+        items: { $ref: '#/schemas/WorkflowCategory' }
+      icon: { $ref: '#/schemas/WorkflowIconType' }
+      deliverables:
+        type: array
+        minItems: 1
+        maxItems: 4
+        items: { $ref: '#/schemas/WorkflowDeliverableType' }
+      connectors:
+        type: array
+        maxItems: 6
+        items: { $ref: '#/schemas/WorkflowConnectorType' }
+      recurring: { type: boolean }
+      featured: { type: boolean }
+
+  WorkflowFieldOption:
+    type: object
+    additionalProperties: false
+    required: [value, label]
+    properties:
+      value: { type: string }
+      label: { type: string }
+
+  WorkflowField:
+    type: object
+    additionalProperties: false
+    required: [key, type, label, required]
+    description: >-
+      One form input. `default` seeds a text, textarea, select, date (YYYY-MM-DD)
+      or url field; `defaults` seeds a multi_select. `options` belong to select
+      and multi_select only. `acceptsFiles` lets a textarea take uploaded files
+      beside, or in place of, its text: a required one is answered by either.
+      The page uploads them as Attachments and launches the Task with
+      `attachmentIds` (at most 10 per field and 20 per launch), so every Run of
+      the Task reads them. A recurring Workflow never sets it, because a
+      Schedule carries no files.
+    properties:
+      key: { type: string, example: counterparty }
+      type: { $ref: '#/schemas/WorkflowFieldType' }
+      label: { type: string }
+      required: { type: boolean }
+      placeholder: { type: string }
+      description: { type: string }
+      options:
+        type: array
+        minItems: 2
+        maxItems: 30
+        items: { $ref: '#/schemas/WorkflowFieldOption' }
+      default: { type: string }
+      defaults:
+        type: array
+        items: { type: string }
+      acceptsFiles: { type: boolean }
+
+  WorkflowPage:
+    type: object
+    additionalProperties: false
+    required: [title, fields]
+    properties:
+      title: { type: string }
+      fields:
+        type: array
+        minItems: 1
+        maxItems: 16
+        items: { $ref: '#/schemas/WorkflowField' }
+
+  WorkflowPlaybook:
+    type: object
+    additionalProperties: false
+    required: [skillKey, path]
+    description: Where a Task Run loads the procedure with `load_skill_reference`.
+    properties:
+      skillKey: { type: string, example: zenith-workflows }
+      path: { type: string, example: contract-review/playbook.md }
+
+  WorkflowRequirement:
+    type: object
+    additionalProperties: false
+    required: [anyOf]
+    description: >-
+      An app the Workflow cannot do its job without. It is met when at least
+      one app of `anyOf` reaches the Run (readiness `ready` or `pending` for
+      the chosen Agent) or, when `orField` names a field, the person answered
+      that field instead. Every app of `anyOf` is also in the Workflow's
+      `connectors`, and each app belongs to at most one requirement. The page
+      holds a launch until every requirement is met; it grants no Connector
+      authority.
+    properties:
+      anyOf:
+        type: array
+        minItems: 1
+        maxItems: 4
+        items: { $ref: '#/schemas/WorkflowConnectorType' }
+      orField:
+        type: string
+        description: An optional field whose answer stands in for the apps.
+
+  WorkflowSchedule:
+    type: object
+    additionalProperties: false
+    required: [cron, instructions]
+    description: >-
+      The recurring form of the Workflow, handed to the Schedule editor.
+      Schedule Runs are connector-only, so `instructions` is a self-contained
+      template (same rendering contract as `brief`), not the playbook.
+    properties:
+      cron: { type: string, example: '0 7 * * 1-5' }
+      instructions: { type: string }
+
+  Workflow:
+    type: object
+    additionalProperties: false
+    required:
+      [key, name, description, categories, icon, deliverables, connectors, recurring, featured,
+       highlights, requirements, milestoneType, submitLabel, pages, brief, playbook]
+    description: >-
+      One Workflow with its form. `titleField`, when present, names the
+      required field whose answer completes the launched Task's title.
+      `requirements` lists the apps the Workflow cannot do its job without.
+    properties:
+      key: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 39, example: contract-review }
+      name: { type: string, example: Contract review }
+      description: { type: string }
+      categories:
+        type: array
+        minItems: 1
+        maxItems: 3
+        items: { $ref: '#/schemas/WorkflowCategory' }
+      icon: { $ref: '#/schemas/WorkflowIconType' }
+      deliverables:
+        type: array
+        minItems: 1
+        maxItems: 4
+        items: { $ref: '#/schemas/WorkflowDeliverableType' }
+      connectors:
+        type: array
+        maxItems: 6
+        items: { $ref: '#/schemas/WorkflowConnectorType' }
+      recurring: { type: boolean }
+      featured: { type: boolean }
+      highlights:
+        type: array
+        minItems: 3
+        maxItems: 3
+        items: { type: string }
+      requirements:
+        type: array
+        maxItems: 3
+        items: { $ref: '#/schemas/WorkflowRequirement' }
+      milestoneType: { $ref: './tasks.yaml#/schemas/TaskMilestoneTypeDto' }
+      submitLabel: { type: string, example: Review contract }
+      titleField: { type: string }
+      pages:
+        type: array
+        minItems: 1
+        maxItems: 3
+        items: { $ref: '#/schemas/WorkflowPage' }
+      brief: { type: string }
+      playbook: { $ref: '#/schemas/WorkflowPlaybook' }
+      schedule: { $ref: '#/schemas/WorkflowSchedule' }

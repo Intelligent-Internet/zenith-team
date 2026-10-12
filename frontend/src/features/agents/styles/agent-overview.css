@@ -1,0 +1,197 @@
+.agent-work-overview > .agent-overview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.agent-work-overview .agent-section-heading {
+  margin: 0 0 12px;
+}
+
+.agent-overview-work-heading,
+.agent-overview-work-heading > a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-overview-work-heading {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agent-overview-work-heading > a {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.agent-work-overview .agent-overview-stats {
+  margin: 0;
+}
+
+.agent-work-overview .agent-overview-stats > span + span::before {
+  content: "·";
+  margin-inline-end: 12px;
+}
+
+.agent-work-overview .agent-focus-card {
+  padding: 24px 24px 0;
+  border-radius: var(--workspace-radius-panel);
+}
+
+.agent-work-overview .agent-focus-card[data-attention] {
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-approval) 38%,
+    var(--workspace-divider)
+  );
+}
+
+.agent-work-overview
+  .agent-focus-card[data-attention]
+  .agent-focus-meta
+  > span:last-child {
+  color: var(--workspace-native-approval);
+}
+
+.agent-work-overview .agent-focus-card h3 {
+  max-width: 60ch;
+  margin: 12px 0 0;
+  font-size: 18px;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.agent-work-overview .agent-focus-description {
+  max-width: 72ch;
+  -webkit-line-clamp: 4;
+  white-space: pre-line;
+}
+
+.agent-work-overview .agent-focus-description[data-expanded] {
+  display: block;
+  overflow: visible;
+}
+
+.agent-work-overview .agent-focus-card footer {
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.agent-work-overview .agent-focus-task-link {
+  margin-inline-start: auto;
+  color: var(--workspace-native-text);
+}
+
+.agent-brief-toggle {
+  flex: none;
+  border-radius: 4px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  cursor: pointer;
+}
+
+.agent-overview-empty {
+  padding: 24px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-panel);
+  background: var(--workspace-panel-bg);
+}
+
+.agent-overview-empty h2 {
+  margin: 0;
+}
+
+.agent-overview-empty p {
+  max-width: 54ch;
+  margin: 10px 0 20px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.agent-overview-notice,
+.agent-work-overview .agent-inline-empty,
+.agent-work-overview .agent-saved-work .task-detail-empty {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.agent-overview-notice button {
+  color: var(--workspace-native-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.agent-work-overview .agent-history[data-compact] .agent-history-list > a {
+  min-height: 64px;
+}
+
+.agent-overview-usage {
+  border-top: 1px solid var(--workspace-divider);
+  padding-top: 18px;
+}
+
+.agent-overview-usage > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 4px;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  list-style: none;
+  cursor: pointer;
+}
+
+.agent-overview-usage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.agent-overview-usage > summary > span:nth-child(2) {
+  margin-inline-start: auto;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+
+.agent-overview-usage > summary > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.agent-overview-usage[open] > summary > svg {
+  transform: rotate(180deg);
+}
+
+.agent-work-overview .agent-usage-summary {
+  margin-top: 16px;
+}
+
+.agent-work-overview :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.agent-work-overview
+  :is(.agent-brief-toggle, .agent-overview-work-heading > a):hover {
+  color: var(--workspace-native-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .agent-overview-empty {
+    padding: 20px;
+  }
+}

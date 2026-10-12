@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="340" viewBox="0 0 520 340">
+  <!-- Decorative map illustration; no geographic or provider data. -->
+  <rect width="520" height="340" fill="#edf0ef"/>
+  <path d="M400-20C300 52 423 83 348 151S339 254 458 375" fill="none" stroke="#d7e8f0" stroke-width="55"/>
+  <path d="M22 45l84-21 25 77-83 35zM210 248l69-28 30 73-83 29z" fill="#e0e9da"/>
+  <path d="M-30 158L538 69M-20 307L534 187M75-20L160 368M230-20L321 358M476-20L435 365" fill="none" stroke="#fff" stroke-width="12"/>
+  <path d="M-20 225L540 124M-20 71L540 302M166-20L224 361M21-20L88 362" fill="none" stroke="#fff" stroke-width="5"/>
+  <path d="M-20 310C146 272 206 86 370-20" fill="none" stroke="#e5d9c6" stroke-width="16"/>
+  <path d="M-20 310C146 272 206 86 370-20" fill="none" stroke="#fffaf0" stroke-width="10"/>
+</svg>

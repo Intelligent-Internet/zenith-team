@@ -1,0 +1,110 @@
+.work-chat-completion {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--workspace-divider);
+  padding: 12px 20px;
+  background: var(--workspace-success-soft);
+  color: var(--workspace-native-text);
+}
+
+.work-chat-completion > svg {
+  flex: none;
+  color: var(--workspace-native-success);
+}
+
+.work-chat-completion__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.work-chat-completion__copy strong {
+  overflow: hidden;
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.work-chat-completion__copy span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.work-chat-completion__link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--workspace-native-accent);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.work-chat-completion__link:hover {
+  text-decoration: underline;
+}
+
+.work-chat-completion__dismiss {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+}
+
+.work-chat-completion__dismiss:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+@media (max-width: 600px) {
+  .work-chat-completion {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 10px 14px;
+  }
+
+  .work-chat-completion__copy {
+    flex-basis: calc(100% - 28px);
+  }
+
+  .work-chat-completion__link {
+    margin-left: 28px;
+  }
+
+  .work-chat-completion__dismiss {
+    margin-left: auto;
+  }
+}
+
+.work-completion-notice {
+  margin-bottom: 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 9px;
+  padding: 10px 12px;
+  max-height: 130px;
+}
+button.work-chat-completion__link {
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}

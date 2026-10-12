@@ -1,0 +1,69 @@
+{
+  "lockFormat": 1,
+  "plugin": "zenith-studio",
+  "component": "managedTools",
+  "version": "1.2.1",
+  "tag": "zenith-studio--v1.2.1",
+  "commit": "4541eaf5fb6153aef1a633385ccef7bde2955a6b",
+  "manifestPath": "plugins/zenith-studio/.boardly-plugin/plugin.json",
+  "manifestSha256": "082e1e6675791afbe660bf6213d079ba672c45a6759a9d0129067014edc56339",
+  "contentPath": "plugins/zenith-studio/boardly/managed-tools",
+  "contentTreeId": "3387a6dac8a3a0afd70b7d8b3345b0c3ab768924",
+  "managedTools": {
+    "contractVersion": 1,
+    "releases": [
+      {
+        "homeEnv": "ZENITH_STUDIO_CLI_HOME",
+        "apiUrlEnv": "ZENITH_STUDIO_CLI_API_URL",
+        "apiUrl": "https://api-agent.ii.inc",
+        "key": "zenith-studio",
+        "name": "Zenith Studio",
+        "packageName": "@zenith-studio/cli",
+        "version": "0.1.15",
+        "integrity": "sha512-4/AQz4eDtEImas0lja+hFW2aq/skjExyX3nIv3eFQ8HDX0RIDVMyj2JmaMYP8iZBJotmDthQPmDIn0Tew4o8dg==",
+        "command": "zenith-studio",
+        "minimumNodeMajor": 22,
+        "skipSetupEnv": "ZENITH_STUDIO_CLI_SKIP_SETUP",
+        "dependencies": [
+          "hyperframes@0.8.36"
+        ],
+        "skillSources": [
+          "skills/canonical/zenith-studio-cli",
+          "skills/adapters/zenith-team/zenith-studio-cli"
+        ],
+        "skill": {
+          "toolKey": "zenith-studio",
+          "toolVersion": "0.1.15",
+          "id": "zenith-studio@0.1.15",
+          "source": "managed_tool",
+          "name": "zenith-studio-cli",
+          "description": "Create and manage Zenith Studio media inside Zenith Team, including images, video, voice, audio, music, projects, jobs, assets, and custom-skill downloads.",
+          "hash": "e5a142a096eedf26a67c614fd8d6b4022d48f0c4cbc59d2ddb8f66430b9766d7",
+          "sizeBytes": 1585332,
+          "fileCount": 422
+        }
+      },
+      {
+        "key": "hyperframes",
+        "name": "HyperFrames",
+        "packageName": "hyperframes",
+        "version": "0.8.36",
+        "integrity": "sha512-R2w202GsO4dfZq3j19b6o3QEXGqYVBNB78yM64/HZpVnoInooxSCLofz7c+CxHGinJj63S23WlEeWIKgFxCb7w==",
+        "command": "hyperframes",
+        "minimumNodeMajor": 22,
+        "skipSetupEnv": "",
+        "skill": {
+          "id": "",
+          "source": "",
+          "name": "",
+          "hash": "",
+          "sizeBytes": 0,
+          "fileCount": 0
+        }
+      }
+    ]
+  },
+  "treeHash": "2ed5ce0dd2a9753b91d09911f8b9b589c6aceb2f9cc76d3c801fb95267f8b5c4",
+  "fileCount": 1,
+  "retiredKeys": []
+}

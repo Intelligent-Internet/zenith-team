@@ -1,0 +1,352 @@
+.task-review-diff {
+  background: #0b1016;
+}
+
+.task-review-diff .diff {
+  min-width: 980px;
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #0b1016;
+  color: rgba(255, 255, 255, 0.84);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 12px;
+}
+
+.task-review-diff .diff-gutter {
+  width: 52px;
+  min-width: 52px;
+  padding: 0 10px;
+  user-select: none;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.035);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.task-review-diff .diff-code {
+  width: calc(50% - 52px);
+  min-width: 0;
+  padding: 0 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  color: rgba(255, 255, 255, 0.86);
+  background: transparent;
+}
+
+.task-review-diff .diff-line {
+  height: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.018);
+}
+
+.task-review-diff .diff-line-insert,
+.task-review-diff .diff-line-insert > td,
+.task-review-diff .diff-line-insert .diff-code {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.task-review-diff .diff-line-delete,
+.task-review-diff .diff-line-delete > td,
+.task-review-diff .diff-line-delete .diff-code {
+  background: rgba(248, 113, 113, 0.18);
+}
+
+.task-review-diff .diff-line-insert .diff-gutter,
+.task-review-diff .diff-line-insert .diff-gutter-col {
+  background: rgba(22, 163, 74, 0.38);
+  color: rgba(220, 252, 231, 0.94);
+}
+
+.task-review-diff .diff-line-delete .diff-gutter,
+.task-review-diff .diff-line-delete .diff-gutter-col {
+  background: rgba(185, 28, 28, 0.42);
+  color: rgba(254, 226, 226, 0.94);
+}
+
+.task-review-diff .diff-code-insert,
+.task-review-diff .diff-code-delete {
+  border-radius: 3px;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.task-review-diff .diff-code-insert {
+  background: rgba(34, 197, 94, 0.38);
+}
+
+.task-review-diff .diff-code-delete {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .task-review-diff .diff {
+    min-width: 860px;
+  }
+
+  .task-review-diff .diff-gutter {
+    width: 44px;
+    min-width: 44px;
+    padding: 0 8px;
+  }
+}
+
+/* The workspace review uses the active palette in its opaque portal. */
+html[data-boardly-workspace-theme] {
+  .task-review-panel-frame {
+    border: 1px solid var(--workspace-divider) !important;
+    background: var(--workspace-overlay-bg) !important;
+    box-shadow: var(--workspace-overlay-shadow) !important;
+  }
+  .task-review-panel {
+    background: var(--workspace-panel-bg);
+    color: var(--workspace-native-text);
+    font-family: var(--workspace-font-body);
+  }
+  .task-review-panel__header {
+    row-gap: 12px;
+    padding-bottom: 20px;
+  }
+  .task-review-panel__title {
+    color: var(--workspace-native-text);
+    font-family: var(--workspace-font-heading);
+    font-size: 18px;
+  }
+  .task-review-panel__task-name {
+    background: var(--workspace-control-bg);
+    color: var(--workspace-native-text-muted);
+    font-weight: 500;
+  }
+  .task-review-panel__divider {
+    background: var(--workspace-divider);
+  }
+  .task-review-panel__text {
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel__muted {
+    color: var(--workspace-native-text-muted);
+  }
+  .task-review-panel__close {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--workspace-radius-control);
+    color: var(--workspace-native-text-muted);
+  }
+  .task-review-panel__close:hover {
+    background: var(--workspace-hover-bg);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel__sidebar {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-raised-bg);
+  }
+  .task-review-panel__sidebar-header {
+    border-color: var(--workspace-divider);
+  }
+  :is(.task-review-panel__sidebar-toggle, .task-review-panel__sidebar-icon) {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-control-bg);
+    color: var(--workspace-native-text-muted);
+  }
+  .task-review-panel__sidebar-toggle:hover {
+    background: var(--workspace-hover-bg);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel__file-nav {
+    color: var(--workspace-native-text);
+  }
+  :is(.task-review-panel__file-nav, .task-review-panel__file-header):hover {
+    background: var(--workspace-hover-bg);
+  }
+  .task-review-panel__file-nav:hover .task-review-panel__muted {
+    color: var(--workspace-native-text-muted);
+  }
+  .task-review-panel__file {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-bg);
+    box-shadow: none;
+  }
+  .task-review-panel__file-header {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-raised-bg);
+    color: var(--workspace-native-text);
+  }
+  :is(.task-review-panel__metric, .task-review-panel__file-status) {
+    --review-tone: var(--workspace-native-text-muted);
+    --review-tone-bg: var(--workspace-control-bg);
+    background: var(--review-tone-bg);
+    color: var(--review-tone);
+    box-shadow: none;
+  }
+  .task-review-panel__file-status {
+    font-size: 11px;
+  }
+  .task-review-panel__file-status-text {
+    --review-tone: var(--workspace-native-approval);
+    color: var(--review-tone);
+  }
+  :is(
+    .task-review-panel__file-status,
+    .task-review-panel__file-status-text
+  )[data-file-type="modify"] {
+    --review-tone: var(--workspace-native-approval);
+    --review-tone-bg: var(--workspace-approval-soft);
+  }
+  :is(
+    .task-review-panel__metric[data-tone="add"],
+    .task-review-panel__file-status[data-file-type="add"],
+    .task-review-panel__file-status-text[data-file-type="add"]
+  ) {
+    --review-tone: var(--workspace-native-success);
+    --review-tone-bg: var(--workspace-success-soft);
+  }
+  :is(
+    .task-review-panel__metric[data-tone="delete"],
+    .task-review-panel__file-status[data-file-type="delete"],
+    .task-review-panel__file-status-text[data-file-type="delete"]
+  ) {
+    --review-tone: var(--workspace-native-danger);
+    --review-tone-bg: var(--workspace-danger-soft);
+  }
+  :is(.task-review-panel__file-status, .task-review-panel__file-status-text):is(
+    [data-file-type="rename"],
+    [data-file-type="copy"]
+  ) {
+    --review-tone: var(--workspace-native-info);
+    --review-tone-bg: var(--workspace-info-soft);
+  }
+  .task-review-panel__additions {
+    color: var(--workspace-native-success);
+  }
+  .task-review-panel__deletions {
+    color: var(--workspace-native-danger);
+  }
+  .task-review-panel__notice {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-raised-bg);
+  }
+  .task-review-panel__notice-icon {
+    background: var(--workspace-control-bg);
+    color: var(--workspace-native-text-muted);
+  }
+  .task-review-panel__notice[data-tone="danger"] {
+    border-color: color-mix(
+      in srgb,
+      var(--workspace-native-danger) 24%,
+      var(--workspace-panel-bg)
+    );
+    background: var(--workspace-danger-soft);
+  }
+  .task-review-panel__notice[data-tone="danger"]
+    .task-review-panel__notice-icon {
+    background: var(--workspace-panel-bg);
+    color: var(--workspace-native-danger);
+  }
+  .task-review-panel__footer {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-raised-bg);
+  }
+  .task-review-panel .task-review-panel__primary {
+    border-radius: var(--workspace-radius-control);
+    background: var(--workspace-accent-fill);
+    color: var(--workspace-accent-foreground) !important;
+    box-shadow: none;
+    filter: none;
+  }
+  .task-review-panel .task-review-panel__primary:not(:disabled):hover {
+    background: var(--workspace-accent-hover);
+  }
+  .task-review-panel .task-review-panel__primary:disabled {
+    background: var(--workspace-control-bg);
+    color: var(--workspace-native-text-faint) !important;
+  }
+  .task-review-panel__secondary {
+    border-color: var(--workspace-divider-strong);
+    background: var(--workspace-panel-bg);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel__secondary:hover {
+    background: var(--workspace-hover-bg);
+  }
+  .task-review-panel .task-review-diff {
+    --diff-font-family: var(--font-mono);
+    --diff-selection-background-color: var(--workspace-selected-bg);
+    --diff-selection-text-color: var(--workspace-native-text);
+    --diff-code-insert-edit-background-color: color-mix(
+      in srgb,
+      var(--workspace-native-success) 18%,
+      var(--workspace-panel-bg)
+    );
+    --diff-code-delete-edit-background-color: color-mix(
+      in srgb,
+      var(--workspace-native-danger) 18%,
+      var(--workspace-panel-bg)
+    );
+    --diff-code-insert-edit-text-color: var(--workspace-native-text);
+    --diff-code-delete-edit-text-color: var(--workspace-native-text);
+    background: var(--workspace-panel-bg);
+  }
+  .task-review-panel .task-review-diff :is(.diff, .diff-code) {
+    background: var(--workspace-panel-bg);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel .task-review-diff .diff-gutter {
+    border-color: var(--workspace-divider);
+    background: var(--workspace-panel-raised-bg);
+    color: var(--workspace-native-text-faint);
+  }
+  .task-review-panel .task-review-diff .diff-line {
+    border-color: var(--workspace-divider);
+  }
+  .task-review-panel
+    .task-review-diff
+    :is(
+      .diff-line-insert,
+      .diff-line-insert > td,
+      .diff-line-insert .diff-code,
+      .diff-code-insert
+    ) {
+    background: var(--workspace-success-soft);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel
+    .task-review-diff
+    :is(
+      .diff-line-delete,
+      .diff-line-delete > td,
+      .diff-line-delete .diff-code,
+      .diff-code-delete
+    ) {
+    background: var(--workspace-danger-soft);
+    color: var(--workspace-native-text);
+  }
+  .task-review-panel
+    .task-review-diff
+    :is(
+      .diff-gutter-insert,
+      .diff-line-insert .diff-gutter,
+      .diff-line-insert .diff-gutter-col
+    ) {
+    background: color-mix(
+      in srgb,
+      var(--workspace-native-success) 18%,
+      var(--workspace-panel-bg)
+    );
+    color: var(--workspace-native-success);
+  }
+  .task-review-panel
+    .task-review-diff
+    :is(
+      .diff-gutter-delete,
+      .diff-line-delete .diff-gutter,
+      .diff-line-delete .diff-gutter-col
+    ) {
+    background: color-mix(
+      in srgb,
+      var(--workspace-native-danger) 18%,
+      var(--workspace-panel-bg)
+    );
+    color: var(--workspace-native-danger);
+  }
+}

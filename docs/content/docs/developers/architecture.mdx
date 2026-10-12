@@ -1,0 +1,77 @@
+---
+title: Architecture
+description: How the Zenith Team code is layered — one Go server, one client tree, a machine-side daemon, and the contracts between them.
+---
+
+For the product-facing explanation, see [How Zenith Team works](/how-zenith-team-works). This page is about how the code is put together: which directory owns what, how a request flows through the server, and where the rules live. It orients and links; the rulebook itself is `AGENTS.md` in the repository root.
+
+```text
+                    ┌─ PostgreSQL   (all structured product state)
+browser ──┐         │
+          ├─ HTTP + WebSocket ─ Go/Gin server ─┼─ object storage (file bytes)
+desktop ──┘                     │              │
+                                │              └─ Redis (realtime relay,
+                                │                        claim-empty cache)
+                                │
+                        daemon (boardly CLI) ─ codex | claude
+```
+
+The server owns PostgreSQL-backed product state and the HTTP/WebSocket contracts. The daemon runs on the user's machine, claims queued runs, prepares workspaces, and launches the provider CLIs; provider credentials and native configuration never leave that machine.
+
+## Repository layout
+
+| Directory | Responsibility | Main technologies |
+| --- | --- | --- |
+| `server/` | Go module: HTTP API, both WebSocket planes, PostgreSQL access, the daemon, embedded migrations | Go, Gin, gorilla/websocket, sqlc + pgx |
+| `frontend/` | The one client tree: the web app plus its Electron desktop packaging | React 19, Vite, Redux Toolkit, Electron Forge |
+| `docs/` | This site, the API reference (`docs/api/`), and the decision records (`docs/adr/`) | MDX |
+| `deploy/` | Production manifests, runbook, and environment reference | Docker Compose |
+| `docker/` | Local development infrastructure (`compose.yml`, `dev.env`) | Docker Compose |
+
+## The four binaries
+
+One directory per executable under `server/cmd/`:
+
+| Binary | Role |
+| --- | --- |
+| `server` | The HTTP/WebSocket API and the composition root; the only one of the four the API container ships |
+| `zen` | The user-facing CLI: `auth`, `daemon start/stop/status/logs`, `config`, `agent`, `runtime`, `task`, `run`, `conversation` and the Run-scoped Agent families |
+| `boardly-mcp` (from `cmd/mcp`) | The stdio MCP server an agent process talks to; ships in the desktop bundle |
+| `migrate` | Standalone migration runner for local and CI databases and manual recovery |
+
+## The request path
+
+```text
+handler → <Domain>Service → sqlc queries → PostgreSQL
+```
+
+`server/internal/handler` is the only package that sees Gin. It binds and validates the request, then calls a domain service — an interface with a `Default…` implementation living in its own package under `server/internal/`. Services read and write through sqlc-generated queries in `server/pkg/db`: the SQL is written by hand and generated into typed Go. There is no ORM and no repository layer in between.
+
+Migrations are embedded in the server binary and applied at startup, before it serves — that is the rollout mechanism. The step-by-step recipe for a new endpoint is in `server/CODEMAP.md` under "Adding an HTTP endpoint".
+
+## Realtime
+
+Two WebSocket planes, each owning its own types:
+
+- **Client plane** (`server/internal/realtime`, `/api/v1/ws`) — receive-only. Browsers get post-commit events, relayed across server processes through Redis.
+- **Daemon plane** (`server/internal/daemonws`, `/api/v1/daemon/ws`) — heartbeats, wakeups when work becomes claimable, the claim RPC, and one-at-a-time durable transcript appends.
+
+Domain services never touch a socket. They publish to the in-process bus, and the composition root (`server/cmd/server`) decides which events reach which plane. Streaming deltas enter neither plane — they stay on the user's machine, as [How Zenith Team works](/how-zenith-team-works) explains from the product side.
+
+## Frontend
+
+`frontend/` is a standalone workspace holding the React 19 + Vite web app and its Electron desktop packaging. RTK Query owns server state; plain Redux slices own UI-only state. Client API types are generated from the OpenAPI contract at `docs/api/spec/openapi.yaml` and are never hand-written — the server owns every wire type.
+
+## Where the rules live
+
+- `AGENTS.md` — the engineering rulebook: repository map, domain charters, and the non-negotiable rules.
+- `server/CODEMAP.md` — the directory index, and how to add an endpoint.
+- `docs/api/` — the API reference; `docs/api/spec/` is the machine-readable contract.
+- `docs/adr/` — the accepted decisions and their reasoning.
+- [Design](/developers/design) — the invariants this architecture is built to keep, on this site.
+
+## Next steps
+
+- **[Design](/developers/design)** — the invariants behind the layering.
+- **[Contributing](/developers/contributing)** — local setup, common commands, and the verification gates.
+- **[How Zenith Team works](/how-zenith-team-works)** — the same system, explained product-first.

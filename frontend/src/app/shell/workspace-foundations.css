@@ -1,0 +1,299 @@
+/* Workspace typography, geometry and aliases shared by every palette. */
+html[data-boardly-workspace-theme],
+.boardly-workspace-theme {
+  color-scheme: var(--workspace-color-scheme);
+  --workspace-radius-control: 8px;
+  --workspace-radius-panel: 12px;
+  --workspace-radius-composer: 20px;
+  --workspace-chat-inset: 24px;
+  --workspace-thread-inset: 16px;
+  --workspace-control-size: 32px;
+  --workspace-radius-overlay: 12px;
+  --workspace-header-height: 44px;
+  --workspace-conversation-header-height: 56px;
+  --workspace-conversation-context-height: 42px;
+  --workspace-rail-width: 80px;
+  --workspace-page-inset: 24px;
+  --workspace-list-width: 1040px;
+  --workspace-document-width: 760px;
+  --workspace-document-gutter: 32px;
+  --workspace-font-body: var(--font-ui);
+  --workspace-font-heading: var(--font-ui);
+  --workspace-text-micro: 11px;
+  --workspace-leading-micro: 16px;
+  --workspace-text-caption: 13px;
+  --workspace-leading-caption: 20px;
+  --workspace-text-label: 13px;
+  --workspace-leading-label: 20px;
+  --workspace-text-body: 14px;
+  --workspace-leading-body: 22px;
+  --workspace-text-document: 15px;
+  --workspace-leading-document: 1.75;
+  --workspace-text-chat: 14px;
+  --workspace-leading-chat: 22px;
+  --workspace-text-title: 16px;
+  --workspace-leading-title: 24px;
+  --workspace-text-page: 22px;
+  --workspace-leading-page: 30px;
+  --workspace-canvas: var(--workspace-content-bg);
+  --workspace-canvas-deep: var(--workspace-app-bg);
+  --workspace-chrome: var(--workspace-titlebar-bg);
+  --workspace-chrome-strong: var(--workspace-overlay-bg);
+  --workspace-panel: var(--workspace-panel-bg);
+  --workspace-panel-raised: var(--workspace-panel-raised-bg);
+  --workspace-panel-soft: var(--workspace-control-bg);
+  --workspace-border: var(--workspace-divider);
+  --workspace-border-strong: var(--workspace-divider-strong);
+  --workspace-text: var(--workspace-native-text);
+  --workspace-text-muted: var(--workspace-native-text-muted);
+  --workspace-text-faint: var(--workspace-native-text-faint);
+  --workspace-yellow: var(--workspace-native-accent);
+  --workspace-lime: var(--workspace-native-success);
+  --workspace-cyan: var(--workspace-native-info);
+  --workspace-danger: var(--workspace-native-danger);
+  --font-sans: var(--workspace-font-body);
+  --font-heading: var(--workspace-font-heading);
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --radius: var(--workspace-radius-control);
+  --surface-primary: var(--workspace-content-bg);
+  --surface-secondary: var(--workspace-panel-bg);
+  --surface-tertiary: var(--workspace-control-bg);
+  --text-primary: var(--workspace-native-text);
+  --text-secondary: var(--workspace-native-text-muted);
+  --text-tertiary: var(--workspace-native-text-faint);
+  --text-inverse: var(--workspace-accent-foreground);
+  --brand-primary: var(--workspace-accent-fill);
+  --brand-hover: var(--workspace-accent-hover);
+  --brand-active: var(--workspace-accent-active);
+  --border-subtle: var(--workspace-divider);
+  --state-hover-bg: var(--workspace-hover-bg);
+  --input-surface: var(--workspace-input-bg);
+  --input-border: var(--workspace-divider-strong);
+  --input-placeholder: var(--workspace-native-text-faint);
+  --input-text: var(--workspace-native-text);
+  --background: var(--workspace-content-bg);
+  --foreground: var(--workspace-native-text);
+  --primary: var(--workspace-accent-fill);
+  --primary-foreground: var(--workspace-accent-foreground);
+  --secondary: var(--workspace-control-bg);
+  --secondary-foreground: var(--workspace-native-text);
+  --card: var(--workspace-panel-bg);
+  --card-foreground: var(--workspace-native-text);
+  --muted: var(--workspace-control-bg);
+  --muted-foreground: var(--workspace-native-text-muted);
+  --accent: var(--workspace-selected-bg);
+  --accent-foreground: var(--workspace-native-text);
+  --popover: var(--workspace-overlay-bg);
+  --popover-foreground: var(--workspace-native-text);
+  --border: var(--workspace-divider);
+  --input: var(--workspace-divider-strong);
+  --ring: var(--workspace-native-accent);
+  --destructive: var(--workspace-native-danger);
+  --destructive-foreground: var(--workspace-danger-foreground);
+  --color-yellow: var(--workspace-accent-fill);
+  --color-yellow-2: var(--workspace-accent-hover);
+  --color-red: var(--workspace-native-danger);
+  --color-red-2: var(--workspace-native-danger);
+  --color-black: var(--workspace-native-text);
+  background: var(--workspace-app-bg);
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+  font-optical-sizing: auto;
+  font-variant-ligatures: none;
+  text-rendering: optimizeLegibility;
+}
+
+.boardly-workspace-theme[data-boardly-theme][data-desktop-mac="true"] {
+  --workspace-header-height: 44px;
+}
+
+html[data-boardly-workspace-theme]
+  .boardly-workspace-theme:not([data-boardly-theme]) {
+  font-family: var(--workspace-font-body);
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  :is(.workspace-utility-header, .workspace-rail, .workspace-bottom-nav) {
+  --workspace-notification-indicator: var(
+    --workspace-nav-notification-indicator
+  );
+  --workspace-native-text: var(--workspace-nav-text);
+  --workspace-native-text-muted: var(--workspace-nav-muted);
+  --workspace-native-text-faint: var(--workspace-nav-muted);
+  --workspace-text: var(--workspace-nav-text);
+  --workspace-text-muted: var(--workspace-nav-muted);
+  --workspace-text-faint: var(--workspace-nav-muted);
+  --workspace-control-bg: var(--workspace-nav-control);
+  --workspace-hover-bg: var(--workspace-nav-hover);
+  --workspace-selected-bg: var(--workspace-nav-selected);
+  --workspace-divider: var(--workspace-nav-divider);
+  --workspace-divider-strong: var(--workspace-nav-divider);
+  --workspace-border: var(--workspace-nav-divider);
+  --workspace-border-strong: var(--workspace-nav-divider);
+  color-scheme: var(--workspace-nav-color-scheme);
+  color: var(--workspace-nav-text);
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-utility-header {
+  border-bottom-color: transparent;
+  padding-right: 16px;
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-company-name {
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 700;
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-wordmark {
+  color: var(--workspace-nav-text);
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-runner-status {
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 500;
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  .workspace-runner-status[data-tone="online"]
+  .workspace-runner-dot {
+  background: var(--workspace-nav-success);
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  .workspace-runner-status:is([data-tone="offline"], [data-tone="unavailable"])
+  .workspace-runner-dot {
+  background: var(--workspace-nav-danger);
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  .workspace-runner-status[data-tone="checking"]
+  .workspace-runner-dot {
+  background: var(--workspace-nav-accent);
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-shell-body {
+  padding: 0 10px 10px 0;
+  background: transparent;
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  .workspace-shell-content:not(.workspace-shell-content--canvas) {
+  border-radius: 12px;
+  background: var(--workspace-content-bg);
+  box-shadow: var(--workspace-shell-shadow);
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-rail {
+  gap: 8px;
+  border-right-color: transparent;
+  padding-top: 8px;
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-primary-nav-item {
+  width: 64px;
+  min-height: 56px;
+  flex-shrink: 0;
+  gap: 6px;
+  border-radius: var(--workspace-radius-control);
+  font-size: var(--workspace-text-micro);
+  line-height: var(--workspace-leading-micro);
+  font-weight: 500;
+}
+
+.boardly-workspace-theme .workspace-rail .workspace-primary-nav-label--compact {
+  font-size: 10px;
+  letter-spacing: -0.025em;
+}
+
+.boardly-workspace-theme[data-boardly-theme="zenith-sky"]
+  .workspace-primary-nav-item.is-active {
+  font-weight: 600;
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  .workspace-primary-nav-item.is-active::before {
+  display: none;
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  :is(h1, h2, h3, .workspace-page-frame__title) {
+  font-family: var(--workspace-font-heading);
+  letter-spacing: -0.02em;
+}
+
+.boardly-workspace-theme[data-boardly-theme]
+  :is(.workspace-page-frame__eyebrow, .workspace-eyebrow) {
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.boardly-workspace-theme[data-boardly-theme] .workspace-access-state__mark {
+  color: var(--workspace-accent-foreground);
+}
+
+@media (max-width: 899px) {
+  html[data-boardly-workspace-theme],
+  .boardly-workspace-theme {
+    --workspace-page-inset: 16px;
+    --workspace-document-gutter: 24px;
+  }
+  .boardly-workspace-theme[data-boardly-theme] .workspace-shell-body {
+    padding: 0 0 var(--workspace-bottom-nav-height);
+  }
+  .boardly-workspace-theme[data-boardly-theme]
+    .workspace-shell-content:not(.workspace-shell-content--canvas) {
+    border-radius: 0;
+  }
+  .boardly-workspace-theme[data-boardly-theme] .workspace-bottom-nav {
+    background: var(--workspace-rail-bg) var(--workspace-shell-gradient);
+    box-shadow: none;
+  }
+  .boardly-workspace-theme[data-boardly-theme]
+    .workspace-bottom-nav
+    .workspace-primary-nav-item {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    gap: 4px;
+  }
+}
+
+html[data-boardly-workspace-theme][data-boardly-high-contrast="true"] {
+  --workspace-divider: var(--workspace-contrast-divider) !important;
+  --workspace-divider-strong: var(
+    --workspace-contrast-divider-strong
+  ) !important;
+  --workspace-native-text-muted: var(
+    --workspace-contrast-text-muted
+  ) !important;
+  --workspace-native-text-faint: var(
+    --workspace-contrast-text-faint
+  ) !important;
+}
+
+@media (prefers-contrast: more) {
+  html[data-boardly-workspace-theme] {
+    --workspace-divider: var(--workspace-contrast-divider) !important;
+    --workspace-divider-strong: var(
+      --workspace-contrast-divider-strong
+    ) !important;
+    --workspace-native-text-muted: var(
+      --workspace-contrast-text-muted
+    ) !important;
+    --workspace-native-text-faint: var(
+      --workspace-contrast-text-faint
+    ) !important;
+  }
+}
+
+html[data-boardly-workspace-theme] .text-brand-primary {
+  color: var(--workspace-native-accent);
+}

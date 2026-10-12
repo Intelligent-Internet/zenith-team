@@ -1,0 +1,1014 @@
+# Shared pieces of the Zenith Team API contract: the reusable parameters,
+# the standard error responses, and every schema more than one domain uses.
+# Referenced from docs/api/spec/openapi.yaml and from each domain file.
+
+parameters:
+  companyId:
+    name: companyId
+    in: path
+    required: true
+    description: Company the request is scoped to. A non-member sees `404`.
+    schema: { type: string, format: uuid }
+  conversationId:
+    name: conversationId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  taskId:
+    name: taskId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  agentId:
+    name: agentId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  runId:
+    name: runId
+    in: path
+    required: true
+    description: Database-generated Run UUID. Numeric IDs are not accepted.
+    schema: {"type": "string", "format": "uuid"}
+  runtimeId:
+    name: runtimeId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  daemonIDHeader:
+    name: X-Boardly-Daemon-ID
+    in: header
+    required: false
+    description: |
+      The machine identity the daemon registered with (`daemonId` on
+      register). Runtime-scoped daemon routes require it to match the
+      runtime's `daemonId`; a mismatch is `404 runtime_not_found` (on the
+      deregister batch the id is skipped instead). Run-scoped daemon routes
+      (`/daemon/runs/{runId}/…`) require it to match the `daemonId` of the
+      run's runtime; a mismatch is `404 run_not_found`, the same as an
+      unknown run. Optional this release: a missing header is admitted with
+      a server-side warning. When the server runs with
+      `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
+      header is `400 invalid_request`.
+    schema: { type: string }
+  runTokenOwnRead:
+    name: X-Boardly-Run-Token
+    in: header
+    required: false
+    description: |
+      Sent by a Run's channel for the Run's own reads (`zen run get`,
+      `zen conversation get`, `messages` and `transcript`). When present it
+      must prove a running Run in this Company whose member is the caller
+      (`401 run_token_invalid`), and the path must name that Run or its
+      chat (`403 task_outside_run_scope`). A Run tagged in a channel or
+      group DM reads its own Run and none of the chat reads. Without it the
+      read is the member's own.
+    schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+  runTokenUpload:
+    name: X-Boardly-Run-Token
+    in: header
+    required: false
+    description: |
+      Sent by the daemon when it uploads a file a Run presents. When present
+      it must prove a running Run, in the Company the upload names, whose
+      member is the caller (`401 run_token_invalid`, nothing is stored).
+      Without it the upload is the member's own.
+    schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+  resourceId:
+    name: resourceId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  attachmentId:
+    name: attachmentId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  itemId:
+    name: itemId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  messageId:
+    name: messageId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  queueItemId:
+    name: queueItemId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  limit:
+    name: limit
+    in: query
+    required: false
+    description: |
+      Maximum rows returned by a seek page or sequence window. Must be a
+      canonical decimal integer — no sign, no padding. Default 50, bounds
+      1..100. Bounded entity collections do not reference this parameter.
+    schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+  cursor:
+    name: cursor
+    in: query
+    required: false
+    description: |
+      Opaque cursor from the previous seek page's `nextCursor`. It identifies
+      the immutable `(createdAt, id)` boundary.
+    schema: { type: string }
+  afterSeq:
+    name: after_seq
+    in: query
+    required: false
+    description: |
+      Return items with `seq > after_seq`. The reconnect path: pair it with
+      `throughSeq` on the response to learn whether one window caught up.
+    schema: { type: integer, format: int64, minimum: 0 }
+  throughSeq:
+    name: through_seq
+    in: query
+    required: false
+    description: |
+      Bound the window above, so a page is reproducible while the conversation
+      keeps growing.
+    schema: { type: integer, format: int64, minimum: 0 }
+
+responses:
+  BadRequest:
+    description: |
+      `400 invalid_request` — malformed transport: unparsable JSON, wrong JSON
+      shape for a hand-decoded field, unparsable identifier.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  Unauthorized:
+    description: |
+      `401` — `authentication_required` (no credential), `session_invalid`
+      (expired, rotated, or replayed), or `invalid_credentials`.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  Forbidden:
+    description: |
+      `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
+      `company_access_required`, or `human_actor_required` when a Run proof
+      (`X-Boardly-Run-Token`) reaches a route that does not accept a Run.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  UnauthorizedRunProof:
+    description: |
+      `401` — `authentication_required`, `session_invalid` or
+      `invalid_credentials`, or `run_token_invalid` when a supplied
+      `X-Boardly-Run-Token` does not prove a running Run whose member is the
+      caller.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  RunOwnReadOutsideScope:
+    description: |
+      `403` — `task_outside_run_scope` when the request carries a Run's
+      token and the path names another Run or chat, or a chat read comes
+      from a Run tagged in a channel or group DM. The `detail` is the fixed
+      sentence "Permission denied. You can only access your own Tasks." and
+      names nothing.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  NotFound:
+    description: |
+      `404` — missing **or** not visible to the caller. Company-scoped denial
+      always lands here rather than on 403.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  Conflict:
+    description: '409 — the resource changed or conflicts with current state.'
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  PayloadTooLarge:
+    description: '`413 request_too_large` — body over the per-endpoint cap.'
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  UnsupportedMediaType:
+    description: '`415 unsupported_media_type` — wrong `Content-Type`.'
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  ValidationFailed:
+    description: |
+      `422` — well-formed request failing a validation rule
+      (`validation_failed`), or a malformed cursor (`invalid_cursor`).
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  InternalError:
+    description: '`500 internal_error` — unexpected server failure.'
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+  ServiceUnavailable:
+    description: |
+      `503` — `service_not_ready` or `<dependency>_unavailable`.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Error' }
+
+schemas:
+  ActorRef:
+    type: object
+    description: |
+      Who did something. Carries a display name so a row renders without a
+      second read — there is no user-resolution endpoint and there does not
+      need to be. One wire type for every actor slot in the API; `avatarUrl`
+      is `null` when the actor has no avatar, never absent.
+    required: [id, kind, name, avatarUrl]
+    properties:
+      id: { type: string, format: uuid }
+      kind: { type: string, enum: [user, agent] }
+      name: { type: string }
+      avatarUrl: { type: [string, "null"] }
+
+  RuntimeStatus:
+    type: string
+    description: |
+      Liveness of a runtime, derived from its daemon's heartbeat. Not writable.
+    enum: [online, offline]
+
+  RuntimeSignIn:
+    type: object
+    description: |
+      The daemon's last look at whether the provider CLI on a machine is
+      signed in, taken with the provider's own status command (`claude auth
+      status`, `codex login status`) in the same probe round as the version.
+      It never changes `status`: a signed-out provider is still a machine that
+      can be asked to sign in, and runs on it fail with a readable
+      `provider_auth_or_access` reason. `unknown` means the status command
+      failed or printed something unexpected; it is never inferred from a
+      failed run. `detail` is a short sentence the daemon composed, never a
+      token or a path. Refresh it with `POST …/runtimes/{runtimeId}/refresh`.
+    required: [state, detail, checkedAt]
+    properties:
+      state:
+        type: string
+        enum: [signed_in, signed_out, unknown]
+      detail:
+        type: string
+        maxLength: 256
+      checkedAt: { $ref: '#/schemas/Timestamp' }
+      billingMode:
+        type: string
+        enum: [api, subscription, unknown]
+
+  CredentialIsolation:
+    type: string
+    enum: [enforced, not_enforced]
+    description: |
+      Whether the daemon keeps a runtime's Agents away from the Zenith Team
+      sign-in files on its computer. `enforced`: on macOS the daemon starts
+      every provider process in a sandbox that can neither read nor write
+      the daemon's home, `~/.boardly`, the desktop app's session store or
+      `local-preview.json`, and this round's probe proved it. `not_enforced`:
+      Windows, Linux, a failed probe, or the test switch
+      `BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced`. A daemon reports it
+      at registration and on every heartbeat.
+
+  RuntimeUnusableReason:
+    type: object
+    description: |
+      Why a runtime the daemon found on a machine cannot run work there: the
+      provider CLI is below the minimum version Zenith Team supports, or the
+      binary is not executable. Set only while the runtime's `status` is
+      `offline` — the machine is on, the CLI is broken — and cleared by the
+      next registration that omits it, which the daemon sends as soon as the
+      CLI is fixed. `message` is a human-facing sentence composed by the
+      daemon; it never contains a path.
+    required: [code, message]
+    properties:
+      code:
+        type: string
+        enum: [below_minimum_version, not_executable]
+      message:
+        type: string
+        maxLength: 256
+
+  RunStatus:
+    type: string
+    description: |
+      The one run-status vocabulary, backed by the `runs_status_check`
+      constraint and declared exactly once. Every surface that names a run
+      status — run reads, conversation summaries, filters, lifecycle events —
+      references this schema. The five non-terminal values are what
+      `active=true` selects; `completed`, `failed`, and `cancelled` are
+      terminal, and a terminal run's `updatedAt` is when it finished.
+    enum:
+      - queued
+      - deferred
+      - dispatched
+      - waiting_local_directory
+      - running
+      - completed
+      - failed
+      - cancelled
+
+  EntityType:
+    type: string
+    description: The closed vocabulary of things an activity row can be about.
+    enum:
+      - company
+      - user
+      - agent
+      - task
+      - run
+      - conversation
+      - message
+      - inbox
+      - resource
+      - runtime
+      - approval
+      - question
+      - deliverable
+      - calendar
+      - project
+      - project_grant
+      - group
+
+  NamedRef:
+    type: object
+    description: |
+      A minimal reference to another entity, embedded at the source so a client
+      never joins two responses by id.
+    required: [id, name]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+
+  RuntimeRef:
+    type: object
+    description: |
+      One of the viewer's own runtimes, as a binding names it: enough to
+      render a status chip. Every runtime is private to the member who
+      registered it (ADR 0014), so a runtime reference only ever describes
+      the viewer's machine; another member's machine is never named on the
+      wire.
+    required: [id, name, customName, status, provider, signIn, unusableReason]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      customName:
+        type: [string, "null"]
+        description: |
+          The name a person gave the machine, or `null` when nobody renamed
+          it. Render `customName ?? name`, so an agent roster shows the
+          rename without a runtime read.
+      status: { $ref: '#/schemas/RuntimeStatus' }
+      provider:
+        type: string
+        enum: [claude, codex]
+      signIn:
+        description: The provider CLI's sign-in verdict on that machine, or `null` before the daemon reported one.
+        oneOf:
+          - { $ref: '#/schemas/RuntimeSignIn' }
+          - { type: "null" }
+      unusableReason:
+        description: Why the machine's provider CLI cannot run work, or `null` for an ordinary row.
+        oneOf:
+          - { $ref: '#/schemas/RuntimeUnusableReason' }
+          - { type: "null" }
+
+  AgentBinding:
+    type: object
+    description: |
+      The viewer's own placement of an Agent template on one of their
+      runtimes (ADR 0014): "I run this Agent on this computer". One binding
+      per Agent and member; the runtime's provider is the Agent's. A binding
+      is the member's private setup, never a grant to anyone else — the
+      Runs it admits are the ones this member authorizes. Never another
+      member's: an Agent read carries the viewer's binding or `null`.
+    required: [id, agentId, runtime, createdAt]
+    properties:
+      id: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+      runtime: { $ref: '#/schemas/RuntimeRef' }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+
+  EntityRef:
+    type: object
+    description: |
+      The thing an activity row or Inbox item is about. `key` and `title` are
+      present for entity types that have them, so the client renders without
+      one read per row.
+      `id` is the entity's domain identifier. Activity and Inbox history keep
+      it as text so a historical non-UUID identifier remains representable.
+    required: [id, type]
+    properties:
+      id: { type: string }
+      type: { $ref: '#/schemas/EntityType' }
+      key: { type: [string, "null"] }
+      title: { type: [string, "null"] }
+
+  # ---------------------------------------------------------------- company
+
+  Agent:
+    type: object
+    description: |
+      An Agent template (ADR 0014): provider, model, thinking level,
+      instructions, capabilities, appearance and reporting line, owned by
+      the company. It has no machine of its own. A member runs it by
+      binding it to one of their own runtimes of the template's provider
+      (`PUT /agents/{agentId}/binding`); `binding`, `runtimeAvailable`,
+      `unavailableReason`, `activeRunCount` and `access.execute` are the
+      **viewer's** — the same Agent reads differently for each member.
+
+      The `agent.created` and `agent.updated` frames reach the whole company
+      and are kept as company activity, so they carry the agent as a member
+      who has not set it up reads it: `binding: null`,
+      `runtimeAvailable: false`, `unavailableReason` `not_bound` (or
+      `agent_archived`), `activeRunCount: 0` and `access.execute: false`.
+      No member's machine is ever named on them. A client applying either
+      frame keeps its own values for those five fields.
+    required:
+      - id
+      - companyId
+      - name
+      - title
+      - instructions
+      - capabilities
+      - reportsTo
+      - avatarKey
+      - accentColor
+      - binding
+      - runtimeAvailable
+      - provider
+      - model
+      - thinkingLevel
+      - maxConcurrentRuns
+      - activeRunCount
+      - archivedAt
+      - createdAt
+      - updatedAt
+      - revision
+      - unavailableReason
+      - createdBy
+      - access
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      name: { type: string, maxLength: 120 }
+      title: { type: string, maxLength: 120 }
+      instructions: { type: string }
+      capabilities: { $ref: './agents.yaml#/schemas/AgentCapabilitySettings' }
+      voice: { $ref: './agents.yaml#/schemas/AgentVoiceSettings' }
+      createdBy:
+        description: |
+          The member who created the agent (ADR 0013); `null` for agents that
+          predate the record. Any active member may create agents; the
+          creator, and company owners and admins, may configure them.
+        oneOf:
+          - { $ref: '#/schemas/ActorRef' }
+          - { type: "null" }
+      access:
+        type: object
+        description: |
+          The caller's server-derived standing on this agent. `configure` is
+          true when the caller may update, archive or restore it: they
+          created it, or they hold `agents.manage` (a company owner or
+          admin). The root agent is the exception: it needs `agents.manage`
+          whoever created it. `execute` is true when the caller has a usable
+          binding for this agent — the same fact `runtimeAvailable` reports.
+          Per caller — a lifecycle event carries the acting member's
+          `configure` and `execute: false`, so a client applying
+          `agent.created` or `agent.updated` keeps its own. Clients render
+          the edit and run controls from this field, never from a role.
+        required: [configure, execute]
+        properties:
+          configure: { type: boolean }
+          execute: { type: boolean }
+      reportsTo:
+        description: |
+          The agent this one reports to, embedded so one page draws the whole
+          org chart with no follow-up read. Null for the root agent. Cannot be
+          set to null by `PATCH` — an explicit null is `400`, so a parent can
+          never be detached.
+        oneOf:
+          - { $ref: '#/schemas/NamedRef' }
+          - { type: "null" }
+      avatarKey:
+        type: [string, "null"]
+        pattern: '^[a-z][a-z0-9-]{0,63}$'
+        description: |
+          The agent's look: a Fold avatar palette key — `fold-butter`,
+          `fold-tangerine`, `fold-coral`, `fold-orchid`, `fold-lagoon`,
+          `fold-pistachio`, `fold-periwinkle` or `fold-cocoa`. The server
+          fences only the format; a client draws the palette the key names
+          and, for `null` or an unknown key, one derived from the agent id.
+          Starter agents are provisioned with one; any agent can be given one.
+      accentColor:
+        type: [string, "null"]
+        pattern: '^#[0-9A-F]{6}$'
+        description: |
+          The agent's accent colour, uppercased server-side. `null` uses the
+          client's default palette.
+      binding:
+        description: |
+          The viewer's binding of this agent — which of their own runtimes
+          runs it — or `null` when they have not set it up. Embedded so the
+          roster renders "runs on your MacBook" without a runtime read.
+        oneOf:
+          - { $ref: '#/schemas/AgentBinding' }
+          - { type: "null" }
+      runtimeAvailable:
+        type: boolean
+        description: |
+          True when the viewer's binding names a runtime that is `online`,
+          usable and signed in. Viewer-relative; the same field the
+          `agent.status_changed` realtime event carries to the binder.
+      provider:
+        type: string
+        enum: [claude, codex]
+        description: |
+          The template's provider, chosen at creation and immutable
+          afterwards (duplicate the agent to change it). A member may bind
+          only a runtime of this provider.
+      model: { type: [string, "null"] }
+      thinkingLevel: { type: [string, "null"] }
+      maxConcurrentRuns:
+        type: integer
+        minimum: 1
+        maximum: 10
+        default: 3
+        description: |
+          How many **task** runs the agent may have in flight at once —
+          statuses `dispatched`, `running`, and `waiting_local_directory`.
+          Task runs past the cap stay `queued` until a slot frees.
+          Direct-conversation runs are exempt in both directions: they
+          neither wait for a slot nor occupy one. Writable through
+          `PATCH /agents/{agentId}`.
+      activeRunCount:
+        type: integer
+        format: int64
+        description: |
+          How many runs hold one of the agent's `maxConcurrentRuns` slots
+          right now — counted with the same task-lane predicate the dispatch
+          gate enforces, so the pair renders together (`2 of 3`) and means
+          what dispatch does. Direct-conversation runs are not included, in
+          keeping with their exemption from the cap.
+
+          A snapshot at read time. It moves on task-run dispatch and on
+          terminal transitions, which publish `run.*` frames; the agent row
+          is not written and no `agent.updated` follows, so a client tracks
+          the movement from those frames — a run takes a slot when it enters
+          `dispatched` and returns it on any terminal status. One case drifts
+          low: a run whose task is deleted mid-flight keeps its slot on the
+          server while its `taskId` goes null on the wire. The next agent
+          read is authoritative.
+      archivedAt: { type: [string, "null"], format: date-time }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+      updatedAt: { $ref: '#/schemas/Timestamp' }
+      revision: { $ref: '#/schemas/Revision' }
+      unavailableReason:
+        type: [string, "null"]
+        description: |
+          Why `runtimeAvailable` is `false` for the viewer, or `null` when it
+          is `true`. It decides which recovery the UI offers: restore the
+          agent, set it up on one of the viewer's computers, fix the provider
+          CLI on that machine, wake the machine, or sign the provider in.
+          `runtime_unusable` refines `runtime_offline`: the runtime is
+          offline because its provider CLI cannot run (the binding's
+          `runtime.unusableReason` says why), and it is ranked before
+          `runtime_offline` because an unusable runtime is always offline.
+          Precedence: `agent_archived`, `not_bound`, `runtime_unusable`,
+          `runtime_offline`, `runtime_signed_out`.
+        enum: [agent_archived, not_bound, runtime_unusable, runtime_offline, runtime_signed_out, null]
+
+  ApprovalExecution:
+    type: object
+    description: |
+      What actually happened when an approved action ran. `skipped` means the
+      target changed while the human was deciding, so the effect was not
+      applied — a decision made at 09:00 about a state from midnight must not
+      overwrite the intervening hours.
+    required: [status, skippedReason]
+    properties:
+      status: { type: string, enum: [executed, skipped] }
+      skippedReason: { type: [string, "null"] }
+      result:
+        description: Domain-owned result of the frozen action, when available.
+
+  # ------------------------------------------------------------ attachments
+
+  Attachment:
+    type: object
+    required:
+      - id
+      - companyId
+      - uploadedByUserId
+      - filename
+      - contentType
+      - sizeBytes
+      - status
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      uploadedByUserId: { type: string, format: uuid }
+      filename: { type: string }
+      contentType: { type: string }
+      sizeBytes: { type: integer, format: int64, example: 20481 }
+      status: { type: string, enum: [pending, ready] }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+      updatedAt: { $ref: '#/schemas/Timestamp' }
+      revision: { $ref: '#/schemas/Revision' }
+
+  # ------------------------------------------------------------------- runs
+
+  BigCounter:
+    type: string
+    description: |
+      An integer counter serialized as a decimal string because it can exceed
+      2^53. Parse as a big integer, not a JS `number`.
+    example: '148213'
+
+  # ---------------------------------------------------------------- company
+
+  CompanyTotals:
+    allOf:
+      - { $ref: '#/schemas/Tokens' }
+      - type: object
+        required: [runCount]
+        properties:
+          runCount: { $ref: '#/schemas/BigCounter' }
+
+  Conversation:
+    type: object
+    required:
+      [id, companyId, kind, taskId, title, createdAt, updatedAt, revision]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      kind: { $ref: '#/schemas/ConversationKind' }
+      taskId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The task this conversation backs; `null` on a direct chat. Carried
+          on the conversation itself rather than beside it, so a caller never
+          has to correlate two objects to learn what a conversation is about.
+      agentId:
+        type: string
+        format: uuid
+        description: Present on direct chats; absent on task conversations.
+      createdByUserId:
+        type: string
+        format: uuid
+        description: Present on direct chats; absent on task conversations.
+      title: { type: [string, "null"] }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+      updatedAt: { $ref: '#/schemas/Timestamp' }
+      revision: { $ref: '#/schemas/Revision' }
+
+  # ----------------------------------------------------------- conversations
+
+  ConversationKind:
+    type: string
+    enum: [task, direct]
+
+  # ------------------------------------------------------------------ agent
+
+  DependencyGraphTask:
+    type: object
+    required: [id, projectId, key, number, title, status]
+    properties:
+      id: { type: string, format: uuid }
+      projectId: { type: string, format: uuid }
+      key: { type: string }
+      number:
+        type: integer
+        format: int64
+        description: What every surface displays as `{taskPrefix}-{number}`.
+      title: { type: string }
+      status: { $ref: '#/schemas/TaskStatus' }
+
+  Error:
+    type: object
+    description: The single error envelope used by every endpoint.
+    required: [detail, code]
+    properties:
+      detail:
+        type: string
+        description: Human-readable explanation. Not a stable contract.
+      code:
+        type: string
+        description: Stable snake_case machine code. Branch on this.
+      requestId:
+        type: [string, "null"]
+        description: |
+          Echoes `X-Request-ID`. `null` only if the middleware chain was
+          bypassed. Quote it in bug reports.
+    examples:
+      - detail: Company not found
+        code: company_not_found
+        requestId: 0197f590-10b8-7cc0-a6c6-160ed7a18b2c
+
+  InboxCounts:
+    type: object
+    required: [unreadCount, countsVersion]
+    properties:
+      unreadCount: { type: integer, format: int64, example: 12 }
+      countsVersion:
+        type: integer
+        format: int64
+        example: 1755856977903
+        description: |
+          Epoch milliseconds: the newest of the last write to any of the
+          recipient's items (seen or hidden) and the last access change of a
+          Project those items name (ADR 0017); `1` for a recipient with no
+          items. Monotonic, also across access changes; use it to discard
+          stale count frames. Not
+          an optimistic-concurrency token — nothing accepts it back — which is
+          why it is not named `revision`.
+
+  # --------------------------------------------------------------- activity
+
+  Message:
+    type: object
+    description: |
+      One item of a conversation's single ordered stream, projected onto the
+      chat surface. A Conversation has one sequence, and the chat page and its
+      provider transcript are two filtered reads of it — so they can never
+      disagree about what came first.
+
+      An item is written once and never updated. There is no pending envelope
+      that later becomes terminal, and no state field: identity, `seq`,
+      authorship and provenance are fixed the moment the row exists.
+    required:
+      [id, conversationId, seq, type, author, runId, content, createdAt]
+    properties:
+      id: { type: string, format: uuid }
+      conversationId: { type: string, format: uuid }
+      seq:
+        type: integer
+        format: int64
+        example: 41
+        description: |
+          Monotonic within the **conversation**, across every item type, and
+          gap-free on this surface's own numbering: allocated as `max(seq) + 1`
+          over committed rows under the conversation row lock, so a rolled-back
+          write leaves no hole. It is the ordering key and the catch-up
+          position.
+
+          A chat window is a *filtered* read of that sequence, so consecutive
+          messages routinely differ by more than one — the run detail between
+          them holds the intervening numbers. Never treat a gap as a lost
+          message; the window's own bounds are what say whether rows are
+          missing.
+      type: { $ref: '#/schemas/ItemType' }
+      author: { $ref: '#/schemas/ActorRef' }
+      runId:
+        {"type": "string", "format": "uuid", "description": "The run this item belongs to. **Required and never null** on either\nauthor: the user's words belong to the run that consumed them, the\nagent's answer to the run that wrote it. This is not \"the run that\nproduced this\" — a user message carries the id of the run its send\nstarted, which is what lets a client attach a pending indicator to\nthe message a human actually typed.\n"}
+      content: { type: string }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+
+  MessageWindowBounds:
+    type: object
+    description: |
+      The navigation scalars every message window carries. `throughSeq` is the
+      conversation's highest `seq` — over the whole stream, not just the items
+      this surface shows — so a client knows whether one page caught it up;
+      `earliestAvailableSeq` says how far back the stream still reaches.
+      Whether older or newer rows exist is derived, not carried: compare the
+      window's lowest `seq` against `earliestAvailableSeq` and its highest
+      against `throughSeq`.
+    required: [earliestAvailableSeq, throughSeq]
+    properties:
+      earliestAvailableSeq: { type: integer, format: int64, example: 1 }
+      throughSeq: { type: integer, format: int64, example: 41 }
+
+  ItemType:
+    type: string
+    description: |
+      What a conversation item is, which is also the whole visibility rule:
+      the chat surface is exactly these two values, and the run-detail types
+      (`reasoning`, `tool_call`, `tool_result`, `error`) are filtered out in
+      SQL and never reach a projection carrying this.
+
+      `agent_text` is the agent's answer as it was committed during the run —
+      there is no separate output envelope, and a run that said nothing simply
+      has no `agent_text` item.
+    enum: [user_message, agent_text]
+
+  MessageWithAttachments:
+    type: object
+    description: |
+      A message with its attachments nested inside it, rather than returned
+      as a parallel array the client has to join by id.
+    allOf:
+      - $ref: '#/schemas/Message'
+      - type: object
+        required: [attachments, attachmentsWithheld]
+        properties:
+          attachments:
+            type: array
+            items: { $ref: '#/schemas/Attachment' }
+          attachmentsWithheld:
+            type: boolean
+            description: |
+              True when a file on the message was left out of `attachments`.
+              On a read: a Project file of a Project the caller does not read
+              (ADR 0017); show that a file is there without naming it. On a
+              `message.created` frame: every file was left out because one is
+              an active Project file; refetch the message.
+
+  PlanBaseEntity:
+    type: object
+    required: [id, key, revision]
+    properties:
+      id: { type: string, format: uuid }
+      key: { type: string }
+      revision: { $ref: '#/schemas/Revision' }
+      conversationId: { type: string, format: uuid }
+      readOnly:
+        type: boolean
+        description: |
+          On a Project: the plan was read without `project.tasks.write` on
+          it (the export sets it from the Project's served
+          `access.permissions`, ADR 0017). The apply then leaves that Project
+          and its Tasks alone, even if the applier may change them by now.
+          It can only narrow an apply. Not compared, and not set on Tasks.
+
+  QuestionPrompt:
+    type: object
+    required: [id, prompt, selectionMode, required]
+    properties:
+      id: { type: string }
+      prompt: { type: string, minLength: 1, maxLength: 2000 }
+      socialPost:
+        $ref: './social.yaml#/schemas/SocialPostReview'
+        description: Exact social publication preview. Requires one required single prompt with publish/cancel choices in that order. Presentation fields are resolved by the server; a custom answer requests changes and never authorizes publishing.
+      toolSetup:
+        type: string
+        enum: [zenith-studio]
+        description: |
+          Explicit Agent request for the Zenith Studio enable/connect card.
+          Requires exactly one required single prompt without options or
+          allowCustomAnswer. This requests human setup and grants no execution
+          authority. The human's answer starts a fresh continuation Run.
+      helpText: { type: [string, "null"], maxLength: 4000 }
+      selectionMode: { type: string, enum: [single, multi] }
+      required: { type: boolean }
+      allowCustomAnswer:
+        type: boolean
+        description: |
+          For a prompt with options, also offer an Other choice whose answer
+          is free text. Must be false when options are absent.
+      options:
+        type: array
+        description: Absent or empty means free text.
+        items:
+          type: object
+          required: [id, label]
+          properties:
+            id: { type: string }
+            label: { type: string, minLength: 1, maxLength: 240 }
+
+  # ---------------------------------------------------- human-in-the-loop
+
+  ResourceRef:
+    type: object
+    description: |
+      Where the resource physically lives. For `local_directory` this is the
+      daemon that owns the path; the public Resource projection omits the path.
+    required: [daemonId, daemonName]
+    properties:
+      daemonId: { type: string }
+      daemonName:
+        type: string
+        description: |
+          The device name the daemon registered with, embedded because nothing
+          on the user plane can resolve a daemon id. Falls back to `daemonId`
+          when the daemon registered no name.
+
+  Revision:
+    type: integer
+    format: int64
+    minimum: 1
+    maximum: 9007199254740991
+    description: Optimistic-concurrency token. Increments on every write.
+    example: 7
+
+  RunQueueItem:
+    type: object
+    description: |
+      One prompt waiting behind the run in flight. `id` is the queue item's own
+      identity and is **not** a reserved run id: `runs.id` is a database-generated UUID the
+      promotion transaction takes by inserting the run, so a prompt still
+      waiting has no run identity yet. Follow this `id` until promotion.
+    required: [id, messageId, content, attachments, initiatedBy, queuedAt, revision]
+    properties:
+      id: { type: string, format: uuid }
+      messageId:
+        type: string
+        format: uuid
+        description: |
+          The id the promoted conversation item will carry. Reserved with the
+          queue row so the eventual item is addressable in advance.
+      content: { type: string }
+      attachments:
+        type: array
+        items: { $ref: '#/schemas/Attachment' }
+      initiatedBy:
+        allOf: [{ $ref: '#/schemas/ActorRef' }]
+        description: |
+          The member who wrote the prompt, always `kind: user`. In a task chat
+          this can be a colleague of the assignee: their message waits here
+          until the assignee's next run carries it (ADR 0014).
+      queuedAt: { $ref: '#/schemas/Timestamp' }
+      revision: { $ref: '#/schemas/Revision' }
+
+  RunQueueProjection:
+    type: object
+    required: [currentRun, items, limit]
+    properties:
+      currentRun:
+        type: [object, "null"]
+        description: |
+          The **oldest non-terminal** run of the conversation, not necessarily
+          an executing one — its `status` can be `queued` or `deferred`.
+        required: [id, status, queuedAt]
+        properties:
+          id: {"type": "string", "format": "uuid"}
+          status: { $ref: '#/schemas/RunStatus' }
+          runtimeId:
+            type: [string, "null"]
+            format: uuid
+            description: |
+              The runtime the run is placed on, for the member who registered
+              that runtime; `null` for every other viewer. A member's
+              machine is theirs alone (ADR 0014).
+          waitReason:
+            type: string
+            description: studio_auth_required while waiting for Zenith Studio sign-in.
+          queuedAt: { $ref: '#/schemas/Timestamp' }
+      items:
+        type: array
+        description: Ordered by position, then queuedAt, then id.
+        items: { $ref: '#/schemas/RunQueueItem' }
+      limit: { type: integer, example: 50 }
+
+  # ------------------------------------------------------------ attachments
+
+  # ----------------------------------------------------------------- search
+
+  # ----------------------------------------------------------------- daemon
+
+  TaskDependency:
+    type: object
+    required:
+      - projectId
+      - companyId
+      - dependentTaskId
+      - prerequisiteTaskId
+      - createdAt
+      - revision
+    properties:
+      projectId: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      dependentTaskId: { type: string, format: uuid }
+      prerequisiteTaskId: { type: string, format: uuid }
+      createdAt: { $ref: '#/schemas/Timestamp' }
+      revision: { $ref: '#/schemas/Revision' }
+
+  TaskStatus:
+    type: string
+    description: |
+      A Task's complete read vocabulary. `failed` is an Agent-reported
+      business outcome and `error` is a technical Run failure; both are
+      server-owned outcomes and are rejected by ordinary Task create/update
+      requests.
+    enum: [backlog, todo, in_progress, in_review, done, blocked, failed, error, cancelled]
+
+  Timestamp:
+    type: string
+    format: date-time
+    description: RFC3339. Nanosecond precision, UTC, unless annotated.
+    example: '2026-08-15T16:02:57.903118Z'
+
+  # ------------------------------------------------------------------ usage
+
+  Tokens:
+    type: object
+    description: |
+      The token counters of one usage slice. There is no combined
+      input+output figure on the wire — a client that wants it sums the two
+      counters it already holds.
+    required:
+      [inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens]
+    properties:
+      inputTokens: { $ref: '#/schemas/BigCounter' }
+      outputTokens: { $ref: '#/schemas/BigCounter' }
+      cacheReadTokens: { $ref: '#/schemas/BigCounter' }
+      cacheWriteTokens: { $ref: '#/schemas/BigCounter' }

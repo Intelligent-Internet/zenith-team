@@ -1,0 +1,9 @@
+{
+  "itemId": "5b78175d-061b-4986-96e3-54a7d640a113",
+  "base": "AQTk/rbSDQAHAQdjb250ZW50AwlwYXJhZ3JhcGgHAOT+ttINAAYoAOT+ttINAAdibG9ja0lkAXckNWI3ODE3NWQtMDYxYi00OTg2LTk2ZTMtNTRhN2Q2NDBhMTEzBADk/rbSDQEPWGluIGNow6BvIPCfjLEKAA==",
+  "updateA": "AQGTm7yOAQBE5P620g0DHMOdIHTGsOG7n25nCkTDsm5nIHRo4bupIGhhaQoA",
+  "updateB": "AQHykbzJCACE5P620g0OHQpRdXnhur90IMSR4buLbmg6IGPDuW5nIG5oYXUKAA==",
+  "undoA": "AAGTm7yOAQEAFQ==",
+  "expected": "Ý tưởng\nDòng thứ hai\nXin chào 🌱\n\nQuyết định: cùng nhau\n",
+  "expectedUndo": "Xin chào 🌱\n\nQuyết định: cùng nhau\n"
+}

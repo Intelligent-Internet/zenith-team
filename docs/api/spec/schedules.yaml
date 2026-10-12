@@ -1,0 +1,587 @@
+# Authored Schedule-domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index and docs/api/schedules.md is the
+# prose counterpart.
+
+paths:
+  companies_companyId_schedules_preview:
+    post:
+      tags: [schedules]
+      operationId: previewSchedule
+      summary: Normalize and review a Schedule draft
+      description: |
+        Requires `schedules.manage`. Resolves the selected Agent and Connector sources,
+        normalizes the trigger, and returns the digest that create/update must
+        echo. Preview writes no product state.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SchedulePreviewRequest' }
+      responses:
+        '200':
+          description: Normalized Schedule review.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SchedulePreviewResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: |
+            `409 schedule_conflict` when selected state cannot be reviewed, or
+            `agent_binding_required` when the caller has not set the Agent up
+            on one of their own runtimes; every firing runs on that binding.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules:
+    get:
+      tags: [schedules]
+      operationId: listSchedules
+      summary: List the owner's Schedules
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/schemas/ScheduleStatus' }
+        - name: preset_key
+          in: query
+          required: false
+          schema: { type: string, pattern: '^[a-z][a-z0-9_]{0,63}$' }
+      responses:
+        '200':
+          description: Newest-first Schedule page.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SchedulePage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    post:
+      tags: [schedules]
+      operationId: createSchedule
+      summary: Create a reviewed Schedule
+      description: |
+        Requires `schedules.manage`. PostgreSQL creates the Schedule and its Schedule
+        Conversation in one transaction. `requestKey` is a replay fence, not
+        an entity id: a new create returns `201`; an exact replay returns the
+        original Schedule with `200`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ScheduleCreateRequest' }
+      responses:
+        '200':
+          description: Exact create replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Schedule' }
+        '201':
+          description: Schedule created.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Schedule' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: |
+            `409 schedule_review_stale`, `schedule_conflict`, or
+            `agent_binding_required`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules_scheduleId:
+    parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - $ref: '#/parameters/scheduleId'
+    get:
+      tags: [schedules]
+      operationId: getSchedule
+      summary: Read one Schedule
+      responses:
+        '200':
+          description: The Schedule.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Schedule' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+    patch:
+      tags: [schedules]
+      operationId: updateSchedule
+      summary: Replace a Schedule definition after review
+      description: |
+        The draft fields form one reviewed definition, rather than a sparse
+        patch. `expectedRevision` prevents lost updates and `reviewDigest`
+        proves that the selected Agent/provider/sources still match preview.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ScheduleUpdateRequest' }
+      responses:
+        '200':
+          description: Updated Schedule.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Schedule' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 schedule_version_conflict`, `schedule_review_stale`,
+            `schedule_run_active`, `schedule_terminal`, `schedule_conflict`, or
+            `agent_binding_required`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules_scheduleId_pause:
+    post:
+      tags: [schedules]
+      operationId: pauseSchedule
+      summary: Pause a Schedule
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/scheduleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ScheduleLifecycleRequest' }
+      responses:
+        '200': { $ref: '#/responses/ScheduleMutationSuccess' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 schedule_version_conflict`, `schedule_run_active`,
+            `schedule_terminal`, or `schedule_invalid_state`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules_scheduleId_resume:
+    post:
+      tags: [schedules]
+      operationId: resumeSchedule
+      summary: Resume a reviewed Schedule
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/scheduleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - { $ref: '#/schemas/ScheduleLifecycleRequest' }
+                - type: object
+                  required: [reviewDigest]
+      responses:
+        '200': { $ref: '#/responses/ScheduleMutationSuccess' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 schedule_version_conflict`, `schedule_review_stale`,
+            `schedule_run_active`, `schedule_terminal`,
+            `schedule_invalid_state`, or `agent_binding_required`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules_scheduleId_cancel:
+    post:
+      tags: [schedules]
+      operationId: cancelSchedule
+      summary: Permanently cancel a Schedule
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/scheduleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ScheduleLifecycleRequest' }
+      responses:
+        '200': { $ref: '#/responses/ScheduleMutationSuccess' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 schedule_version_conflict`, `schedule_run_active`,
+            `schedule_terminal`, or `schedule_invalid_state`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_schedules_scheduleId_runs:
+    parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - $ref: '#/parameters/scheduleId'
+    get:
+      tags: [schedules]
+      operationId: listScheduleRuns
+      summary: List Schedule firing history
+      parameters:
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: Newest-first firing page.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ScheduleRunPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    post:
+      tags: [schedules]
+      operationId: runScheduleNow
+      summary: Materialize one manual Schedule firing
+      description: |
+        PostgreSQL generates the firing, Message, and Run identities. The
+        caller supplies only `requestKey`; an exact replay returns `200` and
+        the original firing, while a new firing returns `201`. A new firing
+        sets the Schedule's `lastRunAt` and keeps its revision and `nextRunAt`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ScheduleRunNowRequest' }
+      responses:
+        '200':
+          description: Exact manual-run replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ScheduleRunRecord' }
+        '201':
+          description: Manual firing materialized.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ScheduleRunRecord' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 schedule_run_active`, `schedule_terminal`,
+            `schedule_invalid_state`, `schedule_conflict` when the Agent is
+            archived or otherwise unusable before the Schedule is paused for
+            it, or `agent_binding_required` when the creator's binding of the
+            Agent is gone before the Schedule is paused for it.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+parameters:
+  scheduleId:
+    name: scheduleId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+
+responses:
+  ScheduleMutationSuccess:
+    description: Updated Schedule.
+    content:
+      application/json:
+        schema: { $ref: '#/schemas/Schedule' }
+
+schemas:
+  ScheduleStatus:
+    type: string
+    enum: [draft, active, paused, completed, cancelled]
+    description: |
+      Create always returns an `active` Schedule and no public route creates
+      or activates a `draft`; the value stays in the enum because the
+      database allows it.
+
+  ScheduleOnceTrigger:
+    type: object
+    additionalProperties: false
+    required: [type, runAt]
+    properties:
+      type: { type: string, const: once }
+      runAt:
+        allOf: [{ $ref: './_common.yaml#/schemas/Timestamp' }]
+        description: Future UTC minute; seconds and fractional seconds are zero.
+
+  ScheduleCronTrigger:
+    type: object
+    additionalProperties: false
+    required: [type, expression, timeZone]
+    properties:
+      type: { type: string, const: cron }
+      expression:
+        type: string
+        maxLength: 256
+        description: Five-field cron expression; intervals under five minutes are rejected.
+      timeZone:
+        type: string
+        maxLength: 255
+        description: IANA time-zone name; `Local` is rejected.
+
+  ScheduleTrigger:
+    oneOf:
+      - { $ref: '#/schemas/ScheduleOnceTrigger' }
+      - { $ref: '#/schemas/ScheduleCronTrigger' }
+    discriminator:
+      propertyName: type
+      mapping:
+        once: '#/schemas/ScheduleOnceTrigger'
+        cron: '#/schemas/ScheduleCronTrigger'
+
+  ScheduleDraftFields:
+    type: object
+    required: [schemaVersion, agentId, name, instructions, trigger, sourceIds]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      agentId: { type: string, format: uuid }
+      name: { type: string, minLength: 1, maxLength: 240 }
+      instructions: { type: string, maxLength: 65536 }
+      presetKey:
+        type: [string, "null"]
+        pattern: '^[a-z][a-z0-9_]{0,63}$'
+      trigger: { $ref: '#/schemas/ScheduleTrigger' }
+      sourceIds:
+        type: array
+        maxItems: 128
+        uniqueItems: true
+        items: { type: string, format: uuid }
+
+  ScheduleDraftRequest:
+    allOf:
+      - { $ref: '#/schemas/ScheduleDraftFields' }
+    unevaluatedProperties: false
+
+  SchedulePreviewRequest:
+    $ref: '#/schemas/ScheduleDraftRequest'
+
+  ScheduleCreateRequest:
+    allOf:
+      - { $ref: '#/schemas/ScheduleDraftFields' }
+      - type: object
+        required: [requestKey, reviewDigest]
+        properties:
+          requestKey:
+            type: string
+            format: uuid
+            description: Replay key only; PostgreSQL generates Schedule and Conversation ids.
+          reviewDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+    unevaluatedProperties: false
+
+  ScheduleUpdateRequest:
+    allOf:
+      - { $ref: '#/schemas/ScheduleDraftFields' }
+      - type: object
+        required: [expectedRevision, reviewDigest]
+        properties:
+          expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+          reviewDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+    unevaluatedProperties: false
+
+  ScheduleLifecycleRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, expectedRevision]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      reviewDigest:
+        type: string
+        pattern: '^[0-9a-f]{64}$'
+
+  ScheduleRunNowRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, requestKey]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      requestKey:
+        type: string
+        format: uuid
+        description: Replay key only; PostgreSQL generates firing, Message, and Run ids.
+
+  ScheduleSource:
+    type: object
+    required: [id, name, nativeId, provider, source]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      nativeId: { type: string }
+      provider: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorProvider' }
+      source: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorSource' }
+
+  Schedule:
+    type: object
+    required:
+      - id
+      - agentId
+      - name
+      - instructions
+      - presetKey
+      - provider
+      - trigger
+      - sources
+      - status
+      - pauseReason
+      - nextRunAt
+      - lastRunAt
+      - revision
+      - createdAt
+      - updatedAt
+    properties:
+      id: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+      name: { type: string }
+      instructions: { type: string }
+      presetKey: { type: [string, "null"] }
+      provider: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorProvider' }
+      trigger: { $ref: '#/schemas/ScheduleTrigger' }
+      sources:
+        type: array
+        items: { $ref: '#/schemas/ScheduleSource' }
+      status: { $ref: '#/schemas/ScheduleStatus' }
+      pauseReason: { type: [string, "null"] }
+      nextRunAt:
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      lastRunAt:
+        description: |
+          When the Schedule last fired, on its timer or through Run now. Null
+          until the first firing.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  SchedulePreviewResponse:
+    type: object
+    required:
+      [normalizedTrigger, humanSchedule, nextOccurrences, provider, sources, reviewDigest]
+    properties:
+      normalizedTrigger: { $ref: '#/schemas/ScheduleTrigger' }
+      humanSchedule:
+        type: string
+        description: |
+          The trigger in plain words, followed by the time zone, such as
+          `Every weekday at 09:00 · Asia/Ho_Chi_Minh`. A cron shape with no
+          plain wording keeps its expression.
+      nextOccurrences:
+        type: array
+        items: { $ref: './_common.yaml#/schemas/Timestamp' }
+      provider: { $ref: './connectors-and-plugins.yaml#/schemas/ConnectorProvider' }
+      sources:
+        type: array
+        items: { $ref: '#/schemas/ScheduleSource' }
+      reviewDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+
+  SchedulePage:
+    type: object
+    required: [schedules, nextCursor]
+    properties:
+      schedules:
+        type: array
+        items: { $ref: '#/schemas/Schedule' }
+      nextCursor: { type: [string, "null"] }
+
+  ScheduleRunTrigger:
+    type: string
+    enum: [scheduled, manual]
+
+  ScheduleRunDisposition:
+    type: string
+    enum: [materialized, superseded, skipped, needs_attention]
+
+  ScheduleRunRecord:
+    type: object
+    required:
+      - firingId
+      - conversationId
+      - messageId
+      - messageSeq
+      - occurrenceAt
+      - trigger
+      - disposition
+      - reason
+      - runId
+      - runStatus
+      - output
+      - createdAt
+    properties:
+      firingId: { type: string, format: uuid }
+      conversationId: { type: string, format: uuid }
+      messageId:
+        type: [string, "null"]
+        format: uuid
+        description: Null when no firing Message was materialized.
+      messageSeq: { type: [integer, "null"], format: int64, minimum: 1 }
+      occurrenceAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      trigger: { $ref: '#/schemas/ScheduleRunTrigger' }
+      disposition: { $ref: '#/schemas/ScheduleRunDisposition' }
+      reason: { type: [string, "null"] }
+      runId:
+        {"type": ["string", "null"], "format": "uuid", "description": "Null for skipped or needs-attention firings."}
+      runStatus:
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/RunStatus' }
+          - { type: "null" }
+      output: { type: [string, "null"] }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  ScheduleRunPage:
+    type: object
+    required: [runs, nextCursor]
+    properties:
+      runs:
+        type: array
+        items: { $ref: '#/schemas/ScheduleRunRecord' }
+      nextCursor: { type: [string, "null"] }

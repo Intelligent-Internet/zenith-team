@@ -1,0 +1,1718 @@
+paths:
+  companies_companyId_analytics_summary:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsSummary
+      summary: Analytics summary
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: scope
+          in: query
+          required: true
+          schema: { type: string, enum: [company, mine] }
+        - { name: start_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: time_zone, in: query, required: true, schema: { type: string } }
+        - { name: provider, in: query, required: false, schema: { type: string } }
+        - { name: model, in: query, required: false, schema: { type: string } }
+        - { name: agent_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: member_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: project_id, in: query, required: false, description: 'A Project the caller reads; any other is `404 project_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: task_id, in: query, required: false, description: 'A Task in a Project the caller reads; any other is `404 task_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: run_type, in: query, required: false, schema: { type: string, enum: [task, direct_chat, schedule, channel_agent] } }
+        - { name: runtime_id, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Analytics summary
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsSummary' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_analytics_series:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsSeries
+      summary: Analytics time series
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [company, mine] } }
+        - { name: start_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: time_zone, in: query, required: true, schema: { type: string } }
+        - { name: metric, in: query, required: true, schema: { type: string, enum: [cost, tokens, runs, run_time, failures] } }
+        - { name: bucket, in: query, required: true, schema: { type: string, enum: [day, week, month] } }
+        - { name: provider, in: query, required: false, schema: { type: string } }
+        - { name: model, in: query, required: false, schema: { type: string } }
+        - { name: agent_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: member_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: project_id, in: query, required: false, description: 'A Project the caller reads; any other is `404 project_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: task_id, in: query, required: false, description: 'A Task in a Project the caller reads; any other is `404 task_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: run_type, in: query, required: false, schema: { type: string, enum: [task, direct_chat, schedule, channel_agent] } }
+        - { name: runtime_id, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Dense time series for the requested window.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsSeries' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_analytics_breakdown:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsBreakdown
+      summary: Analytics dimension breakdown
+      description: 'Rows of one dimension and the request''s `total`; the rows always add up to it.
+        `scope=company` needs `usage.read` and counts every Run in scope; `scope=mine` counts
+        only Runs the caller authorized. A Project or Task is named only to someone who reads
+        its Project (ADR 0017): in `by=project` and `by=task`, every other Project''s Runs are
+        one row with `synthetic: other_work`, label `Other work` and no id.'
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [company, mine] } }
+        - { name: start_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: time_zone, in: query, required: true, schema: { type: string } }
+        - { name: by, in: query, required: true, schema: { type: string, enum: [agent, model, member, project, task, run_type, runtime] } }
+        - { name: sort, in: query, required: true, schema: { type: string, enum: [tokens, cost, runs, run_time, failures] } }
+        - { name: limit, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - { name: provider, in: query, required: false, schema: { type: string } }
+        - { name: model, in: query, required: false, schema: { type: string } }
+        - { name: agent_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: member_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: project_id, in: query, required: false, description: 'A Project the caller reads; any other is `404 project_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: task_id, in: query, required: false, description: 'A Task in a Project the caller reads; any other is `404 task_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: run_type, in: query, required: false, schema: { type: string, enum: [task, direct_chat, schedule, channel_agent] } }
+        - { name: runtime_id, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Paged breakdown rows and the matching total.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsBreakdown' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_analytics_failures:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsFailures
+      summary: Analytics reliability breakdown
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [company, mine] } }
+        - { name: start_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: time_zone, in: query, required: true, schema: { type: string } }
+        - { name: provider, in: query, required: false, schema: { type: string } }
+        - { name: model, in: query, required: false, schema: { type: string } }
+        - { name: agent_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: member_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: project_id, in: query, required: false, description: 'A Project the caller reads; any other is `404 project_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: task_id, in: query, required: false, description: 'A Task in a Project the caller reads; any other is `404 task_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: run_type, in: query, required: false, schema: { type: string, enum: [task, direct_chat, schedule, channel_agent] } }
+        - { name: runtime_id, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Reliability counts and Agent failure ranking.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsFailures' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_analytics_heatmap:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsHeatmap
+      summary: Analytics weekday and hour heatmap
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [company, mine] } }
+        - { name: start_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: time_zone, in: query, required: true, schema: { type: string } }
+        - { name: provider, in: query, required: false, schema: { type: string } }
+        - { name: model, in: query, required: false, schema: { type: string } }
+        - { name: agent_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: member_id, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: project_id, in: query, required: false, description: 'A Project the caller reads; any other is `404 project_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: task_id, in: query, required: false, description: 'A Task in a Project the caller reads; any other is `404 task_not_found` (ADR 0017).', schema: { type: string, format: uuid } }
+        - { name: run_type, in: query, required: false, schema: { type: string, enum: [task, direct_chat, schedule, channel_agent] } }
+        - { name: runtime_id, in: query, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Dense weekday and local-hour usage cells.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsHeatmap' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_analytics_budget:
+    get:
+      tags: [analytics]
+      operationId: getAnalyticsBudgets
+      summary: List analytics soft budgets
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Company and Agent monthly soft budgets.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsBudgetPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    put:
+      tags: [analytics]
+      operationId: putAnalyticsBudget
+      summary: Set an analytics soft budget
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AnalyticsBudgetInput' }
+      responses:
+        '200':
+          description: Saved soft budget.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsBudget' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_tasks_taskId_usage:
+    get:
+      tags: [analytics]
+      operationId: getTaskUsage
+      summary: Read a Task's usage
+      description: 'The Task must be in a Project the caller reads (ADR 0017); otherwise `404
+        task_not_found`, as for a missing Task. Tokens and cost show for `usage.read` holders,
+        and otherwise only on the Runs the caller authorized.'
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      responses:
+        '200':
+          description: Task totals and its visible Run table.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AnalyticsTaskUsage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_huddle_budget:
+    get:
+      tags: [usage]
+      operationId: getHuddleBudget
+      summary: Read the Company huddle AI budget (usage.read)
+      description: UTC calendar-month allowance. An unconfigured budget has revision zero and authorizes no AI spending. Money is a decimal string of integer 1e-10 USD ticks. Committed funds include unsettled reservations.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Current budget and committed allowance.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleBudget' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+    put:
+      tags: [usage]
+      operationId: configureHuddleBudget
+      summary: Configure the Company huddle AI budget (company.profile.update)
+      description: Human owner/admin only. Zero disables new AI spending. A lower limit does not erase prior commitments. Use expectedRevision zero for the first configuration; subsequent updates require the current revision.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [monthlyLimitUsdTicks, expectedRevision]
+              properties:
+                monthlyLimitUsdTicks:
+                  type: string
+                  pattern: '^[0-9]{1,16}$'
+                  description: Integer 1e-10 USD ticks; maximum 9007199254740991.
+                expectedRevision:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  maximum: 9007199254740990
+      responses:
+        '200':
+          description: Updated configuration and current allowance.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleBudget' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: The configuration revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  companies_companyId_usage:
+    get:
+      tags:
+      - usage
+      operationId: getCompanyUsage
+      summary: Company usage report (usage.read)
+      description: 'Requires `usage.read`. The query must contain **exactly** `period` and `time_zone`
+
+        — both are required, neither has a default, and any other key is `422`.
+
+        `time_zone` must be a loadable IANA zone and must not be the literal
+
+        `Local`.
+
+
+        The window fields are **flat**: `periodStartAt` / `periodEndAt` and
+
+        `comparisonStartAt` / `comparisonEndAt` sit at the top level beside the
+
+        single `timeZone` that describes the whole report. They were two nested
+
+        `ReportPeriod` objects that repeated that value identically — the same
+
+        value twice in one body, with nothing saying which won.
+
+
+        Served `Cache-Control: private, no-store`.
+
+        '
+      parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - name: period
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - week
+          - month
+          - year
+      - name: time_zone
+        in: query
+        required: true
+        description: IANA zone name. The literal `Local` is rejected.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The report, with its comparison window and model mix.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/CompanyUsageReport'
+        '401':
+          $ref: './_common.yaml#/responses/Unauthorized'
+        '403':
+          description: '`403 company_permission_required`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '422':
+          $ref: './_common.yaml#/responses/ValidationFailed'
+        '500':
+          $ref: './_common.yaml#/responses/InternalError'
+  companies_companyId_agents_agentId_usage:
+    get:
+      tags:
+      - usage
+      operationId: getAgentUsage
+      summary: Per-agent usage report (usage.read)
+      description: 'Requires `usage.read`. The query must contain **exactly** `start_at`, `end_at`,
+
+        `time_zone`, and `bucket`; none has a default.
+
+
+        `start_at` and `end_at` must be exact **local midnight in the supplied
+
+        `time_zone`** — a UTC midnight paired with a non-UTC zone is `422`. The
+
+        window must be non-empty and at most 367 days.
+
+
+        A malformed `agentId` is `404 agent_not_found`, not 400 or 422.
+
+
+        The window fields are flat at the top level rather than grouped under a
+
+        `period` object; `topTasks` is the array itself, with its denominator
+
+        beside it as `topTasksTotalInputOutputTokens`.
+
+
+        Served `Cache-Control: private, no-store`.
+
+        '
+      parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - $ref: './_common.yaml#/parameters/agentId'
+      - name: start_at
+        in: query
+        required: true
+        description: RFC 3339. Must be exact local midnight in `time_zone`.
+        schema:
+          type: string
+          format: date-time
+      - name: end_at
+        in: query
+        required: true
+        description: 'RFC 3339, exact local midnight in `time_zone`, strictly after
+
+          `start_at` and at most 367 days later.
+
+          '
+        schema:
+          type: string
+          format: date-time
+      - name: time_zone
+        in: query
+        required: true
+        description: IANA zone name. The literal `Local` is rejected.
+        schema:
+          type: string
+      - name: bucket
+        in: query
+        required: true
+        schema:
+          $ref: '#/schemas/UsageBucket'
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/AgentUsageReport'
+        '401':
+          $ref: './_common.yaml#/responses/Unauthorized'
+        '403':
+          description: '`403 company_permission_required`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '404':
+          description: '`404 agent_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '422':
+          $ref: './_common.yaml#/responses/ValidationFailed'
+        '500':
+          $ref: './_common.yaml#/responses/InternalError'
+  companies_companyId_me_activity_insight:
+    get:
+      tags:
+      - usage
+      operationId: getMyActivityInsight
+      summary: The caller's own activity tile
+      description: 'Member gate. Lifetime figures about the **calling user''s own** work in
+
+        this company, not the company''s, and not scoped to any period.
+
+
+        The endpoint takes no query parameters, so any parameter is an unknown
+
+        one and is `422 validation_failed` by the standard rule — there is no
+
+        bespoke pre-handler check. Authentication and membership run ahead of
+
+        it, so an unauthenticated request with a query is `401` and a
+
+        non-member''s is `404`.
+
+
+        Denial inside the service is `403 company_access_required`, a different
+
+        code from the `company_permission_required` the sibling usage routes use.
+
+
+        Served `Cache-Control: private, no-store`.
+
+        '
+      parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The insight tile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/ActivityInsight'
+        '401':
+          $ref: './_common.yaml#/responses/Unauthorized'
+        '403':
+          description: '`403 company_access_required`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '422':
+          description: '`422 validation_failed` — any query parameter.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '500':
+          $ref: './_common.yaml#/responses/InternalError'
+  companies_companyId_activity:
+    get:
+      tags:
+      - activity
+      operationId: listActivity
+      summary: The company activity feed
+      description: 'All permitted recorded Company domain actions. Feed and calendar use the same retained visibility.
+        Task panels filter by exact Task subject. Run lifecycle actions use entity_type=run and the Run UUID as
+        entity_id; this query does not return changes to other entities caused by that Run. There is no dedicated
+        Run Activity route or Run attribution filter.
+
+        Apply membership and each row''s retained Company/creator visibility before filters, pagination, counts
+        or coverage. Private Direct/Schedule rows remain creator-private even for admins. Unknown scope is excluded.
+        Deleted subjects remain readable only through proven retained scope; well-formed inaccessible filter targets
+        return an empty page.
+
+        Project access (ADR 0017) also decides who reads a row: a row that names a Project is listed only for that
+        Project''s readers, including a row addressed to one person; a project_grant row (who gave whom which Project
+        permissions) is also listed for every member whose role holds projects.manage; a Company-wide row about a
+        Task, Task chat, Run, message, file, Approval or Question that names no Project is listed for nobody.
+        Group rows (group.created, group.updated, group.deleted, group.member_added, group.member_removed) name no
+        Project and are listed for every active member, as the Team page is; a Group change on a Project writes
+        project_grant rows (project_grant.group_changed with the Group''s set before and after,
+        project_grant.group_member_added and project_grant.group_member_removed, one row per Project and change
+        naming every person whose stored access there moved, as {projectId, groupId, userIds, count}), read like any
+        other project_grant row. Every project_grant payload also carries projectTitle, and a Group''s row groupName,
+        as they were when the change was made, so the row reads after the Group is deleted or the Project archived;
+        rows written before 2026-10-08 carry neither.
+
+        Filters combine with AND. Reject repeated/unknown keys and invalid combinations (422). entity_id requires
+        entity_type. actor_id requires user/agent actor_type. Revision filters require an exact Task/Conversation
+        subject and cannot be combined. Ordinary timelines use createdAt DESC, id DESC; revision-filtered pages
+        select non-null subject revisions and use revision DESC. Cursors bind filters and mode; invalid/reused incompatible
+        cursors return 422 invalid_cursor. Refresh the head for new inserts; cursors are not replication checkpoints.'
+      parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - $ref: './_common.yaml#/parameters/limit'
+      - $ref: './_common.yaml#/parameters/cursor'
+      - name: entity_type
+        in: query
+        required: false
+        description: Changed subject domain. Run actions use run; no Task reference is required for inclusion.
+        schema:
+          $ref: '#/schemas/ActivityEntityType'
+      - name: entity_id
+        in: query
+        required: false
+        description: Exact subject identity, including retained deleted identities. Requires entity_type. IDs remain
+          text for mixed domain identities; Run subjects use UUID text.
+        schema:
+          type: string
+          minLength: 1
+      - name: actor_type
+        in: query
+        required: false
+        description: Verified initiator, independent of a Run executing an Agent.
+        schema:
+          type: string
+          enum:
+          - user
+          - agent
+          - system
+      - name: actor_id
+        in: query
+        required: false
+        description: Exact actor identity. Requires user or agent actor_type; system has no actor ID.
+        schema:
+          type: string
+          minLength: 1
+          format: uuid
+      - name: action
+        in: query
+        required: false
+        description: One exact domain action such as task.updated or run.completed.
+        schema:
+          $ref: '#/schemas/ActivityAction'
+      - name: revision
+        in: query
+        required: false
+        description: Exact captured subject revision. Requires entity_type task/conversation and entity_id; mutually
+          exclusive with before_revision. Selects revisioned snapshots and revision-descending order.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      - name: before_revision
+        in: query
+        required: false
+        description: Exclusive upper revision bound for a Task/Conversation subject. Requires both subject keys
+          and is mutually exclusive with revision. With limit=1, returns the previous retained revision, which can
+          skip gaps.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+      - name: from
+        in: query
+        required: false
+        description: Inclusive createdAt bound in UTC.
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        required: false
+        description: Exclusive createdAt bound in UTC. When both are present, from must be earlier than to.
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: A page of activity entries, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - items
+                - nextCursor
+                - historyCoverage
+                - historyStartsAt
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/schemas/ActivityEntry'
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+                  historyCoverage:
+                    type: string
+                    enum:
+                    - partial
+                    description: Mixed legacy evidence and snapshots do not prove complete history.
+                  historyStartsAt:
+                    type:
+                    - string
+                    - 'null'
+                    format: date-time
+                    description: Null until a durable coverage boundary can be proven.
+        '401':
+          $ref: './_common.yaml#/responses/Unauthorized'
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '422':
+          description: Malformed or repeated query, invalid filter combination, or invalid_cursor.
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '500':
+          description: '`500 internal_error` — the detail reads "activity feed is
+
+            unavailable" while the code stays generic.
+
+            '
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+  companies_companyId_activity_calendar:
+    get:
+      tags:
+      - activity
+      operationId: getActivityCalendar
+      summary: Count activity per day for one month
+      description: 'Replaces paging the activity feed backwards until it passes the start
+
+        of the month and bucketing by day in the browser. The bucketing belongs
+
+        on the server. Go resolves the local month into exact half-open UTC
+
+        bounds; the `created_at` range predicate uses the company activity
+
+        index, and SQL groups only those bounded rows by local date. This gets
+
+        DST boundaries right without applying a function to the indexed range
+
+        column.
+
+
+        `days` is dense: every day of the month is present, including zeroes,
+
+        so a client renders the grid without generating the key set. The
+
+        response is deliberately **not** a `{items, nextCursor}` page — a month
+
+        is a fixed, complete, directly-indexable bucket set with nothing to
+
+        paginate.
+
+
+        Includes every recorded action permitted to the reader, using the same retained membership and creator visibility
+        and the same Project access rules as the feed.'
+      parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+      - name: month
+        in: query
+        required: true
+        description: Calendar month, `YYYY-MM`.
+        schema:
+          type: string
+          pattern: ^\d{4}-\d{2}$
+      - name: time_zone
+        in: query
+        required: true
+        description: IANA zone name. The literal `Local` is rejected.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: One count per day of the month, and the window it used.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/ActivityCalendar'
+        '401':
+          $ref: './_common.yaml#/responses/Unauthorized'
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+        '422':
+          $ref: './_common.yaml#/responses/ValidationFailed'
+        '500':
+          $ref: './_common.yaml#/responses/InternalError'
+schemas:
+  AnalyticsSummary:
+    type: object
+    additionalProperties: false
+    properties:
+      scope: { type: string, enum: [company, mine] }
+      timeZone: { type: string }
+      periodStartAt: { type: string, format: date-time }
+      periodEndAt: { type: string, format: date-time }
+      comparisonStartAt: { type: string, format: date-time }
+      comparisonEndAt: { type: string, format: date-time }
+      asOf: { type: string, format: date-time }
+      activeNow: { type: string }
+      current: { $ref: '#/schemas/AnalyticsMetrics' }
+      comparison: { $ref: '#/schemas/AnalyticsMetrics' }
+  AnalyticsMetrics:
+    type: object
+    additionalProperties: false
+    properties:
+      tokens: { $ref: '#/schemas/AnalyticsTokens' }
+      cost: { $ref: '#/schemas/AnalyticsCost' }
+      runs: { $ref: '#/schemas/AnalyticsRuns' }
+      time: { $ref: '#/schemas/AnalyticsTime' }
+  AnalyticsTokens:
+    type: object
+    properties:
+      input: { type: string }
+      output: { type: string }
+      cacheRead: { type: string }
+      cacheWrite: { type: string }
+      reasoning: { type: [string, 'null'] }
+  AnalyticsCost:
+    type: object
+    properties:
+      planCoveredTokens: { type: string }
+      unpricedModels:
+        type: array
+        items:
+          type: object
+          properties:
+            provider: { type: string }
+            model: { type: string }
+      reportedUsdTicks: { type: [string, 'null'] }
+      estimatedUsdTicks: { type: [string, 'null'] }
+      coverageState: { type: string, enum: [complete, partial, missing] }
+      costedFactCount: { type: string }
+      uncostedFactCount: { type: string }
+  AnalyticsRuns:
+    type: object
+    properties:
+      total: { type: string }
+      completed: { type: string }
+      failed: { type: string }
+      cancelled: { type: string }
+      task: { type: string }
+      directChat: { type: string }
+      channelAgent: { type: string }
+      schedule: { type: string }
+      withoutUsage: { type: string }
+      withoutTiming: { type: string }
+      retries: { type: string }
+  AnalyticsTime:
+    type: object
+    properties:
+      runTimeMs: { type: [string, 'null'] }
+      p50RunTimeMs: { type: [string, 'null'] }
+      p90RunTimeMs: { type: [string, 'null'] }
+      p50QueueWaitMs: { type: [string, 'null'] }
+      p90QueueWaitMs: { type: [string, 'null'] }
+      p50PreparationMs: { type: [string, 'null'] }
+  AnalyticsSeries:
+    type: object
+    additionalProperties: false
+    properties:
+      scope: { type: string, enum: [company, mine] }
+      metric: { type: string }
+      bucket: { type: string, enum: [day, week, month] }
+      points:
+        type: array
+        items:
+          type: object
+          properties:
+            startAt: { type: string, format: date-time }
+            endAt: { type: string, format: date-time }
+            parts:
+              type: object
+              additionalProperties: { type: [string, 'null'] }
+  AnalyticsBreakdown:
+    type: object
+    additionalProperties: false
+    properties:
+      by: { type: string }
+      rows:
+        type: array
+        items: { $ref: '#/schemas/AnalyticsBreakdownRow' }
+      total: { $ref: '#/schemas/AnalyticsMetrics' }
+      nextCursor: { type: [string, 'null'] }
+  AnalyticsBreakdownRow:
+    allOf:
+      - type: object
+        properties:
+          key: { $ref: '#/schemas/AnalyticsBreakdownKey' }
+      - $ref: '#/schemas/AnalyticsMetrics'
+  AnalyticsBreakdownKey:
+    type: object
+    properties:
+      kind: { type: string }
+      id: { type: [string, 'null'], format: uuid }
+      label: { type: string }
+      synthetic: { type: [string, 'null'], description: 'Set on a row that names no single thing: deleted_agents, unknown_model, system, no_project, other_work (Runs of Projects the caller does not read), direct_chats, schedules, channel_chats, deleted_tasks, other_computers, or the run type.' }
+  AnalyticsFailures:
+    type: object
+    required: [agents, succeeded, byClass, byCode]
+    properties:
+      agents:
+        type: array
+        items: { $ref: '#/schemas/AnalyticsFailureAgent' }
+      succeeded: { type: string }
+      byClass:
+        type: object
+        additionalProperties: { type: string }
+      byCode:
+        type: object
+        additionalProperties: { type: string }
+  AnalyticsFailureAgent:
+    type: object
+    required: [key, failed, finished, rankable]
+    properties:
+      key: { $ref: '#/schemas/AnalyticsBreakdownKey' }
+      failed: { type: string }
+      finished: { type: string }
+      rankable: { type: boolean }
+  AnalyticsHeatmap:
+    type: object
+    required: [scope, cells]
+    properties:
+      scope: { type: string, enum: [company, mine] }
+      cells:
+        type: array
+        minItems: 168
+        maxItems: 168
+        items:
+          type: object
+          required: [weekday, hour, runs, tokens, costUsdTicks]
+          properties:
+            weekday: { type: integer, minimum: 0, maximum: 6 }
+            hour: { type: integer, minimum: 0, maximum: 23 }
+            runs: { type: string }
+            tokens: { type: string }
+            costUsdTicks: { type: string }
+  AnalyticsBudget:
+    type: object
+    required: [id, ownerKind, monthlyLimitUsdTicks, enabled, createdAt, updatedAt]
+    properties:
+      id: { type: string, format: uuid }
+      ownerKind: { type: string, enum: [company, agent] }
+      agentId: { type: [string, 'null'], format: uuid }
+      monthlyLimitUsdTicks: { type: string }
+      enabled: { type: boolean }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+  AnalyticsBudgetPage:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/AnalyticsBudget' }
+  AnalyticsBudgetInput:
+    type: object
+    required: [ownerKind, monthlyLimitUsdTicks, enabled]
+    properties:
+      ownerKind: { type: string, enum: [company, agent] }
+      agentId: { type: [string, 'null'], format: uuid }
+      monthlyLimitUsdTicks: { type: string }
+      enabled: { type: boolean }
+  AnalyticsTaskUsage:
+    type: object
+    required: [taskId, runs, items, usageRestricted]
+    properties:
+      taskId: { type: string, format: uuid }
+      runs: { type: string }
+      agentTimeMs: { type: [string, 'null'] }
+      leadTimeMs: { type: [string, 'null'] }
+      tokens: { type: [string, 'null'] }
+      costUsdTicks: { type: [string, 'null'] }
+      usageRestricted: { type: boolean }
+      items:
+        type: array
+        items: { $ref: '#/schemas/AnalyticsTaskUsageRun' }
+  AnalyticsTaskUsageRun:
+    type: object
+    required: [id, status, agent, usageRestricted]
+    properties:
+      id: { type: string, format: uuid }
+      status: { type: string }
+      agent: { type: string }
+      model: { type: [string, 'null'] }
+      startedAt: { type: [string, 'null'], format: date-time }
+      finishedAt: { type: [string, 'null'], format: date-time }
+      durationMs: { type: [string, 'null'] }
+      queueWaitMs: { type: [string, 'null'] }
+      tokens: { type: [string, 'null'] }
+      costUsdTicks: { type: [string, 'null'] }
+      usageRestricted: { type: boolean }
+      failureClass: { type: [string, 'null'] }
+  HuddleBudget:
+    type: object
+    additionalProperties: false
+    required: [monthlyLimitUsdTicks, committedUsdTicks, spentUsdTicks, reservedUsdTicks, remainingUsdTicks, revision, periodStart, periodEnd, warning]
+    properties:
+      monthlyLimitUsdTicks: { type: string, pattern: '^[0-9]+$' }
+      committedUsdTicks: { type: string, pattern: '^[0-9]+$' }
+      spentUsdTicks:
+        type: string
+        pattern: '^[0-9]+$'
+        description: Cost recorded from received usage reports, not a provider invoice.
+      reservedUsdTicks:
+        type: string
+        pattern: '^[0-9]+$'
+        description: Additional allowance held beyond recorded spend. Missing final usage keeps unused allowance reserved.
+      remainingUsdTicks: { type: string, pattern: '^[0-9]+$' }
+      revision: { type: integer, format: int64, minimum: 0 }
+      periodStart: { type: string, format: date-time }
+      periodEnd: { type: string, format: date-time }
+      warning:
+        type: boolean
+        description: True when at least 80 percent of a nonzero monthly allowance is committed.
+  ActivityEntityType:
+    type: string
+    pattern: ^[a-z][a-z0-9_]*$
+    description: 'The changed subject type, which can differ from the publishing topic:
+
+      a lowercase domain name, which may join words with `_` (`project_grant`). Checked for shape rather than against a list: the
+
+      names belong to the domains that publish them, and an enumeration here
+
+      would be stale the day a domain adds one. A typo is still `422` rather
+
+      than an empty feed.
+
+
+      Entries the feed returns are about a `task` or a `run`; other domains
+
+      are audited but are not company history, so filtering by one reads
+
+      nothing.
+
+      '
+  ActivityAction:
+    type: string
+    pattern: ^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$
+    description: 'The event''s own wire name, `<domain>.<verb>` — the feed''s vocabulary is
+
+      the realtime vocabulary rather than a second one maintained beside it.
+
+      Activity-only facts use the same shape; their domain may join words with
+
+      `_` (`project_grant.joined`).
+
+      Checked for shape rather than against a list, so a malformed value is `422` rather
+
+      than an empty feed while a domain adding an event needs no spec change.
+
+
+      The feed shows `task.created`, `task.updated`, `run.completed`,
+
+      `run.failed`, and Deliverable creation, review, and supersession events.
+
+      Every other event is audited but is not company history, so filtering by
+
+      one reads nothing.
+
+
+      An entry exposes the value as a plain string so an older client can
+
+      still render a generic label when a later server release adds one.
+
+      '
+  ActivityEntry:
+    type: object
+    description: One stored Company action with retained visibility and frozen labels. REST and activity.created
+      carry this same projection.
+    required:
+    - id
+    - action
+    - actor
+    - onBehalfOf
+    - runId
+    - entity
+    - details
+    - createdAt
+    - revision
+    properties:
+      id:
+        type: string
+        format: uuid
+      action:
+        type: string
+        description: 'One current `ActivityAction`. It remains a plain string on the wire
+
+          so rolling clients tolerate actions added by a later server release.
+
+          '
+      actor:
+        $ref: '#/schemas/ActivityActorRef'
+      onBehalfOf:
+        description: 'The person an Agent acted for in a Run, the Run''s Authorizer, with
+
+          their display name frozen when the row was written. Null for a person''s
+
+          own action, a system action, and every row written before Activity
+
+          stored it.
+
+          '
+        oneOf:
+        - $ref: '#/schemas/ActivityPersonRef'
+        - type: 'null'
+      runId:
+        type:
+        - string
+        - 'null'
+        format: uuid
+        description: 'The Run an Agent acted in. Set only together with `onBehalfOf`;
+
+          null otherwise.
+
+          '
+      entity:
+        $ref: './_common.yaml#/schemas/EntityRef'
+      details:
+        oneOf:
+        - $ref: '#/schemas/ActivitySnapshotDetails'
+        - $ref: '#/schemas/ActivityEventDetails'
+      createdAt:
+        $ref: './_common.yaml#/schemas/Timestamp'
+      revision:
+        type:
+        - integer
+        - 'null'
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+        description: Task or Conversation subject revision; null for other actions.
+  ActivityPersonRef:
+    type: object
+    description: 'The person an Agent acted for. `displayName` is frozen when the row
+
+      was written and is null when it could not be read.
+
+      '
+    required:
+    - id
+    - displayName
+    properties:
+      id:
+        type: string
+        format: uuid
+      displayName:
+        type:
+        - string
+        - 'null'
+  ActivityActorRef:
+    type: object
+    description: 'Who caused the activity. User and agent actors carry their UUID and
+
+      resolved display name. A system action has no concrete actor, so both
+
+      `id` and `displayName` are null; clients supply their own system label.
+
+      '
+    required:
+    - id
+    - kind
+    - displayName
+    properties:
+      id:
+        type:
+        - string
+        - 'null'
+        format: uuid
+      kind:
+        type: string
+        enum:
+        - user
+        - agent
+        - system
+      displayName:
+        type:
+        - string
+        - 'null'
+  ActivityCalendar:
+    type: object
+    description: 'One month of per-day activity counts, bucketed in `timeZone`. `month` and
+
+      `timeZone` are echoed so a cached response is self-describing.
+
+      '
+    required:
+    - month
+    - timeZone
+    - startAt
+    - endAt
+    - totalCount
+    - days
+    properties:
+      month:
+        type: string
+        pattern: ^\d{4}-\d{2}$
+      timeZone:
+        type: string
+      startAt:
+        allOf:
+        - $ref: './_common.yaml#/schemas/Timestamp'
+        description: 'The instant the first local day of the month begins, inclusive. Feed
+
+          it straight to `GET .../activity?from=` to drill into the month: the
+
+          server already resolved the local midnight, so a client never repeats
+
+          the zone arithmetic this endpoint exists to remove — which is also
+
+          the arithmetic that gets DST wrong.
+
+          '
+      endAt:
+        allOf:
+        - $ref: './_common.yaml#/schemas/Timestamp'
+        description: The exclusive upper bound of the same window, for `to=`.
+      totalCount:
+        type: integer
+        format: int64
+        description: 'Every entry in the window. The month header renders from this without
+
+          summing the map, and it is the denominator a heat scale divides by.
+
+          '
+      days:
+        type: object
+        description: 'Dense map of `YYYY-MM-DD` **calendar days in `timeZone`** to counts.
+
+          Never instants. Plain JSON numbers: a per-day count cannot approach
+
+          2^53, unlike the token counters.
+
+          '
+        additionalProperties:
+          type: integer
+          format: int64
+  ActivityInsight:
+    type: object
+    description: 'Lifetime figures about the calling user''s own work in this company. Not
+
+      scoped to a period, so there is no window on it.
+
+
+      `mostUsedProvider` and `mostUsedModel` are flat and nullable together —
+
+      they were a nested `{provider, model}` object, which is two scalars of
+
+      one row wearing a wrapper.
+
+      '
+    required:
+    - mostUsedProvider
+    - mostUsedModel
+    - successfulTasks
+    - totalSessions
+    - completedRuns
+    - failedRuns
+    - totalRuns
+    - lastActiveAt
+    properties:
+      mostUsedProvider:
+        type:
+        - string
+        - 'null'
+        description: '`null` when no run of the caller''s has a recorded model.'
+      mostUsedModel:
+        type:
+        - string
+        - 'null'
+        description: Null exactly when `mostUsedProvider` is null.
+      successfulTasks:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: Distinct tasks with at least one completed run the caller started.
+      totalSessions:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: Distinct conversations in which the caller started a run.
+      completedRuns:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: 'Runs the caller started that reached `completed`. Counted over the
+
+          same run set as every other figure here, so it is comparable with
+
+          `totalRuns` — a rate derived from two endpoints on two filters is
+
+          not.
+
+          '
+      failedRuns:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: Runs the caller started that reached `failed`.
+      totalRuns:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: 'Every run the caller started, terminal or not. The denominator: the
+
+          server ships numerator and denominator together rather than a
+
+          pre-computed rate, so a client can render "289 of 326" or a
+
+          percentage without the two halves ever disagreeing.
+
+          '
+      lastActiveAt:
+        oneOf:
+        - $ref: './_common.yaml#/schemas/Timestamp'
+        - type: 'null'
+        description: 'When the caller''s most recent run started. `null` when none of their
+
+          runs ever started. Answers "is this person still working here" —
+
+          otherwise a client pages the activity feed filtered to one actor just
+
+          to read the first row''s timestamp.
+
+          '
+  UsageBucket:
+    type: string
+    enum:
+    - day
+    - month
+  CostAttribution:
+    type: object
+    description: 'What the providers actually charged for a slice, and how much of the
+
+      slice they priced. Composed **flat** onto whatever carries it — these are
+
+      four scalars of the row they describe, not a sub-entity, and the nested
+
+      `costCoverage` object they replace made every consumer reach through a
+
+      wrapper to read a caveat it had to render inline anyway.
+
+      '
+    required:
+    - providerCostUsdTicks
+    - costCoverageState
+    - costReportedFactCount
+    - costMissingFactCount
+    properties:
+      providerCostUsdTicks:
+        oneOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        - type: 'null'
+        description: 'Provider-reported cost as an **integer count of 1e-10 USD ticks**,
+
+          `null` when nothing in the slice reported one; `"0"` is a distinct,
+
+          exact reported zero. Integer minor units, per the money rule in
+
+          conventions.md — and the tick is the unit the daemon reports
+
+          (`costUsdTicks`) and the unit the stored fixed-point dollar figure is
+
+          always a whole number of, so this figure round-trips exactly instead
+
+          of through a decimal that has to be re-parsed to be summed. A decimal
+
+          string of dollars could not be added without a decimal library and
+
+          could not be added *exactly* at all.
+
+          '
+      costCoverageState:
+        type: string
+        enum:
+        - complete
+        - partial
+        - missing
+        description: '`complete` — every fact behind the slice reported a cost; `partial` —
+
+          some did; `missing` — none did. When it is not `complete`,
+
+          `providerCostUsdTicks` is an **undercount**, not an estimate of the
+
+          whole.
+
+          '
+      costReportedFactCount:
+        $ref: './_common.yaml#/schemas/BigCounter'
+      costMissingFactCount:
+        $ref: './_common.yaml#/schemas/BigCounter'
+  UsageModelSlice:
+    type: object
+    description: 'One `(provider, model)` slice of a window. The **model dimension is kept
+
+      on the wire deliberately**: a client prices from its own per-model table,
+
+      and a bare model id can collide across providers, so neither half alone
+
+      identifies a price. Rolling the two up server-side would make the
+
+      response unpriceable and force a per-model request to undo it.
+
+      '
+    allOf:
+    - type: object
+      required:
+      - provider
+      - model
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+    - $ref: './_common.yaml#/schemas/Tokens'
+    - $ref: '#/schemas/CostAttribution'
+  CompanyUsageReport:
+    type: object
+    description: 'Company-wide totals for a calendar window, the same totals for the
+
+      immediately preceding window, a per-agent breakdown, and the model mix.
+
+
+      The window fields are flat. `timeZone` describes the report, not either
+
+      window, and appears once. All totals come from immutable per-run usage
+
+      facts; there is no calculation timestamp, approximation, or backfill
+
+      marker in the payload.
+
+      '
+    required:
+    - periodStartAt
+    - periodEndAt
+    - comparisonStartAt
+    - comparisonEndAt
+    - timeZone
+    - totals
+    - comparisonTotals
+    - agents
+    - models
+    properties:
+      periodStartAt:
+        allOf:
+        - $ref: './_common.yaml#/schemas/Timestamp'
+        description: Inclusive lower bound of the reported window.
+      periodEndAt:
+        allOf:
+        - $ref: './_common.yaml#/schemas/Timestamp'
+        description: Exclusive upper bound of the reported window.
+      comparisonStartAt:
+        $ref: './_common.yaml#/schemas/Timestamp'
+      comparisonEndAt:
+        $ref: './_common.yaml#/schemas/Timestamp'
+      timeZone:
+        type: string
+        description: Echo of the request.
+      totals:
+        $ref: './_common.yaml#/schemas/CompanyTotals'
+      comparisonTotals:
+        $ref: './_common.yaml#/schemas/CompanyTotals'
+      agents:
+        type: array
+        description: 'Ordering is not specified by the contract. `[]` when the window has
+
+          no attributed usage.
+
+          '
+        items:
+          allOf:
+          - $ref: './_common.yaml#/schemas/CompanyTotals'
+          - type: object
+            required:
+            - agentId
+            - name
+            - title
+            - avatarKey
+            properties:
+              agentId:
+                type: string
+                format: uuid
+              name:
+                type: string
+              title:
+                type: string
+              avatarKey:
+                type:
+                - string
+                - 'null'
+      models:
+        type: array
+        description: 'The same window sliced by `(provider, model)` instead of by agent —
+
+          the dimension the per-agent rollup collapses away. Without it the
+
+          only way to answer "what is this company spending its tokens on" is
+
+          one per-agent report per agent, and the model mix a client would
+
+          assemble from those is the sum this row already is. Ordered by
+
+          combined input+output tokens descending; `[]` when the window has no
+
+          usage.
+
+          '
+        items:
+          $ref: '#/schemas/UsageModelSlice'
+  AgentUsageReport:
+    type: object
+    description: 'One agent''s usage over a caller-chosen window. The window fields are flat
+
+      at the top level; `totals`, each `series` point and each `models` row
+
+      carry the same token + cost shape, which is why those three keep their
+
+      names. All totals come from immutable per-run usage facts.
+
+      '
+    required:
+    - periodStartAt
+    - periodEndAt
+    - timeZone
+    - bucket
+    - totals
+    - series
+    - models
+    - topTasks
+    - topTasksTotalInputOutputTokens
+    properties:
+      periodStartAt:
+        $ref: './_common.yaml#/schemas/Timestamp'
+      periodEndAt:
+        $ref: './_common.yaml#/schemas/Timestamp'
+      timeZone:
+        type: string
+      bucket:
+        $ref: '#/schemas/UsageBucket'
+      totals:
+        allOf:
+        - $ref: './_common.yaml#/schemas/Tokens'
+        - type: object
+          required:
+          - runCount
+          properties:
+            runCount:
+              $ref: './_common.yaml#/schemas/BigCounter'
+        - $ref: '#/schemas/CostAttribution'
+      series:
+        type: array
+        description: 'Dense: every bucket in the window is present, zeroed where there was
+
+          no usage. `[]` only when the window itself is empty.
+
+          '
+        items:
+          allOf:
+          - $ref: './_common.yaml#/schemas/Tokens'
+          - type: object
+            required:
+            - startAt
+            - endAt
+            - runCount
+            - models
+            properties:
+              startAt:
+                $ref: './_common.yaml#/schemas/Timestamp'
+              endAt:
+                $ref: './_common.yaml#/schemas/Timestamp'
+              runCount:
+                $ref: './_common.yaml#/schemas/BigCounter'
+              models:
+                type: array
+                description: 'The bucket split by `(provider, model)`. Was a
+
+                  provider-only split, which no pricing table can consume:
+
+                  price is per model, and cache reads are priced apart from
+
+                  input, so a slice missing either could not be costed at
+
+                  all. Cost itself stays on the point rather than the slice,
+
+                  because a slice''s coverage caveat would have to ride with
+
+                  it — for per-model cost, read `models` over a one-bucket
+
+                  window.
+
+                  '
+                items:
+                  type: object
+                  required:
+                  - provider
+                  - model
+                  - inputTokens
+                  - outputTokens
+                  - cacheReadTokens
+                  - cacheWriteTokens
+                  properties:
+                    provider:
+                      type: string
+                    model:
+                      type: string
+                    inputTokens:
+                      $ref: './_common.yaml#/schemas/BigCounter'
+                    outputTokens:
+                      $ref: './_common.yaml#/schemas/BigCounter'
+                    cacheReadTokens:
+                      $ref: './_common.yaml#/schemas/BigCounter'
+                    cacheWriteTokens:
+                      $ref: './_common.yaml#/schemas/BigCounter'
+          - $ref: '#/schemas/CostAttribution'
+      models:
+        type: array
+        description: 'The whole window split by `(provider, model)`. Named for what it is;
+
+          it was `breakdown`, which named nothing. `[]` when the window has no
+
+          usage.
+
+          '
+        items:
+          $ref: '#/schemas/UsageModelSlice'
+      topTasks:
+        type: array
+        description: 'The agent''s heaviest tasks in the window, hard-capped at **4**. Only
+
+          tasks in Projects the caller reads are listed (ADR 0017). Was
+
+          `{totalInputOutputTokens, items}` — a wrapper holding one scalar and
+
+          one array, where the scalar is a sibling of the array, not a property
+
+          of it.
+
+
+          Deleting a Task detaches its historical Conversation and clears the
+
+          retained Runs'' task reference. Those Runs and immutable usage facts
+
+          still contribute to report totals and the task-token denominator,
+
+          but the deleted Task is omitted from this live-Task list.
+
+          '
+        maxItems: 4
+        items:
+          type: object
+          required:
+          - taskId
+          - taskKey
+          - taskNumber
+          - title
+          - status
+          - inputTokens
+          - outputTokens
+          - shareBasisPoints
+          properties:
+            taskId:
+              type: string
+              format: uuid
+            taskKey:
+              type: string
+            taskNumber:
+              type: integer
+              format: int64
+              description: What every surface displays as `{taskPrefix}-{number}`.
+            title:
+              type: string
+            status:
+              type: string
+              description: 'A live task''s own status — a `TaskStatus` value, so a finished
+
+                task reads `done`.
+
+                '
+            inputTokens:
+              $ref: './_common.yaml#/schemas/BigCounter'
+            outputTokens:
+              $ref: './_common.yaml#/schemas/BigCounter'
+            shareBasisPoints:
+              type: integer
+              minimum: 0
+              maximum: 10000
+              description: 'Share of `topTasksTotalInputOutputTokens` in hundredths of a
+
+                percent, rounded half-up. A plain number, not a string. The
+
+                four do not sum to 10000 — the denominator spans every task.
+
+                '
+      topTasksTotalInputOutputTokens:
+        allOf:
+        - $ref: './_common.yaml#/schemas/BigCounter'
+        description: 'The agent''s total across **all** tasks in the window, which is the
+
+          denominator of `shareBasisPoints`. A sibling of `topTasks`, not a
+
+          member of it.
+
+          '
+  ActivityHistoryContext:
+    type: object
+    required:
+    - actorDisplayName
+    - entityKey
+    - entityTitle
+    properties:
+      actorDisplayName:
+        type:
+        - string
+        - 'null'
+      onBehalfOfDisplayName:
+        type: string
+        description: The name of the person an Agent acted for in a Run, frozen when the
+          row was written. Absent on every other row.
+      entityKey:
+        type:
+        - string
+        - 'null'
+      entityTitle:
+        type:
+        - string
+        - 'null'
+  ActivitySnapshotDetails:
+    type: object
+    required:
+    - schemaVersion
+    - before
+    - after
+    - context
+    properties:
+      schemaVersion:
+        type: integer
+        enum:
+        - 1
+      before:
+        type:
+        - object
+        - 'null'
+        additionalProperties: true
+      after:
+        type:
+        - object
+        - 'null'
+        additionalProperties: true
+      context:
+        $ref: '#/schemas/ActivityHistoryContext'
+    description: Redacted complete owner-state snapshots. Run source revision is frozen inside each state; Activity
+      revision is null for Run actions.
+  ActivityEventDetails:
+    type: object
+    required:
+    - schemaVersion
+    - payload
+    properties:
+      schemaVersion:
+        type: integer
+        enum:
+        - 0
+      payload: {}
+      context:
+        type: object
+        additionalProperties: true
+    description: Unversioned evidence from legacy rows or domains awaiting transactional snapshot capture.

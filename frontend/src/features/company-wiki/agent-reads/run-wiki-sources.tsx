@@ -1,0 +1,243 @@
+import { useMemo, useState } from "react";
+import { Link } from "react-router";
+import type { RunDto } from "@/shared/api/types";
+import {
+  BookOpen,
+  ChevronRight,
+  RefreshCcw,
+  Search,
+  ShieldCheck,
+} from "@/shared/ui/icons";
+import { useListRunWikiReadsQuery, type RunWikiRead } from "./agent-reads-api";
+import { WikiSourcePreviewDialog } from "./wiki-source-preview-dialog";
+import "./agent-reads.css";
+
+export type WikiSource = {
+  /** The first read row of this page revision; identifies the source. */
+  read: RunWikiRead;
+  /** Last read row of the revision: whether the Agent saw the whole page. */
+  partial: boolean;
+};
+
+const TERMINAL_RUN_STATUSES = new Set<RunDto["status"]>([
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+/**
+ * One source per page revision. An Agent that pages through a long page
+ * reads the same revision several times; that is still one source, and it is
+ * partial only if the last chunk it fetched was truncated.
+ */
+export function collectSources(items: RunWikiRead[]): WikiSource[] {
+  const sources = new Map<string, WikiSource>();
+  for (const read of items) {
+    if (read.kind !== "read" || !read.pageId || read.revisionNumber === null) {
+      continue;
+    }
+    const key = `${read.pageId}:${read.revisionId ?? read.revisionNumber}`;
+    const existing = sources.get(key);
+    sources.set(key, {
+      read: existing?.read ?? read,
+      partial: read.truncated,
+    });
+  }
+  return [...sources.values()];
+}
+
+export function RunWikiSources({
+  companyId,
+  runId,
+  agentId,
+  runStatus,
+}: {
+  companyId: string;
+  runId: string;
+  agentId: string;
+  /** Explains whether additional source reads may arrive. */
+  runStatus: RunDto["status"] | undefined;
+}) {
+  const active =
+    runStatus !== undefined && !TERMINAL_RUN_STATUSES.has(runStatus);
+  const reads = useListRunWikiReadsQuery(
+    { companyId, runId },
+    {
+      skip: !companyId || !runId,
+    },
+  );
+  const [previewSource, setPreviewSource] = useState<WikiSource | null>(null);
+  const items = reads.currentData?.items;
+  const sources = useMemo(() => collectSources(items ?? []), [items]);
+  const searches = useMemo(
+    () => (items ?? []).filter((read) => read.kind === "search"),
+    [items],
+  );
+
+  return (
+    <section
+      className="zen-wiki-sources"
+      aria-labelledby={`wiki-sources-${runId}`}
+    >
+      <header className="zen-wiki-sources__head">
+        <h2 id={`wiki-sources-${runId}`}>
+          <BookOpen size={17} aria-hidden /> Wiki sources
+        </h2>
+        {sources.length > 0 ? (
+          <span className="zen-wiki-sources__count">{sources.length}</span>
+        ) : null}
+      </header>
+      {reads.isError && !items ? (
+        <p className="zen-wiki-sources__state" role="alert">
+          Wiki sources could not be loaded.{" "}
+          <button type="button" onClick={() => void reads.refetch()}>
+            <RefreshCcw size={13} aria-hidden /> Retry
+          </button>
+        </p>
+      ) : !items ? (
+        <div
+          className="zen-wiki-sources__skeleton"
+          role="status"
+          aria-label="Loading Wiki sources"
+        >
+          <span />
+          <span />
+        </div>
+      ) : (
+        <>
+          {sources.length === 0 ? (
+            <div className="zen-wiki-sources__empty">
+              <strong>No Wiki pages read in this run</strong>
+              <p>
+                {active
+                  ? "Pages the Agent reads will appear here as it works. "
+                  : ""}
+                You can change the Agent&rsquo;s Company Wiki access in{" "}
+                <Link to={`/agents/${agentId}?tab=capabilities`}>
+                  its settings
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <ol className="zen-wiki-sources__list">
+              {sources.map((source, index) => (
+                <SourceRow
+                  key={`${source.read.pageId}:${source.read.revisionId}`}
+                  index={index + 1}
+                  source={source}
+                  onOpen={() => setPreviewSource(source)}
+                />
+              ))}
+            </ol>
+          )}
+          {searches.length > 0 ? (
+            <div className="zen-wiki-sources__searches">
+              <h3>Searches</h3>
+              <ul>
+                {searches.map((search) => (
+                  <li key={search.id}>
+                    <Search size={13} aria-hidden />
+                    <span title={search.query}>{search.query}</span>
+                    <small>{resultLabel(search.resultCount)}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {reads.isError ? (
+            <p className="zen-wiki-sources__state" role="alert">
+              Sources could not be refreshed.{" "}
+              <button type="button" onClick={() => void reads.refetch()}>
+                Retry
+              </button>
+            </p>
+          ) : null}
+        </>
+      )}
+      <p className="zen-wiki-sources__note">
+        <ShieldCheck size={13} aria-hidden /> Read-only. Agents can read
+        published Wiki pages but cannot edit them.
+      </p>
+      {previewSource ? (
+        <WikiSourcePreviewDialog
+          companyId={companyId}
+          read={previewSource.read}
+          onClose={() => setPreviewSource(null)}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function SourceRow({
+  index,
+  source,
+  onOpen,
+}: {
+  index: number;
+  source: WikiSource;
+  onOpen: () => void;
+}) {
+  const { read, partial } = source;
+  const title = read.title.trim() || "Untitled page";
+  const changed =
+    read.page !== null &&
+    read.revisionNumber !== null &&
+    read.page.currentRevision > read.revisionNumber;
+  const archived = read.page?.status === "archived";
+  return (
+    <li>
+      <button
+        type="button"
+        className="zen-wiki-sources__source"
+        aria-label={`Source ${index}: ${title}, version ${read.revisionNumber}. Open preview`}
+        onClick={onOpen}
+      >
+        <span className="zen-wiki-sources__num" aria-hidden>
+          {index}
+        </span>
+        <span className="zen-wiki-sources__body">
+          <strong>{title}</strong>
+          <span className="zen-wiki-sources__chips">
+            <span className="zen-wiki-sources__chip">
+              v{read.revisionNumber}
+            </span>
+            {changed ? (
+              <span className="zen-wiki-sources__chip is-warning">
+                Changed since · now v{read.page?.currentRevision}
+              </span>
+            ) : null}
+            {archived ? (
+              <span className="zen-wiki-sources__chip is-warning">
+                Archived
+              </span>
+            ) : null}
+            {partial ? (
+              <span
+                className="zen-wiki-sources__chip"
+                title="The Agent read only the first part of this long page"
+              >
+                Partly read
+              </span>
+            ) : null}
+            <time dateTime={read.createdAt}>
+              {new Date(read.createdAt).toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </time>
+          </span>
+        </span>
+        <ChevronRight size={15} aria-hidden />
+      </button>
+    </li>
+  );
+}
+
+function resultLabel(count: number | null) {
+  if (count === null) {
+    return "";
+  }
+  return count === 1 ? "1 result" : `${count} results`;
+}

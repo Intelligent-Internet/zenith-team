@@ -1,0 +1,487 @@
+paths:
+  output_document_presence:
+    put:
+      tags: [artifacts]
+      operationId: updateOutputDocumentPresence
+      summary: Share ephemeral cursors after checking document access
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './canvas.yaml#/schemas/CanvasPresenceInput'}
+      responses:
+        '200':
+          description: Current document sessions
+          content:
+            application/json:
+              schema: {$ref: './canvas.yaml#/schemas/CanvasPresenceList'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_document_open:
+    post:
+      tags: [artifacts]
+      operationId: openOutputDocument
+      summary: Open the shared editable Markdown document
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {type: object, required: [pageId], properties: {pageId: {type: string, format: uuid}}}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_document_read:
+    get:
+      tags: [artifacts]
+      operationId: readOutputDocument
+      summary: Read the authorized working document
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: after_seq, in: query, schema: {type: integer}}
+        - {name: state_vector, in: query, schema: {type: string}}
+        - {name: projection, in: query, schema: {type: boolean}}
+        - {name: block_id, in: query, schema: {type: string}}
+        - {name: preview, in: query, schema: {type: boolean}}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {$ref: './canvas.yaml#/schemas/CanvasDocument'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+    post:
+      tags: [artifacts]
+      operationId: syncOutputDocument
+      summary: Merge edits after rechecking Editor permission
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: './canvas.yaml#/schemas/CanvasDocumentUpdate'}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {$ref: './canvas.yaml#/schemas/CanvasDocument'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_document_ids:
+    post:
+      tags: [artifacts]
+      operationId: reserveOutputBlockIds
+      summary: Reserve identities for new blocks
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [count], properties: {count: {type: integer, minimum: 1, maximum: 256}}}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {$ref: './canvas.yaml#/schemas/CanvasBlockIDs'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_document_checkpoint:
+    post:
+      tags: [artifacts]
+      operationId: checkpointOutputDocument
+      summary: Save an immutable review version
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [sequence], properties: {sequence: {type: integer, minimum: 1}}}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {type: object, required: [id], properties: {id: {type: string, format: uuid}}}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_document_version:
+    get:
+      tags: [artifacts]
+      operationId: getOutputDocumentVersion
+      summary: Read or export an immutable document version
+      parameters:
+        - {$ref: './_common.yaml#/parameters/companyId'}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Authorized document result
+          content:
+            application/json:
+              schema: {$ref: './canvas.yaml#/schemas/CanvasBody'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  artifact_review:
+    get:
+      tags: [deliverables]
+      operationId: getOutputReview
+      summary: Read collaborative review of a non-Task Output
+      parameters:
+      - $ref: ./_common.yaml#/parameters/companyId
+      - $ref: ./runs.yaml#/parameters/artifactId
+      responses:
+        '200':
+          description: Immutable Output and its collaborative comment threads.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/OutputReview'
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+  artifact_review_operations:
+    post:
+      tags: [deliverables]
+      operationId: mutateOutputReview
+      summary: Comment, reply, edit or delete own comment, resolve or reopen an Output thread
+      description: Requires current Artifact access. Comments are collaboration and never trigger a Run. Request keys make retries idempotent. Supports at most 100 threads with 100 comments each.
+      parameters:
+      - $ref: ./_common.yaml#/parameters/companyId
+      - $ref: ./runs.yaml#/parameters/artifactId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./canvas.yaml#/schemas/CanvasCommand
+      responses:
+        '200':
+          description: Saved comment operation.
+          content:
+            application/json:
+              schema:
+                $ref: ./canvas.yaml#/schemas/CanvasResult
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '409':
+          description: Revision or request key conflict.
+          content:
+            application/json:
+              schema:
+                $ref: ./_common.yaml#/schemas/Error
+  artifact_visibility:
+    put:
+      tags:
+      - deliverables
+      operationId: setArtifactVisibility
+      summary: Change Artifact visibility
+      parameters:
+      - $ref: ./_common.yaml#/parameters/companyId
+      - $ref: ./runs.yaml#/parameters/artifactId
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: ./runs.yaml#/schemas/ArtifactAccess
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '409':
+          description: Revision changed. Reload and retry.
+          content:
+            application/json:
+              schema:
+                $ref: ./_common.yaml#/schemas/Error
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/ArtifactVisibilityInput'
+  artifact_conversation:
+    delete:
+      tags:
+      - deliverables
+      operationId: revokeArtifactConversation
+      summary: Revoke an Artifact grant to a conversation
+      parameters:
+      - $ref: ./_common.yaml#/parameters/companyId
+      - $ref: ./runs.yaml#/parameters/artifactId
+      - name: conversationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: expectedRevision
+        in: query
+        required: true
+        schema:
+          $ref: ./_common.yaml#/schemas/Revision
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: ./runs.yaml#/schemas/ArtifactAccess
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+  public_artifact:
+    get:
+      tags:
+      - deliverables
+      operationId: getPublicArtifact
+      summary: Read a public Artifact without its source context
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/PublicArtifact'
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+      security: []
+  public_artifact_download:
+    get:
+      tags:
+      - deliverables
+      operationId: downloadPublicArtifact
+      summary: Download one public final file
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: ordinal
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 31
+      responses:
+        '200':
+          description: Successful response.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+      security: []
+schemas:
+  OutputReview:
+    type: object
+    required: [artifact, items, canComment, canEdit, documents, versions]
+    properties:
+      artifact:
+        $ref: ./canvas.yaml#/schemas/CanvasArtifact
+      items:
+        type: array
+        items:
+          $ref: ./canvas.yaml#/schemas/CanvasThread
+      versions:
+        type: array
+        items: {$ref: './canvas.yaml#/schemas/CanvasVersion'}
+      documents:
+        type: array
+        items:
+          type: object
+          required: [outputItemId, pageId, title]
+          properties:
+            outputItemId: {type: string, format: uuid}
+            pageId: {type: string, format: uuid}
+            title: {type: string}
+      canEdit: {type: boolean}
+      canComment:
+        type: boolean
+  ArtifactVisibility:
+    type: string
+    enum:
+    - private
+    - shared
+    - company
+    - public
+  ArtifactVisibilityInput:
+    type: object
+    additionalProperties: false
+    required:
+    - visibility
+    - expectedRevision
+    properties:
+      visibility:
+        type: string
+        description: Shared restricts access to existing people and conversation grants without removing them.
+        enum: [shared, company, public]
+      expectedRevision:
+        $ref: ./_common.yaml#/schemas/Revision
+  ArtifactConversationGrant:
+    type: object
+    additionalProperties: false
+    required:
+    - conversationId
+    - title
+    - grantedAt
+    properties:
+      conversationId:
+        type: string
+        format: uuid
+      title:
+        type: string
+      grantedAt:
+        $ref: ./_common.yaml#/schemas/Timestamp
+  DiscussionArtifact:
+    description: An explicit message reference or an output from the exact Run behind a published Agent reply. Returned only while the caller can read the Artifact; this reference grants no access.
+    type: object
+    additionalProperties: false
+    required:
+    - id
+    - title
+    - type
+    - fileCount
+    - files
+    properties:
+      files:
+        type: array
+        description: Primary and final files in presentation order. Supporting files are omitted.
+        items:
+          $ref: '#/schemas/DiscussionArtifactFile'
+      id:
+        type: string
+        format: uuid
+      title:
+        type: string
+      type:
+        $ref: './runs.yaml#/schemas/ArtifactType'
+      fileCount:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Number of user-facing files, excluding supporting files.
+      fileName:
+        type: string
+        description: Display filename of the first final file, or first primary file when no final exists.
+      contentType:
+        type: string
+        description: MIME type of that file. Omitted when the artifact has no user-facing file.
+  DiscussionArtifactFile:
+    type: object
+    additionalProperties: false
+    required: [fileName, contentType]
+    properties:
+      fileName:
+        type: string
+      contentType:
+        type: string
+  PublicArtifactItem:
+    type: object
+    additionalProperties: false
+    required:
+    - role
+    - ordinal
+    - label
+    - filename
+    - contentType
+    - sizeBytes
+    properties:
+      role:
+        type: string
+        enum: [primary, final]
+      ordinal:
+        type: integer
+        minimum: 0
+        maximum: 31
+      label:
+        type: string
+      filename:
+        type: string
+      contentType:
+        type: string
+      sizeBytes:
+        type: integer
+        format: int64
+  PublicArtifact:
+    type: object
+    additionalProperties: false
+    required:
+    - title
+    - summary
+    - type
+    - items
+    properties:
+      title:
+        type: string
+      summary:
+        type: string
+      type:
+        $ref: ./runs.yaml#/schemas/ArtifactType
+      items:
+        type: array
+        items:
+          $ref: '#/schemas/PublicArtifactItem'

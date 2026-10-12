@@ -1,0 +1,174 @@
+---
+title: Connectors and plugins
+description: The capability plane that decides what a run may use beyond the model, and what daemons publish about it.
+---
+
+What a [run](/runs) may use beyond the model is decided here. A connector is a provider-discovered integration with an exact identity and a reviewed tool contract — the only thing that grants a run execution authority. A plugin is a provider-native installable package that can bring connectors with it but grants nothing by itself. Both are discovered on your computer by the [daemon](/daemon-and-runtimes) and published to Zenith Team as sanitized catalogs; credentials and native configuration never leave the machine.
+
+## Connectors
+
+A connector's identity is exact: its [provider](/providers) (`codex` or `claude`), its source, and its provider-native id. The source names where the integration comes from:
+
+| Source | Provider | What it is |
+|---|---|---|
+| `codex_app` | `codex` | A hosted app the Codex CLI reports |
+| `codex_mcp` | `codex` | An MCP server configured in the Codex home |
+| `claude_plugin` | `claude` | A connector contributed by an installed Claude Code plugin |
+| `claude_mcp` | `claude` | An MCP server configured in Claude Code |
+| `claude_cloud` | `claude` | A Claude cloud connector — always `managed_in_provider` |
+
+Each connector carries a status from a closed set:
+
+| Status | Meaning |
+|---|---|
+| `available` | Discovered, not installed or configured yet |
+| `installed_not_ready` | Installed but not yet usable |
+| `needs_auth` | Installed and waiting on authentication |
+| `connected` | Set up and usable — the only status that can enter runs |
+| `managed_in_provider` | Configured and controlled in the provider's own surface |
+| `unavailable` | The runtime cannot currently provide it |
+| `error` | Discovery reported it in an error state |
+
+Alongside the status, a setup action — `install_and_auth`, `authenticate`, `manage_in_provider`, or `none` — tells the UI what would move the connector forward, and nothing else: the action is a hint, not authority.
+
+### The reviewed tool contract
+
+A connector either carries a complete executable contract or none at all: an executable connector has a canonical, sorted tool list and a digest of exactly that list; a non-executable one has neither. There is no half state — the database refuses it.
+
+**Only a reviewed connector contract grants execution authority.** The company owner enables a connector and, in doing so, reviews its current tool contract; the reviewed digest is recorded on the connector's policy. A connector actually enters runs only while all of the following hold at once:
+
+- it is enabled by policy,
+- its status is `connected`,
+- it carries an executable contract,
+- no review is pending — when the provider changes the tool set, `reviewRequired` is raised and the connector drops out of execution until it is reconnected and re-reviewed,
+- its discovery observation for the runtime is fresh.
+
+Losing any one of these removes the connector from new runs. It does not touch runs whose contract is already frozen — those are handled below.
+
+## Plugins
+
+A plugin is a provider-native installable package, shown through a sanitized catalog scoped to one [runtime](/daemon-and-runtimes):
+
+| Field | What it carries |
+|---|---|
+| **Status** | `available`, `installed`, `disabled`, or `error` |
+| **Action** | `install`, `uninstall`, or `none` |
+| **Presentation** | Name, description, category, logo, featured flag, install count. Codex plugins also carry a full description (for installed or featured plugins), up to three example prompts, a brand colour, the developer, website, privacy and terms links; installed Codex plugins also carry a share link |
+| **Contents** | Counts of the apps, MCP servers, and skills the plugin contributes |
+| **Connector identities** | The connector identities the plugin contributes, if any |
+
+The contrast with connectors is the point. A plugin may contribute connector identities — installing one can make new connectors appear in the catalog — but plugin state never grants execution authority. An installed, enabled plugin authorizes nothing by itself; each connector it contributed still needs its own reviewed contract before a run can use it.
+
+## Discovery
+
+Daemons publish what they see; Zenith Team stores a sanitized projection of it.
+
+Discovery is a replacement snapshot per runtime: a publish replaces the runtime's previous observation wholesale, so a connector that disappears locally disappears from the catalog too. Each snapshot carries a generation id and a canonical manifest digest — replaying the exact same snapshot is harmless (and changes nothing), while a conflicting generation is rejected as `connector_discovery_conflict` or `plugin_discovery_conflict`.
+
+Snapshots are sanitized by construction. They contain presentation metadata and reviewed tool namespaces only; provider credentials, commands, environment values, and install paths stay daemon-local and never enter Zenith Team's database. The cloud holds a description of what your machine can do, never the means to do it.
+
+Freshness matters. A connector's execution proof goes stale 10 minutes after its runtime's last observation, and a stale connector cannot enter new runs until the runtime reports again. A running daemon therefore re-checks its connectors about every three minutes (`BOARDLY_CONNECTOR_DISCOVERY_INTERVAL`, between 1 minute and 3½ minutes), and again as soon as it reconnects after a network gap or sleep. When nothing changed it only **reaffirms** the snapshot Zenith Team already holds, which renews its freshness without resending it; when something changed it publishes a new snapshot.
+
+An offline or sleeping daemon still quietly narrows what runs can use — it never widens it. Before it claims a run, the daemon re-checks any provider whose connectors it last confirmed six or more minutes ago and waits for that check: up to 50 seconds, or 75 seconds for the first check after the daemon starts. The claim goes ahead either way. A run gets no connectors only when that check fails or takes longer, and its instructions then say the apps could not be verified rather than that none are connected.
+
+## What a run can use
+
+A run's connector authority is decided twice — requested at enqueue, frozen at claim:
+
+| Moment | What happens |
+|---|---|
+| **Enqueue** | The run freezes a connector selection. Ordinary runs use mode `all` — whatever is effectively enabled company-wide when the run is claimed. [Schedule](/schedules) runs use mode `exact` — the schedule's reviewed source list, where an empty list deliberately grants nothing. |
+| **Claim** | The reviewed contract for that exact runtime is frozen onto the run as its connector snapshot — in full, or the claim rolls back and the run is cancelled with `connector_unavailable`. Zenith Team never dispatches a run with partial authority. |
+
+A task or chat run's instructions name the apps in its snapshot, with a few of their tools, and tell the agent to use them first and treat their data as the source of truth; apps turned off for the agent are left out. A schedule run's instructions list its reviewed connectors. Naming grants nothing — the snapshot alone decides what the run can call.
+
+Once frozen, the snapshot is immutable. A later policy or discovery change can invalidate queued runs whose frozen contract no longer matches — they are cancelled rather than quietly re-scoped — but it never silently broadens a frozen scope. The claim itself is also where [task-lane capacity](/runs#lanes-and-capacity) is checked; the two gates travel together in one claim.
+
+## Is an app ready for an agent?
+
+The [Workflows](/workflows#apps-a-workflow-uses) launch dialog answers this per app, for the agent you pick on the computer you set it up on (runs execute there), with the same rule the run claim uses: the app is connected, executable, allowed by company policy, reviewed, not turned off for that agent, and its discovery is fresh. An app is recognized by its exact provider identity — never by name — so a similarly named third-party app is never mistaken for it.
+
+| State | Label | Meaning |
+|---|---|---|
+| `ready` | Connected | A run of this agent starting now would get it |
+| `pending` | Checking… | Connected, but discovery is stale or it isn't allowed for runs yet |
+| `needs_connection` | Connect | Offered but not connected (`available`, `installed_not_ready`, `needs_auth`, `error`), or only its plugin is installable |
+| `review_required` | Review (members see Needs review) | Its tool contract changed and waits for review |
+| `disabled_for_agent` | Off for *agent* | Turned off in the agent's capabilities |
+| `provider_managed` | Claude.ai only | A `claude_cloud` connector or a `codex_mcp` server — never enters a run |
+| `not_offered` | Not on Codex / Claude | The agent's provider has no such app |
+| `unknown` | none, only the app's name | You haven't set the agent up on one of your computers (`unbound`), or your computer hasn't reported discovery |
+
+Any member sees the states, each app's logo and the connector and plugin behind it, always for their own computer — nobody sees another member's apps. The answer is a prediction, not a reservation: authority is still decided when the run is claimed.
+
+Apps are connected on the computer of the member who runs the work, and every member installs plugins and connects apps on their own computer. Reviewing an app whose tools changed is for owners and admins, because the review decides which tools runs may use across the whole company; a member whose app needs review is told so.
+
+## The Plugins page
+
+**Settings → Plugins** (route `/settings/plugins`; the older `/settings/connectors` redirects there) is where you manage the plugins and apps on your own computers. Every member can install and uninstall plugins and connect apps here; the **Reconnect** card for apps whose tools changed shows only to owners and admins. It shows your provider's own plugin catalog: what Codex or Claude offers on the selected computer of yours, in the provider's order, with OpenAI's own plugins first. It is not a Zenith Team marketplace. Zenith Team doesn't host or recommend plugins.
+
+### Browse the catalog
+
+- **Computer.** The select beside the title chooses which of your computers' catalog you see (for example **Codex · MacBook Pro**); nobody else's computer is listed. Next to it, **Synced 2h ago** says when that computer last reported its catalog, and the refresh button asks it for the catalog again.
+- **Search** looks through the whole catalog.
+- **Apps to reconnect.** When connected apps change their tools, one line shows their logos and how many need reconnecting. **Reconnect** lists them: reconnect each one to review its updated tools and keep using it, or use **Reconnect all**. An app that is no longer connected isn't listed; connect it again from its plugin's page.
+- **Notices** stay short:
+  - outside Zenith Team Desktop, that installing needs it;
+  - for `claude`, a note that the page lists what the local Claude CLI reports, with **Browse more in Claude** for the rest.
+- **Installed** is a strip of the logos of the plugins installed on that computer. The gear opens the full list of installed plugins. Internal plugins with no name or logo of their own stay out of the strip, as in Codex, but are in that full list.
+- **Featured** lists the plugins the provider features. One section per category follows. For Codex, OpenAI's own plugins come first in every list, then the others, each in Codex's order.
+- **One row per plugin.** Codex also lists the plugins of Claude's plugin marketplace, and many of them are copies of plugins OpenAI lists too. When a copy isn't installed and its OpenAI twin can be installed, the page shows only OpenAI's, so Canva appears once. Search doesn't find the copy, and the counts leave it out. An installed copy always shows. Codex gives these plugins no name or description, so Zenith Team takes them from their marketplace. A plugin with no name at all is named from its id, so "runway-api" shows as "Runway API".
+- **Rows.** Each row shows the plugin's logo, its name and one line about it. **+** installs the plugin, as Codex does. A Codex plugin that signs in to its app at install installs only once that app is connected. If the app isn't connected yet, your browser opens ChatGPT's page to connect it, and a message offers **Open browser** again. A few plugins first ask in a **Connect** dialog. Until the app connects nothing is installed, so a stray click leaves no plugin behind: just close the page or the dialog. If Zenith Team can't check the app, or your browser can't be opened, nothing is installed and a message says why. Every other plugin installs at once, and **Installing** shows on its row. When it's done, "<Plugin> plugin installed" offers **Try now**, and a plugin whose other apps still need connecting lists them to connect now or later. An installed plugin shows **…** instead, with **View details** and **Uninstall**. Uninstalling asks you to confirm first. The agents on that computer lose the plugin's skills, apps and MCP servers, but apps you connected through it stay connected in the provider until you disconnect them there.
+- **More.** A row such as "See HubSpot, Linear, and 38 more" opens that category, or the Featured list, and **Load more** continues a long list there or in a search, adding rows below the ones you already see.
+
+Click a row or a logo to open that plugin's page. Going back returns you to the same list, search and scroll position. The list and search are part of the page's address: the **Plugins** link in the settings sidebar opens the full catalog, and a link to a list or search opens it even while the page is already showing.
+
+Install and uninstall run on your machine, so they need Zenith Team Desktop with the selected computer online. While the computer is offline, its select reads **Offline** and the page shows the last catalog it reported; **Synced** says how old that catalog is.
+
+### A plugin's page
+
+Each plugin has its own page at `/settings/plugins/<id>`. It shows the plugin as the selected computer sees it:
+
+- **Header.** The plugin's logo, name and short description. Under them a line reads its state, the computer, the provider, the developer and when that computer last reported its plugins (for example "Installed on MacBook Pro · Codex · Google · Synced 2h ago"). A note appears only when the computer is offline, or when Zenith Team Desktop couldn't read the plugin from it just now; the page then shows what the computer last reported.
+- **…** holds **Install** or **Uninstall** (with a confirmation) and **Refresh**. It also holds **Open in ChatGPT** and the developer's **Website**, **Privacy policy** and **Terms of service** when the provider gives those links.
+- **Copy link** copies the plugin's share link, a ChatGPT link for a Codex plugin. It is hidden when the provider gives none.
+- **Install** sits beside **Try now** when the plugin isn't installed.
+- **Try now** opens a chat with your CEO Agent with the message already started, for example "Gmail: " followed by the plugin's first example prompt, or "Use Gmail to " when it has none. Finish or edit the message and send it yourself; nothing is sent for you.
+- **Example prompts.** When the provider gives some, up to three sit on a banner in the plugin's brand colour. Click one to start the same chat with that prompt.
+- **Description.** The plugin's full description.
+- **Apps.** The apps the plugin brings. Each shows its logo, what it does, whether it's connected on that computer, and its one next step: connect it, review its changed tools, or **Manage in ChatGPT** for a connected Codex app. After **Connect** opens the sign-in in your browser, the page watches for the connection for up to ten minutes: a Codex app every few seconds and whenever you come back to the window, any other app when you come back. Once the computer reports the app connected, its row says so.
+- **Skills** and **MCP servers.** What the plugin adds. Zenith Team Desktop on that computer names them while it's online; elsewhere the page shows how many there are.
+- **Used by.** The agents you've set up on that computer that can use the plugin. To turn it off for one agent, open that agent's capabilities.
+
+In Zenith Team Desktop on the plugin's computer, while it's online, the page also reads the plugin straight from that computer. It then shows the latest description, apps and skills, even for a plugin that isn't installed; for a Claude plugin that read adds only the names of its MCP servers. Anywhere else the page shows what the computer last reported. A plugin that is neither installed nor featured may have no full description, and its apps are listed once it is installed.
+
+There is no "connected accounts" section. Providers don't tell Zenith Team which account each app is signed in with. A Codex app uses the ChatGPT account that Codex uses on that computer; **Manage in ChatGPT** opens the app's settings there, where you manage its account.
+
+### Logos
+
+Wherever Zenith Team shows a plugin, connector or app, it shows the logo the provider shows, on a small rounded tile. That covers this page, [workflows](/workflows#apps-a-workflow-uses), schedule sources, onboarding and agent capabilities. With no logo, the tile shows the first letter of the name.
+
+- **Borrowed logos.** Claude doesn't provide logos, and Codex has none for the plugins from Claude's marketplace or for a few of its own. Such a plugin borrows a logo, when there is one to borrow:
+  - from the Codex plugin or app with the same name;
+  - else from the one Codex plugin with a logo from the same website, or else the same developer, whose name matches. Sentry CLI shows Sentry's logo, for example.
+
+  Only your own computers lend a logo. When several plugins with logos share the website or developer, or the website is a code site such as GitHub, nothing is borrowed that way, and the tile may show the plugin's first letter. A logo borrowed by name can now and then belong to a different product with the same name.
+- **Web versus Desktop.** In a web browser you see the logos the provider hosts online. Some plugins keep their logo only on the computer. Those show in Zenith Team Desktop on that computer, while it's online.
+- **Themes.** Each app has one logo, not separate light and dark versions. The tile keeps it readable in both themes.
+
+### Arriving from a workflow
+
+When you arrive from a [workflow](/workflows#connect-an-app) app, a panel at the top names the app and agent. It offers the one step that app needs (connect, install, review — for owners and admins — or check again) and links back to the workflow with its form intact. Its install works like **+**: a plugin that signs in to its app at install connects the app first. For a connected app, **Plugin details** opens its plugin's page.
+
+## What this plane is not
+
+- **Not a credential store.** Signing in to a connector happens in the provider's own tooling on your machine; Zenith Team holds no secret to leak. See [Providers](/providers).
+- **Not a per-message toggle.** You do not pick tools per conversation turn — policy decides the company-wide set, and each run freezes it at claim.
+- **Not granted by installation.** Installing a plugin, or seeing a connector in the catalog, authorizes nothing. Review does.
+- **Not a marketplace.** The Plugins page shows your provider's own catalog. Zenith Team doesn't host or recommend plugins, and adds no "popular" or "new" lists of its own. It only puts OpenAI's own plugins first and hides copies of the same plugin. **Try now** only starts a message; whether a run can use the plugin is still decided by the agent's capabilities and the reviewed connectors.
+
+## Next steps
+
+- **[Schedules](/schedules)** — the one surface that pins an exact reviewed connector set per definition.
+- **[Runs](/runs)** — where the frozen snapshot travels and what `connector_unavailable` means for a run.
+- **[Daemon and runtimes](/daemon-and-runtimes)** — the process that discovers, installs, and executes all of this locally.

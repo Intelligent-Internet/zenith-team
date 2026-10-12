@@ -1,0 +1,181 @@
+---
+title: Workflows
+description: Ready-to-run templates — fill in a short form, pick an agent, and it does the work as an ordinary task.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A workflow is a ready-to-run template for a common piece of company work: a contract review, a cash runway forecast, a battle card, a morning inbox brief. You fill in a short form, choose an [agent](/agents) and a project, and Zenith Team creates one [task](/tasks): it is yours, and the agent does the work on your computer. The agent then follows the workflow's **playbook**: the procedure, quality bar and deliverables an expert would expect for that job.
+
+Workflows ship with Zenith Team. Every company sees the same catalog, and the catalog grows with each release.
+
+## Find a workflow
+
+Open **Explore → Workflows** in the rail (route `/workflows`). Every member can use it.
+
+| Part of the page | What it does |
+|---|---|
+| **Featured** | A handful of workflows worth starting with |
+| **Category sections** | One section per category, each with up to six workflows and **See all** |
+| **Search** | Matches names, descriptions and category names; every word you type must match |
+| **Category filter** (starts at **All categories**) | Shows every workflow in one category, including ones whose main category is another |
+| **Browse / Pinned** | **Pinned** lists the workflows you pinned with the pin button on a card, newest first; search and the category filter apply there too |
+
+Pins are saved in this browser (or this desktop app) only. They don't follow you to another computer, nobody else sees them, and signing out clears them.
+
+Your search and category are part of the page's address, so **Back** returns to the search you had, and opening **Explore → Workflows** again starts from the full catalog.
+
+The categories cover company work:
+
+| Category | Examples of the work |
+|---|---|
+| Finance | Models, valuations, credit memos, cash forecasts, invoices |
+| Legal | Contract review and drafting, obligations, legal research |
+| Sales | Prospect research, lead lists, call prep, outreach drafts |
+| Marketing | Content, SEO, social posts, ad and traffic reports |
+| Research | Market research, company deep dives, intelligence briefs |
+| Productivity | Inbox and meeting follow-ups, weekly plans and recaps |
+| Writing | Memos, newsletters, slide decks, summaries and final polish |
+| Recruiting | Job posts, applicant screening, interview kits and debriefs |
+| Media | Thumbnails, carousels, charts, podcast repurposing |
+| E-commerce | Product descriptions, store and stock reports, returns and reviews |
+| Product & engineering | Bug and GitHub triage, release notes, SaaS metrics, product teardowns |
+| Real estate | Property analysis and underwriting, listings, tenant applications |
+
+## Run a workflow
+
+Click a card. The dialog shows what you get — three highlights, the kinds of files you get back (**You get**), the apps it can't do without (**Needs**) and the apps it works best with (**Works best with**), each marked with whether it's ready for the agent you pick (see [Apps a workflow uses](#apps-a-workflow-uses)) — next to the form.
+
+1. **Fill in the form.** Some workflows have two or three short steps; **Next** checks each step before moving on. Required fields are marked; a link field must start with `http://` or `https://`, and a date uses `YYYY-MM-DD`. Fields that ask for a document also take the file itself — see [Attach files](#attach-files).
+2. **Choose who runs it.** On the last step, the agent defaults to your CEO agent — or, if you haven't set the CEO agent up on your computer, to the first agent you have. Pick any other agent that isn't archived instead. The agent runs on your own computer, where you set it up — see [Setting an agent up on your computer](/agents#setting-an-agent-up-on-your-computer). If you pick one you haven't set up yet, the dialog says so, and starting the workflow first asks you to set it up; close that step and no task is created.
+3. **Choose a project.** The task needs a [project](/tasks). The dialog preselects your **Workflows** project if there is one. Otherwise it leaves the choice to you rather than guessing, so the task never lands in an unrelated project; an owner or admin can instead create a **Workflows** project right from the dialog. If your company has no project at all, an owner or admin can create the **Workflows** project there; a member is asked to have one created first.
+4. **Start it.** The button carries the workflow's own label, such as **Review contract**.
+
+Zenith Team creates the task and opens it. The task is yours, and the agent works on it on your computer. It starts at once — or, if your computer is offline, the task waits and starts when it reconnects; the dialog tells you which before you start. You can follow its [runs](/runs) and chat with it in the task, like any other task.
+
+### Attach files
+
+A field that asks for a document — a contract, a CV, a pitch deck, a financial export, a call transcript — also takes the file. Click **Attach files** under the field, or drop files onto it. Each file uploads straight away and shows its progress. A file dropped anywhere else in the dialog is ignored, so a missed drop never takes you away from the form.
+
+- Attach files instead of pasting text, or as well as it. A required field is answered by either, and so is a field that stands in for a missing app.
+- A field takes up to 10 files, and one workflow up to 20 in all.
+- Each file needs its own name. Two files with the same name, even in different fields and whatever their capitals, stop the workflow from starting ("Two files are both named …"): remove one, rename it, and add it again.
+- The workflow won't start while a file is still uploading, or while one failed to upload: remove it, or add it again. If a file is no longer available when you start, the dialog asks you to remove it, add it again and try again.
+- Files you've uploaded are kept while you step away to connect an app, like your answers. While a file is still uploading, the app links wait and the form asks you to let the files finish first, so no upload is lost.
+
+The files travel with the task. The brief names them under the answer they belong to ("Attached files: contract.pdf"), and the task's chat shows a message carrying them ("Attached 2 files for this Task."), so they stay with the task and any member can open them there.
+
+Every run of the task gets the files on the computer it runs on, read-only, in a folder of their own outside the project's workspace, and the agent reads them before it starts. It treats what they say as material to work from, never as instructions, and copies a file into the workspace only when the result must include it. A file an earlier run of the task already downloaded there is reused, not fetched again. A task handed to someone else starts afresh on their computer and downloads its files again, and a task that works in a local folder downloads its files for each run and removes them when the run ends. If a file can't reach the computer — or is still downloading when the run has to start — the run still starts; the agent names the file it couldn't read instead of guessing what's in it.
+
+Files you attach later in the task's chat reach the agent the same way: that message's run and every run after it get them. A colleague's message in your task's chat waits for your next run (see [Assignment and execution](/tasks#assignment-and-execution)), and the files on it reach that run and every run after it. Files attached in a direct chat with an agent don't reach its runs yet.
+
+Recurring workflows don't take files, because a schedule carries none. The **New task** dialog can't attach files yet.
+
+## What the task contains
+
+The task is an ordinary task — nothing about it is special:
+
+| Part | Value |
+|---|---|
+| **Title** | The workflow's name, often followed by your main answer — for example *Contract review — Northwind Logistics Ltd.* |
+| **Description** | Your answers, written up as a brief, then a footer naming the workflow and its playbook (and, when you attached files, telling the agent to read them first) |
+| **Files** | The files you attached, on a message in the task's chat, for every run of the task |
+| **Label** | `workflow:<key>`, for example `workflow:contract-review` |
+| **Milestone type** | Set by the workflow — see [Milestone types](/tasks#milestone-types) |
+| **Priority** | Medium |
+
+The agent reads your brief first, then loads the workflow's playbook from the built-in `zenith-workflows` [skill](/skills) and follows it. Where your brief and the playbook differ, your brief wins. The agent presents its results as [saved results](/runs#saved-results-and-review), which you review as for any task.
+
+<Callout type="info">
+The task description is visible to every member of your company, like every task, and so are the files you attach. Don't put anything in the form you wouldn't put in a task.
+</Callout>
+
+## Apps a workflow uses
+
+Many workflows work from your company's apps: a morning inbox brief reads Gmail and Google Calendar, and client meeting prep also reads Google Drive and your CRM. The apps are [connectors](/connectors-and-plugins) on your own computer, where the agent runs for you, connected in that computer's Codex or Claude account. A colleague who runs the same workflow uses the apps on their computer.
+
+### What the app states mean
+
+Each app's row starts with the app's logo, the one its provider shows. Until you pick an agent, or when your computer hasn't reported a logo, a few well-known apps show a built-in logo and the rest show their first letter. Once you pick an agent, each app under **Needs** and **Works best with** says whether it will reach that agent's run, and a bar and a line under the list count them ("2 of 3 apps connected for Andrew"); the bar fills one segment for each connected app. When an optional app won't reach the run, the line adds which ones the agent goes without.
+
+| State | Meaning |
+|---|---|
+| **Connected** | The app is connected, allowed for your company and will reach this agent's run. |
+| **Checking…** | The app is connected, but Zenith Team is still confirming it — your computer hasn't reported its apps recently, or the app isn't allowed for runs yet. It usually settles within a few minutes while the computer is on. |
+| **Connect** | The app isn't connected on your computer yet. |
+| **Review** (members see **Needs review**) | The app's tools changed; an owner or admin must review them before runs use it again. |
+| **Off for** *agent* (for example **Off for Andrew**) | The app is connected, but turned off in that agent's capabilities. |
+| **Claude.ai only** | A Claude.ai connector. Those stay in Claude.ai and can't be used by Zenith Team runs; pick a Codex agent, or a Claude plugin that provides the app. |
+| **Not on Codex** or **Not on Claude** | The agent's provider doesn't offer this app to Zenith Team runs. |
+| No state, only the app's name | Zenith Team can't check the apps yet: you haven't set the agent up on your computer (the line under the apps offers **Set up**), or your computer hasn't reported its apps yet. |
+
+An app under **Works best with** never stops you from starting: if it isn't ready, the agent follows the playbook's rule for a missing app, never invents its data, and names the app in its final summary.
+
+An app under **Needs** is one the workflow can't do its job without — a morning inbox brief without Gmail would have nothing to read. When the agent you picked doesn't have it (**Connect**, **Review** or **Needs review**, **Off for** *agent*, **Claude.ai only** or **Not on** *provider*), the last step says so ("Needs Gmail connected for Andrew.") and the workflow won't start. You see **Connect Gmail first** in place of the start button, which opens the same panel as the app's row. For an app that needs review, owners and admins see **Review Gmail first**; a member is told that an owner or admin reviews it. Some needs list alternatives ("Any one of Xero or Stripe is enough."), and some can be met by answering a field instead ("Connect Xero, or answer “Account data” instead."). **Checking…** never stops you, and neither does an app with no state — if the app still isn't there when the agent starts, the agent stops and says what's missing instead of guessing.
+
+**Schedule it** is stricter, because a schedule reads only the apps it's given: it opens the schedule editor only once each needed app shows **Connected** or **Checking…** for the agent you picked, and answering a field instead doesn't count. Until then the form says what's missing. Before an agent is chosen it asks for an agent with the app connected. For an agent you haven't set up, it asks you to set it up first and then checks again. While the states are loading, or when your computer hasn't reported its apps, it says it can't confirm the app is connected.
+
+Workflows only suggest apps that Codex offers, because agents run mainly on Codex.
+
+Every member sees the states, always for their own computer. Click an app's row, or focus it and press Enter, to read what its state means; when you can't act on a state, the explanation also says who can. Every member connects, installs and manages apps on their own computer, since apps are connected on the computer of whoever runs the workflow. Reviewing an app whose tools changed is for owners and admins: a member sees **Needs review** and "An owner or admin reviews an app whose tools changed before Runs can use it again." Nobody can connect an app on somebody else's computer — see [Your computers are yours](/daemon-and-runtimes#your-computers-are-yours).
+
+### Connect an app
+
+1. Click the app's row where it says **Connect**, **Review** or **Checking…**. Zenith Team keeps what you typed in the form.
+2. **Settings → Plugins** opens with a panel for that app and agent, and the catalog already searched for it. The panel offers the one step the app needs:
+   - **Connect** *app* (for example **Connect HubSpot**) opens the provider's sign-in in your browser. If only the app's plugin is available, **Install** *plugin* installs it the way **+** on the Plugins page does: a plugin that signs in to its app at install connects that app first, and installs nothing if you close that step.
+   - **Review and reconnect** *app* reviews the changed tools (owners and admins).
+   - **Check again** asks the computer for its apps now.
+3. Finish signing in, then come back to the app. On your computer, Zenith Team checks again as soon as the window is active, and the panel says the app is connected (for example **HubSpot is connected**).
+4. Click **Back to** *workflow* (for example **Back to Client meeting prep**). The form opens with your answers, page, agent and project as you left them.
+
+Connecting happens on your own computer, the one you set the agent up on, so it needs Zenith Team Desktop running there; on any other device the panel tells you where to open it. For an agent you haven't set up, the panel asks you to set it up first. For an app that says **Off for** *agent*, its row and the panel link to the agent's capabilities, for whoever may configure that agent. The kept form lasts until you start, cancel or close the dialog, or reload the page.
+
+### Manage a connected app
+
+Click an app's row where it says **Connected** to open the same panel for an app that already works (for example **Gmail is connected**). It shows:
+
+- **Whose account.** A Codex app is connected to the ChatGPT account that Codex uses on your computer. **Manage in ChatGPT** opens that app in ChatGPT's connector settings, where you switch its account, change what it may access or disconnect it — sign in to ChatGPT with that same account. Zenith Team can't reconnect an app that is already connected. A Claude plugin signs in through Claude Code on that computer; **Claude Code guide** explains how to manage it there.
+- **Its tools.** For a Codex app, how many tools a run can call and how many can make changes (for example "21 tools · 9 can make changes"). A read-only workflow tells the agent not to send, delete or edit anything, but it doesn't switch those tools off.
+- **Turn off for** *agent*, which opens the agent's capabilities, for whoever may configure that agent. A Codex app can be turned off for one agent only through its installed plugin; otherwise the panel says so, and disconnecting the app stops every agent on that computer from using it.
+- **Plugin details**, when the app's plugin is installed. It opens the [plugin's page](/connectors-and-plugins#a-plugins-page), where you can see its apps and skills, try it or uninstall it.
+- **Check again** asks for the app's state now. On your computer, coming back to the window after you change the app in its provider checks it again.
+
+### How the agent uses the apps
+
+Every task and chat run is told which apps it has, by name, and that it must use them first: treat their data as the source of truth, call an app before deciding its data is unavailable, and never replace it with web search, guesses or a question to you. A workflow's task adds an **Apps:** note listing the apps it works best with, and the workflow asks the agent to end its summary with an **Apps used:** line. Work that should only read is told never to send, delete or change anything in an app; that is an instruction to the agent, not a lock on the app's tools.
+
+The run gets the apps that are ready when it starts, not when you click. Before your computer starts a run, it re-checks any apps it hasn't confirmed in the last six minutes — after it wakes from sleep, for example — and waits for that check: up to 50 seconds, or 75 seconds for the first check after Zenith Team starts on that computer. A run gets no apps only when that check fails or takes longer, and it then says its apps could not be verified.
+
+## Recurring workflows and schedules
+
+Some workflows are also useful on a cadence — a morning inbox brief, a weekly brand sentiment digest. Their cards carry a **Recurring** badge.
+
+Owners and admins see a **Schedule it** button on the last step of those workflows; members see a note that owners and admins can schedule them. A schedule runs on its creator's own computer, so for an agent you haven't set up, **Schedule it** first asks you to set it up. It then checks your answers and, for a workflow with **Needs**, that each needed app is **Connected** or **Checking…** for the agent (see [Apps a workflow uses](#what-the-app-states-mean)), then opens the [schedule](/schedules) editor already filled in: name, instructions written from your answers, a suggested cadence, the agent you chose (when that agent can run schedules) and, as sources, the workflow's apps that were **Connected** or **Checking…** for that agent. A note at the top names the workflow and how many sources it preselected. Review every step — check the agent and the time zone, and confirm the exact [connector](/connectors-and-plugins) sources the schedule may read — and save it as usual. Choosing a different agent clears the preselected sources.
+
+A schedule runs very differently from a task. Each occurrence runs connector-only: no playbook, no web, no files and no product tools. That is why a recurring workflow has its own self-contained schedule instructions instead of its playbook. You can create several schedules from the same workflow.
+
+## Things to know
+
+- **Files are inputs, not saved documents.** An attached file is a read-only input that each run gets beside the workspace. The agent doesn't edit it in place, and it doesn't become a versioned company file. A task's runs get its 20 newest files; one that falls outside those 20 is removed from the computer at the next run (a task working in a local folder keeps no copies between runs).
+- **"Works best with" grants nothing.** The app states report what the agent's run would get; they don't give access. The agent uses only the connectors your company already allows. Apps a workflow can't do without are listed under **Needs** instead, and they hold the launch until one is connected.
+- **Apps use your account.** An app acts as the Codex or Claude account signed in on your computer, where the agent runs for you. A workflow never reads a colleague's mailbox or calendar through their computer.
+- **"Read only" is an instruction.** Connecting an app gives runs its write tools too. Workflows that only read tell the agent not to change anything; nothing technically stops it.
+- **An older app can lack a playbook.** The agent loads the playbook from the Zenith Team app on your computer. If that app is older than the workflow, the agent works from your brief alone and says so in its summary. Updating the app fixes it. The same happens if the agent's **Work coordination** tools are turned off.
+- **Drafts, not sends.** Workflows that write outreach or email replies produce drafts for you to review. Their playbooks tell the agent never to send on its own.
+- **Your company can't add its own workflows yet.** The catalog ships with Zenith Team.
+
+## Workflows, starter agents, presets and skills
+
+| Thing | What it is |
+|---|---|
+| **Workflow** | A form, a brief and a playbook that together create one task |
+| **Starter agent** | One of the four ordinary agents the CEO setup creates — see [Starter agents](/agents#starter-agents) |
+| **Schedule preset key** | An optional key that allows at most one schedule per creator per preset; a workflow's **Schedule it** sets none |
+| **Skill** | Files an agent loads during a run; a workflow's playbook is one file of the `zenith-workflows` skill |
+
+## Next steps
+
+- **[Tasks](/tasks)** — statuses, assignees and review of the task a workflow creates.
+- **[Schedules](/schedules)** — how the schedule you create from a recurring workflow fires and stays isolated.
+- **[Skills](/skills)** — the built-in skills, including `zenith-workflows`.

@@ -1,0 +1,131 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/health.md is its prose counterpart.
+
+paths:
+  # =========================================================== health/metrics
+
+  # /healthz
+  healthz:
+    get:
+      tags: [health]
+      operationId: getLiveness
+      summary: Liveness probe
+      description: Always answers while the process is serving. Touches nothing.
+      security: []
+      responses:
+        '200':
+          description: Alive.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+
+
+  # /readyz
+  readyz:
+    get:
+      tags: [health]
+      operationId: getReadiness
+      summary: Readiness probe
+      description: Pings the database. Fails closed when the dependency is down.
+      security: []
+      responses:
+        '200':
+          description: Ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ready }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+  # /metrics
+  metrics:
+    get:
+      tags: [health]
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: |
+        Registered only when a metrics handler is wired. Serves the Prometheus
+        text exposition format, not JSON.
+      security: []
+      responses:
+        '200':
+          description: Prometheus exposition.
+          content:
+            text/plain:
+              schema: { type: string }
+
+
+  # /health/realtime
+  health_realtime:
+    get:
+      tags: [health]
+      operationId: getRealtimeHealth
+      summary: Realtime hub counters
+      description: |
+        Live counters for the realtime hub and the daemon WebSocket hub, for
+        operators. Access is gated outside the normal auth system: a configured
+        bearer token admits anyone who presents it, and without a configured
+        token only direct loopback connections may read. Every other caller gets
+        a bare `404` with **no** error envelope.
+      security: []
+      responses:
+        '200':
+          description: Counter snapshot. Shape is operational, not a contract.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: Not authorized to read. Empty body, no envelope.
+
+  # =============================================================== realtime WS
+
+
+  # =============================================================== diagnostics
+
+  # /api/v1/crash-reports
+  crash_reports:
+    post:
+      tags: [diagnostics]
+      operationId: submitCrashReport
+      summary: Report a client crash
+      description: |
+        Fire-and-forget intake. Returns `202` with no body.
+
+        Intended for the renderer-side crash reporter, which is not yet wired
+        up; no client consumes this endpoint yet.
+
+        The server stamps the report's time itself; a client-supplied
+        `createdAt` is an unknown field the strict decoder rejects as `400`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind: { type: string }
+                platform: { type: string }
+                architecture: { type: string }
+                appVersion: { type: string }
+                reason: { type: string }
+      responses:
+        '202':
+          description: Accepted. No body.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  # ================================================================ companies

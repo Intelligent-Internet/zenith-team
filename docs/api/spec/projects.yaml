@@ -1,0 +1,1082 @@
+# Project API; Company-scoped identity, archive lifecycle and access (ADR 0017).
+paths:
+  projects:
+    get:
+      tags: [projects]
+      operationId: listProjects
+      summary: List Projects
+      description: |
+        Lists the Projects the caller reads, each carrying the caller's own
+        `access`. With `view=manage`, lists instead the Projects the caller
+        manages through the Company permission `projects.manage` but cannot
+        read (the Managed projects view): metadata only, no files; Join is
+        how the caller reads one. The manage view needs `projects.manage`
+        (`403 company_permission_required` otherwise) and is refused with a
+        Run proof (`403 human_actor_required`).
+
+        Sent with a Run's `X-Boardly-Run-Token` (`zen project list`, offered
+        only to Runs outside a task), the token must prove a running Run in
+        this Company carried by its member's own session
+        (`401 run_token_invalid` otherwise). The list is the Projects that
+        member reads, for a Run started by a mention in a channel or a
+        direct message between people too: such a Run uses the access of the
+        person who mentioned the Agent (D31). A task Run's channel refuses
+        `zen project list` with `run_scope_denied` before it reaches the
+        server; a list carrying a task Run's token anyway holds only its
+        task's Project, as a second guard.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: false
+          description: Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+        - name: include_archived
+          in: query
+          schema: { type: boolean, default: false }
+        - name: view
+          in: query
+          schema: { type: string, enum: [manage] }
+      responses:
+        '200':
+          description: The Projects the caller reads, or manages without reading.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectCollection' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    post:
+      tags: [projects]
+      operationId: createProject
+      summary: Create a Project
+      description: |
+        Needs the Company permission `projects.manage` (owner, admin) —
+        `403 company_permission_required` otherwise. The Project starts
+        `restricted` and its creator holds every Project permission, recorded
+        as their own grant. Project keys and Task membership are immutable.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectCreate' }
+      responses:
+        '201':
+          description: The created Project.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Duplicate Project key (`project_conflict`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  accessReport:
+    get:
+      tags: [projects]
+      operationId: getProjectAccessReport
+      summary: List people outside restricted Projects they were working in
+      description: |
+        For each restricted Project that is not archived, the active members
+        who cannot read it but are the assignee of one of its open Tasks
+        (`task_assignee`) or authorized a Run in one of its task chats that
+        was active since `since`, the last 30 days (`run_authorizer`). A Run
+        counts from its start or its last change, so one queued long ago and
+        cancelled when access was lost counts too. Owners and admins use it to
+        give access back after a Project is restricted, including after the
+        upgrade that made every existing Project restricted. It names people
+        and Projects only, never a Task, chat or Run, but it does tell a
+        manager who has open work or ran work in a Project that manager may
+        not read: it is the one management read beyond a Project's metadata
+        and grants (ADR 0017). Needs the Company permission `projects.manage`
+        (`403 company_permission_required` otherwise) and is refused with a
+        Run proof (`403 human_actor_required`). It takes no query parameters:
+        any query string is `422 validation_failed`, `since` included.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The report; `items` is empty when nobody is outside their work.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectAccessReport' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  project:
+    get:
+      tags: [projects]
+      operationId: getProject
+      summary: Read a Project
+      description: |
+        A reader gets the whole Project. A `projects.manage` holder who cannot
+        read it gets metadata only: no `files`, and `access.permissions` holds
+        the three management permissions. Anyone else gets
+        `404 project_not_found`, the answer a missing Project gets.
+
+        Sent with a Run's `X-Boardly-Run-Token` (`zen project get`, offered
+        to Runs outside a task, and the own-Project lookup of a task Run
+        below), the token must prove a running Run in this Company carried by
+        its member's own session
+        (`401 run_token_invalid` otherwise), except that a Project the caller
+        cannot see is `404 project_not_found` whatever the token. A Run reads
+        only as the member's reader: a Project the member only manages is
+        `404 project_not_found`. A Run started by a mention in a channel or a
+        direct message between people reads the Projects the person who
+        mentioned the Agent reads, whoever else is in the chat (D31). A task
+        Run's channel sends only the read of its own task's Project (the lookup
+        `zen task create` makes, which `zen project get` with that key or id
+        also passes while Work coordination is on) and refuses any other with
+        `run_scope_denied`; the server bounds a task Run's reads to its task
+        chat's Project and answers any other with
+        `403 task_outside_run_scope`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: false
+          description: Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+      responses:
+        '200':
+          description: The Project as the caller may see it.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    patch:
+      tags: [projects]
+      operationId: updateProject
+      summary: Update Project title, description and visibility
+      description: |
+        Title and description need `project.settings.update`; visibility needs
+        `project.visibility.update`, which no Company role grants — `403
+        project_permission_required` otherwise. Files are not part of this
+        body: replace them with `PUT /projects/{projectId}/files`; a body
+        naming `files` is refused as `400 invalid_request`. Making a
+        Company-visible Project restricted cancels the Runs of members who
+        lose read or run access (`project_access_revoked`). A body carrying
+        `visibility` must also carry `expectedAccessRevision`, the
+        `access.revision` the caller read (`409
+        project_grant_revision_conflict` when it moved); `expectedRevision` is
+        always the Project `revision`. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectUpdate' }
+      responses:
+        '200':
+          description: The updated Project.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale `expectedRevision` (`project_conflict`), stale
+            `expectedAccessRevision` (`project_grant_revision_conflict`) or
+            archived Project (`project_archived`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  archive:
+    post:
+      tags: [projects]
+      operationId: archiveProject
+      summary: Archive a Project without open Tasks
+      description: |
+        Needs `project.archive`, which `projects.manage` holders hold on every
+        Project through the management bridge. Refused with a Run proof (`403
+        human_actor_required`). Archive is final: no route reopens a Project.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectArchive' }
+      responses:
+        '200':
+          description: The archived Project.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale revision (`project_conflict`), an already archived Project
+            (`project_archived`), or open work (`project_open_tasks`: a Task
+            outside `done`/`cancelled`, a nonterminal Task Run, or a pending or
+            executing merge) prevents archive.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  files:
+    put:
+      tags: [projects]
+      operationId: replaceProjectFiles
+      summary: Replace the Project's files
+      description: |
+        Makes the Project's logo and documents exactly this selection. Needs
+        `project.files.manage`, which no Company role grants.
+        `expectedRevision` is the Project `revision` the caller read (`409
+        project_conflict` when it moved). An unchanged selection writes
+        nothing and answers the Project. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectFilesReplace' }
+      responses:
+        '200':
+          description: The Project with its files.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Stale `expectedRevision` (`project_conflict`) or archived Project (`project_archived`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  grants:
+    get:
+      tags: [projects]
+      operationId: listProjectGrants
+      summary: List the people granted access to a Project
+      description: |
+        Lists every person with a stored source on the Project: their own
+        grant, a Group they are in, or both (Access TECH D4). A person who
+        reaches it only through a Group has `granted: []` and `grantedBy:
+        null`. Each entry's `sources` says where its access comes from, and
+        `effective` is the union. On a Company-visible Project every active
+        member also holds the Company default set without a row; people who
+        read only through that floor are not listed, and a listed person's
+        `effective` and `sources` include it. `groups` lists the Groups
+        holding a grant on the Project. Anyone who can see the Project may
+        list its grants. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+      responses:
+        '200':
+          description: The Project's grants, by person.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGrantCollection' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  grant:
+    put:
+      tags: [projects]
+      operationId: setProjectGrant
+      summary: Set one person's permissions on a Project
+      description: |
+        Makes the person's stored permissions exactly `permissions`. Needs
+        `project.grants.manage`. Works on an archived Project too: access
+        stays manageable after archive. A non-empty set without `project.read` is
+        accepted and `project.read` is added; an empty set removes the
+        person. On a Company-visible Project every member already holds the
+        Company default set, so the stored set only adds on top of it; making
+        the Project restricted later leaves each person exactly their stored
+        set. The person must be an active Company member (`409
+        project_member_required`); a malformed `userId` is `422
+        validation_failed`. Sending the set the person already holds writes
+        nothing. A change that
+        takes `project.read` or `project.tasks.execute` from the person
+        cancels their Runs in the Project (`project_access_revoked`). Every
+        change, self-grants included, is recorded in Activity. Refused with a
+        Run proof (`403 human_actor_required`). The self-grant cap: a caller
+        whose `access.management` is false (they manage only through their
+        own grant) gets `403 project_grant_exceeds_own` when `permissions`
+        holds a permission missing from their `access.permissions`, or when
+        the person's own stored grant does. The answer names no permission.
+        Owners and admins (`projects.manage`) are not capped. A permission
+        outside the catalog, such as the removed `project.results.review`,
+        is `422 project_permission_unknown`, and the `detail` names it.
+        Preview the change first with `POST .../grants/{userId}/preview`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: '#/parameters/userId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectGrantInput' }
+      responses:
+        '200':
+          description: The person's grant after the change and the Project's new access revision.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGrantResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/responses/GrantValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale `expectedRevision` (`project_grant_revision_conflict`), an
+            inactive person (`project_member_required`), or an empty set on a
+            Company-visible Project (`project_visibility_floor`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    delete:
+      tags: [projects]
+      operationId: removeProjectGrant
+      summary: Remove one person's permissions on a Project
+      description: |
+        Deletes every permission row the person holds on the Project. Needs
+        `project.grants.manage`. Works on an archived Project too. Refused on a Company-visible Project, where
+        nobody can be taken below the default set (`409
+        project_visibility_floor`): make it restricted first. Removing
+        someone with no rows, a person who is not a member included, changes
+        nothing and answers `grant: null`. Access adds up: someone a Group
+        still gives the Project keeps it, and the answer is their entry with
+        `granted: []` and `sources` naming the Group. A malformed `userId` is `422
+        validation_failed`. Cancels the person's Runs in the Project when they lose read
+        or run access. Refused with a Run proof (`403 human_actor_required`).
+        The self-grant cap: a caller whose `access.management` is false gets
+        `403 project_grant_exceeds_own` when the person's own stored grant
+        holds a permission missing from the caller's `access.permissions`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: '#/parameters/userId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectAccessRevision' }
+      responses:
+        '200':
+          description: The person's access after the change (`null` when no stored source remains) and the Project's access revision.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGrantResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale `expectedRevision` (`project_grant_revision_conflict`) or a
+            Company-visible Project (`project_visibility_floor`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  groupGrant:
+    put:
+      tags: [projects]
+      operationId: setProjectGroupGrant
+      summary: Set one Group's permissions on a Project
+      description: |
+        Makes the Group's stored permissions on the Project exactly
+        `permissions`, as a person grant does (Access TECH D4): the same
+        catalog and levels, `project.read` added to a non-empty set, an empty
+        set removes the Group, sending the stored set changes nothing, and an
+        archived Project stays manageable. Every member of the Group holds
+        the set; access adds up with their own grant and their other Groups.
+        Needs `project.grants.manage`. The self-grant cap applies as on a
+        person grant: a caller whose `access.management` is false gets `403
+        project_grant_exceeds_own` when `permissions`, or the Group's stored
+        set there, holds a permission missing from their `access.permissions`.
+        A Project holds at most 50 Group grants (`409 group_limit_reached`).
+        A Group not in the Company, or a malformed `groupId`, is `404
+        group_not_found`. A change advances the Project's access revision,
+        is recorded in Activity (`project_grant.group_changed`, the Group's
+        set before and after) and ends the Runs of members who lose read or
+        run access. It sends no Inbox notice. Preview it first with `POST
+        .../group-grants/{groupId}/preview`. A permission outside the
+        catalog is `422 project_permission_unknown`, naming it. Refused with
+        a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: './groups.yaml#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectGrantInput' }
+      responses:
+        '200':
+          description: The Group's grant after the change and the Project's new access revision.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGroupGrantResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/responses/GrantValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: |
+            Project or Company not found, the Project is not visible to the
+            caller (`project_not_found`), or no such Group (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale `expectedRevision` (`project_grant_revision_conflict`), an
+            empty set on a Company-visible Project (`project_visibility_floor`),
+            or a 51st Group grant (`group_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    delete:
+      tags: [projects]
+      operationId: removeProjectGroupGrant
+      summary: Remove one Group's permissions on a Project
+      description: |
+        Deletes every permission the Group holds on the Project. Needs
+        `project.grants.manage`; the self-grant cap checks the Group's stored
+        set. Refused on a Company-visible Project (`409
+        project_visibility_floor`): make it restricted first. Removing a Group
+        that holds nothing there changes nothing and answers `grant: null`.
+        Members keep what their own grant and their other Groups give; whoever
+        loses read or run access has their Runs in the Project ended. Refused
+        with a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: './groups.yaml#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectAccessRevision' }
+      responses:
+        '200':
+          description: The Group holds nothing there; the Project's access revision after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGroupGrantResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: |
+            Project or Company not found, the Project is not visible to the
+            caller (`project_not_found`), or no such Group (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            Stale `expectedRevision` (`project_grant_revision_conflict`) or a
+            Company-visible Project (`project_visibility_floor`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  groupGrantPreview:
+    post:
+      tags: [projects]
+      operationId: previewProjectGroupGrant
+      summary: Preview a Group's grant on a Project
+      description: |
+        Answers what setting the Group's grant on this Project to
+        `permissions` (an empty set removes it) would do, as the save would
+        do it: the members whose access moves, before and after, the Runs
+        that stop, and whether it opens the Project to the caller. `revision`
+        is the Project's access revision to save with. It writes nothing and
+        takes no lock, and refuses what the save would refuse, a permission
+        outside the catalog included (`422 project_permission_unknown`).
+        Needs `project.grants.manage`. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: './groups.yaml#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectGrantPreviewRequest' }
+      responses:
+        '200':
+          description: What the change would do.
+          content:
+            application/json:
+              schema: { $ref: './groups.yaml#/schemas/GroupChangePreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/responses/GrantValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: |
+            Project or Company not found, the Project is not visible to the
+            caller (`project_not_found`), or no such Group (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            An empty set on a Company-visible Project (`project_visibility_floor`)
+            or a 51st Group grant (`group_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  grantPreview:
+    post:
+      tags: [projects]
+      operationId: previewProjectGrant
+      summary: Preview one person's grant on a Project
+      description: |
+        Answers what setting the person's own grant on this Project to
+        `permissions` (an empty set removes it) would do, as `PUT` or
+        `DELETE .../grants/{userId}` would do it: how many of the person's
+        Runs in the Project would stop (`runsStopping`, counted as the Group
+        preview counts them: the person loses `project.read` or
+        `project.tasks.execute`), and whether they would lose the Project
+        (`losesProject`). What their Groups give, the Company-visible
+        default set and their Company role stay as they are. `revision` is
+        the Project's access revision to save with. The app asks before a
+        save only when a Run would stop or the person would lose the
+        Project. It writes nothing and takes no lock. Needs
+        `project.grants.manage`, like the save, and refuses what the save
+        refuses before it writes: the self-grant cap (`403
+        project_grant_exceeds_own`), a permission outside the catalog (`422
+        project_permission_unknown`, naming it) and a removal on a
+        Company-visible Project (`409 project_visibility_floor`). Whether
+        the person is an active member is checked by the save. Refused with
+        a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+        - $ref: '#/parameters/userId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectGrantPreviewRequest' }
+      responses:
+        '200':
+          description: What the change would do.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProjectGrantPreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/responses/GrantValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: An empty set on a Company-visible Project (`project_visibility_floor`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  join:
+    post:
+      tags: [projects]
+      operationId: joinProject
+      summary: Join a Project you manage but cannot read
+      description: |
+        Grants the caller exactly `project.read`, recorded in Activity like
+        any other grant. Needs the Company permission `projects.manage` (`403
+        company_permission_required` otherwise). A caller who already reads
+        the Project changes nothing. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ProjectAccessRevision' }
+      responses:
+        '200':
+          description: The Project as the caller now reads it.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Project' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '404':
+          description: Project or Company not found, or the Project is not visible to the caller.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Stale `expectedRevision` (`project_grant_revision_conflict`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+responses:
+  GrantValidationFailed:
+    description: |
+      `422` — `project_permission_unknown` when `permissions` names a
+      permission outside the catalog, such as `project.results.review`,
+      which migration 000102 removed and a desktop built before it still
+      sends; the `detail` names it. Any other rule a well-formed request
+      fails is `validation_failed`, a malformed `userId` included.
+    content:
+      application/json:
+        schema: { $ref: './_common.yaml#/schemas/Error' }
+parameters:
+  projectId:
+    name: projectId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  userId:
+    name: userId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+schemas:
+  ProjectPermission:
+    type: string
+    description: |
+      One action a person may hold on one Project (ADR 0017). The closed
+      catalog mirrors `auth.ProjectPermissions()` on the server, and a test
+      pins the two. `project.read` is held whenever any other permission is.
+      Company `projects.manage` holders hold `project.settings.update`,
+      `project.grants.manage` and `project.archive` on every Project without
+      a grant; they never hold reading, files, deciding or visibility that
+      way. Clients gate on `access.permissions` and never derive it from a
+      role.
+    enum:
+      - project.approvals.resolve
+      - project.archive
+      - project.files.manage
+      - project.grants.manage
+      - project.read
+      - project.settings.update
+      - project.tasks.execute
+      - project.tasks.write
+      - project.visibility.update
+  ProjectVisibility:
+    type: string
+    description: |
+      `restricted` (the default): only people with a grant read the Project.
+      `company`: every active member reads it and holds
+      `project.read`, `project.tasks.write` and `project.tasks.execute`;
+      grants add on top, and only the stored grants remain when the Project
+      is made restricted again.
+    enum: [company, restricted]
+  ProjectAccess:
+    type: object
+    description: |
+      The caller's own standing on the Project, decided by the server.
+      `revision` is the Project's access revision: the `expectedRevision`
+      of every grant change and Join, and the `expectedAccessRevision` of a
+      visibility change.
+    required: [permissions, management, revision]
+    properties:
+      permissions:
+        type: array
+        items: { $ref: '#/schemas/ProjectPermission' }
+      management: { type: boolean }
+      revision: { type: integer, format: int64 }
+  Project:
+    type: object
+    required: [id, companyId, key, title, description, visibility, access, revision, createdAt, updatedAt, archivedAt]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      key: { type: string, pattern: '^[a-z][a-z0-9_]{0,63}$' }
+      title: { type: string, maxLength: 240 }
+      description: { type: string, maxLength: 65536 }
+      visibility: { $ref: '#/schemas/ProjectVisibility' }
+      access: { $ref: '#/schemas/ProjectAccess' }
+      revision: { type: integer, format: int64 }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      files:
+        description: Absent when the caller manages the Project but cannot read it.
+        $ref: '#/schemas/ProjectFiles'
+      archivedAt: { type: [string, 'null'], format: date-time }
+  ProjectCollection:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/Project' }
+  ProjectFile:
+    type: object
+    required: [id, filename, contentType, sizeBytes]
+    properties:
+      id: { type: string, format: uuid }
+      filename: { type: string }
+      contentType: { type: string }
+      sizeBytes: { type: integer, format: int64 }
+  ProjectFiles:
+    type: object
+    required: [logo, documents]
+    properties:
+      logo:
+        oneOf:
+          - { $ref: '#/schemas/ProjectFile' }
+          - { type: 'null' }
+      documents:
+        type: array
+        items: { $ref: '#/schemas/ProjectFile' }
+  ProjectFilesInput:
+    type: object
+    additionalProperties: false
+    description: Replaces the current file selection atomically. Only ready uploads from this Company may be registered. Removed documents remain retained for frozen Runs until the Project is deleted.
+    required: [logoId, documentIds]
+    properties:
+      logoId: { type: [string, 'null'], format: uuid }
+      documentIds:
+        type: array
+        maxItems: 10
+        uniqueItems: true
+        items: { type: string, format: uuid }
+  ProjectFilesReplace:
+    type: object
+    additionalProperties: false
+    description: A `ProjectFilesInput` checked against the Project `revision` the caller read.
+    required: [logoId, documentIds, expectedRevision]
+    properties:
+      logoId: { type: [string, 'null'], format: uuid }
+      documentIds:
+        type: array
+        maxItems: 10
+        uniqueItems: true
+        items: { type: string, format: uuid }
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+  ProjectCreate:
+    type: object
+    additionalProperties: false
+    required: [key, title]
+    properties:
+      files: { $ref: '#/schemas/ProjectFilesInput' }
+      key: { type: string, pattern: '^[a-z][a-z0-9_]{0,63}$' }
+      title: { type: string, minLength: 1, maxLength: 240 }
+      description: { type: string, maxLength: 65536 }
+  ProjectUpdate:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    anyOf:
+      - required: [title]
+      - required: [description]
+      - required: [visibility]
+    dependentRequired:
+      visibility: [expectedAccessRevision]
+      expectedAccessRevision: [visibility]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      title: { type: string, minLength: 1, maxLength: 240 }
+      description: { type: string, maxLength: 65536 }
+      visibility: { $ref: '#/schemas/ProjectVisibility' }
+      expectedAccessRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        description: The Project's `access.revision` the caller read; sent with `visibility` and only then.
+  ProjectArchive:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+  ProjectAccessRevision:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        description: The Project's `access.revision` the caller read.
+  ProjectGrant:
+    type: object
+    description: |
+      One person's access on the Project. `granted` is their own stored
+      rows (`[]` when they reach the Project only through a Group, the rows
+      the person grant editor changes); `effective` is what they hold with
+      every source: their rows, what their Groups hold on the Project, the
+      Company default set on a Company-visible Project, and the management
+      permissions when their Company role holds `projects.manage`.
+      `sources` lists those sources one by one. `grantedBy` is who wrote
+      their most recent own row, `null` without one or for rows the
+      migration created; `updatedAt` is the latest change of any stored
+      source.
+    required: [userId, granted, effective, sources, grantedBy, updatedAt]
+    properties:
+      userId: { type: string, format: uuid }
+      granted:
+        type: array
+        items: { $ref: '#/schemas/ProjectPermission' }
+      effective:
+        type: array
+        items: { $ref: '#/schemas/ProjectPermission' }
+      sources:
+        type: array
+        items: { $ref: '#/schemas/ProjectGrantSource' }
+      grantedBy: { type: [string, 'null'], format: uuid }
+      updatedAt: { type: string, format: date-time }
+  ProjectGrantSource:
+    type: object
+    description: |
+      One source of a person's access: `grant` (their own rows), `group` (a
+      Group they are in, named by `groupId`), `company` (the default set
+      everyone holds on a Company-visible Project) or `management` (the
+      three management permissions of a Company role holding
+      `projects.manage`). Listed in that order.
+    required: [via, permissions]
+    properties:
+      via:
+        type: string
+        enum: [grant, group, company, management]
+      groupId:
+        type: string
+        format: uuid
+        description: Present only on a `group` source.
+      permissions:
+        type: array
+        items: { $ref: '#/schemas/ProjectPermission' }
+  ProjectGroupGrant:
+    type: object
+    description: |
+      One Group's grant on the Project: what it holds there (`granted`), who
+      wrote its most recent row (`null` when nobody is recorded), when it
+      last changed, and how many active Team members it has.
+    required: [groupId, name, granted, grantedBy, updatedAt, memberCount]
+    properties:
+      groupId: { type: string, format: uuid }
+      name: { type: string }
+      granted:
+        type: array
+        items: { $ref: '#/schemas/ProjectPermission' }
+      grantedBy: { type: [string, 'null'], format: uuid }
+      updatedAt: { type: string, format: date-time }
+      memberCount: { type: integer, format: int64 }
+  ProjectGrantCollection:
+    type: object
+    required: [items, groups]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/ProjectGrant' }
+      groups:
+        type: array
+        items: { $ref: '#/schemas/ProjectGroupGrant' }
+  ProjectGroupGrantResult:
+    type: object
+    required: [grant, revision]
+    properties:
+      grant:
+        oneOf:
+          - { $ref: '#/schemas/ProjectGroupGrant' }
+          - { type: 'null' }
+      revision: { type: integer, format: int64 }
+  ProjectGrantPreviewRequest:
+    type: object
+    additionalProperties: false
+    required: [permissions]
+    description: The set the save would send; an empty set previews a removal.
+    properties:
+      permissions:
+        type: array
+        maxItems: 10
+        items: { $ref: '#/schemas/ProjectPermission' }
+  ProjectGrantPreview:
+    type: object
+    required: [revision, runsStopping, losesProject]
+    properties:
+      revision:
+        type: integer
+        format: int64
+        description: The Project's access revision the save sends.
+      runsStopping:
+        type: integer
+        minimum: 0
+        description: The person's Runs in the Project the change would stop.
+      losesProject:
+        type: boolean
+        description: The person would no longer read the Project.
+  ProjectGrantInput:
+    type: object
+    additionalProperties: false
+    required: [permissions, expectedRevision]
+    properties:
+      permissions:
+        type: array
+        maxItems: 10
+        items: { $ref: '#/schemas/ProjectPermission' }
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        description: The Project's `access.revision` the caller read.
+  ProjectGrantResult:
+    type: object
+    required: [grant, revision]
+    properties:
+      grant:
+        oneOf:
+          - { $ref: '#/schemas/ProjectGrant' }
+          - { type: 'null' }
+      revision: { type: integer, format: int64 }
+  ProjectAccessReport:
+    type: object
+    required: [since, items]
+    properties:
+      since:
+        type: string
+        format: date-time
+        description: Runs that started or last changed at or after this time count.
+      items:
+        type: array
+        items: { $ref: '#/schemas/ProjectAccessReportEntry' }
+  ProjectAccessReportEntry:
+    type: object
+    required: [projectId, key, title, people]
+    properties:
+      projectId: { type: string, format: uuid }
+      key: { type: string }
+      title: { type: string }
+      people:
+        type: array
+        items: { $ref: '#/schemas/ProjectAccessReportPerson' }
+  ProjectAccessReportPerson:
+    type: object
+    required: [userId, reasons]
+    properties:
+      userId: { type: string, format: uuid }
+      reasons:
+        type: array
+        description: Why the person is listed, sorted.
+        items: { $ref: '#/schemas/ProjectAccessReportReason' }
+  ProjectAccessReportReason:
+    type: string
+    enum: [run_authorizer, task_assignee]
+    description: |
+      `task_assignee`: assignee of an open Task in the Project.
+      `run_authorizer`: authorized a Run in one of the Project's task chats
+      that started or last changed within the report's window.

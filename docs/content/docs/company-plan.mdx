@@ -1,0 +1,89 @@
+---
+title: Company Plan
+description: How agents propose Task changes and how a plan is reviewed and applied.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The [Company Plan](/concepts#company-plan) organizes Company [Tasks](/tasks) and their dependencies. Agents propose changes as reviewable transactions; the Founder reviews the exact changes before they apply. **Work**, at `/tasks`, shows the resulting Tasks. Task statuses, execution, and reporting are described in [Tasks](/tasks).
+
+## How agents propose plans
+
+An agent exports the current plan, previews its proposed transaction, and submits the exact document it previewed. Invalid proposals return to the agent for repair before review. The transaction uses format version 5 and contains actions over Projects and Tasks:
+
+```yaml
+kind: company_plan_transaction
+format_version: 5
+company: northwind-robotics
+actions:
+  - id: add_website_project
+    operation: create
+    entity: project
+    key: website
+    values:
+      title: Website
+      description: Launch our first public website.
+  - id: add_launch_task
+    operation: create
+    entity: task
+    key: ship_mvp
+    values:
+      project_key: website
+      title: Launch the MVP
+      description: Ship to the first design partners.
+      agent_id: 0198aa00-0000-7000-8000-00000000a002
+      milestone_type: product
+      priority: high
+      depends_on: []
+```
+
+The document's rules are enforced by the server:
+
+| Rule | Detail |
+|---|---|
+| **Operations** | Tasks: `create`, `update`, `cancel`; Projects: `create`, `update`, `archive`. A transaction cannot set a Task status directly |
+| **Creation** | A created Task starts in `backlog` |
+| **Updates** | Tasks can be updated while `backlog` or `todo`; a `failed` or `error` Task can only have dependencies removed |
+| **Cancellation** | An explicit operation subject to the Task lifecycle rules |
+| **Bounds** | One YAML document, at most 500 actions, at most 4 MiB |
+
+Each Task carries a [milestone type](/tasks#milestone-types), and its `agent_id` names the Agent the Task is executed by. An empty or omitted value means the assignee does the work themself. The plan never names an assignee: whoever applies it is the assignee of every Task it creates, and an existing Task keeps its own. A new Task, or a Task moved to another Agent, must name an active Agent; an archived or unknown Agent rejects the proposal. A Task that keeps its Agent may still name it after the Agent is archived, so a finished Task restated from an export does not block the plan.
+
+Every Task names an immutable `project_key`. Project keys cannot be changed. Dependencies name other Tasks in the same Project by key. A dependency cycle is rejected, and a new dependency cannot point at a cancelled Task. The exported complete plan has flat `projects` and `tasks` lists; each Task carries its own `depends_on` list.
+
+## Review and apply
+
+Submitting a transaction raises an [approval](/approvals-and-questions). The server loads the authoritative plan, computes the change digest, and freezes the resulting action. The digest lists the actual Task and dependency changes.
+
+The Founder decides whether to apply it. Approval applies the frozen action in one transaction. The base records Project and Task identities, revisions, and dependency revisions; if the current plan differs from that reviewed base, the apply is skipped. The agent must prepare a fresh proposal from the current state.
+
+Explicit action transactions preserve work they do not mention. Existing terminal-state and dependency rules remain enforced during application.
+
+A plan only ever changes the projects the person applying it may change. Whoever applies it — you, or the person who approves it — needs the right to write tasks in a project for the plan to change that project's tasks, the right to archive it to archive it or leave it out while it has open tasks, and the right to rename it to rename it. A change they may not make is skipped and listed, and the rest applies. A project they cannot see is never touched, so leaving its tasks out deletes nothing. A plan an agent raises from a task's chat reaches that task's project only, and approving it needs the right to decide approvals and to write tasks there, not a company role. The agent's export marks the projects it may read but not change. See [What owners and admins can see](/project-access).
+
+<Callout type="warning">
+The lower-level complete desired-state apply has different omission semantics: omitting an eligible non-terminal Task deletes it and its dependency edges. The Task's Conversation, messages, and Run history remain as evidence. The review digest exposes these deletions before approval.
+</Callout>
+
+## Proactive Mode
+
+When [Proactive Mode](/companies#proactive-mode) is enabled and the CEO Agent raises the plan approval from the mode's recorded Conversation, the approval can execute inline. The same reviewed-content and stale-base checks apply. Other proposals wait for the Founder's verdict.
+
+## Milestone stages
+
+Every Task names one milestone type. The catalog groups the eight types into four stages:
+
+| Stage | Milestone types |
+|---|---|
+| **`foundation`** | `positioning`, `brand`, `operations` |
+| **`build`** | `product` |
+| **`launch`** | `launch` |
+| **`grow`** | `growth`, `sales_outbound`, `support` |
+
+Stages organize recommendations. They are labels on Tasks, not another ownership layer. The full catalog is in [Tasks](/tasks#milestone-types).
+
+## Next steps
+
+- **[Tasks](/tasks)** — the work a plan creates and its lifecycle.
+- **[Approvals and questions](/approvals-and-questions)** — review and verdicts.
+- **[Companies](/companies)** — roles, Company scoping, and Proactive Mode.

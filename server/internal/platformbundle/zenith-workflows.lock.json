@@ -1,0 +1,20 @@
+{
+  "lockFormat": 1,
+  "plugin": "zenith-workflows",
+  "component": "workflows",
+  "version": "1.0.0",
+  "tag": "zenith-workflows--v1.0.0",
+  "commit": "00633cb71ddf28dd6a1252e2a91a22e53cd4c718",
+  "manifestPath": "plugins/zenith-workflows/.boardly-plugin/plugin.json",
+  "manifestSha256": "e890f0299360983a2716e78935210b5fdb6f6dc863d38867aa8e4a8e3a03b6dd",
+  "contentPath": "plugins/zenith-workflows/boardly/workflows",
+  "contentTreeId": "2f32a7b7b06547fb63e83b3842a797b81b1f8d47",
+  "artifact": {
+    "file": "zenith-workflows.bundle.tar",
+    "sha256": "fdc5b261668cc4b4218e6c1fe4cfbaf50f0f7ee0114218af8b9354f1ea092282",
+    "size": 1527808
+  },
+  "treeHash": "374c059f478fcd6ed675f10b5f8d6dc3006de66d98f853787ce8f98b66da0b85",
+  "fileCount": 290,
+  "retiredKeys": []
+}

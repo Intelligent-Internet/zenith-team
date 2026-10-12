@@ -1,0 +1,172 @@
+# Zenith Team single-node production stack.
+#
+# Copy production.env.example to .env in this directory, fill in the
+# required values, then run:
+#
+#   docker compose -f deploy/docker-compose.production.yml up -d
+#
+# The full runbook — configuration reference, operations, upgrades,
+# rollback, and backups — is deploy/README.md. No secret has a committed
+# default: missing required values fail fast at container startup, never
+# silently fall back.
+#
+# PostgreSQL and Redis ship as bundled services with persistent volumes.
+# To use managed/external instances instead, set APP_DATABASE_URL and
+# APP_REDIS_URL in .env and remove the bundled services plus the
+# server's depends_on entries.
+
+name: boardly-production
+
+x-json-logging: &json-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+services:
+  server:
+    image: ${APP_SERVER_IMAGE:-boardly-server:latest}
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *json-logging
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${APP_HTTP_PORT:-8788}:8788"
+    environment:
+      # --- Required ---
+      APP_DATABASE_URL: >-
+        ${APP_DATABASE_URL:-postgresql://boardly:${APP_POSTGRES_PASSWORD:-}@postgres:5432/boardly?sslmode=disable}
+      AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:-}
+      # --- Origins and cookies (HTTPS origins force secure cookies) ---
+      AUTH_WEB_ORIGINS: ${AUTH_WEB_ORIGINS:-}
+      AUTH_WEB_APP_ORIGIN: ${AUTH_WEB_APP_ORIGIN:-}
+      # --- Core process ---
+      APP_NAME: ${APP_NAME:-Zenith Team API}
+      APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-info}
+      APP_API_REPLICAS: ${APP_API_REPLICAS:-1}
+      APP_REDIS_URL: ${APP_REDIS_URL:-redis://redis:6379/0}
+      APP_SHUTDOWN_TIMEOUT_SECONDS: ${APP_SHUTDOWN_TIMEOUT_SECONDS:-15}
+      # --- Email verification (all core values together, or none) ---
+      AUTH_EMAIL_PROVIDER: ${AUTH_EMAIL_PROVIDER:-}
+      AUTH_RESEND_API_KEY: ${AUTH_RESEND_API_KEY:-}
+      AUTH_EMAIL_VERIFICATION_SECRET: ${AUTH_EMAIL_VERIFICATION_SECRET:-}
+      AUTH_EMAIL_VERIFICATION_TEMPLATE_ID: ${AUTH_EMAIL_VERIFICATION_TEMPLATE_ID:-}
+      AUTH_EMAIL_VERIFICATION_TTL_SECONDS: ${AUTH_EMAIL_VERIFICATION_TTL_SECONDS:-}
+      AUTH_EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS: ${AUTH_EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS:-}
+      AUTH_EMAIL_PROVIDER_TIMEOUT_SECONDS: ${AUTH_EMAIL_PROVIDER_TIMEOUT_SECONDS:-}
+      AUTH_PASSWORD_RESET_TEMPLATE_ID: ${AUTH_PASSWORD_RESET_TEMPLATE_ID:-}
+      AUTH_PASSWORD_RESET_TTL_SECONDS: ${AUTH_PASSWORD_RESET_TTL_SECONDS:-}
+      AUTH_PASSWORD_RESET_RESEND_COOLDOWN_SECONDS: ${AUTH_PASSWORD_RESET_RESEND_COOLDOWN_SECONDS:-}
+      AUTH_INVITATION_TEMPLATE_ID: ${AUTH_INVITATION_TEMPLATE_ID:-}
+      # --- Company mailbox (dedicated Resend credentials) ---
+      MAILBOX_RESEND_API_KEY: ${MAILBOX_RESEND_API_KEY:-}
+      MAILBOX_RESEND_WEBHOOK_SECRET: ${MAILBOX_RESEND_WEBHOOK_SECRET:-}
+      MAILBOX_DOMAIN: ${MAILBOX_DOMAIN:-}
+      MAILBOX_REQUESTS_PER_SECOND: ${MAILBOX_REQUESTS_PER_SECOND:-}
+      MAILBOX_PROVIDER_TIMEOUT_SECONDS: ${MAILBOX_PROVIDER_TIMEOUT_SECONDS:-}
+      # --- Stripe Connect Commerce (optional; all values together) ---
+      COMMERCE_ENABLED: ${COMMERCE_ENABLED:-false}
+      STRIPE_CONNECT_KEY: ${STRIPE_CONNECT_KEY:-}
+      STRIPE_COMMERCE_KEY: ${STRIPE_COMMERCE_KEY:-}
+      STRIPE_RECONCILE_KEY: ${STRIPE_RECONCILE_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PLATFORM_ACCOUNT_ID: ${STRIPE_PLATFORM_ACCOUNT_ID:-}
+      COMMERCE_CUSTOMER_HMAC_KEY: ${COMMERCE_CUSTOMER_HMAC_KEY:-}
+      COMMERCE_ALLOWED_CONNECTED_COUNTRIES: ${COMMERCE_ALLOWED_CONNECTED_COUNTRIES:-}
+      # --- S3-compatible attachment storage (see deploy/README.md) ---
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+      STORAGE_S3_SESSION_TOKEN: ${STORAGE_S3_SESSION_TOKEN:-}
+      STORAGE_S3_USE_PATH_STYLE: ${STORAGE_S3_USE_PATH_STYLE:-}
+      ATTACHMENT_ABANDONED_READY_GRACE_SECONDS: ${ATTACHMENT_ABANDONED_READY_GRACE_SECONDS:-86400}
+      # --- Output publication to Google Cloud Run (optional) ---
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
+      GCP_REGION: ${GCP_REGION:-}
+      GCP_SOURCE_BUCKET: ${GCP_SOURCE_BUCKET:-}
+      GCP_ARTIFACT_REGISTRY: ${GCP_ARTIFACT_REGISTRY:-}
+      GCP_SERVICE_ACCOUNT_EMAIL: ${GCP_SERVICE_ACCOUNT_EMAIL:-}
+      CLOUD_RUN_SERVICE_ACCOUNT: ${CLOUD_RUN_SERVICE_ACCOUNT:-}
+      CLOUD_RUN_MAX_INSTANCES: ${CLOUD_RUN_MAX_INSTANCES:-}
+      CLOUD_RUN_MIN_INSTANCES: ${CLOUD_RUN_MIN_INSTANCES:-}
+      CLOUD_RUN_MEMORY: ${CLOUD_RUN_MEMORY:-}
+      CLOUD_RUN_CPU: ${CLOUD_RUN_CPU:-}
+      # --- Custom publication URLs via Cloudflare Workers KV (optional) ---
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
+      CLOUDFLARE_KV_NAMESPACE_ID: ${CLOUDFLARE_KV_NAMESPACE_ID:-}
+      CLOUDFLARE_BASE_DOMAIN: ${CLOUDFLARE_BASE_DOMAIN:-}
+      # --- Google OAuth (configure Web, Desktop, or both; see runbook) ---
+      GOOGLE_WEB_CLIENT_ID: ${GOOGLE_WEB_CLIENT_ID:-}
+      GOOGLE_WEB_CLIENT_SECRET: ${GOOGLE_WEB_CLIENT_SECRET:-}
+      GOOGLE_WEB_REDIRECT_URI: ${GOOGLE_WEB_REDIRECT_URI:-}
+      GOOGLE_DESKTOP_CLIENT_ID: ${GOOGLE_DESKTOP_CLIENT_ID:-}
+      GOOGLE_DESKTOP_CLIENT_SECRET: ${GOOGLE_DESKTOP_CLIENT_SECRET:-}
+      # --- Personal social connections (optional; same key on every replica) ---
+      SOCIAL_ENABLED_PLATFORMS: ${SOCIAL_ENABLED_PLATFORMS:-x}
+      SOCIAL_CALLBACK_ORIGIN: ${SOCIAL_CALLBACK_ORIGIN:-}
+      SOCIAL_TOKEN_ENCRYPTION_KEY: ${SOCIAL_TOKEN_ENCRYPTION_KEY:-}
+      SOCIAL_X_CLIENT_ID: ${SOCIAL_X_CLIENT_ID:-}
+      SOCIAL_X_CLIENT_SECRET: ${SOCIAL_X_CLIENT_SECRET:-}
+      SOCIAL_FACEBOOK_CLIENT_ID: ${SOCIAL_FACEBOOK_CLIENT_ID:-}
+      SOCIAL_FACEBOOK_CLIENT_SECRET: ${SOCIAL_FACEBOOK_CLIENT_SECRET:-}
+      SOCIAL_INSTAGRAM_CLIENT_ID: ${SOCIAL_INSTAGRAM_CLIENT_ID:-}
+      SOCIAL_INSTAGRAM_CLIENT_SECRET: ${SOCIAL_INSTAGRAM_CLIENT_SECRET:-}
+      SOCIAL_LINKEDIN_CLIENT_ID: ${SOCIAL_LINKEDIN_CLIENT_ID:-}
+      SOCIAL_LINKEDIN_CLIENT_SECRET: ${SOCIAL_LINKEDIN_CLIENT_SECRET:-}
+      SOCIAL_META_GRAPH_VERSION: ${SOCIAL_META_GRAPH_VERSION:-v23.0}
+      # --- Reverse-proxy trust for the WebSocket origin check ---
+      BOARDLY_TRUSTED_PROXIES: ${BOARDLY_TRUSTED_PROXIES:-}
+      # Every other APP_/AUTH_/MAILBOX_/STORAGE_/GOOGLE_/SOCIAL_/ATTACHMENT_ tunable in
+      # deploy/README.md may be added here or exported in .env with a mapping.
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/boardly-readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    logging: *json-logging
+    environment:
+      POSTGRES_DB: boardly
+      POSTGRES_USER: boardly
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:-}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boardly -d boardly"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    logging: *json-logging
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:
+  redis-data:

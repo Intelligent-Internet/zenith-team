@@ -1,0 +1,63 @@
+/* A Codex-style app tile: a rounded square on a neutral workspace surface with
+   the logo inset, so full-bleed icons and transparent marks both read in the
+   light and dark workspace themes. */
+.app-avatar {
+  --app-avatar-size: 32px;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  box-sizing: border-box;
+  width: var(--app-avatar-size);
+  height: var(--app-avatar-size);
+  padding: calc(var(--app-avatar-size) * 0.14);
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: calc(var(--app-avatar-size) * 0.22);
+  background: var(--workspace-panel-raised-bg, var(--workspace-panel-bg));
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+  font-size: calc(var(--app-avatar-size) * 0.42);
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+
+.app-avatar[data-size="20"] {
+  --app-avatar-size: 20px;
+}
+
+.app-avatar[data-size="24"] {
+  --app-avatar-size: 24px;
+}
+
+.app-avatar[data-size="28"] {
+  --app-avatar-size: 28px;
+}
+
+.app-avatar[data-size="40"] {
+  --app-avatar-size: 40px;
+}
+
+.app-avatar[data-size="52"] {
+  --app-avatar-size: 52px;
+}
+
+.app-avatar[data-size="56"] {
+  --app-avatar-size: 56px;
+}
+
+.app-avatar[data-size="60"] {
+  --app-avatar-size: 60px;
+}
+
+.app-avatar[data-size="72"] {
+  --app-avatar-size: 72px;
+}
+
+.app-avatar__logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: calc(var(--app-avatar-size) * 0.1);
+}

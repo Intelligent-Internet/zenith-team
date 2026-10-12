@@ -1,0 +1,99 @@
+/* The assignee can no longer see the Task's Project (outside-project-badge.tsx,
+   ADR 0017): a small warning label beside their name, naming nobody. */
+.task-outside-project-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* On a table row or card: only the eye-slash, its help in the tooltip. */
+.task-outside-project-badge--compact {
+  margin-left: 0;
+  padding: 3px;
+}
+
+.work-table-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-outside-project-badge:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+/* A Task's assignee drawn as the member they are, then the Agent doing the
+   work (task-assignee.tsx). Each half keeps its avatar beside its name; in a
+   narrow cell the Agent moves to the next line instead of squeezing both. */
+.project-task-assignee {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  gap: 4px 10px;
+}
+.project-task-assignee[data-variant="avatars"] {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+.project-task-assignee[data-variant="avatars"] .project-person-avatar {
+  width: 20px;
+  height: 20px;
+}
+.project-task-assignee__member,
+.project-task-assignee__agent {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.project-task-assignee__member {
+  gap: 8px;
+}
+.project-task-assignee__agent {
+  gap: 5px;
+  color: var(--workspace-native-text-muted);
+}
+.project-task-assignee__member > :first-child,
+.project-task-assignee__agent > :first-child {
+  flex-shrink: 0;
+}
+.project-task-assignee__member > span:last-child,
+.project-task-assignee__agent > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.project-person-avatar {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-micro);
+  font-weight: 600;
+  line-height: 1;
+}
+/* The photo fills the circle whatever size the caller sets. Two classes, so
+   it wins over a surface's own rule for bare images (.x img). */
+.project-person-avatar > .project-person-avatar__image {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: cover;
+  object-position: center top;
+}

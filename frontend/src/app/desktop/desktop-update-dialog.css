@@ -1,0 +1,12 @@
+.desktop-update-dialog[data-slot="dialog-content"] {
+  max-width: min(28rem, calc(100vw - 2rem));
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--workspace-overlay-bg, var(--input-surface));
+  color: var(--text-primary);
+}
+
+.desktop-update-dialog__footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--workspace-control-bg, var(--surface-secondary));
+}

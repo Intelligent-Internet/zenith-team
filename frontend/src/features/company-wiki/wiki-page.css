@@ -1,0 +1,1174 @@
+.zen-wiki,
+.zen-wiki-dialog {
+  --wk-accent: var(--workspace-native-accent);
+  --wk-text: var(--workspace-native-text);
+  --wk-muted: var(--workspace-native-text-muted);
+  --wk-border: var(--workspace-divider);
+  --wk-panel: var(--workspace-panel-bg);
+  --wk-soft: var(--workspace-control-bg);
+  --wk-hover: var(--workspace-hover-bg);
+  --wk-selected: var(--workspace-selected-bg);
+}
+.zen-wiki {
+  --wiki-sidebar-width: 253px;
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--wk-text);
+  background: var(--wk-panel);
+  font: var(--workspace-text-body) / var(--workspace-leading-body)
+    var(--workspace-font-body);
+}
+:is(.zen-wiki, .zen-wiki-dialog) * {
+  box-sizing: border-box;
+}
+:is(.zen-wiki, .zen-wiki-dialog) button {
+  cursor: pointer;
+  color: inherit;
+}
+:is(.zen-wiki, .zen-wiki-dialog) button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+:is(.zen-wiki, .zen-wiki-dialog) :is(button, input, select):focus-visible {
+  outline: 2px solid var(--wk-accent);
+  outline-offset: 2px;
+}
+.zen-wiki__top {
+  flex: none;
+  min-height: 76px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px var(--workspace-page-inset);
+  background: var(--wk-panel);
+  border-bottom: 1px solid var(--wk-border);
+}
+.zen-wiki__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--wk-text);
+}
+.zen-wiki__brand > div {
+  display: grid;
+  gap: 2px;
+}
+.zen-wiki__brand strong {
+  font-size: var(--workspace-text-page);
+  line-height: var(--workspace-leading-page);
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--wk-text);
+}
+.zen-wiki__brand span {
+  font-size: 12px;
+  color: var(--wk-muted);
+}
+.zen-wiki__brand .zen-wiki__eyebrow {
+  color: var(--wk-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 500;
+  letter-spacing: normal;
+}
+.zen-wiki--page .zen-wiki__top {
+  display: none;
+}
+.zen-wiki__top-actions,
+.zen-wiki__view-tabs,
+.zen-wiki__page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zen-wiki__top-actions {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.zen-wiki__top-actions button,
+.zen-wiki__page-actions button,
+.zen-wiki__page-bar > button,
+.zen-wiki__filter button,
+.zen-wiki__pagination button {
+  border: 1px solid var(--wk-border);
+  border-radius: var(--workspace-radius-control);
+  background: var(--wk-panel);
+  min-height: var(--workspace-control-size);
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+}
+.zen-wiki__top-actions button:hover,
+.zen-wiki__page-actions button:hover,
+.zen-wiki__filter button:hover,
+.zen-wiki__page-bar > button:hover {
+  background: var(--wk-hover);
+}
+.zen-wiki__view-tabs {
+  border: 1px solid var(--wk-border);
+  border-radius: 9px;
+  padding: 3px;
+}
+.zen-wiki__view-tabs button {
+  border: 0;
+  padding: 6px 11px;
+}
+.zen-wiki__view-tabs [aria-pressed="true"],
+.zen-wiki__filter [aria-pressed="true"],
+.zen-wiki__page-actions [aria-pressed="true"] {
+  background: var(--wk-selected);
+  color: var(--wk-accent);
+}
+:is(.zen-wiki, .zen-wiki-dialog) .zen-wiki__primary {
+  background: var(--workspace-accent-fill);
+  border-color: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+}
+:is(.zen-wiki, .zen-wiki-dialog) .zen-wiki__primary:hover {
+  background: var(--workspace-accent-hover);
+  border-color: var(--workspace-accent-hover);
+}
+.zen-wiki__body {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.zen-wiki--nav-open .zen-wiki__body {
+  grid-template-columns: var(--wiki-sidebar-width) minmax(0, 1fr);
+}
+.workspace-page-sidebar__content.zen-wiki,
+.zen-wiki--sidebar-preview {
+  width: var(--wiki-sidebar-width);
+}
+.zen-wiki__sidebar {
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 13px 24px;
+  border-right: 1px solid var(--wk-border);
+  background: var(--workspace-sidebar-bg);
+}
+.zen-wiki__sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 7px 17px;
+}
+.zen-wiki__sidebar-head strong {
+  flex: 1;
+  font-size: 15px;
+}
+.zen-wiki__sidebar-head button,
+.zen-wiki__open-sidebar,
+.zen-wiki__history > div:first-child button,
+.zen-wiki__panel-head button {
+  border: 0;
+  background: transparent;
+  padding: 5px;
+}
+.zen-wiki__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--wk-border);
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin: 0 4px 15px;
+  color: var(--wk-muted);
+}
+.zen-wiki__search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--wk-text);
+  font: inherit;
+}
+.zen-wiki__sidebar-link,
+.zen-wiki__page-link {
+  width: 100%;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--wk-text);
+  font: inherit;
+  font-size: 13px;
+}
+.zen-wiki__nav-count {
+  margin-left: auto;
+  color: var(--wk-muted);
+  font-size: 11px;
+}
+.zen-wiki__sidebar-link:hover,
+.zen-wiki__page-link:hover {
+  background: var(--wk-hover);
+}
+.zen-wiki__sidebar-link[aria-current="page"],
+.zen-wiki__page-link.is-current {
+  background: var(--wk-selected);
+  color: var(--wk-text);
+}
+.zen-wiki__page-link {
+  padding: 6px 7px;
+  color: var(--wk-muted);
+  font-size: 12px;
+}
+.zen-wiki__page-link span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zen-wiki__sidebar-section {
+  padding: 22px 8px 8px;
+  color: var(--wk-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.zen-wiki__sidebar-section--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.zen-wiki__sidebar-section--action button {
+  border: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  color: var(--wk-muted);
+}
+.zen-wiki__sidebar-section--action button:hover {
+  color: var(--wk-accent);
+}
+.zen-wiki__collection-row {
+  display: flex;
+  align-items: center;
+  border-radius: 7px;
+}
+.zen-wiki__collection-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wk-muted);
+}
+.zen-wiki__collection-menu:hover,
+.zen-wiki__collection-menu[data-state="open"] {
+  background: var(--workspace-hover-bg);
+  color: var(--wk-text);
+}
+.zen-wiki-dialog .zen-wiki__delete-collection {
+  color: var(--workspace-native-danger);
+  border-color: currentColor;
+}
+.zen-wiki__collection-row.is-drop-target,
+.zen-wiki__unfiled-target.is-drop-target {
+  background: var(--workspace-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--wk-accent);
+}
+.zen-wiki__collection-toggle {
+  flex: 0 0 19px;
+  width: 19px;
+  border: 0;
+  background: transparent;
+  padding: 7px 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wk-muted);
+}
+.zen-wiki__collection-toggle--empty {
+  padding: 0;
+}
+.zen-wiki__collection-toggle svg {
+  transition: transform 150ms ease;
+}
+.zen-wiki__chevron-expanded {
+  transform: rotate(90deg);
+}
+.zen-wiki__collection {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  text-align: left;
+  padding: 8px 4px;
+  color: var(--wk-text);
+  font: inherit;
+  font-size: 12px;
+}
+.zen-wiki__collection span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zen-wiki__collection small {
+  color: var(--wk-muted);
+}
+.zen-wiki__tree-pages {
+  padding-left: 18px;
+}
+.zen-wiki__page-link[draggable="true"] {
+  cursor: grab;
+}
+.zen-wiki__page-link[draggable="true"]:active {
+  cursor: grabbing;
+}
+.zen-wiki__unfiled-target {
+  border-radius: 7px;
+  margin-top: 8px;
+  padding-bottom: 18px;
+}
+.zen-wiki__unfiled-group.is-dragging {
+  min-height: 74px;
+}
+.zen-wiki__collection:hover {
+  background: var(--wk-hover);
+}
+.zen-wiki__collection.is-current {
+  background: var(--wk-selected);
+}
+.zen-wiki__muted {
+  color: var(--wk-muted);
+  padding: 0 10px;
+}
+.zen-wiki__error {
+  color: var(--workspace-native-danger);
+  padding: 0 10px;
+}
+:is(.zen-wiki, .zen-wiki-dialog) .zen-wiki__retry {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--wk-accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.zen-wiki__main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  position: relative;
+  background: var(--wk-panel);
+}
+.zen-wiki__open-sidebar {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  z-index: 2;
+}
+/* Leave room for the open-navigation button. */
+@media (max-width: 899px) {
+  .zen-wiki:not(.zen-wiki--nav-open) :is(.zen-wiki__top, .zen-wiki__page-bar) {
+    padding-left: 56px;
+  }
+}
+.zen-wiki--sidebar-preview .zen-wiki__body {
+  display: flex;
+}
+.zen-wiki--sidebar-preview .zen-wiki__sidebar {
+  width: 100%;
+}
+.zen-wiki__sidebar-backdrop {
+  display: none;
+}
+.zen-wiki__overview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px var(--workspace-page-inset) 48px;
+}
+.zen-wiki__overview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.zen-wiki__overview h1 {
+  font-size: var(--workspace-text-page);
+  line-height: var(--workspace-leading-page);
+  letter-spacing: -0.035em;
+  margin: 0 0 4px;
+  font-weight: 650;
+}
+.zen-wiki__overview-heading p {
+  margin: 0;
+  color: var(--wk-muted);
+  font-size: var(--workspace-text-body);
+}
+.zen-wiki__overview-aside {
+  color: var(--wk-muted);
+  font-size: var(--workspace-text-caption);
+}
+.zen-wiki__library-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.zen-wiki__filter {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--wk-border);
+  border-radius: 8px;
+}
+.zen-wiki__filter button {
+  font-size: var(--workspace-text-caption);
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 10px;
+}
+.zen-wiki__library-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(280px, 40%);
+  min-height: var(--workspace-control-size);
+  border: 1px solid var(--wk-border);
+  border-radius: var(--workspace-radius-control);
+  padding: 4px 10px;
+  color: var(--wk-muted);
+}
+.zen-wiki__library-search:focus-within {
+  border-color: var(--wk-accent);
+}
+.zen-wiki__library-search input {
+  border: 0;
+  outline: 0;
+  min-width: 0;
+  width: 100%;
+  color: var(--wk-text);
+  background: transparent;
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.zen-wiki__collections {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.zen-wiki__collection-card {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  border: 1px solid var(--wk-border);
+  border-radius: var(--workspace-radius-panel);
+  background: var(--wk-panel);
+  text-align: left;
+  font: inherit;
+}
+.zen-wiki__collection-card:hover,
+.zen-wiki__collection-card.is-current {
+  border-color: var(--workspace-divider-strong);
+  background: var(--wk-hover);
+}
+.zen-wiki__card-icon {
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--workspace-accent-soft);
+  color: var(--wk-accent);
+}
+.zen-wiki__card-icon--1 {
+  background: var(--workspace-success-soft);
+  color: var(--workspace-native-success);
+}
+.zen-wiki__card-icon--2 {
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+}
+.zen-wiki__card-icon--3 {
+  background: var(--workspace-info-soft);
+  color: var(--workspace-native-info);
+}
+.zen-wiki__collection-card strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+.zen-wiki__collection-card > span:last-child {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  color: var(--wk-muted);
+  font-size: 11px;
+}
+.zen-wiki__list-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0 9px;
+  border-bottom: 1px solid var(--wk-border);
+  font-size: 13px;
+}
+.zen-wiki__list-head span {
+  color: var(--wk-muted);
+  font-size: 12px;
+}
+.zen-wiki__list-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--wk-border);
+  padding: 16px 5px;
+  background: transparent;
+  text-align: left;
+}
+.zen-wiki__list-row:hover {
+  background: var(--wk-hover);
+}
+.zen-wiki__list-row > svg:first-child {
+  color: var(--wk-muted);
+}
+.zen-wiki__list-row > span {
+  display: grid;
+  gap: 1px;
+  flex: 1;
+}
+.zen-wiki__list-row strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.zen-wiki__list-row small,
+.zen-wiki__list-row time {
+  color: var(--wk-muted);
+  font-size: 11px;
+}
+.zen-wiki__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+.zen-wiki__empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--wk-muted);
+}
+.zen-wiki__empty-state h2 {
+  color: var(--wk-text);
+  margin: 0;
+  font-size: 20px;
+}
+.zen-wiki__empty-state p {
+  margin: 0 0 12px;
+}
+.zen-wiki__empty-state button {
+  border: 1px solid var(--wk-accent);
+  border-radius: 8px;
+  padding: 8px 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.zen-wiki__page-bar {
+  flex: none;
+  min-height: 58px;
+  border-bottom: 1px solid var(--wk-border);
+  background: var(--wk-panel);
+  padding: 9px 25px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 9px;
+  color: var(--wk-muted);
+  font-size: 12px;
+}
+.zen-wiki__page-bar > button {
+  border: 0;
+  padding: 6px;
+  color: var(--wk-accent);
+  font-weight: 600;
+}
+.zen-wiki__breadcrumb-title {
+  min-width: 0;
+  flex: 0 1 auto;
+  color: var(--wk-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zen-wiki__page-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.zen-wiki__reader-grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  background: var(--wk-panel);
+}
+.zen-wiki__reader-grid:has(.zen-wiki__history, .zen-wiki__details) {
+  grid-template-columns: minmax(0, 1fr) 225px;
+}
+.zen-wiki__document-scroll {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  scroll-behavior: smooth;
+}
+.zen-wiki__document {
+  min-width: 0;
+  width: min(100%, var(--workspace-document-width));
+  padding: 32px var(--workspace-document-gutter) 72px;
+  margin: 0 auto;
+}
+.zen-wiki__document > .zen-wiki__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wk-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 650;
+  letter-spacing: 0;
+}
+.zen-wiki__eyebrow select {
+  max-width: 220px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+}
+.zen-wiki__document h1 {
+  width: 100%;
+  color: var(--wk-text);
+  margin: 19px 0 15px;
+  font-size: 24px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+}
+.zen-wiki__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--wk-muted);
+  font-size: var(--workspace-text-caption);
+  margin: 0 0 24px;
+}
+.zen-wiki__meta span + span::before {
+  content: "·";
+  margin-right: 8px;
+}
+.zen-wiki__meta select {
+  border: 1px solid var(--wk-border);
+  border-radius: 7px;
+  padding: 6px;
+  background: var(--wk-panel);
+  color: var(--wk-text);
+}
+.zen-wiki__revision-badge {
+  border: 1px solid var(--wk-border);
+  border-radius: 4px;
+  padding: 0 5px;
+  background: var(--wk-soft);
+  font-size: 10px;
+}
+.zen-wiki__prose {
+  font-size: var(--workspace-text-document);
+  line-height: var(--workspace-leading-document);
+}
+.zen-wiki__prose :is(h2, h3) {
+  margin-top: 29px;
+  line-height: 1.3;
+  font-size: 18px;
+  font-weight: 600;
+}
+.zen-wiki__prose a {
+  color: var(--wk-accent);
+  text-decoration: underline;
+}
+.zen-wiki__prose blockquote {
+  border-left: 3px solid var(--workspace-divider-strong);
+  padding-left: 16px;
+  color: var(--wk-muted);
+}
+.zen-wiki__prose pre {
+  overflow: auto;
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--wk-soft);
+}
+.zen-wiki__inline-link {
+  border: 0;
+  background: transparent;
+  color: var(--wk-accent);
+  border-radius: 0;
+  padding: 0;
+  display: inline;
+  align-items: center;
+  gap: 4px;
+  text-decoration: underline;
+  text-decoration-color: var(--workspace-divider-strong);
+  text-underline-offset: 3px;
+}
+.zen-wiki__inline-link svg {
+  display: inline;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+.zen-wiki__empty {
+  color: var(--wk-muted);
+}
+.zen-wiki__archived {
+  display: inline-block;
+  border-radius: 5px;
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+  padding: 4px 8px;
+}
+.zen-wiki__history,
+.zen-wiki__details {
+  min-height: 0;
+  overflow: auto;
+  background: var(--wk-panel);
+  border-left: 1px solid var(--wk-border);
+  padding: 27px 15px;
+}
+.zen-wiki__history > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.zen-wiki__panel-head,
+.zen-wiki__detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.zen-wiki__panel-head {
+  margin-bottom: 18px;
+}
+.zen-wiki__detail-heading {
+  margin-bottom: 10px;
+}
+.zen-wiki__detail-heading span {
+  color: var(--wk-muted);
+  font-size: 12px;
+}
+.zen-wiki__outline {
+  display: grid;
+  border-left: 1px solid var(--wk-border);
+  margin: 0 0 28px 3px;
+}
+.zen-wiki__outline button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 7px 10px;
+  color: var(--wk-muted);
+  font: inherit;
+}
+.zen-wiki__outline button:hover {
+  color: var(--wk-accent);
+  background: var(--wk-hover);
+}
+.zen-wiki__detail-section {
+  border-top: 1px solid var(--wk-border);
+  padding: 19px 0;
+}
+.zen-wiki__detail-actions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--wk-muted);
+  padding: 8px 3px;
+  text-align: left;
+  font: inherit;
+}
+.zen-wiki__detail-actions button:hover {
+  color: var(--wk-accent);
+}
+.zen-wiki__detail-link {
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 3px;
+  text-align: left;
+  font: inherit;
+}
+.zen-wiki__detail-link:hover {
+  color: var(--wk-accent);
+  background: var(--wk-hover);
+}
+.zen-wiki__detail-link span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zen-wiki__detail-link > svg:last-child {
+  color: var(--wk-muted);
+}
+.zen-wiki__revision {
+  border-top: 1px solid var(--wk-border);
+  padding: 15px 0;
+  display: grid;
+  gap: 3px;
+}
+.zen-wiki__revision small {
+  color: var(--wk-muted);
+}
+.zen-wiki__revision p {
+  margin: 4px 0;
+}
+.zen-wiki__revision button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  color: var(--wk-accent);
+  font-size: 12px;
+}
+.zen-wiki__revision-current {
+  color: var(--wk-muted);
+  font-size: 12px;
+}
+.zen-wiki__loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--wk-muted);
+}
+/* Above the shell header (z-index 70), like the other workspace dialogs. */
+.zen-wiki-dialog__overlay {
+  z-index: 220;
+  background: rgb(0 0 0 / 45%);
+}
+.zen-wiki-dialog {
+  z-index: 221;
+  display: flex;
+  width: min(440px, calc(100vw - 32px));
+  max-width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
+  gap: 16px;
+  overflow: auto;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-overlay, 14px);
+  padding: 22px;
+  background: var(--workspace-overlay-bg);
+  color: var(--wk-text);
+  box-shadow: var(--workspace-overlay-shadow);
+  font: var(--workspace-text-body) / var(--workspace-leading-body)
+    var(--workspace-font-body);
+}
+.zen-wiki-dialog--wide {
+  width: min(920px, calc(100vw - 32px));
+  max-width: min(920px, calc(100vw - 32px));
+}
+.zen-wiki-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.zen-wiki-dialog__title {
+  margin: 0;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+}
+.zen-wiki-dialog__close {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px;
+  background: transparent;
+}
+.zen-wiki-dialog__close:hover {
+  background: var(--wk-hover);
+}
+.zen-wiki-dialog__description {
+  margin: 0;
+  color: var(--wk-muted);
+}
+.zen-wiki-dialog__form {
+  display: grid;
+  gap: 16px;
+}
+.zen-wiki-dialog__form label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.zen-wiki-dialog__form :is(input, select) {
+  border: 1px solid var(--wk-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--workspace-input-bg);
+  color: var(--wk-text);
+  font: inherit;
+  font-weight: 400;
+}
+.zen-wiki-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.zen-wiki-dialog__choices {
+  display: grid;
+  gap: 2px;
+  min-height: 0;
+}
+.zen-wiki-dialog__choices p {
+  margin: 4px 0;
+}
+.zen-wiki__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--wk-border);
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: var(--wk-panel);
+  font: inherit;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.zen-wiki__button:hover:not(:disabled, .zen-wiki__primary) {
+  background: var(--wk-hover);
+}
+.zen-wiki__restore-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 0;
+}
+.zen-wiki__restore-panel {
+  min-width: 0;
+  border: 1px solid var(--wk-border);
+  border-radius: 9px;
+  overflow: hidden;
+}
+.zen-wiki__restore-label {
+  display: block;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--wk-border);
+  background: var(--wk-soft);
+  color: var(--wk-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.zen-wiki__restore-document {
+  max-height: min(50vh, 420px);
+  padding: 18px;
+  overflow: auto;
+}
+.zen-wiki__restore-document .zen-wiki__eyebrow {
+  color: var(--wk-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.zen-wiki__restore-document h3 {
+  margin: 9px 0 18px;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+.zen-wiki__restore-summary {
+  margin: 0 0 16px;
+  color: var(--wk-muted);
+  font-size: 13px;
+}
+.zen-wiki__restore-document .zen-wiki__prose {
+  font-size: 14px;
+}
+.zen-wiki__restore-stale {
+  margin: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+}
+.zen-wiki__restore-stale button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+@media (max-width: 700px) {
+  .zen-wiki__restore-comparison {
+    grid-template-columns: 1fr;
+  }
+  .zen-wiki__restore-document {
+    max-height: 26vh;
+  }
+}
+.zen-wiki__link-choice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 7px;
+  padding: 8px;
+  background: transparent;
+  text-align: left;
+}
+.zen-wiki__link-choice:hover {
+  background: var(--wk-hover);
+}
+@media (max-width: 900px) {
+  .zen-wiki {
+    --wiki-sidebar-width: 200px;
+  }
+  /* Panels stack under the document, so the whole grid scrolls. */
+  .zen-wiki__reader-grid:has(.zen-wiki__history, .zen-wiki__details) {
+    display: block;
+    overflow: auto;
+  }
+  .zen-wiki__reader-grid:has(.zen-wiki__history, .zen-wiki__details)
+    :is(.zen-wiki__document-scroll, .zen-wiki__history, .zen-wiki__details) {
+    overflow: visible;
+  }
+  .zen-wiki__collections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .zen-wiki__history,
+  .zen-wiki__details {
+    border-left: 0;
+    border-top: 1px solid var(--wk-border);
+  }
+}
+@media (max-width: 640px) {
+  .zen-wiki__top {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .zen-wiki__top-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 5px;
+  }
+  .zen-wiki__collections {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .zen-wiki__library-tools {
+    flex-wrap: wrap;
+  }
+  .zen-wiki__library-search {
+    width: 100%;
+  }
+  .zen-wiki__brand span {
+    display: none;
+  }
+  .zen-wiki__top-actions button {
+    padding: 7px;
+    font-size: 11px;
+  }
+  /* The navigation overlays the wiki area, which already sits below the
+     shell header and above the mobile bottom navigation. */
+  .zen-wiki--nav-open .zen-wiki__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .zen-wiki__sidebar {
+    position: absolute;
+    z-index: 20;
+    inset: 0 auto 0 0;
+    width: min(270px, 80%);
+    box-shadow: var(--workspace-overlay-shadow);
+  }
+  .zen-wiki__sidebar-backdrop {
+    display: block;
+    position: absolute;
+    z-index: 19;
+    inset: 0;
+    background: rgb(0 0 0 / 30%);
+  }
+  .zen-wiki__page-bar {
+    padding: 8px 12px;
+    gap: 6px 3px;
+  }
+  .zen-wiki:not(.zen-wiki--nav-open) .zen-wiki__page-bar {
+    padding-left: 52px;
+  }
+  /* Actions take their own row so Save stays on screen. */
+  .zen-wiki__page-actions {
+    width: 100%;
+    gap: 6px;
+  }
+  .zen-wiki__page-actions button {
+    padding: 7px;
+    font-size: 11px;
+  }
+  .zen-wiki__action-label {
+    display: none;
+  }
+  .zen-wiki__document {
+    padding: 24px var(--workspace-document-gutter) 48px;
+  }
+}
+
+.zen-wiki__draft-label {
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--wk-muted);
+  white-space: nowrap;
+}

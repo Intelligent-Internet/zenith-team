@@ -1,0 +1,67 @@
+.studio-generate-button {
+  display: inline-flex;
+  min-height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid
+    color-mix(in srgb, var(--workspace-accent-foreground) 12%, transparent);
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  box-shadow:
+    0 2px 5px rgb(24 32 42 / 12%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.studio-generate-button:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+  box-shadow: 0 3px 9px rgb(24 32 42 / 18%);
+}
+
+.studio-generate-button:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.studio-generate-button:disabled {
+  border-color: var(--workspace-divider);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  box-shadow: none;
+  cursor: default;
+}
+
+.studio-generate-button[aria-busy="true"] {
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-native-accent);
+}
+
+.studio-generate-button[aria-busy="true"] > svg {
+  animation: studio-generate-spin 1s linear infinite;
+}
+
+@keyframes studio-generate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-generate-button {
+    transition: none;
+  }
+  .studio-generate-button[aria-busy="true"] > svg {
+    animation: none;
+  }
+}

@@ -1,0 +1,654 @@
+# Company Wiki. Humans publish pages; Agents may only read them (search and read
+# routes proven by a Run token) and members see which revisions a Run read.
+# Agent write access and reviewed proposals are not implemented.
+paths:
+  collections:
+    get:
+      tags: [wiki]
+      operationId: listWikiCollections
+      summary: List Wiki collections
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }]
+      responses:
+        '200': { description: Collections, content: { application/json: { schema: { $ref: '#/schemas/WikiCollectionList' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    post:
+      tags: [wiki]
+      operationId: createWikiCollection
+      summary: Create Wiki collection
+      description: Requires wiki.publish; available to owners and admins.
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiCollectionCreate' } } } }
+      responses:
+        '201': { description: Created collection, content: { application/json: { schema: { $ref: '#/schemas/WikiCollection' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  collection:
+    patch:
+      tags: [wiki]
+      operationId: renameWikiCollection
+      summary: Rename Wiki collection
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/collectionId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiCollectionRename' } } } }
+      responses:
+        '200': { description: Updated collection, content: { application/json: { schema: { $ref: '#/schemas/WikiCollection' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    delete:
+      tags: [wiki]
+      operationId: deleteWikiCollection
+      summary: Delete Wiki collection
+      description: Requires wiki.publish. Moves active and archived pages to Unfiled without deleting content, history, favorites or links. Page revisions advance to reject stale edits.
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/collectionId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiRevisionRequest' } } } }
+      responses:
+        '204': { description: Collection deleted; pages preserved in Unfiled }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  pages:
+    get:
+      tags: [wiki]
+      operationId: listWikiPages
+      summary: Search or browse Wiki pages
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { name: search, in: query, description: "Word prefixes matched against the current title and body, split the way the index splits text (an email or host is one word, and a partly typed one matches). Every word must match; text without letters or digits is no filter.", schema: { type: string, maxLength: 200 } }
+        - { name: status, in: query, schema: { type: string, enum: [active, archived], default: active } }
+        - { name: collection_id, in: query, schema: { type: string, format: uuid } }
+        - { name: favorites_only, in: query, schema: { type: boolean, default: false } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: Matching pages, content: { application/json: { schema: { $ref: '#/schemas/WikiPageList' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    post:
+      tags: [wiki]
+      operationId: createWikiPage
+      summary: Create an unpublished Wiki block draft
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiPageCreate' } } } }
+      responses:
+        '201': { description: Unpublished page, content: { application/json: { schema: { $ref: '#/schemas/WikiPage' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  page:
+    get:
+      tags: [wiki]
+      operationId: getWikiPage
+      summary: Read a Wiki page
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      responses:
+        '200': { description: Current page, content: { application/json: { schema: { $ref: '#/schemas/WikiPage' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  document:
+    get:
+      tags: [wiki]
+      operationId: getWikiDocument
+      summary: Read the shared Wiki working draft
+      description: Requires wiki.publish. Draft editing never changes the published revision. Publishing fences both the current page revision and exact saved draft sequence.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+        - { name: after_seq, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: state_vector, in: query, schema: { type: string } }
+        - { name: projection, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Saved document state, content: { application/json: { schema: { $ref: '#/schemas/WikiDocument' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    post:
+      tags: [wiki]
+      operationId: syncWikiDocument
+      summary: Merge block edits into the shared Wiki draft
+      description: Requires wiki.publish. Draft editing never changes the published revision. Publishing fences both the current page revision and exact saved draft sequence.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiDocumentUpdate' } } } }
+      responses:
+        '200': { description: Saved document state, content: { application/json: { schema: { $ref: '#/schemas/WikiDocument' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  documentIds:
+    post:
+      tags: [wiki]
+      operationId: reserveWikiBlockIDs
+      summary: Reserve identities for new Wiki blocks
+      description: Requires wiki.publish. Draft editing never changes the published revision. Publishing fences both the current page revision and exact saved draft sequence.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiBlockIDsRequest' } } } }
+      responses:
+        '200': { description: Saved document state, content: { application/json: { schema: { $ref: '#/schemas/WikiBlockIDs' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  documentMetadata:
+    patch:
+      tags: [wiki]
+      operationId: updateWikiDraftMetadata
+      summary: Save metadata in the Wiki working draft
+      description: Requires wiki.publish. Draft editing never changes the published revision. Publishing fences both the current page revision and exact saved draft sequence.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiDraftMetadata' } } } }
+      responses:
+        '200': { description: Saved document state, content: { application/json: { schema: { $ref: '#/schemas/WikiDocument' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  publish:
+    post:
+      tags: [wiki]
+      operationId: publishWikiPage
+      summary: Publish the exact saved Wiki draft
+      description: Requires wiki.publish. Draft editing never changes the published revision. Publishing fences both the current page revision and exact saved draft sequence.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiPublishRequest' } } } }
+      responses:
+        '200': { description: Saved document state, content: { application/json: { schema: { $ref: '#/schemas/WikiPage' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  pageLinks:
+    get:
+      tags: [wiki]
+      operationId: getWikiPageLinks
+      summary: Read backlinks and outgoing links for a page
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      responses:
+        '200': { description: Current directed links, content: { application/json: { schema: { $ref: '#/schemas/WikiPageLinks' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  archive:
+    post:
+      tags: [wiki]
+      operationId: archiveWikiPage
+      summary: Archive a Wiki page
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiPageRevisionRequest' } } } }
+      responses: { '200': { description: Archived page, content: { application/json: { schema: { $ref: '#/schemas/WikiPage' } } } }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '409': { $ref: './_common.yaml#/responses/Conflict' }, '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }, '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }, '422': { $ref: './_common.yaml#/responses/ValidationFailed' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  restore:
+    post:
+      tags: [wiki]
+      operationId: restoreWikiPage
+      summary: Restore an archived Wiki page
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiPageRevisionRequest' } } } }
+      responses: { '200': { description: Restored page, content: { application/json: { schema: { $ref: '#/schemas/WikiPage' } } } }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '409': { $ref: './_common.yaml#/responses/Conflict' }, '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }, '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }, '422': { $ref: './_common.yaml#/responses/ValidationFailed' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  revisions:
+    get:
+      tags: [wiki]
+      operationId: listWikiRevisions
+      summary: Read the immutable history of a page
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }, { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }]
+      responses: { '200': { description: Revisions, content: { application/json: { schema: { $ref: '#/schemas/WikiRevisionList' } } } }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  restoreRevision:
+    post:
+      tags: [wiki]
+      operationId: restoreWikiRevision
+      summary: Restore a historical revision into the working draft
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiRestoreRevisionRequest' } } } }
+      responses: { '200': { description: Restored draft, content: { application/json: { schema: { $ref: '#/schemas/WikiDocument' } } } }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '409': { $ref: './_common.yaml#/responses/Conflict' }, '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }, '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }, '422': { $ref: './_common.yaml#/responses/ValidationFailed' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  favorite:
+    put:
+      tags: [wiki]
+      operationId: setWikiFavorite
+      summary: Set the caller's favorite state
+      description: Clearing works on any visible page; favoriting an archived page is `409 wiki_page_archived`.
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: '#/parameters/pageId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiFavoriteRequest' } } } }
+      responses: { '204': { description: Favorite state saved }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '409': { $ref: './_common.yaml#/responses/Conflict' }, '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }, '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }, '422': { $ref: './_common.yaml#/responses/ValidationFailed' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  graph:
+    get:
+      tags: [wiki]
+      operationId: getWikiGraph
+      summary: Read a bounded active-page graph
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }]
+      responses: { '200': { description: First 500 active pages and their current links, content: { application/json: { schema: { $ref: '#/schemas/WikiGraph' } } } }, '401': { $ref: './_common.yaml#/responses/Unauthorized' }, '403': { $ref: './_common.yaml#/responses/Forbidden' }, '404': { $ref: './_common.yaml#/responses/NotFound' }, '500': { $ref: './_common.yaml#/responses/InternalError' } }
+  pageAgentReads:
+    get:
+      tags: [wiki]
+      operationId: listWikiPageAgentReads
+      summary: List the Agent Runs that read a page
+      description: |
+        One entry per Run, newest first, carrying the revision of that Run's
+        latest read. Only Runs the caller may see appear (ADR 0017): a Task Run
+        to the readers of its Task chat, that is of its Project, and a direct
+        or Schedule Conversation's Runs only to the member who opened it.
+        `total` counts every visible Run. `taskId` names the Run's Task only
+        when the caller reads it, else it is null.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: '#/parameters/pageId' }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+      responses:
+        '200': { description: Runs that read the page, content: { application/json: { schema: { $ref: '#/schemas/WikiPageAgentReadList' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  runWikiReads:
+    get:
+      tags: [wiki]
+      operationId: listRunWikiReads
+      summary: List what a Run searched and read in the Wiki
+      description: |
+        The Run's evidence trail, oldest first, at most 200 rows. Visibility
+        follows Run history (ADR 0017): a Task Run reads for the readers of
+        its Task chat, that is of its Project; only the member who opened a
+        direct or Schedule Conversation sees its Runs. A Run that does not exist or is not visible is
+        `404 run_not_found`. Read rows carry the revision that was returned
+        and the page's live state, so a client can show "changed since" (the
+        current revision is newer) and "archived". Rejects Run-token requests
+        with `403 human_actor_required`.
+      parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: './_common.yaml#/parameters/runId' }]
+      responses:
+        '200': { description: Evidence trail, content: { application/json: { schema: { $ref: '#/schemas/RunWikiReadList' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  agentSearch:
+    get:
+      tags: [wiki]
+      operationId: searchWikiForRun
+      summary: Search the Company Wiki as an Agent's Run
+      description: |
+        Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+        Run of this Company, sent by the Run's authorizer. Searches
+        active pages only, ranked by relevance then recency; the words of `q`
+        are OR-ed as word prefixes. Records one `search` row on the Run's
+        evidence trail. A `403 wiki_agent_access_disabled` means the Agent's
+        `wiki` capability group is off. A bad, missing or mismatched proof is
+        `401 run_token_invalid`.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: './_common.yaml#/parameters/runId' }
+        - { $ref: '#/parameters/runToken' }
+        - { name: q, in: query, required: true, description: "Search text, trimmed, at most 200 characters.", schema: { type: string, minLength: 1, maxLength: 200 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
+      responses:
+        '200': { description: Ranked matches, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentSearchResult' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  agentPage:
+    get:
+      tags: [wiki]
+      operationId: readWikiPageForRun
+      summary: Read one active Wiki page as an Agent's Run
+      description: |
+        Read-only, with the same proof, capability and error rules as the
+        search route. Returns at most 24000 characters of the page's current
+        revision from `offset`; `nextOffset` continues a truncated read. An
+        archived page is `404 wiki_page_not_found`. Records one `read` row
+        pinning the exact revision returned. `content` is untrusted reference
+        data, and `notice` says so.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: './_common.yaml#/parameters/runId' }
+        - { $ref: '#/parameters/pageId' }
+        - { $ref: '#/parameters/runToken' }
+        - { name: offset, in: query, description: Characters to skip; at most the page's length., schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: A slice of the page, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentPage' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+parameters:
+  pageId: { name: pageId, in: path, required: true, schema: { type: string, format: uuid } }
+  collectionId: { name: collectionId, in: path, required: true, schema: { type: string, format: uuid } }
+  runToken: { name: X-Boardly-Run-Token, in: header, required: true, schema: { type: string, minLength: 1 } }
+
+schemas:
+  WikiCollection:
+    type: object
+    additionalProperties: false
+    required: [id, companyId, name, revision, createdAt, updatedAt]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      name: { type: string }
+      revision: { type: integer, format: int64 }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+  WikiCollectionList:
+    type: object
+    required: [items]
+    properties:
+      items: { type: array, items: { $ref: '#/schemas/WikiCollection' } }
+  WikiCollectionCreate:
+    type: object
+    required: [name]
+    properties: { name: { type: string, minLength: 1, maxLength: 120 } }
+  WikiCollectionRename:
+    type: object
+    required: [name, expectedRevision]
+    properties:
+      name: { type: string, minLength: 1, maxLength: 120 }
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+  WikiPageSummary:
+    type: object
+    required: [id, collectionId, slug, title, summary, status, revision, updatedAt, favorite, published]
+    properties:
+      published: { type: boolean, description: Whether this page has a Company-visible published revision. }
+      id: { type: string, format: uuid }
+      collectionId: { type: [string, 'null'], format: uuid }
+      slug: { type: string }
+      title: { type: string }
+      summary: { type: string }
+      status: { type: string, enum: [active, archived] }
+      revision: { type: integer, format: int64 }
+      updatedAt: { type: string, format: date-time }
+      favorite: { type: boolean }
+  WikiPageList:
+    type: object
+    required: [items, total]
+    properties:
+      items: { type: array, items: { $ref: '#/schemas/WikiPageSummary' } }
+      total: { type: integer, format: int64 }
+  WikiPage:
+    type: object
+    required: [id, companyId, collectionId, slug, title, body, summary, status, revision, contentRevision, currentRevisionId, createdByUserId, lastAuthorUserId, createdAt, updatedAt, revisionCreatedAt, archivedAt, favorite]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      collectionId: { type: [string, 'null'], format: uuid }
+      slug: { type: string }
+      title: { type: string }
+      body: { type: string, description: Markdown export of the published block snapshot. }
+      content: { $ref: './canvas.yaml#/schemas/CanvasBlock' }
+      summary: { type: string }
+      status: { type: string, enum: [active, archived] }
+      revision: { type: integer, format: int64 }
+      contentRevision: { type: integer, format: int64 }
+      currentRevisionId: { type: [string, 'null'], format: uuid }
+      createdByUserId: { type: string, format: uuid }
+      lastAuthorUserId: { type: string, format: uuid }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      revisionCreatedAt: { type: string, format: date-time }
+      archivedAt: { type: [string, 'null'], format: date-time }
+      favorite: { type: boolean }
+  WikiPageCreate:
+    type: object
+    required: [title]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 240 }
+      body: { type: string, maxLength: 262144 }
+      summary: { type: string, maxLength: 2048 }
+      collectionId: { type: [string, 'null'], format: uuid }
+  WikiDocument:
+    type: object
+    required: [pageId, sequence, structureSequence, schemaVersion, state, markdown, canEdit, title, summary, collectionId]
+    properties:
+      pageId: { type: string, format: uuid }
+      sequence: { type: integer, format: int64 }
+      structureSequence: { type: integer, format: int64 }
+      schemaVersion: { type: integer, const: 1 }
+      state: { type: [string, 'null'], format: byte }
+      stateVector: { type: string, format: byte }
+      content: { $ref: './canvas.yaml#/schemas/CanvasBlock' }
+      markdown: { type: string }
+      canEdit: { type: boolean }
+      title: { type: string }
+      summary: { type: string }
+      collectionId: { type: [string, 'null'], format: uuid }
+  WikiDocumentUpdate:
+    type: object
+    additionalProperties: false
+    required: [baseSequence, update, schemaVersion]
+    properties:
+      baseSequence: { type: integer, format: int64, minimum: 0 }
+      update: { type: string, format: byte }
+      schemaVersion: { type: integer, const: 1 }
+      stateVector: { type: string, format: byte }
+  WikiBlockIDsRequest:
+    type: object
+    required: [count]
+    properties:
+      count: { type: integer, minimum: 1, maximum: 256 }
+  WikiBlockIDs:
+    type: object
+    required: [ids]
+    properties:
+      ids: { type: array, items: { type: string, format: uuid } }
+  WikiDraftMetadata:
+    type: object
+    additionalProperties: false
+    required: [expectedSequence, title, summary, collectionId]
+    properties:
+      expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+      title: { type: string, minLength: 1, maxLength: 240 }
+      summary: { type: string, maxLength: 2048 }
+      collectionId: { type: [string, 'null'], format: uuid }
+  WikiPublishRequest:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision, expectedSequence]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+      expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+  WikiRevision:
+    type: object
+    required: [id, pageId, number, title, body, summary, collectionId, authorUserId, createdAt]
+    properties:
+      id: { type: string, format: uuid }
+      pageId: { type: string, format: uuid }
+      number: { type: integer, format: int64 }
+      title: { type: string }
+      body: { type: string, description: Markdown export of the published block snapshot. }
+      content: { $ref: './canvas.yaml#/schemas/CanvasBlock' }
+      summary: { type: string }
+      collectionId: { type: [string, 'null'], format: uuid }
+      authorUserId: { type: string, format: uuid }
+      createdAt: { type: string, format: date-time }
+  WikiRevisionList:
+    type: object
+    required: [items, total]
+    properties:
+      items: { type: array, items: { $ref: '#/schemas/WikiRevision' } }
+      total: { type: integer, format: int64 }
+  WikiPageRevisionRequest:
+    type: object
+    required: [expectedRevision]
+    properties: { expectedRevision: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 } }
+  WikiRevisionRequest:
+    type: object
+    required: [expectedRevision]
+    properties: { expectedRevision: { type: integer, format: int64, minimum: 1 } }
+  WikiRestoreRevisionRequest:
+    type: object
+    required: [expectedRevision, expectedSequence, revisionId]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+      expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+      revisionId: { type: string, format: uuid }
+  WikiFavoriteRequest:
+    type: object
+    required: [favorite]
+    properties: { favorite: { type: boolean } }
+  WikiLink:
+    type: object
+    required: [fromPageId, toPageId]
+    properties:
+      fromPageId: { type: string, format: uuid }
+      toPageId: { type: string, format: uuid }
+  WikiGraph:
+    type: object
+    required: [pages, links, truncated]
+    properties:
+      pages: { type: array, items: { $ref: '#/schemas/WikiPageSummary' } }
+      links: { type: array, items: { $ref: '#/schemas/WikiLink' } }
+      truncated: { type: boolean }
+  WikiLinkedPage:
+    type: object
+    required: [id, title]
+    properties:
+      id: { type: string, format: uuid }
+      title: { type: string }
+  WikiPageLinks:
+    type: object
+    description: |
+      Active pages linking to this page (`incoming`) and linked from it
+      (`outgoing`), each ordered by title and capped at 200 on its own; the
+      matching `…Truncated` flag reports that a direction has more.
+    required: [incoming, outgoing, incomingTruncated, outgoingTruncated]
+    properties:
+      incoming: { type: array, maxItems: 200, items: { $ref: '#/schemas/WikiLinkedPage' } }
+      outgoing: { type: array, maxItems: 200, items: { $ref: '#/schemas/WikiLinkedPage' } }
+      incomingTruncated: { type: boolean }
+      outgoingTruncated: { type: boolean }
+  WikiAgentSearchItem:
+    type: object
+    required: [pageId, title, summary, snippet, collectionName, revision, updatedAt]
+    properties:
+      pageId: { type: string, format: uuid }
+      title: { type: string }
+      summary: { type: string }
+      snippet: { type: string }
+      collectionName: { type: [string, 'null'] }
+      revision: { type: integer, format: int64, description: Content revision number of the page's current revision. }
+      updatedAt: { type: string, format: date-time }
+  WikiAgentSearchResult:
+    type: object
+    required: [items, total]
+    properties:
+      items: { type: array, maxItems: 10, items: { $ref: '#/schemas/WikiAgentSearchItem' } }
+      total: { type: integer, description: "Every active page that matched, not only those returned." }
+  WikiAgentPage:
+    type: object
+    required: [pageId, title, summary, collectionName, revision, revisionId, updatedAt, updatedByName, content, offset, returnedChars, totalChars, truncated, nextOffset, notice]
+    properties:
+      pageId: { type: string, format: uuid }
+      title: { type: string }
+      summary: { type: string }
+      collectionName: { type: [string, 'null'] }
+      revision: { type: integer, format: int64, description: Content revision number whose text `content` came from. }
+      expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
+      revisionId: { type: string, format: uuid }
+      updatedAt: { type: string, format: date-time }
+      updatedByName: { type: [string, 'null'] }
+      content: { type: string, description: Untrusted reference text; at most 24000 characters. }
+      offset: { type: integer }
+      returnedChars: { type: integer }
+      totalChars: { type: integer }
+      truncated: { type: boolean }
+      nextOffset: { type: [integer, 'null'] }
+      notice: { type: string, description: Fixed reminder that the content is untrusted data. }
+  RunWikiReadPage:
+    type: object
+    required: [status, currentRevision]
+    properties:
+      status: { type: string, enum: [active, archived] }
+      currentRevision: { type: integer, format: int64 }
+  RunWikiRead:
+    type: object
+    required: [id, kind, query, resultCount, pageId, revisionId, revisionNumber, title, truncated, createdAt, page]
+    properties:
+      id: { type: string, format: uuid }
+      kind: { type: string, enum: [search, read] }
+      query: { type: string, description: Redacted search text; empty for a read. }
+      resultCount: { type: [integer, 'null'], format: int32 }
+      pageId: { type: [string, 'null'], format: uuid }
+      revisionId: { type: [string, 'null'], format: uuid }
+      revisionNumber: { type: [integer, 'null'], format: int32 }
+      title: { type: string, description: Page title when it was read; empty for a search. }
+      truncated: { type: boolean }
+      createdAt: { type: string, format: date-time }
+      page: { oneOf: [{ $ref: '#/schemas/RunWikiReadPage' }, { type: 'null' }] }
+  RunWikiReadList:
+    type: object
+    required: [items]
+    properties:
+      items: { type: array, maxItems: 200, items: { $ref: '#/schemas/RunWikiRead' } }
+  WikiPageAgentRead:
+    type: object
+    required: [runId, taskId, agentId, agentName, revisionNumber, lastReadAt]
+    properties:
+      runId: { type: string, format: uuid }
+      taskId: { type: [string, 'null'], format: uuid }
+      agentId: { type: string, format: uuid }
+      agentName: { type: string }
+      revisionNumber: { type: integer, format: int32 }
+      lastReadAt: { type: string, format: date-time }
+  WikiPageAgentReadList:
+    type: object
+    required: [items, total]
+    properties:
+      items: { type: array, maxItems: 50, items: { $ref: '#/schemas/WikiPageAgentRead' } }
+      total: { type: integer }

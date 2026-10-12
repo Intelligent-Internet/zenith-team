@@ -1,0 +1,54 @@
+---
+title: Attachments
+description: How files are staged for message input, referenced on a send, and cleaned up when nothing uses them.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An attachment is an uploaded file staged for [message](/conversations#messages-and-the-transcript) input. Zenith Team's database keeps only the record — filename, content type, size, status. The bytes live in object storage, never in the database, and downloads go through Zenith Team's own route, so storage keys and provider URLs never reach a client.
+
+## The staging flow
+
+Uploading is separate from sending. An upload creates a `pending` record and streams the bytes to object storage; completing it verifies the stored bytes against the declared size and marks the record `ready`. Only a `ready` attachment can be referenced by a message — referencing one still `pending` is refused. An upload holds a one-hour lease: a `pending` record whose lease expires is cleaned up, and the upload starts over.
+
+## Status lifecycle
+
+| Status | Meaning |
+|---|---|
+| `pending` | The record exists; the stored bytes are not yet verified |
+| `ready` | Verified, and referenceable by a message |
+| `deleting` | Cleanup in progress; the object is being removed |
+| `deleted` | Terminal — the record remains, the bytes are gone |
+
+Only `pending` and `ready` ever appear on the API surface. A client learns an attachment is gone from the `attachment.deleted` event, never from a status that changed to a third value.
+
+## Attaching to a message
+
+A send references staged attachments by id, in order, and reads return them nested inside the message that carries them. Who can open a file follows two rules. A file that belongs to a project (one of its documents or its logo) opens only for the people who can see that project, wherever it was shared: in a channel, someone who cannot see the project sees the message without the file. Any other file follows its message: on a task conversation it opens for the people who can see the task's project, on a direct chat only for the chat's creator, and a staged attachment not yet on any message only for its uploader. A file taken out of every project is a plain chat file again, so the whole chat can then open it. See [What owners and admins can see](/project-access).
+
+## Attachments on queued sends
+
+A message that queues behind an active run keeps its files with it. Each attachment is reserved by the queue item, and a reserved attachment is protected from cleanup until the prompt promotes or is removed. At promotion the reservation transfers to the new message atomically; removing the queued prompt releases it. An attachment holds at most one active reservation, so two queued prompts can never claim the same file.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| **File size** | Up to 100 MiB |
+| **Attachments per message** | Up to 20 |
+| **Filename** | Up to 255 characters, no path separators |
+| **Content type** | A bare `type/subtype` MIME type — there is no type allowlist |
+
+## Deletion and cleanup
+
+Zenith Team cleans up attachments on its own: a `pending` upload whose lease expired, and a `ready` attachment that — after a 24-hour grace window (`ATTACHMENT_ABANDONED_READY_GRACE_SECONDS`) — is attached to no message and reserved by no queued prompt. Cleanup removes the object from storage and moves the record to its terminal `deleted` status. There is no user-facing delete: removing a file from the composer only drops the draft selection, and the public API exposes only initiate, complete and download (see [Conversations](/conversations)).
+
+<Callout type="warning">
+Cleanup is irreversible. Once an attachment is cleaned up, the bytes are removed from object storage and `deleted` is terminal — there is no undelete, only a fresh upload.
+</Callout>
+
+## Next steps
+
+- **[Conversations](/conversations)** — the message stream attachments ride on.
+- **[How Zenith Team works](/how-zenith-team-works)** — what Zenith Team stores and what stays on your computer.
+- **[Runs](/runs)** — the turn a message and its attachments are handed to.

@@ -1,0 +1,366 @@
+.project-task-detail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.project-task-detail:focus {
+  outline: none;
+}
+.project-task-detail-header {
+  flex: none;
+  padding: 16px 24px 8px;
+}
+.project-task-detail-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+.project-task-detail-topline > div {
+  display: flex;
+  gap: 4px;
+}
+.project-task-detail-topline button {
+  display: grid;
+  width: var(--workspace-control-size);
+  height: var(--workspace-control-size);
+  place-items: center;
+  border-radius: var(--workspace-radius-control);
+}
+.project-task-detail button:hover {
+  background-color: var(--workspace-hover-bg);
+}
+.project-task-detail button:focus-visible {
+  outline: none;
+  background-color: var(--workspace-selected-bg);
+}
+.project-task-detail-header h2 {
+  margin: 8px 0 14px;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.project-task-detail-metadata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+.project-task-detail-metadata .task-outside-project-badge {
+  margin-left: 0;
+}
+.project-task-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px;
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-control-bg);
+}
+.project-task-detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+  scrollbar-width: thin;
+}
+.project-task-detail .work-next-up-insight {
+  border: 0;
+  gap: 14px;
+  padding: 0;
+}
+.project-task-detail .work-next-up-insight__reason {
+  background: var(--workspace-control-bg);
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-panel);
+}
+.project-task-detail .work-next-up-insight__reason h3 {
+  font-size: var(--workspace-text-label);
+  font-weight: 500;
+}
+.project-task-detail .work-next-up-insight__section > h3 > svg {
+  display: none;
+}
+.project-task-detail .work-next-up-insight__task-title {
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-body);
+}
+.project-task-detail .work-next-up-insight__task {
+  padding: 10px;
+}
+.project-task-detail-tabs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 20px;
+  border-bottom: 1px solid var(--workspace-divider);
+  margin: 6px 0 18px;
+}
+.project-task-detail-tabs button {
+  min-height: 40px;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  white-space: nowrap;
+}
+.project-task-detail-tabs button[aria-selected="true"] {
+  color: var(--workspace-native-text);
+  border-bottom-color: var(--workspace-accent-fill);
+  font-weight: 600;
+}
+.project-task-detail-content {
+  display: grid;
+  gap: 24px;
+}
+.project-task-detail-content h3,
+.project-task-prerequisites h3 {
+  margin: 0 0 8px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+}
+.project-task-detail .task-description {
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  line-height: 1.6;
+}
+.project-task-brief-body,
+.project-task-brief-body > div {
+  line-height: 1.6;
+}
+.project-task-brief-body.is-collapsed {
+  max-height: 9.6em;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+.project-task-detail .project-task-brief-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  margin-top: 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+.project-task-brief-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.project-task-detail .task-properties h3 {
+  margin: 0 0 8px;
+}
+.project-task-detail .task-properties dl {
+  padding: 0;
+  border-bottom: 0;
+}
+.project-task-detail .task-property {
+  min-height: 36px;
+  grid-template-columns: 120px minmax(0, 1fr);
+  border-bottom: 0;
+  font-size: var(--workspace-text-caption);
+}
+.project-task-detail .task-property dd {
+  min-width: 0;
+}
+/* A shared icon column keeps names, priority and dates on the same text axis. */
+.project-task-detail .task-assignment-field,
+.project-task-detail .task-property-date-trigger,
+.project-task-detail .task-property dd:has(> .task-priority-icon),
+.project-task-detail .task-properties .project-task-assignee__member {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+.project-task-detail .task-assignment-field > :first-child,
+.project-task-detail .task-property-date-trigger > svg,
+.project-task-detail .task-property dd > .task-priority-icon,
+.project-task-detail
+  .task-properties
+  .project-task-assignee__member
+  > :first-child {
+  justify-self: center;
+}
+.project-task-detail .task-property-more {
+  margin-top: 8px;
+}
+.project-task-detail .task-property-more > summary {
+  padding-inline: 0;
+}
+.project-task-detail .task-property-input {
+  min-width: 0;
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+}
+.project-task-detail .task-property-input:enabled:hover {
+  background: var(--workspace-hover-bg);
+}
+.project-task-detail .task-property-input:focus {
+  outline: none;
+  border-color: var(--workspace-divider-strong);
+  background: var(--workspace-input-bg);
+}
+.project-task-detail .task-assignment-trigger,
+.project-task-detail .task-property-date-trigger {
+  border: 0;
+  padding-inline: 0;
+}
+.project-task-detail .task-property-date-trigger {
+  width: 100%;
+  min-width: 0;
+  padding-block: 5px;
+}
+.project-task-detail .task-assignment-trigger:focus-visible,
+.project-task-detail .task-property-date-trigger:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+.project-task-files {
+  border-top: 1px solid var(--workspace-divider);
+  padding-top: 12px;
+}
+.project-task-files summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  list-style: none;
+  border-radius: var(--workspace-radius-control);
+}
+.project-task-files summary::-webkit-details-marker {
+  display: none;
+}
+.project-task-files summary > svg:last-child {
+  margin-left: auto;
+}
+.project-task-files[open] summary > svg:last-child {
+  transform: rotate(180deg);
+}
+.project-task-files h3 {
+  margin-top: 16px;
+}
+.project-task-detail .task-detail-file {
+  min-width: 0;
+}
+.project-task-detail .task-detail-activity h2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+  font-size: var(--workspace-text-body);
+}
+.project-task-detail .task-detail-activity h2 > span {
+  width: 100%;
+  font-size: var(--workspace-text-caption);
+  font-weight: 400;
+  color: var(--workspace-native-text-muted);
+}
+.project-task-detail .task-detail-activity ol {
+  padding: 0;
+}
+.project-task-waiting,
+.project-task-detail-actions {
+  flex: none;
+  border-top: 1px solid var(--workspace-divider);
+  padding: 12px 16px;
+}
+.project-task-waiting {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.project-task-waiting > span {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 130px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.project-task-waiting svg {
+  flex-shrink: 0;
+}
+.project-task-detail .project-task-detail-actions > footer {
+  height: auto;
+  padding: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.project-task-detail .project-task-detail-actions button {
+  border-radius: var(--workspace-radius-control);
+  min-height: 32px;
+  height: auto;
+  padding: 8px 12px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  box-shadow: none;
+}
+.project-task-detail
+  .project-task-detail-actions
+  .workspace-task-primary-action {
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+}
+.project-task-detail
+  .project-task-detail-actions
+  button:not(.workspace-task-primary-action) {
+  background: var(--workspace-control-bg);
+  border: 1px solid var(--workspace-divider);
+  color: var(--workspace-native-text);
+}
+.project-related-task-key {
+  font-size: var(--workspace-text-micro);
+  color: var(--workspace-native-text-muted);
+}
+.project-task-detail .work-next-up-insight__status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.project-task-detail
+  .work-next-up-insight__status
+  .project-task-assignee__member {
+  gap: 5px;
+}
+.project-task-detail
+  .work-next-up-insight__status
+  .project-task-assignee
+  .project-person-avatar {
+  width: 20px;
+  height: 20px;
+}
+
+/* What waits on the viewer, and the one button that answers it: a title
+   and the button on one row, the button below on a narrow panel. */
+.project-task-response {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--workspace-approval-soft);
+}

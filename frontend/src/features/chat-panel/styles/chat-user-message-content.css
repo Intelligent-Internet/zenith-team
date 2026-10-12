@@ -1,0 +1,28 @@
+.workspace-user-message-content[data-collapsed] {
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 75%, transparent);
+}
+
+.workspace-user-message-content__toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  padding: 4px 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workspace-user-message-content__toggle:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.workspace-user-message-content__toggle:focus-visible {
+  outline: none;
+  border-color: currentColor;
+  background: var(--workspace-hover-bg);
+}

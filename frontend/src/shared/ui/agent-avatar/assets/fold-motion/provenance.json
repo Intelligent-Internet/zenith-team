@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "approvedOn": "2026-10-01",
+  "imageModel": "openai/gpt-image-2.5/sunburst/edit",
+  "motionModel": "fal-ai/kling-video/v3/pro/image-to-video",
+  "matteModel": "fal-ai/ben/v2/video",
+  "motionParameters": {
+    "durationSeconds": 5,
+    "generateAudio": false,
+    "cfgScale": 0.5,
+    "startAndEndImage": "same approved pose"
+  },
+  "renderContract": {
+    "columns": 10,
+    "rows": 10,
+    "frameCount": 100,
+    "framesPerSecond": 20,
+    "frameSizes": [96, 192],
+    "posterSize": 384,
+    "format": "webp",
+    "alpha": true
+  },
+  "states": [
+    {
+      "state": "idle",
+      "approvedImageSha256": "46fc57cc85ce387b37eb042e1c6059ede0ed48b4ce1dcbc65c484f2935c393e2",
+      "imageRequestId": "01a0f62e-7e51-7460-b3ad-e5bc2ba8a0b4",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: NEUTRAL / IDLE. Faithfully recreate the supplied reference at higher resolution: relaxed forward gaze, gentle little smile, body upright. No visible arms are needed. This is the identity anchor for the set; stay especially faithful to the original face, fold and blue material.",
+      "motionRequestId": "01a0f634-dfa5-73f3-af85-c189be01fbd4",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. Five-second seamless animation cycle: start and end at the exact supplied pose and framing, gently settle in the final half-second. Keep its armless silhouette. The character breathes gently, tilts its head curiously a few degrees, its pupils look briefly left then return to the viewer, with one soft natural blink. Its little smile remains closed. No arms appear.",
+      "matteRequestId": "01a0f637-0469-7b52-9fb1-730bb7ad52cf",
+      "assets": [
+        {
+          "file": "idle-poster.webp",
+          "bytes": 9012,
+          "sha256": "708d6113d75166bcab9917b0dc88a539b4969681514173848d2993a3a11113bc"
+        },
+        {
+          "file": "idle-motion.webp",
+          "bytes": 315840,
+          "sha256": "3238d491a6297ffd30852d0bb90a5013856d4413abd16bb299ab57b0ba50fee6"
+        },
+        {
+          "file": "idle-motion-small.webp",
+          "bytes": 133652,
+          "sha256": "87c80224ef4af36b9e2799fdbaaedb300723b711310b378a7a1da648e8c7f1dc"
+        }
+      ]
+    },
+    {
+      "state": "thinking",
+      "approvedImageSha256": "89a12ce71ca644982e62628dcc5afbe22bd5aade0669664ccb3b168d81bee1e8",
+      "imageRequestId": "01a0f62e-83ce-7703-b6b4-47bfa3e507e5",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: THINKING. Tilt the whole rounded-square head slightly upward and a little to one side, pupils glance upward as if considering an idea. ONE short arm is naturally bent from the lower side of the body, with the elbow tucked close and the small hand resting directly under the chin/bottom of the mouth area, supporting it. Thumb beneath the chin, index finger softly resting alongside it, remaining fingers gently curled. This should read as a human-like contemplative chin-rest gesture, not a hand over the mouth or a disembodied hand stuck on the cheek. The other arm rests unobtrusively or is hidden. Small thoughtful closed mouth, curious rather than worried.",
+      "motionRequestId": "01a0f641-e7f6-7d40-8063-842e58cdb7b8",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. A clear, lively five-second THINKING performance with actual articulated movement. The hand stays by the chin, its index finger visibly taps the chin TWICE. From 0.5 to 2.5 seconds the head/body tilts eight degrees toward the raised hand, the pupils scan from upper-left to upper-right, and the wrist and elbow naturally adjust to maintain contact with the chin. A brief curious pause, then one clear little upward nod with a soft bounce and a natural quick blink. The body moves a few percent of the frame, enough to be readable as a tiny avatar. The hand is clearly active, never frozen or detached. Ease gently back to the EXACT first pose in the final half-second. Do not merely blink a still picture; make it feel like a living, curious little person thinking.",
+      "matteRequestId": "01a0f645-d9f6-73f3-8cdd-8375291fa925",
+      "assets": [
+        {
+          "file": "thinking-poster.webp",
+          "bytes": 9668,
+          "sha256": "11504cc05dda3afac02845b85d0b4e29b0e9d2bdf14764aa405d96cc598ed33b"
+        },
+        {
+          "file": "thinking-motion.webp",
+          "bytes": 313174,
+          "sha256": "65f6554e3b688c4f5b60d361d9edf1acb191e71c8fa235bb5663066a2ecab51c"
+        },
+        {
+          "file": "thinking-motion-small.webp",
+          "bytes": 133158,
+          "sha256": "810e89b521046c0d7592bf149657aaa89f49feffb7f66fff983d8a9bacb33c8b"
+        }
+      ]
+    },
+    {
+      "state": "working",
+      "approvedImageSha256": "731d3e307e538f7f0b29280a91ce46e2bf253a25e587ece364ffae0f2229ef47",
+      "imageRequestId": "01a0f62e-8893-7b10-ad37-f308136d9c32",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: WORKING. A small forward lean and focused, engaged eyes looking slightly downward. Two short connected arms bend naturally toward the lower front of the body, small hands in a purposeful delicate working/typing pose with relaxed curved fingers, without any keyboard or object. Clear wrist and elbow continuity, shoulders connected to the side edges, hands in front of the lower body, not at the corners of the eyes. A tiny determined smile. Energetic concentration rather than another chin-rest pose.",
+      "motionRequestId": "01a0f641-f154-7323-9a36-29f611f3d369",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. A lively five-second WORKING performance with very clearly moving arms and hands. Both forearms move alternately up and down about four percent of the character height as its little fingers type rapidly in mid-air. The left hand lifts as the right taps down, then they switch, in a playful four-beat rhythm. Elbows and shoulders are naturally connected and flex smoothly. Its head nods visibly in time with the typing, leaning forward then slightly to the side, while its pupils follow the hands. A brief satisfied glance up at the viewer and one blink around the middle, then resume the typing burst and smoothly return to the original pose. Enough motion to read at tiny avatar size, not tiny invisible finger twitches. No keyboard, desk or objects. Preserve exact hand anatomy and original mascot.",
+      "matteRequestId": "01a0f645-dcf0-7ce2-8c89-d3d603a79a2d",
+      "assets": [
+        {
+          "file": "working-poster.webp",
+          "bytes": 9488,
+          "sha256": "3db1aa91d2f42acc14763344d498d2db8bf7c19d61f7c879cf58e3ec0b22325d"
+        },
+        {
+          "file": "working-motion.webp",
+          "bytes": 349286,
+          "sha256": "01587306c0d02fcd26d4238986bb2452fe46d90ed9b1f824acec1d1f9740b6b4"
+        },
+        {
+          "file": "working-motion-small.webp",
+          "bytes": 148204,
+          "sha256": "7638dbef134a06912d5ce8ee223b83d6e63083203024bae18b6dd9b75b8633ea"
+        }
+      ]
+    },
+    {
+      "state": "needs-input",
+      "approvedImageSha256": "5f9c71a97cfe27e786d02489936bd947f6f1a9a2bdee9378fa09494f9a4d0753",
+      "imageRequestId": "01a0f62e-8dbf-7672-9134-598d734d5a16",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: WAITING FOR YOUR INPUT. Raise ONE small open hand beside the body in a friendly modest wave, palm toward viewer, rounded fingers naturally separated. Keep the upper arm short and the elbow visibly bent, shoulder connected to the side of the character. The hand stays near head height, not on top of the head. Slight curious head tilt, eyes looking at the viewer, tiny inquisitive smile. The other arm is relaxed or hidden. It should feel like politely saying hello to get your attention.",
+      "motionRequestId": "01a0f634-fe6f-7103-a09b-dc27704f7aa7",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. Five-second seamless animation cycle: start and end at the exact supplied pose and framing, gently settle in the final half-second. The raised open hand gives two friendly little waves at the wrist, with a soft elbow follow-through. Its head tilts invitingly and its eyes blink once while meeting the viewer. The other arm stays tucked. Hold briefly, then settle back into the exact original raised-hand pose. A polite cute greeting, not frantic waving.",
+      "matteRequestId": "01a0f637-0a88-7111-b948-470618a223a1",
+      "assets": [
+        {
+          "file": "needs-input-poster.webp",
+          "bytes": 10680,
+          "sha256": "0be3d4825fe35a7641d6f6355a4c73b089c26605d10d1c7e1fd1a04e3171e587"
+        },
+        {
+          "file": "needs-input-motion.webp",
+          "bytes": 388346,
+          "sha256": "4bc19a5ebdf8cf3ed12ee8d8533e551e9ccbd1d7fe2a6bfab87773fbe38f4902"
+        },
+        {
+          "file": "needs-input-motion-small.webp",
+          "bytes": 164064,
+          "sha256": "0f411bdc83bef36df9395602b8bbcaa69e01da597b0b65c8f1c255842ce4bb81"
+        }
+      ]
+    },
+    {
+      "state": "done",
+      "approvedImageSha256": "68e0125286eccc2edb32818dd22bd1e6821422c05973cc0f941d6d89e86f5398",
+      "imageRequestId": "01a0f62e-92af-7a92-baf9-3a6c2d25709d",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: SUCCESS / DONE. A restrained cheerful little celebration: two short arms lifted beside the body with softly bent elbows and open little hands, palms comfortably forward. Eyes close into happy curved crescent shapes that fit the original ivory eye design, warm smile, a very slight joyful upward body tilt. No enormous mouth, no confetti, stars or props. Keep the exact original rounded square and folded corner.",
+      "motionRequestId": "01a0f635-08a7-7cc3-8f11-f1c81b351b44",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. Five-second seamless animation cycle: start and end at the exact supplied pose and framing, gently settle in the final half-second. With its happy closed crescent eyes, the character makes one joyful little upward hop in place, compressing slightly before lifting and softly settling. Both raised hands bounce with the body, with small wrist wiggles and delayed arm follow-through. The folded corner gently follows the movement. Keep its original tiny smile and rounded square body. Return exactly to the original happy pose; no feet or legs appear.",
+      "matteRequestId": "01a0f637-0d86-7aa1-86d2-ecf128573875",
+      "assets": [
+        {
+          "file": "done-poster.webp",
+          "bytes": 11314,
+          "sha256": "ae817ea0e4831bae44e9d458056f9494bff2c567f9476c4dda51779d5ae49098"
+        },
+        {
+          "file": "done-motion.webp",
+          "bytes": 470270,
+          "sha256": "9aca7050341c14fa4ec5c3906c0c53b2880790ef74d168205a01f82710f3fecc"
+        },
+        {
+          "file": "done-motion-small.webp",
+          "bytes": 205108,
+          "sha256": "e9463b43d3f1917121c1f33023333b3b0264ad7b50be21a33d8bcfa58752847b"
+        }
+      ]
+    },
+    {
+      "state": "error",
+      "approvedImageSha256": "098f2fc11f886194dd69d3867d40ca252136e11c06ff2012fc3f6fea5b0a2c14",
+      "imageRequestId": "01a0f62e-97f1-7711-90b5-6926e2ed7347",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: A SMALL ERROR / NEEDS HELP. One naturally bent short arm brings a small hand to the temple/forehead beside the folded corner, fingertips touching gently in a mild puzzled thinking gesture. Keep eyes visible and anatomically believable connected arm geometry. Slightly concerned eyebrows, a small uncertain mouth, eyes still kind and approachable. Do not make it angry, crying, panicked or deeply sad. The other arm is relaxed or hidden. No red symbols or warning icons.",
+      "motionRequestId": "01a0f635-13d3-73f2-9255-ef164a6b941e",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. Five-second seamless animation cycle: start and end at the exact supplied pose and framing, gently settle in the final half-second. The little hand gently rubs the temple twice in a puzzled gesture, with connected natural elbow and wrist motion. Its worried eyes glance to the side then return, one slow blink, and the head gives a very slight hesitant tilt. Friendly and mildly confused, never panicked, crying or angry. End in the original pose, hand still beside the fold.",
+      "matteRequestId": "01a0f639-f739-78d3-a6f9-f4831d21d07e",
+      "assets": [
+        {
+          "file": "error-poster.webp",
+          "bytes": 9466,
+          "sha256": "77f84cf816969c12989513a39eab2313da5de9113b941c41f2817ba0d2695176"
+        },
+        {
+          "file": "error-motion.webp",
+          "bytes": 332248,
+          "sha256": "ae200ab2522a13667afc8bc84551ecf7738155c798ad730818b5ce28990649a1"
+        },
+        {
+          "file": "error-motion-small.webp",
+          "bytes": 141704,
+          "sha256": "819d0244ad8d6a8863066bb4fd1fc663ef0fec4fb9a01db2b6d132573a0bab21"
+        }
+      ]
+    },
+    {
+      "state": "sleeping",
+      "approvedImageSha256": "f492a14927d8e34b6ed193d25aad1638981902ecdf5767294a0af8930e3dc87d",
+      "imageRequestId": "01a0f62e-9cfb-7423-8c57-45968c91bf8d",
+      "imagePrompt": "Use case: identity-preserving character pose exploration. This is one finished still-image concept for human approval, NOT an animation atlas, rig, UI mockup or implementation.\nUse the supplied blue Fold character as the exact identity reference. Preserve its softly rounded pillow-square body, distinctive thick folded upper-right corner, subtle three-quarter frontal view, periwinkle-blue hue, soft matte clay surface, big warm ivory oval eyes with glossy dark pupils and tiny friendly mouth. Keep the same body proportions and facial character. Do not redesign it as a human, robot, animal, or a different mascot.\nRender the entire character in one coherent, beautifully sculpted 3D pose with physically believable soft lighting from upper-left. If the gesture needs arms, give it SHORT, softly rounded blue toy arms that grow naturally from the sides of its body, with an elbow bend, a small wrist and a clearly readable little palm, rounded fingers and thumb. Hands must be in the same blue clay material and proportionate to this small mascot. The geometry, perspective, contact shadow and overlap must all belong to one unified model. Avoid floating hands, pasted-on limbs, detached joints, skeletal fingers, muscular human arms, veins, skin, gloves, claws, long noodles, extra fingers or swollen blob-like hands. Keep the silhouette simple and charming at avatar size.\nComposition: one character centered on a plain very pale cool gray background matching the reference, square 1024x1024 canvas, character body about 62 percent of canvas height with generous room for hands on both sides. Preserve the reference's camera angle and approximate eye placement, except the expression and head tilt required for this state. No neck, torso extension, legs, feet, desk or ground plane; the rounded square itself is the whole character. No props, text, labels, symbols, emoji, panels, borders, watermark or additional characters.\nThe state below is the ONLY intended change to identity. Make the pose natural, restrained, cute, and immediately understandable.\n\nSTATE: SLEEPING / OFFLINE. Both eyes peacefully closed as soft relaxed curves, tiny calm mouth, the square head tilts just slightly to one side as if dozing. Arms stay tucked away or rest unobtrusively, keeping the original clean silhouette. No Z letters, moon, pillow, bed, snoring marks, drool, extra accessories or props. A quiet cute resting expression on the same original character.",
+      "motionRequestId": "01a0f635-1e1b-7af2-82f0-4f65f3d588c8",
+      "motionPrompt": "Animate this exact approved blue clay Fold mascot as one coherent 3D character. Preserve the original shape, periwinkle blue color, matte material, ivory eyes, tiny mouth, folded upper-right corner, hand anatomy and proportions. Fixed camera, same framing, same scale, single uninterrupted shot. Keep the plain pale gray background completely still and uniform. No camera motion, zoom, cuts, talking, new objects, text, symbols, extra limbs, feet, accessories, face redesign or changing colors. The rounded square itself is the whole body. Movement is expressive and clearly visible, with soft natural acceleration, anticipation and follow-through, never rubbery or distorted. Five-second seamless animation cycle: start and end at the exact supplied pose and framing, gently settle in the final half-second. Eyes remain peacefully closed. The entire soft body slowly rises and expands a little with an inhale, then sinks and relaxes with an exhale, completing one slow breathing cycle. The tucked hands follow the belly subtly. A tiny sleepy head droop then return to the original resting tilt. No waking, no snoring letters or props.",
+      "matteRequestId": "01a0f639-fa2a-7823-b5cb-0a0d89725c8a",
+      "assets": [
+        {
+          "file": "sleeping-poster.webp",
+          "bytes": 9218,
+          "sha256": "e86fb9c10906cefe0d37948b46c25dca7ed6f008288719d815f250eaa944759d"
+        },
+        {
+          "file": "sleeping-motion.webp",
+          "bytes": 306620,
+          "sha256": "1fb12955aae23b417fccac072e751e32148fa58134dad311d7eb5ff2e9378962"
+        },
+        {
+          "file": "sleeping-motion-small.webp",
+          "bytes": 132640,
+          "sha256": "e59a23a846a9b09f9429cc01d765e63353161bed58642ef0e1f017b775375e44"
+        }
+      ]
+    }
+  ]
+}

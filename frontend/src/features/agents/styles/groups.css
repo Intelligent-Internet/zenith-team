@@ -1,0 +1,452 @@
+/* The Group dialog and the change preview (Access DESIGN 6). The dialogs
+   are the Project access dialogs (project-access.css); these rules only
+   add what Groups need. Colors come from the workspace tokens so it
+   follows the Company palette in both themes. */
+
+/* The Group dialog: name, description, people and Projects, with no
+   text headings (the fields say what they are by their placeholders). */
+.group-dialog[data-slot="dialog-content"] {
+  width: 600px;
+}
+
+.group-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group-dialog__input {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  resize: vertical;
+}
+
+.group-dialog__input::placeholder {
+  color: var(--workspace-native-text-muted);
+}
+
+.group-dialog__input:focus {
+  border-color: var(--workspace-native-accent);
+}
+
+.group-dialog__input[aria-invalid="true"] {
+  border-color: var(--workspace-native-danger, #ff8a7a);
+}
+
+.group-dialog__error {
+  color: var(--workspace-native-danger, #ff8a7a);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.group-dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* One compact row: the people mark, Add people right beside it, then
+   "Nobody yet" while the Group is empty and the search is closed. */
+.group-dialog__section-heading {
+  display: flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* The people mark, where a "People" heading used to be. */
+.group-dialog__section-heading > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.group-dialog__section-heading .dashboard-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Add people, as an icon. */
+.group-dialog__section-heading .group-dialog__icon-button {
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+}
+
+.group-dialog__note {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.group-dialog__people,
+.group-dialog__projects {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  list-style: none;
+}
+
+.group-dialog__people {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.group-dialog__person {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 6px 6px 6px 10px;
+  border-radius: 8px;
+}
+
+.group-dialog__person:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.group-dialog__person .project-person-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.group-dialog__person .project-access-person__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* The name, then "you" for the viewer. */
+.group-dialog__name {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.group-dialog__person .group-dialog__name small {
+  flex: none;
+  overflow: visible;
+}
+
+.group-dialog__person .project-access-person__text strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-dialog__person .project-access-person__text small {
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-dialog__remove {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.group-dialog__remove:hover,
+.group-dialog__remove:focus-visible {
+  border-color: var(--workspace-divider);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-danger, #e5484d);
+  outline: none;
+}
+
+.group-dialog__projects li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  color: var(--workspace-native-text);
+  font-size: 13px;
+}
+
+.group-dialog__projects li > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.group-dialog__projects li > span:not(.project-access-perms) {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-dialog__picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--workspace-control-bg);
+}
+
+.group-dialog__picker .project-access-search {
+  width: 100%;
+  height: 36px;
+}
+
+.group-dialog__picker .project-access-people {
+  max-height: 220px;
+  background: var(--workspace-panel-bg);
+}
+
+.project-access-people__option.group-dialog__option {
+  grid-template-columns: 28px minmax(0, 1fr) 16px;
+}
+
+.group-dialog__option > svg {
+  color: var(--workspace-native-accent);
+}
+
+/* The change preview, as a confirm (the compact box of
+   project-access.css, a little wider for its rows): the question, a mark
+   under it only when Projects the viewer can't see are left out, then
+   one row per person (avatar, name, + or −, the Projects it moves on with
+   the label they end with, runs that stop), then what the change opens
+   for the viewer. Above the Group dialog it can open over. */
+.profile-delete-dialog__overlay.group-review-confirm__overlay {
+  z-index: 222;
+}
+
+/* Outranks the compact box's 400 px (project-access.css) whatever order
+   the two sheets load in. */
+.profile-delete-dialog.project-access-confirm.group-review-confirm[data-slot="dialog-content"] {
+  z-index: 223;
+  width: 460px;
+}
+
+.group-review__summary {
+  display: flex;
+  grid-column: 2;
+  margin: 4px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+}
+
+.group-review__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.group-review__body:empty {
+  display: none;
+}
+
+/* A long list scrolls on its own, so the question and Cancel and Change
+   stay in view. Positioned, so the rows' screen-reader text stays inside
+   it and never makes the box scroll too. */
+.group-review__people {
+  position: relative;
+  display: flex;
+  max-height: min(50dvh, 360px);
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* The sign follows the name; the Project takes the rest of the row. */
+.group-review__person {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 24px fit-content(45%) 18px minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 34px;
+  font-size: 12.5px;
+}
+
+/* Clipped, so nothing in it ever spills over the runs chip; a container,
+   so a short cell drops the label's words (below). */
+.group-review__where {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--workspace-native-text);
+  container-type: inline-size;
+}
+
+.group-review__where > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.group-review__where > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The Project's name keeps a few letters beside a long person's name;
+   the role mark keeps its size. */
+.group-review__where > .group-review__project {
+  min-width: 2em;
+}
+
+.group-review__where > .project-access-role {
+  flex: none;
+}
+
+/* What they end with on that Project, as the list labels it. */
+.group-review__where > .group-review__level {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  overflow: visible;
+}
+
+/* Short of room (a phone, or a long name): a preset's label is its icon
+   and "+N" only, as in Add, so the Project keeps its name. A set with no
+   preset keeps its words. */
+@container (max-width: 160px) {
+  .group-review__level:has(.project-access-perms__icon)
+    .project-access-perms__label {
+    display: none;
+  }
+}
+
+.group-review__person .project-person-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.group-review__sign {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.group-review__person[data-change="gain"] .group-review__sign {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-success) 16%,
+    transparent
+  );
+  color: var(--workspace-native-success);
+}
+
+/* Keeps the Project with less: neutral, never the loss colour. */
+.group-review__person[data-change="lowered"] .group-review__sign {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-text-muted) 14%,
+    transparent
+  );
+  color: var(--workspace-native-text-muted);
+}
+
+.group-review__person[data-change="loss"] .group-review__sign {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-danger, #e5484d) 14%,
+    transparent
+  );
+  color: var(--workspace-native-danger, #e5484d);
+}
+
+.group-review__name {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--workspace-native-text);
+  font-weight: 550;
+}
+
+.group-review__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-review__name small {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* What the change opens for the viewer, and who is told. */
+.group-review__opened {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-review__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--workspace-native-approval) 40%, transparent);
+  border-radius: 10px;
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-approval) 10%,
+    transparent
+  );
+  color: var(--workspace-native-text);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.group-review__warning > svg {
+  margin-top: 1px;
+  flex: none;
+  color: var(--workspace-native-approval);
+}
+
+/* Narrow: rows keep one line, a little tighter, a long name leaving the
+   Project more room. */
+@media (max-width: 560px) {
+  .group-review__person {
+    gap: 6px;
+    grid-template-columns: 24px fit-content(34%) 18px minmax(0, 1fr) auto;
+  }
+}

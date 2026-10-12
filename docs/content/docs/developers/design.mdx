@@ -1,0 +1,56 @@
+---
+title: Design decisions
+description: The load-bearing invariants behind Zenith Team's execution path, and the decision records that argue them.
+---
+
+For a product-facing explanation, see [How Zenith Team works](/how-zenith-team-works). This page is the developer register: the decisions and invariants you must not break when touching the execution path, each verified in the code it names. The repo files — `AGENTS.md`, `ARCHITECTURE.md`, `server/CODEMAP.md` — remain the rulebook; this page is a map into them.
+
+## Decision records
+
+The decision records live in the repo at `docs/adr/`, not on this site. Each one records the failure that forced the decision — read the record before touching its area.
+
+| ADR | Decision |
+|---|---|
+| 0001 | Enqueue freezes the trigger prompt into `runs.context`; the daemon never depends on a claim-time fetch for the user's words. |
+| 0002 | The installable client tolerates additive server fields and retries forever; terminal is reserved for deliberate stop and auth refusals. |
+| 0003 | Enqueue freezes the agent brief — name, instructions, model, thinking level — into the run context, in the same transaction. |
+| 0004 | Realtime events carry the committed row; a client refetch is recovery, never the designed response to a frame. |
+| 0005 | A conversation is one item stream; a run labels the rows it wrote. |
+| 0006 | Every reaction registers on one event bus; a topic is a domain, and the delivering consumer decides who sees a fact. |
+
+## Frozen run context
+
+A run has frozen server input. The enqueue transaction stamps the trigger prompt, the agent brief, the initial company description, the execution profile, and resources into `runs.context` (`server/internal/execution/run_context.go`; ADR 0001 and 0003). During preparation, interactive runs can also read the local `assets/general/business_context.md`. Editing an agent never changes runs already enqueued, and retry children inherit the server context copy.
+
+## One conversation item stream
+
+`conversation_items` is the only store of what was said, ordered by `(conversation_id, seq)`; [messages and the transcript](/conversations) are two filtered reads of it, split by item type (ADR 0005). `run_id` on an item is a label, not a foreign key — deleting run history can never delete the founder's words. Rows are immutable once committed (`content_sha256` distinguishes an idempotent replay from an attempted rewrite), and every writer allocates `seq` under the conversation row lock: one sequence, one writer at a time.
+
+## Events
+
+An event carries the committed row in the owning domain's public projection, or a typed removal receipt for a deletion; clients cache-write the payload, and an HTTP re-read is the recovery path after a disconnect (ADR 0004). Every reaction registers on one bus (`server/internal/events`): a topic is a domain — one lowercase word — and an event names itself `topic.verb`, checked at publish.
+
+The envelope carries no audience. Who sees a fact is the delivering consumer's decision, made in the one routing file that subscribes browser topics — and it fails closed: a topic the routing never subscribes to reaches no browser (ADR 0006). The activity log takes the whole stream and subscribes last, so in-process reactions finish before the audit row is announced.
+
+## Execution invariants
+
+Enforced in `server/internal/execution/run.go` and `server/pkg/db/queries/runs.sql`; the product-register version is [Runs](/runs).
+
+| Invariant | Mechanism |
+|---|---|
+| Claim fence | The claim is one statement — `UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED)` — so concurrent claimers skip instead of blocking and a row is never claimed twice. A per-agent advisory lock (deliberately not an `agents` row lock) is taken before the task-lane count, so two claims cannot count the same free slot. |
+| Lane | Derived from `conversations.kind`, never a runs column: `runs.task_id` is `ON DELETE SET NULL`, and the conversation outlives a task delete keeping `kind = 'task'`, so a run cannot shed its [capacity slot](/runs#lanes-and-capacity) by losing its task. The claim, the count, and wire routing all read the conversation. |
+| Prepare lease | `prepare_lease_expires_at` — 45 seconds from claim, extended by the daemon while it prepares. An expired lease is what makes a claimed-but-never-started run recoverable. |
+| Execution generation | A fresh task run advances `tasks.execution_generation` inside the enqueue statement; retry children copy the parent's. Terminal task effects and retry eligibility require the run to still own the current generation — a newer trigger silently wins, and the stale run has no task effect. |
+| Terminal proof | A terminal transition must present the transcript head it observed — `transcript_through_seq`. A mismatch is refused with the server's own head to reconcile against. One seq names one history, so there is no chain digest; ADR 0005 pins why one must not come back. |
+| Terminal sinks | Every terminal write guards on a non-terminal current status, so `completed`, `failed`, and `cancelled` never change again. The only continuation is the retry child, created in the same transaction as the fail — `attempt + 1`, parent stays `failed`, context and generation copied. |
+
+## The boundary
+
+Provider credentials and provider-native configuration never enter PostgreSQL — the daemon publishes sanitized, runtime-scoped discovery projections and keeps everything else on the machine (`AGENTS.md` owns this rule; `server/pkg/redact` scrubs agent-authored text before any commit). The product-facing split is the table in [How Zenith Team works](/how-zenith-team-works#the-data-and-execution-boundary).
+
+## Next steps
+
+- **[Project architecture](/developers/architecture)** — how the code is layered and where each domain lives.
+- **[Contributing](/developers/contributing)** — environment, commands, and the gates a change must pass.
+- **[Runs](/runs)** — the same lifecycle in product terms: statuses, lanes, retries, and task effects.

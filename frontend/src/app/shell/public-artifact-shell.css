@@ -1,0 +1,21 @@
+.public-artifact-shell {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.public-artifact-shell .public-artifact-shell__titlebar {
+  position: relative;
+  width: 100%;
+  border-color: var(--workspace-divider);
+  background: var(--workspace-titlebar-bg);
+  color: var(--workspace-nav-text);
+  backdrop-filter: none;
+}
+
+.public-artifact-shell__titlebar .artifact-action-button {
+  color: inherit;
+}

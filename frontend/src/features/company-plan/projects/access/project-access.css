@@ -1,0 +1,1229 @@
+/* One Project's access on the Team page (project-access-panel.tsx): a
+   toolbar, then one list of Groups and people, each with the icons of what
+   they can do. Colors come from the workspace tokens so it follows the
+   Company palette in both themes. */
+.project-access {
+  --project-accent: var(--workspace-native-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* The Project picker on the left (and Join beside it for a manager who
+   has not joined), Add on the right. */
+.project-access-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-access-toolbar__start {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-access-join {
+  flex: none;
+}
+
+.project-access-add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "View only", in Add's place, as an eye icon. */
+.project-access-readonly {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  cursor: help;
+}
+
+.project-access-readonly:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+.project-access-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption, 12px);
+  line-height: var(--workspace-leading-caption, 1.4);
+}
+
+.project-access-notice[data-tone="error"] {
+  color: var(--workspace-native-danger, #ff8a7a);
+}
+
+/* Try again, as an icon after a load that failed. */
+.project-access-notice .project-access-retry {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.project-access-notice .project-access-retry:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.project-access-notice .project-access-retry:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 1px;
+}
+
+/* Counts as icons: Projects, people, runs that stop, hidden Projects. */
+.project-access-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-access-chip {
+  display: inline-flex;
+  max-width: 100%;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.project-access-chip > svg {
+  flex: none;
+}
+
+.project-access-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-access-chip[data-tone="warn"] {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-approval) 16%,
+    transparent
+  );
+  color: var(--workspace-native-approval);
+}
+
+/* The access confirms (project-access-confirm-dialog.tsx): the shared
+   confirm shell made compact, the icon beside the question. A removal or
+   delete keeps the red alert; a change that only stops runs gets a calm
+   pause icon. The box opens focused on itself, with no ring. */
+.profile-delete-dialog.project-access-confirm[data-slot="dialog-content"] {
+  width: 400px;
+  border-radius: 18px;
+}
+
+.project-access-confirm .profile-delete-dialog__surface {
+  padding: 18px 20px;
+}
+
+html[data-boardly-workspace-theme]
+  .project-access-confirm
+  .profile-delete-dialog__surface:focus-visible,
+.project-access-confirm .profile-delete-dialog__surface:focus {
+  outline: none;
+}
+
+.project-access-confirm .profile-delete-dialog__header {
+  display: grid;
+  align-items: center;
+  column-gap: 12px;
+  grid-template-columns: 36px minmax(0, 1fr);
+}
+
+.project-access-confirm .profile-delete-dialog__icon {
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  border-radius: 10px;
+}
+
+.project-access-confirm .profile-delete-dialog__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Outranks the shell's red confirm icon (workspace-surfaces.css,
+   html[data-boardly-workspace-theme] :is(.profile-delete-dialog__icon…)),
+   so the calm pause stays muted in every theme. */
+html[data-boardly-workspace-theme]
+  .project-access-confirm
+  .profile-delete-dialog__icon[data-tone="neutral"],
+.project-access-confirm .profile-delete-dialog__icon[data-tone="neutral"] {
+  border-color: var(--workspace-divider);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-confirm
+  .profile-delete-dialog__header
+  [data-slot="dialog-title"] {
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+/* A confirm's counts, under its question. */
+.project-access-confirm__counts {
+  display: flex;
+  grid-column: 2;
+  margin-top: 6px;
+}
+
+.project-access-confirm .profile-delete-dialog__footer {
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.project-access-confirm .profile-delete-dialog__button {
+  min-width: 84px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+}
+
+/* A Project open to the whole Company: one line, and Limit for whoever
+   may change it. */
+.project-access-everyone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.project-access-everyone > svg {
+  flex: none;
+  color: var(--project-accent);
+}
+
+.project-access-everyone button {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.project-access-search {
+  display: flex;
+  width: min(240px, 100%);
+  height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-search:focus-within {
+  border-color: var(--workspace-native-accent);
+}
+
+.project-access-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.project-access-search input::placeholder {
+  color: var(--workspace-native-text-muted);
+}
+
+/* The list: Groups first, then people, hairlines between. */
+.project-access-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--workspace-divider);
+  list-style: none;
+}
+
+.project-access-row {
+  display: grid;
+  align-items: center;
+  grid-template-areas:
+    "who perms menu"
+    "refused refused refused";
+  grid-template-columns: minmax(0, 1fr) auto 32px;
+  column-gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--workspace-divider);
+}
+
+.project-access-row__who {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  grid-area: who;
+}
+
+.project-access-row__avatar {
+  flex: none;
+}
+
+.project-access-row__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-access-row__name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-access-row__name strong {
+  overflow: hidden;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body, 14px);
+  font-weight: 600;
+  line-height: var(--workspace-leading-body, 1.45);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-access-row__name small {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption, 12px);
+}
+
+.project-access-row__sub {
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption, 12px);
+  line-height: var(--workspace-leading-caption, 1.4);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-access-row__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A Group's mark: a rounded square where a person has their avatar. */
+.project-access-group-mark {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--workspace-accent-soft);
+  color: var(--project-accent, var(--workspace-native-accent));
+}
+
+/* A crown for an owner, a shield for an admin, after the name. */
+.project-access-role {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--workspace-native-text-muted);
+  cursor: help;
+}
+
+.project-access-role[data-role="owner"] {
+  color: var(--workspace-native-warning, var(--workspace-native-accent));
+}
+
+.project-access-role[data-role="admin"] {
+  color: var(--workspace-native-accent);
+}
+
+.project-access-role:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+.project-access-row__perms {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+  grid-area: perms;
+}
+
+/* The "···" menu of a Group, or the self-grant cap's lock: the last
+   column is always there, so every access label keeps one right edge. */
+.project-access-row__menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-area: menu;
+}
+
+/* A change the server refused under the self-grant cap. */
+.project-access-row__refused {
+  grid-area: refused;
+  margin-top: 6px;
+  padding-left: calc(var(--collection-avatar-size, 36px) + 12px);
+  color: var(--workspace-native-danger, #ff8a7a);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.project-access-empty {
+  padding: 22px 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  text-align: center;
+  list-style: none;
+}
+
+/* What someone can do, as one pill: the highest preset's icon and name,
+   "+N" for the rest, one mark when part comes from a Group, a chevron. */
+.project-access-perms {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 28px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 999px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  text-align: left;
+}
+
+button.project-access-perms {
+  cursor: pointer;
+}
+
+button.project-access-perms:hover,
+button.project-access-perms[data-state="open"] {
+  border-color: var(--workspace-native-text-muted);
+  background: var(--workspace-control-bg);
+}
+
+button.project-access-perms:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+button.project-access-perms:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Read-only: the same pill without a chevron. */
+.project-access-perms[data-static] {
+  cursor: default;
+}
+
+.project-access-perms__content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+.project-access-perms__icon {
+  flex: none;
+  color: var(--project-accent, var(--workspace-native-accent));
+}
+
+.project-access-perms__label {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-access-perms__label[data-empty] {
+  color: var(--workspace-native-text-muted);
+  font-weight: 500;
+}
+
+.project-access-perms__more {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Part of it comes from a Group, or from everyone. */
+.project-access-perms__source {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-perms__chevron {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-perms__lock {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  color: var(--workspace-native-text-muted);
+  cursor: help;
+}
+
+.project-access-perms__lock:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+/* Tooltips over the picker and the access dialogs. */
+.workspace-tooltip.project-access-tooltip {
+  z-index: 240;
+}
+
+/* The picker: presets on top, the permissions as a compact checklist in
+   three groups split by a hairline, then Remove access and Save. It opens
+   where all nine rows fit (project-access-picker.tsx places it); only a
+   window too short for them scrolls the list, within the height Radix
+   says is free. Above the access dialogs (221), since Add opens it there
+   too. */
+.project-access-picker {
+  z-index: 230;
+  display: flex;
+  width: 400px;
+  max-width: calc(100vw - 24px);
+  max-height: var(--radix-popover-content-available-height, 560px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 14px;
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
+  color: var(--workspace-native-text);
+}
+
+/* Focused on open so no preset's tooltip shows; the ring would only
+   outline the whole popover (it outranks the workspace focus ring). */
+html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
+.project-access-picker:focus {
+  outline: none;
+}
+
+.project-access-picker__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.project-access-picker__presets {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 8px;
+  border-bottom: 1px solid var(--workspace-divider);
+  background: var(--workspace-overlay-bg);
+}
+
+.project-access-preset {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.project-access-preset:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.project-access-preset[aria-pressed="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--project-accent, var(--workspace-native-accent)) 30%,
+    transparent
+  );
+  background: var(--workspace-accent-soft);
+  color: var(--project-accent, var(--workspace-native-accent));
+}
+
+.project-access-preset[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.project-access-preset:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: -2px;
+}
+
+.project-access-picker__list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px 6px;
+}
+
+.project-access-picker__group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Work, Decisions, Management: named for screen readers only. */
+.project-access-picker__group + .project-access-picker__group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.project-access-option {
+  display: grid;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  grid-template-columns: 26px minmax(0, 1fr) 14px 18px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-access-option:hover:not([data-locked]) {
+  background: var(--workspace-hover-bg);
+}
+
+.project-access-option:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: -2px;
+}
+
+.project-access-option[data-locked] {
+  cursor: default;
+}
+
+.project-access-option__icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-option__icon[data-on] {
+  background: var(--workspace-accent-soft);
+  color: var(--project-accent, var(--workspace-native-accent));
+}
+
+.project-access-option__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.project-access-option__text strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Out of reach under the self-grant cap: shown, greyed, with the reason. */
+.project-access-option[data-locked][aria-checked="false"]
+  .project-access-option__text
+  strong,
+.project-access-option[data-locked][aria-checked="false"]
+  .project-access-option__icon {
+  opacity: 0.55;
+}
+
+.project-access-option__marker {
+  display: inline-grid;
+  place-items: center;
+  color: var(--workspace-native-text-muted);
+}
+
+.project-access-option__check {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1.5px solid var(--workspace-native-text-muted);
+  border-radius: 5px;
+  color: var(--workspace-accent-foreground, #fff);
+}
+
+.project-access-option__check[data-on] {
+  border-color: var(--workspace-accent-fill, var(--project-accent));
+  background: var(--workspace-accent-fill, var(--project-accent));
+}
+
+/* Checked but not theirs to change (View, a Group's, everyone's). */
+.project-access-option[data-locked] .project-access-option__check[data-on] {
+  opacity: 0.55;
+}
+
+/* Beyond the viewer (the self-grant cap): a lock in place of the box. */
+.project-access-option__check[data-capped] {
+  border-color: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: help;
+}
+
+.project-access-picker__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.project-access-picker__remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--workspace-native-danger, #e5484d);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.project-access-picker__remove:hover:not([aria-disabled="true"]) {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-danger, #e5484d) 10%,
+    transparent
+  );
+}
+
+.project-access-picker__remove[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.project-access-picker__remove:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 1px;
+}
+
+.project-access-picker__save {
+  margin-left: auto;
+}
+
+/* A Group's menu: Delete group in red. */
+.project-access-menu__danger {
+  color: var(--workspace-native-danger, #e5484d);
+}
+
+.team-role-picker:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Team › Project access: the report, then the panel. */
+.team-project-access {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.team-project-picker {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(420px, 100%);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.team-project-picker:hover,
+.team-project-picker:focus-visible {
+  background: var(--workspace-control-bg);
+  outline: none;
+}
+
+.team-project-picker > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+/* The picker's gap sets the space; the Projects page's own margin on
+   .project-logo (projects.css) must not double it once that page loaded. */
+.team-project-picker .project-logo,
+.team-project-picker__item .project-logo {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  place-items: center;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--workspace-control-bg);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.team-project-picker .project-logo img,
+.team-project-picker__item .project-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.team-project-picker__text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.team-project-picker__text strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-project-picker__text small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--workspace-native-text-muted);
+  font-size: 11.5px;
+}
+
+/* Open to everyone, archived, not joined: one icon each. */
+.team-project-picker__text small > span {
+  display: inline-grid;
+  place-items: center;
+}
+
+.team-project-picker__menu[data-slot="dropdown-menu-content"],
+.team-project-picker__menu {
+  min-width: 280px;
+  max-height: min(420px, var(--radix-dropdown-menu-content-available-height));
+  padding: 6px;
+  overflow-y: auto;
+}
+
+.team-project-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+}
+
+.team-project-picker__item > svg:last-child {
+  margin-left: auto;
+  flex: none;
+  color: var(--workspace-native-accent);
+}
+
+.project-access-empty-state {
+  margin: 0;
+  padding: 28px 0;
+  color: var(--workspace-native-text-muted);
+  text-align: center;
+}
+
+/* Dialogs: Add, and the Group dialog and review (groups.css). */
+.project-access-dialog__overlay {
+  z-index: 220;
+  background: rgb(3 8 13 / 58%);
+}
+
+.project-access-dialog[data-slot="dialog-content"] {
+  --project-accent: var(--workspace-native-accent);
+  z-index: 221;
+  display: flex;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 20px;
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
+  color: var(--workspace-native-text);
+}
+
+.project-access-dialog__surface {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.project-access-dialog__header {
+  gap: 4px;
+  padding: 22px 24px 14px;
+  text-align: left;
+}
+
+.project-access-dialog__header [data-slot="dialog-title"] {
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.project-access-dialog__header [data-slot="dialog-description"] {
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+}
+
+.project-access-dialog__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 24px 18px;
+  overflow-y: auto;
+}
+
+.project-access-dialog__footer {
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+/* An empty spacer that keeps a footer's buttons on the right. */
+.project-access-dialog__match {
+  margin-right: auto;
+}
+
+/* "New group", on the left of Add's footer. */
+.project-access-dialog__aside {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+}
+
+/* Add: one row per person or Group; a ticked one gets its picker on the
+   right, a person their role mark. */
+.project-access-people {
+  display: flex;
+  max-height: 320px;
+  flex-direction: column;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  list-style: none;
+}
+
+.project-access-people__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+  border-radius: 8px;
+}
+
+.project-access-people__row:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.project-access-people__row[data-picked] {
+  background: color-mix(in srgb, var(--project-accent) 8%, transparent);
+}
+
+.project-access-people__edit {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+.project-access-people__option {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  grid-template-columns: 18px 28px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-access-people__option .project-access-person__text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* The name, then the owner's crown or admin's shield right after it, as
+   on the list. */
+.project-access-people__option .project-access-person__name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-access-people__option .project-access-person__text strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-access-people__option .project-access-person__text small {
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-access-people__option .project-person-avatar {
+  width: 28px;
+  height: 28px;
+}
+
+.project-access-people__option .project-access-group-mark {
+  border-radius: 8px;
+}
+
+.project-access-people__check {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  place-items: center;
+  border: 1.5px solid var(--workspace-native-text-muted);
+  border-radius: 4px;
+  color: var(--workspace-accent-foreground, #fff);
+}
+
+.project-access-people__option[aria-pressed="true"]
+  .project-access-people__check {
+  border-color: var(--workspace-accent-fill, var(--project-accent));
+  background: var(--workspace-accent-fill, var(--project-accent));
+}
+
+.project-access-people__option[aria-pressed="mixed"]
+  .project-access-people__check {
+  border-color: var(--workspace-accent-fill, var(--project-accent));
+  background: var(--workspace-accent-fill, var(--project-accent));
+}
+
+/* Select all: stays on top while the list scrolls. */
+.project-access-people__all {
+  position: sticky;
+  z-index: 1;
+  top: -4px;
+  margin: -4px -4px 4px;
+  padding-right: 12px;
+  border-bottom: 1px solid var(--workspace-divider);
+  border-radius: 12px 12px 0 0;
+  background: var(--workspace-overlay-bg);
+}
+
+.project-access-people__all:hover {
+  background: var(--workspace-overlay-bg);
+}
+
+.project-access-people__all .project-access-people__option {
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  padding: 10px 14px;
+}
+
+.project-access-people__all strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.project-access-dialog .project-access-search {
+  width: 100%;
+  height: 36px;
+}
+
+/* Phones (390 px): a row keeps one line, its access pill at its own
+   width beside the name; the picker is a bottom sheet with a scrim and a
+   grabber; other dialogs fill the screen. The confirms, a Group change's
+   among them, stay compact boxes. */
+@media (max-width: 560px) {
+  .project-access-row {
+    column-gap: 8px;
+  }
+
+  .project-access-row__refused {
+    padding-left: 0;
+  }
+
+  /* A bottom sheet: pinned to the bottom edge, full width, whatever row
+     opened it. */
+  [data-radix-popper-content-wrapper]:has(> .project-access-picker) {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    min-width: 0 !important;
+    transform: none !important;
+    /* No containing block, so the scrim below covers the screen. */
+    will-change: auto !important;
+  }
+
+  /* The sheet's scrim: a tap on it closes the picker, and only that. */
+  [data-radix-popper-content-wrapper]:has(> .project-access-picker)::before {
+    position: fixed;
+    z-index: -1;
+    background: rgb(3 8 13 / 45%);
+    content: "";
+    inset: 0;
+    pointer-events: auto;
+  }
+
+  .project-access-picker {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 82dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-width: 1px 0 0;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* A grabber on top of the bottom sheet. */
+  .project-access-picker::before {
+    width: 36px;
+    height: 4px;
+    flex: none;
+    align-self: center;
+    margin: 8px 0 0;
+    border-radius: 2px;
+    background: var(--workspace-divider);
+    content: "";
+  }
+
+  /* Add: a ticked row's label is its icon and chevron only, so the
+     email keeps its room. */
+  .project-access-people__row .project-access-perms__label,
+  .project-access-people__row .project-access-perms__more {
+    display: none;
+  }
+
+  /* One row: the aside (New group) left, Cancel and the action right. */
+  .project-access-dialog__footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .project-access-dialog__match {
+    display: none;
+  }
+
+  /* Dialogs fill the screen, their buttons pinned at the bottom (Access
+     DESIGN 1). */
+  .project-access-dialog[data-slot="dialog-content"] {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .project-access-dialog__header {
+    padding: 18px 16px 12px;
+  }
+
+  .project-access-dialog__body {
+    padding: 4px 16px 16px;
+  }
+
+  .project-access-dialog__footer {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+}

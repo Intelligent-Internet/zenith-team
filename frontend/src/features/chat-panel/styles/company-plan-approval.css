@@ -1,0 +1,521 @@
+.company-plan-approval {
+  container: company-plan / inline-size;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-panel);
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.company-plan-approval__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.company-plan-approval__eyebrow,
+.company-plan-approval__muted {
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 500;
+}
+
+.company-plan-approval__status[data-status="pending"],
+.company-plan-approval__owner[data-you="true"] {
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+}
+
+.company-plan-approval__status[data-status="approved"] {
+  background: var(--workspace-success-soft);
+  color: var(--workspace-native-success);
+}
+
+.company-plan-approval__status[data-status="rejected"] {
+  background: var(--workspace-danger-soft);
+  color: var(--workspace-native-danger);
+}
+
+.company-plan-approval__title {
+  margin: 0;
+  font-size: var(--workspace-text-page);
+  line-height: var(--workspace-leading-page);
+  font-weight: 650;
+  text-wrap: pretty;
+}
+
+.company-plan-approval__description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 8px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-chat);
+  line-height: var(--workspace-leading-chat);
+}
+
+.company-plan-approval__summary {
+  margin: 8px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__work {
+  margin-top: 20px;
+}
+
+.company-plan-approval__project {
+  padding-top: 16px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.company-plan-approval__section-title {
+  margin: 0;
+  font-size: var(--workspace-text-chat);
+  line-height: var(--workspace-leading-chat);
+  font-weight: 600;
+}
+
+.company-plan-approval__tasks {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.company-plan-approval__tasks > li + li {
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.company-plan-approval__task > summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 14px 0;
+}
+
+.company-plan-approval :is(summary, button, textarea):focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.company-plan-approval summary {
+  list-style: none;
+  cursor: pointer;
+  border-radius: var(--workspace-radius-control);
+}
+
+.company-plan-approval summary::-webkit-details-marker {
+  display: none;
+}
+
+.company-plan-approval summary:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.company-plan-approval__number {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 600;
+}
+
+.company-plan-approval__task-heading {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.company-plan-approval__task-title {
+  font-size: var(--workspace-text-chat);
+  line-height: var(--workspace-leading-chat);
+  font-weight: 600;
+}
+
+.company-plan-approval__owner {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__owner[data-you="true"] {
+  padding: 0 6px;
+  border-radius: var(--workspace-radius-control);
+}
+
+.company-plan-approval__chevron {
+  flex-shrink: 0;
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval
+  details[open]
+  > summary
+  > .company-plan-approval__chevron {
+  transform: rotate(90deg);
+}
+
+.company-plan-approval__task-body {
+  padding: 0 26px 20px 42px;
+}
+
+.company-plan-approval__task-context {
+  margin: 0 0 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__details {
+  margin-top: 8px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.company-plan-approval__details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 8px;
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval__details-body {
+  padding: 8px 0 20px;
+}
+
+.company-plan-approval__brief + .company-plan-approval__brief {
+  margin-top: 20px;
+}
+
+.company-plan-approval__change-lines {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.company-plan-approval__change-lines li {
+  padding-left: 12px;
+  border-left: 2px solid var(--workspace-divider);
+}
+
+.company-plan-approval__change-lines p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.company-plan-approval__change-lines p + p {
+  margin-top: 4px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__change-lines[data-destructive="true"] {
+  margin-bottom: 20px;
+}
+
+.company-plan-approval__change-lines[data-destructive="true"] li {
+  border-left-color: var(--workspace-native-danger);
+}
+
+.company-plan-approval__markdown {
+  margin-top: 8px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.company-plan-approval__markdown :is(h1, h2, h3) {
+  margin: 16px 0 8px;
+  font-size: var(--workspace-text-chat);
+  line-height: var(--workspace-leading-chat);
+  font-weight: 600;
+}
+
+.company-plan-approval__markdown :is(p, ul, ol) {
+  margin: 8px 0;
+}
+
+.company-plan-approval__markdown :is(ul, ol) {
+  padding-left: 20px;
+}
+
+.company-plan-approval__markdown ul {
+  list-style: disc;
+}
+
+.company-plan-approval__markdown ol {
+  list-style: decimal;
+}
+
+.company-plan-approval__markdown :is(code, pre) {
+  border-radius: 4px;
+  background: var(--workspace-control-bg);
+  font-family: var(--font-mono);
+}
+
+.company-plan-approval__markdown code {
+  padding: 2px 4px;
+}
+
+.company-plan-approval__markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.company-plan-approval__metadata {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 16px 0 12px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__metadata dt {
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval__metadata dd,
+.company-plan-approval__metadata ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.company-plan-approval__metadata li + li {
+  margin-top: 4px;
+}
+
+.company-plan-approval__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-top: 12px;
+}
+
+.company-plan-approval__effect {
+  flex: 1 1 160px;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.company-plan-approval__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.company-plan-approval__button > svg {
+  flex-shrink: 0;
+}
+
+.company-plan-approval__button:hover:not(:disabled) {
+  background: var(--workspace-hover-bg);
+}
+
+.company-plan-approval__button--primary {
+  border-color: var(--workspace-accent-fill);
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+}
+
+.company-plan-approval__button--primary:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+}
+
+.company-plan-approval__button--quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.company-plan-approval__note {
+  display: block;
+  margin-top: 12px;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 500;
+}
+
+.company-plan-approval__note > span {
+  color: var(--workspace-native-text-muted);
+  font-weight: 400;
+}
+
+.company-plan-approval__textarea {
+  display: block;
+  width: 100%;
+  min-height: 80px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.company-plan-approval__textarea::placeholder {
+  color: var(--workspace-native-text-muted);
+}
+
+.company-plan-approval__saved-note {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+}
+
+.company-plan-approval__feedback,
+.company-plan-approval__receipt {
+  margin: 12px 0 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+/* Project access (ADR 0017): who may decide, and what an apply held back. */
+.company-plan-approval__readonly {
+  margin: 16px 0 0;
+  color: var(--workspace-native-text-muted, #abb5bf);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__skipped {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-approval__skipped p,
+.company-plan-approval__skipped ul {
+  margin: 0;
+}
+
+.company-plan-approval__skipped ul {
+  margin-top: 4px;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.company-plan-approval__feedback {
+  color: var(--workspace-native-danger);
+}
+
+.company-plan-approval__receipt {
+  color: var(--workspace-native-text-muted);
+}
+
+@container company-plan (max-width: 600px) {
+  .company-plan-approval__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .company-plan-approval__effect {
+    flex-basis: auto;
+  }
+}
+
+@container company-plan (max-width: 360px) {
+  .company-plan-approval__task > summary {
+    gap: 10px;
+  }
+
+  .company-plan-approval__task-body {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .company-plan-approval__actions {
+    width: 100%;
+  }
+
+  .company-plan-approval__actions
+    > .company-plan-approval__button:not(
+      .company-plan-approval__button--quiet
+    ) {
+    flex: 1 1 130px;
+  }
+}
+
+@media (max-width: 480px) {
+  .company-plan-approval {
+    padding: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  .company-plan-approval__button {
+    min-height: 44px;
+  }
+
+  .company-plan-approval__textarea {
+    font-size: 16px;
+  }
+}

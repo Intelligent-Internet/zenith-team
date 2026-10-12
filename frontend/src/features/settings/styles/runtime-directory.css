@@ -1,0 +1,448 @@
+.runtime-directory-content {
+  container: runtime-directory / inline-size;
+  min-width: 0;
+}
+.runtime-directory-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin: 0 0 28px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.runtime-directory-search {
+  display: flex;
+  height: var(--workspace-control-size);
+  min-width: min(100%, 240px);
+  max-width: 380px;
+  flex: 1 1 300px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-input-bg);
+  padding: 0 12px;
+}
+.runtime-directory-search > svg {
+  flex: none;
+}
+.runtime-directory-search:focus-within {
+  border-color: var(--workspace-native-accent);
+}
+.runtime-directory-toolbar input {
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  color: var(--workspace-native-text);
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+.runtime-directory-count {
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  white-space: nowrap;
+}
+.runtime-directory-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.runtime-directory-actions a {
+  text-decoration: none;
+}
+.runtime-computer-list {
+  display: grid;
+  gap: 32px;
+}
+.runtime-computer-group {
+  min-width: 0;
+}
+.runtime-computer-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 0 16px;
+}
+.runtime-computer-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-accent);
+}
+.runtime-computer-identity {
+  min-width: 0;
+  flex: 1;
+}
+.runtime-computer-heading h2 {
+  margin: 0;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.runtime-computer-heading p {
+  margin: 3px 0 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.runtime-computer-refresh {
+  display: inline-flex;
+  min-height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  padding: 0 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  white-space: nowrap;
+}
+.runtime-computer-refresh:is(:hover, :focus-visible):not(:disabled) {
+  outline: none;
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+.runtime-computer-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.runtime-table-scroll {
+  overflow-x: auto;
+}
+.runtime-table {
+  --runtime-logo-size: 28px;
+  --runtime-logo-gap: 12px;
+  width: 100%;
+  min-width: 620px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
+}
+.runtime-table-agents-column {
+  width: 14%;
+}
+.runtime-table-status-column {
+  width: 16%;
+}
+.runtime-table-action-column {
+  width: 40px;
+}
+.runtime-table th {
+  height: 38px;
+  padding: 0 var(--collection-cell-inset) 10px;
+  vertical-align: bottom;
+  font-weight: 400;
+}
+.runtime-table td {
+  height: var(--collection-row-height);
+  padding: 16px var(--collection-cell-inset);
+  vertical-align: middle;
+}
+.runtime-provider-row {
+  position: relative;
+}
+.runtime-table .collection-list__identity {
+  gap: var(--runtime-logo-gap);
+}
+.runtime-provider-logo {
+  width: var(--runtime-logo-size);
+  height: var(--runtime-logo-size);
+  flex: none;
+  object-fit: contain;
+}
+.runtime-provider-link {
+  text-decoration: none;
+}
+.runtime-provider-link::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: "";
+}
+.runtime-provider-link:focus-visible {
+  outline: none;
+}
+.runtime-provider-identity {
+  flex: 1;
+  min-width: 0;
+}
+.runtime-provider-identity strong {
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 600;
+}
+.runtime-provider-identity p {
+  margin: 4px 0 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+  overflow-wrap: anywhere;
+}
+.runtime-provider-count {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  font-variant-numeric: tabular-nums;
+}
+.runtime-provider-states {
+  display: grid;
+  gap: 5px;
+}
+.runtime-table .runtime-provider-status {
+  margin: 0;
+}
+.runtime-table td.runtime-provider-chevron {
+  padding-right: 12px;
+  padding-left: 0;
+  color: var(--workspace-native-text-muted);
+}
+.runtime-provider-chevron svg {
+  margin-left: auto;
+}
+@container runtime-directory (max-width: 680px) {
+  .runtime-directory-search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .runtime-table {
+    --collection-cell-inset: 8px;
+    min-width: 520px;
+  }
+  .runtime-table-agents-column {
+    width: 104px;
+  }
+  .runtime-table-status-column {
+    width: 104px;
+  }
+  .runtime-table-action-column {
+    width: 28px;
+  }
+  .runtime-table td.runtime-provider-chevron {
+    padding-right: 8px;
+  }
+}
+.runtime-provider-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+.runtime-provider-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+  background: currentColor;
+}
+.runtime-provider-status[data-online="true"] {
+  color: var(--workspace-native-success);
+}
+/* The daemon's sign-in verdict sits beside the status: danger when the CLI is
+   signed out (every run on it would fail), muted when the check itself did
+   not answer. */
+.runtime-provider-sign-in[data-sign-in="signed_out"],
+.runtime-provider-identity .runtime-provider-sign-in-detail {
+  color: var(--workspace-native-danger);
+}
+.runtime-detail-page {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 24px;
+  color: var(--workspace-native-text);
+}
+.runtime-detail-page .runtime-detail__back {
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.runtime-detail-page .runtime-detail__header {
+  margin-top: 18px;
+  border: 0;
+  background: transparent;
+  padding: 0 0 18px;
+  box-shadow: none;
+}
+.runtime-detail-page .runtime-detail__heading h1 {
+  margin: 0;
+  font-size: var(--workspace-text-page);
+  line-height: var(--workspace-leading-page);
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.runtime-detail-page .runtime-detail__heading p {
+  text-align: left;
+}
+.runtime-detail-tabs {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  border-bottom: 1px solid var(--workspace-divider);
+  margin: 0 -24px;
+  padding: 0 24px;
+  overflow-x: auto;
+}
+.runtime-detail-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.runtime-detail-tabs button[aria-current="page"] {
+  color: var(--workspace-native-text);
+  border-bottom-color: var(--workspace-native-accent);
+  font-weight: 600;
+}
+.runtime-detail-page .runtime-capabilities {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.runtime-detail-page .runtime-detail__section {
+  margin-top: 24px;
+  padding: 24px;
+  background: var(--workspace-panel-bg);
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.runtime-detail-page .runtime-detail__facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.runtime-detail-page .runtime-detail__facts > div {
+  min-width: 0;
+}
+.runtime-detail-page .runtime-detail__facts dd {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .runtime-computer-heading {
+    flex-wrap: wrap;
+  }
+  .runtime-detail-page .runtime-detail__facts {
+    grid-template-columns: 1fr;
+  }
+}
+.runtime-detail-page .runtime-detail__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+}
+.runtime-detail-page .runtime-detail__actions {
+  margin: 0;
+  align-items: center;
+}
+.runtime-detail-page .runtime-detail__heading {
+  justify-content: flex-start;
+}
+.runtime-detail-page .runtime-detail__heading > span:last-child {
+  margin-left: auto;
+}
+.runtime-provider-switcher {
+  display: flex;
+  gap: 8px;
+  grid-column: 1/-1;
+  flex-wrap: wrap;
+}
+.runtime-provider-switcher img {
+  width: 14px;
+  height: 14px;
+}
+.runtime-provider-switcher a[aria-current="page"] {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-control-bg);
+}
+.runtime-provider-switcher .runtime-provider-status {
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.runtime-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: start;
+}
+.runtime-overview-layout .runtime-overview-facts {
+  grid-column: 2;
+  grid-row: 1;
+}
+.runtime-overview-layout > section:last-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+.runtime-overview-layout .runtime-detail__facts {
+  grid-template-columns: 1fr;
+}
+.runtime-detail-page .runtime-detail__list li {
+  gap: 12px;
+}
+.runtime-detail-page .runtime-detail__list .dashboard-button {
+  white-space: nowrap;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+@media (max-width: 900px) {
+  .runtime-overview-layout {
+    grid-template-columns: 1fr;
+  }
+  .runtime-overview-layout .runtime-overview-facts {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .runtime-detail-page .runtime-detail__header {
+    grid-template-columns: 1fr;
+  }
+  .runtime-detail-page .runtime-detail__list li {
+    flex-wrap: wrap;
+  }
+}
+.runtime-detail.runtime-detail-page {
+  display: block;
+}
+.runtime-detail-page .runtime-detail-tabs {
+  min-height: 46px;
+}
+.runtime-detail-page .runtime-capabilities {
+  width: 100%;
+}
+
+/* A local directory bound to the computer sits with its runtimes: the
+   binding is a machine-wide rule for the company's Runs. */
+.runtime-bound-directory {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--workspace-divider);
+}
+.runtime-bound-directory > svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--workspace-native-text-muted);
+}

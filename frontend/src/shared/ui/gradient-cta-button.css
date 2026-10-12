@@ -1,0 +1,21 @@
+html[data-boardly-workspace-theme] .workspace-cta-button {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  box-shadow: none;
+  filter: none;
+  font-size: 14px;
+}
+
+html[data-boardly-workspace-theme] .workspace-cta-button:hover:not(:disabled) {
+  background: var(--workspace-accent-hover) !important;
+  filter: none;
+}
+
+html[data-boardly-workspace-theme] .workspace-cta-button:disabled {
+  background: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+  border-color: var(--border);
+  cursor: not-allowed;
+}

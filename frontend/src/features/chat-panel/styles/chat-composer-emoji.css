@@ -1,0 +1,25 @@
+.chat-composer-emoji-button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  padding: 4px;
+  background: transparent;
+  color: var(--workspace-native-text-muted, #706875);
+  cursor: pointer;
+}
+
+.chat-composer-emoji-button:hover,
+.chat-composer-emoji-button[data-state="open"] {
+  background: var(--workspace-hover-bg, #f2eff4);
+  color: var(--workspace-native-text, #2d2631);
+}
+
+.chat-composer-emoji-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

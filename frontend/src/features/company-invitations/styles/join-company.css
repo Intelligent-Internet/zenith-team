@@ -1,0 +1,113 @@
+.company-join-overlay {
+  z-index: 220;
+}
+
+.company-join-dialog[data-slot="dialog-content"] {
+  z-index: 221;
+  max-width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  gap: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--workspace-overlay-bg, var(--input-surface));
+  color: var(--text-primary);
+  box-shadow: var(--workspace-overlay-shadow);
+}
+
+.company-join-form {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.company-join-form__field {
+  display: grid;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.company-join-form__field input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-surface);
+  padding: 11px 12px;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.company-join-form__field input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.company-join-form__field input:focus-visible {
+  border-color: var(--brand-primary);
+  outline-offset: 0;
+}
+
+.company-join-form__field input[aria-invalid="true"] {
+  border-color: var(--destructive);
+}
+
+.company-join-form__hint,
+.company-join-form__error {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.company-join-form__error {
+  color: var(--destructive);
+}
+
+.company-join-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.company-join-form__actions button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.company-join-form__back {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.company-join-form__back:hover {
+  background: var(--state-hover-bg);
+}
+
+.company-join-form__continue {
+  min-width: 148px;
+  background: var(--brand-primary);
+  color: var(--text-inverse);
+}
+
+.company-join-form__continue:hover {
+  background: var(--brand-hover);
+}

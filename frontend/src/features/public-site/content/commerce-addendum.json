@@ -1,0 +1,88 @@
+{
+  "version": "2026-09-11.1",
+  "title": "Zenith Team Commerce Addendum",
+  "description": "Review the additional terms that apply when your company connects Stripe and uses Zenith Team to accept customer payments.",
+  "lastUpdated": "September 11, 2026",
+  "sections": [
+    {
+      "id": "scope-and-acceptance",
+      "title": "Scope and acceptance",
+      "paragraphs": [
+        "This Zenith Team Commerce Addendum (\"Commerce Addendum\") supplements the Zenith Team Terms of Service and applies when you enable Stripe Connect, accept customer payments, or receive payouts through a website or payment experience created or managed with Zenith Team. If this Commerce Addendum conflicts with the Terms of Service on a Commerce-specific matter, this Commerce Addendum controls for that matter.",
+        "You accept this Commerce Addendum for the Company whose Zenith Team workspace you administer. You represent that you are at least 18 years old, have authority to bind that Company, and will keep its legal, tax, contact, and payout information accurate. Do not enable Commerce if you do not have that authority or do not agree to these terms."
+      ]
+    },
+    {
+      "id": "merchant-role",
+      "title": "Your role as merchant",
+      "paragraphs": [
+        "Your Company, not Zenith Team, is the merchant of record for customer transactions processed through its Stripe Connected Account. Zenith Team supplies software and integration services; it does not become the seller of your products or services, set your customer promises, or assume your merchant obligations.",
+        "You are responsible for your products and services, prices, descriptions, customer communications, fulfilment, receipts, cancellation terms, refunds, disputes, chargebacks, taxes, regulatory duties, and all statements made through your website or payment experience. Your customer-facing identity and policies must accurately identify your Company as the seller."
+      ]
+    },
+    {
+      "id": "stripe-connect",
+      "title": "Stripe Connect account",
+      "paragraphs": [
+        "Zenith Team uses Stripe Connect to provide payment and payout functionality. Enabling Commerce creates or links a Stripe Connected Account for your Company under the Zenith Team platform account. Your use of Stripe is also governed by the applicable Stripe Connected Account Agreement, Stripe Services Agreement, and Stripe Privacy Policy.",
+        "Stripe controls its onboarding, identity verification, risk review, capability decisions, account restrictions, and payout requirements. You authorize Zenith Team and Stripe to exchange the account, capability, transaction, and status information reasonably necessary to provide and secure Commerce. Stripe collects sensitive identity documents and bank-account details directly; Zenith Team does not ask you to place those values in prompts, Tasks, or workspace resources."
+      ]
+    },
+    {
+      "id": "payments-and-approvals",
+      "title": "Payments and Zenith Team approvals",
+      "paragraphs": [
+        "Payment configuration must accurately describe the product or service, amount, currency, billing interval, refund terms, and customer experience. Review financial details before approving any live configuration. An AI agent may help draft or propose a payment flow, but it has no independent authority to activate a live price, subscription, refund, payout, or other financial action unless Zenith Team presents and records the required owner approval.",
+        "Zenith Team may impose technical limits, approval requirements, supported-country rules, or additional review before enabling a payment capability. A successful preview, generated website, or completed Stripe onboarding does not by itself authorize live payment processing."
+      ]
+    },
+    {
+      "id": "fees-balances-and-payouts",
+      "title": "Fees, balances, and payouts",
+      "paragraphs": [
+        "Stripe processing, currency-conversion, dispute, payout, and other provider fees may apply to your Connected Account. Any separate Zenith Team Commerce fee will be disclosed before it applies. You authorize Stripe to deduct applicable provider fees, refunds, disputes, reserves, negative balances, and other amounts from your Stripe balance or permitted funding method.",
+        "Payout timing and availability depend on Stripe, your country, currency, bank, payment method, verification state, reserves, risk review, and applicable law. Estimated dates are not guarantees. Zenith Team does not promise a universal payout period and is not responsible for bank or Stripe delays outside its reasonable control."
+      ]
+    },
+    {
+      "id": "refunds-disputes-and-support",
+      "title": "Refunds, disputes, and customer support",
+      "paragraphs": [
+        "You must provide customers with clear support contact details and respond promptly to fulfilment questions, cancellation requests, refund requests, fraud reports, and payment disputes. You are responsible for maintaining evidence needed to answer a dispute and for all resulting debits, fees, reversals, and negative balances on your Connected Account.",
+        "Zenith Team may pause new payment actions or require additional review when there is an unresolved dispute, negative balance, failed payout, suspected fraud, misleading customer experience, excessive refund or dispute activity, or other material risk."
+      ]
+    },
+    {
+      "id": "tax-and-compliance",
+      "title": "Tax, legal, and acceptable use",
+      "paragraphs": [
+        "You are solely responsible for determining, collecting, reporting, and remitting taxes and for obtaining registrations, licences, consents, disclosures, and records required for your business. Zenith Team and its AI features do not provide legal, tax, accounting, or financial advice.",
+        "You may not use Commerce for illegal, fraudulent, deceptive, infringing, sanctioned, prohibited, or restricted activity, or for any product or service disallowed by Stripe or the Zenith Team Terms of Service. You must comply with applicable consumer-protection, privacy, marketing, payment, sanctions, export-control, and industry-specific laws."
+      ]
+    },
+    {
+      "id": "data-and-security",
+      "title": "Data and security",
+      "paragraphs": [
+        "Zenith Team stores a limited projection of your Connected Account status and Commerce operations so it can authorize requests, show readiness, recover safely, and reconcile provider state. Stripe remains the system that collects and stores bank-account and identity-verification details. Zenith Team's handling of personal information is described in the Zenith Team Privacy Policy.",
+        "Protect your Zenith Team and Stripe accounts, use accurate return and website domains, and notify support@ii.inc promptly if you suspect unauthorized access, a fraudulent transaction, or a compromised payment experience. Never place Stripe secret keys, bank details, identity documents, or one-time onboarding secrets in a prompt, Task, generated website, or public repository."
+      ]
+    },
+    {
+      "id": "restriction-and-offboarding",
+      "title": "Restriction and offboarding",
+      "paragraphs": [
+        "Zenith Team or Stripe may restrict, suspend, or disable Commerce when required by law, provider rules, security, risk, account status, or a violation of this Commerce Addendum or the Terms of Service. Restrictions may prevent new payments or payouts while existing refunds, disputes, subscriptions, reserves, reporting, or other obligations continue.",
+        "Disconnecting Commerce or deleting a Zenith Team Company does not cancel customer obligations, erase Stripe records, eliminate negative balances, or end duties that arose before disconnection. You must resolve active subscriptions, pending balances, customer claims, refunds, disputes, tax records, and other outstanding obligations before offboarding can complete."
+      ]
+    },
+    {
+      "id": "changes-and-contact",
+      "title": "Changes and contact",
+      "paragraphs": [
+        "We may update this Commerce Addendum as Zenith Team Commerce, Stripe, supported countries, or applicable law changes. A new version requires acceptance before affected Commerce capabilities continue when the change is material or acceptance is otherwise required.",
+        "Questions about Zenith Team Commerce or this Commerce Addendum may be sent to support@ii.inc. For Stripe account verification, payout, or provider-policy questions, use the support channel made available through your Stripe account."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+.fold-pose,
+.fold-pose__reaction,
+.fold-pose__art {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.fold-pose {
+  /* Leave room for the approved hands while keeping the face legible in chat. */
+  transform: scale(1.16);
+}
+
+.fold-pose__filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.fold-pose__reaction {
+  transform-origin: 50% 70%;
+}
+
+.fold-pose__art {
+  transform: translate(
+    calc(var(--fold-gaze-x) * 0.1),
+    calc(var(--fold-gaze-y) * 0.08)
+  );
+  transition: transform 180ms var(--fold-ease);
+}
+
+.fold-pose__poster,
+.fold-pose__canvas,
+.fold-pose__frames {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.fold-pose__canvas,
+.fold-pose__frames[data-ready] .fold-pose__poster {
+  visibility: hidden;
+}
+
+.fold-pose__frames[data-ready] .fold-pose__canvas {
+  visibility: visible;
+}
+
+.fold-pose__frames[data-transition="entering"] {
+  animation: fold-pose-enter 180ms var(--fold-ease) both;
+}
+.fold-pose__frames[data-transition="leaving"] {
+  animation: fold-pose-leave 180ms var(--fold-ease) both;
+}
+.fold-pose[data-quiet] .fold-pose__reaction {
+  animation: fold-pose-breathe 6s ease-in-out infinite;
+}
+@keyframes fold-pose-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fold-pose-leave {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+@keyframes fold-pose-breathe {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-0.5px) scale(1.012);
+  }
+}
+.fold-avatar[data-paused] .fold-pose__frames[data-transition="entering"] {
+  animation: none;
+}
+.fold-avatar[data-paused] .fold-pose__frames[data-transition="leaving"] {
+  display: none;
+}
+
+.fold-avatar[data-booping] .fold-pose__reaction {
+  animation: fold-pose-boop 680ms var(--fold-ease) both;
+}
+
+@keyframes fold-pose-boop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  18% {
+    transform: translateY(2%) scale(1.05, 0.95);
+  }
+  44% {
+    transform: translateY(-3%) rotate(-3deg) scale(0.98, 1.03);
+  }
+  70% {
+    transform: rotate(1.5deg) scale(1.01, 0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold-pose__frames,
+  .fold-pose__reaction {
+    animation: none !important;
+  }
+  .fold-pose__frames[data-transition="leaving"] {
+    display: none;
+  }
+  .fold-pose__art {
+    transform: none;
+    transition: none;
+  }
+}

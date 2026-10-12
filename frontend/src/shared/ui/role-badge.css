@@ -1,0 +1,24 @@
+.team-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption, 12px);
+  line-height: var(--workspace-leading-caption, 1.4);
+  white-space: nowrap;
+}
+.team-role-badge[data-role="owner"] {
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-native-accent);
+}
+.team-role-badge[data-role="admin"] {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-success) 14%,
+    transparent
+  );
+  color: var(--workspace-native-success);
+}

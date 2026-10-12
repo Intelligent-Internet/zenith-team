@@ -1,0 +1,402 @@
+/* Compatibility for existing light-on-dark utilities. Feature styles own special surfaces. */
+
+:where(html[data-boardly-workspace-theme])
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="bg-[#0B1A2B]"],
+    [class~="bg-[#0F233F]"],
+    [class~="bg-[#0A192A]"],
+    [class~="bg-[#061121]"],
+    [class~="bg-[#132B49]"]
+  ) {
+  background: var(--workspace-panel-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="focus:bg-white/10"], [class~="focus:bg-white/12"]):focus {
+  background-color: var(--workspace-control-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="hover:bg-white/10"],
+    [class~="hover:bg-white/11"],
+    [class~="hover:bg-white/12"],
+    [class~="hover:bg-white/14"],
+    [class~="hover:bg-white/15"],
+    [class~="hover:bg-white/16"],
+    [class~="hover:bg-white/18"],
+    [class~="hover:bg-white/5"],
+    [class~="hover:bg-white/6"],
+    [class~="hover:bg-white/7"],
+    [class~="hover:bg-white/8"]
+  ):hover {
+  background-color: var(--workspace-control-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="bg-white/1"],
+    [class~="bg-white/10"],
+    [class~="bg-white/12"],
+    [class~="bg-white/13"],
+    [class~="bg-white/14"],
+    [class~="bg-white/16"],
+    [class~="bg-white/18"],
+    [class~="bg-white/4"],
+    [class~="bg-white/5"],
+    [class~="bg-white/6"],
+    [class~="bg-white/7"],
+    [class~="bg-white/8"],
+    [class~="bg-white/9"]
+  ) {
+  background-color: var(--workspace-control-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="hover:bg-white/20"], [class~="hover:bg-white/22"]):hover {
+  background-color: var(--workspace-hover-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="bg-white/20"],
+    [class~="bg-white/22"],
+    [class~="bg-white/24"],
+    [class~="bg-white/25"],
+    [class~="bg-white/30"],
+    [class~="bg-white/32"],
+    [class~="bg-white/48"],
+    [class~="bg-white/50"]
+  ) {
+  background-color: var(--workspace-hover-bg) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="hover:border-white/10"],
+    [class~="hover:border-white/16"],
+    [class~="hover:border-white/18"],
+    [class~="hover:border-white/20"],
+    [class~="hover:border-white/8"]
+  ):hover {
+  border-color: var(--workspace-divider) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="border-white/10"],
+    [class~="border-white/12"],
+    [class~="border-white/13"],
+    [class~="border-white/14"],
+    [class~="border-white/15"],
+    [class~="border-white/16"],
+    [class~="border-white/18"],
+    [class~="border-white/20"],
+    [class~="border-white/5"],
+    [class~="border-white/8"],
+    [class~="border-white/9"]
+  ) {
+  border-color: var(--workspace-divider) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="focus:border-white/30"]):focus {
+  border-color: var(--workspace-divider-strong) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="hover:border-white/22"],
+    [class~="hover:border-white/24"],
+    [class~="hover:border-white/25"],
+    [class~="hover:border-white/28"],
+    [class~="hover:border-white/34"]
+  ):hover {
+  border-color: var(--workspace-divider-strong) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="border-white/22"],
+    [class~="border-white/24"],
+    [class~="border-white/25"],
+    [class~="border-white/26"],
+    [class~="border-white/28"],
+    [class~="border-white/30"],
+    [class~="border-white/35"],
+    [class~="border-white/45"],
+    [class~="border-white/50"],
+    [class~="border-white/60"],
+    [class~="border-white/86"]
+  ) {
+  border-color: var(--workspace-divider-strong) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="disabled:text-white/70"],
+    [class~="disabled:text-white/72"]
+  ):disabled {
+  color: var(--workspace-native-text) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="focus:text-white"]):focus {
+  color: var(--workspace-native-text) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="hover:text-white"],
+    [class~="hover:text-white/70"],
+    [class~="hover:text-white/72"],
+    [class~="hover:text-white/74"],
+    [class~="hover:text-white/76"],
+    [class~="hover:text-white/78"],
+    [class~="hover:text-white/82"],
+    [class~="hover:text-white/86"],
+    [class~="hover:text-white/88"],
+    [class~="hover:text-white/90"]
+  ):hover {
+  color: var(--workspace-native-text) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="text-white"],
+    [class~="text-white/68"],
+    [class~="text-white/70"],
+    [class~="text-white/72"],
+    [class~="text-white/74"],
+    [class~="text-white/75"],
+    [class~="text-white/76"],
+    [class~="text-white/78"],
+    [class~="text-white/80"],
+    [class~="text-white/82"],
+    [class~="text-white/84"],
+    [class~="text-white/86"],
+    [class~="text-white/88"],
+    [class~="text-white/90"],
+    [class~="text-white/92"]
+  ) {
+  color: var(--workspace-native-text) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="disabled:text-white/24"],
+    [class~="disabled:text-white/30"],
+    [class~="disabled:text-white/38"],
+    [class~="disabled:text-white/40"]
+  ):disabled {
+  color: var(--workspace-native-text-faint) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="text-white/24"],
+    [class~="text-white/28"],
+    [class~="text-white/30"],
+    [class~="text-white/32"],
+    [class~="text-white/34"],
+    [class~="text-white/35"],
+    [class~="text-white/36"],
+    [class~="text-white/38"],
+    [class~="text-white/40"],
+    [class~="text-white/42"],
+    [class~="text-white/44"]
+  ) {
+  color: var(--workspace-native-text-faint) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="hover:text-white/60"],
+    [class~="hover:text-white/64"],
+    [class~="hover:text-white/65"]
+  ):hover {
+  color: var(--workspace-native-text-muted) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="text-white/45"],
+    [class~="text-white/46"],
+    [class~="text-white/48"],
+    [class~="text-white/50"],
+    [class~="text-white/52"],
+    [class~="text-white/54"],
+    [class~="text-white/55"],
+    [class~="text-white/56"],
+    [class~="text-white/58"],
+    [class~="text-white/60"],
+    [class~="text-white/62"],
+    [class~="text-white/64"],
+    [class~="text-white/65"],
+    [class~="text-white/66"]
+  ) {
+  color: var(--workspace-native-text-muted) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="bg-yellow"], [class~="bg-[#FFD84D]"], [class~="bg-[#ffd84d]"]) {
+  background: var(--workspace-accent-fill) !important;
+  color: var(--workspace-accent-foreground) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is(
+    [class~="text-yellow"],
+    [class~="text-yellow-2"],
+    [class~="text-[#FFD84D]"],
+    [class~="text-[#ffd84d]"]
+  ) {
+  color: var(--workspace-native-accent) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :where(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu,
+    .workspace-command-palette
+  )
+  :is([class~="bg-red-2"], [class~="bg-destructive"]) {
+  color: var(--workspace-danger-foreground) !important;
+}
+
+html[data-boardly-workspace-theme]
+  :is(
+    .boardly-workspace-theme,
+    .workspace-profile-menu,
+    .workspace-notification-menu
+  )
+  [class~="bg-brand-primary"] {
+  color: var(--workspace-accent-foreground) !important;
+}

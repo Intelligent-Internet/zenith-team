@@ -1,0 +1,73 @@
+.conversation-pin-menu__trigger {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+}
+
+.conversation-pin-menu__trigger:hover,
+.conversation-pin-menu__trigger[data-state="open"] {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.conversation-pin-menu__trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .workspace-chat-navigator__row:not(:hover):not(:has(:focus-visible))
+    .conversation-pin-menu__trigger:not([data-state="open"]):not(
+      [aria-busy="true"]
+    ) {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.conversation-pin-menu {
+  z-index: 220;
+  min-width: 192px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  padding: 5px;
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+  box-shadow: 0 8px 24px rgb(37 28 45 / 12%);
+  font-family: var(--workspace-font-body);
+}
+
+.conversation-pin-menu__item {
+  min-height: 36px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--workspace-native-text);
+  font-size: 13px;
+}
+
+.conversation-pin-menu__item[data-highlighted] {
+  background: var(--workspace-hover-bg);
+}
+
+.conversation-pin-menu__item svg {
+  color: var(--workspace-native-text-muted);
+}
+
+@media (pointer: coarse) {
+  .conversation-pin-menu__trigger {
+    width: 36px;
+    height: 40px;
+  }
+
+  .conversation-pin-menu__item {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,46 @@
+{
+  // Boardly local dev. Requires the Go extension (golang.go). server/.env is
+  // git-ignored local config; migrations auto-apply at server boot.
+  //
+  // `make debug-app` launches the Desktop app. Follow daemon output with
+  // `zen daemon logs -f` under Desktop's BOARDLY_HOME.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Boardly server (launch :8788)",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/server/cmd/server",
+      "cwd": "${workspaceFolder}/server",
+      "envFile": "${workspaceFolder}/server/.env",
+      "env": { "APP_LOG_LEVEL": "debug" }
+    },
+    {
+      // Desktop app development. Needs the API on :8788 first.
+      "name": "Electron: dev + debug console",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "command": "pnpm electron:dev:debug"
+    },
+    {
+      "name": "Attach to running Go process (picker)",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": "${command:pickProcess}"
+    }
+  ],
+  "compounds": [
+    {
+      // One F5 for the whole loop: API + desktop app printing the console.
+      "name": "Boardly: server + electron debug console",
+      "configurations": [
+        "Boardly server (launch :8788)",
+        "Electron: dev + debug console"
+      ],
+      "stopAll": true
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+.company-plan-overview {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider, #2b3945);
+  border-radius: 16px;
+  background: var(--workspace-panel-bg, #18242f);
+  color: var(--workspace-native-text, #f3f5f7);
+}
+
+.company-plan-overview__header {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--workspace-divider, #2b3945);
+}
+
+.company-plan-overview__header h2 {
+  margin: 0;
+  font-size: var(--workspace-text-title);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: var(--workspace-leading-title);
+}
+
+.company-plan-overview__header p {
+  margin: 5px 0 0;
+  color: var(--workspace-native-text-muted, #abb5bf);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+}
+
+.company-plan-overview__tasks {
+  padding: 0 22px;
+}
+
+.company-plan-overview__task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+  padding: 14px 0;
+  border: 0;
+  border-bottom: 1px solid var(--workspace-divider, #2b3945);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.company-plan-overview__task:last-child {
+  border-bottom: 0;
+}
+
+.company-plan-overview__task:focus-visible {
+  border-radius: 8px;
+}
+
+.company-plan-overview__task-number,
+.company-plan-overview__task-open {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.company-plan-overview__task-number {
+  width: 30px;
+  height: 30px;
+  background: var(--workspace-control-bg, #202d39);
+  color: var(--workspace-native-text-muted, #abb5bf);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  font-weight: 750;
+}
+
+.company-plan-overview__task-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.company-plan-overview__task-copy strong,
+.company-plan-overview__task-copy > span {
+  display: block;
+}
+
+.company-plan-overview__task-copy strong {
+  font-size: var(--workspace-text-body);
+  font-weight: 700;
+  line-height: var(--workspace-leading-body);
+}
+
+.company-plan-overview__task-copy > span {
+  margin-top: 4px;
+  color: var(--workspace-native-text-muted, #abb5bf);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.company-plan-overview__task-open {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--workspace-divider-strong, #3a4956);
+  color: var(--workspace-native-text-muted, #abb5bf);
+  transition: 160ms ease;
+}
+
+.company-plan-overview__task:hover .company-plan-overview__task-open {
+  border-color: var(--workspace-native-accent, #ffd84d);
+  color: var(--workspace-native-accent, #ffd84d);
+  transform: translateX(2px);
+}
+
+.company-plan-overview__review {
+  min-height: 40px;
+  margin: 4px 22px 16px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-accent, #ffd84d);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.company-plan-overview__review:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .company-plan-overview__header {
+    padding: 17px 16px 14px;
+  }
+
+  .company-plan-overview__tasks {
+    padding: 0 16px;
+  }
+
+  .company-plan-overview__review {
+    margin-inline: 16px;
+  }
+}

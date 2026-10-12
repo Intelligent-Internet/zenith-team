@@ -1,0 +1,108 @@
+.artifact-download-control {
+  display: inline-flex;
+}
+.artifact-download-button {
+  position: relative;
+  overflow: hidden;
+  width: 176px;
+  min-width: 176px;
+  padding-inline: 10px;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 150ms ease;
+}
+.artifact-download-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: artifact-download-enter 180ms ease-out;
+}
+.artifact-download-content svg {
+  transition: transform 180ms ease;
+}
+.artifact-download-button[data-state="idle"]:hover svg {
+  transform: translateY(2px);
+}
+.artifact-download-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.artifact-download-button:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.artifact-download-button[data-state="loading"] svg {
+  animation: artifact-download-spin 900ms linear infinite;
+}
+.artifact-download-button[data-state="loading"]::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.4;
+  animation: artifact-download-sweep 1.2s ease-in-out infinite;
+}
+.artifact-download-button[data-state="ready"] {
+  background: var(--state-hover-bg);
+}
+.artifact-download-button[data-state="ready"] svg {
+  animation: artifact-download-confirm 260ms ease-out;
+}
+@keyframes artifact-download-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes artifact-download-sweep {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(390%);
+  }
+}
+@keyframes artifact-download-enter {
+  from {
+    opacity: 0.4;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes artifact-download-confirm {
+  from {
+    transform: scale(0.7);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@media (max-width: 560px) {
+  .artifact-download-button {
+    width: 156px;
+    min-width: 156px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .artifact-download-button,
+  .artifact-download-content,
+  .artifact-download-content svg {
+    animation: none !important;
+    transition: none;
+  }
+  .artifact-download-button[data-state="loading"]::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.15;
+  }
+  .artifact-download-button:active:not(:disabled),
+  .artifact-download-button[data-state="idle"]:hover svg {
+    transform: none;
+  }
+}

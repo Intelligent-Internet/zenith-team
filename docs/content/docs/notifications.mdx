@@ -1,0 +1,86 @@
+---
+title: Notifications
+description: The Inbox — your queue of unresolved items — and how the app surfaces it.
+---
+
+The product concept is the **Inbox**: your queue of unresolved items in one company, where an empty list means nothing known is waiting on you. The app shows it as **Inbox** (in the header bell and under **More**); the route is `/notifications`, and the older `/inbox` path redirects there. Every item is written for exactly one person by the domain that raised it — a [task](/tasks) event, a finished [run](/runs), a pending [approval or question](/approvals-and-questions) — and this is the one place Zenith Team tells you something happened. Conversations carry no unread counts of their own.
+
+## What lands in your inbox
+
+The set of item kinds is closed:
+
+| Kind | What it tells you |
+|---|---|
+| **`task_assigned`** | A task is now yours — somebody handed it to you, and it will run on your computer when you start it. It clears itself if the task goes to somebody else, since only the assignee can start it |
+| **`task_run_requested`** | Somebody wrote in a task of yours. Their words are saved; your next run reads them. It says how to get that run going: set the agent up, start the task, or reply in its chat when the task cannot be started (in progress, in review, failed). It clears itself once the words stop waiting for you: a run reads them, they are deleted, their writer leaves the company, or the task goes to somebody else |
+| **`task_handoff`** | A task of yours went to somebody else. If your agent was running it, the item says that run was stopped. Files you never merged stay on your computer. You also get one when someone moves your task to another agent and that stops your run; the task stays yours, and the item says how to run it again. Any "Ready to review" item for the task's earlier runs closes, since nobody can review those runs any more |
+| **`blocker`** | A task entered `blocked` — raised to the task's creator and its assignee |
+| **`run_completed`** | An agent's turn finished on your computer. A turn that stopped to wait for an answer or an approval has not finished. If that question or approval reached your inbox, it asks you, and the turn that continues with the answer notifies you when it finishes. If it did not (only members who can approve get an approval), this item tells you the turn is paused |
+| **`run_failed`** | An agent's turn on your computer failed and Zenith Team will not retry it — intermediate failures the retry policy will pick up never notify you. It also tells you when an agent could not pick up again after an approval or question in your task or chat — for example because it is not set up on your computer — and what to do about it. And it tells you when a run of yours was stopped because you can no longer run tasks in its project, while you can still see that project |
+| **`approval_request`** | An agent needs an owner's verdict on a frozen action |
+| **`question_request`** | An agent needs your answer before it can continue |
+| **`discussion_mention`** | Somebody wrote where you should see it: a new post in a channel you follow at **All**, a reply in a thread you follow, a direct message, or a message that mentions you. The Inbox item names who wrote — "Mai Owner wrote in #sales" — or says you were mentioned. It keeps message text and the channel name out of the stored receipt; the Inbox adds the name from your loaded channel list. Native desktop banners show the sender, Company, channel or group context, and a message preview after checking current access. Thread replies are labelled; messages with only attachments show "Sent an image" or "Sent a file". Deleted or inaccessible messages do not produce a banner. If the preview cannot load because of a network error, the banner uses the generic Inbox copy. Opening it takes you there |
+| **`project_access_granted`** | Shown as **Access**. Someone can now see a project whose access you manage, because they were added to a [group](/project-access#groups) — "Mia Chen can now see Payroll", or "3 people can now see Payroll" when several were. **Open access** takes you to **Team › Project access** for that project. Everyone who manages that project's access gets one, except the person who made the change and, when only one person was added, that person |
+| **`runtime_offline`** | A machine stopped answering while it was still running work — "MacBook Pro went offline". The body reports interrupted runs and asks you to reconnect the computer and check the affected work. Raised to the person whose machine it is, and to nobody else; its deep link opens that [runtime](/daemon-and-runtimes)'s page, and it resolves itself when the machine comes back |
+| **`analytics_budget`** | A Company or Agent reaches 80% or 100% of its monthly budget. The notification names the budget owner and links to Analytics. Work continues at 100%; this is a spending alert |
+| **`huddle_missed`** | You missed an invitation: "Missed Huddle from Mai Nguyen". Desktop banners include the Company and source conversation when you can currently read it, and prompt you to open Chat to follow up |
+
+Calendar notifications name the event and person in the title, with a compact
+date and time in the body. An RSVP can say "Alex Tran may attend “Design review”";
+a schedule change asks invited guests to respond again. Timed events show their
+UTC offset, and all-day events show their dates without an unnecessary timezone.
+
+Incoming Huddle invitations name the caller, source conversation and Company.
+Source names are omitted when you cannot read that conversation. Desktop Huddle
+banners follow Chat notification preferences and appear when the app is in the
+background; web alerts use browser notification permission.
+
+Urgency is not a separate field — it follows the kind. A `blocker` always warns; a `run_completed` never does.
+
+Every item belongs to one member in one company: it is addressed to a single recipient, you only ever see your own items, and there is no company-wide inbox. Each company keeps its own queue, so switching companies switches what the badge counts. Items are also deduplicated — each is written with a dedupe key naming the exact event (for example `approval:<id>:requested`), and a repeated write of the same key collapses into the existing item, so a retried operation never doubles a notification.
+
+An item about a task, its chat, its runs or its requests belongs to the task's project. It is sent only to people who can see that project, and it is hidden while you cannot, then comes back if your access does. See [What owners and admins can see](/project-access).
+
+A run's item goes to the person whose computer ran it. For a task that is always its assignee, even when the run read a colleague's message or someone else created the task. A direct chat or a schedule belongs to the person who made it. When you tag an agent in a channel, its answer lands in the thread instead of your inbox.
+
+An item is a frozen record of an event, not a live view of its subject. A `blocker` item still says the task is blocked however the task has moved since; its deep link is where you go to see the current state. Task items open the task's workspace view, approval and question items open the conversation the agent asked from (the request card lives in that chat; the **Approvals** page keeps the history), and a `runtime_offline` item opens the machine's page under **Settings → Runtimes**.
+
+Almost every item waits for you to clear it. One exception is `runtime_offline`: it is about a condition rather than a request, so when the machine comes back Zenith Team marks every copy read and archived for you. If the machine drops out again later, that is a new outage and a new item. A `task_run_requested` item clears itself the same way once the message it is about stops waiting for you, and a `task_assigned` item once the task is no longer yours.
+
+A new item can also surface as a transient toast while you have the app open. The toast is a hint, not the record: the inbox row is the durable truth, so a toast you miss costs nothing — the item is already in the list.
+
+## Agents do not use the inbox
+
+The inbox is for people. Agents coordinate through [tasks](/tasks), task reports, and [conversations](/conversations) — every recipient of an inbox item is a human member, never an agent. When an agent needs something from another agent, that request is recorded work; when it needs something from you, that is exactly what an `approval_request` or `question_request` item announces.
+
+## Notifications and the activity feed
+
+Two surfaces answer two different questions:
+
+| Surface | Question it answers | Scope |
+|---|---|---|
+| **Inbox** | What is waiting on *you*? | Yours alone — per member |
+| **Activity feed** | What *happened* in the company? | Task history for the projects you can see |
+
+The feed is the company's audit trail — tasks created and updated, task runs completed and failed — and reading it changes nothing. The inbox is a work queue: items are addressed, counted, and cleared. See [Companies](/companies) for the feed.
+
+## Handling items
+
+Each item has two independent axes — read and archived — and no state is terminal:
+
+| Action | What it does |
+|---|---|
+| **Read / unread** | Sets or clears the read mark |
+| **Archive / restore** | Retires the item from the active list, or brings it back |
+
+The unread badge counts items that are neither read nor archived, so archiving an unread item lowers the badge without marking it read. The two axes never touch each other. Items are never deleted — archive is how you retire one.
+
+The list shows active items — everything unarchived — by default, and can be narrowed to unread only, to archived items, to the full history, or to a single kind: the blockers-only view is the same list filtered to `blocker`.
+
+You rarely mark items one by one: opening a conversation marks every unread item raised about that conversation read in one step, and **Mark all read** clears the whole backlog (archived items are left alone in both cases). Approval and question items also close themselves — when the request resolves or expires, its items are marked read and archived automatically, so a decided request never lingers as a stale to-do.
+
+## Next steps
+
+- **[Approvals and questions](/approvals-and-questions)** — the two request kinds that wait in your inbox.
+- **[Tasks](/tasks)** — the assignments and blockers that notify you.
+- **[Runs](/runs)** — what completion and failure mean for an agent's turn.

@@ -1,0 +1,7 @@
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+
+/invite/*
+  Cache-Control: no-store
+  Referrer-Policy: no-referrer

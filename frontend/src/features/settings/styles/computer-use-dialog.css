@@ -1,0 +1,121 @@
+.computer-use-dialog__overlay {
+  z-index: 220;
+  background: rgb(3 8 13 / 42%);
+}
+
+.computer-use-dialog[data-slot="dialog-content"] {
+  z-index: 221;
+  width: 440px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  gap: 0;
+  padding: 0;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 20px;
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+  box-shadow: var(--workspace-overlay-shadow);
+}
+
+.computer-use-dialog__body {
+  padding: 28px;
+}
+
+.computer-use-dialog__header {
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+}
+
+.computer-use-dialog__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+  place-items: center;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 14px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-accent);
+}
+
+.computer-use-dialog__header [data-slot="dialog-title"] {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.computer-use-dialog__header [data-slot="dialog-description"] {
+  color: var(--workspace-native-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.computer-use-dialog__footer {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 28px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.computer-use-dialog__button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.computer-use-dialog__button--cancel {
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+
+.computer-use-dialog__button--cancel:hover:not(:disabled) {
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+}
+
+.computer-use-dialog__button--confirm {
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+}
+
+.computer-use-dialog__button--confirm:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+}
+
+.computer-use-dialog__button:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.computer-use-dialog__button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (max-width: 420px) {
+  .computer-use-dialog__body {
+    padding: 24px;
+  }
+
+  .computer-use-dialog__footer {
+    padding: 16px 24px;
+  }
+
+  .computer-use-dialog__button--confirm {
+    flex: 1;
+  }
+}

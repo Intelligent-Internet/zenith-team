@@ -1,0 +1,40 @@
+.collection-view-switch {
+  display: flex;
+  height: var(--workspace-control-size, 32px);
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-control, 6px);
+  background: var(--workspace-content-bg);
+}
+.collection-view-switch button {
+  display: grid;
+  width: 28px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: calc(var(--workspace-radius-control, 8px) - 3px);
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+.collection-view-switch button:hover,
+.collection-view-switch button:focus-visible {
+  outline: none;
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+.collection-view-switch button[aria-pressed="true"] {
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+}
+@media (pointer: coarse) {
+  .collection-view-switch {
+    height: 48px;
+  }
+  .collection-view-switch button {
+    width: 44px;
+    height: 42px;
+  }
+}

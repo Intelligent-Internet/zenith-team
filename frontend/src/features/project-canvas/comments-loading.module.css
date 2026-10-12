@@ -1,0 +1,48 @@
+.panel {
+  min-height: 240px;
+  padding: 18px 16px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  background: var(--workspace-panel-bg);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.panel span {
+  display: block;
+  height: 12px;
+  border-radius: 4px;
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-text-muted) 22%,
+    transparent
+  );
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+.header span:first-child {
+  width: 45%;
+}
+.header span:last-child {
+  width: 20px;
+  height: 20px;
+}
+.body {
+  display: grid;
+  gap: 12px;
+}
+.body span:last-child {
+  width: 65%;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

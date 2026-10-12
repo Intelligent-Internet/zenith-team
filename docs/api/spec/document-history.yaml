@@ -1,0 +1,262 @@
+paths:
+  output_list:
+    get:
+      tags: [artifacts]
+      operationId: outputDocumentHistoryList
+      summary: List shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: actor_id, in: query, schema: {type: string, format: uuid}}
+        - {name: after, in: query, schema: {type: string, format: date-time}}
+        - {name: before, in: query, schema: {type: string, format: date-time}}
+        - {name: before_sequence, in: query, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistory'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_state:
+    get:
+      tags: [artifacts]
+      operationId: outputDocumentHistoryState
+      summary: State shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistoryState'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_restore:
+    post:
+      tags: [artifacts]
+      operationId: outputDocumentHistoryRestore
+      summary: Restore shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/DocumentHistoryRestore'}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistoryState'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  output_name:
+    put:
+      tags: [artifacts]
+      operationId: outputDocumentHistoryName
+      summary: Name shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: artifactId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: outputItemId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/DocumentHistoryName'}
+      responses:
+        '204':
+          description: Checkpoint name saved
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  project_list:
+    get:
+      tags: [artifacts]
+      operationId: projectDocumentHistoryList
+      summary: List shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: actor_id, in: query, schema: {type: string, format: uuid}}
+        - {name: after, in: query, schema: {type: string, format: date-time}}
+        - {name: before, in: query, schema: {type: string, format: date-time}}
+        - {name: before_sequence, in: query, schema: {type: integer, format: int64, minimum: 0}}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistory'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  project_state:
+    get:
+      tags: [artifacts]
+      operationId: projectDocumentHistoryState
+      summary: State shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistoryState'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  project_restore:
+    post:
+      tags: [artifacts]
+      operationId: projectDocumentHistoryRestore
+      summary: Restore shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/DocumentHistoryRestore'}
+      responses:
+        '200':
+          description: Saved document history
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/DocumentHistoryState'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  project_name:
+    put:
+      tags: [artifacts]
+      operationId: projectDocumentHistoryName
+      summary: Name shared document history
+      parameters:
+        - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sequence, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/DocumentHistoryName'}
+      responses:
+        '204':
+          description: Checkpoint name saved
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+schemas:
+  DocumentHistory:
+    type: object
+    required: [items, contributors, nextBeforeSequence, currentSequence, canEdit]
+    properties:
+      items: {type: array, items: {$ref: '#/schemas/DocumentHistoryEntry'}}
+      contributors: {type: array, items: {$ref: '#/schemas/DocumentContributor'}}
+      nextBeforeSequence: {type: integer, format: int64}
+      currentSequence: {type: integer, format: int64}
+      canEdit: {type: boolean}
+  DocumentHistoryEntry:
+    type: object
+    required: [sequence, savedAt, actorType, actorName, changeType, label]
+    properties:
+      sequence: {type: integer, format: int64}
+      savedAt: {type: string, format: date-time}
+      actorType: {type: string, enum: [user, agent, system]}
+      actorId: {type: string, format: uuid}
+      actorName: {type: string}
+      changeType: {type: string, enum: [initial, edit, restore]}
+      label: {type: string}
+      suggestionReview: {$ref: '#/schemas/DocumentSuggestionReview'}
+  DocumentSuggestionReview:
+    type: object
+    required: [id, changeId, projectId, pageId, agentName, action, beforeSequence, beforeTheme, resultTheme]
+    properties:
+      id: {type: string, format: uuid}
+      changeId: {type: string, format: uuid}
+      projectId: {type: string, format: uuid}
+      pageId: {type: string, format: uuid}
+      agentId: {type: string, format: uuid}
+      agentName: {type: string}
+      action: {type: string, enum: [apply, undo]}
+      beforeSequence: {type: integer, format: int64}
+      beforeRevisionId: {type: string, format: uuid}
+      resultRevisionId: {type: string, format: uuid}
+      beforeTheme: {type: string}
+      resultTheme: {type: string}
+  DocumentContributor:
+    type: object
+    required: [actorType, actorId, actorName]
+    properties:
+      actorType: {type: string, enum: [user, agent]}
+      actorId: {type: string, format: uuid}
+      actorName: {type: string}
+  DocumentHistoryState:
+    type: object
+    required: [sequence, previousSequence, markdown, content]
+    properties:
+      sequence: {type: integer, format: int64}
+      previousSequence: {type: integer, format: int64}
+      markdown: {type: string}
+      content: {$ref: './canvas.yaml#/schemas/CanvasBlock'}
+      suggestionCapture: {$ref: '#/schemas/DocumentSuggestionCapture'}
+  DocumentSuggestionCapture:
+    type: object
+    description: Exact retained before and result of an acceptance or undo, redacted against current source access.
+    required: [beforeContent, resultContent, beforeMarkdown, resultMarkdown]
+    properties:
+      beforeContent: {$ref: './canvas.yaml#/schemas/CanvasBlock'}
+      resultContent: {$ref: './canvas.yaml#/schemas/CanvasBlock'}
+      beforeMarkdown: {type: string}
+      resultMarkdown: {type: string}
+  DocumentHistoryRestore:
+    type: object
+    required: [expectedSequence]
+    properties:
+      expectedSequence: {type: integer, format: int64, minimum: 1}
+  DocumentHistoryName:
+    type: object
+    required: [label]
+    properties:
+      label: {type: string, maxLength: 200}

@@ -1,0 +1,100 @@
+---
+title: Skills
+description: The agent-scoped file bundles Zenith Team materializes into a run's execution environment before the provider CLI starts.
+---
+
+Custom skills give an Agent additional procedures, reference documents, scripts,
+and assets. They belong to the Agent and follow it across computers.
+
+## Add a skill
+
+Open **Agents → your Agent → Capabilities → Custom skills → Add skill**.
+Choose a public GitHub repository or skill folder, upload a ZIP, or upload a
+single Markdown file. Private repositories can be uploaded as ZIP. Review the
+instructions and file list, select the skills to install, then confirm.
+
+A Markdown skill needs YAML frontmatter, for example:
+
+```md
+---
+name: review-work
+description: Review a deliverable before handing it back.
+---
+Read the requested changes, inspect the result, and report the checks performed.
+```
+
+A ZIP or repository may contain several skill folders. Each has its own
+SKILL.md; its folder name matches the skill name. Supporting files stay inside
+that folder. An archive wrapper around a repository-root skill is also accepted. Packages cannot install hooks, provider settings or dependencies.
+
+## Manage installed skills
+
+Click a skill row to open its files and source. Edit text files or mark supporting
+files for deletion, then **Save**. Leaving with unsaved changes shows a warning:
+**Stay** keeps editing; **Discard and leave** clears the changes. Switching files
+within the same skill keeps edits until they are saved or discarded.
+Use **Enable** to turn the skill on, **Disable** to turn it off, or **Remove skill**
+to uninstall.
+An existing name is never silently replaced. The Agent creator or a member with
+Agent management permission can make changes; the CEO needs that permission.
+Other Company members can inspect the installed skills.
+
+New Runs in **existing and new chats and Tasks** receive the current enabled
+skills. Running or queued work and its retries keep their current version.
+A changed skill set starts a fresh provider session in the same Zenith chat,
+with its history and workspace retained. Scheduled work keeps its separately
+reviewed access and does not receive custom skills.
+
+## Package limits
+
+Upload up to 32 MiB, expanding to at most 128 MiB and 2000 files. A supporting
+file may be up to 16 MiB and SKILL.md up to 1 MiB. An Agent can have 32 custom
+skills, totaling 128 MiB, and 20 import previews per day. Previews expire after
+24 hours. Confirmed installs keep the exact reviewed bytes and GitHub commit.
+
+## Delivery and skill tools
+
+The daemon verifies every downloaded or cached file against the Run's frozen
+hashes before starting the provider. Codex uses its private Run skill directory;
+Claude uses a separate Run directory, including when working in your local
+folder. Neither requires creating a new Zenith chat.
+
+The Run can also search skills with `search_skills` and read verified text with
+`load_skill_reference`. These tools use the same frozen files as native delivery.
+Binary assets remain available as files. Skills grant no extra connection,
+publication, mail or command authority.
+
+If a bundle cannot be verified or retrieved, the Run fails preparation with
+`skill_bundle_unavailable`. Update an old daemon if it reports that custom skills
+require a newer version.
+
+## Zenith Studio
+
+Every Agent, including the CEO, has a **Zenith Studio** switch under
+**Zenith Team tools**. It is off by default. Enabling it applies to new direct
+and Task Runs; already queued Runs and retries keep their frozen selection.
+Scheduled work keeps its reviewed Connector access.
+
+The daemon prepares the pinned Studio CLI and its video renderer in the
+background. The Runtime computer needs Node.js 22+ and npm; video rendering
+also needs FFmpeg and ffprobe. The daemon prepares Chrome automatically.
+HyperFrames is an internal video dependency, with no separate Agent switch.
+
+Open the Agent's **Zenith Team tools** in Desktop on its Runtime computer.
+Use **Connect** to sign in through the browser. The card reports setup and
+sign-in status, supports cancelling a pending sign-in, and offers **Reconnect**,
+**Refresh status**, **Repair setup**, and **Repair video renderer** in its menu.
+Web and other computers show the last reported status and where to connect.
+
+The connected account belongs to this Agent in this Company on this computer.
+Other Agents connect their own accounts.
+Other Companies use separate accounts. Credentials stay on the computer.
+New enabled Runs receive that account, the pinned CLI, and reviewed Studio
+workflows. Final media is saved as ordinary Zenith Team Outputs.
+
+Each Conversation uses its own Studio Project, reused by later Runs in that
+Conversation. Output cards preview the final media; **Canvas** shows the saved
+source nodes and dependencies. Owners can import a missing source canvas without
+changing the original result. HyperFrames assembles longer videos from multiple
+scenes, narration, captions and music on the Runtime computer. Outputs currently
+allow files up to 100 MiB each; the Agent checks duration and size before delivery.

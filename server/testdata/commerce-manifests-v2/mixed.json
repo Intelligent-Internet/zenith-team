@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "site": {
+    "alias": "store",
+    "origin": "https://store.example.com",
+    "portalReturnPath": "/settings/billing"
+  },
+  "offers": [
+    {
+      "alias": "premium_report",
+      "displayName": "Premium report",
+      "type": "one_time",
+      "entitlement": "report.premium",
+      "amount": 2900,
+      "currency": "usd",
+      "automaticTax": false,
+      "successPath": "/reports/processing",
+      "cancelPath": "/reports"
+    },
+    {
+      "alias": "pro_monthly",
+      "displayName": "Pro",
+      "type": "subscription",
+      "planGroup": "pro",
+      "entitlement": "plan.pro",
+      "amount": 1200,
+      "currency": "gbp",
+      "interval": "month",
+      "automaticTax": true,
+      "successPath": "/billing/processing",
+      "cancelPath": "/pricing"
+    },
+    {
+      "alias": "pro_yearly",
+      "displayName": "Pro",
+      "type": "subscription",
+      "planGroup": "pro",
+      "entitlement": "plan.pro",
+      "amount": 12000,
+      "currency": "gbp",
+      "interval": "year",
+      "automaticTax": true,
+      "successPath": "/billing/processing",
+      "cancelPath": "/pricing"
+    }
+  ]
+}

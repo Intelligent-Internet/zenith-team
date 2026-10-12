@@ -1,0 +1,376 @@
+.support-settings-page {
+  container: support-settings / inline-size;
+  min-width: 0;
+}
+
+.support-settings-section {
+  padding: 26px 0;
+  border-bottom: 1px solid var(--workspace-divider);
+}
+
+.support-settings-section:first-child {
+  padding-top: 0;
+}
+
+.support-settings-section > h2 {
+  margin: 0 0 20px;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+}
+
+.support-settings-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.support-settings-row + .support-settings-row {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.support-settings-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  align-self: start;
+  border-radius: 8px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+}
+
+.support-settings-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.support-settings-row__copy {
+  min-width: 0;
+}
+
+.support-settings-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+}
+
+.support-settings-row__copy p,
+.support-settings-update-summary p,
+.support-settings-automatic p {
+  margin: 4px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: 1.6;
+}
+
+.support-settings-row__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.support-settings-channel {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.support-settings-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  outline: none;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: 20px;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.support-settings-button svg,
+.support-daemon__utility svg {
+  flex: none;
+}
+
+.support-settings-button:not(:disabled):is(:hover, :focus-visible) {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.support-settings-button--primary {
+  border-color: transparent;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  font-weight: 500;
+}
+
+.support-settings-button--primary:not(:disabled):is(:hover, :focus-visible) {
+  background: var(--workspace-accent-fill);
+  filter: brightness(0.96);
+}
+
+.support-settings-button--icon {
+  width: 36px;
+  padding: 7px;
+}
+
+.support-settings-button:disabled,
+.support-daemon__utility:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.support-settings-update-summary {
+  margin-top: 18px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.support-settings-update-summary > strong {
+  font-weight: 500;
+}
+
+.support-settings-update-summary[data-tone="danger"] > strong,
+.support-settings-message[data-tone="danger"],
+.support-daemon__notice[data-tone="danger"] {
+  color: var(--workspace-native-danger);
+}
+
+.support-settings-update-summary progress {
+  display: block;
+  width: min(100%, 360px);
+  height: 6px;
+  margin-top: 12px;
+  accent-color: var(--workspace-native-accent);
+}
+
+.support-settings-automatic {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.support-settings-automatic label {
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+}
+
+.support-settings-contact-action {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.support-settings-contact-action > span {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+
+.support-settings-message,
+.support-daemon__notice {
+  margin: 12px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.support-settings-diagnostic-files {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-control-bg);
+}
+
+.support-daemon__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 400;
+}
+
+.support-daemon__status::before {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+
+.support-daemon__status[data-tone="ready"] {
+  color: var(--workspace-native-success);
+}
+
+.support-daemon__status[data-tone="danger"] {
+  color: var(--workspace-native-danger);
+}
+
+.support-daemon__status[data-tone="warning"],
+.support-daemon__notice[data-tone="warning"] {
+  color: var(--workspace-native-approval);
+}
+
+.support-daemon__utilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.support-daemon__utility {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  outline: none;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: var(--workspace-text-caption);
+  cursor: pointer;
+}
+
+.support-daemon__utility:not(:disabled):is(:hover, :focus-visible),
+.support-daemon__utility[aria-expanded="true"] {
+  background: var(--workspace-control-bg);
+}
+
+.support-daemon__utility:focus-visible {
+  border-color: var(--workspace-native-accent);
+}
+
+.support-daemon__utility[aria-expanded="true"] .support-daemon__chevron {
+  transform: rotate(90deg);
+}
+
+.support-daemon__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 32px;
+  margin-top: 16px;
+  padding: 20px;
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-control-bg);
+  font-size: var(--workspace-text-caption);
+  line-height: 1.6;
+}
+
+.support-daemon__details h3 {
+  margin: 0 0 8px;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.support-daemon__details dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.support-daemon__details :is(dd, p) {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.support-daemon__logs {
+  margin-top: 16px;
+}
+
+.support-daemon__logs .daemon-card__log-toolbar + .daemon-card__log-toolbar {
+  margin-top: 12px;
+}
+
+.support-settings-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 4px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: 1.6;
+}
+
+.support-settings-footer nav {
+  display: flex;
+  gap: 20px;
+}
+
+.support-settings-footer a {
+  border-radius: 3px;
+  outline: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+.support-settings-footer a:is(:hover, :focus-visible) {
+  color: var(--workspace-native-text);
+  text-decoration: underline;
+}
+
+@container support-settings (max-width: 640px) {
+  .support-settings-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .support-settings-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .support-settings-row__action {
+    grid-column: 2;
+    flex-wrap: wrap;
+  }
+
+  .support-settings-contact-action {
+    justify-items: start;
+  }
+
+  .support-settings-button {
+    white-space: normal;
+  }
+
+  .support-daemon__utilities {
+    gap: 4px 8px;
+  }
+
+  .support-daemon__details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

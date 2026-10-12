@@ -1,0 +1,64 @@
+@layer components {
+  .immersive-canvas-texture {
+    background: var(--color-immersive-cream);
+  }
+
+  .immersive-canvas-texture.immersive-canvas-dark {
+    background-color: var(--color-immersive-canvas);
+    background-image: var(--immersive-canvas-dark-bg-image, none);
+    background-position: top;
+    background-size: cover;
+    color: var(--color-immersive-cream);
+  }
+
+  .immersive-canvas-texture::before {
+    display: none;
+  }
+
+  .gradient-cta-button {
+    border-radius: 109px;
+    background:
+      radial-gradient(
+        107.08% 85.59% at 86.3% 87.5%,
+        --alpha(var(--color-black) / 23%) 0%,
+        transparent 86.18%
+      ),
+      radial-gradient(
+        83.94% 83.94% at 26.39% 20.83%,
+        --alpha(var(--color-white) / 41%) 0%,
+        transparent 76.6%,
+        transparent 100%
+      ),
+      linear-gradient(91deg, #f6cf21 0%, #267105 100%);
+    box-shadow:
+      inset -3px -4px 7px --alpha(var(--color-white) / 15%),
+      4px 38px 62px --alpha(var(--color-black) / 50%);
+  }
+
+  .immersive-flow-title {
+    color: var(--color-orange-2);
+    background:
+      radial-gradient(
+        circle at 24% 18%,
+        --alpha(var(--color-white) / 42%) 0%,
+        transparent 70%
+      ),
+      linear-gradient(90deg, #edd56e 0%, #ddbb2f 48%, #d3ac18 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .option-icon-selected {
+    background:
+      radial-gradient(
+        76.16% 76.16% at 28% 20%,
+        --alpha(var(--color-white) / 88%) 0%,
+        transparent 69.79%,
+        transparent 100%
+      ),
+      linear-gradient(135deg, #ffe570 0%, #ffd11a 54%, #efb900 100%);
+    box-shadow: inset -3px -4px 7px --alpha(var(--color-white) / 28%);
+    filter: drop-shadow(4px 38px 62px --alpha(var(--color-black) / 50%));
+  }
+}

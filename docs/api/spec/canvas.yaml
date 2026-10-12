@@ -1,0 +1,1796 @@
+# Shared Project artifact canvas; no execution endpoints.
+paths:
+  search:
+    get:
+      tags: [projects]
+      operationId: searchCanvasDocuments
+      summary: Search authorized native documents and return block locations
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: query, in: query, required: true, schema: {type: string, minLength: 2, maxLength: 120}}
+      responses:
+        '200':
+          description: Matching documents
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/CanvasSearch'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  library:
+    get:
+      tags: [projects]
+      operationId: getCanvasLibrary
+      summary: Read shared templates, personal views and recoverable placements
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+      responses:
+        '200':
+          description: Authorized canvas library
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/CanvasLibrary'}
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  block_ids:
+    post:
+      tags: [projects]
+      operationId: reserveCanvasBlockIDs
+      summary: Reserve server-generated identities for native document blocks
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [count]
+              properties:
+                count: {type: integer, minimum: 1, maximum: 256}
+      responses:
+        '200':
+          description: A bounded pool scoped to the live document
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/CanvasBlockIDs'
+        default:
+          description: Request could not be completed
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Error'
+  canvas:
+    get:
+      tags:
+        - "projects"
+      operationId: "getProjectCanvas"
+      summary: "get Project Canvas"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "after_seq"
+          in: "query"
+          description: "Last applied canvas sequence. Zero requests a snapshot; a missing, expired, or future cursor returns full=true. Notifications are hints and must not advance this cursor."
+          schema:
+            type: "integer"
+            minimum: 0
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasSnapshot"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+  timeline:
+    get:
+      tags: [projects]
+      operationId: getProjectCanvasTimeline
+      summary: List accessible artifact versions and review decisions
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: projectId
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+        - name: before
+          in: query
+          description: Opaque seek cursor returned by the preceding page.
+          schema: {type: string, maxLength: 256}
+      responses:
+        "200":
+          description: Up to 50 events, newest first. Permissions are checked on every page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasTimelinePage"
+        "400":
+          description: Invalid cursor.
+          content:
+            application/json:
+              schema: {$ref: "./_common.yaml#/schemas/Error"}
+        "401":
+          description: Authentication required.
+          content:
+            application/json:
+              schema: {$ref: "./_common.yaml#/schemas/Error"}
+        "404":
+          description: Project unavailable.
+          content:
+            application/json:
+              schema: {$ref: "./_common.yaml#/schemas/Error"}
+  operations:
+    post:
+      tags:
+        - "projects"
+      operationId: "mutateProjectCanvas"
+      summary: "mutate Project Canvas"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasResult"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/schemas/CanvasCommand"
+  history:
+    get:
+      tags:
+        - "projects"
+      operationId: "getCanvasHistory"
+      summary: "get Canvas History"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "artifactId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasHistory"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+  threads:
+    get:
+      tags:
+        - "projects"
+      operationId: "getCanvasThreads"
+      summary: "get Canvas Threads"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "versionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasThreadList"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+  body:
+    get:
+      tags:
+        - "projects"
+      operationId: "getCanvasBody"
+      summary: "get Canvas Body"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "versionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasBody"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+  document:
+    get:
+      tags:
+        - "projects"
+      operationId: "getCanvasDocument"
+      summary: "get Canvas Document"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "versionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "after_seq"
+          in: "query"
+          schema:
+            type: "integer"
+            minimum: 0
+        - name: "projection"
+          in: "query"
+          description: "Omit encoded CRDT state when only the read-only block projection is needed."
+          schema:
+            type: "boolean"
+            default: false
+        - name: state_vector
+          in: query
+          description: Base64 Yjs state vector; return only missing CRDT changes. Revalidate access on every read.
+          schema: {type: string, maxLength: 87384}
+        - name: block_id
+          in: query
+          description: Select an addressed block or heading section for a projection.
+          schema: {type: string, format: uuid}
+        - name: preview
+          in: query
+          description: Limit an unaddressed projection to its first eight top-level blocks.
+          schema: {type: boolean, default: false}
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasDocument"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+    post:
+      tags:
+        - "projects"
+      operationId: "syncCanvasDocument"
+      summary: "sync Canvas Document"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+        - name: "versionId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasDocument"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/schemas/CanvasDocumentUpdate"
+  presence:
+    put:
+      tags:
+        - "projects"
+      operationId: "updateCanvasPresence"
+      summary: "update Canvas Presence"
+      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
+      parameters:
+        - $ref: "./_common.yaml#/parameters/companyId"
+        - name: "projectId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "Authorized canvas state."
+          content:
+            application/json:
+              schema:
+                $ref: "#/schemas/CanvasPresenceList"
+        "400":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "401":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "403":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "404":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "409":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "413":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "415":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "422":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+        "500":
+          description: "Request could not be completed."
+          content:
+            application/json:
+              schema:
+                $ref: "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/schemas/CanvasPresenceInput"
+schemas:
+  CanvasSearch:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items:
+          type: object
+          required: [artifactId, versionId, blockId, title, excerpt]
+          properties:
+            artifactId: {type: string, format: uuid}
+            versionId: {type: string, format: uuid}
+            blockId: {type: string}
+            title: {type: string}
+            excerpt: {type: string}
+  CanvasLibrary:
+    type: object
+    required: [templates, views, removed]
+    properties:
+      templates:
+        type: array
+        items: {$ref: '#/schemas/CanvasLibraryEntry'}
+      views:
+        type: array
+        items: {$ref: '#/schemas/CanvasLibraryEntry'}
+      removed:
+        type: array
+        items:
+          type: object
+          required: [id, title, revision]
+          properties:
+            id: {type: string, format: uuid}
+            title: {type: string}
+            revision: {type: integer}
+  CanvasLibraryEntry:
+    type: object
+    required: [id, title, config]
+    properties:
+      id: {type: string, format: uuid}
+      title: {type: string}
+      config: {type: object, additionalProperties: true}
+  CanvasBlock:
+    type: object
+    properties:
+      type: {type: string}
+      attrs: {type: object, additionalProperties: true}
+      text: {type: string}
+      marks:
+        type: array
+        items:
+          type: object
+          required: [type]
+          properties:
+            type: {type: string}
+            attrs: {type: object, additionalProperties: true}
+      content:
+        type: array
+        items:
+          $ref: '#/schemas/CanvasBlock'
+  CanvasBlockIDs:
+    type: object
+    required: [ids]
+    properties:
+      ids:
+        type: array
+        items: {type: string, format: uuid}
+  DocumentWritingTarget:
+    type: object
+    additionalProperties: false
+    required: [blockId, from, to, text]
+    properties:
+      blockId:
+        type: string
+      from:
+        type: integer
+        minimum: 0
+      to:
+        type: integer
+        minimum: 0
+      text:
+        type: string
+        maxLength: 100000
+    description: Captured text block and UTF-16 selection offsets. Empty ranges insert at the cursor. The server checks the captured text before starting generation and stages the response for human review.
+  CanvasCommand:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "requestKey"
+      - "type"
+    properties:
+      writingTarget:
+        $ref: '#/schemas/DocumentWritingTarget'
+      agentIds:
+        description: Agents explicitly mentioned in a new native Page comment or reply. Starts thread runs without creating Tasks; retries reuse the comment receipt.
+        type: array
+        maxItems: 5
+        uniqueItems: true
+        items:
+          type: string
+          format: uuid
+
+      pageId:
+        type: string
+        format: uuid
+        description: For comment only. Attach to the working Project Page across versions. Mutually exclusive with versionId; the server resolves the originating version.
+      content: {$ref: '#/schemas/CanvasBlock'}
+      requestKey:
+        type: "string"
+        format: "uuid"
+      type:
+        type: "string"
+        enum:
+          - "create_document"
+          - "import_output_document"
+          - "branch_document"
+          - "save_template"
+          - "use_template"
+          - "delete_template"
+          - "save_view"
+          - "delete_view"
+          - "restore_item"
+          - "add_artifact"
+          - "add_version"
+          - "place"
+          - "place_all"
+          - "frame"
+          - "move"
+          - "configure"
+          - "remove"
+          - "connect"
+          - "disconnect"
+          - "comment"
+          - "reply"
+          - "resolve"
+          - "edit_comment"
+          - "delete_comment"
+          - "rename"
+          - "checkpoint"
+          - "restore_version"
+      id:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      artifactId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      taskId:
+        description: Optional Task in this Project for a newly created artifact. Only accepted by create_document and add_artifact, never when adding a version.
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      versionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      threadId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      attachmentId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      outputId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      outputItemId:
+        description: Required by import_output_document. The server reads this exact immutable Markdown file, retaining the Output ACL and returning the existing shared document on repeat opens. Body is ignored. Requires artifactId and the source output versionId.
+        anyOf:
+          - type: string
+            format: uuid
+          - type: "null"
+      wikiPageId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      wikiRevisionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      parentFrameId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      sourceId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      targetId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      expectedRevision:
+        type: "integer"
+      title:
+        type: "string"
+      body:
+        type: "string"
+      action:
+        type: "string"
+      representation:
+        type: "string"
+      versionPolicy:
+        type: "string"
+      x:
+        type: "number"
+      y:
+        type: "number"
+      width:
+        type: "number"
+      height:
+        type: "number"
+      moves:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasMove"
+      viewConfig:
+        type: "object"
+        additionalProperties: true
+      anchor:
+        $ref: '#/schemas/CanvasAnchor'
+  CanvasMove:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "expectedRevision"
+      - "x"
+      - "y"
+      - "width"
+      - "height"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      expectedRevision:
+        type: "integer"
+      x:
+        type: "number"
+      y:
+        type: "number"
+      width:
+        type: "number"
+      height:
+        type: "number"
+  CanvasResult:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "sequence"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      sequence:
+        type: "integer"
+  CanvasItem:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "version"
+      - "id"
+      - "type"
+      - "artifactId"
+      - "pinnedVersionId"
+      - "versionPolicy"
+      - "parentFrameId"
+      - "title"
+      - "x"
+      - "y"
+      - "width"
+      - "height"
+      - "stackOrder"
+      - "representation"
+      - "viewConfig"
+      - "geometryRevision"
+      - "contentRevision"
+    properties:
+      version:
+        anyOf:
+          - $ref: "#/schemas/CanvasVersion"
+          - type: "null"
+      id:
+        type: "string"
+        format: "uuid"
+      type:
+        type: "string"
+      artifactId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      pinnedVersionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      versionPolicy:
+        type: "string"
+      parentFrameId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      title:
+        type: "string"
+      x:
+        type: "number"
+      y:
+        type: "number"
+      width:
+        type: "number"
+      height:
+        type: "number"
+      stackOrder:
+        type: "integer"
+      representation:
+        type: "string"
+      viewConfig:
+        type: "object"
+        additionalProperties: true
+      geometryRevision:
+        type: "integer"
+      contentRevision:
+        type: "integer"
+  CanvasVersion:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "openComments"
+      - "id"
+      - "artifactId"
+      - "number"
+      - "sourceType"
+      - "sourceOutputId"
+      - "wikiPageId"
+      - "wikiRevisionId"
+      - "assetVersionId"
+      - "outputId"
+      - "runId"
+      - "attachmentId"
+      - "filename"
+      - "contentType"
+      - "sizeBytes"
+      - "excerpt"
+      - "createdAt"
+      - "baseVersionId"
+      - "branchTitle"
+    properties:
+      branchTitle: {type: string}
+      openComments:
+        type: "integer"
+      id:
+        type: "string"
+        format: "uuid"
+      artifactId:
+        type: "string"
+        format: "uuid"
+      number:
+        type: "integer"
+      sourceType:
+        type: "string"
+      sourceOutputId:
+        description: Original Output whose current access rules govern this version, including imported native drafts. These documents are not Company Wiki publications.
+        anyOf:
+          - type: string
+            format: uuid
+          - type: "null"
+      outputItemId: {type: string, format: uuid}
+      wikiPageId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      wikiRevisionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      assetVersionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      outputId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      runId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      attachmentId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      filename:
+        anyOf:
+          - type: "string"
+          - type: "null"
+      contentType:
+        anyOf:
+          - type: "string"
+          - type: "null"
+      sizeBytes:
+        anyOf:
+          - type: "integer"
+          - type: "null"
+      excerpt:
+        type: "string"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      baseVersionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+  CanvasArtifact:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "pageId"
+      - "id"
+      - "title"
+      - "revision"
+      - "acceptedVersionId"
+      - "latestVersionId"
+      - "latestVersion"
+      - "openComments"
+      - "updatedAt"
+      - "taskId"
+      - "reviewState"
+      - "creatorName"
+    properties:
+      pageId:
+        description: Stable editable Project Page identity, otherwise null.
+        anyOf:
+          - {type: string, format: uuid}
+          - {type: "null"}
+      taskId:
+        description: Task selected when creating the artifact, otherwise the Task of the earliest accessible Output version, or null for project resources.
+        anyOf:
+          - {type: string, format: uuid}
+          - {type: "null"}
+      creatorName:
+        type: string
+      resultStatus:
+        description: Task result review status for the latest accessible version's source Output. Separate from Canvas version acceptance; absent for working Pages and files.
+        type: string
+        enum: [ready_for_review, approved, changes_requested, superseded]
+      reviewState:
+        description: State of the latest accessible version; a newer unreviewed version needs review even if an older version was accepted. Reject maps to changes_requested and keep_variant to needs_review.
+        type: string
+        enum: [needs_review, changes_requested, accepted]
+      id:
+        type: "string"
+        format: "uuid"
+      title:
+        type: "string"
+      revision:
+        type: "integer"
+      acceptedVersionId:
+        anyOf:
+          - type: "string"
+            format: "uuid"
+          - type: "null"
+      latestVersionId:
+        type: "string"
+        format: "uuid"
+      latestVersion:
+        $ref: "#/schemas/CanvasVersion"
+      openComments:
+        type: "integer"
+      updatedAt:
+        type: "string"
+        format: "date-time"
+  CanvasEdge:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "source"
+      - "target"
+      - "label"
+      - "revision"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      source:
+        type: "string"
+        format: "uuid"
+      target:
+        type: "string"
+        format: "uuid"
+      label:
+        type: "string"
+      revision:
+        type: "integer"
+  CanvasSnapshot:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "artifactIds"
+      - "reviewVersionIds"
+      - "canvasId"
+      - "sequence"
+      - "full"
+      - "items"
+      - "artifacts"
+      - "edges"
+      - "removed"
+      - "canEdit"
+      - "canEditDocuments"
+      - "canManageFiles"
+    properties:
+      reviewVersionIds:
+        description: "Authorized exact versions with changed review threads since after_seq. Deduplicated; empty for layout-only changes. When full=true, refresh open Project review queries instead."
+        type: "array"
+        items:
+          type: "string"
+          format: "uuid"
+      artifactIds:
+        type: "array"
+        items:
+          type: "string"
+          format: "uuid"
+      canvasId:
+        type: "string"
+        format: "uuid"
+      sequence:
+        type: "integer"
+      full:
+        type: "boolean"
+      items:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasItem"
+      artifacts:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasArtifact"
+      edges:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasEdge"
+      removed:
+        type: "array"
+        items:
+          type: "string"
+          format: "uuid"
+      canEdit:
+        type: "boolean"
+        description: "Whether the viewer holds project.tasks.write, which every command needs except adding an uploaded file."
+      canEditDocuments:
+        type: "boolean"
+      canManageFiles:
+        type: "boolean"
+        description: "Whether the viewer holds project.files.manage. add_artifact and add_version with an attachmentId need this alone, not canEdit; show upload controls on it."
+  CanvasComment:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "body"
+      - "revision"
+      - "authorId"
+      - "authorName"
+      - "createdAt"
+      - "editedAt"
+      - "deleted"
+    properties:
+      authorAgentId:
+        type: [string, "null"]
+        format: uuid
+      runId:
+        type: [string, "null"]
+        format: uuid
+
+      id:
+        type: "string"
+        format: "uuid"
+      body:
+        type: "string"
+      revision:
+        type: "integer"
+      authorId:
+        type: "string"
+        format: "uuid"
+      authorName:
+        type: "string"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      editedAt:
+        anyOf:
+          - type: "string"
+            format: "date-time"
+          - type: "null"
+      deleted:
+        type: "boolean"
+  CanvasThread:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "versionId"
+      - "anchor"
+      - "status"
+      - "revision"
+      - "createdAt"
+      - "comments"
+    properties:
+      agentRuns:
+        type: array
+        items:
+          type: object
+          additionalProperties: false
+          required: [agentId, agentName, runId, status]
+          properties:
+            agentId:
+              type: string
+              format: uuid
+            agentName:
+              type: string
+            runId:
+              type: string
+              format: uuid
+            status:
+              type: string
+
+      pageId:
+        type: string
+        format: uuid
+        description: Present for a working Page discussion; absent for exact-version feedback.
+      id:
+        type: "string"
+        format: "uuid"
+      versionId:
+        type: "string"
+        format: "uuid"
+      anchor:
+        $ref: '#/schemas/CanvasAnchor'
+      status:
+        type: "string"
+      revision:
+        type: "integer"
+      createdAt:
+        type: "string"
+        format: "date-time"
+      comments:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasComment"
+  CanvasDecision:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "id"
+      - "versionId"
+      - "action"
+      - "feedback"
+      - "actorName"
+      - "createdAt"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      versionId:
+        type: "string"
+        format: "uuid"
+      action:
+        type: "string"
+      feedback:
+        type: "string"
+      actorName:
+        type: "string"
+      createdAt:
+        type: "string"
+        format: "date-time"
+  CanvasHistory:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "versions"
+      - "decisions"
+    properties:
+      versions:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasVersion"
+      decisions:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasDecision"
+  CanvasDocument:
+    type: "object"
+    additionalProperties: false
+    required:
+      - "pageId"
+      - "sequence"
+      - "state"
+      - "markdown"
+      - "canEdit"
+      - "schemaVersion"
+      - "structureSequence"
+    properties:
+      schemaVersion:
+        type: integer
+        const: 1
+      content:
+        $ref: "#/schemas/CanvasBlock"
+      pageId:
+        type: "string"
+        format: "uuid"
+      sequence:
+        type: "integer"
+      structureSequence:
+        type: integer
+        description: Latest structural edit sequence. Stale edits crossing this boundary require recovery.
+      stateVector:
+        type: string
+        format: byte
+      state:
+        type:
+          - "string"
+          - "null"
+        format: "byte"
+      markdown:
+        type: "string"
+      canEdit:
+        type: "boolean"
+  CanvasThreadList:
+    type: "object"
+    required:
+      - "items"
+    properties:
+      items:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasThread"
+  CanvasBody:
+    type: "object"
+    required:
+      - "body"
+    properties:
+      content:
+        $ref: "#/schemas/CanvasBlock"
+      body:
+        type: "string"
+  CanvasDocumentUpdate:
+    type: "object"
+    required:
+      - "update"
+      - "schemaVersion"
+      - "baseSequence"
+    properties:
+      baseSequence: {type: integer, minimum: 0}
+      stateVector: {type: string, format: byte, description: Client vector used to return only missing changes after acknowledgement.}
+      schemaVersion:
+        type: integer
+        const: 1
+      update:
+        type: "string"
+        format: "byte"
+  CanvasPresenceInput:
+    type: "object"
+    required:
+      - "sessionId"
+      - "x"
+      - "y"
+      - "cameraX"
+      - "cameraY"
+      - "zoom"
+      - "pointing"
+      - "presenting"
+    properties:
+      documentVersionId: {type: string, format: uuid}
+      cursor: {$ref: '#/schemas/CanvasDocumentCursor'}
+      sessionId:
+        type: "string"
+        format: "uuid"
+      x:
+        type: "number"
+      y:
+        type: "number"
+      cameraX:
+        type: "number"
+      cameraY:
+        type: "number"
+      zoom:
+        type: "number"
+        minimum: 0.05
+        maximum: 4
+      pointing:
+        type: "boolean"
+      presenting:
+        type: "boolean"
+      leave:
+        type: "boolean"
+  CanvasSession:
+    type: "object"
+    required:
+      - "actor"
+      - "sessionId"
+      - "x"
+      - "y"
+      - "cameraX"
+      - "cameraY"
+      - "zoom"
+      - "pointing"
+      - "presenting"
+      - "userId"
+      - "name"
+      - "updatedAt"
+    properties:
+      actor:
+        $ref: "_common.yaml#/schemas/ActorRef"
+      runId:
+        type: [string, "null"]
+        format: uuid
+      selectionIds:
+        type: array
+        items: {type: string, format: uuid}
+      dragPreviews:
+        type: array
+        items: {$ref: './whiteboards.yaml#/schemas/BoardDragPreview'}
+      cursor: {$ref: '#/schemas/CanvasDocumentCursor'}
+      view: {$ref: './whiteboards.yaml#/schemas/BoardRect'}
+      workArea: {$ref: './whiteboards.yaml#/schemas/BoardRect'}
+      focused:
+        type: "boolean"
+      sessionId:
+        type: "string"
+        format: "uuid"
+      x:
+        type: "number"
+      y:
+        type: "number"
+      cameraX:
+        type: "number"
+      cameraY:
+        type: "number"
+      zoom:
+        type: "number"
+        minimum: 0.05
+        maximum: 4
+      pointing:
+        type: "boolean"
+      presenting:
+        type: "boolean"
+      userId:
+        type: "string"
+        format: "uuid"
+      name:
+        type: "string"
+      updatedAt:
+        type: "integer"
+  CanvasPresenceList:
+    type: "object"
+    required:
+      - "items"
+    properties:
+      items:
+        type: "array"
+        items:
+          $ref: "#/schemas/CanvasSession"
+  CanvasDocumentCursor:
+    type: object
+    required: [clientId, anchor, head]
+    properties:
+      clientId: {type: integer, minimum: 0, maximum: 4294967295}
+      anchor: {type: string, format: byte}
+      head: {type: string, format: byte}
+
+  CanvasAnchor:
+    oneOf:
+      - $ref: '#/schemas/CanvasLegacyAnchor'
+      - $ref: '#/schemas/CanvasMediaAnchor'
+  CanvasLegacyAnchor:
+    type: object
+    description: Existing version, quote, and viewport anchors; viewport coordinates are not media coordinates.
+    properties:
+      blockId: {type: string, format: uuid}
+      type: { type: string, enum: [version, textQuote, point, block] }
+      exact: { type: string, maxLength: 1000 }
+      x: { type: number }
+      y: { type: number }
+      viewportWidth: { type: number }
+      viewportHeight: { type: number }
+      scrollTop: { type: number }
+  CanvasMediaAnchor:
+    type: object
+    additionalProperties: false
+    description: Immutable media coordinates. Maximum 16 KiB serialized, 512 freehand points total. PDF requires pageIndex; video requires timeMs; other surfaces forbid these fields.
+    required: [type, schemaVersion, target, surface, shapes]
+    properties:
+      type: { type: string, enum: [media] }
+      schemaVersion: { type: integer, enum: [1] }
+      target: { $ref: '#/schemas/CanvasAnchorTarget' }
+      surface: { type: string, enum: [image, pdf, video] }
+      pageIndex: { type: integer, minimum: 0, maximum: 1000000 }
+      timeMs: { type: integer, minimum: 0, maximum: 604800000 }
+      shapes:
+        type: array
+        maxItems: 16
+        items: { $ref: '#/schemas/CanvasAnchorShape' }
+  CanvasAnchorTarget:
+    type: object
+    additionalProperties: false
+    required: [assetVersionId]
+    properties:
+      assetVersionId: { type: string, format: uuid }
+      outputItemId: { type: string, format: uuid }
+  CanvasAnchorShape:
+    oneOf:
+      - $ref: '#/schemas/CanvasAnchorPoint'
+      - $ref: '#/schemas/CanvasAnchorRegion'
+      - $ref: '#/schemas/CanvasAnchorStroke'
+  CanvasAnchorPoint:
+    type: object
+    additionalProperties: false
+    required: [type, color, x, y]
+    properties:
+      type: { type: string, enum: [point] }
+      color: { type: string, enum: [amber, rose, blue] }
+      x: { type: number, minimum: 0, maximum: 1 }
+      y: { type: number, minimum: 0, maximum: 1 }
+  CanvasAnchorRegion:
+    type: object
+    additionalProperties: false
+    required: [type, color, x, y, width, height]
+    properties:
+      type: { type: string, enum: [rectangle, ellipse] }
+      color: { type: string, enum: [amber, rose, blue] }
+      x: { type: number, minimum: 0, maximum: 1 }
+      y: { type: number, minimum: 0, maximum: 1 }
+      width: { type: number, exclusiveMinimum: 0, maximum: 1 }
+      height: { type: number, exclusiveMinimum: 0, maximum: 1 }
+  CanvasAnchorStroke:
+    type: object
+    additionalProperties: false
+    required: [type, color, points]
+    properties:
+      type: { type: string, enum: [freehand] }
+      color: { type: string, enum: [amber, rose, blue] }
+      points:
+        type: array
+        minItems: 2
+        maxItems: 512
+        items:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items: { type: number, minimum: 0, maximum: 1 }
+
+  CanvasTimelineEntry:
+    type: object
+    additionalProperties: false
+    required: [id, artifactId, versionId, versionNumber, title, action, feedback, actorName, createdAt]
+    properties:
+      id: {type: string, format: uuid}
+      artifactId: {type: string, format: uuid}
+      versionId: {type: string, format: uuid}
+      versionNumber: {type: integer}
+      title: {type: string}
+      action: {type: string, enum: [created, version, accept, reject, request_changes, keep_variant]}
+      feedback: {type: string}
+      actorName: {type: string}
+      createdAt: {type: string, format: date-time}
+  CanvasTimelinePage:
+    type: object
+    additionalProperties: false
+    required: [items, nextCursor]
+    properties:
+      items:
+        type: array
+        items: {$ref: "#/schemas/CanvasTimelineEntry"}
+      nextCursor:
+        anyOf:
+          - {type: string}
+          - {type: "null"}

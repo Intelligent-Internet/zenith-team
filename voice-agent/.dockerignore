@@ -1,0 +1,13 @@
+# Upload only production build inputs to LiveKit Cloud.
+*
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!agent.py
+!bridge.py
+!mixer.py
+!profile_prompt.py
+!context_tools.py
+!work_notices.py
+!transcript.py

@@ -1,0 +1,2 @@
+# Reproduce this file with `make api-generate`; do not rewrite generator output.
+src/shared/api/generated/api.generated.ts

@@ -1,0 +1,27 @@
+.workspace-date-time-input {
+  color-scheme: inherit;
+}
+
+.workspace-date-time-input::-webkit-calendar-picker-indicator {
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 8px;
+  padding: 0;
+  background: currentColor;
+  mask: url("../../assets/iconsax/calendar-date.svg") center / contain no-repeat;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.workspace-date-time-input[type="time"]::-webkit-calendar-picker-indicator {
+  mask-image: url("../../assets/iconsax/clock.svg");
+}
+
+.workspace-date-time-input:hover::-webkit-calendar-picker-indicator,
+.workspace-date-time-input:focus-visible::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+.workspace-date-time-input:disabled::-webkit-calendar-picker-indicator {
+  cursor: default;
+}

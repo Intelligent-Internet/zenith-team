@@ -1,0 +1,92 @@
+---
+title: Quickstart
+description: The path from a fresh account to your first completed agent task, in five steps.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Zenith Team runs your company through persistent [agents](/agents) that plan in the cloud and execute on your own computer. Getting from an empty account to the first finished piece of work has five stops: create a [Company](/companies), connect a computer, meet your CEO Agent, approve a [Company Plan](/company-plan), and watch the first [run](/runs).
+
+## 1. Sign up and create your Company
+
+Open Zenith Team and sign in — with Google, or by creating an account with your email and password (a verification code confirms the address). Onboarding then asks a few questions about you and the company you are building and creates your [Company](/companies), the boundary every agent, plan, and conversation will live in.
+
+The last onboarding screen sets up your [CEO Agent](/agents#the-ceo-agent-and-the-reporting-tree) — and it needs a connected computer, which you do not have yet.
+
+**Success check:** the CEO Agent setup screen appears and **Registered runtimes** reports that no runtime is registered for this Company.
+
+## 2. Connect your computer
+
+Agents execute on your machine, not in Zenith Team's cloud — the [daemon](/daemon-and-runtimes) is the background process that makes that true, and it registers your machine's provider installations as runtimes. Two ways to get one running:
+
+- **Desktop app** — it bundles the daemon and starts it for you once you are signed in.
+- **CLI** — sign in, then start the daemon in the background:
+
+```bash
+zen auth login
+zen daemon start
+```
+
+`zen auth login` prompts for email and password; `zen auth login --google` opens a browser sign-in instead. `zen daemon status` reports whether the daemon is up, and its state lives under `~/.boardly`.
+
+Connecting a computer uploads nothing: your code, files, and workspace tree stay on the machine, and only conversations, statuses, and usage reach Zenith Team. The exact split is the [data and execution boundary](/how-zenith-team-works#the-data-and-execution-boundary).
+
+<Callout type="info">
+The daemon launches your local provider CLIs, so those must already be signed in on the same machine — Codex (`codex`) and Claude Code (`claude`) each with the vendor's own login. Zenith Team never holds provider credentials. See [Providers](/providers).
+</Callout>
+
+**Success check:** choose **Refresh** on the CEO Agent setup screen and your machine appears under **Registered runtimes** as online.
+
+## 3. Meet your CEO Agent
+
+On the setup screen, Zenith Team selects an online Codex runtime by default. You can choose another online runtime, optionally set a model, then save. If no Codex runtime is online, select a runtime explicitly or connect Codex. The four starter Agents inherit the CEO Agent's selected runtime and model settings. The [runtime](/daemon-and-runtimes) identifies the machine and provider installation. You then land in the app, in your CEO Agent's direct chat.
+
+Now talk to your CEO Agent in its direct chat: what you want to build, who it is for, what success looks like. Zenith Team turns your input into a view of the business, introduces the [starter Agents](/agents#starter-agents), and plans the first Tasks your stage needs.
+
+**Success check:** your CEO Agent has replied in its direct chat.
+
+## 4. Approve your first Company Plan
+
+The CEO Agent drafts a plan of numbered Tasks and dependencies. Applying a plan is consequential, so it raises an [approval](/approvals-and-questions): a frozen request for your verdict, waiting in **Approvals** (the `/approvals` page) and in the [Inbox](/notifications). Review the proposed tasks on **Work**, then approve.
+
+How plan transactions and digests work is covered in [Company Plan](/company-plan) and [Approvals and questions](/approvals-and-questions).
+
+**Success check:** **Work** (the `/tasks` page) shows your numbered Tasks.
+
+## 5. Watch the first task run
+
+Open **Work** and start a ready [task](/tasks). Starting it creates a run in the task's own conversation; a runtime on your computer claims it, and the provider CLI executes it in a [task worktree](/workspaces#task-worktrees) on your machine while the transcript streams back into the conversation.
+
+A completed run is not a finished task: completion moves the task to `in_review`, and you decide when it is `done`. See [Run completion and task completion](/how-zenith-team-works#run-completion-and-task-completion).
+
+**Success check:** the task's conversation holds the agent's transcript, and the task sits in `in_review`.
+
+That closes the loop. What remains is reviewing this first output and coming back tomorrow — anything that needs you by then, from open approvals to questions, will be waiting in the [Inbox](/notifications).
+
+## The surfaces you met
+
+| Surface | Route | What it holds |
+|---|---|---|
+| **Home** | `/app` | The chat with your CEO Agent, your other sessions and the Company context sidebar |
+| **Work** | `/tasks` | The [Company Plan](/company-plan) — your Tasks and dependencies |
+| **Approvals** | `/approvals` | [Approvals](/approvals-and-questions) awaiting your verdict |
+| **Inbox** | `/notifications` | The [Inbox](/notifications) — every unresolved item addressed to you |
+| **Agents** | `/agents` | Your [Agents](/agents) and their reporting tree |
+
+## If something does not move
+
+| Symptom | Check first |
+|---|---|
+| **Registered runtimes** stays empty | Is the daemon running on that machine? Open the desktop app and sign in, or run `zen daemon status`. See [Daemon and runtimes](/daemon-and-runtimes). |
+| A runtime is listed but offline | Bring that daemon back online — `zen daemon restart` — or select another runtime. |
+| A run stays `queued` | No online runtime has claimed it. Queued-while-offline is by design: the run waits for a runtime, it does not fail. See [Runs](/runs). |
+| Runs fail on an online runtime | Provider sign-in on that machine — the vendor CLI login for `codex` or `claude`, not anything in Zenith Team. See [Providers](/providers). |
+| You cannot find the plan to approve | The [Inbox](/notifications) lists every unresolved item addressed to you. See [Approvals and questions](/approvals-and-questions). |
+| A task finished but is not `done` | Completion means `in_review` — the review verdict is yours. See [Tasks](/tasks). |
+
+## Next steps
+
+- **[How Zenith Team works](/how-zenith-team-works)** — the full path of the run you watched, end to end.
+- **[Company Plan](/company-plan)** — how tasks are proposed, revised, and approved after the first one.
+- **[Tasks](/tasks)** — statuses, assignees, and how task work merges back.
+- **[Daemon and runtimes](/daemon-and-runtimes)** — keeping your computer connected and its runtimes online.

@@ -1,0 +1,127 @@
+---
+title: Agents
+description: The persistent AI roles a company employs — their configuration, the reporting tree, run capacity, availability, and lifecycle.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An agent is a persistent AI role inside a [company](/companies): a name, a title, standing instructions and a provider. The company owns it as a template, and each member who wants to run it sets it up on one of their own [runtimes](/daemon-and-runtimes). You talk to an agent in [conversations](/conversations), assign it work through [tasks](/tasks), and everything it actually does happens through [runs](/runs).
+
+An agent does not need a computer to exist. Its provider (`codex` or `claude`) is chosen when it is created and never changes. Where it runs is each member's own choice: see [Setting an agent up on your computer](#setting-an-agent-up-on-your-computer).
+
+## Agent configuration
+
+| Setting | What it does |
+|---|---|
+| **`name`** | The agent's display name — how it appears in chat, the org chart, and reports. |
+| **`title`** | The role label, such as "Engineering Agent". |
+| **`instructions`** | The agent's standing charter. Frozen into every run's input, so editing it affects the next run, never one already queued or running. May be empty. |
+| **`model`** | Optional agent model override. `null` means the runtime's default model — the usual state. |
+| **`thinkingLevel`** | Optional reasoning-depth override, passed to the provider CLI. `null` means no override. A value has to be one the runtime's provider takes: Claude Code `low`, `medium`, `high`, `xhigh` or `max`; Codex a level from the runtime's model catalog (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`). Anything else is refused when you save. |
+| **`maxConcurrentRuns`** | How many of the agent's task runs may execute at once: 1–10, default 3, set at creation or changed later. See [Concurrency and slots](#concurrency-and-slots). |
+| **`provider`** | `codex` or `claude`, chosen at creation and fixed from then on. An agent moves to the other provider by being duplicated. Each member runs the agent on one of their own computers with that provider. |
+| **Appearance** | Optional `avatarKey` and `accentColor`. The avatar is always the Fold character; the key picks one of its eight looks (`fold-butter` … `fold-cocoa`), and the accent tints the agent's lanes and cards. Starter agents come with one; any agent can be given one, and clearing either falls back to a look and colour derived from the agent's id. |
+| **Reports to** | The agent's manager in the reporting tree. Only the root agent has none. |
+
+## Creating an agent
+
+Anyone in the company can add agents beyond the starter set, from the app or the CLI. Every route creates the same object through the same rules, and an agent needs three things to exist:
+
+1. **A name and a role.** The name is how it appears everywhere; the role is the title on its profile, such as "Research Agent".
+2. **A manager.** New agents report to the CEO Agent unless you pick another active agent. The tree stays a tree, so a manager that would create a cycle is refused.
+3. **A provider.** Codex or Claude Code. It never changes later; an agent moves to the other provider by being duplicated. Setting the agent up on one of your own computers for that provider is optional at creation. Only your own computers are offered, because nobody else's is visible to you — see [Daemon and runtimes](/daemon-and-runtimes).
+
+Everything else is optional at creation and editable later: the model and thinking level (checked against the provider's vocabulary), standing instructions, a look (one of the eight Fold palettes, which also sets the accent colour), and the task-run cap (default 3). When you create the agent, the app lists the models and thinking levels of the computer you pick. When you edit it later, it asks the computer you set it up on, or another of yours for the provider that is online. Otherwise you type the model name and pick from the provider's documented thinking levels; saving never needs a computer online.
+
+**In the app**, open **Agents → New agent**. The dialog asks for the name and role, shows the eight looks, the manager, the provider, your own computers that can run it, the model and thinking level, optional instructions and the task cap, then opens the new profile. Setting it up on a computer is optional: the dialog proposes one of your computers only when it is ready, which means online and not signed out of the provider, and **Don't set it up now** creates the agent as a template anybody can set up later. **Duplicate** on any agent's profile opens the same dialog seeded from that agent: instructions, appearance and cap are copied, the copy reports to the same manager (a copy of the CEO Agent reports to the CEO Agent), and the model and thinking level travel while the copy keeps the same provider. Choosing the other provider clears those two, because they are one provider's vocabulary.
+
+**From a terminal**, `zen agent create --name --title --provider [--runtime-id] [--reports-to] [--model] [--thinking-level] [--instructions] [--avatar-key] [--accent-color] [--max-concurrent-runs]` creates one, and `zen agent copy <source-agent-id>` clones one with the same rules as Duplicate (`--provider` is how an agent moves to the other provider). Both print the created agent. See the [CLI](/cli) page.
+
+Creating an agent never starts a run. Work reaches it through [tasks](/tasks), [conversations](/conversations) and the [Company Plan](/company-plan) like any other agent.
+
+## Who can create and change agents
+
+Every member of a company sees every agent, and any member can add one. An agent belongs to the company; where it runs belongs to each person.
+
+Changing an agent — its instructions, model, capabilities, archiving it — is for the person who created it and for the company owners and admins. Everyone else sees the same profile read-only, with a note naming who can change it. Setting an agent up on a computer is not one of those changes: that is your own setup, and you can always do it for yourself. One caveat on capabilities: the skills, MCP servers and plugins an agent inherits are read from the catalog of your own computer. Every member sees what their own computer provides and can refresh that catalog while using Zenith Team Desktop on that computer, from the agent's Capabilities tab or the runtime's page under **Settings → Runtimes**. Every member also installs plugins and connects apps on their own computer, from **Settings → Plugins**; reviewing an app whose tools changed stays with owners and admins. The CEO Agent is the exception: it is set up by a company owner during onboarding, and only owners and admins can change it, whoever created it.
+
+## Setting an agent up on your computer
+
+An agent runs where you put it. Choose **Set up** on its row in the Agents list, or open it and choose **Set it up** on its Settings tab (or **Change** to move it), pick one of your own computers with the agent's provider installed, and the agent is ready for you: chats, tasks you own, and schedules you create all run there. Every member can do this for any agent, including one they cannot change. Sending a chat message to an agent you have not set up offers the same step and sends the message once it is done; in a channel's @-mention list such an agent reads **Not set up**, and choosing it offers the setup.
+
+When you tag an agent in a channel or a group DM, the run is yours: it runs on your computer and works with your access, never more. It sees only projects and tasks you can see. Everyone in the chat reads its answer, so you are responsible for what it shares: tag it there only for what everyone in that chat may see, and ask about private work in your own chat with the agent or in the task's chat. The message box reminds you of this when you tag an agent in a shared chat. What the run did along the way, and any result it saves, belong to you, the person who started it.
+
+What the agent can use is what *your* computer provides. If you have the GitHub plugin installed and your colleague does not, the same agent has it for you and not for them. The built-in Zenith Team skills and the agent's instructions are the same for everyone, because they belong to the template.
+
+Your setup is yours alone. Nobody else sees which computer you chose, moving it changes nothing for anybody else, and removing it only stops *your* runs — your queued work on that agent is cancelled, and work already running is left to finish.
+
+## The CEO Agent and the reporting tree
+
+Every company's agents form a single reporting tree. The one agent that reports to no other is the **root agent** — the CEO Agent in the product — and a company can hold at most one active root. The first agent you create, created without a manager, is it.
+
+Every other agent names an existing active agent as its manager. The tree stays a tree: a manager assignment that would create a cycle is refused, a non-root agent can never be detached into a second root, and the root agent can never be given a manager. Reparenting only ever moves a non-root agent under another active agent.
+
+The tree is not decoration. [Task reports](/tasks#task-reports) route done and failed outcomes upward through it, and the [Company Plan](/company-plan)'s transaction tools are reserved for the root — the CEO Agent plans, the other agents execute.
+
+## Starter agents
+
+Creating the root agent also provisions four starter agents as its direct reports, with the same provider and model, and set up on the founder's computer when the CEO Agent is: **Lyra** (Product Agent), **Eli** (Engineering Agent), **Susan** (Marketing Agent) and **Ariana** (Operations Agent), each with its own look and accent colour. They are templates, not roles. Rename, retrain, archive or set them up on your own computer exactly like any agent you create yourself — nothing in Zenith Team keys on their names, and a [Company Plan](/company-plan) routes work to whichever active agent's charter fits.
+
+## Agents, runtimes, and runs
+
+Three objects share this space and are easy to blur. Each owns one thing:
+
+| Object | Owns | In one sentence |
+|---|---|---|
+| **Agent** | Identity | The persistent role work is addressed to — the agent is the identity, and it survives machines coming and going. |
+| **Runtime** | Installation | One provider CLI installation on one member's computer — the runtime is the installation that executes the agent for that member, not the agent itself. |
+| **Run** | Execution | One execution of the agent in one conversation — the run is the unit of work, claimed by the runtime its member set the agent up on and ended exactly once. |
+
+Deleting the distinction breaks intuition in both directions: an agent set up on an offline computer still exists and still accepts queued work, and removing a computer never removes an agent. You either move your setups on it to another of your computers with the same provider, and your queued work follows, or remove them, which cancels your queued work there (see [Naming and removing a runtime](/daemon-and-runtimes#naming-and-removing-a-runtime)).
+
+## Concurrency and slots
+
+`maxConcurrentRuns` caps one thing: the agent's **task-lane** runs. A task run holds one slot from dispatch until it reaches a terminal state; task runs past the cap stay `queued`. Slots are counted for each person, so the count an agent's page shows is yours: task runs on your computer.
+
+Two kinds of run are exempt in both directions — they never wait for a slot and never hold one:
+
+- A **direct chat** run. Messaging an agent is never blocked by its task load.
+- A **schedule** run. A firing executes regardless of how busy the agent is.
+
+Within the task lane, concurrency is still one run per piece of work: at most one active run per task. Several slots let an agent work several tasks at once, never one task twice. The full lane mechanics live in [Runs](/runs#lanes-and-capacity).
+
+Changing the cap is safe in both directions. Lowering it below the current in-flight count cancels nothing — the runs already executing finish, and no new task run dispatches until the count is back under the cap. Raising it opens slots that fill from the agent's queued task work over the next dispatch polls, as far as there is work to fill them.
+
+## Availability
+
+Whether an agent shows as available is computed, never stored — there is no availability column to go stale. It is computed for each member from their own setup, so the same agent can be ready for you and offline for a colleague. When it is not available, the agent shows the first of these reasons that applies, in this order, and each has its own recovery:
+
+| Reason | When | Recovery |
+|---|---|---|
+| **Archived** (`agent_archived`) | `archivedAt` is set | Restore the agent |
+| **Not set up** (`not_bound`) | You have not set the agent up on one of your computers | Set it up on one of your computers with the agent's provider |
+| **Computer can't run it** (`runtime_unusable`) | Your computer is on, but its provider CLI is below the minimum version or not executable — the runtime shows **Unusable** with the daemon's reason | Upgrade or fix the CLI on that computer; the daemon clears the reason on its own |
+| **Computer offline** (`runtime_offline`) | Your computer is off or its daemon is stopped | Wake the computer, or move the agent to another of your computers |
+| **Signed out** (`runtime_signed_out`) | The provider CLI on your computer is signed out | Sign in to the provider there, then refresh |
+
+An unavailable agent is not broken. A run enqueued for it simply waits `queued` until your computer comes back online and claims it — a closed laptop never prevents Zenith Team from accepting the work. An agent you have not set up is the one exception: nothing is queued for you until you set it up.
+
+## Skills
+
+An agent can carry [skills](/skills) — bundles of instruction and reference files materialized into the run's execution environment before the provider CLI starts, so the agent begins work already knowing procedures it would otherwise rediscover. What a bundle contains and how it reaches each provider is covered on the [Skills](/skills) page.
+
+## Archiving and restoring
+
+Archiving is a soft delete: it stamps the agent archived and erases nothing. Run and task history survives, and the agent remains readable.
+
+Archiving is refused while the agent still has active direct reports, active runs, or active tasks it does the work for — hand those to another agent or finish them first. The root agent can never be archived. Restoring reverses the archive, with one ordering rule: the agent's direct manager must itself be active, so restore an ancestor before its reports.
+
+<Callout type="warning">
+An archived agent refuses all new work. Every enqueue for it is rejected outright — a message to its conversations, a task starting, a schedule firing — and nothing retries the refusal. Archiving an agent that anything still expects work from goes quiet on those expectations until the agent is restored.
+</Callout>
+
+## Next steps
+
+- **[Skills](/skills)** — the file bundles an agent carries into its runs.
+- **[Daemon and runtimes](/daemon-and-runtimes)** — the machine-side half of every agent.
+- **[Runs](/runs)** — lanes, capacity, statuses, and the failure reference.

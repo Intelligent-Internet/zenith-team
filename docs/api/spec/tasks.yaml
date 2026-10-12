@@ -1,0 +1,1811 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/tasks.md is its prose counterpart.
+
+paths:
+  # Company Plan
+  companies_companyId_company_plan_apply:
+    post:
+      tags: [plan]
+      operationId: applyCompanyPlan
+      summary: Apply, or request approval to apply, the whole Company Plan
+      description: |
+        With only the ordinary bearer credential, this is the synchronous apply
+        under `company.plan.apply` (owner, admin) and returns `200`. When `X-Boardly-Run-Token` is
+        present, the token must prove a currently running Run in this Company
+        and a UUID `Idempotency-Key` is required; the server recomputes the
+        authoritative diff, freezes it, and returns a durable Approval receipt
+        with `202` instead of applying it.
+
+        The body cap is 16 MiB. Synchronous apply performs three-way
+        reconciliation of `base` against `desired`. `base` is the plan
+        snapshot the client read: every Project the caller reads and every
+        Task in them (including terminal Tasks) with id, key and revision,
+        and every dependency edge with its revision. `conversationId` on a
+        base Task is optional and not compared.
+
+        The apply reaches only the Projects the caller may change (ADR
+        0017): those listed in `base`, not marked `readOnly` there or in
+        `desired`, where the caller holds `project.tasks.write`. Tasks are
+        created, updated and deleted by omission only there. A Project the
+        caller only reads, or that the plan was read without being able to
+        change (the export marks it `readOnly` in `base` and `desired`), is
+        left alone with its Tasks, whatever `desired` says about it, even if
+        the caller may change it by now.
+
+        A Project the caller cannot read is never reached: omitting its
+        Tasks deletes nothing. Archiving such a key is the same `422` as
+        archiving a key nobody has used. Creating a Project under a key
+        that is taken, readable or not, is `409 work_plan_conflict`, as
+        `POST /projects` answers `project_conflict`; nothing about the
+        hidden Project is read or changed.
+
+        Some changes need more than `project.tasks.write`; without it the
+        Project is left as it is and the change is listed under `skipped`
+        in the result, while the rest applies. Renaming a Project needs
+        `project.settings.update`. Archiving it, or leaving it out of
+        `desired` while it has open Tasks (which would delete them), needs
+        `project.archive`; without it neither the Project nor any of its
+        Tasks changes. A Project the plan read as changeable where the
+        caller has since lost `project.tasks.write` (or `project.read`) is
+        left alone and listed when `desired` would change it; restated as it
+        is, it is left alone without a listing.
+
+        On another member's open Task the apply keeps the rules a Task PATCH
+        keeps: giving it another executing agent, or taking it out of
+        `in_review`, needs `tasks.assign` or being its assignee (`403
+        company_permission_required`), and so does deleting it by omission.
+        Owners and admins hold `tasks.assign`.
+
+        Any Project, Task or edge in reach that appeared, disappeared or
+        changed since the read makes the whole apply `409
+        work_plan_conflict`, as does naming in `desired` a Project the
+        caller could not read when they read the plan but can change now.
+
+        With a Run token from a Task Run in a Task chat that has a Project,
+        the Approval covers that Project alone: the preview and the frozen
+        action leave out every other Project and any new one, and whoever
+        approves it needs `project.approvals.resolve` and
+        `project.tasks.write` there, not `company.plan.apply`.
+
+        > **This is the only path that deletes a task**, and the only path that
+        > writes task dependencies at all — the route table has no DELETE for a
+        > task and no POST/PATCH/DELETE for dependencies anywhere. A task created
+        > through `POST .../tasks` and never added to the plan document is
+        > destroyed by the next apply unless it is terminal.
+
+        A plan keeps every existing task's assignee; `agentId` changes only
+        who executes it. Giving a task that has run another executing agent
+        is a handoff (ADR 0014), and applying the plan confirms it: the
+        task's live runs are cancelled (`run.cancelled`, reason
+        `task_reassigned`) and its execution and workspace generations
+        advance, exactly as a confirmed task PATCH does. The apply itself
+        starts no run.
+
+        Failure modes collapse: base mismatch, stale `companySlug`, a `createdAt`
+        outside the freshness window, and terminal-entity immutability all map to
+        the single code `work_plan_conflict` with the same fixed detail string.
+        The richer internal messages never reach the client.
+
+        Task keys are unique within the Company.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: false
+          description: Supplying this switches the operation to the approval-request branch.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Required as a UUID whenever `X-Boardly-Run-Token` is supplied.
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PlanArtifact' }
+      responses:
+        '200':
+          description: Applied synchronously; compact mutation counts are returned.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PlanApplyResult' }
+        '202':
+          description: |
+            Durable Approval receipt for a live Run request — the bare
+            Approval, for both first creation and exact replay.
+          content:
+            application/json:
+              schema: { $ref: './approvals.yaml#/schemas/Approval' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 work_plan_conflict` — a stale `base` revision, a `companySlug`
+            that no longer matches the live slug, a `createdAt` outside
+            `now - 24h .. now + 5min`, or an attempt to mutate a terminal
+            task. With a Run token from a Task Run, `409 no_eligible_resolver`
+            when no reader of the Task chat's Project may approve it (holds
+            `project.approvals.resolve` and `project.tasks.write`):
+            no Approval is stored and the Run fails with `failureReason`
+            `no_eligible_resolver` (ADR 0017).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — wrong `artifactVersion`/`formatVersion`, a
+            `companyId` that is not this company, an empty `companySlug`, a zero
+            `createdAt`, a duplicate key, an over-long
+            title or description, a self-referential or repeated dependency, or a
+            **new** dependency whose prerequisite task is `cancelled`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  # ==================================================================== tasks
+
+  # /api/v1/companies/{companyId}/tasks
+  companies_companyId_tasks:
+    get:
+      tags: [tasks]
+      operationId: listTasks
+      summary: List tasks
+      description: |
+        Member gate. `assignee_id` reads one member's board — the tasks
+        they are responsible for running — and `executed_by_agent_id` reads
+        one agent's board; both may be combined. `project_id` filters the
+        immutable owning Project.
+
+        Only tasks of Projects the caller reads are listed (ADR 0017). A
+        `project_id` the caller cannot read — including one they only manage
+        through `projects.manage` — is `404 project_not_found`, exactly like
+        a Project that does not exist.
+
+        `dependencies_resolved` selects on the same predicate the enqueue path
+        evaluates, so "what can actually start right now" is one filtered
+        response rather than the whole board plus a dependency read per row.
+
+        `zen task list` inside a Run outside a task sends the member's
+        session plus the Run's `X-Boardly-Run-Token`, and a Run reads only
+        its own tasks: the list is then the tasks the Run's agent does for
+        the member the Run works for, whatever `assignee_id` or
+        `executed_by_agent_id` asked for; the other filters still narrow it.
+        A token that does not prove a running Run in this Company, or is
+        sent with any session other than the Run's member's, is
+        `401 run_token_invalid`. A Run started by a mention in a channel or a
+        direct message between people uses the access of the person who
+        mentioned the Agent, whoever else is in the chat (D31). A task Run
+        is not offered `zen task list`: its channel refuses the request with
+        `run_scope_denied` before it reaches the server. Should a list carry
+        a task Run's token anyway, the server answers only tasks in that
+        task chat's Project, as a second guard. One Run reads more: the
+        Company's root agent in its member's direct chat, with its Company
+        planning on, plans the Company, so its list is every task its member
+        reads, with the caller's filters as asked (IA-FR12). The server
+        decides this from the token.
+
+        All matching tasks are returned in one response. The query parameters
+        below are filters, not pagination controls.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/runTokenRead'
+        - name: project_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          required: false
+          description: |
+            Comma-separated set; a task matching any listed status is returned.
+            The whole set travels in one value — repeating the parameter is `422`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: './_common.yaml#/schemas/TaskStatus' }
+        - name: priority
+          in: query
+          required: false
+          description: Comma-separated set, like `status`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/schemas/TaskPriority' }
+        - name: assignee_id
+          in: query
+          required: false
+          description: Only tasks assigned to this member.
+          schema: { type: string, format: uuid }
+        - name: executed_by_agent_id
+          in: query
+          required: false
+          description: Only tasks this agent does the work of.
+          schema: { type: string, format: uuid }
+        - name: dependencies_resolved
+          in: query
+          required: false
+          description: |
+            `true` returns only tasks whose every prerequisite is `done`;
+            `false` returns only tasks still waiting on one.
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: All matching tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Task' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '404':
+          description: '`404 company_not_found`, or `404 project_not_found` when `project_id` names a Project the caller cannot read.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    post:
+      tags: [tasks]
+      operationId: createTask
+      summary: Create a task
+      description: |
+        Member gate. PostgreSQL generates the task and conversation identities,
+        and the call creates both rows in one transaction. `key` is unique
+        within the company; a collision returns `409 task_conflict`. Omit
+        `key` and the server mints `{taskPrefix}-{number}` from the number
+        it allocates, so the key and the displayed label are one task.
+
+        `title` is required in practice: it is trimmed and then rejected when
+        empty or over 240 runes, so omitting it is `422`, not a default.
+
+        A task always has a member **assignee** — the person responsible
+        for running it on their own computer — and an **executedBy**: the
+        agent that does the work, or the assignee themself (ADR 0014).
+        `assignee` defaults to the caller; assigning another member needs
+        `tasks.assign` (owner or admin), else `403 company_permission_required`.
+        `executedBy` defaults to the assignee (human work); a `user` value
+        must equal the assignee (`422`).
+
+        Project access (ADR 0017): the caller needs `project.tasks.write` on
+        `projectId`, else `403 project_permission_required`; a Project they
+        cannot read is `404 project_not_found`, like one that does not exist.
+        That holds for an owner or admin who manages the Project through
+        their role but cannot read it: they can open no Task there.
+        Another assignee must read the Project, else
+        `409 project_member_required`, which names nobody. Starting the
+        assignment run below also needs the caller's `project.tasks.execute`,
+        else `403 project_permission_required` whose short `detail` names
+        the agent ("Eli didn't start: you can't run tasks here.", never the
+        Project) and nothing is written.
+
+        When the caller is the assignee and `executedBy` is an agent, the
+        call also enqueues an assignment run in this transaction on the
+        caller's binding of that agent and commits the task `in_progress`,
+        under the same admission rule a task message follows: a task created
+        already `done` or `cancelled` gets no run and keeps its status. The
+        run starts as an explicit start does: the task's title and
+        description are posted in its chat as the caller's message. No
+        binding is `409 agent_binding_required` and nothing is written.
+        When the assignee is someone else, no run starts: the task keeps its
+        status and the assignee receives a `task_assigned` Inbox item naming
+        who assigned it and what to do next on their computer — set the
+        agent up, start it, or reply in its chat when the task's status has
+        no start (in progress, in review, failed).
+
+        `zen task create` inside a Run sends the member's session plus the
+        Run's `X-Boardly-Run-Token`. When the header is present it must prove
+        a Run in this Company that is still running and has an authorizing
+        member, else `401 run_token_invalid` and nothing is written: a Run
+        cancelled by a handoff or by a person cannot file follow-up work. A
+        Run files work only for the member it works for: an `assignee` other
+        than that member, or a caller who is not that member, is
+        `403 task_outside_run_scope`, even for an owner. A task Run files
+        only in its task chat's Project; any other `projectId` is the same
+        `403`, and so is a Project the member cannot see. A Run mentioned
+        in a chat uses the access of the person who mentioned the Agent. The
+        token must be sent with the Run's member's own session, else
+        `401 run_token_invalid`. A create without the header is the
+        member's own.
+
+        `attachmentIds` attaches the creator's ready uploads as the task's
+        input files. They travel on one member message in the task
+        conversation that belongs to the assignment run, so they list among
+        the task's sources, and every Run of the task receives them as
+        read-only files outside its workspace. They need that run, which this
+        create starts only when the caller is the assignee and an agent does
+        the work (ADR 0014): files on a task with no executing agent, on one
+        assigned to another member, or on one created `done` or `cancelled`
+        are `422 validation_failed`. A file that is not the creator's
+        finished upload in this Company, or is already attached, is
+        `409 task_attachment_unavailable` and nothing is created.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: false
+          description: Sent by a Run's channel; when present it must prove a live Run in this Company.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [projectId, milestoneType, title]
+              properties:
+                projectId: { type: string, format: uuid }
+                key:
+                  type: string
+                  description: |
+                    Stable identity within the company. Omit it and the server
+                    mints `{taskPrefix}-{number}` from the number it allocates,
+                    the same string every surface displays for the task; a
+                    Company Plan chooses its own slugs. That label shape is
+                    the server's: a chosen key in it is `422`, as is a
+                    whitespace-only key, and a duplicate is `409 task_conflict`.
+                resultPolicy: { $ref: '#/schemas/TaskResultPolicy' }
+                milestoneType: { $ref: '#/schemas/TaskMilestoneTypeDto' }
+                title: { type: string, maxLength: 240 }
+                description: { type: string }
+                status:
+                  type: string
+                  enum: [backlog, todo, in_progress, in_review, done, blocked, cancelled]
+                priority: { $ref: '#/schemas/TaskPriority' }
+                labels: { $ref: '#/schemas/TaskLabels' }
+                startDate: { $ref: '#/schemas/TaskCalendarDate' }
+                dueDate: { $ref: '#/schemas/TaskCalendarDate' }
+                assignee:
+                  description: "The responsible member. Omitted means the caller."
+                  $ref: '#/schemas/AssigneeRef'
+                executedBy:
+                  description: "The agent that does the work, or the assignee themself. Omitted means the assignee."
+                  $ref: '#/schemas/ExecutorRef'
+                attachmentIds:
+                  type: array
+                  maxItems: 20
+                  uniqueItems: true
+                  items: { type: string, format: uuid }
+                  description: The creator's ready uploads to attach as the task's input files, in display order. Only on a create that starts the assignment run.
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: |
+            `401` — `authentication_required`, `session_invalid` or
+            `invalid_credentials`, or `run_token_invalid` when a supplied
+            `X-Boardly-Run-Token` does not prove a running Run in this
+            Company with an authorizing member, or is sent with another
+            member's session.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: |
+            `403 company_permission_required` — assigning another member
+            without `tasks.assign` — `403 project_permission_required` —
+            the caller lacks `project.tasks.write` on the Project, or
+            `project.tasks.execute` for the assignment run — or
+            `403 task_outside_run_scope` — sent with a Run's token, the task
+            would be another member's, a task Run's in another Project, or in
+            a Project the member cannot see.
+            That `detail` is always "Permission denied. You can only access
+            your own Tasks."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`, or `404 project_not_found` when the caller cannot read `projectId` or it does not exist.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 task_conflict` — key collision or invalid association — `409 project_archived` when the Project is archived, `409 project_member_required` when the assignee cannot read the Project, `409 agent_binding_required` when the caller has not set the agent up on one of their computers, or `409 task_attachment_unavailable` when a file cannot be attached.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/tasks/{taskId}
+  companies_companyId_tasks_taskId:
+    get:
+      tags: [tasks]
+      operationId: getTask
+      summary: Read one task
+      description: |
+        Member gate. The path names the task by its id, its `key` or its
+        displayed `{taskPrefix}-{number}` label.
+
+        `zen task get` inside a Run sends the member's session plus the
+        Run's `X-Boardly-Run-Token`, and a Run reads only its own tasks: the
+        ones its agent does for the member the Run works for. Any other
+        task is `403 task_outside_run_scope` — even one the member could
+        read — with nothing of the task in the body: its `detail` is always
+        "Permission denied. You can only access your own Tasks." The same
+        answer meets a task Run reading a task in any Project but its own
+        (ADR 0017). A Run started by a mention in a channel or a direct
+        message between people uses the access of the person who mentioned
+        the Agent, whoever else is in the chat (D31). The root agent's Run in its member's direct
+        chat, with its Company planning on, reads every task its member
+        reads (IA-FR12). A token that does not prove a
+        running Run in this Company, or is sent with any session other than
+        the Run's member's, is `401 run_token_invalid`; a task that does not
+        exist stays `404`.
+
+        A task whose Project the caller cannot read (ADR 0017) is
+        `404 task_not_found`, exactly like a task that does not exist; the
+        `projects.manage` bridge never opens a task.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/taskReference'
+        - $ref: '#/parameters/runTokenRead'
+      responses:
+        '200':
+          description: The task.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Task' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '403': { $ref: '#/responses/TaskOutsideRunScope' }
+        '404':
+          description: '`404 task_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    patch:
+      tags: [tasks]
+      operationId: updateTask
+      summary: Update a task
+      description: |
+        Sparse. The Task milestone coordinate (`milestoneType`) may be
+        replaced but never cleared. Except for calendar dates, `null` on a mutable field is `422`; an assignee can be
+        **changed** but never removed. `failed` and `error` are server-owned
+        outcomes and cannot be written through this general mutation route.
+
+        `labels` replaces the Task-owned display labels; `[]` clears them.
+        `startDate` and `dueDate` are calendar dates, not timestamps. `null`
+        clears a date; omitted fields stay unchanged. The merged dates must
+        satisfy startDate <= dueDate. These fields do not schedule or start Runs.
+
+        Changing `assignee` or `executedBy` is a **handoff** (ADR 0014).
+        Who may: a `tasks.assign` holder (owner or admin) or the current
+        assignee; anyone else is `403 company_permission_required`. Once
+        the task has ever run, a handoff must carry `confirmHandoff: true`,
+        else it is refused with `409 task_handoff_confirmation_required` and
+        nothing changes. The refusal carries `runLive` beside the envelope:
+        whether a run of the task is live right now (confirming cancels it)
+        or the task only ran before. Its `detail` says the same for a person
+        to read; a client branches on `runLive`, never on the error text, and
+        never on the task's `status` — a task in progress may have nothing
+        live, paused on a request or already handed off once. A confirmed
+        handoff cancels every live run of the task (`run.cancelled`, reason
+        `task_reassigned`), advances the execution generation so earlier
+        work can no longer change the task, moves a task that was
+        `in_progress` or `in_review` back to `todo` — nothing of it runs any
+        more and its earlier runs cannot be reviewed, so the new assignee
+        starts it fresh — and notifies the members it
+        moves the task between (`task_handoff` to the previous assignee,
+        saying whether their run was stopped, `task_assigned` to the new
+        one), except whoever made the change:
+        nobody is told about a move they made themself. A move that changes
+        only `executedBy` keeps the assignee, who gets the `task_handoff`
+        when it stopped their run. Every `run_completed` item about the
+        task's earlier runs is read and archived: nobody can review or
+        merge those runs any more. Any change of `assignee`, whether or not
+        the task has run, reads and archives the previous assignee's
+        `task_assigned` items: only the assignee starts a task. The new
+        assignee's computer prepares a fresh workspace from the project's
+        main branch; files that were not merged stay on the previous
+        computer. Messages queued in the task chat are kept: the new
+        assignee's first run reads them. A Company Plan apply that gives a
+        task that has run another executing agent is the same handoff,
+        confirmed by the apply: a task the plan states as in progress or in
+        review goes back to todo too.
+
+        Moving a task out of `in_review` to any other status — marking it
+        done without review among them — decides the work the assignee's
+        computer did: only the assignee or a `tasks.assign` holder may, and
+        anyone else is `403 company_permission_required`.
+
+        A run starts from the PATCH only when the caller is the (new)
+        assignee and `executedBy` is an agent, under the same admission rule
+        a task message follows, keyed on the status the PATCH lands on — a
+        body that also sets `done` or `cancelled` changes the assignment
+        without a run. Re-selecting the current values, or changing only
+        priority, starts nothing.
+
+        Project access (ADR 0017): every PATCH needs `project.tasks.write` on
+        the task's Project, else `403 project_permission_required`; a task
+        in a Project the caller cannot read is `404 task_not_found`. A
+        handoff still needs `tasks.assign` or being the current assignee, and
+        the new assignee must read the Project (`409 project_member_required`,
+        naming nobody). A run the PATCH would start also needs the caller's
+        `project.tasks.execute`, else `403 project_permission_required`
+        naming the agent, and nothing changes.
+
+        The response is the authoritative post-write state: the task flat,
+        with the `runId` the transition enqueued beside it (`null` when it
+        started nothing) and `assigneeOutsideProjectTaskIds` listing the task
+        when its assignee can no longer read its Project. PostgreSQL generates the optional run identity. What
+        actually moved is also published on the `task.updated` event for
+        clients that did not make the change.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                resultPolicy: { $ref: '#/schemas/TaskResultPolicy' }
+                resultSelection: { $ref: '#/schemas/TaskResultSelectionInput' }
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                milestoneType: { $ref: '#/schemas/TaskMilestoneTypeDto' }
+                title: { type: string, maxLength: 240 }
+                description: { type: string }
+                status:
+                  type: string
+                  enum: [backlog, todo, in_progress, in_review, done, blocked, cancelled]
+                priority: { $ref: '#/schemas/TaskPriority' }
+                labels: { $ref: '#/schemas/TaskLabels' }
+                startDate: { $ref: '#/schemas/TaskCalendarDate' }
+                dueDate: { $ref: '#/schemas/TaskCalendarDate' }
+                assignee: { $ref: '#/schemas/AssigneeRef' }
+                executedBy: { $ref: '#/schemas/ExecutorRef' }
+                confirmHandoff:
+                  type: boolean
+                  default: false
+                  description: |
+                    Acknowledges that a handoff of a task that has already run
+                    cancels its live work and starts the next run from a fresh
+                    workspace. Ignored when nothing is handed off.
+      responses:
+        '200':
+          description: |
+            The updated task, with the run it started beside it when it
+            started one.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` — a handoff, or a move out of `in_review`, by someone who is neither the assignee nor a `tasks.assign` holder — or `403 project_permission_required` — the caller lacks `project.tasks.write`, or `project.tasks.execute` for the run the PATCH would start.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 task_not_found`, `work_plan_not_found`, or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 task_result_selection_required` when delivered results have not been selected,
+            `409 task_result_application_required` when required changes remain unapplied,
+            `409 task_conflict` — `expectedRevision` did not match — or
+            `409 task_dependency_blocked` when the transition needs a
+            prerequisite that is not `done`. `dependenciesResolved` on the task
+            is the same predicate, read ahead of the write.
+            `409 project_archived` when the Project is archived and the write
+            would leave the Task outside `done`/`cancelled` or hand it to a
+            new Agent. `409 task_handoff_confirmation_required` when a
+            handoff of a task that has run arrives without `confirmHandoff`;
+            its `runLive` says whether a run is live.
+            `409 agent_binding_required` when the run the handoff would
+            start has no binding on the caller's computers.
+            `409 project_member_required` when the new assignee cannot read
+            the task's Project.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskUpdateConflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/tasks/{taskId}/dependencies
+  companies_companyId_tasks_taskId_dependencies:
+    get:
+      tags: [tasks]
+      operationId: listTaskDependencies
+      summary: Both dependency directions for one task
+      description: |
+        Unpaginated — a task's own edge set is small and both directions are
+        returned together. Dependencies themselves are written only through
+        `POST .../company-plan/apply`.
+
+        Each edge embeds the **other** task: its key, title, status, assignee
+        and executedBy. There is no `resolve` flag, because the query that reads the
+        edges already joins the tasks — a flag would only offer a shape with
+        conditionally-absent fields, which collides with the absent/null/empty
+        merge rule.
+
+        `blockedBy: []` is an authoritative "nothing blocks this", not missing
+        data.
+
+        The path names the task by its id, its `key` or its displayed
+        label. Sent with a Run's `X-Boardly-Run-Token`, the task itself must
+        be one of the Run's own, as on `GET .../tasks/{taskId}`, else
+        `403 task_outside_run_scope`; its prerequisites then come with it as
+        read-only context, and of its dependents (`blocks`) only the Run's
+        own. The root agent's Run in its member's direct chat, with its
+        Company planning on, reads every task its member reads and gets
+        every dependent (IA-FR12).
+
+        A task whose Project the caller cannot read is `404 task_not_found`
+        (ADR 0017), and every embedded task is read through the caller's
+        Project access too.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/taskReference'
+        - $ref: '#/parameters/runTokenRead'
+      responses:
+        '200':
+          description: What blocks this task, and what it blocks.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DependencySet' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '403': { $ref: '#/responses/TaskOutsideRunScope' }
+        '404':
+          description: '`404 task_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/task-dependencies
+  companies_companyId_task_dependencies:
+    get:
+      tags: [tasks]
+      operationId: listTaskDependencyGraph
+      summary: The whole-company dependency graph
+      description: |
+        Every matching edge in the company, returned in full for rendering a
+        plan view. It validates its whole query string rather than reading one
+        parameter and ignoring the rest, so an unknown parameter is `422` here
+        exactly as it is on `.../tasks`.
+
+        Edges stay **normalized** — ids in `items`, one stub per endpoint task
+        in `tasks` — because a plan view is dense and denormalizing every edge
+        into two task summaries would repeat the same rows across the response. The
+        single-task view does the opposite for the opposite reason.
+
+        Only edges of Projects the caller reads are returned (ADR 0017);
+        both ends of an edge share its Project.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: All matching dependency edges, plus a stub per endpoint task.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DependencyGraph' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/tasks/{taskId}/runs
+  companies_companyId_tasks_taskId_runs:
+    post:
+      tags: [tasks]
+      operationId: startTaskExecution
+      summary: Enqueue a run for a task
+      description: |
+        The concurrency field is `expectedRevision`, the same name every other
+        optimistic write in the API uses, compared against the `revision` the
+        task publishes.
+
+        Only the task's assignee may start it (`403 task_assignee_required`
+        for anyone else — the run executes on the assignee's own computer,
+        ADR 0014). The run uses `execution.agent`: the executing agent, or,
+        for human work, the agent that created the task (CEO if a member
+        created it). The assignee must have that agent set up on one of
+        their runtimes (`409 agent_binding_required` otherwise).
+        Human work keeps `executedBy` equal to the assignee; its agent
+        assists in the task conversation and records the member's decisions.
+
+        The assignee also needs `project.tasks.execute` on the task's
+        Project (ADR 0017). Without it the start is
+        `403 project_permission_required` and nothing is enqueued; the
+        short `detail` names the agent ("Eli didn't start: you can't run
+        tasks here.") and never names the Project. A task whose Project the caller cannot
+        read is `404 task_not_found`.
+
+        A start is accepted from `backlog`, `todo`, `blocked` and `error`.
+        A task in progress, in review or failed is `409 task_conflict`
+        here: it runs again when its assignee writes in its chat, which is
+        also what a `task_assigned` Inbox item for such a task tells them.
+
+        A matching revision starts a fresh run with a PostgreSQL-generated
+        identity and returns `201`. A stale revision returns `409 task_conflict`.
+        The start posts the task's title and description in its chat as the
+        assignee's message, and the run answers it. An assignment run from a
+        create or a PATCH posts the same message.
+        The response is the task's post-transition state flat, with the new
+        `runId` beside it — the same shape the PATCH returns, with `runId`
+        always set here.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '201':
+          description: Enqueued.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskMutationResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 task_assignee_required` — the caller is not the task''s assignee — or `403 project_permission_required` — the assignee lacks `project.tasks.execute` on the task''s Project.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 task_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 task_conflict` — revision mismatch, or a task state that cannot
+            execute — `409 task_dependency_blocked` when a prerequisite is
+            not `done`, or `409 agent_binding_required` when the assignee has
+            not set the agent up on one of their computers.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  # /api/v1/companies/{companyId}/task-failures
+  companies_companyId_task_failures:
+    post:
+      tags: [tasks]
+      operationId: markTaskFailed
+      summary: Report a business failure for the live Run's Task
+      description: |
+        Requires the ordinary bearer principal plus a supplemental live
+        `X-Boardly-Run-Token`. The token, rather than caller-authored ids,
+        supplies the Run and Task identity and must prove a currently running
+        Run in this Company.
+
+        `Idempotency-Key` is a UUID scoped to this operation and Run. An exact
+        replay returns the same failed Task. Reusing the key with another
+        reason, reporting against a Task that can no longer transition, or
+        racing another terminal outcome returns `409 task_conflict`.
+
+        This is an Agent-reported business outcome and sets Task status to
+        `failed`; it does not turn a technical Run failure into Task status
+        `error`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          description: Supplemental proof for the live Run whose Task failed.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID replay fence scoped to this task-failure operation and Run.
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/TaskFailureRequest' }
+      responses:
+        '200':
+          description: The authoritative failed Task; exact replay has the same response.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskFailureResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: '`401 authentication_required` or `401 run_token_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found` or `404 task_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 task_conflict` — incompatible idempotent replay, a terminal
+            race, or a Task state that cannot accept a business failure.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  # ============================================================= task reports
+
+  # /api/v1/companies/{companyId}/conversations/{conversationId}/task-reports
+  companies_companyId_conversations_conversationId_task_reports:
+    get:
+      tags: [tasks]
+      operationId: previewTaskReports
+      summary: Preview pending Task outcome reports for one direct conversation
+      description: |
+        Returns at most 100 oldest pending outcome events for the direct
+        Conversation's recipient Agent, counting only reports about Projects
+        the caller reads (ADR 0017); reports about other Projects stay queued
+        until a reader of their Project asks. `pendingCount` is authoritative
+        for those readable reports and `truncated` reports whether more of
+        them remain. The preview does not reserve or mutate the queue.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/conversationId'
+      responses:
+        '200':
+          description: Current pending report preview.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/TaskReportPreviewDto' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+
+  # /api/v1/companies/{companyId}/conversations/{conversationId}/task-reports/send
+  companies_companyId_conversations_conversationId_task_reports_send:
+    post:
+      tags: [tasks]
+      operationId: sendTaskReports
+      summary: Confirm and enqueue the pending Task outcome reports
+      description: |
+        Atomically freezes the current pending events the caller can read (only
+        reports about Projects the caller reads, ADR 0017) into a batch, writes
+        the Conversation message, and enqueues a Run for the conversation's
+        Agent. Reports about other Projects stay queued.
+        PostgreSQL generates all durable entity ids. `requestKey` is the replay
+        fence: the same key and caller returns the original receipt with `200`;
+        a new batch returns `201`. The response has no `created` flag because
+        the status code already carries that fact.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/conversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SendTaskReportsRequest' }
+      responses:
+        '200':
+          description: Exact replay of an existing batch.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SendTaskReportsResponse' }
+        '201':
+          description: Batch created and Run enqueued.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SendTaskReportsResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: |
+            `409 task_report_agent_busy`, `task_report_no_pending` (no pending
+            report the caller reads remains), or `task_conflict` when the
+            replay key names incompatible state.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  # ================================================================ workspace
+
+  # /api/v1/companies/{companyId}/tasks/{taskId}/workspace
+  companies_companyId_tasks_taskId_workspace:
+    get:
+      tags: [tasks]
+      operationId: getTaskWorkspace
+      summary: Load everything a task detail screen renders
+      description: |
+        The largest single round-trip reduction in the contract: about thirty
+        requests to one. Opening a task previously fired the task, then all
+        100 company runs filtered client-side, a message-count probe, the
+        message page, conversation state, a state write, and then one
+        transcript request per distinct `runId` in those messages.
+
+        `runTimelines` is bounded deliberately — only the Runs referenced by
+        the returned message page, each capped at the newest 20 transcript
+        rows. The owning Conversation's transcript endpoint is the drill-down;
+        its rows carry `runId` for grouping. `hasMore` says older preview rows
+        exist. Trading an N+1 for one enormous response is not a fix.
+
+        The entire response comes from one read-only `REPEATABLE READ`
+        snapshot. Task conversations are visible to every active Company
+        member. As a fail-closed data-integrity defense, a Task associated with
+        a creator-private direct conversation remains readable only by that
+        conversation's creator.
+
+        Every part is the same DTO its own resource returns, `dependencies`
+        included, so each lands in the cache slot the individual read would
+        have filled.
+
+        The workspace carries the whole task, so a request sent with a Run's
+        `X-Boardly-Run-Token` reads only the Run's own tasks, as
+        `GET .../tasks/{taskId}` does: any other task is
+        `403 task_outside_run_scope`, with nothing of the task in the body.
+        Its `dependencies` are what `.../dependencies` gives the Run. No Run
+        command reaches this route today; the rule keeps it closed.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+        - $ref: '#/parameters/runTokenRead'
+        - name: message_limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: The task workspace snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - task
+                  - conversation
+                  - messages
+                  - earliestAvailableSeq
+                  - throughSeq
+                  - runTimelines
+                  - activeRuns
+                  - runQueue
+                  - dependencies
+                properties:
+                  task: { $ref: '#/schemas/Task' }
+                  conversation: { $ref: './_common.yaml#/schemas/Conversation' }
+                  messages:
+                    type: array
+                    items: { $ref: './_common.yaml#/schemas/MessageWithAttachments' }
+                  earliestAvailableSeq: { type: integer, format: int64, example: 1 }
+                  throughSeq: { type: integer, format: int64, example: 41 }
+                  runTimelines:
+                    type: array
+                    items:
+                      type: object
+                      required: [runId, items, throughSeq, hasMore]
+                      properties:
+                        runId: {"type": "string", "format": "uuid"}
+                        items:
+                          type: array
+                          maxItems: 20
+                          description: The newest 20 durable transcript rows at most.
+                          items: { $ref: './runs.yaml#/schemas/RunTranscriptEntry' }
+                        throughSeq: { type: integer, format: int64, example: 41 }
+                        hasMore:
+                          type: boolean
+                          description: True when older transcript rows exist beyond this 20-row preview.
+                  activeRuns:
+                    type: array
+                    items: { $ref: './runs.yaml#/schemas/Run' }
+                  runQueue: { $ref: './_common.yaml#/schemas/RunQueueProjection' }
+                  dependencies: { $ref: '#/schemas/DependencySet' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '403': { $ref: '#/responses/TaskOutsideRunScope' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/tasks/{taskId}/results
+  companies_companyId_tasks_taskId_results:
+    post:
+      tags: [tasks, deliverables]
+      operationId: finalizeTaskResults
+      summary: Select the exact live Task Run's final deliveries
+      description: |
+        Requires the assignee's session, live Task Run proof, current Project
+        execution permission and the expected Task revision. Selects only outputs
+        from this Run and execution generation, in the supplied order. The Task
+        remains in_progress until the Run terminates. This operation cannot apply
+        suggestions, approve results or change policy. On successful completion,
+        a Task with optional review can finish only when this exact Run finalized
+        its results and required suggestions are applied (or it was assigned as
+        proposal-only); otherwise it needs review. No human approval is fabricated.
+        A matching idempotent replay returns the current Task without replacing
+        a later selection. A different payload under the same key conflicts.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/FinalizeTaskResultsInput' }
+      responses:
+        '200':
+          description: The authoritative Task with its new result selection.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Task' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '403':
+          description: '`task_outside_run_scope` or `project_permission_required` after execution access is revoked.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: The Task, Run, selection or replay no longer matches the request.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    get:
+      tags: [tasks, deliverables]
+      operationId: getTaskResults
+      summary: Read a Task's durable outputs and user-provided source files
+      description: |
+        Active Company members can read the Outputs from this Task's Runs that
+        they can access, and ready Attachments on user-authored user messages
+        in its Conversation. The Task's creator owns its Outputs; the member
+        who ran a Run holds a `view` grant on what that Run presented.
+        Results are independent of the loaded chat history. Outputs are ordered
+        newest first by (Output createdAt, Output id), including multiple
+        Outputs from the same Run; sources are ordered by
+        (Attachment createdAt, Attachment id), newest first. Attachment identity
+        is unique across message attachments, so sources cannot repeat.
+        Each section returns at most limit entries. The opaque cursor tracks
+        both sections independently, and an exhausted section returns [] on
+        subsequent pages. Re-fetch without a cursor to refresh the latest state.
+        Publication and Deliverable states are read in the same snapshot.
+        Use the individual Run result endpoint with `artifactId` to obtain the
+        matching review action. Download an Output item through its Run,
+        Artifact, and ordinal; assetVersionId identifies its immutable file
+        snapshot.
+
+        Sent with a Run's `X-Boardly-Run-Token`, the task must be one of the
+        Run's own, as on `GET .../tasks/{taskId}`, else
+        `403 task_outside_run_scope` and no result is read. No Run command
+        reaches this route today; the rule keeps it closed.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/taskId'
+        - $ref: '#/parameters/runTokenRead'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+        - name: cursor
+          in: query
+          schema: { type: string, maxLength: 128 }
+      responses:
+        '200':
+          description: The next results and sources from one membership-checked snapshot.
+          content:
+            application/json:
+              schema: { $ref: './runs.yaml#/schemas/TaskResultPage' }
+        '401': { $ref: '#/responses/UnauthorizedRunRead' }
+        '403': { $ref: '#/responses/TaskOutsideRunScope' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422':
+          description: '`422 validation_failed` for invalid query parameters, or `invalid_cursor` for a malformed cursor.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+parameters:
+  taskReference:
+    name: taskId
+    in: path
+    required: true
+    description: |
+      The task's id, or the name people give it: its `key` in any letter
+      case, else the `{taskPrefix}-{number}` label the board shows, in this
+      company's prefix and any letter case. A key that is exactly the name
+      wins over another task's label; keys are unique only in their exact
+      letter case, and when two equal the name in another case the older
+      task (lower `number`) wins. A name that is no task is
+      `404 task_not_found`.
+    schema: { type: string, minLength: 1 }
+  runTokenRead:
+    name: X-Boardly-Run-Token
+    in: header
+    required: false
+    description: |
+      Sent by a Run's channel. When present it must prove a running Run in
+      this Company, and the read covers only that Run's own tasks: the ones
+      its agent does for the member the Run works for.
+    schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+
+responses:
+  UnauthorizedRunRead:
+    description: |
+      `401` — `authentication_required`, `session_invalid` or
+      `invalid_credentials`, or `run_token_invalid` when a supplied
+      `X-Boardly-Run-Token` does not prove a running Run in this Company.
+    content:
+      application/json:
+        schema: { $ref: './_common.yaml#/schemas/Error' }
+  TaskOutsideRunScope:
+    description: |
+      `403 task_outside_run_scope` — sent with a Run's token, the task is
+      not one of the Run's own. The body carries nothing of the task — no
+      content, label, member or agent name — and its `detail` is always
+      "Permission denied. You can only access your own Tasks."
+    content:
+      application/json:
+        schema: { $ref: './_common.yaml#/schemas/Error' }
+
+schemas:
+  FinalizeTaskResultsInput:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision, outputIds]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1, maximum: 9007199254740991 }
+      outputIds:
+        type: array
+        minItems: 1
+        maxItems: 32
+        uniqueItems: true
+        items: { type: string, format: uuid }
+  TaskResultPolicy:
+    type: object
+    additionalProperties: false
+    required: [proposalOnly, reviewRequired]
+    properties:
+      proposalOnly: { type: boolean, description: Assigned before execution; approval endorses the proposal without applying it. }
+      reviewRequired: { type: boolean, description: Whether selection requires separate Task approval. }
+  TaskResultSelectionInput:
+    type: object
+    additionalProperties: false
+    required: [requestKey, outputIds]
+    properties:
+      requestKey: { type: string, format: uuid }
+      outputIds:
+        type: array
+        minItems: 1
+        maxItems: 32
+        uniqueItems: true
+        items: { type: string, format: uuid }
+      acceptChanges:
+        type: array
+        maxItems: 32
+        description: Exact reviewed changes to apply atomically with the selection and optional done transition.
+        items:
+          type: object
+          additionalProperties: false
+          required: [projectId, pageId, changeId, input]
+          properties:
+            projectId: { type: string, format: uuid }
+            pageId: { type: string, format: uuid }
+            changeId: { type: string, format: uuid }
+            input: { $ref: './pages.yaml#/schemas/PageChangeReviewInput' }
+  TaskResultSelection:
+    type: object
+    additionalProperties: false
+    required: [proposalOnly, reviewRequired, policyEditable, hasUnavailable, taskRevision, selectionId, outputIds, approvedAt]
+    properties:
+      proposalOnly: { type: boolean }
+      reviewRequired: { type: boolean }
+      taskRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      hasUnavailable: { type: boolean, description: Some selected evidence is no longer readable and its identities are withheld. }
+      policyEditable: { type: boolean, description: False once execution has begun. }
+      selectionId: { type: [string, 'null'], format: uuid }
+      outputIds:
+        type: array
+        items: { type: string, format: uuid }
+      approvedAt: { type: [string, 'null'], format: date-time }
+
+  TaskFailureRequest:
+    type: object
+    additionalProperties: false
+    required: [reason]
+    properties:
+      reason:
+        type: string
+        minLength: 1
+        maxLength: 2000
+
+  TaskFailureResponse:
+    type: object
+    additionalProperties: false
+    required: [status, task]
+    properties:
+      status: { type: string, const: failed }
+      task: { $ref: '#/schemas/Task' }
+
+  TaskReportEventDto:
+    type: object
+    required:
+      - id
+      - taskId
+      - taskKey
+      - taskTitle
+      - outcome
+      - completionSource
+      - completedAt
+      - resultSummary
+    properties:
+      id: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      taskKey: { type: string }
+      taskTitle: { type: string }
+      outcome: { type: string, enum: [done, failed] }
+      completionSource:
+        type: string
+        enum: [manual, review_accepted, agent_business_failure]
+      completedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      resultSummary: { type: string, maxLength: 600 }
+
+
+  TaskReportPreviewDto:
+    type: object
+    required:
+      [recipientAgentId, conversationId, pendingCount, agentBusy, truncated, events]
+    properties:
+      recipientAgentId: { type: string, format: uuid }
+      conversationId: { type: string, format: uuid }
+      pendingCount: { type: integer, format: int64, minimum: 0 }
+      agentBusy: { type: boolean }
+      truncated: { type: boolean }
+      events:
+        type: array
+        maxItems: 100
+        items: { $ref: '#/schemas/TaskReportEventDto' }
+
+
+  SendTaskReportsRequest:
+    type: object
+    additionalProperties: false
+    required: [requestKey]
+    properties:
+      requestKey:
+        type: string
+        format: uuid
+        description: Caller-generated replay key; never used as an entity id.
+
+
+  SendTaskReportsResponse:
+    type: object
+    required: [batchId, messageId, runId, eventCount]
+    properties:
+      batchId: { type: string, format: uuid }
+      messageId: { type: string, format: uuid }
+      runId:
+        {"type": "string", "format": "uuid"}
+      eventCount: { type: integer, format: int32, minimum: 1 }
+
+  AssigneeRef:
+    type: object
+    description: |
+      Which member a task is assigned to, on the **write** side. Always a
+      member (ADR 0014): the assignee is the person responsible for running
+      the task on their own computer.
+
+      Deliberately not the response's `ActorRef`: that one carries a display
+      name and avatar, and the request decoder rejects unknown fields, so a
+      client generated from `ActorRef` would send a body the server refuses.
+    required: [id, kind]
+    properties:
+      id: { type: string, format: uuid }
+      kind: { type: string, enum: [user] }
+
+  ExecutorRef:
+    type: object
+    description: |
+      Who does a task's work, on the **write** side: an agent, or the
+      assignee themself (`kind: user` with the assignee's id — any other
+      member is `422`).
+    required: [id, kind]
+    properties:
+      id: { type: string, format: uuid }
+      kind: { type: string, enum: [user, agent] }
+
+  TaskExecution:
+    type: object
+    description: |
+      Whether the task can start on its assignee's computer, without naming
+      that computer. `assigneeReady` is true when the assignee has set the
+      executing or assisting agent up on a runtime that is online, usable
+      and signed in, and holds `project.tasks.execute` on the task's
+      Project. `agent` names that agent: `executedBy` for agent work,
+      otherwise the creating agent, with the CEO as fallback for tasks
+      created by a member. Human work keeps its human `executedBy`.
+      `agent` is null when no such agent exists. `unreadyReason` says why
+      not — `not_bound` (the assignee has not set the agent up),
+      `runtime_offline`, `runtime_unusable`, `runtime_signed_out`,
+      `agent_archived`, `assignee_inactive` (the assignee is no longer an
+      active member, or their account is closed, and the task needs
+      reassigning), or `assignee_cannot_run`
+      (the assignee does not hold `project.tasks.execute` on the task's
+      Project, so a start would be refused with
+      `403 project_permission_required`; someone who manages the Project
+      grants it, or the task goes to someone who holds it) — or `null`.
+      When several apply, the first of `assignee_inactive`, `agent_archived`,
+      `assignee_cannot_run`, `not_bound` and then the computer's state is
+      given. It is read live, so it can change while `revision` stays: when
+      the assignee's setup or computer changes, `task.updated` carries the
+      task again with the same `revision`, and when their access to the
+      Project changes, `project.access_changed` tells the Project's readers
+      to read its tasks again.
+    required: [agent, assigneeReady, unreadyReason]
+    properties:
+      agent:
+        description: The agent that executes or assists this task's conversation.
+        oneOf:
+          - $ref: './_common.yaml#/schemas/ActorRef'
+          - type: 'null'
+      assigneeReady: { type: boolean }
+      unreadyReason:
+        type: [string, "null"]
+        enum: [not_bound, runtime_offline, runtime_unusable, runtime_signed_out, agent_archived, assignee_inactive, assignee_cannot_run, null]
+
+
+  DependencyEdge:
+    type: object
+    description: |
+      One dependency edge, seen from one task. `task` is always the **other**
+      endpoint — the prerequisite inside `blockedBy`, the dependent inside
+      `blocks` — so both directions share one wire type and a blocker chip
+      renders from the edge alone.
+
+      `revision` is the **edge's**, which is what
+      `PlanArtifact.base.dependencies` expects; the task's own version travels
+      inside `task`.
+    required: [task, createdAt, revision]
+    properties:
+      task: { $ref: '#/schemas/DependencyTask' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  DependencyGraph:
+    type: object
+    description: |
+      The complete matching edge set plus the stubs it names. `tasks` covers
+      exactly the endpoints of `items`, so the response is self-contained.
+    required: [items, tasks]
+    properties:
+      items:
+        type: array
+        items: { $ref: './_common.yaml#/schemas/TaskDependency' }
+      tasks:
+        type: array
+        description: Stubs for every task named by an edge on this page.
+        items: { $ref: './_common.yaml#/schemas/DependencyGraphTask' }
+
+
+  DependencySet:
+    type: object
+    description: |
+      Both directions for one task. Either array being `[]` is an
+      authoritative empty, not missing data.
+    required: [blockedBy, blocks]
+    properties:
+      blockedBy:
+        type: array
+        description: Edges whose `task` must reach `done` before this one may run.
+        items: { $ref: '#/schemas/DependencyEdge' }
+      blocks:
+        type: array
+        description: Edges whose `task` is waiting on this one.
+        items: { $ref: '#/schemas/DependencyEdge' }
+
+
+  DependencyTask:
+    type: object
+    description: |
+      The far endpoint of a dependency edge, carried inline so "blocked by
+      ENG-9, which Ada owns" renders without a read per blocker.
+    required: [id, projectId, key, number, title, status, assignee, executedBy, revision]
+    properties:
+      id: { type: string, format: uuid }
+      projectId: { type: string, format: uuid }
+      key: { type: string }
+      number:
+        type: integer
+        format: int64
+        description: What every surface displays as `{taskPrefix}-{number}`.
+      title: { type: string }
+      status: { $ref: './_common.yaml#/schemas/TaskStatus' }
+      assignee: { $ref: './_common.yaml#/schemas/ActorRef' }
+      executedBy: { $ref: './_common.yaml#/schemas/ActorRef' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  PlanApplyResult:
+    type: object
+    description: |
+      Compact counts across the Plan transaction's entity mutations, and the
+      Project changes it left undone because the applier lacks the Project
+      permission they need (ADR 0017).
+    required: [created, updated, deleted, skipped]
+    properties:
+      created: { type: integer }
+      updated: { type: integer }
+      deleted: { type: integer }
+      skipped:
+        type: array
+        description: |
+          Project changes the apply left undone while the rest applied
+          (ADR 0017): renaming a Project without `project.settings.update`
+          (`update`); archiving it, or leaving it out of `desired` while it
+          has open Tasks, without `project.archive` (`archive`); or changing
+          it or its Tasks after the applier lost `project.tasks.write` or
+          `project.read` there since the plan was read (`tasks`). In the
+          last two the whole Project and its Tasks are left as they are.
+          Empty when nothing was held back.
+        items: { $ref: '#/schemas/PlanSkip' }
+
+  PlanSkip:
+    type: object
+    required: [entityType, key, operation, permission]
+    properties:
+      entityType: { type: string, enum: [project] }
+      key: { type: string }
+      operation: { type: string, enum: [update, archive, tasks] }
+      permission:
+        allOf: [{ $ref: './projects.yaml#/schemas/ProjectPermission' }]
+        description: |
+          The Project permission the applier lacks: `project.settings.update`
+          to rename, `project.archive` to archive or empty the Project,
+          `project.tasks.write` or `project.read` for `tasks`.
+
+
+  PlanArtifact:
+    type: object
+    description: |
+      The plan document as its author reads the Company. `base` is the plan
+      snapshot the client read — every Project they read, every Task in it
+      (terminal ones included) and every dependency edge, each with its
+      revision; `desired` is the target. The apply reaches only the listed
+      Projects the applier may change (ADR 0017). Both stay nested: they are two
+      documents the caller assembles and ships whole, not groupings of the
+      response's own scalars. The apply is a three-way reconciliation and is
+      the **only** path that deletes tasks or writes dependencies.
+    required: [artifactVersion, companyId, companySlug, createdAt, base, desired]
+    properties:
+      artifactVersion: { type: integer, const: 1 }
+      companyId: { type: string, format: uuid }
+      companySlug:
+        type: string
+        description: Must equal the live slug, else `409 work_plan_conflict`.
+      createdAt:
+        allOf: [{ $ref: './_common.yaml#/schemas/Timestamp' }]
+        description: |
+          Must fall inside `now - 24h` .. `now + 5min`, else
+          `409 work_plan_conflict`. A zero value is `422` instead.
+      base:
+        type: object
+        required: [projects, tasks, dependencies]
+        properties:
+          projects:
+            type: array
+            items: { $ref: './_common.yaml#/schemas/PlanBaseEntity' }
+          tasks:
+            type: array
+            items: { $ref: './_common.yaml#/schemas/PlanBaseEntity' }
+          dependencies:
+            type: array
+            items:
+              type: object
+              required: [dependentTaskId, prerequisiteTaskId, revision]
+              properties:
+                dependentTaskId: { type: string, format: uuid }
+                prerequisiteTaskId: { type: string, format: uuid }
+                revision: { $ref: './_common.yaml#/schemas/Revision' }
+      desired:
+        type: object
+        required: [formatVersion, company, projects, tasks]
+        properties:
+          formatVersion:
+            type: integer
+            const: 5
+            description: |
+              Company Tasks and their dependencies, each naming its assignee
+              agent by id.
+          company: { type: string }
+          projects:
+            type: array
+            items: { $ref: './approvals.yaml#/schemas/CompanyPlanProject' }
+          tasks:
+            type: array
+            items:
+              type: object
+              required:
+                - key
+                - projectKey
+                - title
+                - description
+                - status
+                - priority
+                - agentId
+                - milestoneType
+                - dependsOn
+              properties:
+                key: { type: string }
+                projectKey: { type: string }
+                title: { type: string, maxLength: 240 }
+                description: { type: string }
+                status:
+                  allOf: [{ $ref: './_common.yaml#/schemas/TaskStatus' }]
+                  description: |
+                    `failed` and `error` may only restate an existing Task
+                    already in that same server-owned status; a Plan
+                    cannot introduce either outcome.
+                priority: { $ref: '#/schemas/TaskPriority' }
+                agentId:
+                  type: string
+                  description: |
+                    The Agent that does the work (`executedBy`) — any active
+                    Agent of the company. Empty when the task's assignee does
+                    the work themself. A task the plan creates is assigned to
+                    the member who applies the plan; a restated task keeps its
+                    assignee.
+                milestoneType: { $ref: '#/schemas/TaskMilestoneTypeDto' }
+                dependsOn:
+                  type: array
+                  items:
+                    type: object
+                    required: [taskKey]
+                    properties:
+                      taskKey: { type: string }
+
+  # ------------------------------------------------------------- tasks
+
+  Task:
+    type: object
+    required:
+      - id
+      - key
+      - companyId
+      - projectId
+      - milestoneType
+      - conversationId
+      - number
+      - title
+      - description
+      - status
+      - priority
+      - labels
+      - startDate
+      - dueDate
+      - assignee
+      - executedBy
+      - execution
+      - creator
+      - blockedByCount
+      - dependenciesResolved
+      - assigneeOutsideProject
+      - createdAt
+      - updatedAt
+      - completedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      key:
+        type: string
+        description: |
+          Stable identity, unique per company: the displayed
+          `{taskPrefix}-{number}` label when the server minted it on a
+          create without a key, otherwise the slug a Company Plan or client
+          chose (never in that label shape).
+      companyId: { type: string, format: uuid }
+      projectId: { type: string, format: uuid, description: Immutable owning Project. }
+      milestoneType: { $ref: '#/schemas/TaskMilestoneTypeDto' }
+      conversationId:
+        type: string
+        format: uuid
+        description: Every task owns exactly one conversation.
+      number:
+        type: integer
+        format: int64
+        example: 14
+        description: Monotonic per company. What every surface displays as `{taskPrefix}-{number}`.
+      title: { type: string, maxLength: 240 }
+      description: { type: string }
+      status: { $ref: './_common.yaml#/schemas/TaskStatus' }
+      priority: { $ref: '#/schemas/TaskPriority' }
+      labels: { $ref: '#/schemas/TaskLabels' }
+      startDate: { $ref: '#/schemas/TaskCalendarDate' }
+      dueDate: { $ref: '#/schemas/TaskCalendarDate' }
+      assignee:
+        description: "The member responsible for running the task on their own computer. Always `kind: user`."
+        $ref: './_common.yaml#/schemas/ActorRef'
+      executedBy:
+        description: "Who does the work — an agent, or the assignee themself (then identical to `assignee`)."
+        $ref: './_common.yaml#/schemas/ActorRef'
+      execution: { $ref: '#/schemas/TaskExecution' }
+      creator: { $ref: './_common.yaml#/schemas/ActorRef' }
+      blockedByCount:
+        type: integer
+        format: int64
+        example: 2
+        description: |
+          Prerequisites this task has, done or not. A board draws its
+          "2 blockers" chip from this instead of one dependency read per row.
+      dependenciesResolved:
+        type: boolean
+        description: |
+          False while any prerequisite is not `done`. This is the exact
+          predicate the enqueue path evaluates, so a client disables *Start*
+          rather than discovering `409 task_dependency_blocked`. It is **not**
+          derivable from `blockedByCount`: a task can have four prerequisites
+          and still be startable because all four are finished.
+      assigneeOutsideProject:
+        type: boolean
+        description: |
+          True when the task sits in a restricted Project and its assignee
+          cannot read that Project (ADR 0017): the assignee can neither open
+          nor run it until someone gives them access. The server decides it
+          on every read and frame; a client shows it and never works it out
+          from the Project's grants.
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      completedAt:
+        description: |
+          Latest business outcome time, or `null` while unfinished. A new user
+          message that resumes a `failed` Task clears this field.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      access:
+        description: |
+          Present on every REST response; left out of `task.created` and
+          `task.updated` frames.
+        $ref: '#/schemas/TaskAccess'
+
+  TaskAccess:
+    type: object
+    description: |
+      What the caller may do with the task (ADR 0017): their effective
+      permissions on the task's Project, decided by the server and merged
+      exactly like the Project's own `access.permissions` (grants, plus the
+      company-visible floor, plus the management names for `projects.manage`
+      holders). A task appears only to readers of its Project, so
+      `project.read` is always present. Clients gate on it and never derive
+      it from a role. Every REST read carries it; `task.created` and
+      `task.updated` frames reach other people and leave it out, so a client
+      keeps the value it read and refetches on the frame.
+    required: [permissions]
+    properties:
+      permissions:
+        type: array
+        items: { $ref: './projects.yaml#/schemas/ProjectPermission' }
+
+
+  TaskMutationResult:
+    description: |
+      The one task-write receipt: the updated task **flat**, with the run the
+      transition enqueued as a sibling `runId`. PATCH and the run-start action
+      share it, so both land in the same cache slot. Whether a run was created
+      is exactly `runId != null` — there is no separate flag.
+    allOf:
+      - $ref: '#/schemas/Task'
+      - type: object
+        required: [runId, assigneeOutsideProjectTaskIds]
+        properties:
+          assigneeOutsideProjectTaskIds:
+            type: array
+            items: { type: string, format: uuid }
+            description: |
+              The written tasks whose assignee cannot read the task's Project
+              (ADR 0017), usually empty. An assignee who loses access keeps
+              the task until someone who can read the Project and holds
+              `tasks.assign` hands it over; a client shows an "outside
+              project" badge. It names no one.
+          runId:
+            {"type": ["string", "null"], "format": "uuid", "description": "The run this write enqueued, or `null` when the transition\nstarted nothing. The run projection arrives through the run API\nand realtime lifecycle events.\n"}
+
+  TaskHandoffConfirmationError:
+    description: |
+      The `task_handoff_confirmation_required` refusal: the standard error
+      envelope with `runLive` flat beside it.
+    allOf:
+      - $ref: './_common.yaml#/schemas/Error'
+      - type: object
+        required: [runLive]
+        properties:
+          code: { const: task_handoff_confirmation_required }
+          runLive:
+            type: boolean
+            description: |
+              `true` when a run of the task is live right now, so confirming
+              the handoff cancels it; `false` when the task only ran before.
+              Read from the same runs a confirmed handoff would cancel.
+
+  TaskUpdateConflict:
+    description: |
+      What a refused task update returns with 409. Branch on `code`: only
+      `task_handoff_confirmation_required` carries `runLive`; every other
+      conflict is the plain envelope. `anyOf`, not `oneOf`: the envelope
+      admits extra keys, so a handoff refusal matches both branches.
+    anyOf:
+      - $ref: '#/schemas/TaskHandoffConfirmationError'
+      - $ref: './_common.yaml#/schemas/Error'
+
+  TaskPriority:
+    type: string
+    enum: [low, medium, high, urgent]
+
+
+  TaskMilestoneTypeDto:
+    type: string
+    description: Stable Task planning outcome from milestone catalog version 3.
+    enum:
+      - positioning
+      - brand
+      - presence
+      - finance
+      - product
+      - launch
+      - growth
+      - sales_outbound
+      - operations
+      - support
+
+  TaskLabels:
+    type: array
+    maxItems: 20
+    description: Task-owned display labels, trimmed and deduplicated case-insensitively in first-seen order. Empty and control-character labels are rejected. These are not Company-managed label identities.
+    items: { type: string, minLength: 1, maxLength: 48 }
+
+  TaskCalendarDate:
+    description: Gregorian calendar date (year 0001–9999), without a time zone; null means unset.
+    oneOf:
+      - { type: string, format: date }
+      - { type: "null" }

@@ -1,0 +1,82 @@
+---
+title: Approvals and questions
+description: How agents ask you for a decision or for information without ever parking a run.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Sometimes an agent needs something only a person can give: a verdict on a consequential action, or an answer it cannot derive. Zenith Team models these as two durable requests — an **Approval** asks for your decision, a **Question** asks for information. Both are raised from a live [run](/runs), both survive a closed laptop and a night's sleep, and both wake the agent with your response through a fresh run. Pending requests also land in your [inbox](/notifications), so they are never lost in a scrolled-past conversation.
+
+## Approvals
+
+An Approval is a durable request for your verdict on one frozen consequential action. Two kinds exist today:
+
+| Kind | What you are deciding |
+|---|---|
+| **`company_plan_apply`** | Whether to apply a set of [Company Plan](/company-plan) changes an agent authored — the request carries the server-computed diff you review |
+| **`commerce_manifest_publish`** | Whether to publish a payment setup an agent submitted — shown as **Review & publish payment setup** and resolved from the commerce review flow |
+
+An Approval moves through a closed status set, and the terminal status is the decision:
+
+| Status | Meaning |
+|---|---|
+| **`pending`** | Waiting for a verdict |
+| **`approved`** | You approved it — the frozen action was executed, or skipped with a reason |
+| **`rejected`** | You rejected it — nothing executed, and the agent hears your note |
+| **`cancelled`** | Withdrawn without a decision |
+| **`expired`** | The deadline passed before anyone decided |
+
+Visibility follows origin, for approvals and questions alike: a request raised while working a [task](/tasks) is visible to the people who can see the task's project; one raised in your private direct chat is yours alone. Deciding a request from a task needs the right to decide approvals and questions on that project, whatever your role, and applying a Company Plan from a task also needs the right to write its tasks; it is sent to exactly the people who hold those rights (a payment setup keeps its own owner review). If nobody does, the agent's run stops and its member is told to give someone that right. See [What owners and admins can see](/project-access). Raising is also replay-safe — an agent retrying the same request gets the same durable row back, never a duplicate.
+
+**The action is frozen when the request is raised.** The server persists the canonical action and its digest at request time, and approving executes that stored action — never what the agent would ask for now. And if the action's target changed while the request waited, the execution is skipped rather than applied, with a reason: your 9am decision about a midnight state must not silently overwrite the hours in between.
+
+## Questions
+
+A Question is a durable request for information, carrying one to ten typed prompts. Each prompt is one of two shapes:
+
+| Prompt shape | How you answer |
+|---|---|
+| **Free text** | A prompt with no options takes a written answer |
+| **Choice** | A prompt with 2–20 options takes option picks — `single` selection or `multi` |
+
+Prompts can be marked required, and can carry help text explaining the stakes of each option. A Question's status set is `pending`, then `answered`, `withdrawn`, or `expired`. Who may answer follows the same origin rule as visibility: a task question is answered by the people who may decide approvals and questions on its project; only you can answer one raised in your direct chat. An answer must cover every required prompt — the agent is then woken with all of it in context.
+
+## A run never parks
+
+There is no "waiting for human" run status, and there never will be one. The agent raises the request from its live run, that run ends normally, and your terminal response is delivered through a fresh continuation run — a new root run, not a retry.
+
+The sequence:
+
+1. The agent calls a gated tool mid-run; the server persists the pending Approval or Question.
+2. The run ends normally. Hours can pass. Nothing is held open.
+3. You decide or answer — or the request expires.
+4. Zenith Team enqueues a new run for the same agent in the same conversation, carrying the outcome — the decision, the answers, or the expiry — in its context.
+
+The continuation run's identity is stamped onto the request (`continuationRunId`) in the same transaction that creates the run, so a non-empty value always names a run you can open. It stays empty while the continuation is pending, and permanently if the target is gone — an archived agent, a deleted task, or an agent the task's assignee (or the chat's creator) has not set up on their computer abandons the continuation rather than running against nothing. When there is something for them to do — the agent is not set up on their computer or is archived, or the task failed, waits on a task it depends on, or is in an archived project — that member gets a `run_failed` notification saying why and what to do, such as "Set Eli up on your computer, then reply in the task's chat." It never says to run the task again: a task waiting on an answer or an approval stays in progress, where there is no Run button, and a reply in its chat is what starts the agent again. A task that was marked done or cancelled raises no notification, because closing it was a member's own choice.
+
+One narrow exception: a commerce publish approval for a Site running locally keeps its authoring task run alive, because the signing key that activation needs exists only inside that run's supervised `zen commerce dev` process. Every other request uses the end-and-resume flow above.
+
+**Expiry wakes the agent too.** Every request carries an `expiresAt` — 24 hours for Company Plan approvals and questions, 30 days for commerce publish approvals. A request no one answers is not a silent dead end: Zenith Team expires it, closes its inbox items, and the agent is re-run and told the request expired, so it can proceed differently or stop deliberately.
+
+## Proactive Mode
+
+Proactive Mode is the one exception to the pending-verdict path, and it is deliberately narrow. It is a per-company preference only an owner can change; enabling it binds the mode to that owner's direct conversation with the [CEO Agent](/agents#the-ceo-agent-and-the-reporting-tree) — see [Companies](/companies).
+
+While it is on, a `company_plan_apply` Approval raised from exactly that conversation — still the company's selected conversation, still targeting the active CEO Agent, with you still an active owner — is executed and resolved inline: the Approval is stored already `approved`, no notification is created, and no continuation run is scheduled, because the originating conversation already has the outcome. Any drift in that authority — a different conversation, an archived agent, a changed selection — falls back to the ordinary pending path.
+
+<Callout type="info">
+Proactive Mode covers only Company Plan approvals from the selected CEO Agent conversation. Questions, commerce approvals, and approvals raised from any other conversation always wait for you.
+</Callout>
+
+## The Approvals page
+
+Pending requests live on the **Approvals** page (route `/approvals`), in two tabs — **Approvals** and **Questions**. Each request shows who asked, what it is about, and when it expires; an Approval renders the server-computed preview of exactly what will execute. The inbox item a pending request raises opens the conversation the agent asked from, where the pending request renders as a decision card; resolving or expiry closes that item automatically, and this page's status filters (`approvalStatus`, `questionStatus`) keep resolved requests as history.
+
+The page lists only what you may decide, and its counts say the same. A request raised in a task chat of a project is decided inside that project: you see it here when you hold **Answer approvals and questions** on the project, whatever your company role, and a member who holds it on one project gets the **Approvals** tab for that project's requests. In the task chat itself, the same item is all you need to answer a question, even when you can't post in that chat; without it, the question shows which item you need. The same rule decides where the app says a task needs your input or your response: on its board card, in its task panel, in its chat and the chat list, on the Work page and on the Agents pages. Someone who can't answer sees the task's usual status there. Requests outside a project follow the company's own approval permission, which owners and admins hold.
+
+## Next steps
+
+- **[Notifications](/notifications)** — the inbox where pending requests wait for you.
+- **[Company Plan](/company-plan)** — the surface `company_plan_apply` approvals gate.
+- **[Runs](/runs)** — what a run is, and why ending one is cheap.
+- **[How Zenith Team works](/how-zenith-team-works)** — where the continuation run fits in the full path.

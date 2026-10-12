@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "boardly: infra up (postgres+redis+minio)",
+      "type": "shell",
+      "command": "make infra-up",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "boardly: dlv headless server (:2345)",
+      "detail": "Start the API under delve, then use the 'attach to headless dlv' launch config",
+      "type": "shell",
+      "command": "bash -lc 'cd server && set -a && source .env && set +a && exec \"$HOME/go/bin/dlv\" debug ./cmd/server --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient'",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "boardly: kill server on :8788",
+      "type": "shell",
+      "command": "kill $(lsof -nP -iTCP:8788 -sTCP:LISTEN -t) 2>/dev/null || echo 'nothing on :8788'",
+      "problemMatcher": []
+    }
+  ]
+}

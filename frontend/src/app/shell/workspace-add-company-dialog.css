@@ -1,0 +1,53 @@
+.workspace-add-company-choices {
+  display: grid;
+  gap: 10px;
+}
+
+.workspace-add-company-choice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--input-surface);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.workspace-add-company-choice:hover {
+  border-color: var(--brand-primary);
+  background: var(--state-hover-bg);
+}
+
+.workspace-add-company-choice:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+.workspace-add-company-choice > svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.workspace-add-company-choice > span {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspace-add-company-choice strong {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.workspace-add-company-choice > span > span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}

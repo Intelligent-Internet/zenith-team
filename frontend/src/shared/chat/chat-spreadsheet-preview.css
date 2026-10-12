@@ -1,0 +1,63 @@
+.chat-spreadsheet__tabs {
+  display: flex;
+  gap: 4px;
+  overflow: auto;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--workspace-divider);
+}
+.chat-spreadsheet__tabs button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.chat-spreadsheet__tabs button[aria-pressed="true"] {
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-accent);
+}
+.chat-spreadsheet__notice {
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: var(--workspace-native-text-muted);
+}
+.chat-spreadsheet__scroll {
+  max-height: 60dvh;
+  overflow: auto;
+}
+.chat-spreadsheet table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  width: max-content;
+  min-width: 100%;
+}
+.chat-spreadsheet th,
+.chat-spreadsheet td {
+  padding: 6px 10px;
+  border-right: 1px solid var(--workspace-divider);
+  border-bottom: 1px solid var(--workspace-divider);
+  text-align: left;
+}
+.chat-spreadsheet td span {
+  display: block;
+  max-width: 320px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 90px;
+}
+.chat-spreadsheet th {
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+  font-weight: 500;
+}
+.chat-spreadsheet thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.chat-spreadsheet tbody th {
+  position: sticky;
+  left: 0;
+}

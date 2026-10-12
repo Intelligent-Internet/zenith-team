@@ -1,0 +1,7 @@
+{
+  "extends": "../../../../../frontend/tsconfig.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["./boardly-commerce-json-import.compile.ts"]
+}

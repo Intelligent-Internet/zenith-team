@@ -1,0 +1,73 @@
+/* The Assignee and Executed by pickers (task-assignment-fields.tsx): the
+   face, then a button drawn like the property inputs beside it. It opens
+   the list New task offers Agents in. */
+.task-assignment-field {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+.task-assignment-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+.task-assignment-trigger > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-assignment-trigger > svg {
+  flex-shrink: 0;
+  color: var(--workspace-native-text-muted);
+}
+.task-assignment-trigger[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: progress;
+}
+/* The list stays inside the window. Near the bottom it opens above the row
+   (the popover flips when there is more room there), and it never grows past
+   the room left on its side: the options scroll inside it instead. */
+.task-assignment-menu {
+  display: flex;
+  flex-direction: column;
+  max-height: var(--radix-popover-content-available-height);
+}
+.task-assignment-menu .task-create-agent-options {
+  min-height: 0;
+}
+/* A member's face is as large as an Agent's in the list. */
+.task-assignment-menu .project-person-avatar {
+  width: 30px;
+  height: 30px;
+}
+/* Listed but not offered (no Run tasks with agents): greyed, with a lock
+   where the tick goes, and its hint says why. */
+.task-assignment-menu button[data-locked] {
+  cursor: default;
+}
+.task-assignment-menu button[data-locked]:hover {
+  background: transparent;
+}
+.task-assignment-menu button[data-locked] > :not(svg) {
+  opacity: 0.55;
+}
+.task-assignment-menu button[data-locked] > svg {
+  flex-shrink: 0;
+  color: var(--workspace-native-text-muted);
+}
+
+/* What a handoff leaves behind, under the dialog's question
+   (task-handoff-dialog.tsx). */
+.task-handoff-dialog__hint {
+  margin: 16px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}

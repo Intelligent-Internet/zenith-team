@@ -1,0 +1,6 @@
+# BuildKit per-Dockerfile ignore: the build runs from the repository root but
+# the image needs only the Go module. Classic (non-BuildKit) builders skip
+# this file and simply transfer a larger context.
+*
+!server
+server/Dockerfile*

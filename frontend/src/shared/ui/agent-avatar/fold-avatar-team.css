@@ -1,0 +1,124 @@
+.fold-team {
+  --fold-team-cycle: 2s;
+}
+.fold-team__body {
+  transform-origin: 130px 181px;
+  animation: fold-team-effort var(--fold-team-cycle) ease-in-out infinite;
+}
+.fold-team__eyes {
+  transform-origin: 132px 100px;
+  animation: fold-team-blink 4.6s ease-in-out infinite;
+  animation-delay: var(--fold-blink-delay);
+}
+.fold-team__left {
+  transform-origin: 83px 145px;
+  animation: fold-team-point var(--fold-team-cycle) ease-in-out infinite;
+}
+.fold-team__right {
+  transform-origin: 193px 141px;
+}
+.fold-team[data-appearance="ceo"] {
+  --fold-team-cycle: 2.4s;
+}
+.fold-team[data-appearance="ceo"] .fold-team__left {
+  transform-origin: 80px 136px;
+  animation-name: fold-team-direct;
+}
+.fold-team[data-appearance="marketing"] {
+  --fold-team-cycle: 1.8s;
+}
+.fold-team[data-appearance="marketing"] .fold-team__left {
+  transform-origin: 76px 141px;
+  animation-name: fold-team-megaphone;
+}
+.fold-team[data-appearance="marketing"] .fold-team__right {
+  animation: fold-team-direct var(--fold-team-cycle) ease-in-out infinite;
+}
+.fold-team[data-appearance="operations"] .fold-team__left {
+  transform-origin: 82px 144px;
+  animation-name: fold-team-pencil;
+}
+@keyframes fold-team-effort {
+  0%,
+  40%,
+  78%,
+  100% {
+    transform: translateY(0);
+  }
+  20%,
+  60% {
+    transform: translateY(1px);
+  }
+}
+@keyframes fold-team-blink {
+  0%,
+  40%,
+  44%,
+  100% {
+    transform: scaleY(1);
+  }
+  42% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes fold-team-point {
+  0%,
+  40%,
+  78%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20%,
+  60% {
+    transform: rotate(-7deg);
+  }
+}
+@keyframes fold-team-direct {
+  0%,
+  40%,
+  78%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-5deg);
+  }
+}
+@keyframes fold-team-megaphone {
+  0%,
+  78%,
+  100% {
+    transform: rotate(0deg);
+  }
+  20%,
+  60% {
+    transform: rotate(7deg);
+  }
+  40% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes fold-team-pencil {
+  0%,
+  38%,
+  76%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  18%,
+  56% {
+    transform: translate(3px, 2px) rotate(8deg);
+  }
+  28%,
+  66% {
+    transform: translate(1px, -1px) rotate(3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fold-team * {
+    animation: none !important;
+  }
+}

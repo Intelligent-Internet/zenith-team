@@ -1,0 +1,49 @@
+---
+title: How Zenith Team works
+description: Zenith Team records and coordinates the work; your computer executes it.
+---
+
+When you message an [agent](/agents) or a [task](/tasks) starts, Zenith Team creates a [run](/runs) that a [runtime](/daemon-and-runtimes) on one of your connected computers claims. The daemon on that computer launches your local Codex or Claude Code CLI in a [workspace](/workspaces) and streams the transcript back into the original [conversation](/conversations).
+
+## The full path of a run
+
+1. **A trigger enqueues a run.** A message, a task starting, a [schedule firing](/schedules), a [task report](/tasks#task-reports), or your answer to an [approval or question](/approvals-and-questions) creates a `queued` run. The run's input — the prompt, the agent's instructions and model, the initial company description, and any resources — is frozen at this moment. Interactive runs can additionally read the shared local Company context Asset during execution.
+2. **The daemon is woken.** The server hints the daemon over its connection; a 30-second poll is the backstop. A lost hint costs one poll, never the run.
+3. **A runtime claims it.** The claim checks the agent's [task-lane capacity](/runs#lanes-and-capacity) and freezes the run's reviewed [connector contract](/connectors-and-plugins) — in full, or the run is cancelled.
+4. **The daemon prepares a workspace.** It picks exactly one [placement](/workspaces#how-a-run-is-placed), creates [memory](/memory), materializes [skills](/skills), and builds the provider's execution environment.
+5. **The provider CLI executes.** Codex or Claude Code runs on your computer. Streaming deltas stay on the machine; the desktop app can render them as a live preview.
+6. **The transcript commits.** Each durable item the agent produces is appended, in order, to the conversation's single item sequence, and your browser updates live.
+7. **The run ends exactly once.** Completed, failed, or cancelled — usage is recorded, and a task run [projects its outcome onto the task](/runs#run-completion-and-task-status).
+
+## The data and execution boundary
+
+| Zenith Team stores | Your computer keeps |
+|---|---|
+| Companies, plans, tasks | Your code and files |
+| Conversations and transcripts | Provider credentials and sign-in |
+| Run status, usage, and outcomes | Connector secrets and native configuration |
+| Sanitized connector and plugin catalogs | The workspace tree itself |
+| Approvals, questions, notifications | Streaming deltas and the live preview |
+
+Zenith Team never holds provider credentials: you sign in to Codex and Claude Code with the vendor's own CLI, on your own machine. See [Providers](/providers).
+
+## How agents are triggered
+
+| Trigger | What happens |
+|---|---|
+| **Send a message** | Starts a run in that conversation, or queues it behind the active one. See [Conversations](/conversations). |
+| **A task starts** | Runs in the task's own conversation and workspace. See [Tasks](/tasks). |
+| **A schedule fires** | A capacity-exempt run on the schedule's thread. See [Schedules](/schedules). |
+| **You answer an approval or question** | A fresh continuation run delivers your response. See [Approvals and questions](/approvals-and-questions). |
+| **You confirm task reports** | A batch becomes one message and run in the recipient agent's direct chat. See [Tasks](/tasks#task-reports). |
+
+## Run completion and task completion
+
+A completed run is not a finished task. Completion moves the task to `in_review` — you (or the reporting chain) decide when it is `done`. The full projection rules live in [Runs](/runs#run-completion-and-task-status).
+
+## Next steps
+
+- **[Core concepts](/concepts)** — every object in the model, defined in one place.
+- **[Workspaces](/workspaces)** — the per-company directory tree runs execute in.
+- **[Daemon and runtimes](/daemon-and-runtimes)** — connecting a computer and keeping it online.
+- **[Architecture](/developers/architecture)** — the same system from the code side, for people working on Zenith Team.

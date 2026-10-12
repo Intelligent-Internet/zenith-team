@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="156" viewBox="0 0 64 156" fill="none">
+  <defs>
+    <linearGradient id="drawing-pen-body" x1="16" y1="100" x2="48" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c9cacc"/>
+      <stop offset=".24" stop-color="#f5f5f4"/>
+      <stop offset=".55" stop-color="#fff"/>
+      <stop offset=".84" stop-color="#edeeed"/>
+      <stop offset="1" stop-color="#c9cbcc"/>
+    </linearGradient>
+    <linearGradient id="drawing-pen-tip" x1="29" y1="4" x2="35" y2="17" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".45"/>
+      <stop offset="1" stop-opacity=".25"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 156V65C16 53 24 27 29 10H35C40 27 48 53 48 65V156" fill="url(#drawing-pen-body)" stroke="#b5b7b9" stroke-opacity=".35"/>
+  <path d="M28 15L30 5C30.5 2 33.5 2 34 5L36 15Z" fill="currentColor"/>
+  <path d="M28 15L30 5C30.5 2 33.5 2 34 5L36 15Z" fill="url(#drawing-pen-tip)"/>
+  <path d="M16 72H48V78H16Z" fill="currentColor"/>
+  <path d="M18 79H46" stroke="#000" stroke-opacity=".08"/>
+  <path d="M22 90V153" stroke="#fff" stroke-opacity=".8" stroke-width="2"/>
+  <path d="M16 139H48" stroke="#b5b7b9" stroke-opacity=".25"/>
+</svg>

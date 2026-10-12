@@ -1,0 +1,1235 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/agents.md is its prose counterpart.
+
+paths:
+
+  # =================================================================== agents
+
+  # /api/v1/companies/{companyId}/agents
+  companies_companyId_agents:
+    get:
+      tags: [agents]
+      operationId: listAgents
+      summary: List agents
+      description: |
+        Every active member. All matching company agents in `(createdAt, id)` ascending
+        order. The roster is returned in full; the query parameters below are
+        filters, not pagination controls.
+
+        **Every row is the one agent wire type** — the same object the single
+        read, all four mutations, and the `agent.created` / `agent.updated`
+        realtime snapshots carry. There is no read-only wrapper and no
+        write-only variant. The snapshots reach the whole company, so they
+        carry no member's binding (see `Agent`).
+
+        Because each row embeds `reportsTo` and the **viewer's** `binding`,
+        one response draws the whole org chart and says which agents are
+        set up on the viewer's own computers, with no follow-up read; each
+        row carries its own appearance (`avatarKey`, `accentColor`). "What
+        stops working if this machine goes offline" is
+        `GET /agent-bindings?runtime_id=`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: include_archived
+          in: query
+          required: false
+          description: Exactly `true` or `false`. Archived agents are excluded by default.
+          schema: { type: string, enum: ['true', 'false'], default: 'false' }
+        - name: reports_to_agent_id
+          in: query
+          required: false
+          description: |
+            Only this agent's **direct** reports. `409 agent_archive_blocked`
+            says dependents remain but not which; this names them in one call.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: All matching agents.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './_common.yaml#/schemas/Agent'
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    post:
+      tags: [agents]
+      operationId: createAgent
+      summary: Create an agent
+      description: |
+        Any active member (ADR 0013); the root agent alone needs `agents.manage` (a company owner or admin). PostgreSQL generates the agent `id`. The agent is a
+        template of the `provider` named in the request (ADR 0014); it runs
+        for a member once that member binds it to one of their own runtimes
+        of that provider. `runtimeId` is optional and means "also set it up
+        on my computer now": it must be a runtime the caller registered, of
+        the template's provider, and creates the caller's binding in the
+        same transaction. The root agent requires `runtimeId`: onboarding
+        binds the founder.
+
+        Omitting `reportsToAgentId` creates the company's root agent; a company
+        holds at most one active root.
+
+        Creating the root agent also provisions the starter agents — Lyra
+        (product), Eli (engineering), Susan (marketing) and Ariana
+        (operations) — as ordinary reports of that root, each with its own
+        appearance, of the root's provider and bound to the caller's runtime
+        as the root is. They are templates, not roles: rename, retrain or
+        archive them like any other agent.
+
+        The response is the agent at the top level, with the caller's binding.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, title, provider, model, thinkingLevel]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                title: { type: string, minLength: 1, maxLength: 120 }
+                instructions:
+                  type: string
+                  maxLength: 32768
+                  description: Defaults to `""`. An explicit `null` is `400 invalid_request`.
+                reportsToAgentId:
+                  type: string
+                  format: uuid
+                  description: |
+                    An existing **active** agent. Omit to create the root agent.
+                avatarKey:
+                  type: [string, "null"]
+                  pattern: '^[a-z][a-z0-9-]{0,63}$'
+                  description: Optional Fold look (`fold-<palette>`); omitted or `null` lets the agent id choose the palette.
+                accentColor:
+                  type: [string, "null"]
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+                  description: Optional. Uppercased server-side; omitted or `null` uses the default palette.
+                provider:
+                  type: string
+                  enum: [claude, codex]
+                  description: The template's provider; immutable afterwards.
+                runtimeId:
+                  type: string
+                  format: uuid
+                  description: |
+                    Optional: also bind the new agent to this runtime for the
+                    caller. Must be a runtime the caller registered
+                    (`404 runtime_not_found` otherwise, exactly like an
+                    unknown id) of the template's provider
+                    (`422 agent_binding_provider_mismatch`). Required for the
+                    root agent.
+                model:
+                  type: [string, "null"]
+                  maxLength: 160
+                  description: Must be present. `null` means no override — use the provider's default.
+                thinkingLevel:
+                  type: [string, "null"]
+                  maxLength: 64
+                  description: |
+                    Must be present. `null` means no override. A value is
+                    checked against `provider`: Claude Code takes
+                    `low | medium | high | xhigh | max`; Codex takes
+                    `none | minimal | low | medium | high | xhigh`. A level
+                    outside that vocabulary is `422 validation_failed`.
+                maxConcurrentRuns:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                  description: |
+                    The task-lane run cap the agent starts with, 1..10. Omitted
+                    means 3; an explicit `null` is `400 invalid_request`.
+      responses:
+        '201':
+          description: Created with a database-generated `id`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Agent' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 agent_creator_required` — on create, a caller without `agents.manage` creating the root agent — or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            `404 company_not_found`; `404 runtime_not_found` when `runtimeId`
+            is unknown, removed, foreign, or another member's machine
+            (invisible to the caller, ADR 0014); `404 agent_not_found`
+            when `reportsToAgentId` is unknown or archived.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 agent_create_conflict` — a second active root agent was
+            requested.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 validation_failed` — a request field fails validation; `422 agent_binding_provider_mismatch` — `runtimeId` names a runtime of another provider.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/agents/{agentId}/binding
+  companies_companyId_agents_agentId_binding:
+    put:
+      tags: [agents]
+      operationId: bindAgent
+      summary: Set up an agent on one of the caller's runtimes
+      description: |
+        The caller's binding of this agent (ADR 0014): "run this agent on
+        this computer of mine". Any active member; the runtime must be one
+        the caller registered — another member's machine is
+        `404 runtime_not_found`, exactly like an unknown id — of the
+        agent's provider (`422 agent_binding_provider_mismatch`), not
+        removed, and the agent must not be archived (`409 agent_archived`).
+        The runtime may be offline: the binding is setup, not a start.
+
+        One binding per agent and member: a second `PUT` moves the binding
+        to the named runtime, and the caller's queued and deferred Runs on
+        this agent move with it; Runs a daemon already claimed finish where
+        they are. Naming the runtime already bound is a no-op `200`.
+
+        A binding is the caller's private setup and admits only the Runs
+        the caller authorizes; it never lets anyone else use the machine.
+        After the commit the caller alone receives `agent.binding_changed`.
+
+        The response is the agent projection for the caller, binding
+        included.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AgentBindingRequest' }
+      responses:
+        '200':
+          description: The agent as the caller now sees it.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Agent' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`, `agent_not_found`, or `runtime_not_found` (unknown, removed, foreign, or another member''s machine).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 agent_archived` — an archived agent cannot be set up; restore it first.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 validation_failed`, or `422 agent_binding_provider_mismatch` — the runtime''s provider is not the agent''s.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    delete:
+      tags: [agents]
+      operationId: unbindAgent
+      summary: Remove an agent from the caller's computer
+      description: |
+        Deletes the caller's binding of this agent. Their queued and
+        deferred Runs on it are cancelled (`run.cancelled`, reason
+        `agent_unbound`); Runs a daemon already claimed finish. Idempotent:
+        no binding is `204` too. After the commit the caller alone receives
+        `agent.binding_changed` with `binding: null`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      responses:
+        '204':
+          description: Removed, or nothing to remove. No body.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `agent_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/agent-bindings
+  companies_companyId_agent_bindings:
+    get:
+      tags: [agents]
+      operationId: listMyAgentBindings
+      summary: List the caller's agent bindings
+      description: |
+        Every binding the caller holds in the company, oldest first —
+        always the caller's own, whatever their role: a binding is a
+        member's private setup and nobody else's machine is ever listed.
+        `runtime_id` narrows the list to one of the caller's runtimes, which
+        is what the runtime detail screen renders ("agents on this
+        computer") and what a removal reviews.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: runtime_id
+          in: query
+          required: false
+          description: Only the caller's bindings on this runtime.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The caller's bindings, oldest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: './_common.yaml#/schemas/AgentBinding' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/agents/{agentId}
+  companies_companyId_agents_agentId:
+    get:
+      tags: [agents]
+      operationId: getAgent
+      summary: Read one agent
+      description: |
+        The agent object, byte-identical to a list row. Archived agents are
+        readable by id.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      responses:
+        '200':
+          description: The agent.
+          content:
+            application/json:
+              schema:
+                $ref: './_common.yaml#/schemas/Agent'
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 agent_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    patch:
+      tags: [agents]
+      operationId: updateAgent
+      summary: Update an agent (creator, owner or admin)
+      description: |
+        Sparse update — omit a field to leave it alone. At least one mutable
+        field must accompany `expectedRevision`.
+
+        Only `model` and `thinkingLevel` accept an explicit `null`.
+        **A parent cannot be detached**: `reportsToAgentId: null` is
+        `400 invalid_request`, and setting a manager on the root agent is
+        `409 root_agent_topology_immutable`.
+
+        `maxConcurrentRuns` is the task-lane capacity knob: 1..10, default 3
+        at creation, and this route is the only way to change it. Out of
+        range is `422 validation_failed`; an explicit `null` is
+        `400 invalid_request` — the cap always has a value, there is no
+        "unset". Lowering it below the current `activeRunCount` is accepted:
+        nothing is cancelled, the runs already in flight finish, and no new
+        task run dispatches until the count is back under the cap. Raising it
+        does not wait for a run to finish, but it is not an instant ramp
+        either: a dispatch poll claims at most one run per agent, so a widened
+        lane fills over successive polls, and only as far as the agent has
+        queued task work to dispatch.
+
+        `provider` is immutable: any value is `422 validation_failed`,
+        whose detail says to duplicate the agent to use the other provider.
+        `runtimeId` is not a template
+        field either: where an agent runs is each member's own binding
+        (`PUT …/agents/{agentId}/binding`). `avatarKey` and `accentColor`
+        are nullable like `model`: an explicit `null` clears the appearance.
+
+        The response is the full new projection for the caller, and
+        `agent.updated` carries the same template fields with no member's
+        binding (`binding: null`, `runtimeAvailable: false`); a client
+        applying the event keeps its own `binding`, availability,
+        `activeRunCount` and `access`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                name: { type: string, minLength: 1, maxLength: 120 }
+                title: { type: string, minLength: 1, maxLength: 120 }
+                instructions: { type: string, maxLength: 32768 }
+                reportsToAgentId:
+                  type: string
+                  format: uuid
+                  description: An active agent. An explicit `null` is `400 invalid_request`.
+                model:
+                  type: [string, "null"]
+                  maxLength: 160
+                  description: '`null` clears the override.'
+                thinkingLevel:
+                  type: [string, "null"]
+                  maxLength: 64
+                  description: |
+                    `null` clears the override. A value is checked against the
+                    agent's provider: Claude Code `low | medium | high |
+                    xhigh | max`; Codex `none | minimal | low | medium | high |
+                    xhigh`. Outside that vocabulary is `422 validation_failed`.
+                avatarKey:
+                  type: [string, "null"]
+                  pattern: '^[a-z][a-z0-9-]{0,63}$'
+                  description: '`null` clears the look; the client derives the palette from the agent id.'
+                accentColor:
+                  type: [string, "null"]
+                  pattern: '^#[0-9A-Fa-f]{6}$'
+                  description: 'Uppercased server-side; `null` restores the default palette.'
+                capabilities: { $ref: '#/schemas/AgentCapabilitySettings' }
+                voice: { $ref: '#/schemas/AgentVoiceSettings' }
+                maxConcurrentRuns:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  description: |
+                    The task-lane run cap, 1..10. An explicit `null` is
+                    `400 invalid_request`.
+                provider:
+                  description: |
+                    Not updatable. Any value, `null` included, is
+                    `422 validation_failed`: an agent's provider is fixed, so
+                    duplicate the agent to use the other provider.
+      responses:
+        '200':
+          description: |
+            The updated agent. Also returned unchanged, with no version bump,
+            when every supplied value already matches — and
+            for a replay whose stored `revision` is exactly
+            `expectedRevision + 1` over a row that already reflects the ask.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Agent' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 agent_creator_required` — the caller is neither the agent''s creator nor a holder of `agents.manage` (a company owner or admin); the root agent needs `agents.manage` — or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 agent_not_found` (no such agent; a `reportsToAgentId` that is unknown or archived) or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 agent_revision_conflict`, `409 agent_reports_to_cycle`, or
+            `409 root_agent_topology_immutable`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/agents/{agentId}/archive
+  companies_companyId_agents_agentId_archive:
+    post:
+      tags: [agents]
+      operationId: archiveAgent
+      summary: Archive an agent (creator, owner or admin)
+      description: |
+        Soft-deletes the agent by stamping `archivedAt`. Refused while active
+        direct reports, active runs, or active tasks remain
+        (`409 agent_archive_blocked`) — `GET /agents?reports_to_agent_id=`
+        names the reports, and the runs and tasks lists filtered by this agent
+        say what work is still open.
+
+        Archiving **or** restoring the root agent both answer
+        `409 root_agent_topology_immutable`: the guard sits before the
+        archive/restore split, not inside either branch.
+
+        `runtimeAvailable` flips to `false` in the same response and
+        `unavailableReason` becomes `agent_archived`, whatever the runtime is
+        doing.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: |
+            The archived agent. Archiving an already-archived agent at the
+            matching version is a no-op: the row comes back unmoved and no
+            event is raised.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Agent' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 agent_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 agent_revision_conflict`, `409 agent_archive_blocked`, or
+            `409 root_agent_topology_immutable`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/agents/{agentId}/restore
+  companies_companyId_agents_agentId_restore:
+    post:
+      tags: [agents]
+      operationId: restoreAgent
+      summary: Restore an archived agent (creator, owner or admin)
+      description: |
+        Clears `archivedAt`. The **direct** manager must exist and be
+        unarchived — restore an ancestor before its reports. The walk above
+        that check verifies existence and absence of cycles, not archived
+        ancestors.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: |
+            The restored agent. Restoring an already-active agent at the
+            matching version is a no-op and raises no event.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Agent' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: |
+            `404 agent_not_found` — no such agent, or its direct manager is
+            archived or missing — or `404 company_not_found`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 agent_revision_conflict`, `409 agent_reports_to_cycle`, or
+            `409 root_agent_topology_immutable`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  # ========================================================= platform skills
+  companies_companyId_platform_skills:
+    get:
+      tags: [agents]
+      operationId: listPlatformSkills
+      summary: List the compiled platform skills (member)
+      description: |
+        The release-owned procedures every attended Run can load through
+        `search_skills` / `load_skill_reference`. Today there are two, in
+        this order: `zenith-platform`, the zen CLI and the product contracts
+        behind it, with one reference per domain and the Commerce Gateway
+        procedure (`commerce/procedure.md`) for payment work; and
+        `zenith-workflows`, one `<workflow-key>/playbook.md` per Workflow in
+        the catalog (`listWorkflows`); the Workflow forms (`workflow.yaml`)
+        are the page's input, not references. The list is read from the files
+        compiled or pinned into this release, so it names exactly what ships; it is identical for every Company and
+        carries no Company data. The keys are reserved — a custom skill can
+        never shadow them — and they cannot be switched off: the Agent's
+        `disabledBuiltIns` switches gate the `boardly-mcp` tool groups, not
+        the procedures.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The compiled skills in search order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/PlatformSkill' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  # ==================================================================== usage
+
+  companies_companyId_agents_agentId_skills:
+    get:
+      tags: [agents]
+      operationId: listAgentSkills
+      summary: List custom skills for an Agent
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      responses:
+        '200':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkillCollection' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    post:
+      tags: [agents]
+      operationId: installAgentSkills
+      summary: Install the selected reviewed skill versions
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AgentSkillInstallRequest' }
+      responses:
+        '200':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkillCollection' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_agents_agentId_skill_imports_upload:
+    post:
+      tags: [agents]
+      operationId: previewAgentSkillUpload
+      summary: Preview a ZIP or Markdown skill package
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              additionalProperties: false
+              properties:
+                file: { type: string, format: binary }
+                replaceSkillId: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkillPreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_agents_agentId_skill_imports_github:
+    post:
+      tags: [agents]
+      operationId: previewAgentSkillGitHub
+      summary: Preview skills at an immutable public GitHub commit
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AgentSkillGitHubRequest' }
+      responses:
+        '201':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkillPreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_agents_agentId_skills_skillId:
+    patch:
+      tags: [agents]
+      operationId: updateAgentSkill
+      summary: Update custom skill access or files
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+        - name: skillId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AgentSkillUpdateRequest' }
+      responses:
+        '200':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkill' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    delete:
+      tags: [agents]
+      operationId: removeAgentSkill
+      summary: Remove a custom skill from future Runs
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+        - name: skillId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AgentSkillRemoveRequest' }
+      responses:
+        '204':
+          description: Skill removed.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_agents_agentId_skills_skillId_reference:
+    get:
+      tags: [agents]
+      operationId: readAgentSkillReference
+      summary: Read an installed skill text file
+      description: |
+        Human Company members may read; configuration requires the Agent's
+        creator or agents.manage (the root Agent requires agents.manage).
+        Installation uses exactly the reviewed bytes and expires after 24 hours.
+        Future direct-chat and Task Runs freeze enabled versions; queued and active
+        Runs and their retries keep their snapshot. Scheduled Runs have no custom skills.
+        Limits are 32 skills and 128 MiB total per Agent, 20 imports per day,
+        32 MiB uploaded, 128 MiB expanded, 2000 files, and 16 MiB per file.
+        GitHub imports accept public HTTPS github.com repositories and tree/blob
+        links. The full URL is the only source input; separate ref/path fields are rejected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/agentId'
+        - name: skillId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+        - name: versionId
+          in: query
+          description: Require the installation to still select this version; stale reads return 409.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Authoritative result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AgentSkillReference' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Skill access, revision, source or storage error; see errors.md.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+schemas:
+  AgentBindingRequest:
+    type: object
+    additionalProperties: false
+    description: |
+      Which of the caller's runtimes should run the agent. The runtime must
+      be one the caller registered, of the agent's provider.
+    required: [runtimeId]
+    properties:
+      runtimeId: { type: string, format: uuid }
+
+  AgentVoiceSettings:
+    type: object
+    additionalProperties: false
+    required: [enabled, voice, greet, participation]
+    description: Opt-in Huddle voice capability. Does not grant runtime tools or skills. Profile changes apply at the next invitation; disabling revokes current voice sessions.
+    properties:
+      enabled: { type: boolean, default: false }
+      voice: { type: string, enum: [aster, beacon, cinder, marin, stone, vesper], default: marin }
+      greet:
+        type: boolean
+        default: true
+        deprecated: true
+        description: Ignored. Invited Agents always greet once; the server prevents replay on reconnect.
+      participation: { type: string, enum: [addressed, natural], default: addressed }
+  PlatformSkill:
+    type: object
+    additionalProperties: false
+    required: [key, name, description, references]
+    description: >-
+      One compiled platform skill. `key` is the reserved `zenith-<name>`
+      key an Agent passes to `load_skill_reference`; `name` is what a
+      person reads; `references` are the file paths it can load beside
+      `SKILL.md`, in bytewise path order (so `zenith-workflows` lists its
+      playbooks by key, not in `listWorkflows`' name order).
+    properties:
+      key: { type: string, example: zenith-platform }
+      name: { type: string, example: Zenith platform }
+      description: { type: string }
+      references:
+        type: array
+        items: { type: string, example: references/outputs.md }
+
+
+  # ------------------------------------------------------------- tasks
+  AgentCapabilitySettings:
+    type: object
+    additionalProperties: false
+    required: [disabledBuiltIns, disabledPlugins, disabledMcpServers]
+    description: >-
+      Replaces this Agent's capability selections using expectedRevision on PATCH.
+      enabledTools opts into managed Zenith Team tools; absent or empty means
+      disabled, including for existing Agents. Zenith Studio uses the local
+      Studio CLI account on the Runtime computer, separately from Connector policy.
+      The selection is template state: the denial lists name plugins and MCP
+      servers from the company's catalog for the agent's provider, and apply
+      on whichever runtime a member's binding names — an id the machine does
+      not have is simply not there. Empty arrays restore inheritance;
+      enabling never installs a plugin or grants Company Connector authority;
+      retained denials can be cleared even after discovery removes an item.
+      Plugin-bundle skills share their containing plugin's switch. Future
+      interactive Runs freeze the selection; queued/running Runs and retries
+      keep their original inputs. Reviewed Schedule Connector scopes stay
+      independent.
+    properties:
+      enabledTools:
+        type: array
+        maxItems: 1
+        default: []
+        items: { type: string, enum: [zenith-studio] }
+      disabledBuiltIns:
+        type: array
+        maxItems: 5
+        items: { type: string, enum: [planning, coordination, saved-work, founder-input, wiki] }
+      disabledPlugins:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+      disabledMcpServers:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+
+  AgentSkillFile:
+    type: object
+    required: [path, sizeBytes, sha256, text]
+    properties:
+      path: { type: string }
+      sizeBytes: { type: integer, format: int64 }
+      sha256: { type: string }
+      text: { type: boolean }
+  AgentSkill:
+    type: object
+    required: [id, agentId, versionId, name, description, enabled, revision, contentHash, sizeBytes, fileCount, files, sourceType, sourceUrl, sourceCommit, sourcePath, updatedAt, edited]
+    properties:
+      id: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+      versionId: { type: string, format: uuid }
+      name: { type: string }
+      description: { type: string }
+      enabled: { type: boolean }
+      revision: { type: integer, format: int64 }
+      contentHash: { type: string }
+      sizeBytes: { type: integer, format: int64 }
+      fileCount: { type: integer }
+      files:
+        type: array
+        items: { $ref: '#/schemas/AgentSkillFile' }
+      sourceType: { type: string, enum: [github, zip, markdown] }
+      sourceUrl: { type: string }
+      sourceCommit: { type: string }
+      sourcePath: { type: string }
+      updatedAt: { type: string, format: date-time }
+      edited: { type: boolean, description: Files were edited in Zenith Team; source fields describe the original import. }
+  AgentSkillPreviewVersion:
+    type: object
+    required: [versionId, name, description, contentHash, sizeBytes, files, sourcePath, instructions]
+    properties:
+      versionId: { type: string, format: uuid }
+      name: { type: string }
+      description: { type: string }
+      contentHash: { type: string }
+      sizeBytes: { type: integer, format: int64 }
+      files:
+        type: array
+        items: { $ref: '#/schemas/AgentSkillFile' }
+      sourcePath: { type: string }
+      instructions: { type: string }
+  AgentSkillCandidate:
+    allOf:
+      - $ref: '#/schemas/AgentSkillPreviewVersion'
+      - type: object
+        properties:
+          originalName:
+            type: string
+            description: Source name when normalization or collision handling changed the installed name.
+          existingSkill:
+            type: object
+            required: [id, revision]
+            properties:
+              id: { type: string, format: uuid }
+              revision: { type: integer, format: int64, minimum: 1 }
+          addAsNew:
+            $ref: '#/schemas/AgentSkillPreviewVersion'
+  AgentSkillPreview:
+    type: object
+    required: [id, expiresAt, sourceType, sourceUrl, sourceCommit, skills]
+    properties:
+      id: { type: string, format: uuid }
+      expiresAt: { type: string, format: date-time }
+      sourceType: { type: string, enum: [github, zip, markdown] }
+      sourceUrl: { type: string }
+      sourceCommit: { type: string }
+      skills:
+        type: array
+        items: { $ref: '#/schemas/AgentSkillCandidate' }
+  AgentSkillCollection:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/AgentSkill' }
+  AgentSkillReference:
+    type: object
+    required: [path, content, sha256]
+    properties:
+      path: { type: string }
+      content: { type: string }
+      sha256: { type: string }
+  AgentSkillGitHubRequest:
+    type: object
+    additionalProperties: false
+    required: [url]
+    properties:
+      url: { type: string, maxLength: 2048 }
+      replaceSkillId: { type: string, format: uuid }
+  AgentSkillInstallRequest:
+    type: object
+    additionalProperties: false
+    required: [importId, versionIds]
+    properties:
+      importId: { type: string, format: uuid }
+      versionIds:
+        type: array
+        minItems: 1
+        maxItems: 32
+        items: { type: string, format: uuid }
+      replaceSkillId: { type: string, format: uuid }
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      replacements:
+        type: array
+        maxItems: 32
+        description: Explicit per-version updates; mutually exclusive with replaceSkillId and expectedRevision. Unlisted versions are added without replacing existing skills.
+        items:
+          type: object
+          additionalProperties: false
+          required: [versionId, skillId, expectedRevision]
+          properties:
+            versionId: { type: string, format: uuid }
+            skillId: { type: string, format: uuid }
+            expectedRevision: { type: integer, format: int64, minimum: 1 }
+  AgentSkillUpdateRequest:
+    type: object
+    additionalProperties: false
+    description: |
+      Supply enabled to change access, or changes/deletePaths to edit existing files.
+      These modes cannot be mixed. File edits publish a new immutable version;
+      the installed name cannot change and SKILL.md cannot be deleted. The complete
+      resulting package must have valid frontmatter and no missing Markdown references.
+      Original import provenance is retained. Existing Runs keep their frozen version.
+    required: [expectedRevision]
+    oneOf:
+      - required: [enabled]
+        properties:
+          changes: { maxItems: 0 }
+          deletePaths: { maxItems: 0 }
+      - not:
+          required: [enabled]
+          properties:
+            enabled: { type: boolean }
+        anyOf:
+          - required: [changes]
+            properties:
+              changes: { minItems: 1 }
+          - required: [deletePaths]
+            properties:
+              deletePaths: { minItems: 1 }
+    properties:
+      enabled: { type: boolean }
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      changes:
+        type: array
+        maxItems: 2000
+        items:
+          type: object
+          additionalProperties: false
+          required: [path, content]
+          properties:
+            path: { type: string, minLength: 1, maxLength: 1024 }
+            content: { type: string, description: UTF-8 text; empty content is allowed for supporting files. }
+      deletePaths:
+        type: array
+        maxItems: 2000
+        items: { type: string, minLength: 1, maxLength: 1024 }
+  AgentSkillRemoveRequest:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }

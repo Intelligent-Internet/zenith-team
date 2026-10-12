@@ -1,0 +1,508 @@
+.fold-avatar {
+  --fold-ease: cubic-bezier(0.22, 0.75, 0.28, 1);
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 24%;
+  background: transparent;
+  color: inherit;
+  vertical-align: middle;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.fold-avatar {
+  cursor: pointer;
+}
+.fold-avatar__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.fold-avatar__character,
+.fold-avatar__reaction {
+  transform-origin: 124px 215px;
+}
+.fold-avatar__character {
+  animation: fold-breathe 5.6s ease-in-out infinite;
+  animation-delay: var(--fold-breathe-delay);
+}
+.fold-avatar__body {
+  transform-origin: 122px 196px;
+}
+.fold-avatar__face {
+  transform-origin: 128px 123px;
+  transition: transform 260ms var(--fold-ease);
+}
+.fold-avatar__arm--left {
+  transform-origin: 53px 153px;
+}
+.fold-avatar__arm--right {
+  transform-origin: 198px 133px;
+}
+.fold-avatar__foot--left {
+  transform-origin: 90px 196px;
+}
+.fold-avatar__foot--right {
+  transform-origin: 157px 194px;
+}
+.fold-avatar__shadow {
+  transform-origin: 124px 215px;
+  animation: fold-shadow 5.6s ease-in-out infinite;
+  animation-delay: var(--fold-breathe-delay);
+}
+.fold-avatar__eye {
+  transform-origin: 99px 118px;
+  animation: fold-blink 6.4s ease-in-out infinite;
+  animation-delay: var(--fold-blink-delay);
+}
+.fold-avatar__eye--right {
+  transform-origin: 154px 112px;
+}
+.fold-avatar__gaze {
+  transform: translate(var(--fold-gaze-x), var(--fold-gaze-y));
+  transition: transform 110ms ease-out;
+}
+.fold-avatar__closed-eyes,
+.fold-avatar__happy-eyes,
+.fold-avatar__brows,
+.fold-avatar__mouth {
+  display: none;
+}
+.fold-avatar__mouth--smile {
+  display: block;
+}
+
+button.fold-avatar:not([data-paused]):hover .fold-avatar__face {
+  transform: translateY(-0.75px);
+}
+
+.fold-avatar[data-state="thinking"] .fold-avatar__character {
+  animation: fold-think 5s ease-in-out infinite;
+}
+.fold-avatar[data-state="thinking"] .fold-avatar__face {
+  transform: translateY(-1px) rotate(-1.5deg);
+}
+.fold-avatar[data-state="thinking"] .fold-avatar__gaze {
+  transform: translate(
+    calc(var(--fold-gaze-x) - 1px),
+    calc(var(--fold-gaze-y) - 1.5px)
+  );
+}
+.fold-avatar[data-state="thinking"] .fold-avatar__arm--right {
+  transform: rotate(-6deg);
+}
+.fold-avatar[data-state="thinking"] .fold-avatar__mouth--smile {
+  display: none;
+}
+.fold-avatar[data-state="thinking"] .fold-avatar__mouth--thinking {
+  display: block;
+}
+
+.fold-avatar[data-state="working"] .fold-avatar__character {
+  animation: fold-work 2.4s ease-in-out infinite;
+}
+.fold-avatar[data-state="working"] .fold-avatar__arm--left {
+  animation: fold-hand-left 1.2s ease-in-out infinite;
+}
+.fold-avatar[data-state="working"] .fold-avatar__arm--right {
+  animation: fold-hand-right 1.2s 0.6s ease-in-out infinite;
+}
+.fold-avatar[data-state="working"] .fold-avatar__gaze {
+  transform: translate(
+    calc(var(--fold-gaze-x) - 3px),
+    calc(var(--fold-gaze-y) + 5px)
+  );
+}
+.fold-avatar[data-state="working"] .fold-avatar__face {
+  transform: translateY(1px);
+}
+
+.fold-avatar[data-state="needs-input"] .fold-avatar__character {
+  animation: fold-listen 7s ease-in-out infinite;
+}
+.fold-avatar[data-state="needs-input"] .fold-avatar__arm--right {
+  animation: fold-listen-hand 7s ease-in-out infinite;
+}
+.fold-avatar[data-state="needs-input"] .fold-avatar__mouth--smile {
+  display: none;
+}
+.fold-avatar[data-state="needs-input"] .fold-avatar__mouth--waiting {
+  display: block;
+}
+
+.fold-avatar[data-state="done"] .fold-avatar__character {
+  transform: rotate(-1deg);
+  animation: fold-done 720ms var(--fold-ease) both;
+}
+.fold-avatar[data-state="done"] .fold-avatar__arm--right {
+  animation: fold-done-hand 720ms var(--fold-ease) both;
+}
+.fold-avatar[data-state="done"] .fold-avatar__open-eyes {
+  display: none;
+}
+.fold-avatar[data-state="done"] .fold-avatar__happy-eyes {
+  display: block;
+}
+.fold-avatar[data-state="done"] .fold-avatar__mouth--smile {
+  display: none;
+}
+.fold-avatar[data-state="done"] .fold-avatar__mouth--done {
+  display: block;
+}
+.fold-avatar[data-state="done"] .fold-avatar__shadow {
+  animation: fold-done-shadow 720ms var(--fold-ease) both;
+}
+
+.fold-avatar[data-state="error"] .fold-avatar__character {
+  animation: fold-error 440ms ease-out both;
+}
+.fold-avatar[data-state="error"] .fold-avatar__brows {
+  display: block;
+}
+.fold-avatar[data-state="error"] .fold-avatar__mouth--smile {
+  display: none;
+}
+.fold-avatar[data-state="error"] .fold-avatar__mouth--error {
+  display: block;
+}
+
+.fold-avatar[data-state="sleeping"] .fold-avatar__character {
+  animation: fold-sleep 6s ease-in-out infinite;
+}
+.fold-avatar[data-state="sleeping"] .fold-avatar__face {
+  transform: translateY(2px);
+}
+.fold-avatar[data-state="sleeping"] .fold-avatar__open-eyes {
+  display: none;
+}
+.fold-avatar[data-state="sleeping"] .fold-avatar__closed-eyes {
+  display: block;
+}
+.fold-avatar[data-state="sleeping"] .fold-avatar__mouth--smile {
+  display: none;
+}
+.fold-avatar[data-state="sleeping"] .fold-avatar__mouth--thinking {
+  display: block;
+}
+
+.fold-avatar[data-booping] .fold-avatar__reaction {
+  animation: fold-boop 740ms var(--fold-ease) both;
+}
+.fold-avatar[data-booping] .fold-avatar__gaze {
+  transform: translate(-5px, 2px);
+}
+.fold-avatar[data-booping] .fold-avatar__eye--left {
+  animation: fold-boop-eye 740ms var(--fold-ease) both;
+}
+
+.fold-avatar[data-compact] .fold-avatar__crop {
+  transform: translate(-37px, -31px) scale(1.3);
+  transform-origin: 0 0;
+}
+.fold-avatar[data-compact] .fold-avatar__arm,
+.fold-avatar[data-compact] .fold-avatar__feet,
+.fold-avatar[data-compact] .fold-avatar__shadow {
+  display: none;
+}
+.fold-avatar[data-compact] .fold-avatar__character,
+.fold-avatar[data-compact] .fold-avatar__eye {
+  animation: none;
+}
+.fold-avatar[data-compact][data-compact-motion="blink"]:not([data-paused])
+  .fold-avatar__eye {
+  animation: fold-compact-blink var(--fold-compact-blink-duration) ease-in-out
+    1.2s infinite;
+}
+.fold-avatar[data-compact][data-compact-motion="greet"]:not([data-paused])
+  .fold-avatar__gaze {
+  animation: fold-compact-greet 640ms var(--fold-ease);
+}
+.fold-avatar[data-compact][data-compact-motion="greet"]:not([data-paused])
+  .fold-avatar__eye {
+  animation: fold-compact-greet-blink 640ms ease-in-out;
+}
+.fold-avatar[data-compact] .fold-avatar__svg {
+  overflow: hidden;
+  border-radius: 24%;
+}
+
+.fold-avatar[data-paused] *,
+.fold-avatar[data-paused] *::before,
+.fold-avatar[data-paused] *::after {
+  animation-play-state: paused !important;
+}
+
+@keyframes fold-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.004, 1.007);
+  }
+}
+@keyframes fold-compact-blink {
+  0%,
+  3%,
+  100% {
+    transform: scaleY(1);
+  }
+  1.5% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes fold-compact-greet {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  32%,
+  66% {
+    transform: translate(-5px, 1.5px);
+  }
+}
+@keyframes fold-compact-greet-blink {
+  0%,
+  55%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  72% {
+    transform: scaleY(0.08);
+  }
+}
+@keyframes fold-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.98);
+    opacity: 0.92;
+  }
+}
+@keyframes fold-blink {
+  0%,
+  42%,
+  45.5%,
+  78%,
+  81.5%,
+  100% {
+    transform: scaleY(1);
+  }
+  43.75%,
+  79.75% {
+    transform: scaleY(0.06);
+  }
+}
+@keyframes fold-think {
+  0%,
+  100% {
+    transform: rotate(-1deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-2.5deg) translateY(-0.75px);
+  }
+}
+@keyframes fold-work {
+  0%,
+  100% {
+    transform: translateY(0.5px) rotate(0);
+  }
+  25% {
+    transform: translateY(1px) rotate(-0.6deg);
+  }
+  75% {
+    transform: translateY(1px) rotate(0.6deg);
+  }
+}
+@keyframes fold-hand-left {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(-8deg) translateY(-0.5px);
+  }
+}
+@keyframes fold-hand-right {
+  0%,
+  100% {
+    transform: rotate(3deg);
+  }
+  50% {
+    transform: rotate(8deg) translateY(-0.5px);
+  }
+}
+@keyframes fold-listen {
+  0%,
+  72%,
+  100% {
+    transform: rotate(1.5deg);
+  }
+  80% {
+    transform: rotate(3deg) translateY(-1px);
+  }
+  88% {
+    transform: rotate(1deg);
+  }
+}
+@keyframes fold-listen-hand {
+  0%,
+  72%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  80% {
+    transform: rotate(-12deg);
+  }
+  86% {
+    transform: rotate(7deg);
+  }
+  92% {
+    transform: rotate(-8deg);
+  }
+}
+@keyframes fold-done {
+  0% {
+    transform: scale(1);
+  }
+  18% {
+    transform: translateY(2px) scale(1.035, 0.965);
+  }
+  43% {
+    transform: translateY(-9px) rotate(-3deg) scale(0.985, 1.025);
+  }
+  68% {
+    transform: translateY(1px) rotate(1.5deg) scale(1.02, 0.985);
+  }
+  100% {
+    transform: rotate(-1deg);
+  }
+}
+@keyframes fold-done-hand {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  43% {
+    transform: rotate(-12deg);
+  }
+  68% {
+    transform: rotate(7deg);
+  }
+}
+@keyframes fold-done-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  43% {
+    transform: scaleX(0.86);
+    opacity: 0.66;
+  }
+}
+@keyframes fold-error {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  22%,
+  66% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  44%,
+  82% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+@keyframes fold-sleep {
+  0%,
+  100% {
+    transform: rotate(1.5deg) scaleY(0.99);
+  }
+  50% {
+    transform: rotate(2deg) scale(1.006, 0.995);
+  }
+}
+@keyframes fold-boop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  17% {
+    transform: translateY(3px) scale(1.065, 0.94);
+  }
+  40% {
+    transform: translateY(-3px) rotate(-3deg) scale(0.985, 1.025);
+  }
+  65% {
+    transform: rotate(1.5deg) scale(1.015, 0.99);
+  }
+}
+@keyframes fold-boop-eye {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  16%,
+  62% {
+    transform: scaleY(0.62);
+  }
+}
+
+.fold-avatar--welcome .fold-avatar__character {
+  animation: fold-welcome-sway 6s ease-in-out infinite;
+}
+
+.fold-avatar--welcome .fold-avatar__arm--right {
+  animation: fold-welcome-wave 9s ease-in-out infinite;
+}
+
+@keyframes fold-welcome-sway {
+  0%,
+  100% {
+    transform: rotate(-1.2deg) scale(1, 1);
+  }
+  50% {
+    transform: rotate(1deg) scale(1.006, 0.993);
+  }
+}
+
+@keyframes fold-welcome-wave {
+  0%,
+  12%,
+  42%,
+  100% {
+    transform: rotate(0deg);
+  }
+  19%,
+  31% {
+    transform: rotate(-17deg);
+  }
+  25%,
+  36% {
+    transform: rotate(5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold-avatar *,
+  .fold-avatar *::before,
+  .fold-avatar *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  button.fold-avatar:not([data-paused]):hover .fold-avatar__face {
+    transform: none;
+  }
+}

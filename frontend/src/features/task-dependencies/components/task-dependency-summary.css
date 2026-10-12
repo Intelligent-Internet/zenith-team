@@ -1,0 +1,72 @@
+.task-dependency-summary-item {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.task-dependency-summary-item:hover,
+.task-dependency-summary-item:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  outline: none;
+}
+.task-dependency-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+.task-dependency-summary-status {
+  flex-shrink: 0;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font-weight: 600;
+}
+.task-dependency-summary-status[data-tone="done"] {
+  background: var(--workspace-success-soft);
+  color: var(--workspace-native-success);
+}
+.task-dependency-summary-status[data-tone="blocking"] {
+  background: var(--workspace-approval-soft);
+  color: var(--workspace-native-approval);
+}
+.task-dependency-summary-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 8px 0 0;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 500;
+}
+.task-dependency-summary-assignee {
+  display: block;
+  margin-top: 6px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+}
+.task-dependency-summary-state {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.task-dependency-summary-state[data-tone="error"] {
+  color: var(--workspace-native-danger);
+}
+.task-detail-properties .task-dependency-summary-assignee {
+  display: none;
+}

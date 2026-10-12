@@ -1,0 +1,1462 @@
+---
+schemas:
+  CalendarEvent:
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - type
+      - title
+      - description
+      - location
+      - color
+      - allDay
+      - startLocal
+      - endLocal
+      - timeZone
+      - recurrence
+      - recurrenceUntil
+      - recurrenceInterval
+      - recurrenceWeekdays
+      - recurrenceMonthlyMode
+      - recurrenceCount
+      - reminderMinutes
+      - revision
+      - calendarId
+      - calendarType
+      - calendarName
+      - companyId
+      - organizerUserId
+      - canEdit
+      - responseStatus
+      - attendees
+      - organizerName
+    properties:
+      id:
+        type: string
+        format: uuid
+      type:
+        type: string
+        enum:
+          - event
+          - reminder
+      title:
+        type: string
+        maxLength: 240
+      description:
+        type: string
+        maxLength: 16000
+      location:
+        type: string
+        maxLength: 1000
+      color:
+        type: string
+        enum:
+          - sage
+          - sky
+          - lavender
+          - rose
+          - sand
+      allDay:
+        type: boolean
+      startLocal:
+        type: string
+      endLocal:
+        type: string
+      timeZone:
+        type: string
+      recurrence:
+        type: string
+        enum:
+          - none
+          - daily
+          - weekly
+          - monthly
+          - yearly
+      recurrenceInterval:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 999
+        default: 1
+        description: Repeat every N days, weeks, months or years; 1 for nonrepeating events.
+      recurrenceWeekdays:
+        type: array
+        maxItems: 7
+        uniqueItems: true
+        default: []
+        description: Weekly only. Sunday is 0, Saturday is 6. Empty uses the start weekday. Weeks start Monday.
+        items:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 6
+      recurrenceMonthlyMode:
+        type: string
+        enum: [day_of_month, day_of_week]
+        default: day_of_month
+        description: Monthly by date or ordinal weekday of startLocal; a fifth weekday means the last weekday of the month.
+      recurrenceCount:
+        type: [integer, "null"]
+        format: int32
+        minimum: 1
+        maximum: 1000
+        description: Total occurrences from the series start; mutually exclusive with recurrenceUntil. Skipped dates and DST gaps do not count; cancelled occurrences do.
+      recurrenceUntil:
+        type:
+          - string
+          - "null"
+        format: date
+      reminderMinutes:
+        type:
+          - integer
+          - "null"
+        format: int32
+        minimum: 0
+        maximum: 10080
+      revision:
+        type: integer
+        format: int64
+      calendarId:
+        type: string
+        format: uuid
+      calendarType:
+        type: string
+        enum:
+          - personal
+          - company
+      calendarName:
+        type: string
+      companyId:
+        type:
+          - string
+          - "null"
+        format: uuid
+      organizerUserId:
+        type: string
+        format: uuid
+      canEdit:
+        type: boolean
+      responseStatus:
+        type: string
+        enum:
+          - ""
+          - needs_action
+          - accepted
+          - tentative
+          - declined
+      attendees:
+        type: array
+        items:
+          "$ref": "#/schemas/CalendarAttendee"
+      organizerName:
+        type: string
+  CalendarOccurrence:
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - type
+      - title
+      - description
+      - location
+      - color
+      - allDay
+      - startLocal
+      - endLocal
+      - timeZone
+      - recurrence
+      - recurrenceUntil
+      - recurrenceInterval
+      - recurrenceWeekdays
+      - recurrenceMonthlyMode
+      - recurrenceCount
+      - reminderMinutes
+      - revision
+      - seriesStartLocal
+      - seriesEndLocal
+      - occurrenceDate
+      - startAt
+      - endAt
+      - completed
+      - calendarId
+      - calendarType
+      - calendarName
+      - companyId
+      - organizerUserId
+      - canEdit
+      - responseStatus
+      - attendees
+      - organizerName
+    properties:
+      id:
+        type: string
+        format: uuid
+      type:
+        type: string
+        enum:
+          - event
+          - reminder
+      title:
+        type: string
+        maxLength: 240
+      description:
+        type: string
+        maxLength: 16000
+      location:
+        type: string
+        maxLength: 1000
+      color:
+        type: string
+        enum:
+          - sage
+          - sky
+          - lavender
+          - rose
+          - sand
+      allDay:
+        type: boolean
+      startLocal:
+        type: string
+      endLocal:
+        type: string
+      timeZone:
+        type: string
+      recurrence:
+        type: string
+        enum:
+          - none
+          - daily
+          - weekly
+          - monthly
+          - yearly
+      recurrenceInterval:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 999
+        default: 1
+        description: Repeat every N days, weeks, months or years; 1 for nonrepeating events.
+      recurrenceWeekdays:
+        type: array
+        maxItems: 7
+        uniqueItems: true
+        default: []
+        description: Weekly only. Sunday is 0, Saturday is 6. Empty uses the start weekday. Weeks start Monday.
+        items:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 6
+      recurrenceMonthlyMode:
+        type: string
+        enum: [day_of_month, day_of_week]
+        default: day_of_month
+        description: Monthly by date or ordinal weekday of startLocal; a fifth weekday means the last weekday of the month.
+      recurrenceCount:
+        type: [integer, "null"]
+        format: int32
+        minimum: 1
+        maximum: 1000
+        description: Total occurrences from the series start; mutually exclusive with recurrenceUntil. Skipped dates and DST gaps do not count; cancelled occurrences do.
+      recurrenceUntil:
+        type:
+          - string
+          - "null"
+        format: date
+      reminderMinutes:
+        type:
+          - integer
+          - "null"
+        format: int32
+        minimum: 0
+        maximum: 10080
+      revision:
+        type: integer
+        format: int64
+      seriesStartLocal:
+        type: string
+      seriesEndLocal:
+        type: string
+      occurrenceDate:
+        type: string
+        format: date
+      startAt:
+        type: string
+        format: date-time
+      endAt:
+        type: string
+        format: date-time
+      completed:
+        type: boolean
+      calendarId:
+        type: string
+        format: uuid
+      calendarType:
+        type: string
+        enum:
+          - personal
+          - company
+      calendarName:
+        type: string
+      companyId:
+        type:
+          - string
+          - "null"
+        format: uuid
+      organizerUserId:
+        type: string
+        format: uuid
+      canEdit:
+        type: boolean
+      responseStatus:
+        type: string
+        enum:
+          - ""
+          - needs_action
+          - accepted
+          - tentative
+          - declined
+      attendees:
+        type: array
+        items:
+          "$ref": "#/schemas/CalendarAttendee"
+      organizerName:
+        type: string
+  CalendarInput:
+    type: object
+    additionalProperties: false
+    required:
+      - type
+      - title
+      - color
+      - startLocal
+      - endLocal
+      - timeZone
+      - recurrence
+    properties:
+      type:
+        type: string
+        enum:
+          - event
+          - reminder
+      title:
+        type: string
+        maxLength: 240
+      description:
+        type: string
+        maxLength: 16000
+      location:
+        type: string
+        maxLength: 1000
+      color:
+        type: string
+        enum:
+          - sage
+          - sky
+          - lavender
+          - rose
+          - sand
+      allDay:
+        type: boolean
+      startLocal:
+        type: string
+      endLocal:
+        type: string
+      timeZone:
+        type: string
+      recurrence:
+        type: string
+        enum:
+          - none
+          - daily
+          - weekly
+          - monthly
+          - yearly
+      recurrenceInterval:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 999
+        default: 1
+        description: Repeat every N days, weeks, months or years; 1 for nonrepeating events.
+      recurrenceWeekdays:
+        type: array
+        maxItems: 7
+        uniqueItems: true
+        default: []
+        description: Weekly only. Sunday is 0, Saturday is 6. Empty uses the start weekday. Weeks start Monday.
+        items:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 6
+      recurrenceMonthlyMode:
+        type: string
+        enum: [day_of_month, day_of_week]
+        default: day_of_month
+        description: Monthly by date or ordinal weekday of startLocal; a fifth weekday means the last weekday of the month.
+      recurrenceCount:
+        type: [integer, "null"]
+        format: int32
+        minimum: 1
+        maximum: 1000
+        description: Total occurrences from the series start; mutually exclusive with recurrenceUntil. Skipped dates and DST gaps do not count; cancelled occurrences do.
+      recurrenceUntil:
+        type:
+          - string
+          - "null"
+        format: date
+      reminderMinutes:
+        type:
+          - integer
+          - "null"
+        format: int32
+        minimum: 0
+        maximum: 10080
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 0
+      calendarId:
+        type: string
+        format: uuid
+      attendeeUserIds:
+        type: array
+        maxItems: 100
+        uniqueItems: true
+        items:
+          type: string
+          format: uuid
+    description:
+      Calendar placement is immutable after creation. Attendees replace
+      the guest list and must be active members of the route company. Omitting calendarId
+      on create selects the personal calendar. All-day endLocal is exclusive.
+  CalendarOccurrenceInput:
+    type: object
+    additionalProperties: false
+    required:
+      - expectedRevision
+      - occurrenceDate
+      - action
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+      occurrenceDate:
+        type: string
+        format: date
+      action:
+        type: string
+        enum:
+          - cancel
+          - complete
+          - reopen
+  CalendarOccurrences:
+    type: object
+    additionalProperties: false
+    required:
+      - items
+    properties:
+      items:
+        type: array
+        items:
+          "$ref": "#/schemas/CalendarOccurrence"
+  CalendarAttendee:
+    type: object
+    additionalProperties: false
+    required:
+      - userId
+      - displayName
+      - email
+      - responseStatus
+    properties:
+      userId:
+        type: string
+        format: uuid
+      displayName:
+        type: string
+      email:
+        type: string
+      responseStatus:
+        type: string
+        enum:
+          - needs_action
+          - accepted
+          - tentative
+          - declined
+  Calendar:
+    type: object
+    additionalProperties: false
+    required:
+      - id
+      - type
+      - name
+      - companyId
+    properties:
+      id:
+        type: string
+        format: uuid
+      type:
+        type: string
+        enum:
+          - personal
+          - company
+      name:
+        type: string
+      companyId:
+        type:
+          - string
+          - "null"
+        format: uuid
+  CalendarMember:
+    type: object
+    additionalProperties: false
+    required:
+      - userId
+      - displayName
+      - email
+    properties:
+      userId:
+        type: string
+        format: uuid
+      displayName:
+        type: string
+      email:
+        type: string
+  CalendarCatalog:
+    type: object
+    additionalProperties: false
+    required:
+      - calendars
+      - members
+      - userId
+      - now
+    properties:
+      calendars:
+        type: array
+        items:
+          "$ref": "#/schemas/Calendar"
+      members:
+        type: array
+        items:
+          "$ref": "#/schemas/CalendarMember"
+      userId:
+        type: string
+        format: uuid
+      now:
+        type: string
+        format: date-time
+  CalendarResponseInput:
+    type: object
+    additionalProperties: false
+    required:
+      - expectedRevision
+      - responseStatus
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+      responseStatus:
+        type: string
+        enum:
+          - accepted
+          - tentative
+          - declined
+  CalendarReadResult:
+    type: object
+    additionalProperties: false
+    required:
+      - catalog
+      - items
+    properties:
+      catalog:
+        "$ref": "#/schemas/CalendarCatalog"
+      items:
+        type: array
+        items:
+          "$ref": "#/schemas/CalendarOccurrence"
+  CalendarCommandResult:
+    type: object
+    additionalProperties: false
+    required:
+      - event
+    properties:
+      event:
+        oneOf:
+          - "$ref": "#/schemas/CalendarEvent"
+          - type: "null"
+  CalendarCommandEventInput:
+    type: object
+    additionalProperties: false
+    required:
+      - type
+      - title
+      - color
+      - startLocal
+      - endLocal
+      - timeZone
+      - recurrence
+    properties:
+      type:
+        type: string
+        enum:
+          - event
+          - reminder
+      title:
+        type: string
+        maxLength: 240
+      description:
+        type: string
+        maxLength: 16000
+      location:
+        type: string
+        maxLength: 1000
+      color:
+        type: string
+        enum:
+          - sage
+          - sky
+          - lavender
+          - rose
+          - sand
+      allDay:
+        type: boolean
+      startLocal:
+        type: string
+      endLocal:
+        type: string
+      timeZone:
+        type: string
+      recurrence:
+        type: string
+        enum:
+          - none
+          - daily
+          - weekly
+          - monthly
+          - yearly
+      recurrenceInterval:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 999
+        default: 1
+        description: Repeat every N days, weeks, months or years; 1 for nonrepeating events.
+      recurrenceWeekdays:
+        type: array
+        maxItems: 7
+        uniqueItems: true
+        default: []
+        description: Weekly only. Sunday is 0, Saturday is 6. Empty uses the start weekday. Weeks start Monday.
+        items:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 6
+      recurrenceMonthlyMode:
+        type: string
+        enum: [day_of_month, day_of_week]
+        default: day_of_month
+        description: Monthly by date or ordinal weekday of startLocal; a fifth weekday means the last weekday of the month.
+      recurrenceCount:
+        type: [integer, "null"]
+        format: int32
+        minimum: 1
+        maximum: 1000
+        description: Total occurrences from the series start; mutually exclusive with recurrenceUntil. Skipped dates and DST gaps do not count; cancelled occurrences do.
+      recurrenceUntil:
+        type:
+          - string
+          - "null"
+        format: date
+      reminderMinutes:
+        type:
+          - integer
+          - "null"
+        format: int32
+        minimum: 0
+        maximum: 10080
+      calendarId:
+        type: string
+        format: uuid
+      attendeeUserIds:
+        type: array
+        maxItems: 100
+        uniqueItems: true
+        items:
+          type: string
+          format: uuid
+    description:
+      Calendar placement is immutable after creation. Attendees replace
+      the guest list and must be active members of the route company. Omitting calendarId
+      on create selects the personal calendar. All-day endLocal is exclusive.
+  CalendarCommandInput:
+    type: object
+    additionalProperties: false
+    required:
+      - action
+    properties:
+      action:
+        type: string
+        enum:
+          - create
+          - update
+          - delete
+          - respond
+          - cancel
+          - complete
+          - reopen
+      eventId:
+        type: string
+        format: uuid
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+      input:
+        "$ref": "#/schemas/CalendarCommandEventInput"
+      responseStatus:
+        type: string
+        enum:
+          - accepted
+          - tentative
+          - declined
+      occurrenceDate:
+        type: string
+        format: date
+    description:
+      Create requires input and omits eventId/revision. Update requires
+      eventId, expectedRevision and the full input. Other mutations require eventId
+      and expectedRevision; respond requires responseStatus, occurrence actions require
+      occurrenceDate. Identity always comes from the authenticated caller and live
+      direct Run proof.
+paths:
+  events:
+    get:
+      tags:
+        - calendar
+      operationId: listCalendarEvents
+      summary: List visible occurrences in a window of at most 93 days
+      responses:
+        "200":
+          description: List personal occurrences in a window of at most 93 days.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarOccurrences"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+    post:
+      tags:
+        - calendar
+      operationId: createCalendarEvent
+      summary: Create a visible event or reminder
+      responses:
+        "201":
+          description: Create a personal event or reminder.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarEvent"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarInput"
+  event:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - calendar
+      operationId: updateCalendarEvent
+      summary: Replace an entire event series using its revision
+      responses:
+        "200":
+          description: Replace an entire event series using its revision.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarEvent"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarInput"
+    delete:
+      tags:
+        - calendar
+      operationId: deleteCalendarEvent
+      summary: Delete an entire visible event series
+      responses:
+        "204":
+          description: Delete an entire personal event series.
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: expected_revision
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+  occurrences:
+    post:
+      tags:
+        - calendar
+      operationId: changeCalendarOccurrence
+      summary: Cancel, complete or reopen one occurrence
+      responses:
+        "204":
+          description: Cancel, complete or reopen one occurrence.
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarOccurrenceInput"
+
+  catalog:
+    get:
+      tags:
+        - calendar
+      operationId: calendarCatalog
+      summary: List the personal calendar, current company calendar and active members
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "200":
+          description: Calendar result.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarCatalog"
+  response:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - calendar
+      operationId: respondCalendarInvitation
+      summary: Respond to an invitation for the entire event series
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "204":
+          description: Saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarResponseInput"
+  company_events:
+    get:
+      tags:
+        - calendar
+      operationId: companyListCalendarEvents
+      summary: List shared occurrences in a window of at most 93 days
+      responses:
+        "200":
+          description: List calendar occurrences in a window of at most 93 days.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarOccurrences"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+    post:
+      tags:
+        - calendar
+      operationId: companyCreateCalendarEvent
+      summary: Create a shared event or reminder
+      responses:
+        "201":
+          description: Create a calendar event or reminder.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarEvent"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarInput"
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  company_event:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - calendar
+      operationId: companyUpdateCalendarEvent
+      summary: Replace an entire event series using its revision
+      responses:
+        "200":
+          description: Replace an entire event series using its revision.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarEvent"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarInput"
+    delete:
+      tags:
+        - calendar
+      operationId: companyDeleteCalendarEvent
+      summary: Delete an entire shared event series
+      responses:
+        "204":
+          description: Delete an entire calendar event series.
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: expected_revision
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+  company_occurrences:
+    post:
+      tags:
+        - calendar
+      operationId: companyChangeCalendarOccurrence
+      summary: Cancel, complete or reopen one occurrence
+      responses:
+        "204":
+          description: Cancel, complete or reopen one occurrence.
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarOccurrenceInput"
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+  company_catalog:
+    get:
+      tags:
+        - calendar
+      operationId: companyCalendarCatalog
+      summary: List personal and current company calendars and active members
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "200":
+          description: Calendar result.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarCatalog"
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  company_response:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - calendar
+      operationId: companyRespondCalendarInvitation
+      summary: Respond to an invitation for the entire event series
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Calendar resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "204":
+          description: Saved.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarResponseInput"
+  agent:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: conversationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: X-Boardly-Run-Token
+        in: header
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - calendar
+      operationId: readAgentCalendar
+      summary: Read calendars for the owner of this live direct conversation
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "200":
+          description: Calendar result.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarReadResult"
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+    post:
+      tags:
+        - calendar
+      operationId: writeAgentCalendar
+      summary: Apply an idempotent Run-scoped calendar command
+      responses:
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "422":
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "413":
+          "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+        "415":
+          "$ref": "./_common.yaml#/responses/UnsupportedMediaType"
+        "404":
+          description: Personal resource not found.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "409":
+          description: Revision conflict.
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "200":
+          description: Calendar result.
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/CalendarCommandResult"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/CalendarCommandInput"
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            format: uuid

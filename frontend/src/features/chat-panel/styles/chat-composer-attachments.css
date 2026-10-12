@@ -1,0 +1,103 @@
+.chat-composer-attachments {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 84px;
+  flex-shrink: 0;
+  gap: 8px;
+  margin: 9px 12px 0;
+  padding: 2px 1px 5px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.chat-composer-attachment {
+  display: flex;
+  width: 220px;
+  min-height: 74px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--workspace-divider, #ffffff29);
+  border-radius: var(--workspace-radius-panel, 8px);
+  padding: 7px;
+  background: var(--workspace-control-bg, #ffffff14);
+  color: var(--workspace-native-text, #fff);
+}
+.chat-composer-attachment[data-error="true"] {
+  border-color: var(--workspace-native-danger, #bd4d55);
+}
+.chat-composer-attachment[data-error="true"] .chat-composer-attachment__status,
+.chat-composer-attachment[data-error="true"] .chat-composer-attachment__retry {
+  color: var(--workspace-native-danger, #bd4d55);
+}
+.chat-composer-attachment__preview {
+  display: grid;
+  width: 52px;
+  height: 54px;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--workspace-radius-control, 6px);
+  padding: 0;
+  background: var(--workspace-panel-bg, #ffffff14);
+  color: inherit;
+  cursor: pointer;
+}
+.chat-composer-attachment__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.chat-composer-attachment__preview .chat-attachments__unavailable {
+  min-height: 0;
+  font-size: 0;
+}
+.chat-composer-attachment__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.chat-composer-attachment__copy strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-composer-attachment__copy span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--workspace-native-text-muted, #ffffff88);
+  font-size: 12px;
+  line-height: 18px;
+}
+.chat-composer-attachment__copy progress {
+  width: 100%;
+  height: 3px;
+  accent-color: var(--workspace-native-accent);
+}
+.chat-composer-attachment__actions {
+  display: flex;
+  align-self: stretch;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.chat-composer-attachment__actions button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--workspace-native-text-muted, #ffffff88);
+  cursor: pointer;
+}
+.chat-composer-attachment__actions button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}

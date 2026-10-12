@@ -1,0 +1,273 @@
+---
+title: Core concepts
+description: The objects Zenith Team is built from — companies, plans, agents, runs — and how they relate.
+---
+
+Zenith Team runs Company work through persistent AI [Agents](/agents), planned through [Tasks](/company-plan) and executed by [provider CLIs](/providers) on your own computer. Every worker is an Agent: the starter Agents the CEO setup provisions are ordinary Agents. A Task is always assigned to a person (a Team member), who has an Agent do the work or does it themself. Planned terms describe the accepted direction; other definitions describe the shipped product.
+
+## Company and people
+
+### Company
+
+The tenant and authority boundary. Every agent, task, conversation, run, and file belongs to exactly one company, and every query is company-scoped. See [Companies](/companies).
+
+### Founder
+
+The person who created a company. They start as its `owner`; ownership can later be transferred, so Founder names a history, not a role. See [Companies](/companies#members-and-roles).
+
+### Role
+
+One of `owner`, `admin` or `member`, held by a membership. Roles are what people assign; code never compares them — it checks permissions. Roles never open a Project's content; that is [Project access](#project-access). An owner holds every permission; an admin holds every permission except deleting the company, managing owners, setting the company's sharing policy, managing revenue and publishing results; a member holds no management permission and works on tasks, chats and their own runtimes. A company keeps at least one active owner. See [Companies](/companies#members-and-roles).
+
+### Permission
+
+A named action the server checks, such as `agents.manage` or `members.invite`. A role grants a fixed set, and the server publishes the resolved set on every Company read and on the access-changed frame, so a client gates on the set rather than on the role name. Runtime consent and actor type are separate rules that no permission overrides. Inside a Project, what you may do is your [Project access](#project-access), not your role. See [Companies](/companies#members-and-roles).
+
+### Human actor
+
+A request from a signed-in person, as opposed to a Run acting through its proof. Team and company-lifecycle changes — invite, remove, change a role, transfer ownership, delete — and changes to who may see a Project accept only a human actor.
+
+### Team member
+
+A person with an active membership in a Company and one of the roles owner, admin or member. Agents are not team members. Access belongs to the membership, not to the person's account: leaving a Company ends it, and coming back does not restore it. See [Companies](/companies#members-and-roles).
+
+### Group
+
+A named set of Team members that can be given access to a Project with the same permissions as one person, on **Team › Project access**, where Groups are listed with the people. A Group never acts and never starts a run; it holds people only, never agents or other Groups. Owners and admins, who manage Team members, create Groups and change who is in them there; everyone else can see them. Access adds up: what someone holds through Finance shows a group mark on the Project ("From Finance" in the picker), and removing them from a Group, or removing the Group from a Project, leaves whatever they were given themselves. Before a change to who is in a Group is saved, a preview shows which Projects and people it moves and how many runs will stop. When adding someone to a Group lets them see a restricted Project, everyone else who manages access to it, admins included, gets one Inbox notice; the person who made the change does not, and neither does the person added when only one was. Leaving the Company ends every Group membership. See [What owners and admins can see](/project-access#groups). Not to be confused with the Team page, which lists every Team member.
+
+### Invitation
+
+A pending offer to one email address to join a Company as `admin` or `member`; it expires after seven days, can be resent or cancelled, and is accepted only by the account that holds the invited address. A share link is the same offer for anyone who holds the link.
+
+## Plan and work
+
+### Company Plan
+
+The planning workflow for Company Tasks and dependencies, shown in **Work**. Agents author plan transactions; you review a digest and approve or reject them. See [Company Plan](/company-plan).
+
+### Task
+
+The numbered unit of work and the coordination boundary between agents and the people in a company. Each task names its **assignee** — always a member, responsible for running it on their own computer — who it is **executed by** — an agent, or the assignee themselves — plus a milestone type, and owns exactly one conversation. See [Tasks](/tasks).
+
+### Project
+
+A named piece of work, such as market research or a website, that every Task belongs to from the moment it is created. It gives its Tasks shared context and its own Git repository, and it decides who can see them. See [Tasks](/tasks).
+
+### Project access
+
+What one person may do on one Project: see it, write Tasks, run Tasks, manage its files, decide approvals and questions, open or restrict it, rename it, give access, archive it. People hold it, given to them directly or through a [Group](#group). An agent is never given Project access of its own: each run uses the access of the person it works for, its [Authorizer](#authorizer), and never more. A Project is restricted when created and is for the people added to it; some Projects are open to everyone in the Company, and the app does not offer opening one. Roles never open a Project's content: owners and admins manage every Project but see inside one only once given access, and every such change is recorded. See [What owners and admins can see](/project-access).
+
+### Milestone type
+
+A closed classification of the company-building outcome a task advances — positioning, brand, product, launch, growth, sales outbound, operations, or support. It is planning vocabulary, not another hierarchy layer. See [Tasks](/tasks#milestone-types).
+
+### Workflow
+
+A ready-to-run template on the **Workflows** page: a short form, a brief and a playbook that ship with Zenith Team and are the same for every company. Launching one creates an ordinary Task that you are assigned and an Agent executes on your computer, and the Agent loads the playbook from the built-in `zenith-workflows` Skill. A recurring Workflow can also prefill a new Schedule. A Workflow is not a **Starter Agent**, which is an Agent the CEO setup provisions; it is not a Schedule **preset key**, which allows one Schedule per creator per preset, while a Workflow prefill sets none; and it is not a **Skill** itself: its playbook is one file of a Skill, and the Workflow is the form and the launch around it. See [Workflows](/workflows).
+
+### Approval
+
+A durable request for your verdict on one frozen consequential action, such as applying a company plan. See [Approvals and questions](/approvals-and-questions).
+
+### Question
+
+A durable request for information from you, with one or more typed prompts. See [Approvals and questions](/approvals-and-questions).
+
+### Inbox
+
+The queue of unresolved items addressed to you, shown in the app as **Inbox**. Empty means nothing known is waiting. See [Notifications](/notifications).
+
+## Agents and conversations
+
+### Agent
+
+A persistent AI role with a name, title, instructions and a fixed provider. An agent is a template the whole company shares: to run it, a Team member sets it up on one of their own computers. An agent carries its own cap on concurrent task work, counted per person. Each run works for one person, its [Authorizer](#authorizer), and can see and do only what that person can. Activity names both the agent and the person it worked for, for example "Eli for Mia", and links the run. See [Agents](/agents).
+
+### Setup (binding)
+
+One member's placement of an agent on one of their own computers. It is what makes the agent runnable for them, and it is theirs alone: two people can run the same agent on their own machines, each with the plugins and connections their computer provides. See [Agents](/agents#setting-an-agent-up-on-your-computer).
+
+### CEO Agent
+
+The agent at the top of the reporting tree — the one agent in a company that reports to no other. See [Agents](/agents#the-ceo-agent-and-the-reporting-tree).
+
+### Starter Agent
+
+One of the four Agents — Lyra (product), Eli (engineering), Susan (marketing) and Ariana (operations) — that the CEO setup provisions as ordinary reports of the CEO Agent, each with its own avatar and accent colour. They are templates, not roles: rename, retrain, rebind or archive them like any other Agent. Nothing in the product keys on their names. See [Agents](/agents#starter-agents).
+
+### Service Agent — Planned
+
+A Company-owned agent that runs on a computer the Company runs and works with Project access given to it, not for one person. It always has a named sponsor, a Team member: if the sponsor leaves the Company or loses access to one of its Projects, it pauses. It can never approve, review or manage, and a mention in a chat never uses it. Nothing of it is built, and the Company-run computer it needs does not exist yet: until then, every agent works for one person.
+
+### Conversation
+
+The thread of record for a task, a schedule, or a private direct chat, and the owner of one ordered item sequence. Everything said — by you, by the agent, and by the agent's tools — is a row of that sequence. See [Conversations](/conversations).
+
+### Channel — Proposed
+
+A chat platform such as Slack or Telegram connected to a Company so a bound member can message an Agent from there. A channel direct message is an ordinary private direct Conversation; decisions are never taken in the channel.
+
+### Company Wiki — Planned
+
+The Company's durable shared business knowledge: pages with identifiable sources and revisions, published on purpose. It is distinct from private conversation history, from Conversation memory, and from the shipped local Company Memory notes described below. The [Memory guide](/memory) describes the current local implementation.
+
+### Wiki page — Planned
+
+One titled Markdown document in the Company Wiki. Every save is an immutable revision with an author, a time and optional sources; readers see the current revision.
+
+### Agent context — Planned
+
+The instructions and authorized evidence selected for one Agent's current work. Ordinary Agents use only the active Conversation's history; the CEO can retrieve shared Company work. Using the same Agent does not combine Conversations. The Conversation context snapshot below is the shipped part; the [Agents guide](/agents) describes current configuration.
+
+### Conversation memory — Planned
+
+Optional local working notes for one Conversation, which an eligible memory Skill may maintain. Saved Conversation history provides continuity across machines; notes saved only on one computer remain local. The [Memory guide](/memory) describes the current implementation.
+
+### Message
+
+A conversation item on the chat surface: what you sent, or what the agent said. The rest of the sequence is run detail. See [Conversations](/conversations#messages-and-the-transcript).
+
+### Conversation context snapshot
+
+The bounded, frozen copy of a Conversation's earlier chat messages, each with its author, that a Run carries so the agent can read what was said before even when its provider session is new. It is context, never instructions or authority. See [Conversations](/conversations#messages-and-the-transcript).
+
+### Attachment
+
+An uploaded file that can supply message input or the contents of a saved Asset Version. Uploading a file alone does not give it a shared Asset identity. See [Attachments](/attachments).
+
+### Asset — Planned
+
+A Company-owned file identity whose saved contents are represented by Asset Versions. A file visible in a local workspace browser is not necessarily a saved Asset. Saved Asset identity, current-version selection and sharing are accepted work (Attachments AT-C5–8); a browsable Company Asset catalogue is a separate proposal.
+
+### Output
+
+The immutable complete result an agent explicitly presents during one run: a title, summary, and ordered file set with exactly one primary item. See [Run results](/runs#saved-results-and-review).
+
+### Asset Version — Planned
+
+A saved, immutable revision of an Asset's contents. An Output pins an exact Asset Version so later work cannot change the files behind that result. Saving a revision does not by itself select it as the Company's current version or expand who can read it.
+
+### Asset catalogue — Planned
+
+The Company-wide view of saved Assets and their versions with source, author, time, audience and review state, readable and downloadable from any machine. Working files on a computer are a separate local view.
+
+### Deliverable — Retired
+
+A completed task run's output used to become a deliverable awaiting one company-owner decision; nothing creates one now, and a saved result is an [Output](#output) with no review of its own. See [Run results](/runs#saved-results-and-review).
+
+### Skill
+
+Agent-scoped files materialized into a run's execution environment before the provider CLI starts. See [Skills](/skills).
+
+## Execution
+
+### Run
+
+One agent execution in a conversation — "turn" in everyday prose. A run freezes its input, is claimed by a runtime, streams an ordered transcript, and ends exactly once. See [Runs](/runs).
+
+### Activity
+
+A record of a Company action, its affected entity, and who caused it.
+A Run is one possible affected entity. An action an agent takes in a run
+names three things: the agent, the person the run works for, and the run.
+Access to an Activity follows the visibility of the action it records. The currently shipped feed shows a
+Task-related subset; the planned Company log spans permitted domain actions.
+
+### Entity revision
+
+The version of one Task or Conversation's mutable state. Revisions belong
+to that entity; they do not count Runs or order Conversation messages.
+
+### Task execution generation
+
+The Task execution cycle that a fresh Run starts and its automatic retries
+share. It distinguishes current execution authority from an older Run's work.
+
+### Daemon
+
+The background process on your computer. It registers runtimes, claims queued runs, prepares workspaces, launches provider CLIs, and streams results back — keeping machine credentials and paths off the product surface. See [Daemon and runtimes](/daemon-and-runtimes).
+
+### Runtime
+
+One provider installation a daemon registered for one company — in the product, a **connection**. It belongs to the member whose daemon registered it, its **registrant**, and nobody else in the company can see it, use it or manage it. Whether an agent shows as available for you derives from your own computer's heartbeat. See [Daemon and runtimes](/daemon-and-runtimes).
+
+### Authorizer
+
+The Team member whose action asked for a run: the message sender, the assignee who started a task, the person who tagged the agent in a chat, the schedule's creator. A run executes on that person's own setup of the agent, on a computer they registered — never on anybody else's (ADR 0014). The run sees and does only what this person can. When it answers in a channel or a group chat, everyone there reads the answer, so the person who tagged the agent decides what it may share there. The person who answers a question or decides an approval is not the Authorizer. They are recorded, and the run that continues still works for the same person: the task's assignee, or the person whose direct chat it is. A voice agent in a call reads Company context with the access of the person who shared it, who must be in the call, and everyone in the call hears its answers; when that person leaves the call, the agent stops.
+
+### Provider
+
+`codex` or `claude` — the vendor CLI that actually executes a run. The supported set is closed. See [Providers](/providers).
+
+### Workspace
+
+The local filesystem environment in which a Run executes. A Task workspace holds that Task's working files across Runs. The Task owns its workspace identity and the assigned Agent executes the work (D13, D14). Sharing a Task identity does not synchronize files between computers. A Workspace is never the Company itself. See [Workspaces](/workspaces).
+
+### Working files
+
+The authored files in a Workspace, including work still being revised or awaiting acceptance. Working files can differ from the immutable files pinned by an Output.
+
+### Company Memory
+
+Notes agents retain across Runs in the Company workspace. Their current persistence is local to that workspace; the Company name does not imply availability on every member's computer. See [Memory](/memory).
+
+### Connector
+
+A provider-discovered integration with an exact identity and a reviewed tool contract. Only a reviewed connector contract grants a run execution authority. See [Connectors and plugins](/connectors-and-plugins).
+
+### Plugin
+
+A provider-native installable package. It may contribute connector identities, but plugin state never grants execution authority. See [Connectors and plugins](/connectors-and-plugins).
+
+### Schedule
+
+A creator-private one-shot or cron definition for one agent. A firing creates a message and a run — never a task. See [Schedules](/schedules).
+
+### Resource
+
+A company-scoped binding to a local directory on a specific daemon, so an agent can work directly in a folder you already have. See [Workspaces](/workspaces#local-directories).
+
+### Operator mode
+
+The `zen` CLI as a person uses it: signed in with a bearer Session, choosing a Company by flag, environment or saved config, and allowed to drive the Daemon. See [CLI](/cli).
+
+### Agent mode
+
+The `zen` CLI as a Run uses it: bound by the Daemon to one Run's Company, Agent, Conversation and Task, holding no credential, and limited to the commands that Run's frozen policy admits. It never falls back to Operator mode. See [CLI](/cli#agent-mode).
+
+### Run channel
+
+The Daemon's loopback route that carries a Run's `zen` commands and its Zenith Team MCP tool calls to the server with the Daemon's Session and the Run proof. Neither holds a credential of its own. It exists only while the Run does. See [CLI](/cli#agent-mode).
+
+## Account and access
+
+### Session
+
+One signed-in credential on one client: a browser cookie session or a bearer session on the desktop app and CLI. Signing out or reusing a retired refresh token ends it. Your [daemon](#daemon) has a session of its own for the same account: it works only for the daemon's own calls and, beside a running Agent's proof, for that Agent's work for you, never as you.
+
+### Device — Planned
+
+A desktop app or daemon install with its own identity that the account holder approves once. A changed device identity needs approval again.
+
+### Staff — Proposed
+
+An internal Zenith Team member with an explicit staff grant and a separate short-lived session for the admin console. Staff is not a Company role and never acts as a customer.
+
+### Feature flag — Proposed
+
+A named switch declared in code that can be turned on for a Company, a person, a percentage of people or everyone, and killed for everyone without a deploy. Clients only ever receive resolved decisions.
+
+## How the objects relate
+
+- A **Company** is the boundary. Everything below belongs to exactly one, and the **Founder** owns it.
+- **Companies** own **Projects**, which own **Tasks**; **Project access** decides who sees each one, and the **Company Plan** is how agents propose reviewed Task and dependency changes.
+- An **Agent** does its work through **Runs** inside **Conversations** — a task conversation, a private direct chat, or a schedule's thread.
+- The **Daemon** on your computer registers **Runtimes**; a queued run waits until a runtime claims it, then the **Provider** CLI executes it inside a **Workspace**, with **Skills**, **Memory**, and reviewed **Connectors** prepared around it.
+- **Approvals**, **Questions**, and the **Inbox** keep you in the loop — a run never parks waiting for a person.
+- **Schedules** produce recurring runs on their own thread, isolated from every durable workspace.
+
+## Next steps
+
+- **[How Zenith Team works](/how-zenith-team-works)** — the path of a run from trigger to transcript, and what stays on your computer.
+- **[Quickstart](/quickstart)** — sign up, connect a computer, and watch your first task run.
+- **[Tasks](/tasks)** — statuses, assignees, dependencies, and how task work merges back.

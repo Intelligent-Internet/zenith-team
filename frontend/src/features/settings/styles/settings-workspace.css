@@ -1,0 +1,377 @@
+.settings-workspace {
+  display: grid;
+  grid-template-columns: 208px minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  color: var(--workspace-native-text);
+  background: var(--workspace-panel-bg);
+}
+.settings-workspace-nav {
+  padding: 20px 12px;
+  border-right: 1px solid var(--workspace-divider);
+  background: var(--workspace-sidebar-bg);
+  overflow: auto;
+}
+.settings-workspace-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px 24px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+}
+.settings-workspace-nav section + section {
+  margin-top: 28px;
+}
+.settings-workspace-nav h2 {
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 500;
+  color: var(--workspace-native-text-muted);
+  margin: 0 12px 8px;
+}
+.settings-workspace-nav nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: var(--workspace-radius-control);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  color: var(--workspace-native-text);
+  text-decoration: none;
+}
+.settings-workspace-nav nav a:hover {
+  background: var(--workspace-hover-bg);
+}
+.settings-workspace-nav nav a.is-active {
+  background: var(--workspace-selected-bg);
+  color: var(--workspace-native-text);
+  font-weight: 500;
+}
+.boardly-workspace-theme[data-boardly-theme] .settings-shell--current {
+  padding: 0;
+  min-width: 0;
+}
+.settings-shell--current > .workspace-page-frame__content {
+  background: var(--workspace-content-bg);
+}
+
+/* A page that draws its own header (SettingsShell `ownsHeader`) replaces
+   the frame's title. */
+.settings-shell--page-header > .workspace-page-frame__header {
+  display: none;
+}
+.settings-current-content {
+  width: 100%;
+  min-width: 0;
+}
+.settings-shell--current
+  :is(.general-identity, .general-notifications, .general-secrets) {
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-panel-bg);
+  padding: 24px;
+  margin: 0;
+}
+.settings-shell--current .general-settings-page {
+  display: grid;
+  gap: 20px;
+}
+.settings-shell--current .general-identity {
+  height: auto;
+  display: block;
+}
+.general-profile-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.company-settings-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-native-accent);
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+}
+.general-profile-heading h2 {
+  margin: 0;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 650;
+}
+.general-profile-heading p {
+  margin: 4px 0 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.settings-shell--current .general-identity__fields {
+  height: auto;
+  grid-template-rows: none;
+  gap: 20px;
+}
+.settings-shell--current .general-identity__fields > .general-identity__field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  background: transparent;
+  white-space: normal;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+.settings-shell--current .general-identity__field > label:not(.sr-only) {
+  grid-column: 1/-1;
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  color: var(--workspace-native-text);
+}
+.settings-shell--current .general-identity__field > :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 6px;
+  background: var(--workspace-panel-bg);
+  padding: 0 10px;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.settings-shell--current .general-identity__field:focus-within {
+  box-shadow: none;
+}
+.settings-shell--current
+  .general-identity__field
+  > :is(input, select):focus-visible {
+  border-color: var(--workspace-native-accent);
+  outline: none;
+}
+.settings-shell--current .general-identity__field.profile-phone-field {
+  grid-template-columns: minmax(150px, 0.6fr) minmax(0, 1fr) auto;
+}
+.company-phone-label {
+  grid-column: 1 / -1;
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+}
+.settings-shell--current
+  .general-identity__field
+  > input:only-of-type:not([type="tel"]) {
+  grid-column: 1;
+}
+.company-connections {
+  padding: 20px 24px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 8px;
+  background: var(--workspace-panel-bg);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.company-connections summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.company-connections p {
+  margin: 16px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+.company-connections a {
+  color: var(--workspace-native-accent);
+}
+.settings-shell--current .general-identity__field > button {
+  align-self: end;
+  height: 36px;
+}
+.settings-shell--current .general-divider {
+  display: none;
+}
+.settings-shell--current .general-notification-row {
+  min-height: 70px;
+  padding: 14px 16px;
+  gap: 12px;
+}
+.settings-shell--current .general-notification-row__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-native-accent);
+}
+.settings-shell--current .general-notification-row strong {
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  font-weight: 600;
+}
+.settings-shell--current .general-notification-row p {
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+.company-settings-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  color: var(--workspace-native-text-muted);
+}
+.company-settings-footer small {
+  margin-left: auto;
+}
+.settings-shell--current .settings-card {
+  border-radius: 8px;
+}
+@media (max-width: 800px) {
+  .settings-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .settings-workspace-nav {
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--workspace-divider);
+  }
+  .settings-workspace-heading,
+  .settings-workspace-nav h2 {
+    display: none;
+  }
+  .settings-workspace-nav nav {
+    display: flex;
+    overflow: auto;
+  }
+  .settings-workspace-nav section {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .settings-workspace-nav section + section {
+    margin: 0;
+  }
+}
+
+.daemon-log-search {
+  min-height: 36px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 6px;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  outline: none;
+}
+.daemon-log-search:focus-visible {
+  border-color: var(--workspace-native-accent);
+}
+.settings-shell--current .runtime-detail {
+  padding: 0;
+  width: 100%;
+  min-width: 0;
+}
+.settings-shell--current .runtime-detail__header {
+  margin-top: 16px;
+}
+.settings-shell--current .runtime-detail__back {
+  font-size: 13px;
+}
+.settings-shell--current .support-section-heading p,
+.settings-shell--current .support-row__copy p,
+.settings-shell--current .general-notification-row p,
+.settings-shell--current .capability-row-copy p,
+.settings-shell--current .capability-note {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--workspace-native-text-muted);
+}
+.settings-shell--current .support-action-button {
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.settings-shell--current .daemon-log-viewer {
+  min-height: 160px;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 19px;
+}
+.settings-shell--current .daemon-card__log-toolbar {
+  flex-wrap: wrap;
+}
+.support-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+.support-contact > .support-section-heading {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+.support-contact .support-section-heading p {
+  max-width: 72ch;
+}
+.settings-shell .support-contact > .support-action-button {
+  min-height: 36px;
+  gap: 8px;
+  margin: 0;
+  text-decoration: none;
+}
+.support-contact > .support-action-button:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+.support-contact > .support-action-button svg {
+  flex-shrink: 0;
+}
+.settings-shell .runtime-capabilities {
+  padding: 24px 0 40px;
+}
+
+.settings-shell .capability-toolbar label {
+  width: min(100%, 420px);
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 6px;
+  background: var(--workspace-panel-bg);
+}
+
+.settings-shell .capability-toolbar label:focus-within {
+  border-color: var(--workspace-native-accent);
+}
+
+.settings-shell .capability-toolbar input {
+  width: 100%;
+}
+
+.settings-shell .capability-row-copy small,
+.settings-shell .capability-state {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settings-shell .capability-row-copy small svg {
+  flex-shrink: 0;
+}
+
+.settings-shell .support-settings-page .my-account-hint {
+  margin-top: 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}

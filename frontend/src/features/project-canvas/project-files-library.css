@@ -1,0 +1,46 @@
+.po-project-file-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--pc-line);
+}
+
+.po-project-file-row .po-library-row {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.po-project-file-row .po-library-row > svg {
+  flex: none;
+}
+
+.po-project-file-row strong {
+  overflow-wrap: anywhere;
+}
+
+.po-project-file-row .po-project-file-download {
+  flex: none;
+  margin-inline: 4px 12px;
+  border: 0;
+  color: var(--pc-muted);
+}
+
+.po-project-file-preview {
+  --pc-ink: var(--workspace-native-text);
+  --pc-muted: var(--workspace-native-text-muted);
+  --pc-soft: var(--workspace-native-text-faint);
+  --pc-line: var(--workspace-divider);
+  --pc-paper: var(--workspace-panel-bg);
+  --pc-raised: var(--workspace-panel-raised-bg);
+  --pc-accent: var(--workspace-native-accent);
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--pc-ink);
+  background: var(--workspace-content-bg);
+  font-family: var(--workspace-font-body);
+  font-size: 14px;
+}

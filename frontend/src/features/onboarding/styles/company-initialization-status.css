@@ -1,0 +1,112 @@
+.company-initialization-status {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--workspace-divider);
+  background: var(--workspace-content-bg);
+  color: var(--workspace-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.company-initialization-status > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.company-initialization-status__body {
+  flex: 1;
+  min-width: 0;
+}
+.company-initialization-status__title {
+  margin: 0;
+  font-weight: 600;
+}
+.company-initialization-status__description {
+  margin: 2px 0 0;
+  color: var(--workspace-text-muted);
+  overflow-wrap: anywhere;
+}
+.company-initialization-status__stages {
+  display: flex;
+  gap: 16px;
+  margin: 5px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--workspace-text-muted);
+  font-size: 11px;
+}
+.company-initialization-status__stages li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.company-initialization-status__stages li[aria-current="step"] {
+  color: var(--workspace-text);
+  font-weight: 600;
+}
+.company-initialization-status__actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.company-initialization-status__actions :is(a, button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-text);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.company-initialization-status__actions :is(a, button):hover {
+  background: var(--workspace-hover-bg);
+}
+.company-initialization-status__actions :is(a, button):focus-visible {
+  border-color: currentColor;
+  background: var(--workspace-hover-bg);
+  outline: none;
+}
+.company-initialization-status__actions button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.company-initialization-status__actions
+  .company-initialization-status__dismiss {
+  width: 32px;
+  padding: 0;
+  border-color: transparent;
+}
+.company-initialization-status__spinner {
+  animation: company-preparation-spin 1s linear infinite;
+}
+@keyframes company-preparation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 640px) {
+  .company-initialization-status {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+  .company-initialization-status__body {
+    flex-basis: calc(100% - 28px);
+  }
+  .company-initialization-status__actions {
+    margin-left: 28px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .company-initialization-status__spinner {
+    animation: none;
+  }
+}

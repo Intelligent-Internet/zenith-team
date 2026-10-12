@@ -1,0 +1,41 @@
+{
+  "model": "openai/gpt-image-2.5/sunburst/edit",
+  "requestId": "01a0f6fb-d94c-7213-9005-ad719979dd77",
+  "reference": "Approved susan preview, 2026-10-01",
+  "prompt": "Create a production animation puppet atlas from the supplied approved Fold mascot. Preserve the EXACT character colors, clay texture, prop design and lighting. This is a disassembly sheet, NOT an assembled character.\n1536x1024 transparent RGBA. Exactly six isolated pieces in a rigid 3 columns x 2 rows grid; each cell 512x512 with 40px empty margins; do not cross cell boundaries. No labels, lines, frames, background, floor or shadows.\nTOP LEFT: only the complete rounded square folded-page torso, plain coral body. Face completely blank with restored clay: NO eyes, NO mouth, NO arms, NO hands, NO legs, NO props. Keep folded upper-right corner and reconstruct occluded torso.\nTOP MIDDLE: only two ivory oval eyes with dark glossy pupils, as one isolated pair, horizontally spaced, both eyes open even if reference winks. No face, mouth or body.\nTOP RIGHT: only the small dark curved smile, dimensional clay, no face.\nBOTTOM LEFT: only a coral hand firmly gripping the handle of a cream and coral megaphone pointing outward LEFT. Complete isolated arm with rounded shoulder attachment, no torso, no extra limbs.\nBOTTOM MIDDLE: only a coral arm and open mitten hand waving toward the RIGHT. Complete isolated arm with rounded shoulder attachment, no torso, no extra limbs.\nBOTTOM RIGHT: only two coral salmon stubby clay legs and feet, as a separated pair, no body.\nAll shapes front-facing, coherent same soft studio illumination. Truly transparent around every part, including between feet and around eyes. Preserve ivory eye material and dark mouth. Keep each part well inside its assigned cell.",
+  "processing": "Lossless rectangular alpha crops; 4px margin around 50% alpha bounds.",
+  "crops": [
+    {
+      "part": "body",
+      "crop": "420x418+92+74"
+    },
+    {
+      "part": "eyes",
+      "crop": "360x207+603+202"
+    },
+    {
+      "part": "mouth",
+      "crop": "203x113+1172+255"
+    },
+    {
+      "part": "left",
+      "crop": "455x364+57+564"
+    },
+    {
+      "part": "right",
+      "crop": "453x247+512+615"
+    },
+    {
+      "part": "feet",
+      "crop": "471x201+1030+703"
+    }
+  ],
+  "assets": {
+    "mouth.webp": "bbcd481a9304377c2ec9e261686d14604109e96bf10d11b2a5f732852b691ad7",
+    "body.webp": "a5f81d55822f3243904f11b43a939e7017204fee8c7fa8fd2e1a0db5cdd51bf9",
+    "right.webp": "f1cd0e8f69949cf8c54908aa04db1983e236a7f9f544efca8e1922cdb4488fb3",
+    "left.webp": "ed8131d3daba19b00c9d94ccd23679f8eb3653a2ac6a0bcf6848148d64f54034",
+    "feet.webp": "23dd979229db3d068b7c18ba192148786d63031c31e12386f0bddc9eb949cb34",
+    "eyes.webp": "f07bdc60e29c540c0bfdd21dcdef2b0ad45b9c006a667437af201be2070edb58"
+  }
+}

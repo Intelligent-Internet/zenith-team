@@ -1,0 +1,67 @@
+.pc-format-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  width: 100%;
+  min-height: 50px;
+  flex-shrink: 0;
+  padding: 5px 16px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--workspace-divider);
+  overflow-x: auto;
+  background: var(--workspace-panel-bg);
+}
+.pc-format-toolbar button {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+.pc-format-toolbar button:hover:not(:disabled),
+.pc-format-toolbar button.is-active {
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-accent);
+}
+.pc-format-toolbar button:focus-visible,
+.pc-format-toolbar select:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+.pc-format-toolbar button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.pc-format-toolbar select {
+  flex: none;
+  min-width: 105px;
+  height: 34px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 10px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font-size: 12px;
+}
+.pc-format-divider {
+  flex: 0 0 1px;
+  width: 1px;
+  height: 20px;
+  margin: 0 8px;
+  background: var(--workspace-divider);
+}
+
+.pc-format-toolbar button > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}

@@ -1,0 +1,2572 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/runs.md is its prose counterpart.
+
+paths:
+
+  companies_companyId_runs_runId_agent_artifacts_artifactId:
+    get:
+      tags: [runs, deliverables]
+      operationId: inspectArtifactForRun
+      summary: Inspect immutable Artifact evidence for a live Run
+      description: Requires the Run Authorizer's session and live Run proof. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The artifact ID pins its immutable output items and Asset Versions; no source workspace path is exposed.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - $ref: '#/parameters/artifactId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The exact saved Output and its file items or document destination.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DeliverableOutput' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+  companies_companyId_runs_runId_agent_artifacts_artifactId_items_ordinal_download:
+    get:
+      tags: [runs, deliverables]
+      operationId: downloadArtifactForRun
+      summary: Download a pinned Artifact file for a live consuming Run
+      description: Requires the Run Authorizer's session and live Run proof, rechecked before streaming bytes. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The runId identifies the consuming Run, not the Run that produced the Artifact. Does not redirect to storage.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - $ref: '#/parameters/artifactId'
+        - name: ordinal
+          in: path
+          required: true
+          schema: { type: integer, minimum: 0, maximum: 31 }
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Authorized immutable file bytes.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+
+  companies_companyId_artifacts_unowned:
+    get:
+      tags: [deliverables]
+      operationId: listUnownedArtifacts
+      summary: List minimal identifiers for Artifacts needing owner recovery
+      description: Requires the Company results.review permission. Contents remain inaccessible until claimed.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Up to 200 unowned or inactive-owner Artifacts.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/UnownedArtifactPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+
+  companies_companyId_artifacts_artifactId_claim:
+    post:
+      tags: [deliverables]
+      operationId: claimUnownedArtifact
+      summary: Claim an Artifact whose owner is missing or inactive
+      description: Requires results.review and records the caller as the new owner.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/artifactId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: Claimed Artifact.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ArtifactDetail' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: Artifact is already owned or its access revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_artifacts:
+    get:
+      tags: [deliverables]
+      operationId: listArtifacts
+      summary: List every Artifact the caller can open in the Company
+      description: |
+        Newest first; used by chat attachments and Company Wiki citations. Each Artifact
+        appears only for the people who can already read it (owner, grants,
+        shared Conversations, `company` visibility), so the list reveals
+        nothing that could not be opened one by one. `search` matches the
+        title, case-insensitively.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: search
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200 }
+        - name: ownership
+          in: query
+          schema: { type: string, enum: [owned, shared] }
+        - name: source
+          in: query
+          schema: { type: string, enum: [channel, direct, task, schedule] }
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: A page of Artifacts the caller can open.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConversationArtifactPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_artifacts_resolve:
+    get:
+      tags: [deliverables]
+      operationId: resolveArtifacts
+      summary: Resolve Artifact ids for the caller
+      description: |
+        Returns the named Artifacts the caller can open now, newest first.
+        An id that is missing, deleted or not visible to the caller is simply
+        absent, so the three cases cannot be told apart. Company Wiki readers
+        resolve `[[artifact:<id>]]` citations through this; an absent id
+        renders as an unavailable citation. Repeated ids are read once.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: id
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 50
+            items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The requested Artifacts the caller can open.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ResolvedArtifacts' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_artifacts_artifactId:
+    get:
+      tags: [deliverables]
+      operationId: getArtifact
+      summary: Read one Artifact under its current per-person permission
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/artifactId'
+      responses:
+        '200':
+          description: Authorized Artifact and access roster.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ArtifactDetail' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+
+  companies_companyId_artifacts_artifactId_grants_userId:
+    put:
+      tags: [deliverables]
+      operationId: putArtifactGrant
+      summary: Grant or change a person's Artifact permission
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/artifactId'
+        - $ref: '#/parameters/granteeUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ArtifactGrantRequest' }
+      responses:
+        '200':
+          description: Updated access roster.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ArtifactAccess' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Access revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    delete:
+      tags: [deliverables]
+      operationId: deleteArtifactGrant
+      summary: Revoke a person's Artifact permission
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/artifactId'
+        - $ref: '#/parameters/granteeUserId'
+        - name: expectedRevision
+          in: query
+          required: true
+          schema: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: Updated access roster.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ArtifactAccess' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Access revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_artifacts_artifactId_items_ordinal_download:
+    get:
+      tags: [deliverables]
+      operationId: downloadArtifactFile
+      summary: Stream an authorized Artifact file through Zenith Team
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/artifactId'
+        - name: ordinal
+          in: path
+          required: true
+          schema: { type: integer, minimum: 0, maximum: 31 }
+        - name: X-Boardly-Artifact-Cache
+          in: header
+          description: Opt into desktop disk-cache revalidation after current artifact authorization.
+          schema: { type: string, enum: [revalidate] }
+        - name: If-None-Match
+          in: header
+          description: Exact ETag from a prior authorized download; only used with the desktop cache opt-in header.
+          schema: { type: string }
+      responses:
+        '200':
+          description: Private file bytes; never a storage redirect.
+          headers:
+            ETag:
+              description: Immutable attachment identity and revision, present for opted-in desktop downloads.
+              schema: { type: string }
+            Cache-Control:
+              description: Private no-cache for desktop revalidation; private no-store otherwise.
+              schema: { type: string }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '304':
+          description: The caller still has access and the ready attachment matches the supplied ETag. No file bytes or storage read.
+          headers:
+            ETag:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, enum: ['private, no-cache'] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+
+  # ===================================================================== runs
+
+  # /api/v1/companies/{companyId}/runs
+  companies_companyId_runs:
+    get:
+      tags: [runs]
+      operationId: listRuns
+      summary: List the company's runs
+      description: |
+        Newest first (`createdAt DESC, id DESC`), paged by the standard opaque
+        cursor. The next page seeks strictly before the prior boundary:
+        `(created_at, id) < (cursor_created_at, cursor_id)`. The id tie-breaker
+        prevents equal timestamps from skipping or duplicating runs.
+
+        Every filter below exists because a shipped client emulated it by
+        fetching the company's runs and filtering in JavaScript — one screen per
+        filter. `active=true` is the one-parameter form of the non-terminal
+        status set, so a "what is running right now" panel does not have to
+        enumerate the vocabulary and re-enumerate it when a status is added.
+
+        `status` takes a **comma-separated list**, not a repeated parameter: a
+        repeated query parameter is `422` API-wide, so the multi-status filter
+        has to travel in one value.
+
+        Task-conversation runs are visible to every company member. Direct-
+        conversation runs are visible only to the conversation creator.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+        - name: status
+          in: query
+          required: false
+          description: |
+            Comma-separated run statuses. An unrecognized value is `422` and the
+            message lists the allowed set.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: './_common.yaml#/schemas/RunStatus' }
+        - name: active
+          in: query
+          required: false
+          description: |
+            `true` restricts to the non-terminal statuses — `queued`,
+            `deferred`, `dispatched`, `waiting_local_directory`, `running`.
+            Mutually exclusive with `status`; sending both is `422`.
+          schema: { type: boolean }
+        - name: task_id
+          in: query
+          required: false
+          description: Runs serving one task.
+          schema: { type: string, format: uuid }
+        - name: conversation_id
+          in: query
+          required: false
+          description: Runs in one conversation.
+          schema: { type: string, format: uuid }
+        - name: agent_id
+          in: query
+          required: false
+          description: Runs executed by one agent.
+          schema: { type: string, format: uuid }
+        - name: runtime_id
+          in: query
+          required: false
+          description: |
+            Runs dispatched to one runtime — "what is this machine working on",
+            which the runtimes roster links straight into. Only the caller's
+            own runtimes match: another member's runtime returns no runs,
+            because a machine is its registrant's alone (ADR 0014).
+          schema: { type: string, format: uuid }
+        - name: run_type
+          in: query
+          schema: {type: string, enum: [task, direct_chat, schedule]}
+        - name: revision
+          in: query
+          description: Frozen input revision. Requires a task_id or conversation_id source scope; the two may be combined and AND together like every other filter.
+          schema: {type: integer, format: int64, minimum: 1, maximum: 9007199254740991}
+        - name: from
+          in: query
+          description: Inclusive creation time.
+          schema: {type: string, format: date-time}
+        - name: to
+          in: query
+          description: Exclusive creation time; greater than from when both are supplied.
+          schema: {type: string, format: date-time}
+      responses:
+        '200':
+          description: A page of runs, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Run' }
+                  nextCursor:
+                    type: [string, "null"]
+                    description: '`null` on the last page.'
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}
+  companies_companyId_runs_runId:
+    get:
+      tags: [runs]
+      operationId: getRun
+      summary: Read one run
+      description: |
+        The run row minus its internal columns: the context document, the
+        prepare lease, `sessionId`, `sessionRolloutMissing`,
+        `retiredSessionId`, and `forceFreshSession` are daemon-plane concerns
+        and are not projected here.
+
+        This read is the **only** way to obtain a run's `error` text — it is
+        structurally absent from the typed realtime lifecycle snapshot.
+
+        A direct-conversation run is visible only to its creator.
+
+        A Run reads its own record here with its proof (`zen run get`), a
+        Run tagged in a channel or group DM included. With
+        `X-Boardly-Run-Token` the path must name the token's own Run
+        (`403 task_outside_run_scope`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - $ref: './_common.yaml#/parameters/runTokenOwnRead'
+      responses:
+        '200':
+          description: The run.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Run' }
+        '401': { $ref: './_common.yaml#/responses/UnauthorizedRunProof' }
+        '403': { $ref: './_common.yaml#/responses/RunOwnReadOutsideScope' }
+        '404':
+          description: |
+            `404 run_not_found` or `company_not_found`. A malformed `runId`
+            lands here too — a path id that cannot name a row is
+            indistinguishable from one that names nothing.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/cancel
+  companies_companyId_runs_runId_cancel:
+    post:
+      tags: [runs]
+      operationId: cancelRun
+      summary: Cancel a run
+      description: |
+        The database transition is immediate. Stopping an already-running
+        provider process is cooperative, but the returned row is already
+        `cancelled` and `run.cancelled` is published after commit.
+
+        **Guarded on state, not on `revision`.** The `runs` table carries no
+        version column, so there is nothing for an `expectedRevision` to
+        compare against. Cancellation is idempotent: a terminal run is returned
+        unchanged.
+
+        A task-conversation run is visible to the readers of its Project
+        (ADR 0017), and cancelling it stops work there, so the caller needs
+        `project.tasks.execute` on that Project (`403
+        project_permission_required`); someone who cannot read the Project
+        gets `404 run_not_found`. A direct-conversation run is
+        creator-private, exactly like list and get; its provider items
+        inherit the owning Conversation's visibility.
+
+        **Only the run's authorizer or a `tasks.assign` holder may cancel
+        it.** Stopping a run acts on the computer it runs on, its
+        authorizer's own (ADR 0014); any other member who can read it gets
+        `403 company_permission_required` and nothing changes.
+
+        **A cancellation transition never produces a retry.** An
+        already-terminal run is returned unchanged; whether a failed run
+        already earned a retry child is read from that child's `parentRunId`
+        linkage, not from a flag on the parent.
+
+        Cancelling a Run does not cancel its Task. The Task keeps its current
+        workflow state and Conversation, so a later message starts a fresh Run
+        in the same retained Task workspace. Task cancellation is a separate
+        Task mutation.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+      responses:
+        '200':
+          description: The authoritative run projection after the idempotent action.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Run' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 csrf_invalid` — cookie callers only — `403 project_permission_required` — a reader of a task run''s Project without `project.tasks.execute` (ADR 0017) — or `403 company_permission_required`: the caller neither authorized the run nor holds `tasks.assign`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 run_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runtimes
+  companies_companyId_runtimes:
+    get:
+      tags: [runtimes]
+      operationId: listRuntimes
+      summary: List the caller's runtimes
+      description: |
+        Registration and liveness happen over the daemon plane; the user
+        plane writes two things — the machine rename
+        (`PATCH …/runtimes/{runtimeId}`) and the registrant's removal
+        (`DELETE …/runtimes/{runtimeId}`, `POST …/runtimes/{runtimeId}/remove`).
+        A runtime exists because a daemon registered it, goes offline when
+        that daemon deregisters or is swept, and leaves this list when the
+        registrant removes it or the garbage collector drops it.
+
+        Every runtime is private to the member who registered it
+        (ADR 0014), so the roster is the caller's own machines — whatever
+        their company role: an owner or admin sees no more than that.
+        Another member's machine is absent — not present with a flag — so
+        counts, pickers and searches built from this list never disclose
+        it. An empty list means the caller has no computer registered here,
+        not that the company has none.
+
+        Ordered `createdAt ASC, id ASC` — the roster is a stable list of
+        machines, not a feed, so a new registration appends rather than
+        reshuffling the rows above it. All matching runtimes are returned in
+        one response; `status` and `provider` are filters, not pagination
+        controls.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: status
+          in: query
+          required: false
+          description: Filter by liveness.
+          schema: { $ref: './_common.yaml#/schemas/RuntimeStatus' }
+        - name: provider
+          in: query
+          required: false
+          description: |
+            Filter to one provider. An agent can only bind to a runtime of its
+            own provider, so the picker would otherwise read the whole roster
+            and discard most of it.
+          schema: { type: string }
+      responses:
+        '200':
+          description: All matching runtimes, oldest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Runtime' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runtimes/{runtimeId}
+  companies_companyId_runtimes_runtimeId:
+    get:
+      tags: [runtimes]
+      operationId: getRuntime
+      summary: Read one runtime
+      description: |
+        One roster row by id, the same projection the list serves. Only the
+        member who registered the runtime may read it; another member's
+        machine is `404 runtime_not_found` for every role, exactly like an
+        unknown id (ADR 0014).
+
+        The agents the caller runs on the machine are
+        `GET /agent-bindings?runtime_id=` and the work on it is
+        `GET /runs?runtime_id=&active=true`; the detail read does not embed
+        either, so the three reads stay one request each and cache
+        independently.
+
+        An unknown id, another company's id, a malformed id, and another
+        member's runtime are all `404 runtime_not_found`: the answer never
+        says whether the id exists elsewhere.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      responses:
+        '200':
+          description: The runtime.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Runtime' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    patch:
+      tags: [runtimes]
+      operationId: renameRuntime
+      summary: Rename a machine
+      description: |
+        The one user-plane write on a runtime. Sets or clears the name a
+        person gives the machine; the daemon's own `name` is never touched,
+        so clearing the custom name restores it. With `applyToMachine: true`
+        the name lands on every runtime the same daemon registered in this
+        company — both provider rows of one laptop — which is what "rename a
+        machine" means; `false` (the default) renames the one row the path
+        names.
+
+        Gate: the member whose machine it is, judged inside the write
+        transaction against the stored registration. Another member's
+        runtime is invisible to every role and answers
+        `404 runtime_not_found` (ADR 0014).
+
+        No `revision`, deliberately: the row has no version column and the
+        write is a last-writer-wins set of one display field. Two people
+        renaming the same machine at once end with whichever committed last,
+        which is the right outcome for a label.
+
+        After the commit the registrant receives `daemon.roster_changed`
+        with `action: update`, naming the machine and the runtimes it
+        touched, and refetches the roster.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/RuntimeRenameRequest' }
+      responses:
+        '200':
+          description: The renamed runtime — the same projection the read serves.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Runtime' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found` — unknown, foreign, malformed, removed, or another member''s runtime (invisible to the caller, ADR 0014).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    delete:
+      tags: [runtimes]
+      operationId: deleteRuntime
+      summary: Remove a runtime, dropping the caller's bindings on it
+      description: |
+        The registrant's removal (ADR 0014) with no target: the row leaves
+        the roster and every other runtime read, its run history stays
+        readable, every binding the caller holds on it is deleted, and the
+        caller's queued and deferred Runs on it are cancelled
+        (`run.cancelled`, reason `runtime_removed`). No request body.
+        `POST …/runtimes/{runtimeId}/remove` is the same removal with the
+        bindings moved to another of the caller's runtimes instead.
+
+        Refused with `409 runtime_remove_blocked` while the runtime is
+        online: its daemon would register the row again moments later. The
+        detail tells the person to quit Zenith Team on that computer, or
+        stop its zen daemon, then try again.
+
+        Soft, not a row delete: `runs.runtime_id` points at the row and run
+        history outlives the machine. The row is stamped `removed_at`,
+        hidden from the list, the detail read, the heartbeat and the claim
+        path, and revived by the same machine registering the same runtime
+        again — a restart is the user's intent, not a bug.
+
+        After the commit the registrant receives `daemon.roster_changed`
+        with `action: remove`, naming the machine and the row, and one
+        `agent.binding_changed` (`binding: null`) per dropped binding.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      responses:
+        '204':
+          description: Removed. No body.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found` (unknown, another company''s, malformed, already removed, or another member''s runtime — invisible to the caller, ADR 0014).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 runtime_remove_blocked` — the runtime is online.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runtimes/{runtimeId}/remove
+  companies_companyId_runtimes_runtimeId_remove:
+    post:
+      tags: [runtimes]
+      operationId: removeRuntime
+      summary: Remove a runtime, moving the caller's bindings to another
+      description: |
+        The registrant's removal (ADR 0014) with the caller's bindings on
+        the machine moved to `targetRuntimeId` — another runtime the caller
+        registered, of the same provider, online or not — or dropped when
+        `targetRuntimeId` is `null` (then it is exactly the `DELETE`).
+
+        Checked inside one transaction under the runtime rows: the runtime
+        must be offline (`409 runtime_remove_blocked`, "Quit Zenith Team on
+        that computer first, or stop its zen daemon, then try again"); the
+        target must be another live runtime the
+        caller registered (`404 runtime_not_found`) of the same provider
+        (`422 agent_binding_provider_mismatch`). Then every binding the
+        caller holds on the runtime moves to the target, the caller's queued
+        and deferred Runs follow, and the runtime is stamped removed exactly
+        as the `DELETE` describes; Runs a daemon already claimed stay on
+        the offline runtime for the sweepers.
+
+        After the commit the registrant receives one `agent.binding_changed`
+        per moved binding, then `daemon.roster_changed` with
+        `action: remove`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/RuntimeRemovalInput' }
+      responses:
+        '200':
+          description: The removal receipt.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/RuntimeRemoval' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found` — the runtime or the target is unknown, another company''s, malformed, already removed, or another member''s runtime (invisible to the caller, ADR 0014).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 runtime_remove_blocked` — the runtime is online.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 validation_failed` — `targetRuntimeId` is missing, not a runtime id or `null`, or names the runtime being removed, and the detail says which; or `422 agent_binding_provider_mismatch` — the target runs another provider.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runtimes/{runtimeId}/models
+  companies_companyId_runtimes_runtimeId_models:
+    post:
+      tags: [runtimes]
+      operationId: discoverRuntimeModels
+      summary: Discover one runtime's model catalog
+      description: |
+        The runtime's registrant (ADR 0014). Enqueues discovery against the exact online runtime named by
+        the path and always answers `202`, including when it coalesces with the
+        runtime's existing pending or running request. The daemon receives the
+        work on its next heartbeat; `daemon.pending_work` only asks it to send
+        that heartbeat sooner.
+
+        The request is transient coordination state, retained for two minutes
+        after it becomes terminal. Clients poll the returned request id with
+        the companion GET. Zenith Team stores no model-discovery request in
+        PostgreSQL.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: runtimeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Enqueued, or coalesced with the active request.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ModelDiscoveryRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found` — including another member''s runtime, invisible to the caller (ADR 0014).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 runtime_offline`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runtimes/{runtimeId}/refresh
+  companies_companyId_runtimes_runtimeId_refresh:
+    post:
+      tags: [runtimes]
+      operationId: refreshRuntime
+      summary: Ask a machine to check its provider setup again
+      description: |
+        Asks the daemon behind the exact online runtime named by the path to
+        probe every provider CLI on that machine again — path, version,
+        sign-in state — and register what it finds. The answer is not
+        awaited: the daemon's fresh registration is the result, served on
+        the `Runtime` rows and announced by `daemon.roster_changed`, so a
+        client that refetches the roster on that event needs nothing else.
+        The hint rides the daemon's realtime socket and is safe to lose or
+        repeat; a runtime that is offline has no daemon to hear it and is
+        refused with `409 runtime_offline`.
+
+        It makes a machine do work, so the gate is the machine's, not a
+        role's (ADR 0014): only its registrant may ask. Another member's
+        machine is invisible to the caller and answers
+        `404 runtime_not_found`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: runtimeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: The daemon was asked; watch the roster.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `runtime_not_found` — including another member''s runtime, invisible to the caller (ADR 0014).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 runtime_offline`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/companies/{companyId}/runtimes/{runtimeId}/models/{requestId}
+  companies_companyId_runtimes_runtimeId_models_requestId:
+    get:
+      tags: [runtimes]
+      operationId: getRuntimeModelDiscovery
+      summary: Read a runtime model-discovery request
+      description: |
+        The runtime's registrant (ADR 0014). `pending` becomes `timeout` after 30 seconds without a
+        daemon claim; `running` becomes `timeout` after 60 seconds without a
+        terminal report. A request id is visible only through the exact company
+        and runtime path that created it.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: runtimeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Current request lifecycle and any terminal result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ModelDiscoveryRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 company_not_found`, `runtime_not_found`, or
+            `model_discovery_not_found`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/runs/{runId}/output
+  runs_runId_output:
+    post:
+      tags: [runs]
+      operationId: presentRunOutput
+      summary: Save an Artifact produced by a running Run
+      description: |
+        Run-bound MCP callers use their normal user authentication plus the
+        injected Run proof. `Idempotency-Key` is a UUID. An exact presentation
+        replay returns its existing Artifact; a distinct presentation while the
+        Run is running creates another immutable, independently reviewable
+        Artifact. For `type: app`, the local MCP backend supplies normalized
+        development commands and no file items. The server stores that command
+        payload without exposing a local HTTP loopback URL. Local app preview
+        controls are unavailable until an access-checked gateway is added.
+        Active Company membership and the exact Run proof are required. Terminal
+        Runs accept exact replays but reject new presentations.
+      parameters:
+        - $ref: './_common.yaml#/parameters/runId'
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PresentRunOutputRequest' }
+      responses:
+        '200':
+          description: An exact replay of an Artifact already saved by the Run.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PresentRunOutputResponse' }
+        '201':
+          description: A new Artifact was saved as another Output of the Run.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PresentRunOutputResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 not_found` — including a malformed or unavailable Run.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 conflict` — the Run is terminal and this is not an exact replay.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 validation_failed` or `target_unavailable` for an invalid Artifact.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/conversations/{conversationId}/artifacts
+  companies_companyId_conversations_conversationId_artifacts:
+    get:
+      tags: [runs, conversations]
+      operationId: listConversationArtifacts
+      summary: List the Artifacts saved in one Conversation
+      description: |
+        Returns app, media, text, and file Artifacts newest first for the
+        right-side Conversation canvas. A Task Conversation is visible to the
+        readers of its Project (ADR 0017); direct and Schedule Conversations
+        remain creator-private. Channels and human direct discussions require
+        active conversation membership and include Artifacts from tagged Agent
+        Runs, conversation shares, and non-deleted message links across all
+        threads. Multiple references to an Artifact produce one entry. This
+        listing does not grant access to private Agent output. Each Artifact
+        is listed only for the people who can read it: its owner, the people
+        and Conversations it is shared with, and, for a Task Run, the member
+        who ran it (the Run's authorizer), who holds a `view` grant.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: runId
+          in: query
+          required: false
+          description: Restrict results to one Run without changing Conversation or Artifact access checks.
+          schema: { type: string, format: uuid }
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: A page of saved Artifacts.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConversationArtifactPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 not_found` — including an inaccessible or malformed Conversation.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  # /api/v1/companies/{companyId}/runs/{runId}/result
+  companies_companyId_runs_runId_result:
+    get:
+      tags: [runs, deliverables]
+      operationId: getRunResult
+      summary: Read one Artifact presented by a Run
+      description: |
+        When `artifactId` is present, returns that exact Output and its
+        Deliverable. Without it, returns the newest Output as a compatibility
+        default.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - name: artifactId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The Run status and selected Output and Deliverable, when present.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/RunResult' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 not_found` — including a Run outside the caller-visible company scope.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/result/studio-canvas
+  companies_companyId_runs_runId_result_studio_canvas:
+    post:
+      tags: [runs, deliverables]
+      operationId: attachRunStudioCanvas
+      summary: Add a missing Studio source snapshot to an existing result
+      description: >-
+        Company owners with access to the Run may add a source snapshot once.
+        This supplements provenance without changing the frozen output or review
+        items. Identical retries return the existing snapshot; replacement or a
+        result already containing a Studio source artifact returns conflict.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: './_common.yaml#/parameters/runId' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [canvas]
+              properties:
+                canvas: { $ref: '#/schemas/StudioCanvas' }
+      responses:
+        '200':
+          description: Saved source snapshot
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SavedStudioCanvas' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: A source canvas is already saved and cannot be replaced.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/companies/{companyId}/runs/{runId}/result/publication
+  companies_companyId_runs_runId_result_publication:
+    post:
+      tags: [runs, deliverables]
+      operationId: publishRunResult
+      summary: Publish or retry an eligible application output
+      description: |
+        Provider-unavailable and deployment failures can be manually retried on the exact stored provider
+        while resources may exist. Resource references and cleanup authority are
+        preserved. The original provider must remain configured; rebinding to a
+        different provider requires cleanup first.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PublicationCreateInput' }
+      responses:
+        '200':
+          description: The existing publication or an idempotent replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PublicationCreateResult' }
+        '201':
+          description: Publication was queued.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PublicationCreateResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: The publication or approval state changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/result/publication/unpublish
+  companies_companyId_runs_runId_result_publication_unpublish:
+    post:
+      tags: [runs, deliverables]
+      operationId: unpublishRunResult
+      summary: Remove a Run result's public application
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PublicationUnpublishInput' }
+      responses:
+        '200':
+          description: The publication queued for removal.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/OutputPublication' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: The publication revision or lifecycle state changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/result/publication/subdomain
+  companies_companyId_runs_runId_result_publication_subdomain:
+    put:
+      tags: [runs, deliverables]
+      operationId: setRunResultSubdomain
+      summary: Claim a custom subdomain for a published Run result
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PublicationSubdomainInput' }
+      responses:
+        '200':
+          description: The publication queued for custom URL routing.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/OutputPublication' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: The subdomain is taken, or the publication revision or lifecycle state changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/artifacts/{artifactId}/items/{ordinal}/download
+  companies_companyId_runs_runId_artifacts_artifactId_items_ordinal_download:
+    get:
+      tags: [runs, deliverables]
+      operationId: downloadArtifactItem
+      summary: Download one file item from a saved Artifact
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - name: artifactId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: ordinal
+          in: path
+          required: true
+          schema: { type: integer, minimum: 0, maximum: 31 }
+        - name: X-Boardly-Artifact-Cache
+          in: header
+          description: Opt into desktop disk-cache revalidation after current artifact authorization.
+          schema: { type: string, enum: [revalidate] }
+        - name: If-None-Match
+          in: header
+          description: Exact ETag from a prior authorized download; only used with the desktop cache opt-in header.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The stored bytes with their authoritative content type and filename. Studio source snapshots use application/vnd.zenith-studio.canvas+json.
+          headers:
+            ETag:
+              description: Immutable attachment identity and revision, present for opted-in desktop downloads.
+              schema: { type: string }
+            Cache-Control:
+              description: Private no-cache for desktop revalidation; private no-store otherwise.
+              schema: { type: string }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+            application/vnd.zenith-studio.canvas+json:
+              schema: { $ref: '#/schemas/StudioCanvas' }
+        '304':
+          description: The caller still has access and the ready attachment matches the supplied ETag. No file bytes or storage read.
+          headers:
+            ETag:
+              schema: { type: string }
+            Cache-Control:
+              schema: { type: string, enum: ['private, no-cache'] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 not_found` — including a malformed Artifact, ordinal, or inaccessible item.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/runs/{runId}/artifacts/{artifactId}/items/{ordinal}/share
+  companies_companyId_runs_runId_artifacts_artifactId_items_ordinal_share:
+    post:
+      tags: [runs, deliverables]
+      operationId: shareArtifactItem
+      summary: Create a temporary share link for one saved Artifact file
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - name: artifactId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: ordinal
+          in: path
+          required: true
+          schema: { type: integer, minimum: 0, maximum: 31 }
+      responses:
+        '200':
+          description: A Zenith Team URL that checks current artifact access when opened.
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: Always `private, no-store`.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ArtifactShareLink' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 not_found` — including a malformed Artifact, ordinal, or inaccessible item.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+
+parameters:
+  artifactId:
+    name: artifactId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  granteeUserId:
+    name: userId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+
+schemas:
+
+  StudioCanvas:
+    type: object
+    additionalProperties: false
+    description: Immutable source artifact saved by present_output alongside Studio media. Contains only the supplied source graph, with no credentials or live provider URLs. Maximum encoded size is 1 MiB.
+    required: [version, projectId, nodes, edges]
+    properties:
+      version: { type: integer, enum: [1] }
+      projectId: { type: string, minLength: 1, maxLength: 128 }
+      nodes:
+        type: array
+        minItems: 1
+        maxItems: 200
+        items: { $ref: '#/schemas/StudioCanvasNode' }
+      edges:
+        type: array
+        maxItems: 400
+        items:
+          type: object
+          additionalProperties: false
+          required: [source, target]
+          properties:
+            source: { type: string, minLength: 1, maxLength: 128 }
+            target: { type: string, minLength: 1, maxLength: 128 }
+
+  StudioCanvasNode:
+    type: object
+    additionalProperties: false
+    required: [id, type, label, position]
+    properties:
+      id: { type: string, minLength: 1, maxLength: 128 }
+      type: { type: string, minLength: 1, maxLength: 80 }
+      label: { type: string, minLength: 1, maxLength: 160 }
+      position:
+        type: object
+        additionalProperties: false
+        required: [x, y]
+        properties:
+          x: { type: number, minimum: -1000000, maximum: 1000000 }
+          y: { type: number, minimum: -1000000, maximum: 1000000 }
+      prompt: { type: string, maxLength: 16000 }
+      model: { type: string, maxLength: 16000 }
+      status: { type: string, maxLength: 16000 }
+      outputOrdinal:
+        type: integer
+        minimum: 0
+        maximum: 31
+        description: Zero-based ordinal of this node's media in the same frozen Output. Omitted for nodes without a delivered file.
+
+  PresentRunOutputItemRequest:
+    type: object
+    additionalProperties: false
+    required: [role, label]
+    properties:
+      role: { $ref: '#/schemas/DeliverableItemRole' }
+      label: { type: string, minLength: 1, maxLength: 120 }
+      assetVersionId: { type: string, format: uuid }
+      attachmentId: { type: string, format: uuid }
+    oneOf:
+      - required: [assetVersionId]
+      - required: [attachmentId]
+
+  ArtifactType:
+    type: string
+    enum: [app, media, text, file]
+    description: |
+      The dedicated Artifact experience: running app preview, image/audio/video media,
+      readable text such as a plan, or a general file collection.
+
+  AppPreviewCommand:
+    type: object
+    additionalProperties: false
+    required: [command, port]
+    properties:
+      command: { type: string, minLength: 1, maxLength: 4096 }
+      args:
+        type: array
+        maxItems: 64
+        items: { type: string, maxLength: 4096 }
+      workingDirectory: { type: string, minLength: 1, maxLength: 4096 }
+      port: { type: integer, minimum: 1024, maximum: 65535 }
+
+  PresentRunAppOutput:
+    type: object
+    additionalProperties: false
+    required: [commands]
+    properties:
+      commands:
+        type: array
+        minItems: 1
+        maxItems: 8
+        items: { $ref: '#/schemas/AppPreviewCommand' }
+
+  PresentRunOutputRequest:
+    type: object
+    additionalProperties: false
+    required: [title, summary]
+    oneOf:
+      - required: [type, app]
+        properties:
+          type: { const: app }
+          items: { type: array }
+        not:
+          required: [items]
+          properties:
+            items: {}
+      - required: [items]
+        properties:
+          type:
+            type: string
+            enum: [media, text, file]
+          app: { type: object }
+        not:
+          required: [app]
+          properties:
+            app: {}
+    properties:
+      type:
+        allOf: [{ $ref: '#/schemas/ArtifactType' }]
+        default: file
+        description: App requires an app command document and no file items.
+      app:
+        $ref: '#/schemas/PresentRunAppOutput'
+      presentationId:
+        type: string
+        format: uuid
+        description: Optional native Project presentation prepared by this exact Run; requires type=text and its canonical primary export.
+      title: { type: string, minLength: 1, maxLength: 160 }
+      summary: { type: string, minLength: 1, maxLength: 4000 }
+      submissionNotes: { type: string, minLength: 1, maxLength: 4000 }
+      items:
+        type: array
+        minItems: 1
+        maxItems: 32
+        items: { $ref: '#/schemas/PresentRunOutputItemRequest' }
+
+  PresentRunOutputResponse:
+    type: object
+    additionalProperties: false
+    required: [outputId]
+    properties:
+      outputId: { type: string, format: uuid }
+
+  DeliverableItemRole:
+    type: string
+    enum: [primary, final, supporting]
+    description: Exactly one primary item is the lead final result. Additional final items are completed deliverables requested by the user. Supporting items are sources or intermediate files.
+
+  DeliverableStatus:
+    type: string
+    enum: [ready_for_review, approved, changes_requested, superseded]
+
+  DeliverableOutputItem:
+    type: object
+    additionalProperties: false
+    required: [id, assetVersionId, contentType, sizeBytes, ordinal, role, label, kind, displayName, detail]
+    properties:
+      id: { type: string, format: uuid }
+      assetVersionId: { type: string, format: uuid }
+      contentType: { type: string }
+      sizeBytes: { type: integer, format: int64, minimum: 0 }
+      ordinal: { type: integer, minimum: 0, maximum: 31 }
+      role: { $ref: '#/schemas/DeliverableItemRole' }
+      label: { type: string }
+      kind: { type: string }
+      displayName: { type: string }
+      detail: { type: string }
+
+  DeliverableOutput:
+    type: object
+    additionalProperties: false
+    required: [id, type, title, summary, items, createdAt]
+    properties:
+      actorType: {type: string, enum: [user, agent]}
+      actorUserId: {type: string, format: uuid}
+      actorAgentId: {type: string, format: uuid}
+      freshness:
+        type: string
+        enum: [current, stale, unavailable, unknown, not_applicable]
+        description: Current comparison with authorized shared content; never changes delivery or approval.
+      liveUrl:
+        type: string
+        description: Authorized destination for current shared content.
+
+      id: { type: string, format: uuid }
+      type: { $ref: '#/schemas/ArtifactType' }
+      url: { type: string, format: uri }
+      presentationUrl:
+        type: string
+        description: Relative authenticated URL for this exact immutable Project presentation.
+      canvasUrl:
+        type: string
+        description: Relative authenticated Project canvas URL for this exact saved Output version; omitted when unregistered.
+      title: { type: string }
+      summary: { type: string }
+      submissionNotes: { type: string }
+      items:
+        type: array
+        items: { $ref: '#/schemas/DeliverableOutputItem' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  ArtifactShareLink:
+    type: object
+    additionalProperties: false
+    required: [url]
+    properties:
+      url: { type: string, format: uri }
+
+  ArtifactPermission:
+    type: string
+    enum: [view, edit, manage]
+
+  ArtifactGrant:
+    type: object
+    additionalProperties: false
+    required: [userId, displayName, permission, grantedAt]
+    properties:
+      userId: { type: string, format: uuid }
+      displayName: { type: string }
+      permission: { $ref: '#/schemas/ArtifactPermission' }
+      grantedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  ArtifactAccess:
+    type: object
+    additionalProperties: false
+    required: [ownerUserId, ownerDisplayName, ownerActive, permission, revision, grants, visibility, conversationGrants]
+    properties:
+      visibility: { $ref: './artifact-sharing.yaml#/schemas/ArtifactVisibility' }
+      publicToken: { type: string, format: uuid }
+      conversationGrants:
+        type: array
+        items: { $ref: './artifact-sharing.yaml#/schemas/ArtifactConversationGrant' }
+      ownerUserId:
+        description: >-
+          The Task's creator; for a Run started by tagging an Agent in a
+          channel or group DM, the person who tagged it (the Run's
+          authorizer), so the Output starts `private` to them and the Agent's
+          creator gets nothing unless they share it; otherwise the direct or
+          Schedule Conversation's creator. Null for an Agent-created Task
+          until someone claims it. When a Task Run's authorizer is not the
+          owner, they hold a `view` grant from the moment the Run presents it.
+          A tagged Run's Output presented before this rule keeps the Agent's
+          creator as owner.
+        oneOf:
+          - { type: string, format: uuid }
+          - { type: 'null' }
+      ownerDisplayName:
+        oneOf:
+          - { type: string }
+          - { type: 'null' }
+      ownerActive: { type: boolean }
+      permission: { $ref: '#/schemas/ArtifactPermission' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      grants:
+        type: array
+        items: { $ref: '#/schemas/ArtifactGrant' }
+
+  ArtifactSource:
+    type: object
+    additionalProperties: false
+    required: [conversationId, type]
+    properties:
+      conversationId: { type: string, format: uuid }
+      type: { type: string, enum: [task, direct, channel, human_direct, schedule, huddle] }
+      taskId: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+
+  ArtifactDetail:
+    type: object
+    additionalProperties: false
+    required: [runId, result, access, url]
+    properties:
+      source:
+        description: Original conversation, only present when the viewer can read it. Artifact access alone does not grant source access.
+        $ref: '#/schemas/ArtifactSource'
+      runId: { type: [string, 'null'], format: uuid }
+      result: { $ref: '#/schemas/RunResult' }
+      access: { $ref: '#/schemas/ArtifactAccess' }
+      url: { type: string, format: uri }
+
+  UnownedArtifact:
+    type: object
+    additionalProperties: false
+    required: [id, runId, revision, createdAt]
+    properties:
+      id: { type: string, format: uuid }
+      runId: { type: [string, 'null'], format: uuid }
+      taskId: { type: string, format: uuid }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  UnownedArtifactPage:
+    type: object
+    additionalProperties: false
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/UnownedArtifact' }
+
+  ArtifactGrantRequest:
+    type: object
+    additionalProperties: false
+    required: [permission, expectedRevision]
+    properties:
+      permission: { $ref: '#/schemas/ArtifactPermission' }
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  TaskRunResult:
+    type: object
+    additionalProperties: false
+    required: [runId, runtimeId, runStatus, output, deliverable, publication]
+    properties:
+      runId: {"type": ["string", "null"], "format": "uuid"}
+      runtimeId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The runtime the run executed on, for the member who registered it;
+          `null` for every other reader (ADR 0014).
+      runStatus: { type: string }
+      output: { $ref: '#/schemas/DeliverableOutput' }
+      deliverable:
+        oneOf:
+          - { $ref: '#/schemas/Deliverable' }
+          - { type: 'null' }
+      publication:
+        oneOf:
+          - { $ref: '#/schemas/OutputPublication' }
+          - { type: 'null' }
+
+  ArtifactLibraryMetadata:
+    type: object
+    additionalProperties: false
+    required: [ownerName, owned, canShare, source]
+    description: Present on Company list and resolve results. Source details require separate source access.
+    properties:
+      ownerName: { type: string }
+      owned: { type: boolean }
+      canShare: { type: boolean }
+      source:
+        type: object
+        additionalProperties: false
+        required: [type, title, detail]
+        properties:
+          type: { type: string, enum: [channel, direct, task, schedule, restricted] }
+          title: { type: string }
+          detail: { type: string }
+
+  ArtifactRunResult:
+    type: object
+    additionalProperties: false
+    required: [runId, runtimeId, runStatus, artifact, deliverable, publication]
+    properties:
+      library:
+        $ref: '#/schemas/ArtifactLibraryMetadata'
+      runId: { type: [string, 'null'], format: uuid }
+      runtimeId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The runtime the run executed on, for the member who registered it;
+          `null` for every other reader (ADR 0014).
+      runStatus: { type: string }
+      artifact: { $ref: '#/schemas/DeliverableOutput' }
+      deliverable:
+        oneOf:
+          - { $ref: '#/schemas/Deliverable' }
+          - { type: 'null' }
+      publication:
+        oneOf:
+          - { $ref: '#/schemas/OutputPublication' }
+          - { type: 'null' }
+
+  ConversationArtifactPage:
+    type: object
+    additionalProperties: false
+    required: [items, nextCursor]
+    properties:
+      items:
+        type: array
+        maxItems: 50
+        items: { $ref: '#/schemas/ArtifactRunResult' }
+      nextCursor:
+        type: [string, 'null']
+
+  ResolvedArtifacts:
+    type: object
+    additionalProperties: false
+    required: [items]
+    properties:
+      items:
+        type: array
+        maxItems: 50
+        items: { $ref: '#/schemas/ArtifactRunResult' }
+
+  TaskResultSource:
+    type: object
+    additionalProperties: false
+    required: [messageId, attachment]
+    properties:
+      messageId: { type: string, format: uuid }
+      attachment: { $ref: './_common.yaml#/schemas/Attachment' }
+
+  TaskResultPage:
+    type: object
+    additionalProperties: false
+    required: [items, sources, nextCursor, selection]
+    properties:
+      selection: { $ref: './tasks.yaml#/schemas/TaskResultSelection' }
+      items:
+        type: array
+        maxItems: 50
+        items: { $ref: '#/schemas/TaskRunResult' }
+      sources:
+        type: array
+        maxItems: 50
+        items: { $ref: '#/schemas/TaskResultSource' }
+      nextCursor:
+        type: [string, 'null']
+        description: Opaque continuation tracking both feeds; null when both are exhausted.
+
+  Deliverable:
+    type: object
+    additionalProperties: false
+    required: [id, runId, status, output, submittedAt, revision]
+    properties:
+      id: { type: string, format: uuid }
+      runId: {"type": ["string", "null"], "format": "uuid"}
+      status: { $ref: '#/schemas/DeliverableStatus' }
+      output: { $ref: '#/schemas/DeliverableOutput' }
+      submittedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      reviewedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      reviewFeedback: { type: string }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  SavedStudioCanvas:
+    type: object
+    additionalProperties: false
+    required: [canvas, addedAt]
+    properties:
+      canvas: { $ref: '#/schemas/StudioCanvas' }
+      addedAt: { type: string, format: date-time }
+
+  RunResult:
+    type: object
+    additionalProperties: false
+    required: [runtimeId, runStatus, output, deliverable, publication, canPublish, canUnpublish]
+    properties:
+      runtimeId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The runtime the run executed on, for the member who registered it;
+          `null` for every other reader (ADR 0014).
+      runStatus: { $ref: './_common.yaml#/schemas/RunStatus' }
+      output:
+        oneOf:
+          - { $ref: '#/schemas/DeliverableOutput' }
+          - { type: "null" }
+      deliverable:
+        oneOf:
+          - { $ref: '#/schemas/Deliverable' }
+          - { type: "null" }
+      studioCanvas: { $ref: '#/schemas/SavedStudioCanvas' }
+      canAttachStudioCanvas: { type: boolean }
+      publication:
+        oneOf:
+          - { $ref: '#/schemas/OutputPublication' }
+          - { type: "null" }
+      canPublish: { type: boolean }
+      canUnpublish: { type: boolean }
+      publicationSubdomain: { $ref: '#/schemas/PublicationSubdomainOptions' }
+
+  PublicationStatus:
+    type: string
+    enum: [queued, uploading, building, deploying, routing, published, unpublishing, unpublished, failed]
+
+  PublicationFailureCode:
+    type: string
+    enum: [source_invalid, build_failed, deploy_failed, provider_unavailable]
+
+  OutputPublication:
+    type: object
+    additionalProperties: false
+    required: [id, outputId, providerType, status, createdAt, updatedAt, revision]
+    properties:
+      id: { type: string, format: uuid }
+      outputId: { type: string, format: uuid }
+      providerType: { type: string }
+      status: { $ref: '#/schemas/PublicationStatus' }
+      url: { type: string, format: uri }
+      customUrl: { type: string, format: uri, description: Custom URL after routing succeeds. }
+      subdomain: { type: string, description: Name reserved for this output across unpublish and republish. }
+      failureCode: { $ref: '#/schemas/PublicationFailureCode' }
+      failureDetail: { type: string }
+      publishedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      unpublishedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  PublicationCreateInput:
+    type: object
+    additionalProperties: false
+    required: [confirmPublicExposure]
+    properties:
+      confirmPublicExposure: { type: boolean, enum: [true] }
+
+  PublicationCreateResult:
+    type: object
+    additionalProperties: false
+    required: [publication, created]
+    properties:
+      publication: { $ref: '#/schemas/OutputPublication' }
+      created: { type: boolean }
+
+  PublicationUnpublishInput:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  ModelDiscoveryStatus:
+    type: string
+    enum: [pending, running, completed, failed, timeout]
+
+  RuntimeReasoningLevel:
+    type: object
+    required: [value, label]
+    properties:
+      value: { type: string, minLength: 1, maxLength: 255 }
+      label: { type: string, minLength: 1, maxLength: 255 }
+      description: { type: string, maxLength: 1024 }
+
+  RuntimeModelReasoning:
+    type: object
+    required: [levels]
+    properties:
+      defaultLevel: { type: string, maxLength: 255 }
+      levels:
+        type: array
+        maxItems: 16
+        items: { $ref: '#/schemas/RuntimeReasoningLevel' }
+
+  RuntimeModel:
+    type: object
+    required: [id, label]
+    properties:
+      id: { type: string, minLength: 1, maxLength: 255 }
+      label: { type: string, minLength: 1, maxLength: 255 }
+      default: { type: boolean }
+      reasoning: { $ref: '#/schemas/RuntimeModelReasoning' }
+
+  ModelDiscoveryError:
+    type: object
+    required: [code, message]
+    properties:
+      code:
+        type: string
+        enum: [discovery_failed, pending_timeout, running_timeout]
+      message: { type: string, minLength: 1, maxLength: 512 }
+
+  ModelDiscoveryRequest:
+    type: object
+    required: [requestId, runtimeId, status, models, createdAt, updatedAt]
+    properties:
+      requestId: { type: string, format: uuid }
+      runtimeId: { type: string, format: uuid }
+      status: { $ref: '#/schemas/ModelDiscoveryStatus' }
+      models:
+        type: array
+        maxItems: 100
+        items: { $ref: '#/schemas/RuntimeModel' }
+      error: { $ref: '#/schemas/ModelDiscoveryError' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  RunLifecyclePayload:
+    type: object
+    description: |
+      The browser-safe Run lifecycle projection shared by queued, dispatched,
+      running, waiting, and terminal realtime events. It deliberately has no
+      raw `error`; provider output can therefore never enter the browser
+      realtime lane through generic serialization.
+
+      Every nullable field here is **explicitly `null`** when it has no value,
+      never absent — the projection is complete on every surface that carries
+      it.
+
+      The immutable `revision` is the Task input revision for task Runs and the
+      Conversation input revision for direct_chat/schedule Runs. Legacy unknown
+      inputs are null. It is not a lifecycle version or a cancellation token;
+      lifecycle concurrency uses atomic status transitions.
+    required:
+      - runType
+      - revision
+      - source
+      - id
+      - companyId
+      - agentId
+      - taskId
+      - taskExecutionGeneration
+      - conversationId
+      - runtimeId
+      - provider
+      - status
+      - attempt
+      - maxAttempts
+      - parentRunId
+      - triggerMessageId
+      - failureReason
+      - failureMessage
+      - failureDetail
+      - waitReason
+      - transcriptThroughSeq
+      - createdAt
+      - updatedAt
+      - fireAt
+    properties:
+      runType: {type: string, enum: [task, direct_chat, schedule]}
+      revision:
+        type: [integer, 'null']
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+        description: Frozen source revision; retries inherit it. Null when historically unknown.
+      source:
+        oneOf:
+          - {$ref: '#/schemas/RunSource'}
+          - {type: 'null'}
+      id:
+        {"type": "string", "format": "uuid", "description": "Database-generated Run UUID."}
+      companyId: { type: string, format: uuid }
+      agentId:
+        type: string
+        format: uuid
+        description: |
+          The agent executing the run. An id, not an embedded ref — the agent
+          roster is a cached collection every client already holds, so the row
+          joins client-side against the cache slot the roster filled.
+      taskId:
+        type: [string, "null"]
+        format: uuid
+        description: '`null` for a direct-conversation run.'
+      taskExecutionGeneration:
+        type: [integer, "null"]
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+        description: |
+          The Task execution generation frozen into this Run, or `null` for a
+          non-Task Run. Manual workspace acceptance echoes this value so the
+          server can reject a review that belongs to an older generation.
+      conversationId:
+        type: string
+        format: uuid
+        description: Always present — a run always belongs to a conversation.
+      runtimeId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The runtime the run is placed on, for the member who registered
+          that runtime: every Run executes on its authorizer's own binding
+          (ADR 0014), and that machine is theirs alone. `null` for every
+          other reader, and on every `run.*` realtime frame, which reaches
+          more readers than the registrant. The registrant resolves it
+          against their own runtimes roster.
+      provider:
+        type: string
+        enum: [claude, codex]
+        description: |
+          The runtime's provider, carried on the run so a surface can name
+          it ("Runs with Codex", "Codex has hit its usage limit") without
+          joining the runtimes roster.
+      status: { $ref: './_common.yaml#/schemas/RunStatus' }
+      attempt:
+        type: integer
+        format: int32
+        example: 1
+        description: 1-based. A retry child starts at the parent's attempt + 1.
+      maxAttempts:
+        type: integer
+        format: int32
+        example: 3
+        description: |
+          The ceiling this run may reach, derived from `failureReason`: a
+          transient provider stream cut earns three attempts, every other
+          retryable reason two, and a run that has not failed reports the
+          generic ceiling. A failure the auto-retry path will not act on
+          reports the run's own `attempt` as the ceiling, so
+          `attempt == maxAttempts` always reads as final and a client never
+          waits for a child that is not coming; the ceiling is never below
+          `attempt`, so a third attempt earned by two stream cuts reads as
+          3 of 3, not 3 of 2. It is computed rather than
+          stored — the server has no `max_attempts` column — so a client
+          still renders "attempt 2 of 3" from `attempt`/`maxAttempts`
+          instead of hard-coding the number.
+      parentRunId:
+        {"type": ["string", "null"], "format": "uuid", "description": "Set only on a server-created retry child. Whether a failed run got a\nretry is read from the child's linkage, not from a flag on the\nparent.\n"}
+      triggerMessageId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The run's own first `user_message` conversation item — the words this
+          run was started on. Still a UUID: conversation items keep uuid
+          identity even though runs do not.
+
+          `null` for a run that has no words of its own: a server-created retry
+          child (follow `parentRunId` to reach the original) and an assignment
+          run.
+
+          The reverse edge is now `Message.runId`, present on **every** item,
+          so a client can also reach this from the message side.
+      transcriptThroughSeq:
+        type: integer
+        format: int64
+        minimum: 0
+        description: |
+          PostgreSQL's authoritative durable transcript cursor for this Run —
+          the conversation `seq` of the newest item committed to it. Lifecycle
+          events carry the same value. A client with a verified complete prefix
+          can converge against it, but merely observing the largest seq does
+          not prove earlier items arrived. Recover uncertain coverage through
+          the owning Conversation's transcript endpoint; filtered numeric gaps
+          alone do not indicate loss.
+      failureReason:
+        type: [string, "null"]
+        description: |
+          Coarse classifier. **Open set** — the column carries no check
+          constraint and new reasons ship without an API change. Match on the
+          prefix before the dot and always keep a fallback branch.
+      failureMessage:
+        type: [string, "null"]
+        description: |
+          The user-facing sentence for `failureReason`, naming `provider`
+          ("Codex has hit its usage limit or run out of credit. Retrying
+          will not help until the plan or balance is topped up."), safe to
+          render as-is. Present exactly when `failureReason` is, and `null`
+          otherwise.
+
+          It exists so a client can explain a failed run from this snapshot
+          alone. `failureReason` is a classifier, not copy, and the raw
+          provider text is only on the authorized `Run` read — so without
+          this every surface would invent its own wording from an enum and
+          they would drift.
+
+          Server-owned and not a stable contract: the wording may change to
+          read better without an API version bump, and a reason Zenith Team has
+          not classified yet resolves to a generic sentence rather than
+          nothing. Branch on `failureReason`, display `failureMessage`, then
+          `failureDetail`.
+      failureDetail:
+        type: [string, "null"]
+        maxLength: 320
+        description: |
+          The provider's or daemon's own words for the failure, as one
+          bounded, cleaned line: the part a sentence per reason cannot carry
+          ("… try again at Sep 22nd, 2026 11:27 AM.", the rejected model
+          name, a billing link). Derived from the raw failure text at read
+          time — JSON envelopes reduced to their message, whitespace
+          collapsed, cut at a word boundary — and the daemon's bounded
+          `run.preparation_failed.<phase>` codes replaced by a plain
+          sentence for the phase. Present when `failureReason` is and the
+          run recorded any text; `null` otherwise. Render it under
+          `failureMessage`; never parse it.
+      waitReason:
+        type: [string, "null"]
+        description: |
+          `local_directory_busy` while waiting for a local path, or
+          `studio_auth_required` while a running Studio command waits for sign-in.
+          Host paths remain daemon-local. Cleared on resume and on failure.
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt:
+        description: |
+          The authoritative mutation clock, and the run's only timestamp
+          besides `createdAt`. Every lifecycle write moves it, so for a run in
+          a given status it is when the run entered that status: a dispatched
+          run's claim time, a terminal run's finish time. Who caused the
+          transition, and the ones before this one, are the activity stream's
+          to answer — the row carries state, not a history.
+        $ref: './_common.yaml#/schemas/Timestamp'
+      fireAt:
+        description: |
+          When a `deferred` run becomes claimable — the backoff deadline of a
+          retry child. `null` in every other status.
+
+          This is the answer to "when will it try again". A client that does
+          not have it can only poll, because the delay is a per-reason server
+          decision.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      queuedAt:
+        type: [string, "null"]
+        format: date-time
+        description: When the Run entered the claimable queue.
+      claimedAt:
+        type: [string, "null"]
+        format: date-time
+        description: When a Runtime claimed the Run.
+      startedAt:
+        type: [string, "null"]
+        format: date-time
+        description: When provider execution started.
+      finishedAt:
+        type: [string, "null"]
+        format: date-time
+        description: When the Run reached a terminal state.
+      durationMs:
+        type: [integer, "null"]
+        format: int64
+        description: "finishedAt - startedAt, when both are known."
+
+  TerminalRunLifecyclePayload:
+    allOf:
+      - $ref: '#/schemas/RunLifecyclePayload'
+      - type: object
+        description: |
+          A committed terminal Run snapshot. `transcriptThroughSeq` names the
+          exact durable transcript prefix at the transition; clients accept
+          terminal convergence only when it matches.
+        required: [status, transcriptThroughSeq, updatedAt]
+        properties:
+          status:
+            type: string
+            enum: [completed, failed, cancelled]
+          transcriptThroughSeq:
+            type: integer
+            format: int64
+            minimum: 0
+          updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  Run:
+    allOf:
+      - $ref: '#/schemas/RunLifecyclePayload'
+      - type: object
+        description: |
+          The authorized user-plane REST projection used by the runs surface
+          and composed task-workspace responses. It extends the browser-safe
+          lifecycle snapshot with raw terminal failure text.
+        required: [error]
+        properties:
+          error:
+            type: [string, "null"]
+            description: |
+              Free-form provider failure text, or the fixed cancellation
+              marker: `user_cancelled` when a person cancelled it, or the
+              reason the server cancelled it — for example
+              `project_access_revoked` when the member the Run works for
+              lost `project.read` or `project.tasks.execute` on its Project
+              (ADR 0017), or `task_deleted` when a Company Plan apply deleted
+              its task. Returned verbatim here, and explicitly `null` when
+              the run has none; a Run that failed with a server-side
+              `failureReason` such as `no_eligible_resolver` has none. The typed realtime snapshot has no
+              `error` field, so this authorized read is the only browser
+              surface that can obtain it.
+          usageRestricted:
+            type: boolean
+            description: Whether this viewer lacks permission to read this Run's token and cost counters.
+          usage:
+            oneOf:
+              - $ref: '#/schemas/RunUsageSummary'
+              - { type: "null" }
+            description: Per-Run token and reported-cost evidence for authorized readers.
+
+  RunUsageSummary:
+    type: object
+    required: [inputTokens, outputTokens, cacheReadTokens, cacheWriteTokens]
+    properties:
+      inputTokens: { type: string, pattern: '^[0-9]+$' }
+      outputTokens: { type: string, pattern: '^[0-9]+$' }
+      cacheReadTokens: { type: string, pattern: '^[0-9]+$' }
+      cacheWriteTokens: { type: string, pattern: '^[0-9]+$' }
+      costUsdTicks: { type: [string, "null"], pattern: '^[0-9]+$' }
+
+  RunTranscriptEntry:
+    type: object
+    description: |
+      One immutable provider-neutral item in a Conversation's transcript.
+      Provider-native envelopes never cross this interface. Every row carries
+      `runId` because the Conversation route spans Runs; live
+      `run.message_created` payloads add Conversation routing context. The canonical
+      `{itemKey, role, parts}` item accepted by the write seam is limited to
+      2 MiB (2,097,152 bytes); content is never silently truncated.
+
+      The Run's own `user_message` item is **not** a transcript entry: it
+      carries no provider parts and no digest, and it is read from the chat
+      surface instead.
+    required: [id, runId, seq, itemKey, role, parts, itemDigest, createdAt]
+    properties:
+      id: { type: string, format: uuid }
+      runId:
+        {"type": "string", "format": "uuid", "description": "The Run that produced this provider item."}
+      seq:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 41
+        description: |
+          The item's position in its **Conversation's** sequence, assigned by
+          PostgreSQL under the conversation row lock. Ascending within the
+          Run and never reused, but not dense: a user message sent while the
+          Run works takes a number in between, so a transcript's `seq` values
+          are a subsequence of the conversation's. Ordering and catch-up
+          cursor; not a per-Run ordinal and not a global event sequence.
+      itemKey:
+        type: string
+        description: |
+          Stable provider item identity within this Run. A replay with the same
+          key and normalized content returns the existing row; different content
+          conflicts. This is not a generic idempotency key.
+        minLength: 1
+        maxLength: 512
+      role:
+        type: string
+        description: |
+          A display label derived on read from the item's stored type, not a
+          round trip of what the daemon sent: the stream stores `type`,
+          because type is what decides visibility. `tool_result` items read
+          back as `tool` and everything else as `agent`, so a read never
+          returns `system` even though the write seam accepts it.
+        enum: [agent, tool, system]
+      parts:
+        type: array
+        minItems: 1
+        maxItems: 128
+        items: { $ref: '#/schemas/RunItemPart' }
+      itemDigest:
+        type: string
+        pattern: '^[0-9a-f]{64}$'
+        description: SHA-256 of one canonical normalized item, not a transcript hash chain or proof of earlier-item delivery.
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  RunItemPart:
+    oneOf:
+      - $ref: '#/schemas/RunTextPart'
+      - $ref: '#/schemas/RunReasoningPart'
+      - $ref: '#/schemas/RunToolCallPart'
+      - $ref: '#/schemas/RunToolResultPart'
+      - $ref: '#/schemas/RunErrorPart'
+
+  RunTextPart:
+    type: object
+    additionalProperties: false
+    required: [type, text]
+    properties:
+      type: { const: text }
+      text: { type: string, minLength: 1 }
+      final: { type: boolean, description: Explicit provider confirmation that this text is a final answer. }
+
+  RunReasoningPart:
+    type: object
+    additionalProperties: false
+    required: [type, text]
+    properties:
+      type: { const: reasoning }
+      text: { type: string, minLength: 1 }
+
+  RunToolCallPart:
+    type: object
+    additionalProperties: false
+    required: [type, callId, name]
+    properties:
+      type: { const: toolCall }
+      callId: { type: string, minLength: 1, maxLength: 512 }
+      name: { type: string, minLength: 1, maxLength: 512 }
+      input:
+        type: object
+        additionalProperties: true
+
+  RunToolResultPart:
+    type: object
+    additionalProperties: false
+    required: [type, callId]
+    properties:
+      type: { const: toolResult }
+      callId: { type: string, minLength: 1, maxLength: 512 }
+      name: { type: string, maxLength: 512 }
+      output: { type: string }
+      status:
+        type: string
+        enum: [in_progress, completed, failed, declined, cancelled]
+      exitCode:
+        type: integer
+        format: int64
+        minimum: 0
+      durationMs:
+        type: integer
+        format: int64
+        minimum: 0
+
+  RunErrorPart:
+    type: object
+    additionalProperties: false
+    required: [type, text]
+    properties:
+      type: { const: error }
+      text: { type: string, minLength: 1 }
+
+  Runtime:
+    type: object
+    description: |
+      The user-plane runtime projection: one of the **caller's own**
+      machines. Runtimes are created and kept alive over the daemon plane;
+      the user-plane writes are the machine rename (`customName`) and the
+      registrant's removal (`DELETE`, `POST …/remove`), after which the row
+      is gone from every read.
+
+      Every runtime is private to the member who registered it (ADR 0014):
+      only the registrant's own authorized Runs execute on it, and only the
+      registrant sees, renames, removes or probes it. Another member's
+      machine is invisible — absent from the list, `404` by id — whatever
+      the caller's company role.
+
+      No general `revision`: the rename is a last-writer-wins set of one
+      display field, and the removal moves or drops the caller's own
+      bindings. `updatedAt` is the freshness signal, and `lastSeenAt` is the
+      liveness one.
+    required:
+      - id
+      - companyId
+      - daemonId
+      - name
+      - customName
+      - provider
+      - status
+      - unusableReason
+      - signIn
+      - providerVersion
+      - cliVersion
+      - launchedBy
+      - createdAt
+      - updatedAt
+    properties:
+      tools:
+        type: array
+        items: { $ref: "#/schemas/ToolObservation" }
+        description: Sanitized installation and company sign-in observations from the runtime computer.
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      daemonId:
+        type: string
+        description: |
+          The registering daemon's persistent id. One laptop running both
+          providers registers **two** runtimes that share this value, so it is
+          the only key that groups a roster by machine. Always present: every
+          runtime is registered by a machine, and it is half of the natural
+          identity the registration upsert arbitrates on.
+      name:
+        type: string
+        description: |
+          The daemon's submitted name; when blank the **server** substitutes
+          `provider` or `"<provider> (<deviceName>)"`. Never overwritten by a
+          rename — clearing `customName` restores it.
+      customName:
+        type: [string, "null"]
+        description: |
+          The name a person gave the machine through
+          `PATCH …/runtimes/{runtimeId}`, or `null` when nobody renamed it.
+          Sits beside `name` rather than replacing it, so a re-registration
+          cannot undo the rename; render `customName ?? name`. Every runtime
+          the same daemon registered shares it when the rename applied to
+          the machine.
+      provider:
+        type: string
+        description: |
+          One of the server's supported providers. Registration accepts the
+          value only as an exact, case-sensitive match, and PostgreSQL
+          enforces the same closed vocabulary.
+        enum: [claude, codex]
+      status:
+        description: |
+          Set by registration, heartbeats, deregistration, and the stale
+          sweeper.
+        $ref: './_common.yaml#/schemas/RuntimeStatus'
+      unusableReason:
+        description: |
+          Why this machine's provider CLI cannot run work — below the minimum
+          version, or not executable — or `null` for an ordinary row. Present
+          only while `status` is `offline` (the constraint is structural: a
+          heartbeat cannot bring an unusable runtime online), and cleared by
+          the daemon's next registration once the CLI is fixed. This is the
+          difference the roster draws between "machine off" and "machine on,
+          CLI broken": the recovery is on that machine, not a wake-up.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/RuntimeUnusableReason' }
+          - { type: "null" }
+      signIn:
+        description: |
+          Whether the provider CLI on this machine is signed in, as the daemon
+          last checked it, or `null` when no registration has carried a
+          verdict yet (a daemon older than the probe). Rosters and pickers
+          show it beside the version so a person does not start a run on a
+          signed-out provider; `POST …/refresh` asks the daemon to look again.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/RuntimeSignIn' }
+          - { type: "null" }
+      owner:
+        description: |
+          The member whose machine this is, resolved from the registering
+          principal — always the caller on a served row. `null` when the
+          registration carried no user.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/ActorRef' }
+          - { type: "null" }
+      deviceInfo:
+        type: string
+        description: |
+          The daemon's self-reported device string, verbatim and unparsed. A
+          display label, not a structure.
+      providerVersion:
+        type: string
+        description: |
+          The provider CLI version the daemon probed at registration (for
+          example the `claude` or `codex` binary's version). Empty when the
+          daemon reported none — a row registered before versions were
+          announced, or a probe that found no version string.
+      cliVersion:
+        type: string
+        description: |
+          The `zen` CLI/daemon version that registered the runtime. Empty
+          when the daemon reported none.
+      launchedBy:
+        type: string
+        description: |
+          `desktop` when the desktop app spawned the daemon, `cli` for a
+          daemon started from a terminal. The daemon announces only the
+          desktop case; the server names everything else `cli`, so a client
+          never branches on an empty string.
+        enum: [desktop, cli]
+      lastSeenAt:
+        description: |
+          Last heartbeat. Nullable in the schema, but every write path stamps
+          it, so it is present on every row a client can see. A runtime is
+          swept to `offline` once this falls behind the stale threshold.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  RuntimeAccess:
+    type: object
+    description: |
+      The viewer's server-derived standing on an Agent through their own
+      binding, so a client never reconstructs permission from a role.
+      `execute` is true when the viewer has set the Agent up on one of
+      their runtimes and that runtime is online, usable and signed in
+      (ADR 0014) — the same fact the Agent's `runtimeAvailable` carries.
+    required: [execute]
+    properties:
+      execute: { type: boolean }
+
+  RuntimeRenameRequest:
+    type: object
+    additionalProperties: false
+    description: |
+      The machine rename. `customName` is always sent: the server trims it,
+      and the empty string clears the custom name (there is no `null` — a
+      client that means "clear" says so with `""`). `applyToMachine` renames
+      every runtime the same daemon registered in the company; omitted or
+      `false` renames the one row the path names.
+    required: [customName]
+    properties:
+      customName:
+        type: string
+        maxLength: 100
+        description: Trimmed by the server; at most 100 characters; `""` clears.
+      applyToMachine:
+        type: boolean
+        default: false
+        description: Rename every runtime of the same machine, not only this row.
+
+  RuntimeRemovalInput:
+    type: object
+    additionalProperties: false
+    description: |
+      Where the caller's bindings on the removed runtime go.
+      `targetRuntimeId` names another runtime the caller registered, of the
+      same provider; `null` drops the bindings and cancels the caller's
+      queued Runs on the machine. The runtime being removed is refused with
+      `422 validation_failed`.
+    required: [targetRuntimeId]
+    properties:
+      targetRuntimeId:
+        type: [string, "null"]
+        format: uuid
+        description: The runtime the caller's bindings move to, or `null` to drop them.
+
+  RuntimeRemoval:
+    type: object
+    description: |
+      The removal receipt: what was removed, how many of the caller's
+      bindings moved, how many queued and deferred Runs followed them, and
+      how many were cancelled because the bindings were dropped. Not a
+      projection — the row is gone from every read.
+    required: [removedRuntimeId, movedBindingCount, retargetedRunCount, cancelledRunCount]
+    properties:
+      removedRuntimeId: { type: string, format: uuid }
+      movedBindingCount:
+        type: integer
+        format: int64
+        minimum: 0
+        description: The caller's bindings now on the target.
+      retargetedRunCount:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Queued and deferred Runs now waiting on the target.
+      cancelledRunCount:
+        type: integer
+        format: int64
+        minimum: 0
+        description: Queued and deferred Runs cancelled because no target was named.
+
+  PublicationSubdomainInput:
+    type: object
+    additionalProperties: false
+    required: [subdomain, expectedRevision]
+    properties:
+      subdomain:
+        type: string
+        minLength: 2
+        maxLength: 63
+        description: A DNS label under the configured base domain. Normalized to lowercase; reserved names and consecutive hyphens are rejected. A claimed name cannot be changed.
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  PublicationSubdomainOptions:
+    type: object
+    additionalProperties: false
+    required: [baseDomain, canSet]
+    properties:
+      baseDomain: { type: string }
+      canSet: { type: boolean }
+
+  RunSource:
+    type: object
+    additionalProperties: false
+    required: [id, type, key, title]
+    properties:
+      id: {type: string, format: uuid}
+      type: {type: string, enum: [task, conversation]}
+      key: {type: [string, 'null']}
+      title: {type: [string, 'null']}
+    description: Immutable enqueue-time source identity and labels, retained after deletion.
+
+  ToolObservation:
+    description: Shared tool installation or one Agent authentication profile on this runtime. Unscoped rows carry no authenticated state. Select auth by tool key and agentId.
+    type: object
+    additionalProperties: false
+    required: [key, version, state, authState, reasonCode, observedAt]
+    properties:
+      agentId: { type: string, format: uuid }
+      apiOrigin: { type: string, format: uri }
+      key: { type: string, enum: [zenith-studio, hyperframes] }
+      version: { type: string, maxLength: 128, pattern: '^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$' }
+      state: { type: string, enum: [pending, installing, installed, error] }
+      authState: { type: string, enum: [unknown, needs_auth, authenticated, connecting, error, not_required] }
+      reasonCode: { type: string, enum: ["", setup_failed, prerequisites_missing] }
+      observedAt: { type: string, format: date-time }

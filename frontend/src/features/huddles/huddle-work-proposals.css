@@ -1,0 +1,174 @@
+.huddle-sidebar-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.huddle-sidebar-view[hidden] {
+  display: none;
+}
+.huddle-work-proposals {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.huddle-proposals-disclosure,
+.huddle-proposal-target {
+  color: var(--muted-foreground);
+}
+.huddle-proposal-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--workspace-panel-raised-bg, var(--surface-raised));
+  overflow-wrap: anywhere;
+}
+.huddle-proposal-card header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+}
+.huddle-proposal-card header span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--control-hover);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.huddle-proposal-card h3 {
+  margin-top: 16px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.huddle-proposal-target {
+  margin-top: 6px;
+  font-size: 11px;
+}
+.huddle-work-progress {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.huddle-work-progress > p,
+.huddle-work-progress > small {
+  color: var(--muted-foreground);
+}
+.huddle-work-progress .huddle-work-task-state {
+  color: var(--foreground);
+}
+.huddle-work-progress[data-state="running"] > strong,
+.huddle-work-progress[data-state="waiting_for_input"] > strong {
+  color: var(--primary);
+}
+.huddle-work-progress[data-state="failed"] > strong {
+  color: var(--destructive);
+}
+.huddle-work-progress .huddle-proposal-actions {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 8px;
+}
+.huddle-proposal-brief {
+  margin-top: 6px;
+  white-space: pre-wrap;
+}
+.huddle-proposal-card form {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.huddle-proposal-card input,
+.huddle-proposal-card textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+}
+.huddle-proposal-card textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+.huddle-proposal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.huddle-proposal-card [role="alert"] {
+  margin-top: 8px;
+  color: var(--destructive);
+}
+.huddle-sidebar-choice {
+  border-bottom: 2px solid transparent;
+  padding: 8px 2px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.huddle-sidebar-choice[aria-pressed="true"] {
+  border-bottom-color: var(--primary);
+  color: var(--foreground);
+}
+.huddle-proposal-submit-dialog {
+  max-width: 560px;
+  max-height: 85dvh;
+  overflow-y: auto;
+}
+.huddle-proposal-review {
+  display: grid;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.huddle-proposal-review h3 {
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.4;
+  margin-top: 10px;
+}
+.huddle-proposal-summary {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--frame);
+}
+.huddle-proposal-summary .huddle-proposal-target {
+  margin-top: 0;
+}
+.huddle-proposal-summary .huddle-proposal-brief {
+  margin-top: 10px;
+}
+.huddle-proposal-ownership {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 0;
+}
+.huddle-proposal-ownership dt {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.huddle-proposal-ownership dd,
+.huddle-proposal-review label {
+  font-weight: 600;
+}
+.huddle-proposal-review select {
+  padding: 8px 10px;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.huddle-proposal-review [role="alert"] {
+  color: var(--destructive);
+}

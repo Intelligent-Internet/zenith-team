@@ -1,0 +1,16 @@
+/* Keep full-screen layout ownership in the shell. */
+:global(.boardly-workspace-theme) .fullscreen {
+  background: transparent;
+}
+:global(.boardly-workspace-theme) .fullscreen::before {
+  display: none;
+}
+:global(.boardly-workspace-theme[data-boardly-theme]) .fullscreen .body {
+  padding: 8px;
+  background: transparent;
+}
+:global(.boardly-workspace-theme[data-boardly-theme]) .fullscreen .content {
+  height: auto;
+  overflow: hidden;
+  border-radius: 22px;
+}

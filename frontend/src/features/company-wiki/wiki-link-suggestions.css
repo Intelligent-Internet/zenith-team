@@ -1,0 +1,101 @@
+.wk-link-suggestions {
+  position: fixed;
+  z-index: 60;
+  width: min(380px, calc(100vw - 16px));
+  max-height: 334px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--wk-border);
+  border-radius: 10px;
+  background: var(--wk-panel);
+  color: var(--wk-text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  font-size: 13px;
+}
+.wk-link-suggestions__heading,
+.wk-link-suggestions__hint,
+.wk-link-suggestions p {
+  padding: 6px 8px;
+  margin: 0;
+}
+.wk-link-suggestions__heading {
+  font-weight: 600;
+}
+.wk-link-suggestions__hint {
+  color: var(--wk-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--wk-border);
+}
+.wk-link-suggestions [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+.wk-link-suggestions [role="option"] svg {
+  flex-shrink: 0;
+}
+.wk-link-suggestions [role="option"] span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-link-suggestions [role="option"][aria-selected="true"],
+.wk-link-suggestions [role="option"]:hover {
+  background: var(--wk-soft);
+  color: var(--wk-plum);
+}
+.wk-link-suggestions p button {
+  text-decoration: underline;
+}
+
+.wk-link-suggestions__scopes {
+  display: flex;
+  gap: 2px;
+}
+.wk-link-suggestions__scopes button {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--wk-muted);
+  font-weight: 500;
+}
+.wk-link-suggestions__scopes button[aria-selected="true"] {
+  background: var(--wk-soft);
+  color: var(--wk-text);
+}
+.wk-link-suggestions__scopes button:disabled {
+  opacity: 0.45;
+}
+.wk-link-suggestions__trail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-link-suggestions [role="option"] .wk-link-suggestions__text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.wk-link-suggestions__text small {
+  overflow: hidden;
+  color: var(--wk-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wk-link-suggestions [role="option"].is-item {
+  padding-left: 22px;
+}
+.wk-link-suggestions [role="option"] .wk-link-suggestions__more {
+  margin-left: auto;
+  color: var(--wk-muted);
+}

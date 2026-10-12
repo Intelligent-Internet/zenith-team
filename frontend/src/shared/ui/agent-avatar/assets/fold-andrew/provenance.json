@@ -1,0 +1,41 @@
+{
+  "model": "openai/gpt-image-2.5/sunburst/edit",
+  "requestId": "01a0f6fb-d93c-7403-bd5a-ce208b2baddc",
+  "reference": "Approved andrew preview, 2026-10-01",
+  "prompt": "Create a production animation puppet atlas from the supplied approved Fold mascot. Preserve the EXACT character colors, clay texture, prop design and lighting. This is a disassembly sheet, NOT an assembled character.\n1536x1024 transparent RGBA. Exactly six isolated pieces in a rigid 3 columns x 2 rows grid; each cell 512x512 with 40px empty margins; do not cross cell boundaries. No labels, lines, frames, background, floor or shadows.\nTOP LEFT: only the complete rounded square folded-page torso, yellow torso with its tiny navy bow tie below the face area. Face completely blank with restored clay: NO eyes, NO mouth, NO arms, NO hands, NO legs, NO props. Keep folded upper-right corner and reconstruct occluded torso.\nTOP MIDDLE: only two ivory oval eyes with dark glossy pupils, as one isolated pair, horizontally spaced, both eyes open even if reference winks. No face, mouth or body.\nTOP RIGHT: only the small dark curved smile, dimensional clay, no face.\nBOTTOM LEFT: only a yellow welcoming waving arm and open mitten hand extending LEFT. Complete isolated arm with rounded shoulder attachment, no torso, no extra limbs.\nBOTTOM MIDDLE: only a yellow bent arm and hand clutching the closed navy planning notebook on the viewer RIGHT. Complete isolated arm with rounded shoulder attachment, no torso, no extra limbs.\nBOTTOM RIGHT: only two butter yellow stubby clay legs and feet, as a separated pair, no body.\nAll shapes front-facing, coherent same soft studio illumination. Truly transparent around every part, including between feet and around eyes. Preserve ivory eye material and dark mouth. Keep each part well inside its assigned cell.",
+  "processing": "Lossless rectangular alpha crops; 4px margin around 50% alpha bounds.",
+  "crops": [
+    {
+      "part": "body",
+      "crop": "408x415+84+68"
+    },
+    {
+      "part": "eyes",
+      "crop": "349x194+599+197"
+    },
+    {
+      "part": "mouth",
+      "crop": "177x87+1181+273"
+    },
+    {
+      "part": "left",
+      "crop": "387x230+65+614"
+    },
+    {
+      "part": "right",
+      "crop": "337x273+623+629"
+    },
+    {
+      "part": "feet",
+      "crop": "457x189+1030+663"
+    }
+  ],
+  "assets": {
+    "mouth.webp": "620987cc471ec64810aa845b667ab195d3cf7a6fd781c50a15538d45a5d04d02",
+    "body.webp": "33fec7c431411dc846dfaecc7c99a19fa7fbc7e55c607ec32f987dd4bfa2342c",
+    "right.webp": "4a86589ce60ac2e5a9221d23f3edb9f9606ee99c1d8b30d558533fc8a1233263",
+    "left.webp": "2fd995b3ac29b60b8cfcbb2a62e2bbd6c838d5d716bd7959f594df702b118648",
+    "feet.webp": "ae21778d8f7b94e2bface4372938cc4b04cebabb1a692e1d2ef709fad26ff3a5",
+    "eyes.webp": "5e6f8201abc7c80781ff443761a384f4d9d20f7d51b68726b1c3d228b2ac1d79"
+  }
+}

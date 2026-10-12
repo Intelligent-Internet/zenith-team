@@ -1,0 +1,482 @@
+# Personal social API. Authenticated data is always scoped to the current user.
+schemas:
+  SocialPlatform:
+    type: "object"
+    additionalProperties: false
+    required: ["id", "name", "available", "comingSoon", "supportsRemoteRevoke"]
+    properties:
+      id:
+        type: "string"
+      name:
+        type: "string"
+      available:
+        type: "boolean"
+      comingSoon:
+        type: "boolean"
+      supportsRemoteRevoke:
+        type: "boolean"
+  SocialTarget:
+    type: "object"
+    additionalProperties: false
+    required: ["id", "name", "username", "type"]
+    properties:
+      id:
+        type: "string"
+      name:
+        type: "string"
+      username:
+        type: "string"
+      type:
+        type: "string"
+  SocialConnection:
+    type: "object"
+    additionalProperties: false
+    required:
+      [
+        "id",
+        "platform",
+        "displayName",
+        "username",
+        "avatarUrl",
+        "connectedAt",
+        "expiresAt",
+        "status",
+        "revision",
+        "targets",
+        "canPublish",
+      ]
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+      platform:
+        type: "string"
+      displayName:
+        type: "string"
+      username:
+        type: "string"
+      avatarUrl:
+        type: "string"
+      connectedAt:
+        type: "string"
+        format: "date-time"
+      expiresAt:
+        type: ["string", "null"]
+        format: "date-time"
+      status:
+        type: "string"
+      revision:
+        type: "integer"
+        format: "int64"
+      canPublish:
+        type: boolean
+      targets:
+        type: "array"
+        items:
+          "$ref": "#/schemas/SocialTarget"
+  SocialOAuthStartResponse:
+    type: "object"
+    additionalProperties: false
+    required: ["authorizationUrl"]
+    properties:
+      authorizationUrl:
+        type: "string"
+  SocialPlatforms:
+    type: "object"
+    additionalProperties: false
+    required: ["items"]
+    properties:
+      items:
+        type: "array"
+        items:
+          "$ref": "#/schemas/SocialPlatform"
+  SocialConnections:
+    type: "object"
+    additionalProperties: false
+    required: ["items"]
+    properties:
+      items:
+        type: "array"
+        items:
+          "$ref": "#/schemas/SocialConnection"
+  SocialDesktopRequest:
+    type: object
+    additionalProperties: false
+    required: [redirectUri, state]
+    properties:
+      redirectUri: {type: string, maxLength: 200}
+      state: {type: string, minLength: 43, maxLength: 43}
+  SocialPostInput:
+    type: object
+    additionalProperties: false
+    required: [questionId]
+    properties:
+      questionId:
+        type: string
+        format: uuid
+        description: Answered ask_human question containing the exact socialPost preview and a publish decision by the account owner. This is the durable publication identity across retries and Runs.
+  SocialPostReview:
+    type: object
+    additionalProperties: false
+    required: [connectionId, targetId, text]
+    properties:
+      connectionId: {type: string, format: uuid}
+      targetId: {type: string, format: uuid}
+      text: {type: string, maxLength: 63206}
+      attachmentIds:
+        type: array
+        maxItems: 4
+        items: {type: string, format: uuid}
+      connectionRevision: {type: integer, format: int64, readOnly: true}
+      platform: {type: string, readOnly: true}
+      targetName: {type: string, readOnly: true}
+      username: {type: string, readOnly: true}
+      avatarUrl: {type: string, readOnly: true}
+      media:
+        type: array
+        readOnly: true
+        items: {$ref: '#/schemas/SocialMedia'}
+  SocialPost:
+    type: object
+    additionalProperties: false
+    required: [id, platform, targetName, text, status, externalId, url, errorCode, createdAt]
+    properties:
+      id: {type: string, format: uuid}
+      platform: {type: string}
+      targetName: {type: string}
+      text: {type: string}
+      status: {type: string}
+      externalId: {type: string}
+      url: {type: string}
+      errorCode: {type: string}
+      createdAt: {type: string, format: date-time}
+  SocialMedia:
+    type: object
+    additionalProperties: false
+    required: [id, filename, contentType, sizeBytes]
+    properties:
+      id: {type: string, format: uuid}
+      filename: {type: string}
+      contentType: {type: string}
+      sizeBytes: {type: integer, format: int64}
+  SocialReadResult:
+    type: object
+    additionalProperties: false
+    required: [connections, posts, images, videos]
+    properties:
+      connections:
+        type: array
+        items: {$ref: '#/schemas/SocialConnection'}
+      posts:
+        type: array
+        items: {$ref: '#/schemas/SocialPost'}
+      images:
+        type: array
+        items: {$ref: '#/schemas/SocialMedia'}
+      videos:
+        type: array
+        items: {$ref: '#/schemas/SocialMedia'}
+paths:
+  platforms:
+    get:
+      tags: ["social"]
+      operationId: "listSocialPlatforms"
+      summary: "List connection availability for this deployment"
+      responses:
+        200:
+          description: "List connection availability for this deployment."
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/schemas/SocialPlatforms"
+        401:
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        422:
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+  connections:
+    get:
+      tags: ["social"]
+      operationId: "listSocialConnections"
+      summary: "List personal social accounts without credentials"
+      responses:
+        200:
+          description: "List personal social accounts without credentials."
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/schemas/SocialConnections"
+        401:
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        422:
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+  connection:
+    delete:
+      tags: ["social"]
+      operationId: "disconnectSocial"
+      summary: "Revoke supported grants and disconnect a personal social account"
+      responses:
+        204:
+          description: "Revoke supported grants and disconnect a personal social account."
+        401:
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        422:
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        404:
+          description: "Connection not found."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        409:
+          description: "Revision conflict."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        502:
+          description: "Provider request failed."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        503:
+          description: "Platform disabled or not configured."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      parameters:
+        [
+          {
+            "name": "connectionId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" },
+          },
+          {
+            "name": "expected_revision",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 },
+          },
+        ]
+  start:
+    post:
+      tags: ["social"]
+      operationId: "startSocialOAuth"
+      summary: "Start a browser-bound personal social authorization"
+      responses:
+        200:
+          description: "Start a browser-bound personal social authorization."
+          content:
+            "application/json":
+              schema:
+                "$ref": "#/schemas/SocialOAuthStartResponse"
+        401:
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        422:
+          "$ref": "./_common.yaml#/responses/ValidationFailed"
+        404:
+          description: "Connection not found."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        409:
+          description: "Revision conflict."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        502:
+          description: "Provider request failed."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+        503:
+          description: "Platform disabled or not configured."
+          content:
+            "application/json":
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      parameters:
+        [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "schema":
+              {
+                "type": "string",
+                "enum": ["x", "facebook", "instagram", "linkedin"],
+              },
+          },
+        ]
+  callback:
+    get:
+      tags: ["social"]
+      operationId: "completeSocialOAuth"
+      summary: "Consume a single-use authorization and return to Social accounts"
+      responses:
+        303:
+          description: "Consume a single-use authorization and return to Social accounts."
+          headers:
+            Location:
+              description: "Configured web application origin and connection result; never contains credentials."
+              schema:
+                type: "string"
+        404:
+          "$ref": "./_common.yaml#/responses/NotFound"
+      parameters:
+        [
+          {
+            "name": "platform",
+            "in": "path",
+            "required": true,
+            "schema":
+              {
+                "type": "string",
+                "enum": ["x", "facebook", "instagram", "linkedin"],
+              },
+          },
+        ]
+      security: []
+  desktop:
+    parameters:
+      - {name: platform, in: path, required: true, schema: {type: string, enum: [x, facebook, instagram, linkedin]}}
+    post:
+      tags: [social]
+      operationId: startSocialDesktopOAuth
+      summary: Start a single-use browser launch for desktop social authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/SocialDesktopRequest'}
+      responses:
+        '200':
+          description: Browser launch URL; credentials never leave the server.
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/SocialOAuthStartResponse'}
+        '400': {$ref: './_common.yaml#/responses/BadRequest'}
+        '401': {$ref: './_common.yaml#/responses/Unauthorized'}
+        '403': {$ref: './_common.yaml#/responses/Forbidden'}
+        '404': {$ref: './_common.yaml#/responses/NotFound'}
+        '409':
+          description: Human confirmation missing, expired or stale; or connection busy, changed or requiring reconnect.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+        '413': {$ref: './_common.yaml#/responses/PayloadTooLarge'}
+        '415': {$ref: './_common.yaml#/responses/UnsupportedMediaType'}
+        '422': {$ref: './_common.yaml#/responses/ValidationFailed'}
+        '503':
+          description: Platform not enabled or configured.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  launch:
+    parameters:
+      - {name: platform, in: path, required: true, schema: {type: string, enum: [x, facebook, instagram, linkedin]}}
+      - {name: state, in: query, required: true, schema: {type: string}}
+      - {name: ticket, in: query, required: true, schema: {type: string}}
+    get:
+      tags: [social]
+      operationId: launchSocialDesktopOAuth
+      summary: Consume the desktop launch ticket and bind the system browser callback
+      security: []
+      responses:
+        '303':
+          description: Redirect to the provider authorization screen.
+          headers:
+            Location:
+              schema: {type: string}
+        '400': {$ref: './_common.yaml#/responses/BadRequest'}
+        '401': {$ref: './_common.yaml#/responses/Unauthorized'}
+        '403': {$ref: './_common.yaml#/responses/Forbidden'}
+        '404': {$ref: './_common.yaml#/responses/NotFound'}
+        '409':
+          description: Human confirmation missing, expired or stale; or connection busy, changed or requiring reconnect.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+        '413': {$ref: './_common.yaml#/responses/PayloadTooLarge'}
+        '415': {$ref: './_common.yaml#/responses/UnsupportedMediaType'}
+        '422': {$ref: './_common.yaml#/responses/ValidationFailed'}
+        '503':
+          description: Platform not enabled or configured.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  agent:
+    parameters:
+      - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: X-Boardly-Run-Token, in: header, required: true, schema: {type: string}}
+    get:
+      tags: [social]
+      operationId: readAgentSocial
+      summary: Read personal accounts, recent publishing receipts and conversation images/videos for a live direct Run
+      responses:
+        '200':
+          description: Private social resources for the conversation owner.
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/SocialReadResult'}
+        '400': {$ref: './_common.yaml#/responses/BadRequest'}
+        '401': {$ref: './_common.yaml#/responses/Unauthorized'}
+        '403': {$ref: './_common.yaml#/responses/Forbidden'}
+        '404': {$ref: './_common.yaml#/responses/NotFound'}
+        '409':
+          description: Human confirmation missing, expired or stale; or connection busy, changed or requiring reconnect.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+        '413': {$ref: './_common.yaml#/responses/PayloadTooLarge'}
+        '415': {$ref: './_common.yaml#/responses/UnsupportedMediaType'}
+        '422': {$ref: './_common.yaml#/responses/ValidationFailed'}
+        '503':
+          description: Platform not enabled or configured.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+  posts:
+    parameters:
+      - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+      - {name: X-Boardly-Run-Token, in: header, required: true, schema: {type: string}}
+      - {name: Idempotency-Key, in: header, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [social]
+      operationId: publishAgentSocial
+      summary: Publish a human-confirmed social post preview with a durable receipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/schemas/SocialPostInput'}
+      responses:
+        '200':
+          description: Publishing receipt. An unknown outcome must be checked manually before a new publishing attempt.
+          content:
+            application/json:
+              schema: {$ref: '#/schemas/SocialPost'}
+        '400': {$ref: './_common.yaml#/responses/BadRequest'}
+        '401': {$ref: './_common.yaml#/responses/Unauthorized'}
+        '403': {$ref: './_common.yaml#/responses/Forbidden'}
+        '404': {$ref: './_common.yaml#/responses/NotFound'}
+        '409':
+          description: Human confirmation missing, expired or stale; or connection busy, changed or requiring reconnect.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}
+        '413': {$ref: './_common.yaml#/responses/PayloadTooLarge'}
+        '415': {$ref: './_common.yaml#/responses/UnsupportedMediaType'}
+        '422': {$ref: './_common.yaml#/responses/ValidationFailed'}
+        '503':
+          description: Platform not enabled or configured.
+          content:
+            application/json:
+              schema: {$ref: './_common.yaml#/schemas/Error'}

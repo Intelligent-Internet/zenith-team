@@ -1,0 +1,83 @@
+---
+title: Daemon and runtimes
+description: The background process that connects your computer to Zenith Team, and the provider runtimes it registers.
+---
+
+Zenith Team's cloud records the work; your computer executes it. The bridge is the daemon — the process that registers what your machine can run, claims queued [runs](/runs), prepares [workspaces](/workspaces), launches the [provider CLIs](/providers), and streams results back. This page is about connecting a computer and keeping it online; the full run path lives in [How Zenith Team works](/how-zenith-team-works).
+
+## Daemon and runtime
+
+- **The daemon** is the background process on your computer. It holds your Zenith Team sign-in, talks to the server, and owns everything machine-local: workspaces, provider processes, credentials, and paths.
+- **A runtime** is one provider installation that daemon registered for one company — "Claude Code on this laptop, for this company". Runs are dispatched to runtimes, and every [agent](/agents) is bound to exactly one.
+
+The daemon is the machine; the runtime is what the machine offers a company. One laptop running both provider CLIs registers two runtimes per company, and they are the same machine.
+
+## Connecting a computer
+
+The desktop app runs its own bundled daemon — installing and signing in to the app connects the computer with nothing else to do. From a terminal, the same thing is two commands:
+
+```bash
+zen auth login
+zen daemon start
+```
+
+`zen daemon start` detaches by default (`--foreground` keeps it in your terminal) and refuses to start if neither `claude` nor `codex` is installed and on `PATH`. The daemon keeps a persistent identity in `~/.boardly/daemon.id`, so restarting it re-registers the same runtimes instead of creating new ones.
+
+**More than one Codex.** A computer often has several copies of the Codex CLI: one from Homebrew or npm, one inside the ChatGPT app, and one Codex keeps up to date in `~/.codex`. The daemon asks each copy for its version and uses the newest. It keeps the path it found, not the versioned folder behind it, so an upgrade reaches the next run. Installed a newer copy while the daemon runs? Choose **Refresh setup** on the runtime page, or restart the daemon. To choose a copy yourself, set `BOARDLY_CODEX_PATH` to its full path before you start the daemon.
+
+Restarting is safe at any time. `zen daemon restart` first checks that your session still works, then lets in-flight runs finish, waits for the old process to exit, and only then starts the new one. A daemon you started from the terminal also notices when the `zen` binary it runs from is replaced (an upgrade, or a rebuild) and restarts into it once no run is in flight; while it waits, `zen daemon status` shows a `restart pending` line. The desktop app manages its own daemon and restarts it itself when the app updates. Its Settings → Updates & Support page shows the daemon as the **Agent service** card, with its state, the providers it found (with versions) and skipped (with the reason), and lets you start, stop, or restart it and read its log; stopping while runs are in flight asks first, because those runs fail and retry once the daemon is back.
+
+One daemon serves every company you belong to: it syncs your membership list and registers runtimes for each company. When you leave a company the daemon stops serving it — it stops heartbeating that company's runtimes rather than deregistering them, so they fall behind the 150-second staleness threshold and the next sweep marks them offline, within about three minutes; after seven days offline they are cleaned up if no agent or run still references them. Runtimes are unique per company, daemon, and provider — registering again updates the existing runtime rather than adding a duplicate. A provider CLI you install after the daemon started is picked up within about two minutes and registered for every company without a restart; the same goes for one that was on the machine but could not be probed at start. Uninstalling a CLI never deregisters its runtime, and never needs a restart either: within about two minutes the daemon notices the CLI is gone and re-registers what the machine can actually run, so that runtime stops being heartbeated and goes offline the same way — on the roster, offline, about three minutes after the uninstall. Install the CLI again and the same loop brings its runtime back.
+
+A runtime answers only to the machine that registered it. Every request the daemon makes names its machine id, and the server refuses heartbeats, deregistration, and run preparation for a runtime from any other machine — even one signed in as the same person. Another member's daemon cannot take your runtime offline or speak for it.
+
+## Online status and dispatch
+
+Heartbeats decide online and offline. The daemon heartbeats continuously; when a runtime's last-seen clock falls behind the server's 150-second staleness threshold, the server marks it offline and fails its in-flight runs as `runtime_offline` — which is [retried automatically](/runs#failures-and-automatic-retries) once the machine returns. Whether an agent shows as available derives from its runtime's liveness; see [Agents](/agents#availability).
+
+Dispatch is hint-first: when work becomes claimable, the server nudges the daemon over its open connection, and a 30-second poll is the backstop — a lost hint costs one poll, never the run. Claiming a run checks the agent's [task-lane capacity](/runs#lanes-and-capacity) and freezes the run's reviewed [connector contract](/connectors-and-plugins); a run whose reviewed contract is no longer available in full is cancelled rather than dispatched with partial authority.
+
+A queued run does not need the machine to be on. It waits — through a closed laptop, a reboot, an offline week — until its runtime comes back and claims it.
+
+When a machine drops out while it is holding work, Zenith Team says so instead of leaving you to notice the agent has gone quiet: the person who registered the machine gets a [notification](/notifications) — "MacBook Pro went offline with 1 run in flight" — that opens the runtime's page. Nobody has to clear it. The moment the machine registers or heartbeats again, every copy of that notification is marked read and archived on its own, and a later outage raises a fresh one. A demotion that costs no work is silent.
+
+## Your computers are yours
+
+A connection belongs to the person who registered it. Nobody else in the company sees it — not the company owner, not an admin — and nobody else can run anything on it. There is no sharing setting to get wrong: the computer is yours, and only your own work runs there.
+
+That is what makes an agent's setup personal. An agent is a template the whole company shares, and you run it by setting it up on one of your own computers. Your colleague can set the same agent up on theirs; each of you gets the plugins, connections and provider sign-in your own machine provides, and neither of you spends the other's laptop. An agent you have not set up reads **Not set up** in the Agents directory and in a channel's @-mention list, and the Agents list, the chat composer and the task run button offer to set it up rather than failing on send.
+
+When a task runs, it runs on the computer of the member it belongs to — its assignee — and only they can start it. Nobody can hand you work that runs on somebody else's machine, and nobody can start work on yours.
+
+## Naming and removing a runtime
+
+Open **Settings → Runtimes** (Computers & runtimes) and choose **View runtime** on a provider row to see one runtime in full: its provider and CLI versions, whether the desktop app or a terminal started its daemon, who owns the machine, when it was last seen, the other runtimes on the same machine, the agents you set up on it, and the runs active on it.
+
+**Rename** gives the machine a name of your own — "Office Mac" instead of "Claude (duong-macbook)". The name shows everywhere Zenith Team names a runtime and applies to every runtime that machine registered, so both provider rows of one laptop read the same. Clear the name to go back to the daemon's own. Only you can rename your own machine, because only you can see it.
+
+**Remove** takes a runtime off the roster for good — a laptop that is gone, or one you no longer use. Two rules keep it safe. The runtime must be offline, or it registers again moments later: quit Zenith Team on that computer first, or run `zen daemon stop` there if the daemon was started from the command line. For the computer you are using, stop the **Agent service** under **Updates & Support** instead. The runtime page says which one applies — it shows how the computer was launched — and the Remove button stays off until the computer goes offline. If agents are set up on it, the dialog asks what happens to them: move them to another of your computers with the same provider, because an agent keeps its provider, and your queued work moves with them; or remove them, which cancels your queued work there. The agents stay in the company either way, and you can set them up again later. Nobody else's setup is touched, because a computer only ever holds its registrant's. Run history stays readable after a removal, and if the same machine registers the runtime again it simply returns.
+
+## What stays on your machine
+
+- **Provider credentials and sign-in.** You authenticate with the vendor CLIs on your machine; Zenith Team never holds those credentials. See [Providers](/providers#sign-in-and-credentials).
+- **Native provider configuration.** Connector commands, environment values, and install paths stay daemon-local; only sanitized capability catalogs are published. See [Connectors and plugins](/connectors-and-plugins).
+- **Your code and the workspace tree.** The daemon owns the per-company directory tree, and local paths never appear in the product surface. See [Workspaces](/workspaces).
+
+The full table of what Zenith Team stores versus what your computer keeps is in [How Zenith Team works](/how-zenith-team-works#the-data-and-execution-boundary).
+
+## Troubleshooting an offline runtime
+
+Work through these in order on the machine that owns the runtime:
+
+1. **`zen daemon status`** — is the daemon running at all, and what does the `session` line say? `signed out` or `expired` means the daemon cannot authenticate: run `zen auth login`, then `zen daemon restart`.
+2. **`zen daemon logs`** — prints the log file paths and tails the main log (`-f` follows). Registration and heartbeat failures land here with their causes.
+3. **`zen daemon probe-runtimes`** — prints, as JSON, which provider CLIs the daemon can actually resolve. A provider missing from the output is not installed or not on the `PATH` the daemon sees. For Codex, the path shown is the copy a fresh start would use: the newest one it finds now. A daemon that is already running moves to that copy after **Refresh setup** or a restart, and keeps its current copy when the two are the same version.
+4. **Check for an unusable runtime.** A provider the daemon found but cannot run — its CLI is below the minimum version Zenith Team supports, or the binary is not executable — registers as a runtime that shows **Unusable** in the roster with the daemon's reason under it (for example "Codex CLI 0.90.0 is below the minimum 0.100.0"), and `zen daemon status` lists the same provider and reason on its `skipped agents` line. The runtime is offline while the reason stands, heartbeats do not bring it online, and its agents read as unavailable for `runtime_unusable`. The fix is on that machine: upgrade or repair the CLI; the daemon notices within ten minutes, re-registers, and the reason clears on its own.
+5. **Sign in to the provider CLI itself.** A runtime can be online while its provider rejects work — runs then fail with `agent_error.provider_auth_or_access`. When the daemon's own sign-in check caught it, Computers & runtimes and the runtime page show **Not signed in** (or **Sign-in unknown** when the check did not answer), and the runtime page's status reads that instead of a green Online. Re-authenticate with the vendor's own CLI; see [Providers](/providers#sign-in-and-credentials).
+
+## Next steps
+
+- **[Providers](/providers)** — what Codex and Claude Code each support, and how sign-in works.
+- **[Runs](/runs)** — the lifecycle of the work a runtime claims.
+- **[Workspaces](/workspaces)** — the directory tree the daemon prepares for every run.
+- **[Connectors and plugins](/connectors-and-plugins)** — the capability contract frozen at claim.

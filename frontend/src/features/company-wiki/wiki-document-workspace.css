@@ -1,0 +1,273 @@
+.wiki-document-workspace,
+.zen-wiki__prose,
+.zen-wiki__restore-panel {
+  --pc-ink: var(--workspace-native-text);
+  --pc-muted: var(--workspace-native-text-muted);
+  --pc-soft: var(--workspace-native-text-faint);
+  --pc-line: var(--workspace-divider);
+  --pc-paper: var(--workspace-panel-bg);
+  --pc-raised: var(--workspace-panel-raised-bg);
+  --pc-accent: var(--workspace-native-accent);
+}
+.wiki-document-workspace {
+  min-width: 0;
+  min-height: 100%;
+  --wk-border: var(--workspace-divider);
+  --wk-panel: var(--workspace-panel-bg);
+  --wk-text: var(--workspace-native-text);
+  --wk-muted: var(--workspace-native-text-muted);
+  --wk-soft: var(--workspace-panel-raised-bg);
+  --wk-plum: var(--workspace-native-accent);
+}
+.wiki-document-workspace__bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 10px 24px;
+  color: var(--pc-muted);
+  font-size: 12px;
+}
+.wiki-document-workspace__draft-label {
+  flex: none;
+  color: var(--pc-ink);
+  font-weight: 600;
+}
+.wiki-document-workspace__bar > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--pc-line);
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.wiki-document-workspace__bar > button:hover:not(:disabled) {
+  background: var(--pc-raised);
+  color: var(--pc-ink);
+}
+.wiki-document-workspace__status {
+  flex: 1;
+  min-width: 0;
+}
+.wiki-document-workspace__bar .pc-document-status {
+  min-height: 32px;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+}
+.wiki-document-workspace__bar .pc-document-status > button {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wiki-document-workspace__bar
+  .pc-document-status
+  > button:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+}
+.wiki-document-workspace__bar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.wiki-document-workspace__bar button:focus-visible,
+.wiki-document-workspace__details :is(input, select):focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 2px;
+}
+.wiki-document-workspace__details {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  gap: 16px;
+  margin: 0 24px;
+  padding: 12px 0 20px;
+  border-bottom: 1px solid var(--pc-line);
+  font-size: 12px;
+  color: var(--pc-muted);
+}
+.wiki-document-workspace__details label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.wiki-document-workspace__details label > span {
+  font-size: 11px;
+  font-weight: 500;
+}
+.wiki-document-workspace__details input,
+.wiki-document-workspace__details select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 6px 10px;
+  color: var(--pc-ink);
+  border: 1px solid var(--pc-line);
+  border-radius: 6px;
+  background: var(--pc-paper);
+}
+.wiki-document-workspace__details input::placeholder {
+  color: var(--pc-soft);
+}
+@media (max-width: 640px) {
+  .wiki-document-workspace__bar {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 16px;
+  }
+  .wiki-document-workspace__status {
+    flex-basis: 100%;
+  }
+  .wiki-document-workspace__details {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 0 16px;
+  }
+}
+.zen-wiki__prose .pc-block-editor > .tiptap,
+.zen-wiki__restore-panel .pc-block-editor > .tiptap {
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+  font-size: var(--workspace-text-document);
+  line-height: var(--workspace-leading-document);
+}
+/* The Wiki page bar hosts the save state and draft actions, where Save sat
+   in the earlier editor. These render outside the document section, so they
+   use workspace tokens rather than the --pc-* ones. */
+.zen-wiki__draft-slot {
+  display: contents;
+}
+.wiki-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* LiveDocument portals its status header into the slot; both dissolve so
+   the save state, Export PDF and Review and publish share one row. */
+.wiki-draft-actions > div,
+.wiki-draft-actions .pc-document-status {
+  display: contents;
+}
+.wiki-draft-actions .pc-document-status > [role="status"] {
+  order: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.wiki-draft-actions .pc-document-people {
+  order: 2;
+}
+.wiki-draft-actions .pc-document-people:empty {
+  display: none;
+}
+.wiki-draft-actions > button {
+  order: 3;
+}
+.wiki-draft-actions > button,
+.wiki-draft-actions .pc-document-status > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: var(--workspace-control-size);
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.wiki-draft-actions > button:hover:not(:disabled) {
+  background: var(--workspace-panel-raised-bg);
+}
+.wiki-draft-actions .pc-document-status > button {
+  order: 4;
+  border-color: var(--workspace-accent-fill);
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  font-weight: 600;
+}
+.wiki-draft-actions .pc-document-status > button:hover:not(:disabled) {
+  background: var(--workspace-accent-hover);
+}
+.wiki-draft-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* The draft heading mirrors the published page: collection, title, status. */
+.wiki-draft-heading {
+  display: grid;
+  gap: 8px;
+}
+.wiki-draft-heading__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--pc-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 650;
+}
+.wiki-draft-heading__eyebrow select {
+  max-width: 220px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.wiki-draft-heading__eyebrow select:hover:not(:disabled) {
+  background: var(--pc-raised);
+}
+.wiki-draft-heading__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--pc-muted);
+  font-size: var(--workspace-text-caption);
+}
+.wiki-draft-heading__meta span + span::before {
+  content: "·";
+  margin-right: 8px;
+}
+.wiki-draft-heading__badge {
+  border: 1px solid var(--pc-line);
+  border-radius: 4px;
+  padding: 0 5px;
+  background: var(--pc-raised);
+  font-size: 10px;
+}
+.wiki-draft-heading__editing {
+  color: var(--pc-accent);
+  font-weight: 600;
+}
+.wiki-draft-heading__summary {
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--pc-ink);
+  font-size: var(--workspace-text-body);
+}
+.wiki-draft-heading__summary::placeholder {
+  color: var(--pc-soft);
+}
+.wiki-draft-heading__summary:focus-visible {
+  outline: none;
+  border-bottom-color: var(--pc-line);
+}

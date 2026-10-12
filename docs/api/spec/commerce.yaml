@@ -1,0 +1,1125 @@
+# Authored Commerce-domain section of the Zenith Team API contract. Company-facing
+# Stripe Connect setup, Task-authored manifests, and the thin Site Commerce
+# gateway share this file because they are one end-to-end authority boundary.
+
+paths:
+  companies_companyId_commerce_summary:
+    get:
+      tags: [commerce]
+      operationId: getCommerceSummary
+      summary: Read owner-facing Stripe Connect and Commerce terms state
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Current Commerce terms and both environment projections.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceSummary' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_account_status:
+    get:
+      tags: [commerce]
+      operationId: getCommerceAccountStatus
+      summary: Read provider-free Commerce integration readiness
+      description: Member route. Omits Stripe ids, publishable keys, and legal document URLs.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Readiness facts a Task may use before authoring a manifest.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceIntegrationReadiness' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_terms_acceptances:
+    post:
+      tags: [commerce]
+      operationId: acceptCommerceTerms
+      summary: Accept the current Commerce Addendum
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceTermsAcceptanceRequest' }
+      responses:
+        '200':
+          description: Exact acceptance replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceTermsAcceptanceResult' }
+        '201':
+          description: Addendum accepted.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceTermsAcceptanceResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`commerce_terms_outdated` or `commerce_terms_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_accounts_environment_account_session:
+    post:
+      tags: [commerce]
+      operationId: createCommerceAccountSession
+      summary: Create an in-memory Stripe Connect embedded-component session
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/commerceEnvironment'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceCommandRequest' }
+      responses:
+        '200':
+          description: Ephemeral account session. The client secret is never persisted by Zenith Team.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceAccountSession' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Stripe setup, account conflict, or reconciliation is required.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_accounts_environment_onboarding_link:
+    post:
+      tags: [commerce]
+      operationId: createCommerceOnboardingLink
+      summary: Create a short-lived hosted Stripe onboarding link
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/commerceEnvironment'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceCommandRequest' }
+      responses:
+        '200':
+          description: Short-lived provider link.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceOnboardingLink' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Stripe setup, account conflict, or reconciliation is required.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_accounts_environment_dashboard_link:
+    post:
+      tags: [commerce]
+      operationId: createCommerceDashboardLink
+      summary: Create an account-scoped full Stripe Dashboard link
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/commerceEnvironment'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceCommandRequest' }
+      responses:
+        '200':
+          description: Account-scoped Stripe Dashboard navigation link. Stripe authenticates the Connected Account owner.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceDashboardLink' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Stripe setup, account conflict, or reconciliation is required.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_manifests:
+    get:
+      tags: [commerce]
+      operationId: listCommerceManifests
+      summary: List owner-reviewable Commerce manifests
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: Manifest review seek page, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceManifestPage' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    post:
+      tags: [commerce]
+      operationId: submitCommerceManifest
+      summary: Submit a Task-authored Commerce manifest
+      description: |
+        Member route, but only a live Task Run can call it. The signed Run
+        token supplies company, conversation, Task, Agent, and Run authority;
+        none of those ids are caller-authored JSON. `Idempotency-Key` is a UUID
+        bound to that Run. An exact replay returns the original manifest.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/runToken'
+        - $ref: '#/parameters/idempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceManifestSubmissionRequest' }
+      responses:
+        '201':
+          description: Draft created or exact submission replayed.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceManifestSubmission' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`commerce_manifest_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_manifests_manifestId:
+    get:
+      tags: [commerce]
+      operationId: getCommerceManifest
+      summary: Read one manifest from an authorized Run for the same Task
+      description: |
+        The live Run token supplies the current Task and Conversation. The
+        manifest must belong to that exact pair, so the original Run and the
+        automatic continuation Run can both read it without widening access.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/manifestId'
+        - $ref: '#/parameters/runToken'
+      responses:
+        '200':
+          description: Provider-free manifest state.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceManifestStatus' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`commerce_manifest_not_found`, including a malformed id.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_commerce_manifests_manifestId_approve_publish:
+    post:
+      tags: [commerce]
+      operationId: approveCommerceManifest
+      summary: Approve and publish a reviewed Commerce catalog
+      description: |
+        Publishes the exact immutable manifest digest. Successful activation
+        resolves and closes its companion `commerce_manifest_publish`
+        Approval and opens a durable continuation receipt; Zenith Team then
+        enqueues a new Run for the originating Task automatically.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/manifestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceManifestApprovalRequest' }
+      responses:
+        '200':
+          description: Active manifest, including an exact publish replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceManifestStatus' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: '`authentication_required` or `owner_reauthentication_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`commerce_manifest_not_found`, including a malformed id.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Manifest state, companion Approval/digest, missing local signing key, Site authority, or gateway operation conflict.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_sites_siteId_signing_keys_sync:
+    post:
+      tags: [commerce]
+      operationId: syncCommerceSiteSigningKeys
+      summary: Synchronize a Site's public request-signing key
+      description: |
+        Requires `commerce.manage` — a rotation command. Zenith Team fetches the Site's fixed
+        well-known verification document through its hardened public-network
+        client, validates the exact manifest proof and ES256/P-256 JWK, makes
+        the new key active, and keeps the prior active key retiring for the
+        configured overlap window. Private key material never enters Zenith Team.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/siteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceCommandRequest' }
+      responses:
+        '200':
+          description: Current signing-key lifecycle projection.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceSiteSigningKeyPage' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`commerce_site_not_found`, including a malformed or foreign Site id.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: The Site authority proof or key lifecycle conflicts with current state.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_commerce_sites_siteId_signing_keys_keyId_revoke:
+    post:
+      tags: [commerce]
+      operationId: revokeCommerceSiteSigningKey
+      summary: Revoke a Site request-signing key immediately
+      description: |
+        Requires `commerce.manage` — a emergency command. Revocation takes effect immediately;
+        Zenith Team rejects subsequent request proofs for the key even if a normal
+        rotation overlap would otherwise still be open.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/siteId'
+        - $ref: '#/parameters/signingKeyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CommerceCommandRequest' }
+      responses:
+        '200':
+          description: Revoked signing-key projection, including an exact replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceSiteSigningKeyResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`commerce_site_not_found` or `commerce_signing_key_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: The requested key cannot be reconciled with current Site state.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  site_commerce_jwks:
+    get:
+      tags: [commerce]
+      operationId: getSiteCommerceJWKSet
+      summary: Read public keys for Site Commerce entitlement assertions
+      security: []
+      responses:
+        '200':
+          description: Current public signing-key set.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceJWKSet' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  site_commerce_challenges:
+    post:
+      tags: [commerce]
+      operationId: createSiteCommerceChallenge
+      summary: Create a one-time proof-of-possession challenge
+      description: |
+        Public server-to-server endpoint. The opaque nonce expires after 60
+        seconds and is bound to the exact Site, operation, and Checkout or
+        Customer Portal action. A valid Site-signed request consumes it once.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SiteCommerceChallengeRequest' }
+      responses:
+        '201':
+          description: Short-lived one-time challenge.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SiteCommerceChallenge' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '404':
+          description: '`commerce_site_not_found`, including an inactive or malformed Site id.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: '`commerce_rate_limited`; carries `Retry-After`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  site_commerce_checkout_sessions:
+    post:
+      tags: [commerce]
+      operationId: createSiteCommerceCheckoutSession
+      summary: Create a hosted Checkout session for the authenticated Site customer
+      security: []
+      parameters:
+        - $ref: '#/parameters/siteRequestProof'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SiteCommerceCheckoutRequest' }
+      responses:
+        '200':
+          description: Hosted Stripe redirect.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceHostedRedirect' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Commerce operation is in progress or requires reconciliation.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: '`commerce_rate_limited`; carries `Retry-After`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  site_commerce_portal_sessions:
+    post:
+      tags: [commerce]
+      operationId: createSiteCommercePortalSession
+      summary: Create a hosted billing-portal session for the authenticated Site customer
+      security: []
+      parameters:
+        - $ref: '#/parameters/siteRequestProof'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SiteCommercePortalRequest' }
+      responses:
+        '200':
+          description: Hosted Stripe redirect.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceHostedRedirect' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`commerce_customer_not_found`; the subject has not completed a Checkout.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Commerce operation is in progress or requires reconciliation.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: '`commerce_rate_limited`; carries `Retry-After`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  site_commerce_entitlements_verify:
+    post:
+      tags: [commerce]
+      operationId: verifySiteCommerceEntitlements
+      summary: Verify current entitlements for the authenticated Site customer
+      security: []
+      parameters:
+        - $ref: '#/parameters/siteRequestProof'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Current entitlement set and short-lived signed assertion.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceEntitlementVerification' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '409':
+          description: Site customer or Commerce operation state conflicts with durable authority.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: '`commerce_rate_limited`; carries `Retry-After`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  webhooks_stripe_commerce:
+    post:
+      tags: [commerce]
+      operationId: receiveCommerceWebhook
+      summary: Accept one signed Stripe Commerce event
+      description: The raw body is authenticated by `Stripe-Signature`; no Zenith Team session is read.
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 8192 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Event processed or exact provider replay acknowledged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CommerceWebhookReceipt' }
+        '400':
+          description: '`commerce_webhook_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: '`commerce_webhook_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+parameters:
+  commerceEnvironment:
+    name: environment
+    in: path
+    required: true
+    schema: { $ref: '#/schemas/CommerceEnvironment' }
+  manifestId:
+    name: manifestId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  siteId:
+    name: siteId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  signingKeyId:
+    name: keyId
+    in: path
+    required: true
+    schema: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+  runToken:
+    name: X-Boardly-Run-Token
+    in: header
+    required: true
+    schema: { type: string, minLength: 1 }
+  idempotencyKey:
+    name: Idempotency-Key
+    in: header
+    required: true
+    schema: { type: string, format: uuid }
+  siteRequestProof:
+    name: Authorization
+    in: header
+    required: true
+    description: Short-lived ES256 Site request proof, carried as `BoardlySite <JWT>`.
+    schema: { type: string, pattern: '^BoardlySite .+$' }
+
+schemas:
+  CommerceEnvironment:
+    type: string
+    enum: [sandbox, live]
+
+  CommerceSyncStatus:
+    type: string
+    enum: [not_started, pending, current, stale]
+
+  CommerceStatus:
+    type: string
+    enum:
+      - not_started
+      - provisioning
+      - onboarding
+      - pending_review
+      - ready
+      - action_required
+      - restricted
+      - draining
+      - disconnected
+
+  CommerceCommandRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+
+  CommerceTermsAcceptanceRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, termsVersion, accepted]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      termsVersion: { type: string, minLength: 1, maxLength: 64 }
+      accepted: { type: boolean, const: true }
+
+  CommerceTermsAcceptance:
+    type: object
+    additionalProperties: false
+    required: [termsVersion, acceptedAt]
+    properties:
+      termsVersion: { type: string }
+      acceptedAt: { type: string, format: date-time }
+
+  CommerceTermsAcceptanceResult:
+    type: object
+    additionalProperties: false
+    required: [acceptance]
+    properties:
+      acceptance: { $ref: '#/schemas/CommerceTermsAcceptance' }
+
+  CommerceTermsState:
+    type: object
+    additionalProperties: false
+    required: [currentVersion, digest, documentUrl, privacyUrl, accepted, acceptedAt]
+    properties:
+      currentVersion: { type: string }
+      digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+      documentUrl: { type: string, format: uri }
+      privacyUrl: { type: string, format: uri }
+      accepted: { type: boolean }
+      acceptedAt: { type: [string, 'null'], format: date-time }
+
+  CommerceRequirementSummary:
+    type: object
+    additionalProperties: false
+    required: [currentlyDue, eventuallyDue, pastDue, currentDeadline]
+    properties:
+      currentlyDue: { type: integer, format: int32 }
+      eventuallyDue: { type: integer, format: int32 }
+      pastDue: { type: integer, format: int32 }
+      currentDeadline: { type: [string, 'null'], format: date-time }
+
+  CommerceAccount:
+    type: object
+    additionalProperties: false
+    required:
+      - environment
+      - configured
+      - status
+      - chargesEnabled
+      - payoutsEnabled
+      - actionRequired
+      - country
+      - defaultCurrency
+      - requirements
+      - syncStatus
+      - lastReconciledAt
+      - rowVersion
+    properties:
+      environment: { $ref: '#/schemas/CommerceEnvironment' }
+      configured: { type: boolean }
+      publishableKey: { type: string }
+      status: { $ref: '#/schemas/CommerceStatus' }
+      chargesEnabled: { type: boolean }
+      payoutsEnabled: { type: boolean }
+      actionRequired: { type: boolean }
+      country: { type: [string, 'null'] }
+      defaultCurrency: { type: [string, 'null'] }
+      requirements: { $ref: '#/schemas/CommerceRequirementSummary' }
+      syncStatus: { $ref: '#/schemas/CommerceSyncStatus' }
+      syncErrorCode: { type: string }
+      lastReconciledAt: { type: [string, 'null'], format: date-time }
+      rowVersion: { type: integer, format: int64 }
+
+  CommerceSummary:
+    type: object
+    additionalProperties: false
+    required: [companyId, terms, accounts]
+    properties:
+      companyId: { type: string, format: uuid }
+      terms: { $ref: '#/schemas/CommerceTermsState' }
+      accounts:
+        type: array
+        items: { $ref: '#/schemas/CommerceAccount' }
+
+  CommerceIntegrationAccount:
+    type: object
+    additionalProperties: false
+    required:
+      - environment
+      - configured
+      - status
+      - manifestReady
+      - chargesEnabled
+      - payoutsEnabled
+      - actionRequired
+      - country
+      - requirements
+      - syncStatus
+      - lastReconciledAt
+    properties:
+      environment: { $ref: '#/schemas/CommerceEnvironment' }
+      configured: { type: boolean }
+      status: { $ref: '#/schemas/CommerceStatus' }
+      manifestReady:
+        type: boolean
+        description: Whether provider, account, terms, country, and sync gates allow manifest submission.
+      chargesEnabled: { type: boolean }
+      payoutsEnabled: { type: boolean }
+      actionRequired: { type: boolean }
+      country: { type: [string, 'null'] }
+      requirements: { $ref: '#/schemas/CommerceRequirementSummary' }
+      syncStatus: { $ref: '#/schemas/CommerceSyncStatus' }
+      lastReconciledAt: { type: [string, 'null'], format: date-time }
+
+  CommerceIntegrationReadiness:
+    type: object
+    additionalProperties: false
+    required: [termsAccepted, accounts]
+    properties:
+      termsAccepted: { type: boolean }
+      accounts:
+        type: array
+        items: { $ref: '#/schemas/CommerceIntegrationAccount' }
+
+  CommerceAccountSession:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, publishableKey, clientSecret, expiresAt]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      publishableKey: { type: string }
+      clientSecret: { type: string }
+      expiresAt: { type: string, format: date-time }
+
+  CommerceOnboardingLink:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, url, expiresAt]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      url: { type: string, format: uri }
+      expiresAt: { type: string, format: date-time }
+
+  CommerceDashboardLink:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, url]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      url: { type: string, format: uri }
+
+  CommerceManifestSubmissionRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, environment, manifest]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      environment: { $ref: '#/schemas/CommerceEnvironment' }
+      manifest: { $ref: '#/schemas/CommerceManifest' }
+
+  CommerceManifestApprovalRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, digest]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      digest: { type: string, pattern: '^[a-f0-9]{64}$' }
+
+  CommerceManifest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, site, offers]
+    properties:
+      schemaVersion: { type: integer, enum: [2] }
+      site: { $ref: '#/schemas/CommerceManifestSite' }
+      offers:
+        type: array
+        minItems: 1
+        maxItems: 100
+        items: { $ref: '#/schemas/CommerceManifestOffer' }
+
+  CommerceManifestSite:
+    type: object
+    additionalProperties: false
+    required: [alias, origin, portalReturnPath]
+    description: |
+      Site identity and redirect authority. The Site authenticates its own
+      customer and proves Commerce requests with a separately registered
+      ES256 signing key.
+    properties:
+      alias: { type: string }
+      origin:
+        type: string
+        format: uri
+        description: Canonical HTTPS origin, or exact loopback HTTP origin for local sandbox development.
+      portalReturnPath: { type: string }
+
+  CommerceOfferType:
+    type: string
+    enum: [one_time, subscription]
+
+  CommerceManifestState:
+    type: string
+    enum: [draft, publishing, active, rejected, apply_failed, superseded]
+
+  CommerceManifestOffer:
+    type: object
+    additionalProperties: false
+    required:
+      - alias
+      - displayName
+      - type
+      - entitlement
+      - amount
+      - currency
+      - automaticTax
+      - successPath
+      - cancelPath
+    properties:
+      alias: { type: string }
+      displayName: { type: string }
+      type: { $ref: '#/schemas/CommerceOfferType' }
+      planGroup: { type: string }
+      entitlement: { type: string }
+      amount: { type: integer, format: int64 }
+      currency: { type: string }
+      interval: { type: string, enum: [month, year] }
+      automaticTax: { type: boolean }
+      successPath: { type: string }
+      cancelPath: { type: string }
+
+  CommerceManifestSubmission:
+    type: object
+    additionalProperties: false
+    required:
+      - manifestId
+      - approvalId
+      - siteId
+      - digest
+      - state
+      - verificationPath
+      - verificationDocument
+      - createdAt
+    properties:
+      manifestId: { type: string, format: uuid }
+      approvalId:
+        type: string
+        format: uuid
+        description: Durable owner Approval attached to the originating Task; publication automatically resumes that Task.
+      siteId: { type: string, format: uuid }
+      digest: { type: string }
+      state: { $ref: '#/schemas/CommerceManifestState' }
+      verificationPath: { type: string }
+      verificationDocument: { $ref: '#/schemas/CommerceSiteVerificationProof' }
+      createdAt: { type: string, format: date-time }
+
+  CommerceManifestStatus:
+    type: object
+    additionalProperties: false
+    required: [manifestId, siteId, taskId, runId, digest, state, createdAt, updatedAt]
+    properties:
+      manifestId: { type: string, format: uuid }
+      siteId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      runId: {"type": "string", "format": "uuid"}
+      digest: { type: string }
+      state: { $ref: '#/schemas/CommerceManifestState' }
+      applyErrorCode: { type: string }
+      approvedAt: { type: string, format: date-time }
+      appliedAt: { type: string, format: date-time }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+
+  CommerceManifestReview:
+    type: object
+    additionalProperties: false
+    required:
+      - manifestId
+      - siteId
+      - taskId
+      - runId
+      - digest
+      - state
+      - createdAt
+      - updatedAt
+      - environment
+      - manifest
+      - signingKeys
+    properties:
+      manifestId: { type: string, format: uuid }
+      siteId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      runId: {"type": "string", "format": "uuid"}
+      digest: { type: string }
+      state: { $ref: '#/schemas/CommerceManifestState' }
+      applyErrorCode: { type: string }
+      approvedAt: { type: string, format: date-time }
+      appliedAt: { type: string, format: date-time }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      environment: { $ref: '#/schemas/CommerceEnvironment' }
+      manifest: { $ref: '#/schemas/CommerceManifest' }
+      signingKeys:
+        type: array
+        items: { $ref: '#/schemas/CommerceSiteSigningKeySummary' }
+
+  CommerceSiteSigningKeyState:
+    type: string
+    enum: [pending, active, retiring, revoked]
+
+  CommerceSiteSigningKeySummary:
+    type: object
+    additionalProperties: false
+    required: [keyId, fingerprint, state]
+    properties:
+      keyId: { type: string, minLength: 1, maxLength: 128 }
+      fingerprint: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+      state: { $ref: '#/schemas/CommerceSiteSigningKeyState' }
+      activatedAt: { type: string, format: date-time }
+      retireAt: { type: string, format: date-time }
+
+  CommerceSiteSigningKeyPage:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, signingKeys]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      signingKeys:
+        type: array
+        items: { $ref: '#/schemas/CommerceSiteSigningKeySummary' }
+
+  CommerceSiteSigningKeyResult:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, signingKey]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      signingKey: { $ref: '#/schemas/CommerceSiteSigningKeySummary' }
+
+  CommerceSiteVerificationProof:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, siteAlias, manifestDigest]
+    description: |
+      Zenith Team-generated origin proof. The Site serves these exact fields plus
+      its current `signingKeys` array at the returned verification path.
+    properties:
+      schemaVersion: { type: integer, enum: [2] }
+      siteAlias: { type: string }
+      manifestDigest: { type: string, pattern: '^[a-f0-9]{64}$' }
+
+  CommerceManifestPage:
+    type: object
+    additionalProperties: false
+    required: [manifests, nextCursor]
+    properties:
+      manifests:
+        type: array
+        items: { $ref: '#/schemas/CommerceManifestReview' }
+      nextCursor: { type: [string, "null"] }
+
+  SiteCommerceCheckoutRequest:
+    type: object
+    additionalProperties: false
+    required: [offerAlias, operationId]
+    properties:
+      offerAlias: { type: string }
+      operationId: { type: string, format: uuid }
+
+  SiteCommercePortalRequest:
+    type: object
+    additionalProperties: false
+    required: [operationId]
+    properties:
+      operationId: { type: string, format: uuid }
+
+  SiteCommerceChallengeAction:
+    type: string
+    enum: [checkout, portal]
+
+  SiteCommerceChallengeRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, siteId, action, operationId]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      siteId: { type: string, format: uuid }
+      action: { $ref: '#/schemas/SiteCommerceChallengeAction' }
+      operationId: { type: string, format: uuid }
+
+  SiteCommerceChallenge:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, nonce, expiresAt]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      nonce: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+      expiresAt: { type: string, format: date-time }
+
+  CommerceHostedRedirect:
+    type: object
+    additionalProperties: false
+    required: [url]
+    properties:
+      url: { type: string, format: uri }
+
+  CommerceEntitlement:
+    type: object
+    additionalProperties: false
+    required: [key, status, updatedAt]
+    properties:
+      key: { type: string }
+      status: { type: string }
+      startsAt: { type: string, format: date-time }
+      expiresAt: { type: string, format: date-time }
+      revokedReason: { type: string }
+      updatedAt: { type: string, format: date-time }
+
+  CommerceEntitlementVerification:
+    type: object
+    additionalProperties: false
+    required: [entitlements, assertion, expiresAt]
+    properties:
+      entitlements:
+        type: array
+        items: { $ref: '#/schemas/CommerceEntitlement' }
+      assertion: { type: string }
+      expiresAt: { type: string, format: date-time }
+
+  CommerceJWK:
+    type: object
+    additionalProperties: false
+    required: [kty, use, crv, kid, alg, x, y]
+    properties:
+      kty: { type: string }
+      use: { type: string }
+      crv: { type: string }
+      kid: { type: string }
+      alg: { type: string }
+      x: { type: string }
+      y: { type: string }
+
+  CommerceJWKSet:
+    type: object
+    additionalProperties: false
+    required: [keys]
+    properties:
+      keys:
+        type: array
+        items: { $ref: '#/schemas/CommerceJWK' }
+
+  CommerceWebhookReceipt:
+    type: object
+    additionalProperties: false
+    required: [processed, duplicate]
+    properties:
+      processed: { type: boolean }
+      duplicate: { type: boolean }

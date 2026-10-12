@@ -1,0 +1,128 @@
+.member-agent-setup .onboarding-step__header .member-agent-setup__company {
+  margin: 0 0 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.member-agent-setup .onboarding-step__header h1:focus {
+  outline: none;
+}
+
+.member-agent-setup__body {
+  display: grid;
+  gap: 16px;
+}
+
+.member-agent-setup__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.member-agent-setup__toolbar h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.member-agent-setup__toolbar > span {
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+}
+
+.member-agent-setup__choices {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.member-agent-setup__computer,
+.member-agent-setup__agent {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  background: var(--workspace-panel-bg);
+  cursor: pointer;
+}
+
+.member-agent-setup__computer[data-selected="true"],
+.member-agent-setup__agent[data-selected="true"] {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-accent-soft);
+}
+
+.member-agent-setup__agent[data-disabled="true"] {
+  cursor: default;
+}
+
+.member-agent-setup__choices label:focus-within {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.member-agent-setup__choices input {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  accent-color: var(--workspace-native-accent);
+}
+
+.member-agent-setup__choices svg {
+  flex: none;
+}
+
+.member-agent-setup__identity {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+
+.member-agent-setup__identity strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.member-agent-setup__identity > span {
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.member-agent-setup__notice {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.member-agent-setup .member-agent-setup__error {
+  color: var(--workspace-native-danger);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 540px) {
+  .member-agent-setup__computer,
+  .member-agent-setup__agent {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .member-agent-setup__toolbar {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,815 @@
+.boardly-workspace-theme.workspace-onboarding {
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
+  background: var(--workspace-content-bg);
+  scrollbar-color: var(--workspace-divider-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.workspace-onboarding .workspace-onboarding__titlebar {
+  height: 40px;
+  border-color: var(--workspace-divider);
+  background: var(--workspace-titlebar-bg) var(--workspace-shell-gradient);
+  color: var(--workspace-native-text);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.workspace-onboarding:not([data-desktop-mac="true"])
+  .workspace-onboarding__titlebar
+  > :first-child {
+  padding-left: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   One layout for every step after the welcome screen: a persistent progress
+   bar, then a single centred column of header, body and action bar. Steps
+   differ only in column width, so titles, progress and buttons sit in the
+   same place from one step to the next.
+   --------------------------------------------------------------------------- */
+
+.workspace-onboarding {
+  /* The titlebar is fixed over the page, so content starts below it. */
+  --onboarding-titlebar: 40px;
+  --onboarding-column-narrow: 680px;
+  --onboarding-column-wide: 1200px;
+  --onboarding-gutter: 28px;
+}
+
+.workspace-onboarding__frame {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  padding: calc(var(--onboarding-titlebar) + 32px) var(--onboarding-gutter) 56px;
+}
+
+.onboarding-step {
+  width: min(100%, var(--onboarding-column-narrow));
+  margin: 40px auto 0;
+}
+
+.onboarding-step[data-width="wide"] {
+  width: min(100%, var(--onboarding-column-wide));
+}
+
+.onboarding-step__header {
+  max-width: 600px;
+  margin: 0 auto 36px;
+  text-align: center;
+}
+
+.onboarding-step__header h1 {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.onboarding-step__header p {
+  margin: 12px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 15px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.onboarding-step__body,
+.workspace-onboarding__form {
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-onboarding__form {
+  display: grid;
+  gap: 22px;
+}
+
+/* The action bar every step ends with: Back and context on the left, the way
+   forward on the right. */
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.onboarding-actions[data-align="center"] {
+  justify-content: center;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.onboarding-actions__start,
+.onboarding-actions__end {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.onboarding-actions__start {
+  margin-right: auto;
+}
+
+.onboarding-actions__end {
+  margin-left: auto;
+}
+
+.onboarding-actions[data-align="center"] .onboarding-actions__end {
+  margin: 0;
+}
+
+.onboarding-actions__meta {
+  color: var(--workspace-native-text-faint);
+  font-size: 12px;
+}
+
+/* Buttons: one size and shape; the variant only changes the fill. */
+.onboarding-button {
+  display: inline-flex;
+  min-height: 42px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.onboarding-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.onboarding-button:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+
+.onboarding-button--secondary {
+  border-color: var(--workspace-divider-strong);
+  background: var(--workspace-control-bg);
+}
+
+.onboarding-button--secondary:not(:disabled):hover {
+  background: var(--workspace-hover-bg);
+}
+
+.onboarding-button--ghost {
+  padding-inline: 10px;
+  color: var(--workspace-native-text-muted);
+}
+
+.onboarding-button--ghost:not(:disabled):hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.onboarding-button.workspace-onboarding__submit {
+  min-width: 148px;
+  padding-inline: 18px;
+}
+
+.workspace-onboarding__field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.workspace-onboarding__optional {
+  margin-left: 6px;
+  color: var(--workspace-native-text-faint);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.workspace-onboarding__field :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-input-bg);
+  padding: 11px 12px;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.workspace-onboarding__field textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.workspace-onboarding__field :is(input, textarea)::placeholder {
+  color: var(--workspace-native-text-faint);
+}
+
+.workspace-onboarding__field :is(input, textarea):focus-visible {
+  border-color: var(--workspace-native-accent);
+  outline-offset: 0;
+}
+
+.workspace-onboarding__field :is(input, textarea)[aria-invalid="true"] {
+  border-color: var(--workspace-native-danger);
+}
+
+.workspace-onboarding__field :is(input, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.workspace-onboarding__submit {
+  border: 1px solid transparent;
+  background: var(--workspace-native-accent);
+  color: var(--workspace-accent-foreground);
+  font-weight: 500;
+}
+
+.workspace-onboarding__submit:not(:disabled):hover {
+  background: color-mix(in srgb, var(--workspace-native-accent) 88%, white);
+}
+
+.workspace-onboarding__error {
+  padding: 12px 14px;
+  border: 1px solid var(--workspace-native-danger);
+  border-radius: var(--workspace-radius-control);
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-danger) 8%,
+    var(--workspace-panel-bg)
+  );
+  color: var(--workspace-native-danger);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------------
+   The onboarding screens: the Fold scene, the company form, and the
+   connections step. Merged from onboarding-welcome.css, whose wizard-era
+   selectors (choice groups, priority rows, tool grids, the step counter) went
+   with the form that used them.
+   --------------------------------------------------------------------------- */
+
+.onboarding-introduction {
+  display: grid;
+  min-height: calc(100dvh - 40px);
+  width: min(100%, 1040px);
+  margin-inline: auto;
+  padding: 40px 24px 64px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  column-gap: 64px;
+  align-content: center;
+  align-items: center;
+  text-align: left;
+}
+
+.onboarding-introduction .onboarding-introduction__scene {
+  width: 340px;
+  max-width: 100%;
+  height: 310px;
+  grid-row: 1 / 3;
+  margin: 0 auto;
+}
+
+.onboarding-introduction__copy h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.onboarding-introduction__copy > p:not(.onboarding-welcome__eyebrow) {
+  max-width: 460px;
+  margin: 20px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.onboarding-introduction__actions {
+  grid-column: 2;
+  min-width: 0;
+  margin-top: 28px;
+}
+
+.onboarding-introduction__choices {
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-introduction__choice {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-panel);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  text-align: left;
+}
+
+.onboarding-introduction__choice:hover,
+.onboarding-introduction__choice:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.onboarding-introduction__choice:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.onboarding-introduction__choice > svg:first-child {
+  color: var(--workspace-native-accent);
+}
+
+.onboarding-introduction__choice > span {
+  display: grid;
+  gap: 5px;
+}
+
+.onboarding-introduction__choice strong {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.onboarding-introduction__choice > span > span {
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 680px) {
+  .onboarding-introduction {
+    width: min(100%, 540px);
+    grid-template-columns: minmax(0, 1fr);
+    text-align: center;
+  }
+
+  .onboarding-introduction .onboarding-introduction__scene {
+    grid-row: auto;
+    width: 260px;
+    height: 220px;
+    margin-bottom: 24px;
+  }
+
+  .onboarding-introduction__copy > p:not(.onboarding-welcome__eyebrow) {
+    margin-inline: auto;
+  }
+
+  .onboarding-introduction__actions {
+    grid-column: 1;
+  }
+}
+
+.onboarding-welcome__scene {
+  position: relative;
+  display: grid;
+  width: 280px;
+  height: 260px;
+  margin: 0 0 32px;
+  place-items: center;
+  isolation: isolate;
+}
+
+.onboarding-welcome__scene::before {
+  position: absolute;
+  z-index: -1;
+  inset: 30px 8px 0;
+  border: 1px solid color-mix(in srgb, #ee8b42 16%, transparent);
+  border-radius: 48% 52% 44% 56%;
+  background: radial-gradient(
+    ellipse at 40% 30%,
+    color-mix(in srgb, #ee8b42 16%, transparent),
+    color-mix(in srgb, #ee8b42 4%, transparent)
+  );
+  content: "";
+  transform: rotate(-8deg);
+}
+
+.onboarding-welcome__spark {
+  position: absolute;
+  color: color-mix(in srgb, #ee8b42 75%, var(--workspace-native-text));
+}
+
+.onboarding-welcome__spark--one {
+  top: 42px;
+  left: 16px;
+  font-size: 28px;
+}
+
+.onboarding-welcome__spark--two {
+  right: 2px;
+  bottom: 45px;
+  font-size: 36px;
+}
+
+.onboarding-welcome__eyebrow {
+  margin: 0 0 14px;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.workspace-onboarding__form .workspace-onboarding__field textarea {
+  min-height: 132px;
+}
+
+.onboarding-welcome__field-error {
+  margin: 8px 0 0;
+  color: var(--workspace-native-danger);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.onboarding-connections {
+  display: grid;
+  gap: 20px;
+}
+
+.onboarding-connections__grid {
+  display: grid;
+  gap: 10px;
+}
+
+.onboarding-connection-card {
+  display: grid;
+  min-width: 0;
+  min-height: 86px;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: 14px;
+  background: var(--workspace-panel-bg);
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.onboarding-connection-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-accent) 40%,
+    var(--workspace-divider)
+  );
+  transform: translateY(-1px);
+}
+
+.onboarding-connection-card > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.onboarding-connection-card strong {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onboarding-connection-card > div span {
+  color: var(--workspace-native-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.onboarding-connection-card button,
+.onboarding-connections__state button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--workspace-native-accent) 55%,
+      var(--workspace-divider)
+    );
+  border-radius: 10px;
+  background: transparent;
+  color: var(--workspace-native-accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.onboarding-connection-card button {
+  min-width: 88px;
+}
+
+.onboarding-connection-card button:disabled {
+  border-color: var(--workspace-divider);
+  color: var(--workspace-native-text-faint);
+  cursor: default;
+}
+
+/* An installed app nobody signed in to yet: the one card that needs the
+   founder, so its action is filled rather than outlined. */
+.onboarding-connection-card[data-attention="true"] button:not(:disabled) {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-native-accent);
+  color: var(--workspace-accent-foreground);
+}
+
+.onboarding-connection-card[data-attention="true"] > div span {
+  color: var(--workspace-native-text-muted);
+}
+
+.onboarding-connection-card[data-connected="true"] > div span {
+  color: var(--workspace-native-success);
+}
+
+.onboarding-connection-card[data-connected="true"] button:disabled {
+  border-color: transparent;
+  color: var(--workspace-native-success);
+}
+
+.onboarding-connection-card[data-connected="true"] {
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-accent) 35%,
+    var(--workspace-divider)
+  );
+}
+
+.onboarding-connections__state {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px dashed var(--workspace-divider-strong);
+  border-radius: 14px;
+  color: var(--workspace-native-text-muted);
+  text-align: center;
+}
+
+.onboarding-connections__state span,
+.onboarding-connections__notice {
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+}
+
+.onboarding-connections__notice {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Reference-file uploads and the step progress indicator.
+   --------------------------------------------------------------------------- */
+
+.onboarding-uploads {
+  display: grid;
+  gap: 10px;
+}
+
+.onboarding-uploads__label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.onboarding-uploads__dropzone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px dashed var(--workspace-divider-strong);
+  border-radius: 12px;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.onboarding-uploads__dropzone:not(:disabled):hover,
+.onboarding-uploads__dropzone[data-dragging="true"] {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-control-bg);
+}
+
+.onboarding-uploads__dropzone[data-dragging="true"] {
+  transform: translateY(-1px);
+}
+
+.onboarding-uploads__dropzone:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.onboarding-uploads__dropzone span {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.onboarding-uploads__dropzone strong {
+  color: var(--workspace-native-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onboarding-uploads__list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-uploads__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  background: var(--workspace-panel-bg);
+  font-size: 13px;
+}
+
+.onboarding-uploads__item[data-status="error"] {
+  border-color: var(--workspace-native-danger);
+  color: var(--workspace-danger-text);
+}
+
+.onboarding-uploads__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.onboarding-uploads__meta {
+  color: var(--workspace-native-text-faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The fill sits under the row rather than beside it, so a long filename never
+   competes with the progress for width. */
+.onboarding-uploads__progress {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  width: var(--upload-progress, 0%);
+  background: var(--workspace-native-accent);
+  transition: width 220ms ease-out;
+}
+
+.onboarding-uploads__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--workspace-native-text-faint);
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.onboarding-uploads__remove:not(:disabled):hover {
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+}
+
+.onboarding-welcome__notice {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+}
+
+.onboarding-progress {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.onboarding-progress__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.onboarding-progress__label > span {
+  color: var(--workspace-native-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-progress__track {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-progress__step {
+  width: 24px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--workspace-divider-strong);
+  transition:
+    width 420ms var(--onboarding-ease),
+    background-color 260ms ease,
+    opacity 260ms ease;
+}
+
+.onboarding-progress__step[data-state="complete"] {
+  background: var(--workspace-native-accent);
+  opacity: 0.45;
+}
+
+.onboarding-progress__step[data-state="current"] {
+  width: 48px;
+  background: var(--workspace-native-accent);
+}
+
+@media (max-width: 680px) {
+  .workspace-onboarding {
+    --onboarding-gutter: 16px;
+  }
+
+  .workspace-onboarding__frame {
+    padding-top: calc(var(--onboarding-titlebar) + 24px);
+  }
+
+  .onboarding-step {
+    margin-top: 28px;
+  }
+
+  .onboarding-step__header {
+    margin-bottom: 28px;
+  }
+
+  /* On a phone the bar stacks: the way forward on top, full width, where
+     the thumb is; Back and context underneath. */
+  .onboarding-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .onboarding-actions__start,
+  .onboarding-actions__end {
+    margin: 0;
+  }
+
+  .onboarding-actions__end {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .onboarding-actions__start {
+    justify-content: space-between;
+  }
+}

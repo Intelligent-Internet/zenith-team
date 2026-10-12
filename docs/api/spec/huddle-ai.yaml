@@ -1,0 +1,846 @@
+paths:
+  transcript:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    post:
+      operationId: appendHuddleTranscript
+      tags: [conversations]
+      summary: Checkpoint captured audio text using the live attempt capability
+      description: Sequential idempotent batches, at most 24 KiB per request. Revoked or expired attempts cannot write. One saved system card per invitation, visible only through Huddle chat membership. Reconnect attempts share that invitation. Storage is bounded; truncation is explicit. No raw audio or extra model session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [sequence, entries]
+              properties:
+                sequence: { type: integer, minimum: 1, maximum: 9007199254740991 }
+                truncated: { type: boolean, default: false }
+                entries:
+                  type: array
+                  maxItems: 32
+                  items:
+                    type: object
+                    additionalProperties: false
+                    required: [speaker, text]
+                    properties:
+                      speaker: { type: string, enum: [participants, agent] }
+                      text: { type: string, minLength: 1, maxLength: 4000 }
+      responses:
+        '200':
+          description: Checkpoint acknowledged; stop capture if truncated is true.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [truncated]
+                properties:
+                  truncated: { type: boolean }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Out-of-order sequence or changed replay payload.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Attempt is no longer authorized to capture.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  leave:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    post:
+      operationId: leaveHuddleAI
+      tags: [conversations]
+      summary: End only this voice Agent invitation using its attempt capability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: false }
+      responses:
+        '200':
+          description: Agent departure acknowledged. Human call remains open.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [left]
+                properties:
+                  left: { type: boolean }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '503':
+          description: Attempt lease expired or invitation revoked.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  submit:
+    parameters:
+    - $ref: ./_common.yaml#/parameters/companyId
+    - name: huddleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    - name: proposalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    post:
+      operationId: submitHuddleProposal
+      tags: [conversations]
+      summary: Confirm a reviewed proposal without starting a Run
+      description: Human moderator only. New Tasks are created in Backlog, assigned to the confirming human with the proposing Agent. No Run is created and no runtime binding is required. Existing Tasks must already have that same assignee and Agent; confirmation does not change their content or start execution. Exact revision and payload replays return the receipt without duplicating work. Drafts survive Agent departure until expiry or call end. No runtime identity or credentials are shared with other participants.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/SubmitHuddleProposalRequest' }
+      responses:
+        '200':
+          description: Confirmation receipt. Start execution separately from the Task.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleProposal' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Stale review, ineligible Task or missing personal Agent binding. No partial Task or Run is committed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  proposals:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    post:
+      operationId: proposeHuddleWork
+      tags: [conversations]
+      summary: Save a shared work proposal without creating a Task or Run
+      description: Requires the current attempt capability and shared-context grant. Agent identity comes from the invitation; no human authorizer is inferred. At most 20 proposals per Huddle. A requestKey is immutable within its invitation and exact replays return the current draft, including human edits. Proposals survive Agent departure and expire after one hour or at call end.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/HuddleProposalRequest' }
+      responses:
+        '200':
+          description: Saved or replayed draft. No execution authority is granted.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleProposal' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Request key reused for different content.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: This call has reached its proposal limit.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: Attempt authority is unavailable or revoked.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  proposal:
+    parameters:
+    - $ref: ./_common.yaml#/parameters/companyId
+    - name: huddleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    - name: proposalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    put:
+      operationId: updateHuddleProposal
+      tags: [conversations]
+      summary: Edit or reject a shared work proposal as a Huddle moderator
+      description: Revision-fenced. Only pending unexpired drafts can change. Target Project, Task and Agent are immutable. Submission is a separate human confirmation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/UpdateHuddleProposalRequest' }
+      responses:
+        '200':
+          description: Updated draft.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleProposal' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Proposal changed, expired, or was already submitted or rejected.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  tools:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    post:
+      operationId: readHuddleContext
+      tags: [conversations]
+      summary: Read bounded Company-shared context using a voice attempt capability
+      description: Requires explicit invitation opt-in and active Company access, independent of the Agent Planning capability. Never exposes private conversations, Run output, credentials or workspace files. Maximum 120 reads per attempt and five admitted reads per ten seconds. Unknown and inaccessible task IDs both return an empty list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/HuddleContextRequest' }
+      responses:
+        '200':
+          description: Bounded shared context with source identities.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/HuddleContextResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '429':
+          description: Lookup rate or attempt limit reached.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: Attempt authority is unavailable or revoked.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  ai:
+    parameters:
+    - $ref: ./_common.yaml#/parameters/companyId
+    - name: huddleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: getHuddleAI
+      tags:
+      - conversations
+      summary: Read Helia status for a visible Huddle
+      responses:
+        '200':
+          description: Current voice authority and availability.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/HuddleAIStatus'
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+    put:
+      operationId: setHuddleAI
+      tags:
+      - conversations
+      summary: Invite or remove Helia from this Huddle
+      description: The starter or a Company administrator with current call visibility
+        can moderate. Sharing Company context also needs the caller in the call
+        (canShareContext); otherwise 403 huddle_operation_forbidden. Calls start
+        without Helia. Setting enabled to true explicitly invites the voice agent
+        and starts a new chat boundary. Removal immediately revokes the feed and
+        lease renewal. Inviting again retains the room budget and greeting receipt. A configured Company budget alone never invites Helia.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/SetHuddleAI'
+      responses:
+        '200':
+          description: Updated status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/HuddleAIStatus'
+        '400':
+          $ref: ./_common.yaml#/responses/BadRequest
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '409':
+          description: Revision or request key conflict.
+          content:
+            application/json:
+              schema:
+                $ref: ./_common.yaml#/schemas/Error
+        '422':
+          $ref: ./_common.yaml#/responses/ValidationFailed
+        '503':
+          description: Huddle is no longer open.
+          content:
+            application/json:
+              schema:
+                $ref: ./_common.yaml#/schemas/Error
+  claim:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      operationId: claimHuddleAI
+      tags:
+      - conversations
+      summary: Claim a voice attempt using the workload credential
+      description: Internal voice process only. Claim requires the workload bearer
+        secret; all other operations require the claimed attempt capability. Usage
+        reconciliation grants no media or chat authority.
+      responses:
+        '200':
+          description: Attempt-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/HuddleAILease'
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '422':
+          $ref: ./_common.yaml#/responses/ValidationFailed
+  heartbeat:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      operationId: heartbeatHuddleAI
+      tags:
+      - conversations
+      summary: Renew a current attempt capability
+      description: Internal voice process only. Claim requires the workload bearer
+        secret; all other operations require the claimed attempt capability. Usage
+        reconciliation grants no media or chat authority.
+      responses:
+        '200':
+          description: Attempt-scoped result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/HuddleAILease'
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '422':
+          $ref: ./_common.yaml#/responses/ValidationFailed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/HuddleAIHeartbeat'
+  chat:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      operationId: readHuddleAIChat
+      tags:
+      - conversations
+      summary: Read the exact authorized Huddle chat feed
+      description: Internal voice process only. Claim requires the workload bearer
+        secret; all other operations require the claimed attempt capability. Usage
+        reconciliation grants no media or chat authority.
+      responses:
+        '200':
+          description: Attempt-scoped result.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/schemas/HuddleAIChatItem'
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '422':
+          $ref: ./_common.yaml#/responses/ValidationFailed
+  usage:
+    parameters:
+    - name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    post:
+      operationId: recordHuddleAIUsage
+      tags:
+      - conversations
+      summary: Reconcile cumulative model session usage
+      description: Internal voice process only. Claim requires the workload bearer
+        secret; all other operations require the claimed attempt capability. Usage
+        reconciliation grants no media or chat authority.
+      responses:
+        '204':
+          description: Usage receipt accepted.
+        '401':
+          $ref: ./_common.yaml#/responses/Unauthorized
+        '403':
+          $ref: ./_common.yaml#/responses/Forbidden
+        '404':
+          $ref: ./_common.yaml#/responses/NotFound
+        '422':
+          $ref: ./_common.yaml#/responses/ValidationFailed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/HuddleAIUsage'
+schemas:
+  HuddleProposalRequest:
+    type: object
+    additionalProperties: false
+    required: [requestKey, projectId, title, brief]
+    properties:
+      requestKey: { type: string, minLength: 1, maxLength: 128 }
+      projectId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid, description: Optional existing Task in the selected Project. }
+      title: { type: string, minLength: 1, maxLength: 200 }
+      brief: { type: string, minLength: 1, maxLength: 4000 }
+  UpdateHuddleProposalRequest:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision, action]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1, maximum: 9007199254740991 }
+      action: { type: string, enum: [edit, reject] }
+      title: { type: string, maxLength: 200, description: Required for edit and forbidden for reject. }
+      brief: { type: string, maxLength: 4000, description: Required for edit and forbidden for reject. }
+  SubmitHuddleProposalRequest:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision, confirm]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1, maximum: 9007199254740991 }
+      confirm: { type: boolean, enum: [true] }
+      milestoneType:
+        $ref: './tasks.yaml#/schemas/TaskMilestoneTypeDto'
+      expectedTaskRevision: { type: integer, format: int64, minimum: 1, maximum: 9007199254740991, description: Required only for existing Task proposals. milestoneType is required only for new Tasks. }
+  HuddleProposal:
+    type: object
+    required: [id, agentId, agentName, projectId, projectTitle, taskId, taskKey, title, brief, state, revision, canEdit, updatedByUserId, expiresAt, createdAt, submittedTaskId, submittedTaskKey]
+    properties:
+      work: { $ref: '#/schemas/HuddleWorkProgress' }
+      id: { type: string, format: uuid }
+      agentId: { type: string, format: uuid, description: Historical identity of the proposing Agent. }
+      agentName: { type: string }
+      projectId: { type: [string, 'null'], format: uuid }
+      projectTitle: { type: string }
+      taskId: { type: [string, 'null'], format: uuid }
+      taskKey: { type: string }
+      title: { type: string }
+      brief: { type: string }
+      state: { type: string, enum: [pending, rejected, expired, submitted] }
+      submittedTaskId: { type: [string, 'null'], format: uuid }
+      submittedTaskKey: { type: string }
+      revision: { type: integer, format: int64 }
+      canEdit: { type: boolean }
+      updatedByUserId: { type: [string, 'null'], format: uuid }
+      expiresAt: { type: string, format: date-time }
+      createdAt: { type: string, format: date-time }
+  HuddleContextRequest:
+    type: object
+    additionalProperties: false
+    required: [requestId, tool]
+    properties:
+      requestId: { type: string, minLength: 1, maxLength: 128 }
+      tool: { type: string, enum: [get_company_context, list_projects, search_tasks, get_task, get_work_status, get_work_result] }
+      proposalId: { type: string, format: uuid, description: 'Required for get_work_result, optional for get_work_status, forbidden otherwise. Only submitted proposals in this call are visible.' }
+      query: { type: string, maxLength: 200, description: Title or key substring; search_tasks only. }
+      status: { type: string, enum: [backlog, todo, in_progress, blocked, in_review, done, cancelled, failed, error], description: search_tasks only. }
+      projectId: { type: string, format: uuid, description: search_tasks only. }
+      taskId: { type: string, format: uuid, description: Required for get_task and forbidden otherwise. }
+      afterId: { type: string, format: uuid, description: list_projects cursor only. }
+      beforeNumber: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991, description: search_tasks cursor only. }
+  HuddleContextItem:
+    type: object
+    required: [id, type, title, updatedAt, truncated]
+    properties:
+      id: { type: string, format: uuid }
+      type: { type: string, enum: [company, project, task, work] }
+      work: { $ref: '#/schemas/HuddleWorkProgress' }
+      key: { type: string }
+      title: { type: string }
+      description: { type: string }
+      status: { type: string }
+      projectId: { type: string, format: uuid }
+      assignee: { type: string }
+      dueDate: { type: string }
+      blockedByCount: { type: integer, format: int64 }
+      updatedAt: { type: string, format: date-time }
+      truncated: { type: boolean }
+  HuddleContextResult:
+    type: object
+    required: [items, readAt, hasMore]
+    properties:
+      items: { type: array, maxItems: 20, items: { $ref: '#/schemas/HuddleContextItem' } }
+      readAt: { type: string, format: date-time }
+      hasMore: { type: boolean }
+      nextBeforeNumber: { type: integer, format: int64 }
+      nextAfterId: { type: string, format: uuid }
+  HuddleToolActivity:
+    type: object
+    required: [requestId, tool, state, at, sources]
+    properties:
+      requestId: { type: string }
+      tool: { type: string, enum: [get_company_context, list_projects, search_tasks, get_task, get_work_status, get_work_result] }
+      state: { type: string, enum: [reading, completed] }
+      at: { type: string, format: date-time }
+      sources: { type: array, maxItems: 5, items: { $ref: '#/schemas/HuddleContextItem' } }
+  HuddleWorkProgress:
+    type: object
+    description: Confirmed means the Task exists with no linked Run available; open the Task for its current execution state. Legacy submissions retain a live projection of the submitted Run and its explicit retries or human-input continuations, never an unrelated later Run. No machine identities, raw errors or private transcript. Completed describes the Run, not Task acceptance.
+    required: [state, newerTaskExecution, hasResult, resultTruncated, checkedAt]
+    properties:
+      state: { type: string, enum: [confirmed, unavailable, queued, waiting_for_runtime, preparing, running, waiting_for_input, resuming, waiting_local_directory, deferred, completed, failed, cancelled] }
+      taskId: { type: string, format: uuid }
+      taskStatus: { type: string }
+      runId: { type: string, format: uuid }
+      runStatus: { type: string }
+      newerTaskExecution: { type: boolean, description: The Task has advanced beyond this work's execution generation. }
+      hasResult: { type: boolean, description: The selected completed Run has a proven final answer in its shared Task conversation. }
+      resultText: { type: string, maxLength: 2000, description: 'Untrusted final answer text, returned only by get_work_result; never reasoning or tool output.' }
+      resultMessageId: { type: string, format: uuid }
+      resultMessageSeq: { type: integer, format: int64 }
+      resultConversationId: { type: string, format: uuid }
+      resultTruncated: { type: boolean }
+      checkedAt: { type: string, format: date-time }
+  HuddleVoiceIdentity:
+    type: object
+    required: [id, name, title, avatarKey, accentColor]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      title: { type: string }
+      avatarKey: { type: [string, 'null'] }
+      accentColor: { type: [string, 'null'] }
+  HuddleVoiceProfile:
+    allOf:
+    - $ref: '#/schemas/HuddleVoiceIdentity'
+    - type: object
+      required: [revision, instructions, settings]
+      properties:
+        revision: { type: integer, format: int64 }
+        instructions: { type: string }
+        settings: { $ref: './agents.yaml#/schemas/AgentVoiceSettings' }
+  HuddleAIStatus:
+    type: object
+    required:
+    - proposals
+    - allowCompanyContext
+    - state
+    - disabled
+    - revision
+    - canModerate
+    - canShareContext
+    - captureState
+    - roomSeconds
+    - humanSeconds
+    - modelSeconds
+    properties:
+      proposals:
+        type: array
+        maxItems: 20
+        items: { $ref: '#/schemas/HuddleProposal' }
+      allowCompanyContext: { type: boolean }
+      toolActivity: { $ref: '#/schemas/HuddleToolActivity' }
+      agent: { $ref: '#/schemas/HuddleVoiceIdentity' }
+      state:
+        type: string
+        enum:
+        - pending
+        - starting
+        - listening
+        - speaking
+        - unavailable
+        - disabled
+        - ended
+      disabled:
+        type: boolean
+      unavailableReason:
+        type: string
+        enum: [budget, service_disabled, connection, agent_unavailable, context_sharer_left]
+        description: Present when unavailable; budget includes allowance held by other calls or an expired call reservation.
+          context_sharer_left means the person who shared Company context left the call, so the
+          Agent stopped; someone still in the call can share it again.
+      stopReason:
+        $ref: '#/schemas/HuddleAIStopReason'
+      revision:
+        type: integer
+        format: int64
+      canModerate:
+        type: boolean
+      canShareContext:
+        type: boolean
+        description: The viewer can moderate and is in the call (connected and an active
+          member of the Huddle chat), so they may invite the Agent with Company context.
+          A moderator outside the call invites it without context.
+      attemptId:
+        type: string
+        format: uuid
+      deadlineAt:
+        type: string
+        format: date-time
+      captureState:
+        type: string
+        deprecated: true
+        enum:
+        - unavailable
+        description: Legacy live-capture readiness field; always unavailable. Saved
+          transcript cards are delivered in Huddle chat after an Agent invitation
+          ends, and do not provide live captions or audio recording.
+      roomSeconds:
+        type: number
+      humanSeconds:
+        type: number
+      modelSeconds:
+        type: number
+  SetHuddleAI:
+    type: object
+    additionalProperties: false
+    required:
+    - enabled
+    - expectedRevision
+    - requestKey
+    properties:
+      allowCompanyContext:
+        type: boolean
+        description: Defaults to true when inviting and false when disabling. Share read-only Company/project/task context with everyone in this call, independently of Planning. Set false explicitly to opt out. Must be false when disabling. Existing invitations are unchanged. Only someone in the call (connected and an active member of the Huddle chat) may share it, because the Agent then reads as them; anyone else gets 403 huddle_operation_forbidden and invites with false. The Agent stops when that person leaves the call.
+      agentId:
+        type: string
+        format: uuid
+        description: Required when enabling; omit when disabling. Must be an active Company Agent with Voice enabled.
+      enabled:
+        type: boolean
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+      requestKey:
+        type: string
+        format: uuid
+  HuddleAILease:
+    type: object
+    required:
+    - allowCompanyContext
+    - agent
+    - huddleId
+    - roomName
+    - leaseExpiresAt
+    - deadlineAt
+    - greet
+    - chatCursor
+    - humanIdentities
+    - reasoningReserveTicks
+    - completedSeq
+    - pendingChat
+    properties:
+      workNotices:
+        type: array
+        maxItems: 20
+        description: Pending receipt-bound work notices, only with an active shared-context grant and an admitted human. Polling does not claim delivery.
+        items:
+          $ref: '#/schemas/HuddleWorkNotice'
+      claimedWorkNotice:
+        description: A committed at-most-once notification attempt. Absent for stale or already-claimed IDs. Never replay after a lost response.
+        $ref: '#/schemas/HuddleWorkNotice'
+      allowCompanyContext: { type: boolean }
+      agent: { $ref: '#/schemas/HuddleVoiceProfile' }
+      capability:
+        type: string
+      huddleId:
+        type: string
+        format: uuid
+      roomName:
+        type: string
+      leaseExpiresAt:
+        type: string
+        format: date-time
+      deadlineAt:
+        type: string
+        format: date-time
+      greet:
+        type: boolean
+      chatCursor:
+        type: integer
+        format: int64
+      humanIdentities:
+        type: array
+        items:
+          type: string
+      reasoningReserveTicks:
+        type: integer
+        format: int64
+      completedSeq:
+        type: integer
+        format: int64
+      pendingChat:
+        type: array
+        items:
+          $ref: '#/schemas/HuddleAIChatItem'
+  HuddleAIChatItem:
+    type: object
+    required:
+    - id
+    - seq
+    - authorId
+    - displayName
+    - text
+    - createdAt
+    properties:
+      id:
+        type: string
+        format: uuid
+      seq:
+        type: integer
+        format: int64
+      authorId:
+        type: string
+        format: uuid
+      displayName:
+        type: string
+      text:
+        type: string
+      createdAt:
+        type: string
+        format: date-time
+  HuddleWorkNotice:
+    type: object
+    required: [id, state, taskKey]
+    properties:
+      id:
+        type: string
+        maxLength: 160
+        description: Opaque server-derived receipt/run/state checkpoint key. Not an execution capability.
+      state:
+        type: string
+        enum: [waiting_for_input, completed]
+      taskKey:
+        type: string
+  HuddleAIHeartbeat:
+    type: object
+    additionalProperties: false
+    properties:
+      pollWork:
+        type: boolean
+        default: false
+        description: Request pending work notices without model-driven polling; use on the normal five-second heartbeat only.
+      claimWorkNotice:
+        type: string
+        maxLength: 160
+        description: Claim one offered notice before speaking. Current scope and work state are rechecked. At most 128 distinct attempts are retained per proposal; status/result reads remain available after the cap.
+      chatCursor:
+        type: integer
+        format: int64
+        minimum: 0
+      state:
+        type: string
+        enum:
+        - listening
+        - speaking
+      completedSeq:
+        type: integer
+        format: int64
+        minimum: 0
+  HuddleAIUsage:
+    type: object
+    additionalProperties: false
+    required:
+    - modelSessionId
+    properties:
+      modelSessionId:
+        type: string
+        maxLength: 200
+      modelSeconds:
+        type: number
+        minimum: 0
+        maximum: 7200
+      inputTokens:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 100000000
+      cachedInputTokens:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 100000000
+      outputTokens:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 100000000
+      final:
+        type: boolean
+      closed:
+        type: boolean
+      stopReason:
+        $ref: '#/schemas/HuddleAIStopReason'
+  HuddleAIStopReason:
+    type: string
+    description: Bounded session shutdown reason; usage reports may supply this only with closed=true. No provider error text or user content.
+    enum: [provider_error, provider_closed, control_unavailable, authority_revoked, lease_expired, reasoning_budget, microphone_error, worker_shutdown, internal_error, agent_left]

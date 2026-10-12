@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "site": {
+    "alias": "yearly-store",
+    "origin": "https://yearly.example.com",
+    "portalReturnPath": "/settings/billing"
+  },
+  "offers": [
+    {
+      "alias": "pro_yearly",
+      "displayName": "Pro",
+      "type": "subscription",
+      "planGroup": "pro",
+      "entitlement": "plan.pro",
+      "amount": 12000,
+      "currency": "gbp",
+      "interval": "year",
+      "automaticTax": true,
+      "successPath": "/billing/processing",
+      "cancelPath": "/pricing"
+    }
+  ]
+}

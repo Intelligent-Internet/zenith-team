@@ -1,0 +1,541 @@
+.my-account-page {
+  container-type: inline-size;
+  color: var(--workspace-native-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.my-account-section {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--workspace-divider);
+}
+
+.my-account-section:first-child {
+  padding-top: 0;
+}
+
+.my-account-section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.my-account-section > h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 28px;
+  letter-spacing: -0.02em;
+}
+
+.my-account-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.my-account-avatar {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.my-account-avatar > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.my-account-identity > div {
+  min-width: 0;
+}
+
+.my-account-identity strong {
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.my-account-email {
+  margin-top: 3px;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.my-account-form {
+  display: grid;
+  gap: 20px;
+}
+
+.my-account-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.my-account-field {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: 8px;
+}
+
+.my-account-field > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.my-account-field > label > span {
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.my-account-form :is(input, select, textarea) {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font: inherit;
+  transition: border-color 120ms;
+}
+
+.my-account-form :is(input, textarea)::placeholder {
+  color: var(--workspace-native-text-muted);
+}
+
+.my-account-form :is(input, select, textarea):enabled:hover {
+  border-color: var(--workspace-native-text-muted);
+}
+
+.my-account-form :is(input, select, textarea):focus-visible {
+  border-color: var(--workspace-native-accent);
+  outline: none;
+  box-shadow: none;
+}
+
+.my-account-form :is(input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.my-account-phone {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+}
+
+.my-account-country {
+  position: relative;
+  min-width: 0;
+}
+
+.my-account-country > select {
+  height: 100%;
+  appearance: none;
+  padding-right: 32px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.my-account-country > svg {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: var(--workspace-native-text-muted);
+  pointer-events: none;
+}
+
+.my-account-field > textarea {
+  min-height: 96px;
+  max-height: 300px;
+  resize: vertical;
+}
+
+.my-account-field__meta {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
+}
+
+.my-account-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.my-account-form-status {
+  min-width: 0;
+}
+
+.my-account-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.my-account-actions > button {
+  min-height: 36px;
+}
+
+.my-account-save-button:disabled {
+  border-color: var(--workspace-divider);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  opacity: 0.65;
+}
+
+.my-account-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+}
+
+.my-account-feedback.is-error {
+  color: var(--workspace-native-danger);
+}
+
+.my-account-text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-account-text-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.my-account-text-action:enabled:hover,
+.my-account-text-action:focus-visible {
+  background: var(--workspace-hover-bg);
+}
+
+.my-account-timezone,
+.my-account-timezone dd {
+  margin: 0;
+}
+
+.my-account-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 70px;
+  padding: 14px 0;
+}
+
+.my-account-setting-row > :first-child {
+  min-width: 0;
+}
+
+.my-account-setting-row :is(strong, h3) {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.my-account-setting-row > :first-child > :is(span, p) {
+  display: block;
+  margin: 3px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+}
+
+.my-account-timezone dd {
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.my-account-section:has(.my-account-timezone) {
+  padding-bottom: 10px;
+}
+
+.my-account-section:has(.my-account-timezone) > h2 {
+  margin-bottom: 4px;
+}
+
+.my-account-company .workspace-company-switcher {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: none;
+  min-height: 64px;
+  height: auto;
+  padding: 6px 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  text-align: left;
+}
+
+.my-account-company .workspace-company-switcher:hover,
+.my-account-company .workspace-company-switcher:focus-visible,
+.my-account-company .workspace-company-switcher[data-state="open"] {
+  background: var(--workspace-hover-bg);
+}
+
+.my-account-page
+  .my-account-company
+  .workspace-company-switcher
+  .workspace-company-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.my-account-company .workspace-company-details {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.my-account-page .my-account-company .workspace-company-name {
+  max-width: none;
+  color: var(--workspace-native-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.my-account-company .workspace-company-description,
+.my-account-company .workspace-company-action {
+  color: var(--workspace-native-text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.my-account-company .workspace-company-description::first-letter {
+  text-transform: uppercase;
+}
+
+.my-account-company .workspace-company-switcher > svg {
+  color: var(--workspace-native-text-muted);
+}
+
+.my-account-daily {
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.my-account-daily > .my-account-feedback {
+  margin: 0 0 14px;
+}
+
+.my-account-secondary-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--workspace-control-size);
+  padding: 4px 12px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.my-account-secondary-link:hover,
+.my-account-secondary-link:focus-visible {
+  border-color: var(--workspace-native-text-muted);
+  background: var(--workspace-hover-bg);
+}
+
+.my-account-daily .profile-daily-state {
+  margin: 0 0 20px;
+}
+
+.my-account-activity {
+  padding-top: 18px;
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.my-account-activity > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.my-account-activity h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.my-account-activity > header > span {
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+}
+
+.my-account-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 0;
+}
+
+.my-account-metric {
+  min-width: 0;
+}
+
+.my-account-metric + .my-account-metric {
+  padding-left: 24px;
+  border-left: 1px solid var(--workspace-divider);
+}
+
+.my-account-metric dt {
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+}
+
+.my-account-metric dd {
+  margin: 3px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+.my-account-metric small {
+  display: block;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.my-account-metric__skeleton {
+  display: block;
+  width: 70%;
+  height: 24px;
+  margin-top: 4px;
+  border-radius: 4px;
+  background: var(--workspace-control-bg);
+}
+
+.my-account-activity > .my-account-feedback {
+  margin-top: 12px;
+}
+
+.my-account-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.my-account-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--workspace-control-size);
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-native-danger);
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.my-account-delete:hover,
+.my-account-delete:focus-visible {
+  background: var(--workspace-danger-soft);
+}
+
+@container (max-width: 720px) {
+  .my-account-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+@container (max-width: 480px) {
+  .my-account-form-footer {
+    flex-wrap: wrap;
+  }
+
+  .my-account-form-footer > .my-account-actions {
+    margin-left: auto;
+  }
+
+  .my-account-setting-row {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+
+  .my-account-timezone dd {
+    text-align: left;
+  }
+
+  .my-account-company .workspace-company-switcher {
+    grid-template-columns: 40px minmax(0, 1fr) 16px;
+  }
+
+  .my-account-company .workspace-company-action {
+    display: none;
+  }
+
+  .my-account-metrics {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .my-account-metric + .my-account-metric {
+    padding-left: 0;
+    border-left: 0;
+  }
+}

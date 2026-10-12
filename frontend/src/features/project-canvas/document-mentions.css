@@ -1,0 +1,66 @@
+.pc-document-mentions {
+  position: fixed;
+  z-index: 100;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--workspace-divider, var(--border));
+  border-radius: 10px;
+  background: var(--workspace-overlay-bg, var(--popover));
+  color: var(--workspace-native-text, var(--foreground));
+  box-shadow: var(--workspace-overlay-shadow, 0 8px 30px #0002);
+  font-size: 13px;
+}
+.pc-mention-heading,
+.pc-mention-footer {
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--workspace-native-text-muted, var(--muted-foreground));
+}
+.pc-mention-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+.pc-mention-heading span {
+  font-weight: 400;
+}
+.pc-document-mentions [role="listbox"] {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.pc-document-mentions [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.pc-document-mentions [role="option"][aria-selected="true"] {
+  background: var(--workspace-hover-bg, var(--muted));
+}
+.pc-document-mentions [role="option"] svg {
+  flex: none;
+  opacity: 0.7;
+}
+.pc-document-mentions [role="option"] span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-document-mentions p {
+  padding: 8px 10px;
+  margin: 0;
+}
+.pc-document-mentions p button {
+  text-decoration: underline;
+}

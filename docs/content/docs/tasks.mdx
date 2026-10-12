@@ -1,0 +1,153 @@
+---
+title: Tasks
+description: The numbered unit of work — its statuses, its member and the agent that works for them, the milestone catalog, dependencies, reports, and how its work merges back.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A task is the numbered unit of work in a [company](/companies), and the coordination boundary between [agents](/agents) and the people who work with them. Each task names two things: its **assignee**, always a member, who is responsible for it and on whose computer it runs; and who it is **executed by** — an agent, or the assignee themselves. It also carries a milestone type and owns exactly one [conversation](/conversations), created with it in the same transaction.
+
+Tasks are usually proposed by agents through the [Company Plan](/company-plan) and approved by you, but you can also create one directly. Either way, the task is what the rest of the system hangs on: its conversation holds the discussion, its [runs](/runs) do the work, and its outcome is reported up the agent tree.
+
+## Parts of a task
+
+| Part | What it is |
+|---|---|
+| **Key and number** | `number` is monotonic per company, and `{taskPrefix}-{number}` — `ENG-14` — is the label every surface shows; `key` is the task's stable identity: that same label when the task was created without one (the server mints it), or the slug a Company Plan chose. Agents quote the key; the CLI resolves both |
+| **Project** | The project it belongs to, chosen when it is created and never changed. Only the people who can see that project see the task, its board and its chat, and what each of them may do with it is their [project access](/project-access) |
+| **Milestone type** | The company-building outcome it advances — see [Milestone types](#milestone-types) |
+| **Assignee** | Always a member. They are responsible for the task, they alone can start it, and it runs on a computer they registered. A task can be given only to someone who can see its project, and starting it needs the right to run tasks there |
+| **Executed by** | The agent that does the work, or the assignee again when they do it themselves. Changing it once the task has run is a handoff |
+| **Priority** | `low`, `medium` (the default), `high`, or `urgent` — assignment and start runs are enqueued at the task's priority |
+| **Status** | The workflow state — see [Status](#status) |
+| **Conversation** | The task's single thread of record |
+| **Dependencies** | Optional prerequisite edges to other tasks — see [Dependencies](#dependencies) |
+
+Three things a task is not:
+
+- **Not a run.** A run is one execution; the task is the durable work record its runs serve. One task accumulates many runs in its one conversation.
+- **Not a container.** There are no subtasks. The only edge between two tasks is a dependency.
+- **Not created by schedules.** A [schedule](/schedules) firing creates a message and a run — never a task.
+
+## Status
+
+A task's status is a founder-owned workflow projection. Run state — not task state — describes execution truth: the status answers "where is this in my workflow", the run answers "what is executing right now". The set is closed:
+
+| Status | Meaning |
+|---|---|
+| `backlog` | Captured, not yet scheduled — the default on create |
+| `todo` | Scheduled, not started |
+| `in_progress` | A run is doing, or is queued to do, the work |
+| `in_review` | A run completed; the outcome awaits your review |
+| `done` | Accepted. Refuses new messages |
+| `blocked` | Flagged as stuck. Entering it raises an [Inbox](/notifications) item |
+| `failed` | The agent declared the business outcome unachievable — server-owned |
+| `error` | The run failed technically with no retry left — server-owned |
+| `cancelled` | Abandoned. Refuses new messages |
+
+Two of these look alike and are not. Both are server-owned — ordinary create and update requests cannot select either — but they mean different things:
+
+| | `failed` | `error` |
+|---|---|---|
+| **What it means** | A business outcome: the assigned agent declares, from its live run, that the goal of the task cannot be achieved — "the supplier rejected the order" | A technical outcome: the run failed and no retry was left |
+| **What it records** | `completedAt` and a failure report carrying the agent's reason | Nothing final — the task remains restartable |
+| **How it clears** | Only a fresh message from you — an explicit resume. An [approval or question](/approvals-and-questions) continuation cannot reopen it | A message, or an explicit start |
+
+A completed run never moves a task to `done`. Completion moves it to `in_review`; you — or a [merge acceptance](#merging-task-work) — decide when it is `done`. The review is the assignee's, or an owner's or admin's: only they see **Review changes** and **Mark as done without review**, and only they can move a task out of `in_review`. Inside the task's project, accepting the agent's changes also needs **Run tasks with agents**, and marking the task done **Create and edit tasks** ([Project access](/project-access)). Only they see **Needs your review** on an agent's task in review, and its status as **Needs review**, and only when its last run completed; everyone else, and a task moved to review by hand, shows its usual status, **In review**. Which terminal run projects which status, and the fences that make a stale run's projection a no-op, are defined in [Runs](/runs#run-completion-and-task-status).
+
+## Assignment and execution
+
+The assignee is the single execution authority, and the computer is theirs. A task executed by an agent runs on the assignee's own setup of that agent: if they have not set it up yet, the run button offers to do that first, and nobody else can start the task on their behalf. Anyone else who opens the task reads, under its buttons, who can start it, such as "Only Mia can start this". Until it can run there, Next up lists the task under Waiting and says what it waits for in a few words, such as "Mia hasn't set up Eli" or "Mia's computer is offline". If the assignee has left the company, the agent is archived, or the assignee may not run tasks in the task's project, the task is listed under Needs your input instead, because it waits for someone to give it to another member or agent, or to let the assignee run tasks there. A task with an open [approval or question](/approvals-and-questions) is listed under Needs your input only if you may answer it. Otherwise it waits for someone else's answer: it shows as running while its work is in progress, or under Waiting, and Next up offers no start until the answer comes. A task the assignee does themselves starts no agent run and is completed by them.
+
+Anyone else can still write in the task's conversation. Their words are saved for the assignee, who is told about them, and the assignee's next run reads them in order — nothing is lost, and nothing starts on somebody else's machine. Files attached to such a message reach that run too, and every run after it, like any file on the task.
+
+**Handing a task over.** Change the **Assignee** or **Executed by** row wherever a task's properties show — the task page, the Work side panel or a project's task panel. Changing either is an ordinary edit while the task has never run. Once it has, Zenith Team asks you to confirm: the work in flight is cancelled, the task starts again from the project's main branch on the new assignee's computer, and the previous assignee is told. Moving it only to another agent keeps the assignee, who is told when that stopped their run. Earlier runs can no longer be reviewed, so their "Ready to review" notices close, and a task that was in progress or in review goes back to To do for its new holder to start — unless you hand it to yourself with an agent, which starts that run at once. That needs **Run tasks with agents** on the project: without it the agents in your own open task's **Executed by** list, and you in its **Assignee** list for an agent's task, show a lock and "Needs Run tasks". Files that were never merged stay on the computer that made them — nothing moves them, and nobody else can reach them. Handing a task over needs the `tasks.assign` permission (owners and admins) or being the current assignee; everyone else sees both rows as plain names. The new assignee must be able to see the task's project. If someone loses access to a project, their tasks there stay assigned to them until an owner or admin who can see it hands them over.
+
+**A task for someone else.** Owners and admins can pick another member as the assignee when they create a task. No run starts: the new assignee is told, and starts it on their own computer.
+
+## Milestone types
+
+The [milestone type](/concepts#milestone-type) classifies the company-building outcome a task advances. The catalog is closed and versioned, and each type belongs to one of four stages — `foundation`, `build`, `launch`, `grow`:
+
+| Milestone type | Stage | Outcome |
+|---|---|---|
+| `positioning` | Foundation | Who the company serves, the problem it owns, the message customers remember |
+| `brand` | Foundation | The reusable visual identity and brand guidance |
+| `operations` | Foundation | A repeatable operating workflow with clear ownership and reporting |
+| `product` | Build | The customer-facing product, service, website, app, and revenue path |
+| `launch` | Launch | A coordinated release with a ready customer surface and a measurable response path |
+| `growth` | Grow | Demand and conversion — social, content, community, SEO, campaigns |
+| `sales_outbound` | Grow | A focused prospecting and outreach motion with durable pipeline follow-up |
+| `support` | Grow | Dependable customer onboarding, support, and retention |
+
+Stages organize recommendations; they do not lock every company into the same sequence. The catalog also seeds default prerequisites when a plan is generated, but only the dependencies actually written on your tasks govern execution.
+
+## Dependencies
+
+A task may name other tasks as prerequisites. The rule is strict and single: work is admitted only when every prerequisite is `done` — `in_review` does not count. The same predicate gates every path into execution: an explicit start, a new message in the task conversation, an automatic retry, and assigning an agent. A blocked attempt returns `409 task_dependency_blocked`; nothing polls or waits.
+
+Two projected fields expose the predicate. `blockedByCount` counts prerequisite edges; `dependenciesResolved` is the exact admission check — a task with four prerequisites is startable only once all four are `done`, so it is deliberately not derivable from the count.
+
+A dependency never sets the `blocked` status. Blocking is computed at admission time; `blocked` is a workflow flag a person or a plan sets.
+
+## Tasks and runs
+
+Each task owns exactly one conversation, and every run the task ever gets happens there. Work starts three ways:
+
+| Trigger | What it requires |
+|---|---|
+| **Assignment** | Naming the agent that does the work — at create or later — starts a run in the same transaction when you are the task's assignee and have that agent set up, and moves the task to `in_progress`, admitted by status exactly like a message; re-selecting the same agent starts nothing, and assigning the task to somebody else starts nothing at all — they start it themselves |
+| **Explicit start** | You are the assignee, an agent does the work, the task is `backlog`, `todo`, `blocked`, or `error`; the latest run terminal; every prerequisite `done` |
+| **A message** | You write in the task conversation — admitted by status, below |
+
+An assignment and an explicit start look the same in the chat: the task's title and description appear as your message, and the agent's reply answers it.
+
+A message may start or queue work only for an agent-assigned task, and only when every prerequisite is `done`. Admission depends on the current status:
+
+| Current status | A new message |
+|---|---|
+| `backlog`, `todo`, `in_review`, `blocked`, `failed`, `error` | Admitted; moves the task back to `in_progress` when its fresh run materializes |
+| `in_progress` | Admitted; the task stays where it is |
+| `done`, `cancelled` | Refused |
+
+If another run is already active, an admitted prompt waits in the conversation's queue and is checked again when it reaches the head — an ineligible prompt is removed rather than reopening the task.
+
+Each fresh run advances a counter on the task — the execution generation — and freezes it on the run, so a stale run from an earlier start can no longer change the task.
+
+Messaging a `failed` task is an explicit resume: the fresh run moves it back to `in_progress` and supersedes the pending failure report.
+
+## Task reports
+
+A `done` or `failed` outcome on an agent-assigned task becomes a pending report, routed up the assignee's reporting tree to the agent at its top — the [CEO Agent](/agents#the-ceo-agent-and-the-reporting-tree). The CEO Agent's own task outcomes create no report; there is no one above it.
+
+A report is not delivered when it is created. It waits until a person confirms the pending batch: the outcomes become one message and one run in the recipient agent's direct conversation, so the recipient learns of finished work the way it learns everything — in its own thread. You preview the batch first, and a recipient that is mid-run refuses the send until it is free. When the company's Proactive Mode is on, Zenith Team confirms the CEO Agent's batches automatically on your behalf.
+
+If a reported outcome changes before delivery — say a `failed` task is resumed — the stale pending report is superseded rather than rewritten. The recipient never receives an outcome the task has already moved past.
+
+## Merging task work
+
+A task run executes on its own branch in a Git worktree, not in the scope's durable `main` workspace — so finishing a task has a second act: merging the branch back. The disk mechanics — the worktree, the branch, which machine merges — live in [Workspaces](/workspaces#merging-task-work-back). What the product decides is when a merge is requested:
+
+| Request | When |
+|---|---|
+| **Proactive** | With the company's Proactive Mode on, every completed task run queues a durable merge job automatically; tasks already `in_review` when the mode is switched on are backfilled |
+| **Manual** | You review the task's diff in the desktop app and accept it. The acceptance is fenced to the exact task revision and execution generation you reviewed, and the task must still be `in_review` |
+
+Both paths produce the same durable, leased job. A `merged` result moves the task from `in_review` to `done` and files its done report; a `blocked` result — a conflict, for example — records why and changes nothing on the task. A job whose task has moved to a newer generation merges nothing.
+
+## Cancelling and deleting
+
+Cancelling is a status change, not a removal: set `cancelled` yourself, or a cancelled run projects it. The task, its conversation, and its history all remain; the conversation refuses new messages.
+
+There is no delete endpoint for a task. The one place a task row is deleted is a Company Plan apply: tasks the applied plan no longer contains are deleted unless they are `done`, `failed`, or `cancelled`. The task's conversation is detached, not deleted — its messages, runs, and usage evidence remain readable.
+
+<Callout type="warning">
+Applying a Company Plan permanently deletes every non-terminal task the plan omits — including tasks that are `in_progress`, `in_review`, or `error`. The detached conversation and its transcript survive; the task itself, its number, and its dependency edges do not, and there is no undo.
+</Callout>
+
+## Next steps
+
+- **[Runs](/runs)** — the execution behind every task transition, and the projection fences.
+- **[Company Plan](/company-plan)** — how agents propose tasks and you approve them.
+- **[Workspaces](/workspaces)** — the worktree a task's runs execute in, and where merges land.
+- **[Conversations](/conversations)** — the thread of record every task owns.

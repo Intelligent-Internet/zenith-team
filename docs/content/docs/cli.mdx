@@ -1,0 +1,187 @@
+---
+title: CLI reference
+description: The zen command-line tool for signing in, running the daemon, and working with tasks, runs and conversations — from a terminal or from inside a Run.
+---
+
+`zen` is the Zenith Team command-line tool. From a terminal it signs you in, runs the [daemon](/daemon-and-runtimes) on a headless machine, and works with [tasks](/tasks), [runs](/runs), [conversations](/conversations), [agents](/agents) and the founder's [questions and approvals](/approvals-and-questions) over the same API the app uses. Inside a Run the very same binary runs in **Agent mode**: the daemon binds it to that Run, so an Agent can read its Task, ask you a Question or report a failure with one command and no credential.
+
+The desktop app's daemon is separate. The app supervises its own daemon with its own state directory, so a terminal login and a terminal-started daemon never share — or disturb — the desktop's session. The families below are the stable surface; the flags your installed version supports are always defined by each command's own `--help`.
+
+## Two modes
+
+| Mode | Who | Credential | Company | Allowed |
+|---|---|---|---|---|
+| **Operator** | a person at a terminal | the session from `zen auth login` in `~/.boardly/auth.json` | `--company`, then `BOARDLY_COMPANY_ID`, then `zen company use` | everything |
+| **Agent** | a provider process the daemon launched for a Run | none — `run.json` in the Run's private `BOARDLY_HOME` names a daemon channel | fixed to the Run's Company; a different `--company` is refused | the commands the Run's policy admits |
+
+`zen auth status` says which mode a shell is in and where its server and company came from. The two modes never fall back to each other: a Run whose channel is missing fails, it does not borrow your session.
+
+## Global flags
+
+| Flag | Meaning |
+|---|---|
+| `--output table\|json` | Lists default to a table; single objects and mutation results default to JSON, which prints the server body untouched |
+| `--company <id>` | The company for this command (Operator mode) |
+| `--request-key <uuid>` | Idempotency key for a mutation; in Agent mode one is derived from the command so an exact retry converges. `zen task create` is the exception: the server does not deduplicate it, so only a stable `--key` makes a retry safe |
+| `--debug` | Print the full error chain |
+
+Results go to stdout; progress, warnings and pagination hints go to stderr, so `--output json` stays parseable.
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | success |
+| `1` | generic failure |
+| `2` | network: the server or daemon could not be reached |
+| `3` | not authorized: signed out, session rejected, outside the Run's scope, or an operator command inside a Run |
+| `4` | not found |
+| `5` | invalid input |
+| `6` | conflict: the object changed since it was read (stale revision) or a key collided |
+
+A failure prints one line on stderr and leaves stdout empty. With `--output json` that line is a JSON object, so a script or an agent branches on the code instead of reading prose:
+
+```
+{"error":{"code":"task_outside_run_scope","message":"Permission denied. You can only access your own Tasks.","status":403,"exitCode":3,"requestId":"…"}}
+```
+
+`code`, `status` and `requestId` are the server's and are left out when the failure never reached it. `message` is the sentence to show a person; a server failure puts the request that failed in front of it, except a Run's refused task read, which prints the server's sentence as it stands.
+
+## Sign in
+
+```bash
+zen auth login                 # email and password, prompted
+zen auth login --google        # sign in with Google in your browser
+zen auth login --code <code>   # redeem a handoff code from a signed-in session
+zen auth status                # session state, effective server and company, and why
+zen auth whoami                # the account and its companies
+zen auth logout                # end the session on the server and forget it locally
+```
+
+The password prompt keeps the password out of your shell history — prefer it over `--password`. The `--google` flow opens your browser and completes over a loopback redirect. The `--code` flow is for machines where a browser is impractical: mint a handoff code from an already signed-in Zenith Team session and paste it. Every path verifies the credential against the server before saving it, and records the server URL for later commands.
+
+## Pick a company
+
+```bash
+zen company list
+zen company use 0197f4a1-9d33-7c55-b0a2-51c7e8d90f42
+zen company get
+```
+
+`zen company use` saves the default. `--company` on any command and `BOARDLY_COMPANY_ID` win over it, in that order.
+
+## Run the daemon
+
+| Command | Purpose |
+|---|---|
+| **`zen daemon start`** | Start the daemon, detached from your terminal (`--foreground` keeps it in this process) |
+| **`zen daemon stop`** | Stop the running daemon — it signals only the exact process the health check identifies, then waits up to 15 s for that process to exit |
+| **`zen daemon status`** | Health: status, pid, version, uptime, server, detected provider CLIs, registered companies, active runs, session state, skipped providers, and a `restart pending` line while a replaced binary waits for the daemon to go idle |
+| **`zen daemon restart`** | Switch the daemon to this binary once its in-flight runs finish |
+| **`zen daemon logs`** | Print the log file paths and tail the main log (`-f` follows, `-n` sets the line count) |
+| **`zen doctor`** | Session, server reachability, daemon health, provider CLIs and effective configuration, each with a next action; `--output json` for support bundles |
+
+A detached start writes the daemon's output to log files under `~/.boardly` and waits for the health port to report `running` before returning. The daemon runs on a session of its own, not on yours: `daemon start` creates it from your `zen auth login` session the first time, and refuses to launch when you are not signed in — run `zen auth login` first. That session works only for the daemon's own calls and for a running Agent's calls for you, never as you. `zen auth logout` ends both. A daemon started from the terminal follows the `zen` binary it was started from and, once idle, restarts into a replaced binary; turn that off with `--no-auto-reload`, `BOARDLY_AUTO_RELOAD=false`, or `zen config set disable_auto_reload true`.
+
+Everything the CLI persists lives in one directory (`zen config path` prints it):
+
+| Path | What it holds |
+|---|---|
+| **`~/.boardly/auth.json`** | Your session — access token and rotating refresh token |
+| **`~/.boardly/daemon-auth.json`** | The daemon's own session, created by `daemon start` |
+| **`~/.boardly/config.json`** | The saved settings from `zen config set` and `zen company use` |
+| **`~/.boardly/daemon.id`** | This machine's stable daemon identifier, minted on first start |
+| **`~/.boardly/daemon.log`** | The daemon's log — what `daemon logs` tails |
+| **`~/.boardly/daemon.err.log`** | Crash output, near-empty on a healthy machine |
+
+On a Mac, Agents cannot read or change this directory: the daemon starts every provider CLI inside a sandbox that keeps it, and the desktop app's own session, out of reach, and reports the computer as protected. The same sandbox stops a run from reading another run's connection to Zenith Team, and, inside the workspaces folder, from writing anything but its own folders, so it cannot leave code there for another run. A run started by tagging an agent in a channel or group DM cannot even read the rest of the workspaces folder (your Company `main` workspace and its memory included) or your bound local directories: its answer goes to everyone in the chat, and project access does not cover your own folders and memory, so nothing from them should end up there. App previews start in it too. On Windows and Linux there is no such wall yet, and the daemon reports the computer as not protected.
+
+## Configuration
+
+`zen config show` prints the saved settings; `zen config set <key> <value>` changes one; an empty string clears it. The keys are `server_url`, `company_id`, `device_name`, `workspaces_root`, `poll_interval`, `heartbeat_interval`, `max_concurrent_runs`, `agent_timeout`, `codex_semantic_inactivity_timeout`, `codex_handshake_timeout`, `log_level` and `disable_auto_reload`. The daemon keys mirror `daemon start` flags and `BOARDLY_*` environment variables; precedence is always `--flag` &gt; `BOARDLY_*` env &gt; `config.json` &gt; built-in default, and `zen doctor` shows which rung each value came from.
+
+## Tasks
+
+| Command | Purpose |
+|---|---|
+| **`zen task list`** | The tasks you can see (`--project`, `--status a,b`, `--priority`, `--assignee-user`, `--executed-by-agent`); in Agent mode, only the Run's own tasks (the root agent in its direct chat, with Company planning on, sees every task its member sees), and only in a Run outside a task |
+| **`zen task get <id\|key>`** | One task by id, by key, or by the label the app shows (`ENG-12` finds task 12 even when its key is a plan slug); in Agent mode, the Run's own task when omitted, and any task that is not the Run's own is refused |
+| **`zen task create`** | `--title`, `--milestone` and `--project` (id or key) required, except that a Task Run files the task in its own Project when `--project` is left out; `--assignee-user` names the member who owns the task (default: you; inside a Run the task always belongs to the member the Run works for and the flag is refused), `--executed-by-agent` the agent that does the work (inside a Run, default: the Run's own agent) and `--executed-by-self` the assignee doing it themselves; the work starts right away only when you are the assignee and have that agent set up; the server mints the key `{prefix}-{number}` from the number it allocates unless `--key` is given |
+| **`zen task update`** | Only the flags you pass change. `--assignee-user` hands the task to another member and `--executed-by-agent` / `--executed-by-self` change who does the work; once the task has run, either needs `--confirm-handoff`, which cancels the live run and starts the work over on the new assignee's computer |
+| **`zen task update <id\|key>`** | Only the flags you pass change; the revision is fetched first, or pass `--revision` |
+| **`zen task start <id\|key>`** | Start an execution run |
+| **`zen task dependencies [id\|key]`** | The tasks it depends on (`blocked by`) and the tasks waiting on it (`blocks`) |
+| **`zen task workspace <id\|key>`** | Its workspace and conversation |
+| **`zen task messages <id\|key>`** | Its conversation's messages |
+| **`zen task send <id\|key> --content`** | Send a message into its conversation |
+| **`zen task fail --reason`** | Agent mode only: declare the Run's task a business failure with evidence |
+
+A command that takes a task sends the name it was given — id, key or label — to the server, which looks keys and labels up itself. The CLI never reads the task list to find it, so a name that is no task fails with the server's `task_not_found`, its request id and exit code `4`. The name travels as one path segment, so a name with `/`, or a lone `.` or `..`, is refused before it is sent (exit code `5`); use the task's id or its label instead. Any other name, such as one with a space or a letter like `é`, is escaped on the way and reaches the server as given. Inside a Run the rule is stricter (see [Agent mode](#agent-mode)).
+
+Bodies such as `--description` and `--content` accept a `-file` or `-stdin` variant, so multi-line text never has to fight shell quoting.
+
+## Runs and conversations
+
+| Command | Purpose |
+|---|---|
+| **`zen run list`** | Newest first (`--active`, `--status`, `--task`, `--conversation`, `--agent`, `--runtime`, `--cursor`) |
+| **`zen run get [id]`** | One run; the current Run when omitted in Agent mode |
+| **`zen run cancel <id>`** | Cancel a queued or running run |
+| **`zen run context`** | Agent mode: the Run's identity and the commands it may use, read from `run.json` without a network call |
+| **`zen conversation list\|get\|create`** | Direct conversations (`create --agent <id>`) |
+| **`zen conversation messages [id]`** | What people and the agent said (`--after-seq`, `--limit`) |
+| **`zen conversation transcript [id]`** | The durable provider transcript across every run |
+| **`zen conversation send <id> --content`** | Send a message |
+
+## Questions, approvals and the inbox
+
+| Command | Purpose |
+|---|---|
+| **`zen question list\|get`** | Founder questions (pending by default) |
+| **`zen question ask`** | Agent mode only: `--title`, then one `--prompt` per prompt with its `--option` values; `--prompts-file` for the exact API array |
+| **`zen question answer <id>`** | `--text` and `--select` per prompt, or `--answers-file` |
+| **`zen question withdraw <id>`** | Withdraw a pending question |
+| **`zen approval list\|get\|approve\|reject\|cancel`** | Founder approvals; decisions take `--note` |
+| **`zen inbox list\|counts\|read\|unread\|archive\|restore\|read-all`** | The notification inbox |
+| **`zen schedule list\|get\|runs\|pause\|resume\|cancel\|run-now`** | Your schedules |
+
+## Agents and runtimes
+
+| Command | Purpose |
+|---|---|
+| **`zen agent list\|get\|create\|copy\|update\|archive\|restore\|usage`** | Agents; `create` needs `--name`, `--title`, `--provider`, and takes `--runtime-id` (also set it up on that computer of yours), `--reports-to` (default: the root), `--model`, `--thinking-level`, `--instructions`, `--avatar-key`, `--accent-color`, `--max-concurrent-runs`; `copy <id>` clones an agent — the copy keeps the model and thinking level while the provider is unchanged, and `--provider` is how an agent moves to the other one |
+| **`zen agent bind\|unbind\|bindings`** | Your own setup: `bind <agentId> --runtime-id` sets an agent up on one of your computers or moves it, `unbind <agentId>` stops running it there and cancels your queued runs of it, and `bindings` lists the agents you have set up and where |
+| **`zen runtime list\|get\|rename\|remove`** | The machines registered in the company; `remove --target` moves its agents |
+| **`zen mail draft`** | Agent mode only: a reviewable Agent Mail draft; nothing is sent until you approve |
+| **`zen commerce dev -- <command...>`** | Run a local Site under the current task's scoped signing lease |
+
+## Agent mode
+
+The daemon places one exact copy of `zen` on the PATH of every Task and direct-conversation Run, together with a private `run.json` in that Run's `BOARDLY_HOME`. The file names the daemon's loopback endpoint, a capability bound to the Run, the frozen Run identity and the admitted commands. Every product call the CLI makes in this mode goes to the daemon's **Run channel**, and the daemon forwards it to the server with its own session and the Run proof after checking the request against the Run's policy. The Zenith Team MCP tools reach the server through the same channel. The agent process never holds a credential, cannot widen its scope through flags or environment, and loses the channel the moment the Run ends.
+
+The system prompt tells the Agent exactly which commands its Run admits; a Task Run typically gets `zen run context`, `zen task get`, `zen task dependencies`, `zen conversation messages`, `zen conversation transcript`, `zen agent list`, `zen company get`, `zen question ask`, `zen task fail`, `zen task create`, and the Commerce reads; a Run outside a task, such as a direct conversation, adds `zen project list`, `zen project get` and `zen task list` (unless the agent's Company planning is off). Artifact presentation uses the `present_output` MCP tool. The daemon receives its structured input through the Run channel, snapshots workspace files, uploads them, saves the Output, and registers local app previews. This operation is not a `zen` command. Task Runs can also load the built-in `zenith-platform` Skill through `search_skills` for the full reference. Operator commands (`auth login`, `daemon start`, `config set`, `company use`) fail inside a Run on purpose, with exit code `3`.
+
+`zen task create` inside a Run files work for the member the Run works for. The daemon forwards it with that member's session, so they become the assignee, the Run's own agent does the work unless the command names another agent or `--executed-by-self`, and the task starts at once on their computer when they have that agent set up. `--assignee-user` is refused inside a Run. Once the Run is cancelled (the task is handed off, or someone stops it) the command is refused, so a stopped Run cannot file follow-up work. A Task Run files it in its own Project and may look up only that one; a direct conversation names any Project it can read, and is not offered the command when its agent's Company planning is switched off. The CEO agent outside a Task is not offered it either: its proposed work reaches other agents only through a Company Plan the founder reviews first. Switching an agent's Work coordination off withholds the command in every Run.
+
+A command outside the Run's scope fails with `run_scope_denied` and exit code `3`. The request never reaches the server, so the daemon log records the refusal as a warning with the Run, the method and the path.
+
+A Run reads only its own tasks: the ones its agent does for the member the Run works for. In a Run outside a task `zen task list` shows just those (a Task Run is not offered `zen task list` or `zen project list`, nor `zen project get` of any Project but its own, and gets `run_scope_denied` if it tries), and `zen task get` or `zen task dependencies` of any other task — by id, key or label — fails with `task_outside_run_scope` and exit code `3`. The server makes that refusal with one fixed sentence that names no task, member or agent, and the CLI prints it as it stands. The agent then tells the person, briefly, that it cannot access that task and that only its assignee can start it:
+
+```
+zen: Permission denied. You can only access your own Tasks. (code: task_outside_run_scope) [request …]
+```
+
+Those two commands send the name they were given to the server, as every task command does; the Run's list holds only the Run's own tasks, so a colleague's task could not be looked up there anyway. A task Run reads other tasks by name the same way and gets the same refusal. A task Run reads only in its own task's Project: the member's own tasks in other Projects are refused the same way, because its answer lands in the task chat, which only that Project's readers see. Inside a Run the name must travel as it is: the daemon refuses any `%` in a request path, so a name with `/`, `%`, `?`, `#`, a space or any other character a URL escapes (a letter like `é`), or a lone `.` or `..`, is refused before it is sent (exit code `5`); use the task's id or its label instead.
+
+When someone tags an agent in a channel or a direct message between people, the run works with that person's access, never more: it sees the projects and tasks they can see, and a project or task they cannot see is not found, as for them; filing a task in such a project is refused with the same sentence. Everyone in the chat reads the answer, so the person who tagged the agent is responsible for what it shares. Tag an agent there only for what everyone in the chat may see, and ask about private work in the task's chat or your own chat with the agent. The name travels as one path segment, so a name with `/`, `%`, `?`, `#` or a space, or a lone `.` or `..`, is refused before it is sent (exit code `5`); use the task's id or its label instead.
+
+One read of every task remains, and only for the root agent in its direct chat while Company planning is on: it plans the company, so its Company Plan export (an MCP tool) holds the whole plan, and its `zen task` reads show every task its member can see. The server decides this, not the agent's computer. No other agent reads that much, and neither does the root agent mentioned in a channel, working in a task Run, or with Company planning switched off: there its reads are scoped like any Run's.
+
+Output presentation, Company Plan transactions and Skill reads are MCP tools. Scheduled Runs receive neither the output tool nor a CLI channel, so they cannot save Artifacts; they remain connector-only and still return their textual Run result.
+
+## Next steps
+
+- **[Daemon and runtimes](/daemon-and-runtimes)** — what the daemon does once it is running.
+- **[Workspaces](/workspaces)** — the tree that `workspaces_root` places.
+- **[Providers](/providers)** — signing in to Codex and Claude Code, the CLIs the daemon launches.
+- **[Quickstart](/quickstart)** — the desktop-app path, if you would rather not touch a terminal.

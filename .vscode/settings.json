@@ -1,0 +1,21 @@
+{
+  // Editor tests never start PostgreSQL implicitly. Use `make go-test` for the
+  // Docker-backed suites; -count=1 avoids stale results while debugging.
+  "go.testFlags": ["-count=1"],
+  "go.testTimeout": "300s",
+  "go.formatTool": "custom",
+  "go.alternateTools": {
+    "customFormatter": "${workspaceFolder}/.tools/bin/golangci-lint"
+  },
+  "go.formatFlags": ["fmt", "--stdin", "--enable", "golines"],
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "gopls": {
+    "build.directoryFilters": ["-frontend", "-node_modules", "-.claude"],
+    // Without this, every *_integration_test.go file reads as "excluded from
+    // build" in the editor, with no completion and no diagnostics.
+    "build.buildFlags": ["-tags=integration"]
+  }
+}

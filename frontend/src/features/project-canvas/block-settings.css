@@ -1,0 +1,140 @@
+.pc-has-settings {
+  position: relative;
+}
+.pc-has-settings > .pc-collection-heading,
+.pc-has-settings > .pc-reference-heading {
+  padding-right: 38px;
+}
+.pc-has-settings > .pc-block-settings {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.pc-has-settings > .pc-block-settings,
+.po-overview-section-heading .pc-block-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  min-height: 30px;
+  padding: 5px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--pc-muted);
+  background: var(--pc-paper);
+  opacity: 0;
+  pointer-events: none;
+}
+.pc-has-settings:hover > .pc-block-settings,
+.pc-has-settings:focus-within > .pc-block-settings,
+.po-overview-section:hover .pc-block-settings,
+.po-overview-section:focus-within .pc-block-settings,
+.pc-block-settings[data-state="open"],
+.pc-block-settings[data-needed="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pc-block-settings-popup {
+  --pc-ink: var(--workspace-native-text);
+  --pc-muted: var(--workspace-native-text-muted);
+  --pc-line: var(--workspace-divider);
+  --pc-paper: var(--workspace-panel-bg);
+  --pc-raised: var(--workspace-panel-raised-bg);
+  --pc-accent: var(--workspace-native-accent);
+  z-index: 80;
+  width: min(300px, calc(100vw - 32px));
+  max-height: var(--radix-popover-content-available-height);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid var(--pc-line);
+  border-radius: 12px;
+  color: var(--pc-ink);
+  background: var(--pc-paper);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 12%);
+  font: 12px/1.5 var(--workspace-font-body);
+}
+.pc-block-settings-popup > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.pc-block-settings-popup button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px;
+  background: transparent;
+  color: var(--pc-ink);
+  cursor: pointer;
+  font: inherit;
+}
+.pc-block-settings-popup button:hover,
+.pc-block-settings-popup button[aria-pressed="true"] {
+  background: var(--pc-raised);
+}
+.pc-block-settings-popup label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.pc-block-settings-popup :is(select, input) {
+  flex: 1 1 140px;
+  min-width: 0;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--pc-line);
+  border-radius: 6px;
+  color: var(--pc-ink);
+  background: var(--pc-paper);
+  font: inherit;
+}
+.pc-block-settings-popup > p {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--pc-muted);
+}
+.pc-block-settings-popup :is(button, select, input, a):focus-visible,
+.pc-block-settings:focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 2px;
+}
+@media (hover: none) {
+  .pc-has-settings > .pc-block-settings,
+  .po-overview-section-heading .pc-block-settings {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.po-page-menu .pc-page-actions > button,
+.po-page-menu > button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 34px;
+  padding: 7px 8px;
+  text-align: left;
+}
+.po-page-menu .pc-page-actions > button:disabled,
+.po-page-menu > button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.po-page-menu .po-page-properties {
+  margin-top: 14px;
+  padding-top: 4px;
+  border-top: 1px solid var(--pc-line);
+}
+.po-page-menu .po-page-properties p {
+  color: var(--pc-muted);
+  font-size: 11px;
+}

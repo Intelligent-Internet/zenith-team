@@ -1,0 +1,201 @@
+# golangci-lint v2 configuration for the Boardly Go server (version pinned in
+# the root Makefile). Style baseline: Google Go Style Guide + CodeReviewComments.
+#   make go-fmt        -> golangci-lint fmt          (gofumpt + goimports, rewrites)
+#   make go-fmt-check  -> golangci-lint fmt --diff   (exit 1 if unformatted)
+#   make go-lint       -> golangci-lint run          (also flags unformatted files)
+#   make go-lint-fix   -> golangci-lint run --fix
+version: "2"
+
+run:
+  concurrency: 4
+  timeout: 5m
+  tests: true
+  # Without this, the `//go:build integration` tag on every *_integration_test.go
+  # file would hide all 85 of them from the linter as well as from the compiler,
+  # and they would rot unlinted. The unit lane still runs them untagged; this
+  # only widens what golangci-lint is allowed to see.
+  build-tags:
+    - integration
+  # v2 default, stated explicitly: exclusion paths below resolve relative to
+  # this file's directory (server/), regardless of invocation cwd.
+  relative-path-mode: cfg
+
+formatters:
+  enable:
+    - gofumpt # strict superset of gofmt
+    - goimports # import management + stdlib / third-party / local grouping
+    - golines # wrap lines past max-len; the baseline was migrated 2026-08-11
+  settings:
+    gofumpt:
+      module-path: boardly.dev/boardly/server
+      extra-rules: true
+    goimports:
+      local-prefixes:
+        - boardly.dev/boardly/server # our imports grouped last
+    # Applies to the whole tree. tab-len 8 matches how Go renders a tab, so
+    # max-len is measured the way the code actually reads.
+    golines:
+      max-len: 120
+      tab-len: 8
+      shorten-comments: false
+      reformat-tags: true
+      chain-split-dots: true
+  exclusions:
+    # sqlc output under pkg/db/generated carries the canonical
+    # "Code generated ... DO NOT EDIT." header, so header detection alone keeps
+    # it unformatted. An explicit path entry here would be reported as unused.
+    generated: lax
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - asciicheck # reject Unicode homoglyphs in identifiers
+    - bidichk # reject bidirectional Unicode control characters
+    - bodyclose # unclosed HTTP response bodies
+    - copyloopvar # loop-var copies made redundant by Go 1.22 semantics
+    - durationcheck # invalid time.Duration multiplication
+    - errorlint # %w wrapping, errors.Is/As over == and type asserts
+    - exptostd # replace x/exp helpers that have stdlib equivalents
+    - gocritic # curated diagnostics (default check set)
+    - intrange # `for i := range n` (Go 1.22+)
+    - loggercheck # validate structured logger key-value pairs
+    - misspell
+    - noctx # HTTP requests without context
+    - nolintlint # keeps nolint directives honest
+    - predeclared # prevent shadowing Go built-in identifiers
+    - reassign # catch unexpected package-variable reassignment
+    - revive # golint successor: the Google conventions live here
+    - rowserrcheck # sql.Rows.Err checked
+    - sqlclosecheck # sql Rows/Stmt closed
+    - testifylint # enforce correct testify assertion patterns
+    - thelper # test helpers call t.Helper()
+    - unconvert # redundant conversions
+    - unparam # unused params / always-same returns
+    - usestdlibvars # http.MethodGet, http.StatusOK over literals
+    - wastedassign
+  settings:
+    errcheck:
+      check-type-assertions: true # unchecked one-result type assertions panic
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # struct-packing micro-optimization, pure noise
+        - shadow # idiomatic err shadowing; Google style does not ban it
+    staticcheck:
+      # "all" = SA + S + ST + QF. The five ST checks below are delegated to
+      # revive so each doc/naming finding is reported once, in golint wording.
+      checks:
+        - all
+        - -ST1000 # package comments        -> revive package-comments
+        - -ST1003 # naming/initialisms      -> revive var-naming
+        - -ST1020 # exported func comments  -> revive exported
+        - -ST1021 # exported type comments  -> revive exported
+        - -ST1022 # exported var comments   -> revive exported
+    revive:
+      # Explicit golint/CodeReviewComments set (revive defaults, pinned, + use-any).
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: use-any
+        - name: var-declaration
+        - name: var-naming
+    misspell:
+      locale: US
+      # "cancelled" is a domain value here, not a typo: it is a persisted task /
+      # goal status and an agent wire-protocol token. US-locale correction
+      # would rewrite enum literals and break status handling.
+      ignore-rules:
+        - cancelled
+        - cancelling
+        - cancellable
+    nolintlint:
+      require-explanation: true # //nolint:foo // reason
+      require-specific: true # bare //nolint forbidden
+      allow-unused: false
+  exclusions:
+    warn-unused: true # surface exclusion rules that no longer match anything
+    generated: strict # v2 default; sqlc headers match the convention
+    presets:
+      - std-error-handling # classic errcheck excludes (defer Close, print)
+      - common-false-positives
+      # Deliberately NOT `comments`: it would suppress exactly the revive
+      # exported/package-comments enforcement Google style requires.
+    rules:
+      # Tests: pragmatic relaxations; everything else still applies.
+      - path: _test\.go
+        linters:
+          - bodyclose # response-body hygiene is not worth the ceremony in tests
+          - noctx # raw requests in tests are fine
+          - errcheck # assert helpers and best-effort cleanup dominate here
+          - unparam # table-driven helpers legitimately take constant arguments
+      - path: _test\.go
+        linters:
+          - revive
+        # Go test helpers idiomatically take *testing.T first, which conflicts
+        # with context-as-argument. Doc-comment rules do not apply to tests.
+        text: "(context.Context should be the first parameter|should have comment|should have a package comment|should be of the form)"
+
+      # ---------------------------------------------------------------------
+      # STAGED DEBT — pre-existing violations, excluded so `make go-lint` is a
+      # usable gate today. These are real Google-style rules, kept enabled so
+      # deleting an entry below immediately re-surfaces the work.
+      #
+      #   1. Doc comments on exported identifiers .......... 2250 findings
+      #      Auto-generating 2250 "// Foo does foo." comments would add noise,
+      #      not information. Burn down per package, then delete this rule.
+      #   2. Capitalized error strings (ST1005) ............. 630 findings
+      #      Mechanically fixable, but these strings reach API clients and the
+      #      UI, so rewording is a product change, not a lint cleanup.
+      #
+      # Burn-down: delete an entry, then scope the work with
+      #   golangci-lint run --new-from-rev=origin/main   (new code only)
+      # ---------------------------------------------------------------------
+      - linters:
+          - revive
+        text: "(should have comment|should have a package comment|should be of the form)"
+      - linters:
+          - staticcheck
+        text: "ST1005:"
+      # The AWS uploader deprecation is acknowledged, not ignored:
+      # feature/s3/transfermanager is not a drop-in replacement, so migrating
+      # is its own change. This is path-scoped rather than a //nolint on each
+      # line because golines rewraps those signatures, and a line-scoped
+      # directive silently stops suppressing when its line moves. s3_test.go is
+      # in scope too: its fake uploader has to spell out the same deprecated
+      # option type to satisfy the interface s3.go declares.
+      - path: internal/infra/storage/s3(_test)?\.go
+        linters:
+          - staticcheck
+        text: "SA1019: manager\\.(Uploader|NewUploader) is deprecated"
+      # internal/testutil/dbtest is test scaffolding, not a _test.go file, so
+      # the _test.go exclusion above misses it. Same reason as s3.go: golines
+      # splits these helper signatures and a line-scoped //nolint stops
+      # applying when the signature wraps.
+      - path: internal/testutil/dbtest/
+        linters:
+          - revive
+        text: "context-as-argument"
+
+issues:
+  # v2 defaults (50 / 3) silently truncate; never hide findings.
+  max-issues-per-linter: 0
+  max-same-issues: 0

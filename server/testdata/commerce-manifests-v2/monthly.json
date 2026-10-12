@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "site": {
+    "alias": "monthly-store",
+    "origin": "https://monthly.example.com",
+    "portalReturnPath": "/settings/billing"
+  },
+  "offers": [
+    {
+      "alias": "pro_monthly",
+      "displayName": "Pro",
+      "type": "subscription",
+      "planGroup": "pro",
+      "entitlement": "plan.pro",
+      "amount": 1200,
+      "currency": "gbp",
+      "interval": "month",
+      "automaticTax": true,
+      "successPath": "/billing/processing",
+      "cancelPath": "/pricing"
+    }
+  ]
+}

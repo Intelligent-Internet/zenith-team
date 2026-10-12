@@ -1,0 +1,43 @@
+.task-working-pages {
+  margin: 20px 0;
+  color: var(--workspace-native-text, inherit);
+  font-size: 13px;
+}
+.task-working-pages > h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.task-working-pages > p {
+  color: var(--workspace-native-text-muted);
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+.task-working-pages a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--workspace-divider);
+  color: inherit;
+  text-decoration: none;
+}
+.task-working-pages a:hover {
+  color: var(--workspace-accent, currentColor);
+}
+.task-working-pages a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.task-working-pages a > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.task-working-pages small {
+  display: block;
+  margin-top: 2px;
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+}

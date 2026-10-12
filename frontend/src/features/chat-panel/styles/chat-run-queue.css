@@ -1,0 +1,193 @@
+.workspace-chat-run-queue {
+  --queue-text: var(--workspace-native-text, #ececec);
+  --queue-muted: var(--workspace-native-text-muted, #a3a3a3);
+  --queue-border: var(--workspace-divider, #3a3a3a);
+  --queue-hover: var(--workspace-hover-bg, #303030);
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  width: calc(100% - 56px);
+  min-height: 0;
+  max-height: min(240px, 35vh);
+  margin: 0 28px 8px;
+  overflow: hidden;
+  border: 1px solid var(--queue-border);
+  border-radius: 16px;
+  background: var(--workspace-control-bg, #262626);
+  color: var(--queue-text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.workspace-chat-run-queue--expanded {
+  width: calc(100% - 72px);
+  max-width: 808px;
+  margin-inline: auto;
+}
+
+/* PromptInput renders its hidden file input immediately before the form. */
+.workspace-chat-run-queue:has(
+  + .workspace-chat-composer,
+  + input[type="file"] + .workspace-chat-composer
+) {
+  margin-bottom: -12px;
+  padding-bottom: 12px;
+  border-bottom: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.workspace-chat-run-queue + .workspace-chat-composer,
+.workspace-chat-run-queue + input[type="file"] + .workspace-chat-composer {
+  margin-top: 0;
+}
+
+.chat-run-queue-list {
+  min-height: 0;
+  margin: 0;
+  padding: 2px 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--queue-border) transparent;
+  scrollbar-width: thin;
+  list-style: none;
+}
+
+.chat-run-queue-list:empty {
+  display: none;
+}
+
+.chat-run-queue-item {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding-block: 4px;
+}
+
+.chat-run-queue-item--dragging {
+  z-index: 1;
+  background: var(--queue-hover);
+}
+
+.chat-run-queue-prompt {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-run-queue-icon,
+.chat-run-queue-action,
+.chat-run-queue-retry {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--queue-muted);
+}
+
+.chat-run-queue-action,
+.chat-run-queue-retry {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chat-run-queue-action:focus-visible,
+.chat-run-queue-retry:focus-visible {
+  outline: none;
+  border-color: var(--workspace-native-accent, #e6c65b);
+  background: var(--queue-hover);
+}
+
+.chat-run-queue-action:disabled,
+.chat-run-queue-retry:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.chat-run-queue-drag {
+  touch-action: none;
+  cursor: grab;
+}
+
+.chat-run-queue-drag:active {
+  cursor: grabbing;
+}
+
+.chat-run-queue-action:hover:not(:disabled),
+.chat-run-queue-retry:hover:not(:disabled) {
+  background: var(--queue-hover);
+  color: var(--queue-text);
+}
+
+.chat-run-queue-attachment {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border: 1px solid var(--queue-border);
+  border-radius: 5px;
+  background: var(--workspace-chat-bg, #191919);
+  color: var(--queue-muted);
+}
+
+.chat-run-queue-attachment img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat-run-queue-attachment-count {
+  flex-shrink: 0;
+  color: var(--queue-muted);
+  font-size: 11px;
+}
+
+.chat-run-queue-status {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  color: var(--queue-muted);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.chat-run-queue-status > p {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+}
+
+.chat-run-queue-status[data-state="unavailable"] {
+  color: var(--workspace-native-danger, #f299a3);
+}
+
+.chat-run-queue-retry {
+  width: auto;
+  padding-inline: 10px;
+  border-color: var(--queue-border);
+  font-weight: 600;
+}
+
+@media (pointer: coarse) {
+  .chat-run-queue-action {
+    width: 40px;
+    height: 40px;
+  }
+}

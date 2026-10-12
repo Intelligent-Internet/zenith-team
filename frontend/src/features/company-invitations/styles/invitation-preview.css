@@ -1,0 +1,344 @@
+.invitation-preview {
+  --invitation-canvas: var(--workspace-content-bg, #ffffff);
+  --invitation-panel: var(--workspace-panel-bg, #ffffff);
+  --invitation-control: var(--workspace-control-bg, #f3f3f3);
+  --invitation-text: var(--workspace-native-text, #0d0d0d);
+  --invitation-muted: var(--workspace-native-text-muted, #6e6e6e);
+  --invitation-border: var(--workspace-divider, #ebebeb);
+  --invitation-accent: var(--workspace-native-accent, #171717);
+  --invitation-accent-fill: var(--workspace-accent-fill, #171717);
+  --invitation-accent-foreground: var(--workspace-accent-foreground, #ffffff);
+  --invitation-accent-hover: var(--workspace-accent-hover, #303030);
+  --invitation-accent-soft: var(--workspace-accent-soft, #f3f3f3);
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--invitation-canvas);
+  color: var(--invitation-text);
+  font-family: var(--workspace-font-body, var(--font-ui));
+  color-scheme: light;
+}
+
+.dark .invitation-preview {
+  --invitation-canvas: var(--workspace-content-bg, #181818);
+  --invitation-panel: var(--workspace-panel-bg, #262626);
+  --invitation-control: var(--workspace-control-bg, #2b2b2b);
+  --invitation-text: var(--workspace-native-text, #ececec);
+  --invitation-muted: var(--workspace-native-text-muted, #a3a3a3);
+  --invitation-border: var(--workspace-divider, #3a3a3a);
+  --invitation-accent: var(--workspace-native-accent, #ececec);
+  --invitation-accent-fill: var(--workspace-accent-fill, #ffffff);
+  --invitation-accent-foreground: var(--workspace-accent-foreground, #17191c);
+  --invitation-accent-hover: var(--workspace-accent-hover, #e3e3e3);
+  --invitation-accent-soft: var(--workspace-accent-soft, #323232);
+  color-scheme: dark;
+}
+
+.invitation-preview__header {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  align-items: center;
+  justify-content: space-between;
+  align-self: center;
+  padding: 30px 36px;
+}
+
+.invitation-preview__wordmark {
+  color: var(--invitation-text);
+}
+
+.invitation-preview__logo {
+  width: 112px;
+  height: 20px;
+}
+
+.invitation-preview__logo path,
+.invitation-preview__logo text {
+  fill: currentColor;
+}
+
+.invitation-preview__badge {
+  border: 1px solid var(--invitation-border);
+  border-radius: 6px;
+  padding: 4px 9px;
+  color: var(--invitation-muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+}
+
+.invitation-preview__body {
+  display: flex;
+  width: 100%;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px 48px;
+}
+
+.invitation-preview__card {
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--invitation-border);
+  border-radius: 12px;
+  padding: 36px;
+  background: var(--invitation-panel);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 3%);
+}
+
+.invitation-preview__company-art {
+  position: relative;
+  width: 68px;
+  margin-bottom: 28px;
+}
+
+.invitation-preview__company-mark {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid
+    color-mix(in srgb, var(--invitation-accent) 16%, transparent);
+  border-radius: 16px;
+  background: var(--invitation-accent-soft);
+  color: var(--invitation-accent);
+  font-family: var(--workspace-font-heading, var(--font-ui));
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+}
+
+.invitation-preview__status-mark {
+  position: absolute;
+  right: -7px;
+  bottom: -5px;
+  display: flex;
+  width: 31px;
+  height: 31px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--invitation-panel);
+  border-radius: 50%;
+  background: var(--invitation-control);
+  color: var(--invitation-muted);
+}
+
+.invitation-preview__eyebrow {
+  margin-bottom: 9px;
+  color: var(--invitation-accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.invitation-preview__card h1 {
+  margin: 0;
+  font-family: var(--workspace-font-heading, var(--font-ui));
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 1.25;
+}
+
+.invitation-preview__description {
+  margin-top: 13px;
+  color: var(--invitation-muted);
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.invitation-preview__details {
+  display: grid;
+  gap: 17px;
+  margin-top: 26px;
+  border-block: 1px solid var(--invitation-border);
+  padding-block: 22px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.invitation-preview__details > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.invitation-preview__details dt {
+  flex-shrink: 0;
+  color: var(--invitation-muted);
+}
+
+.invitation-preview__details dd {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.invitation-preview__inviter {
+  display: flex;
+  width: 23px;
+  height: 23px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--invitation-border);
+  border-radius: 50%;
+  background: var(--invitation-control);
+  color: var(--invitation-muted);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.invitation-preview__account {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 22px;
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--invitation-control);
+  color: var(--invitation-muted);
+}
+
+.invitation-preview__account > svg {
+  flex-shrink: 0;
+}
+
+.invitation-preview__account > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.invitation-preview__account strong,
+.invitation-preview__account-hint strong {
+  color: var(--invitation-text);
+  font-size: 12px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.invitation-preview__account-hint {
+  margin-top: 22px;
+  color: var(--invitation-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.invitation-preview__actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.invitation-preview__primary,
+.invitation-preview__secondary {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.invitation-preview__primary {
+  background: var(--invitation-accent-fill);
+  color: var(--invitation-accent-foreground);
+}
+
+.invitation-preview__primary:hover {
+  background: var(--invitation-accent-hover);
+}
+
+.invitation-preview__secondary {
+  border: 1px solid var(--invitation-border);
+  color: var(--invitation-text);
+}
+
+.invitation-preview__secondary:hover {
+  background: var(--invitation-control);
+}
+
+.invitation-preview__feedback p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  border: 1px solid var(--invitation-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--invitation-control);
+  color: var(--invitation-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.invitation-preview__feedback svg {
+  flex-shrink: 0;
+}
+
+.invitation-preview__coming-soon {
+  margin-top: 20px;
+  color: var(--invitation-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.invitation-preview__controls {
+  display: grid;
+  max-width: 480px;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  color: var(--invitation-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.invitation-preview__state-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invitation-preview__state-picker select {
+  max-width: 210px;
+  border: 1px solid var(--invitation-border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--invitation-panel);
+  color: var(--invitation-text);
+  font: inherit;
+}
+
+@media (max-width: 520px) {
+  .invitation-preview__header {
+    padding: 22px 20px;
+  }
+
+  .invitation-preview__body {
+    justify-content: flex-start;
+    padding: 14px 16px 32px;
+  }
+
+  .invitation-preview__card {
+    border-radius: 14px;
+    padding: 28px 23px;
+  }
+
+  .invitation-preview__details {
+    font-size: 12px;
+  }
+}

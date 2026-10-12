@@ -1,0 +1,10 @@
+# Local development configuration for `livekit-server --config docker/livekit.dev.yaml`.
+port: 7880
+
+keys:
+  devkey: secret
+
+webhook:
+  api_key: devkey
+  urls:
+    - http://127.0.0.1:8788/api/v1/internal/livekit/webhook

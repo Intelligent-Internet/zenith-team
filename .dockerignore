@@ -1,0 +1,15 @@
+.git
+.github
+.worktrees
+node_modules
+**/node_modules
+.turbo
+dist
+**/dist
+out
+**/out
+coverage
+playwright-report
+test-results
+.env*
+*.log

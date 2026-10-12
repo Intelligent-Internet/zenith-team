@@ -1,0 +1,1511 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/authentication.md is its prose counterpart.
+
+paths:
+
+  # ====================================================================== auth
+
+  # /api/v1/auth/providers
+  auth_providers:
+    get:
+      tags: [auth]
+      operationId: listAuthProviders
+      summary: Which third-party sign-in providers are enabled
+      description: |
+        Deployment capability probe. Public — call it before rendering a Google
+        button, and **branch on the flag for your own client**: the web and
+        desktop OAuth clients are configured independently, so a deployment
+        that configured only one of them will fail the other's start call with
+        `503 oauth_not_configured`.
+
+        The complete set is returned; it is fixed at build time and has no
+        pagination contract.
+      security: []
+      responses:
+        '200':
+          description: Provider capabilities.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [provider, enabled, webEnabled, desktopEnabled]
+                      properties:
+                        provider: { type: string, enum: [google] }
+                        enabled:
+                          type: boolean
+                          description: |
+                            Deployment-level switch, exactly
+                            `webEnabled || desktopEnabled`. Answers "does this
+                            build have the provider at all"; it is not a
+                            sign-in offer on its own.
+
+                            A documented denormalization that must stay:
+                            **installed desktop builds validate this field**
+                            when probing the deployment, so removing it — or
+                            letting it drift from the pair it summarizes —
+                            breaks clients that already shipped.
+                        webEnabled:
+                          type: boolean
+                          description: |
+                            The browser flow (`/auth/google/web/start`) can
+                            complete. Draw the button in a browser on this.
+                        desktopEnabled:
+                          type: boolean
+                          description: |
+                            The PKCE flow (`/auth/google/desktop/start`) can
+                            complete. Draw the button in the native app on
+                            this — `enabled` alone made the desktop app render
+                            a control that answers `503`.
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/auth/signup
+  auth_signup:
+    post:
+      tags: [auth]
+      operationId: signup
+      summary: Create an account
+      description: |
+        Returns **201** for both outcomes: a live session, or the
+        `pending_verification` body when the deployment requires email
+        verification. Branch on the `result` discriminator, not on the status
+        code.
+
+        Whether verification can occur at all is deployment configuration, not a
+        property of the API — a client cannot discover the mode except by
+        calling this.
+
+        `client` must agree with the request's `Origin` header: the server infers
+        web-vs-desktop from the mere presence of `Origin`, not from the
+        credential. A desktop build behind a proxy that injects `Origin`, or a
+        webview that omits it, gets `422 client_transport_mismatch` that no
+        credential can fix. `client` is validated **first**, so an absent, empty
+        or unrecognized value is `422 validation_failed`; only a well-formed
+        value contradicting `Origin` reaches `client_transport_mismatch`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, displayName, client]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                displayName: { type: string }
+                client: { type: string, enum: [web, desktop] }
+                clientMetadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: |
+            Session created, **or** verification pending. Same status for both.
+            For `client: "web"` the session cookies are set on this response.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AuthResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '409':
+          description: '`409 email_already_registered`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `validation_failed` (email, password, or display name rejected) or
+            `client_transport_mismatch`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: |
+            `503 email_delivery_unavailable` — the verification mail could not be
+            sent. Note the asymmetry: `/auth/password-reset/request` swallows the
+            identical failure and still answers 202.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/login
+  auth_login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Exchange credentials for a session
+      description: |
+        Returns **200** for both a session and the `pending_verification` body —
+        the mirror image of signup, which uses 201 for both. Same two shapes,
+        different status code per operation, and neither is distinguishable by
+        status — branch on the `result` discriminator.
+
+        A successful login is the whole sign-in: `companies` on the response is
+        the page `GET /companies` would return, so **do not follow this with a
+        company read**.
+
+        A wrong password, an unknown address, a malformed address and a
+        disabled account all collapse to one `401 invalid_credentials`, and the
+        unknown-address path still runs a dummy password verification so the
+        timing matches.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, client]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+                client: { type: string, enum: [web, desktop] }
+                clientMetadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Session created, or verification pending.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AuthResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: |
+            `401 invalid_credentials` — wrong password, unknown or malformed
+            address, or a disabled account. Never retry programmatically.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`validation_failed` or `client_transport_mismatch`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: |
+            `503 email_delivery_unavailable` — the login re-opened a
+            verification flow and its mail could not be sent.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/refresh
+  auth_refresh:
+    post:
+      tags: [auth]
+      operationId: refreshSession
+      summary: Rotate the session
+      description: |
+        For `client: "web"` the server reads the `boardly_refresh` cookie and
+        **silently ignores** any `refreshToken` in the body. For
+        `client: "desktop"` the body's `refreshToken` is required.
+
+        A desktop client should generate a random UUID `rotationId`, persist it
+        beside the current refresh token before sending the request, and reuse
+        that value for every retry of the same rotation. If the server committed
+        the rotation but the response was lost, that exact retry returns the
+        same child session and refresh token instead of treating the old token
+        as a replay. Clear the identifier only after the new session is stored.
+
+        CSRF for this route validates against `boardly_refresh_csrf`, not
+        `boardly_csrf`.
+
+        Ordering note: `client` carries a struct-tag rule, which the binder
+        enforces **before** the transport check — so a missing, empty, or
+        unrecognized `client` is `422 validation_failed`, and only a well-formed
+        `client` contradicting `Origin` reaches `422 client_transport_mismatch`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client]
+              properties:
+                client: { type: string, enum: [web, desktop] }
+                refreshToken:
+                  type: string
+                  description: Required for desktop; ignored for web.
+                rotationId:
+                  type: string
+                  format: uuid
+                  description: |
+                    Optional idempotency identifier for one refresh rotation.
+                    Desktop clients should persist one random UUID before the
+                    first attempt and reuse it until the rotated session is
+                    stored. Reusing it with the same refresh token recovers the
+                    same rotation after a lost response.
+                clientMetadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: |
+            Rotated session — a fully new token pair, and a new session `id`.
+            No `companies`: absent means unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/SessionRotation' }
+        '400':
+          description: |
+            `400 refresh_token_required` — no refresh cookie (web) or no
+            `refreshToken` (desktop) — or `invalid_request`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: |
+            `401 session_invalid` — expired, revoked, or replayed. A replay
+            revokes the whole session family; for `client: "web"` it also
+            clears all four auth cookies.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: |
+            `409 session_already_rotated` — the token was concurrently rotated
+            without the same `rotationId`. Retry **once** with the credential
+            you now hold. An exact retry with the original refresh token and
+            matching `rotationId` returns the original rotation as `200`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/auth/logout
+  auth_logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: End the session
+      description: |
+        **Idempotent on both transports.** Signing out with no live credential
+        — no refresh cookie, or no `refreshToken` — is a `204`, not an error:
+        the caller asked to end up signed out and that is where they are.
+        `refresh_token_required` is raised only by `/auth/refresh`, where the
+        credential is the point of the call.
+
+        For `client: "web"` the four auth cookies are always cleared, whether
+        or not there was a session to revoke.
+
+        CSRF validates against `boardly_refresh_csrf`. As with refresh, the
+        struct-tag rule on `client` precedes the transport check.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [client]
+              properties:
+                client: { type: string, enum: [web, desktop] }
+                refreshToken: { type: string }
+      responses:
+        '204':
+          description: Session ended, or nothing to end. No body.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/auth/daemon-session
+  auth_daemon_session:
+    post:
+      tags: [auth]
+      operationId: mintDaemonSession
+      summary: Start the daemon's own session
+      description: |
+        Starts a new session for the signed-in person, held by their daemon
+        (D31). The desktop app calls it after sign-in, and `zen daemon
+        start` calls it when its home holds no `daemon-auth.json`; both
+        store the answer there. The daemon renews it with
+        `POST /auth/refresh` (`client: "desktop"`) like any bearer session,
+        and a refresh keeps it a daemon session.
+
+        A daemon session acts only on the daemon plane (`/api/v1/daemon/*`)
+        and, beside a live `X-Boardly-Run-Token` whose Run works for the same
+        person, on the routes that accept a Run. Everywhere else it is
+        `403 run_proof_required`; it is never its person.
+
+        It is a session of its own: signing the person out of the app does
+        not end it. `zen desktop-session clear` and `zen auth logout` end it
+        with `POST /auth/logout`.
+
+        The body is empty or `{}`. The answer is a bearer token pair, so only
+        the bearer transport may ask: a browser's request (an `Origin`
+        header, or the cookie session) is `422 client_transport_mismatch`.
+      security:
+        - bearerToken: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '201':
+          description: The daemon's new session.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonSession' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: |
+            `403 run_proof_required` — the caller is itself a daemon session;
+            only a person's session starts one. `403 human_actor_required` —
+            the request carries a Run proof.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 client_transport_mismatch` — a browser request.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/password-reset/request
+  auth_password_reset_request:
+    post:
+      tags: [auth]
+      operationId: requestPasswordReset
+      summary: Send a password-reset mail
+      description: |
+        Always `202`, whether or not the address exists — the response must not
+        disclose account existence. It also swallows a mail-provider failure and
+        still answers 202, unlike `/auth/signup`, which surfaces the identical
+        failure as `503`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '202':
+          description: |
+            Accepted. Reveals nothing about the address — deliberately no
+            timestamp, flow id, or anything else derived from whether the
+            account exists.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: accepted }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: |
+            `503 password_reset_unavailable` — reset delivery is not
+            configured, or is down. Retry with backoff.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/password-reset/confirm
+  auth_password_reset_confirm:
+    post:
+      tags: [auth]
+      operationId: confirmPasswordReset
+      summary: Set a new password from a reset token
+      description: |
+        Consumes the token, replaces the password, and revokes **every** live
+        session for that user — including the caller's. The next step is always
+        a fresh login, never a refresh.
+
+        Password rules are validated before the token, so a weak password on an
+        expired link reports the password problem rather than sending the user
+        back for a link they will fail again.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, format: password }
+      responses:
+        '200':
+          description: Password changed. Existing sessions are invalidated.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: password_reset }
+        '400':
+          description: |
+            `400 password_reset_invalid` — malformed, unknown, already used, or
+            past its lifetime, which are deliberately one code: they are
+            indistinguishable to the holder and need the same next step. Or
+            `invalid_request`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: '`503 password_reset_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/email-verification/verify
+  auth_email_verification_verify:
+    post:
+      tags: [auth]
+      operationId: verifyEmail
+      summary: Consume the six-digit verification code
+      description: |
+        Where a verified signup gets its session, so `companies` is present and,
+        for a new account, empty.
+
+        Wrong codes count against a per-flow budget. The attempt that exhausts
+        it answers `429 verification_code_locked` rather than
+        `400 verification_code_invalid`, and the flow stays locked — waiting
+        does not clear it, only a new flow does. The error envelope carries no
+        counter: read `attemptsRemaining` from the pending body or from
+        `/email-verification/status`, which does not spend an attempt.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, verificationId, code, client]
+              properties:
+                email: { type: string, format: email }
+                verificationId: { type: string, format: uuid }
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                  description: |
+                    Exactly six ASCII digits. Spelled `code` everywhere — the
+                    mail, the domain input, and every error code that names it.
+                client: { type: string, enum: [web, desktop] }
+      responses:
+        '200':
+          description: Verified. A session is issued in the same response.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AuthSuccess' }
+        '400':
+          description: |
+            `400 verification_code_invalid` — the code does not match. Prompt
+            again. Or `invalid_request`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: |
+            `403 account_disabled` — including the case where marking the user
+            verified matched no row.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            `404 verification_not_found` — no live flow for this email,
+            id and client.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 email_already_registered` — a unique-violation on the
+            case-insensitive email index during the mark-verified write.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 verification_code_expired` — request a new code.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`validation_failed` or `client_transport_mismatch`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: |
+            `429 verification_code_locked` — the attempt budget is exhausted
+            and the flow is locked permanently. Open a new one.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/email-verification/resend
+  auth_email_verification_resend:
+    post:
+      tags: [auth]
+      operationId: resendEmailVerification
+      summary: Re-send the verification code
+      description: |
+        Mints a *new* code and resets the TTL, the cooldown and
+        `attemptsRemaining`. **The previous code stops working the moment this
+        returns**, so a user holding two mails must use the newer one.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, verificationId, client]
+              properties:
+                email: { type: string, format: email }
+                verificationId: { type: string, format: uuid }
+                client: { type: string, enum: [web, desktop] }
+      responses:
+        '200':
+          description: A fresh code was sent; the pending body is returned again.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PendingEmailVerification' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '404':
+          description: |
+            `404 verification_not_found` — no such flow. Start a new
+            verification.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: |
+            `410 verification_code_expired` — the flow itself expired. Start
+            over rather than resending.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`validation_failed` or `client_transport_mismatch`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: |
+            `429 verification_resend_too_soon` — inside the cooldown; wait
+            until the last response's `resendAvailableAt`. Or
+            `verification_code_locked`, which resending cannot clear.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: '`503 email_delivery_unavailable` — the new code could not be sent.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/email-verification/status
+  auth_email_verification_status:
+    post:
+      tags: [auth]
+      operationId: getEmailVerificationStatus
+      summary: Poll a pending verification
+      description: |
+        A pure read modeled as a POST with a request body, returning **two**
+        different shapes under one status code. It never errors on a bad lookup:
+        an unknown id, a wrong email, a mismatched client, and malformed input
+        all report `{"status": "not_found"}`, so the endpoint cannot be used to
+        enumerate live verifications. The lookup triple is credential-grade and
+        must not land in a URL, a proxy log, or a `Referer` header, which is why
+        it is a POST.
+
+        Reading the status does **not** spend a verification attempt, so this is
+        where a resumed flow re-reads `attemptsRemaining`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, verificationId, client]
+              properties:
+                email: { type: string, format: email }
+                verificationId: { type: string, format: uuid }
+                client: { type: string, enum: [web, desktop] }
+      responses:
+        '200':
+          description: Either the pending body, or a bare status.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/schemas/PendingEmailVerification' }
+                  - type: object
+                    required: [status]
+                    properties:
+                      status:
+                        type: string
+                        enum: [expired, not_found]
+                        description: |
+                          `expired` covers both a lapsed TTL and a locked-out
+                          flow — neither is recoverable, and both need a new
+                          flow. `not_found` is any lookup that did not match.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+
+
+  # /api/v1/auth/google/web/start
+  auth_google_web_start:
+    post:
+      tags: [auth]
+      operationId: startGoogleOAuthWeb
+      summary: Begin the browser Google flow
+      description: |
+        Returns the URL to send the browser to, and sets the short-lived binding
+        cookie the callback re-checks. The cookie binds the flow to **this**
+        browser, so a flow started in one browser cannot be completed in
+        another and a forwarded callback URL is inert.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [returnPath]
+              properties:
+                returnPath:
+                  type: string
+                  maxLength: 2048
+                  description: |
+                    Same-origin path to land on after success: must start with
+                    a single `/`, with no `\`, `#`, control character, host or
+                    userinfo. Re-validated on the callback; an unsafe stored
+                    value is a `500`.
+                clientMetadata:
+                  type: object
+                  description: |
+                    Exactly two accepted keys, `appVersion` and `platform`,
+                    each at most 255 bytes with no control characters. Any
+                    other key is `400 invalid_request` from the strict decoder.
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Authorization URL and its expiry.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresAt]
+                properties:
+                  authorizationUrl: { type: string, format: uri }
+                  expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '502':
+          description: |
+            `502 oauth_provider_unavailable` — the provider would not issue an
+            authorization URL. Retry with backoff.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: |
+            `503 oauth_not_configured` — Google is not configured for the
+            **web** client here. This is what `webEnabled: false` on
+            `GET /auth/providers` predicts.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/google/web/callback
+  auth_google_web_callback:
+    get:
+      tags: [auth]
+      operationId: completeGoogleOAuthWeb
+      summary: Google's browser redirect target
+      description: |
+        Called by the browser as a redirect target from Google, never by
+        application code. Success and expected OAuth failures redirect:
+        success goes to
+        `<webAppOrigin><returnPath>` with the four auth cookies set, and a
+        failure goes to `<webAppOrigin>/login?auth_error=<code>` carrying the
+        same vocabulary an error envelope would. Redirects have no response
+        body; unexpected internal failures retain the error envelope.
+
+        The query string must be non-empty and at most 8 KiB. It must include
+        `state` and exactly one of `code`/`error`, each once and non-empty.
+        Additional Google response parameters such as `scope`, `authuser`,
+        `hd` and `prompt` are ignored; they cannot supply identity or a return
+        path. The binding cookie must be present exactly once and is cleared on every response
+        through this path, so a failed callback cannot be retried by reloading.
+      security: []
+      parameters:
+        - name: state
+          in: query
+          required: true
+          description: Opaque 43-character value from the authorization URL.
+          schema: { type: string }
+        - name: code
+          in: query
+          required: false
+          description: Google's authorization code. Exactly one of `code`/`error`.
+          schema: { type: string }
+        - name: error
+          in: query
+          required: false
+          description: Only the literal `access_denied` is accepted.
+          schema: { type: string, enum: [access_denied] }
+      responses:
+        '303':
+          description: |
+            Success or failure — both redirect. On success, to the app origin
+            plus the stored `returnPath`, with the session cookies set. On
+            failure, to `/login?auth_error=<code>` where the code is one of
+            `oauth_flow_invalid`, `oauth_provider_denied`,
+            `oauth_identity_invalid`, `oauth_email_unverified`,
+            `account_disabled`, `oauth_account_conflict`,
+            `oauth_provider_unavailable`, or `oauth_not_configured`. Branch on
+            `auth_error` exactly as on an envelope's `code`.
+          headers:
+            Location:
+              schema: { type: string, format: uri }
+            Set-Cookie:
+              schema: { type: string }
+        '500':
+          description: |
+            `500 internal_error` — the deployment lacks its web app origin or
+            CSRF configuration, the stored return path is unsafe, or an
+            unexpected internal error occurred. These retain the error envelope.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/google/desktop/start
+  auth_google_desktop_start:
+    post:
+      tags: [auth]
+      operationId: startGoogleOAuthDesktop
+      summary: Begin the desktop (PKCE) Google flow
+      description: |
+        The native app listens on a loopback port, so `flowId` and `state` come
+        back **in the body**: there is no browser to hold a binding cookie.
+        PKCE replaces it — the verifier never leaves the app, so possession of
+        `state` alone cannot complete the flow.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [redirectUri, codeChallenge]
+              properties:
+                redirectUri:
+                  type: string
+                  description: |
+                    Exactly `http://127.0.0.1:<port>/` — trailing slash
+                    required, no path, no `localhost`, no IPv6 form — with the
+                    port in 1024..65535.
+                codeChallenge:
+                  type: string
+                  description: |
+                    S256 challenge: exactly 43 characters of unpadded base64url
+                    decoding to 32 bytes.
+                clientMetadata:
+                  type: object
+                  description: The same two-key allowlist as the web start.
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Flow handle, state, and the authorization URL.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [flowId, state, authorizationUrl, expiresAt]
+                properties:
+                  flowId: { type: string, format: uuid }
+                  state: { type: string }
+                  authorizationUrl: { type: string, format: uri }
+                  expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '502':
+          description: '`502 oauth_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: |
+            `503 oauth_not_configured` — Google is not configured for the
+            **desktop** client here, which is what `desktopEnabled: false` on
+            `GET /auth/providers` predicts.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/google/desktop/complete
+  auth_google_desktop_complete:
+    post:
+      tags: [auth]
+      operationId: completeGoogleOAuthDesktop
+      summary: Exchange the desktop flow for a bearer session
+      description: |
+        The app posts what its loopback listener caught. The session is
+        **always** the bearer branch regardless of anything the caller sends,
+        and this operation runs no transport check, so it works with or without
+        an `Origin` header.
+
+        `flowId` is a plain string with a `uuid` struct rule, so a non-UUID is
+        `422 validation_failed`. A **present but malformed** `state`,
+        `redirectUri`, or `verifier` is `400 oauth_flow_invalid` (checked before
+        any flow lookup); only an entirely absent one is caught as `422`.
+        Sending both `code` and `error`, or neither, is `422`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [flowId, redirectUri, state, verifier]
+              properties:
+                flowId: { type: string, format: uuid }
+                redirectUri: { type: string }
+                state: { type: string }
+                code: { type: string }
+                error: { type: string, enum: [access_denied] }
+                verifier:
+                  type: string
+                  description: |
+                    PKCE verifier, 43–128 unreserved characters; its S256
+                    challenge must match the stored one.
+      responses:
+        '200':
+          description: Bearer session for the desktop shell.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AuthSuccess' }
+        '400':
+          description: |
+            `400 oauth_flow_invalid` — unknown, expired or already-consumed
+            flow, or a present-but-malformed `state`, `redirectUri` or
+            `verifier`. Restart the flow. Or `invalid_request`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: |
+            `401 oauth_provider_denied` (`error=access_denied`, not an error to
+            report) or `oauth_identity_invalid`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: '`403 oauth_email_unverified` or `account_disabled`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 oauth_account_conflict` — the identity belongs to another
+            account. Sign in with the original method and link.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '502':
+          description: '`502 oauth_provider_unavailable` — token exchange failed.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: '`503 oauth_not_configured`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/desktop/handoff/start
+  auth_desktop_handoff_start:
+    post:
+      tags: [auth]
+      operationId: startDesktopHandoff
+      summary: Mint a one-time code to hand a web session to the desktop app
+      description: |
+        Called by the **cookie-authenticated web app**. A bearer-authenticated
+        desktop caller is rejected even though it holds a valid credential: the
+        handler additionally requires the session-cookie auth kind and a web
+        transport, and answers `422 client_transport_mismatch` — the code the
+        vocabulary defines for a bearer client on a cookie flow — rather than
+        claiming the credential was missing.
+
+        Takes no request body: the handler never reads one, so any body a
+        caller sends is ignored rather than parsed.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The short-lived handoff code.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, expiresAt]
+                properties:
+                  code:
+                    type: string
+                    description: |
+                      43 characters of unpadded base64url over 32 random bytes,
+                      single-use, 60-second lifetime, stored only as a SHA-256
+                      digest. Minting a new one deletes any code the user
+                      already holds, so at most one is live per user.
+                  expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: |
+            `401 authentication_required` (no credential at all) or
+            `session_invalid` (the cookie's session is expired or revoked).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '422':
+          description: |
+            `422 client_transport_mismatch` — a bearer credential, or a cookie
+            credential with no `Origin` header.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/auth/desktop/handoff/complete
+  auth_desktop_handoff_complete:
+    post:
+      tags: [auth]
+      operationId: completeDesktopHandoff
+      summary: Redeem a handoff code for a bearer session
+      description: |
+        Public — the desktop app has no credential yet. An `Origin` header is
+        `422 client_transport_mismatch`: a browser has no business redeeming a
+        handoff.
+
+        **The code is consumed before its expiry is checked**, so it can never
+        be redeemed twice even if the first attempt arrives late: a second
+        attempt sees `400 desktop_handoff_invalid`, a late first attempt sees
+        `410 desktop_handoff_expired`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+                clientMetadata:
+                  type: object
+                  description: The same two-key allowlist as the OAuth flows.
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Bearer session, with the caller's complete company collection.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/AuthSuccess' }
+        '400':
+          description: |
+            `400 desktop_handoff_invalid` — malformed, unknown, or
+            already-consumed code. Request a new one. Or `invalid_request`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: '`403 account_disabled`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: |
+            `410 desktop_handoff_expired` — the code was live but past its 60
+            seconds. Request a new one; retrying cannot help.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`validation_failed` or `client_transport_mismatch`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  # =================================================================== account
+
+  # /api/v1/me
+  me:
+    get:
+      tags: [account]
+      operationId: getMe
+      summary: Read the calling user
+      description: |
+        The **only** user-identity read in the API. There is no
+        `GET /users/{userId}`, so a `userId` seen on a member row, a task
+        assignee, or a message author cannot be resolved to a name.
+      responses:
+        '200':
+          description: The caller.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/User'
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '422':
+          description: '`422 validation_failed` — any query parameter.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    delete:
+      tags: [account]
+      operationId: deleteMe
+      summary: Delete the calling user's account
+      description: |
+        Requires a JSON **request body** on a DELETE, run through the same strict
+        reader as every other write — so a bodyless DELETE is
+        `415 unsupported_media_type`, not `400`. The confirmation is a typed
+        field rather than a query parameter precisely so a link or a prefetch
+        cannot fire it.
+
+        The cascade runs in one transaction: every run the user authored across
+        every company moves to `cancelled` with reason `account_deleted`, the
+        runs' daemon tokens are deleted, and the session revocations fan out as
+        `auth.session_revoked`. A repeat call from a credential the cascade
+        already revoked reports `401 session_invalid`, which is the converged
+        state rather than an error to retry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation: { type: string, const: DELETE }
+      responses:
+        '204':
+          description: Account deleted. No body.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: |
+            `409 account_conflict` — the row moved off the expected revision, or
+            the transaction committed zero session revocations. Re-read the
+            account.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/me/profile
+  me_profile:
+    patch:
+      tags: [account]
+      operationId: updateMyProfile
+      summary: Update the calling user's profile
+      description: |
+        A whole-document profile write: all four editable fields are required.
+        `null` clears either nullable phone field, and the phone pair is
+        validated together so the stored country and number are always both set
+        or both null.
+
+        Optional `avatarDataUrl` replaces the avatar with a PNG or JPEG thumbnail
+        (at most 256 × 256 pixels and 96 KiB before base64 encoding). Omit it to
+        preserve the current avatar, including an OAuth picture. Empty strings,
+        null, remote URLs and other image formats are rejected. Clients resize
+        selected photos before submitting; the total JSON body is capped at 144 KiB.
+
+        `expectedRevision` is checked **first, on every call**, including one
+        that would change nothing: a stale revision is `409` whether or not the
+        submitted values happen to match what is stored.
+
+        `emailVerifiedAt`, `hasPassword` and `linkedProviders` are read-only —
+        they are set by the verification, OAuth and reset flows, never here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, displayName, biography, phoneCountryIso2, phoneNumber]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                displayName:
+                  type: string
+                  description: Trimmed, 1–120 characters and at most 480 UTF-8 bytes.
+                avatarDataUrl:
+                  type: string
+                  maxLength: 131104
+                  description: Base64 PNG or JPEG thumbnail; at most 256 × 256 pixels and 96 KiB of image data. Omit to preserve the avatar.
+                biography:
+                  type: string
+                  description: |
+                    Trimmed, CRLF normalized to LF; at most 1200 characters,
+                    4800 bytes and 12 lines; no NUL. `""` clears it.
+                phoneCountryIso2:
+                  type: [string, "null"]
+                  description: Supported ISO-2 code, or `null` to clear the pair.
+                phoneNumber:
+                  type: [string, "null"]
+                  description: 1–15 digits, no separators or `+`, or `null`.
+      responses:
+        '200':
+          description: Updated (or unchanged) user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/schemas/User'
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: |
+            `409 profile_revision_conflict` — stale `expectedRevision`. The envelope is
+            deliberately extended with the server's current state so the client
+            can re-render without a refetch. **The key is `currentUser`, not
+            `user`**: a client that reads one key unconditionally finds nothing
+            here.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/schemas/Error' }
+                  - type: object
+                    required: [currentUser]
+                    properties:
+                      currentUser: { $ref: '#/schemas/User' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+
+
+schemas:
+
+  AuthResult:
+    description: |
+      A session, or the pending-verification body. Same status code — branch
+      on the `result` discriminator both branches carry.
+    oneOf:
+      - { $ref: '#/schemas/AuthSuccess' }
+      - { $ref: '#/schemas/PendingEmailVerification' }
+    discriminator:
+      propertyName: result
+      # The mapping is not decoration: without it a generator keys the union
+      # on the schema names rather than the values the wire actually carries,
+      # and a client cannot branch on `result` type-safely.
+      mapping:
+        session: '#/schemas/AuthSuccess'
+        pending_verification: '#/schemas/PendingEmailVerification'
+
+
+  AuthSuccess:
+    type: object
+    description: |
+      The session envelope: three co-equal slots, so each is named. `user` and
+      the entries of `companies` are entities in their own right and `session`
+      is a value object a client stores whole — nothing here is a wrapper
+      around one thing, and nothing here groups scalars behind a key.
+    required: [result, user, session, companies]
+    properties:
+      result:
+        type: string
+        const: session
+        description: |
+          Discriminator against `PendingEmailVerification`, whose `result` is
+          `pending_verification`. The two bodies share a status code per
+          operation, so this is the branch key.
+      user: { $ref: '#/schemas/User' }
+      session: { $ref: '#/schemas/Session' }
+      companies:
+        type: object
+        description: |
+          The caller's complete `GET /api/v1/companies` collection — same
+          envelope and same `createdAt, id` order. It is what removes the
+          second sign-in request.
+
+          **Absent from `POST /auth/refresh`**, where absent means unchanged:
+          see `SessionRotation`.
+        required: [items]
+        properties:
+          items:
+            type: array
+            items: { $ref: './companies.yaml#/schemas/Company' }
+
+
+  SessionRotation:
+    type: object
+    description: |
+      The `POST /auth/refresh` response: the same `user` and `session` slots as
+      `AuthSuccess`, with **no `companies`**. A rotation every fifteen minutes
+      is not a reason to resend a company list, and absent means unchanged, so
+      a client keeps what it cached. Membership changes arrive over the socket
+      as `auth.company_access_changed`.
+    required: [user, session]
+    properties:
+      user: { $ref: '#/schemas/User' }
+      session: { $ref: '#/schemas/Session' }
+
+
+  DaemonSession:
+    type: object
+    description: |
+      The `POST /auth/daemon-session` response: the daemon's own bearer
+      session for the same person. `client` names who holds it.
+    required: [client, user, session]
+    properties:
+      client: { type: string, const: daemon }
+      user: { $ref: '#/schemas/User' }
+      session: { $ref: '#/schemas/Session' }
+
+
+  Session:
+    description: |
+      Discriminated by `transport`. **Branch on `transport`** — the token
+      fields do not exist in the cookie case, where the same values are set as
+      `Set-Cookie` headers instead.
+
+      The branch is chosen by the request's `client` field, not by anything
+      about the account.
+    oneOf:
+      - type: object
+        title: CookieSession
+        required: [transport, id, issuedAt, accessExpiresAt, refreshExpiresAt]
+        properties:
+          transport: { type: string, const: cookie }
+          id: { $ref: '#/schemas/SessionId' }
+          issuedAt: { $ref: '#/schemas/SessionIssuedAt' }
+          accessExpiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+          refreshExpiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      - type: object
+        title: BearerSession
+        required:
+          - transport
+          - id
+          - issuedAt
+          - accessToken
+          - refreshToken
+          - accessExpiresAt
+          - refreshExpiresAt
+        properties:
+          transport: { type: string, const: bearer }
+          id: { $ref: '#/schemas/SessionId' }
+          issuedAt: { $ref: '#/schemas/SessionIssuedAt' }
+          accessToken:
+            type: string
+            description: HS256 JWT. Opaque to clients.
+          refreshToken:
+            type: string
+            description: |
+              `brf_` followed by base64url over 32 random bytes. Opaque, and
+              **single-use** — replaying a rotated one revokes the family.
+          accessExpiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+          refreshExpiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+
+  SessionId:
+    type: string
+    format: uuid
+    description: |
+      The session's own identifier, and the value `auth.session_revoked`
+      carries as `sessionId`. That event is routed through the affected user's
+      typed user audience, so every connected device receives every revocation
+      — including the ones another device's routine rotation causes. This is
+      what lets a client tell whether a revocation is about itself instead of
+      signing out on all of them or none.
+
+      **Not a credential**: it grants nothing and is safe to persist beside the
+      token. Every rotation mints a new session, so it changes on every
+      `POST /auth/refresh`.
+
+
+  SessionIssuedAt:
+    allOf: [{ $ref: './_common.yaml#/schemas/Timestamp' }]
+    description: |
+      The server's clock at the instant the session was minted. Paired with
+      `accessExpiresAt` it gives a client both the access TTL and its own
+      offset from the server clock, so a device with a skewed clock schedules
+      its refresh correctly instead of hot-looping or never refreshing.
+
+
+  PendingEmailVerification:
+    type: object
+    description: |
+      Returned **with the same status code as a successful session** by signup
+      (201) and login (200). Distinguish it by the `result` discriminator,
+      never by HTTP status. It is also the `pending_verification` branch of
+      `POST /auth/email-verification/status`, byte-identical, so a resumed flow
+      lands in the same client slot.
+    required:
+      - result
+      - status
+      - email
+      - verificationId
+      - expiresAt
+      - resendAvailableAt
+      - attemptsRemaining
+      - maxAttempts
+    properties:
+      result:
+        type: string
+        const: pending_verification
+        description: |
+          Discriminator against `AuthSuccess`, whose `result` is `session`.
+      status: { type: string, const: pending_verification }
+      email: { type: string, format: email }
+      verificationId: { type: string, format: uuid }
+      expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      resendAvailableAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      attemptsRemaining:
+        type: integer
+        minimum: 0
+        description: |
+          Wrong codes this flow can still absorb. The attempt that reaches zero
+          answers `429 verification_code_locked` and the flow is locked
+          **permanently** — waiting does not clear it. The error envelope
+          carries no counter, so this is the only way a client can warn before
+          the last attempt is spent.
+      maxAttempts:
+        type: integer
+        minimum: 1
+        example: 3
+        description: |
+          How many wrong codes a flow tolerates, so a client renders "2 of 5"
+          rather than hardcoding the number. It is a server constant, not a
+          per-deployment setting and not a per-flow value: every flow answers
+          the same, and a resend puts `attemptsRemaining` back to it.
+
+
+  # ------------------------------------------------------------------- user
+
+  User:
+    type: object
+    description: |
+      The one user wire type: `GET /me`, both `/me` writes, the `user` slot of
+      the session envelope, and the `user.updated` realtime event all carry
+      these bytes.
+    required:
+      - id
+      - email
+      - emailVerifiedAt
+      - hasPassword
+      - linkedProviders
+      - displayName
+      - avatarUrl
+      - biography
+      - phoneCountryIso2
+      - phoneNumber
+      - revision
+      - createdAt
+      - updatedAt
+    properties:
+      id: { type: string, format: uuid }
+      email: { type: string, format: email }
+      emailVerifiedAt:
+        oneOf: [{ $ref: './_common.yaml#/schemas/Timestamp' }, { type: "null" }]
+        description: |
+          When the address was proven, `null` when it never was. Set at
+          creation for an account made through an identity provider, and at
+          code consumption for an email signup. A deployment that runs no email
+          verification leaves it `null` forever, so `null` alone is not a
+          prompt to re-verify.
+      hasPassword:
+        type: boolean
+        description: |
+          Whether this account has a password at all. `false` for an account
+          created through an identity provider and never given one — such an
+          account cannot use `POST /auth/login`. With `linkedProviders` it is
+          what lets a settings screen label its own button instead of guessing
+          between "Set a password" and "Change password".
+      linkedProviders:
+        type: array
+        description: |
+          Identity providers linked to this account, using the same slugs as
+          `GET /auth/providers`. `[]` is authoritative — there are none. An
+          account with `hasPassword: false` and one entry here has exactly one
+          way in, which is the check that makes unlinking safe.
+        items: { type: string, enum: [google] }
+      displayName: { type: string }
+      avatarUrl:
+        type: [string, "null"]
+        description: OAuth image URL or a bounded image data URL saved with PATCH /me/profile using avatarDataUrl.
+      biography: { type: string }
+      phoneCountryIso2:
+        type: [string, "null"]
+        description: |
+          Flat beside `phoneNumber` rather than a `phone` object: the two are
+          scalars of this entity, and the server keeps them both set or both
+          null.
+      phoneNumber: { type: [string, "null"] }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }

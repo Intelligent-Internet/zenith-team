@@ -1,0 +1,120 @@
+.huddle-call-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px var(--workspace-chat-inset, 24px);
+  color: var(--foreground);
+}
+.huddle-call-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: var(--workspace-radius-panel, 8px);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.huddle-call-copy {
+  min-width: 0;
+}
+.huddle-call-copy header,
+.huddle-history-message header,
+.huddle-history-proposal header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.huddle-call-copy strong {
+  font-size: 14px;
+}
+.huddle-call-copy time,
+.huddle-call-copy small,
+.huddle-history-content time,
+.huddle-history-proposal small,
+.huddle-history-proposal header span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.huddle-call-copy p {
+  margin: 2px 0 4px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.huddle-call-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.huddle-call-link:hover {
+  color: var(--primary);
+}
+.huddle-call-link:focus-visible,
+.huddle-history-tabs button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.huddle-call-unavailable {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+[data-slot="dialog-content"].huddle-history-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  max-height: calc(100dvh - 48px);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  background: var(--background);
+  color: var(--foreground);
+  border-color: var(--border);
+  border-radius: 18px;
+}
+.huddle-history-tabs {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.huddle-history-tabs button {
+  padding: 10px 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.huddle-history-tabs button[aria-pressed="true"] {
+  color: var(--foreground);
+  border-bottom-color: var(--primary);
+}
+.huddle-history-content {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 160px;
+  padding: 4px 2px;
+  font-size: 13px;
+}
+.huddle-history-message p,
+.huddle-history-proposal p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+  user-select: text;
+}
+.huddle-history-proposal {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.huddle-history-proposal h3 {
+  margin-top: 12px;
+  font-weight: 600;
+}

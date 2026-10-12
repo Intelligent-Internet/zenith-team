@@ -1,0 +1,225 @@
+.setup-bank-dialog__overlay {
+  z-index: 68;
+  background: rgb(22 16 28 / 46%);
+}
+
+.setup-bank-dialog {
+  z-index: 70;
+  display: flex;
+  width: min(760px, calc(100vw - 32px));
+  max-width: min(760px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider, #e5dfe8);
+  border-radius: var(--workspace-radius-overlay, 14px);
+  padding: 0;
+  background: var(--workspace-overlay-bg, #fff);
+  color: var(--workspace-native-text, #2d2631);
+  box-shadow: var(--workspace-overlay-shadow, 0 16px 48px rgb(37 28 45 / 12%));
+  font-family: var(--workspace-font-body, sans-serif);
+}
+
+.setup-bank-dialog__header {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--workspace-divider, #e5dfe8);
+  padding: 24px;
+}
+
+.setup-bank-dialog__title {
+  margin: 0;
+  font-family: var(--workspace-font-heading, sans-serif);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.setup-bank-dialog__description {
+  margin: 0;
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.setup-bank-dialog__close {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: var(--workspace-radius-control, 8px);
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted, #706875);
+  cursor: pointer;
+}
+
+.setup-bank-dialog__close:hover {
+  background: var(--workspace-hover-bg, #f1edf4);
+  color: var(--workspace-native-text, #2d2631);
+}
+
+.setup-bank-dialog__steps {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  color: var(--workspace-native-text-muted, #706875);
+}
+
+.setup-bank-dialog__progress {
+  height: 4px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--workspace-control-bg, #f1edf4);
+}
+
+.setup-bank-dialog__progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--workspace-native-accent, #7556b9);
+}
+
+.setup-bank-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  scrollbar-width: thin;
+}
+
+.setup-bank-dialog__section-title {
+  font-family: var(--workspace-font-heading, sans-serif);
+}
+
+.setup-bank-dialog__muted {
+  color: var(--workspace-native-text-muted, #706875);
+}
+
+.setup-bank-dialog__icon {
+  background: var(--workspace-control-bg, #f1edf4);
+  color: var(--workspace-native-accent, #7556b9);
+}
+
+.setup-bank-dialog__document,
+.setup-bank-dialog__consent,
+.setup-bank-dialog__stripe-form {
+  border-color: var(--workspace-divider, #e5dfe8);
+}
+
+.setup-bank-dialog__document {
+  background: var(--workspace-input-bg, #fff);
+  color: var(--workspace-native-text, #2d2631);
+  cursor: pointer;
+}
+
+.setup-bank-dialog__document:hover {
+  border-color: var(--workspace-divider-strong, #d4cbdc);
+  background: var(--workspace-hover-bg, #f1edf4);
+}
+
+.setup-bank-dialog__consent {
+  background: var(--workspace-control-bg, #f1edf4);
+}
+
+.setup-bank-dialog__consent:hover,
+.setup-bank-dialog__consent:has(input:checked) {
+  border-color: var(--workspace-native-accent, #7556b9);
+  background: var(--workspace-selected-bg, #eee7f8);
+}
+
+.setup-bank-dialog__consent input {
+  accent-color: var(--workspace-accent-fill, #7556b9);
+}
+
+.setup-bank-dialog__accepted {
+  border-color: var(--workspace-native-success, #32785a);
+  background: var(--workspace-success-soft, #eaf4ed);
+  color: var(--workspace-native-success, #32785a);
+}
+
+.setup-bank-dialog__status-icon {
+  color: var(--workspace-native-accent, #7556b9);
+}
+
+.setup-bank-dialog__onboarding[data-tone="error"]
+  .setup-bank-dialog__status-icon {
+  color: var(--workspace-native-danger, #c24a5b);
+}
+
+.setup-bank-dialog__onboarding[data-tone="warning"]
+  .setup-bank-dialog__status-icon {
+  color: var(--workspace-native-approval, #8c650e);
+}
+
+.setup-bank-dialog__footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--workspace-divider, #e5dfe8);
+  padding: 16px 24px;
+}
+
+.setup-bank-dialog__button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: var(--workspace-radius-control, 8px);
+  padding-inline: 20px;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.setup-bank-dialog__button--primary {
+  background: var(--workspace-accent-fill, #7556b9);
+  color: var(--workspace-accent-foreground, #fff);
+}
+
+.setup-bank-dialog__button--primary:hover:not(:disabled) {
+  background: var(--workspace-accent-hover, #6544a8);
+}
+
+.setup-bank-dialog__button--secondary {
+  border-color: var(--workspace-divider, #e5dfe8);
+  background: var(--workspace-control-bg, #f1edf4);
+  color: var(--workspace-native-text, #2d2631);
+}
+
+.setup-bank-dialog__button--secondary:hover:not(:disabled) {
+  background: var(--workspace-hover-bg, #f1edf4);
+}
+
+.setup-bank-dialog__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.setup-bank-dialog :is(button, input):focus-visible {
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .setup-bank-dialog__header,
+  .setup-bank-dialog__body {
+    padding: 20px;
+  }
+
+  .setup-bank-dialog__footer {
+    padding-inline: 20px;
+  }
+}
+
+@media (pointer: coarse) {
+  .setup-bank-dialog__close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .setup-bank-dialog__button {
+    min-height: 44px;
+  }
+}

@@ -1,0 +1,2429 @@
+{
+  "paths": {
+    "overview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getProjectOverview",
+        "summary": "Read the designated Project home Page and contribution rollup",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectOverview"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "updateProjectOverview",
+        "summary": "Create or designate the stable Overview Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectOverview"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/OverviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "pages": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listProjectPages",
+        "summary": "Discover working Pages, optionally contributed to by one Task",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "./canvas.yaml#/schemas/CanvasArtifact"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "createProjectPage",
+        "summary": "Create a native Project Page without a Canvas placement",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageCreateResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageCreateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "page": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getProjectPage",
+        "summary": "Read one native Page by stable identity",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "updateProjectPage",
+        "summary": "Update Page title or presentation preset",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageMetadataInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "changes": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listProjectPageChanges",
+        "summary": "Read pending and recent contributions to this Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "History cursor returned by the previous response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageChangeFeed"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "change": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getProjectPageChange",
+        "summary": "Read before and after content for a Page contribution",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageChangeDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "reviewProjectPageChange",
+        "summary": "Apply reject or undo a contribution to this Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageEditResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageChangeReviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "preview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "previewProjectPresentation",
+        "summary": "Preview a selected Page with exact retained evidence",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sequence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectPresentation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pagePresentations": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listPagePresentations",
+        "summary": "List snapshots of this Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/schemas/ProjectPresentationEntry"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "savePagePresentation",
+        "summary": "Capture a reviewed Page and its retained evidence",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectPresentation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PresentationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "presentations": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listProjectPresentations",
+        "summary": "List captured Pages across the Project",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/schemas/ProjectPresentationEntry"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "presentation": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getProjectPresentation",
+        "summary": "Read an immutable Page capture with current source access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "presentationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectPresentation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "export": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "exportProjectPresentation",
+        "summary": "Download the immutable Markdown export with current source access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "presentationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentProject": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "readProjectForRun",
+        "summary": "Discover the current Task Project and its Pages with live Run proof",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectRead"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentSource": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "readPageSource",
+        "summary": "Read exact permitted source content with live Task Run proof",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "blockId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageSource"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentPages": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "createProjectPageForRun",
+        "summary": "Create a native result Page in the live Task Project",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageCreateResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageCreateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentPage": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "readProjectPageForRun",
+        "summary": "Read a focused Page and its edit preconditions by stable identity",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Page"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "editProjectPageForRun",
+        "summary": "Contribute focused blocks to a Page with live Task Run proof",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageEditResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageEditInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentPreview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "previewProjectPresentationForRun",
+        "summary": "Preview a selected Page for Task result submission",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Preview this unresolved proposal without applying it."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectPresentation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentPrepare": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "prepareProjectPresentationForRun",
+        "summary": "Capture a selected Page and prepare its canonical result attachment",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageArtifactPreparation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PresentationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "threads": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listProjectPageThreads",
+        "summary": "Read discussions attached to the working Page across saved versions",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasThreadList"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "OverviewTask": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status",
+        "assigneeUserId",
+        "agentId",
+        "revision",
+        "assigneeName"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "assigneeUserId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "agentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "assigneeName": {
+          "type": "string"
+        },
+        "agentName": {
+          "type": "string"
+        }
+      }
+    },
+    "PageChange": {
+      "type": "object",
+      "required": [
+        "id",
+        "runId",
+        "summary",
+        "status",
+        "createdAt",
+        "pageTitle",
+        "pageId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "proposed",
+            "rejected",
+            "undone",
+            "partially_applied",
+            "needs_update",
+            "superseded",
+            "resolved"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pageTitle": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "feedback": {
+          "type": "string",
+          "description": "Latest nonempty review feedback for preparing a revised proposal."
+        },
+        "agentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Proposing Agent attribution, retained independently of the originating Run."
+        },
+        "agentName": {
+          "type": "string"
+        }
+      }
+    },
+    "ProjectOverview": {
+      "type": "object",
+      "required": [
+        "pageId",
+        "title",
+        "canEdit",
+        "changes"
+      ],
+      "properties": {
+        "pageId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageChange"
+          }
+        }
+      }
+    },
+    "OverviewInput": {
+      "type": "object",
+      "required": [
+        "requestKey",
+        "action"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "create",
+            "designate"
+          ]
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageOperation": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "insert",
+            "update",
+            "remove",
+            "move"
+          ]
+        },
+        "blockId": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "afterId": {
+          "type": "string"
+        },
+        "expectedHash": {
+          "type": "string"
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "beforeId": {
+          "type": "string",
+          "description": "Optional sibling insertion/move anchor, mutually exclusive with afterId."
+        }
+      }
+    },
+    "PageEditInput": {
+      "type": "object",
+      "required": [
+        "requestKey",
+        "sequence",
+        "summary"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageOperation"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ],
+          "description": "Change the theme in its own contribution; omit operations."
+        },
+        "supersedesId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "required": [
+                "operations"
+              ]
+            },
+            {
+              "required": [
+                "theme"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "PageEditResult": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "sequence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "proposed",
+            "rejected",
+            "undone",
+            "partially_applied",
+            "needs_update",
+            "superseded",
+            "resolved"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "ProjectPresentationEntry": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "sequence",
+        "createdAt",
+        "runId",
+        "outputId",
+        "pageId",
+        "theme"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "outputId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ]
+        },
+        "changeId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        }
+      }
+    },
+    "ProjectPresentation": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "sequence",
+        "createdAt",
+        "runId",
+        "outputId",
+        "content",
+        "documents",
+        "fingerprint",
+        "issues",
+        "sourceCount",
+        "canExport",
+        "pageId",
+        "theme",
+        "requiredSuggestionIndexes"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "outputId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "documents": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+          }
+        },
+        "fingerprint": {
+          "type": "string"
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceCount": {
+          "type": "integer"
+        },
+        "canExport": {
+          "type": "boolean"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ]
+        },
+        "changeId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        },
+        "requiredSuggestionIndexes": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "uniqueItems": true,
+          "description": "Suggestion indexes pending in this immutable capture. Later rejection or resolution does not remove an index; Task completion requires their application unless assigned proposal-only. Empty for shared-content captures."
+        }
+      }
+    },
+    "PresentationInput": {
+      "type": "object",
+      "required": [
+        "requestKey",
+        "sequence",
+        "fingerprint"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "changeId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        }
+      },
+      "additionalProperties": false
+    },
+    "PageChangeDetail": {
+      "type": "object",
+      "required": [
+        "id",
+        "runId",
+        "summary",
+        "status",
+        "createdAt",
+        "before",
+        "after",
+        "pageTitle",
+        "pageId",
+        "fingerprint",
+        "suggestions",
+        "reviews"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "runId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "applied",
+            "proposed",
+            "rejected",
+            "undone",
+            "partially_applied",
+            "needs_update",
+            "superseded",
+            "resolved"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "before": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "after": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "pageTitle": {
+          "type": "string"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "beforeTheme": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "default",
+            "editorial",
+            "compact",
+            null
+          ]
+        },
+        "afterTheme": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "default",
+            "editorial",
+            "compact",
+            null
+          ]
+        },
+        "fingerprint": {
+          "type": "string"
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageSuggestion"
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageChangeReview"
+          }
+        },
+        "feedback": {
+          "type": "string",
+          "description": "Latest nonempty review feedback for preparing a revised proposal."
+        },
+        "agentId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Proposing Agent attribution, retained independently of the originating Run."
+        },
+        "agentName": {
+          "type": "string"
+        }
+      }
+    },
+    "PageArtifactPreparation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presentationId",
+        "attachmentId",
+        "title"
+      ],
+      "properties": {
+        "presentationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attachmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "PageSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "versionId",
+        "artifactId",
+        "title",
+        "sourceType"
+      ],
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "artifactId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sourceType": {
+          "type": "string"
+        },
+        "content": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "markdown": {
+          "type": "string"
+        }
+      }
+    },
+    "PageSourceState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "versionId",
+        "artifactId",
+        "currentVersionId",
+        "title",
+        "status"
+      ],
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "artifactId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "currentVersionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "current",
+            "needs_refresh",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "PageCreateInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "title"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "markdown": {
+          "type": "string",
+          "description": "Prose source converted into native blocks. Supply either content or markdown."
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "oneOf": [
+            {
+              "required": [
+                "content"
+              ]
+            },
+            {
+              "required": [
+                "markdown"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "PageCreateResult": {
+      "type": "object",
+      "required": [
+        "versionId",
+        "artifactId",
+        "pageId",
+        "title",
+        "sequence"
+      ],
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "artifactId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "changeId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "required": [
+        "pageId",
+        "versionId",
+        "artifactId",
+        "title",
+        "sequence",
+        "canEdit",
+        "theme",
+        "content",
+        "blockHashes",
+        "sources",
+        "changes",
+        "canReviewSuggestions",
+        "pendingCreation"
+      ],
+      "properties": {
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "versionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "artifactId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ]
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "blockHashes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageSourceState"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageChange"
+          }
+        },
+        "canReviewSuggestions": {
+          "type": "boolean"
+        },
+        "pendingCreation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ProjectRead": {
+      "type": "object",
+      "required": [
+        "projectId",
+        "overviewPageId",
+        "tasks",
+        "pages",
+        "changes",
+        "results"
+      ],
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "overviewPageId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/OverviewTask"
+          }
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "./canvas.yaml#/schemas/CanvasArtifact"
+          }
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageChange"
+          }
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "./canvas.yaml#/schemas/CanvasArtifact"
+          }
+        }
+      }
+    },
+    "PageMetadataInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "editorial",
+            "compact"
+          ]
+        }
+      },
+      "required": [
+        "sequence"
+      ]
+    },
+    "PageChangeFeed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pending",
+        "history",
+        "nextCursor"
+      ],
+      "properties": {
+        "pending": {
+          "type": "array",
+          "description": "All contributions awaiting review, independent of the history cursor.",
+          "items": {
+            "$ref": "#/schemas/PageChange"
+          }
+        },
+        "history": {
+          "type": "array",
+          "description": "Up to 50 completed contributions, newest first.",
+          "items": {
+            "$ref": "#/schemas/PageChange"
+          }
+        },
+        "nextCursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Opaque cursor for the next history page; null when complete."
+        }
+      }
+    },
+    "PageChangeReviewInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "fingerprint",
+        "action"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "fingerprint": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "apply",
+            "reject",
+            "undo",
+            "request_changes",
+            "resolve"
+          ]
+        },
+        "indexes": {
+          "type": "array",
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "feedback": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    "PageSuggestion": {
+      "type": "object",
+      "required": [
+        "index",
+        "type",
+        "blockId",
+        "status",
+        "group",
+        "competingChangeIds"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "type": {
+          "type": "string"
+        },
+        "blockId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "needs_update",
+            "already_reflected",
+            "applied",
+            "rejected",
+            "undone",
+            "superseded"
+          ]
+        },
+        "before": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "after": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "group": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "competingChangeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "PageChangeReview": {
+      "type": "object",
+      "required": [
+        "id",
+        "actorUserId",
+        "action",
+        "indexes",
+        "feedback",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "actorUserId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "apply",
+            "reject",
+            "undo",
+            "resolve",
+            "request_changes"
+          ]
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "feedback": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

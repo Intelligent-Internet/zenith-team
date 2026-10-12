@@ -1,0 +1,4275 @@
+{
+  "paths": {
+    "library": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "listWhiteboards",
+        "summary": "List whiteboards",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "favorites",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "unowned",
+            "in": "query",
+            "description": "Company Whiteboard managers only: Boards no active member manages, which they may claim.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 40
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardList"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "createWhiteboard",
+        "summary": "Create whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Board"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/CreateBoardInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "board": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "getWhiteboard",
+        "summary": "Get whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardSnapshot"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "updateWhiteboard",
+        "summary": "Update whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Board"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/UpdateBoardInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "favorite": {
+      "put": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "favoriteWhiteboard",
+        "summary": "Favorite whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Preference saved"
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardFavoriteInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "operations": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "operationsWhiteboard",
+        "summary": "Operations whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardMutation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardBatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "hydrate": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "hydrateWhiteboard",
+        "summary": "Hydrate whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardHydration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardHydrateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "text": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "textWhiteboard",
+        "summary": "Text whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardTextResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardTextInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "contextWhiteboard",
+        "summary": "Context whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardContext"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardContextInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "presence": {
+      "put": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "updateWhiteboardPresence",
+        "summary": "Update whiteboard presence",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardPresence"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardPresenceInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "file": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "downloadWhiteboardFile",
+        "summary": "Download a file placed on a whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "variant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "original",
+                "preview"
+              ]
+            },
+            "description": "`preview` returns the bounded image preview when the file has one; otherwise the original file."
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes. Member downloads revalidate with an ETag, so a cached copy is reused only after the server resolves current Board access.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "The cached copy named by If-None-Match is still current and readable."
+          }
+        }
+      }
+    },
+    "agentLibrary": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "agentListWhiteboards",
+        "summary": "Agent list whiteboards",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/runId"
+          },
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Skip this many invitations. Responses contain at most 100 Boards."
+          },
+          {
+            "name": "X-Boardly-Run-Token",
+            "in": "header",
+            "required": true,
+            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^brt_[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardList"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+      }
+    },
+    "agentOperations": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "agentOperationsWhiteboard",
+        "summary": "Agent operations whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/runId"
+          },
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Boardly-Run-Token",
+            "in": "header",
+            "required": true,
+            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^brt_[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardMutation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/UnauthorizedRunProof"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardBatch"
+              }
+            }
+          }
+        },
+        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+      }
+    },
+    "agentCompose": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "agentComposeWhiteboard",
+        "summary": "Agent compose whiteboard content",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/runId"
+          },
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Boardly-Run-Token",
+            "in": "header",
+            "required": true,
+            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^brt_[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardComposeResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/UnauthorizedRunProof"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardComposeInput"
+              }
+            }
+          }
+        },
+        "description": "Adds content by intent: notes, a text, a shape, a left-to-right diagram, an SVG-path sketch, connectors, or arranges existing objects. The server measures and lays it out, places the whole request as one group where the person who authorized the Run is looking (the nearest free space when that area is full, beside the Board's content when nobody looks), and applies one native batch with the same receipts and fences as operations. The receipt identifies the intent, so a retry with the same request key replays the same objects. The Agent's cursor moves to the new work, which it selects and outlines as its work area."
+      }
+    },
+    "agentContext": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "agentContextWhiteboard",
+        "summary": "Agent context whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/runId"
+          },
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Boardly-Run-Token",
+            "in": "header",
+            "required": true,
+            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^brt_[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardContext"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/UnauthorizedRunProof"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardContextInput"
+              }
+            }
+          }
+        },
+        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+      }
+    },
+    "agentView": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "agentViewWhiteboard",
+        "summary": "Agent view whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/runId"
+          },
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Boardly-Run-Token",
+            "in": "header",
+            "required": true,
+            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
+            "schema": {
+              "type": "string",
+              "pattern": "^brt_[0-9a-f]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardAgentView"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/UnauthorizedRunProof"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardAgentViewInput"
+              }
+            }
+          }
+        },
+        "description": "The compact reading an Agent works from: by default the area the person who authorized the Run is looking at (their focused browser window, else their latest one, else the view they left a few minutes ago), one line per object with a short ref, with an optional image of exactly that area. The same Run proof and invitation as context apply. The Agent's presence moves to the area it read."
+      }
+    },
+    "access": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "getWhiteboardAccess",
+        "summary": "Read Board visibility and person/Agent grants",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Your invitations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardAccess"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "setWhiteboardAccess",
+        "summary": "Grant, change or revoke person/Agent access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardAccessInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Invitation updated"
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "visibility": {
+      "put": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "setWhiteboardVisibility",
+        "summary": "Set Private, Company or Public visibility; leaving Public revokes its link",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardVisibilityInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Invitation updated"
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        }
+      }
+    },
+    "channel": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "getWhiteboardChannel",
+        "summary": "Read the Board's chat and the people who can read the Board",
+        "description": "Reads the Board's chat without joining it: the chat once someone started it, whether the caller joined, and the people who can read the Board to mention. A person who cannot read the Board gets 404.",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Board's chat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardChannel"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "joinWhiteboardChannel",
+        "summary": "Open the Board's chat, starting it the first time",
+        "description": "Joins the caller to the Board's chat, starting the chat the first time, and brings its people and Agents in step with the Board: people who can no longer read the Board leave, and its Agents are the Agents invited to the Board. The chat is an ordinary channel read through the discussion routes by its ID; it never lists in Chat. A person who cannot read the Board gets 404.",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Board's chat, joined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardChannel"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "publicBoard": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "getPublicWhiteboard",
+        "summary": "Read an unrevoked public Board link; no sign-in required",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardSnapshot"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "publicHydrate": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "hydratePublicWhiteboard",
+        "summary": "Read an unrevoked public Board link; no sign-in required",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardHydration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardHydrateInput"
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "publicFile": {
+      "get": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "downloadPublicWhiteboardFile",
+        "summary": "Download a file a public Board link still places; no sign-in required",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "variant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "original",
+                "preview"
+              ]
+            },
+            "description": "`preview` returns the bounded image preview when the file has one; otherwise the original file."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File bytes. Member downloads are immutable by attachment ID and may be cached privately.",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "files": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "attachWhiteboardFile",
+        "summary": "Reference an uploaded file from a whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/BoardFile"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardFileInput"
+              }
+            }
+          }
+        },
+        "description": "Member-only. Registers a file on the Board so items can place it. Accepts the caller's own ready upload that no chat, Project, Output or other Board shares yet, or a file the caller can already read on another Board of the Company (copy between Boards). Any file type is accepted; PNG, JPEG, GIF and WebP images must decode, are limited to 32 MiB and 32 Mi pixels, and keep a bounded preview. Retrying the same attachment on the same Board returns the same registration. The scene item is created separately through operations."
+      }
+    },
+    "claim": {
+      "post": {
+        "tags": [
+          "whiteboards"
+        ],
+        "operationId": "claimWhiteboard",
+        "summary": "Claim an unowned whiteboard",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "boardId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/Board"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "./_common.yaml#/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "./_common.yaml#/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "./_common.yaml#/responses/NotFound"
+          },
+          "409": {
+            "$ref": "./_common.yaml#/responses/Conflict"
+          },
+          "413": {
+            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
+          },
+          "422": {
+            "$ref": "./_common.yaml#/responses/ValidationFailed"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/BoardClaimInput"
+              }
+            }
+          }
+        },
+        "description": "A Company Whiteboard manager takes manage access to a Board no active member manages."
+      }
+    }
+  },
+  "schemas": {
+    "Board": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "companyId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "createdBy": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "archivedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "favorite": {
+          "type": "boolean"
+        },
+        "canEdit": {
+          "type": "boolean"
+        },
+        "canManage": {
+          "type": "boolean"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "company",
+            "public"
+          ]
+        },
+        "canShare": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "companyId",
+        "title",
+        "purpose",
+        "sequence",
+        "revision",
+        "createdBy",
+        "createdAt",
+        "updatedAt",
+        "archivedAt",
+        "favorite",
+        "canEdit",
+        "canManage",
+        "visibility",
+        "canShare"
+      ]
+    },
+    "BoardList": {
+      "type": "object",
+      "properties": {
+        "boards": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/Board"
+          }
+        },
+        "hasMore": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "boards",
+        "hasMore"
+      ]
+    },
+    "CreateBoardInput": {
+      "type": "object",
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "requestKey",
+        "title"
+      ]
+    },
+    "UpdateBoardInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "purpose": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 2000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "archived": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "expectedRevision"
+      ]
+    },
+    "BoardGeometry": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "type": "number",
+          "format": "double"
+        },
+        "width": {
+          "type": "number",
+          "format": "double"
+        },
+        "height": {
+          "type": "number",
+          "format": "double"
+        },
+        "rotation": {
+          "type": "number",
+          "format": "double"
+        },
+        "stackOrder": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "parentFrameId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readingOrder": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height",
+        "rotation",
+        "stackOrder",
+        "parentFrameId",
+        "readingOrder"
+      ]
+    },
+    "BoardProperties": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "description": "An ink, #rrggbb or #rrggbbaa. An ink swatch's name (graphite, blue, green, yellow, rose) is stored as its value."
+        },
+        "fill": {
+          "type": "string",
+          "description": "A fill, #rrggbb or #rrggbbaa. A fill swatch's name (yellow, blue, pink, green, none) is stored as its value."
+        },
+        "strokeWidth": {
+          "type": "number",
+          "format": "double"
+        },
+        "shape": {
+          "$ref": "#/schemas/BoardShapeType"
+        },
+        "brush": {
+          "type": "string"
+        },
+        "locked": {
+          "type": "boolean"
+        },
+        "role": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "attachmentId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": "The compartments below a class's, entity's or fragment's title, one member per line: a class's attributes then methods, an entity's columns (\"PK id uuid\"), a fragment's guard for each operand."
+        },
+        "dividers": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "number"
+          },
+          "description": "A fragment's dashed operand lines, measured from its top: one fewer than its sections, increasing."
+        },
+        "head": {
+          "$ref": "#/schemas/BoardHeadType"
+        }
+      },
+      "required": [
+        "locked"
+      ]
+    },
+    "BoardPoint": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "type": "number",
+          "format": "double"
+        },
+        "pressure": {
+          "type": "number",
+          "format": "double"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ]
+    },
+    "BoardItem": {
+      "allOf": [
+        {
+          "$ref": "#/schemas/BoardGeometry"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "sticky",
+                "text",
+                "shape",
+                "stroke",
+                "image",
+                "file",
+                "frame"
+              ]
+            },
+            "properties": {
+              "$ref": "#/schemas/BoardProperties"
+            },
+            "geometryRevision": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "contentRevision": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "textRevision": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "lifecycleRevision": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "text": {
+              "type": "string"
+            },
+            "textTruncated": {
+              "type": "boolean"
+            },
+            "createdBy": {
+              "$ref": "_common.yaml#/schemas/ActorRef"
+            },
+            "updatedBy": {
+              "$ref": "_common.yaml#/schemas/ActorRef"
+            },
+            "deleted": {
+              "type": "boolean"
+            },
+            "createdByRunId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "updatedByRunId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "file": {
+              "$ref": "#/schemas/BoardFile"
+            }
+          },
+          "required": [
+            "id",
+            "type",
+            "properties",
+            "geometryRevision",
+            "contentRevision",
+            "textRevision",
+            "lifecycleRevision",
+            "text",
+            "textTruncated",
+            "createdBy",
+            "updatedBy",
+            "deleted"
+          ]
+        }
+      ]
+    },
+    "BoardEdge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "targetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "label": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "line": {
+          "$ref": "#/schemas/BoardLineType"
+        },
+        "startMarker": {
+          "$ref": "#/schemas/BoardMarkerType"
+        },
+        "endMarker": {
+          "$ref": "#/schemas/BoardMarkerType"
+        },
+        "route": {
+          "$ref": "#/schemas/BoardRouteType"
+        },
+        "anchorY": {
+          "description": "A message's row below its source's top; null on other routes.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceLabel": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "A multiplicity or role at the source end."
+        },
+        "targetLabel": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "A multiplicity or role at the target end."
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "createdBy": {
+          "$ref": "_common.yaml#/schemas/ActorRef"
+        },
+        "updatedBy": {
+          "$ref": "_common.yaml#/schemas/ActorRef"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "createdByRunId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updatedByRunId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "label",
+        "relation",
+        "line",
+        "startMarker",
+        "endMarker",
+        "route",
+        "anchorY",
+        "sourceLabel",
+        "targetLabel",
+        "revision",
+        "createdBy",
+        "updatedBy",
+        "deleted"
+      ]
+    },
+    "BoardSnapshot": {
+      "type": "object",
+      "properties": {
+        "board": {
+          "$ref": "#/schemas/Board"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "full": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardItem"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardEdge"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "required": [
+        "board",
+        "sequence",
+        "full",
+        "items",
+        "edges",
+        "removed"
+      ]
+    },
+    "BoardHydrateInput": {
+      "type": "object",
+      "properties": {
+        "itemIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "stateVectors": {
+          "type": "object",
+          "description": "Yjs state vectors (base64) of notes the client already holds; those notes return only the missing update.",
+          "additionalProperties": {
+            "type": "string",
+            "format": "byte"
+          }
+        }
+      },
+      "required": [
+        "itemIds"
+      ]
+    },
+    "BoardHydratedItem": {
+      "type": "object",
+      "properties": {
+        "lifecycleRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "text": {
+          "type": "string"
+        },
+        "textRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "state": {
+          "type": "string",
+          "format": "byte"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardPoint"
+          }
+        },
+        "delta": {
+          "type": "boolean",
+          "description": "state is an update relative to the supplied state vector rather than the complete note."
+        }
+      },
+      "required": [
+        "lifecycleRevision",
+        "id",
+        "text",
+        "textRevision"
+      ]
+    },
+    "BoardHydration": {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardHydratedItem"
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": "Requested IDs that are no longer live items on this Board (deleted, or not an item)."
+        }
+      },
+      "required": [
+        "sequence",
+        "items",
+        "missing"
+      ]
+    },
+    "BoardCommand": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "create_item",
+            "geometry",
+            "content",
+            "text",
+            "delete_item",
+            "restore_item",
+            "create_edge",
+            "update_edge",
+            "delete_edge",
+            "restore_edge"
+          ]
+        },
+        "draftId": {
+          "type": "string"
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "itemType": {
+          "type": "string"
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Expected field revision. For text commands, use lifecycleRevision and also expectedTextRevision; text replaces only the existing CRDT text."
+        },
+        "expectedGeometryRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "expectedTextRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "geometry": {
+          "anyOf": [
+            {
+              "$ref": "#/schemas/BoardGeometry"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "properties": {
+          "anyOf": [
+            {
+              "$ref": "#/schemas/BoardProperties"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardPoint"
+          }
+        },
+        "parentRef": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "targetRef": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "line": {
+          "$ref": "#/schemas/BoardLineType"
+        },
+        "startMarker": {
+          "$ref": "#/schemas/BoardMarkerType"
+        },
+        "endMarker": {
+          "$ref": "#/schemas/BoardMarkerType"
+        },
+        "route": {
+          "$ref": "#/schemas/BoardRouteType"
+        },
+        "anchorY": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "A message's row below its source's top; required with the message route."
+        },
+        "sourceLabel": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "targetLabel": {
+          "type": "string",
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "description": "Connector notation (line, markers, route, anchorY, end labels): create_edge starts from the Board's usual arrow (solid, no start marker, arrow end, flow route); update_edge replaces label and relation and changes only the notation fields it names."
+    },
+    "BoardBatch": {
+      "type": "object",
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardCommand"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "requestKey",
+        "commands"
+      ]
+    },
+    "BoardMutation": {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "ids": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardItem"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardEdge"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "replayed": {
+          "type": "boolean",
+          "description": "This request key was already committed. Items and edges are omitted when they changed after that commit; use a snapshot for their current state."
+        }
+      },
+      "required": [
+        "sequence",
+        "ids",
+        "items",
+        "edges",
+        "removed",
+        "replayed"
+      ]
+    },
+    "BoardTextInput": {
+      "type": "object",
+      "properties": {
+        "lifecycleRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "itemId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "update": {
+          "type": "string",
+          "format": "byte"
+        },
+        "stateVector": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "required": [
+        "lifecycleRevision",
+        "requestKey",
+        "itemId",
+        "update"
+      ]
+    },
+    "BoardTextResult": {
+      "type": "object",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "itemId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "textRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "text": {
+          "type": "string"
+        },
+        "update": {
+          "type": "string",
+          "format": "byte"
+        }
+      },
+      "required": [
+        "sequence",
+        "itemId",
+        "textRevision",
+        "text",
+        "update"
+      ]
+    },
+    "BoardContextInput": {
+      "type": "object",
+      "properties": {
+        "itemIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxItems": 500
+        },
+        "maxItems": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "maxBytes": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1024,
+          "maximum": 1048576
+        },
+        "visualOffset": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Zero-based image continuation offset. Follow visuals.nextOffset until hasMore is false."
+        },
+        "expectedSequence": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0,
+          "description": "The first page's sequence, for later image pages. If the Board moved, the page renders the latest committed state and sets visuals.changed; visuals.regionsShifted says whether the page plan moved too."
+        },
+        "includeVisuals": {
+          "type": "boolean",
+          "default": false,
+          "description": "Render ephemeral PNG regions of the acknowledged scene. Nearby content is grouped; distant content and oversized groups are split. Enabled automatically by whiteboard_read."
+        },
+        "expectedPlan": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "The first page's visuals.planHash, for later image pages; visuals.regionsShifted reports whether the plan moved."
+        }
+      }
+    },
+    "BoardAgentViewInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "area": {
+          "type": "string",
+          "enum": [
+            "view",
+            "all"
+          ],
+          "description": "view (the default when the requester's view is known) or all."
+        },
+        "itemRefs": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 36
+          },
+          "description": "Short refs or IDs to read in full, with attribution."
+        },
+        "image": {
+          "type": "boolean",
+          "description": "Also render the area read, at most 1024 pixels on its longer side."
+        }
+      }
+    },
+    "BoardAgentRef": {
+      "type": "object",
+      "required": [
+        "ref",
+        "id",
+        "type"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string"
+        },
+        "geometryRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "contentRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "textRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "lifecycleRevision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64",
+          "description": "A connector's revision."
+        },
+        "geometry": {
+          "$ref": "#/schemas/BoardGeometry"
+        },
+        "properties": {
+          "$ref": "#/schemas/BoardProperties"
+        }
+      }
+    },
+    "BoardAgentView": {
+      "type": "object",
+      "required": [
+        "sequence",
+        "text",
+        "refs",
+        "area"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "text": {
+          "type": "string",
+          "description": "The reading the model sees: one line per object, frames first, then rows top to bottom."
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardAgentRef"
+          },
+          "description": "Each listed object's ID, revisions, and an item's geometry and properties, so boardly-mcp fills edit revisions itself and keeps the fields an edit does not name."
+        },
+        "area": {
+          "anyOf": [
+            {
+              "$ref": "#/schemas/BoardRect"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "image": {
+          "$ref": "#/schemas/BoardVisualRegion"
+        },
+        "imageUnavailable": {
+          "type": "string"
+        }
+      }
+    },
+    "BoardComposeRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "revision"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      }
+    },
+    "BoardComposeNote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 16
+        }
+      }
+    },
+    "BoardComposeNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "text"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "shape": {
+          "type": "string",
+          "enum": [
+            "rectangle",
+            "ellipse",
+            "diamond",
+            "triangle",
+            "rounded",
+            "terminal",
+            "actor",
+            "database",
+            "queue",
+            "cloud",
+            "component",
+            "document",
+            "note",
+            "lifeline",
+            "class",
+            "entity",
+            "fragment",
+            "sticky"
+          ],
+          "description": "A box of any kind, or a sticky note. A sequence's participants are lifelines (the default) or actors, drawn as lifelines headed by the actor's figure; a use case diagram draws actors and ellipses."
+        },
+        "fill": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "The box's fill: a fill swatch name or a hex value."
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 16,
+          "description": "The box's outline and text: an ink swatch name or a hex value."
+        },
+        "sections": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": "A class's or entity's compartments, each one string holding a member or column per line: a class [\"- id: UUID\\n- total: Money\", \"+ place(): void\"], an entity [\"PK id uuid\\nemail text\"]. A class sent as three or four one-line sections is regrouped into attributes and methods."
+        },
+        "attributes": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "A class's attributes, one per entry, in place of sections; drawn as its first compartment."
+        },
+        "methods": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "A class's methods, one per entry, in place of sections; drawn as its second compartment."
+        },
+        "columns": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "An entity's columns, one per entry, in place of sections."
+        }
+      }
+    },
+    "BoardComposeEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "to": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "style": {
+          "$ref": "#/schemas/BoardComposeConnectorStyle"
+        },
+        "fromEnd": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Between entities a cardinality (1, 0..1, 1..*, 0..*) drawn as a crow's foot; otherwise a multiplicity label at the source. A marker name (BoardMarkerType) instead draws that marker at the source in place of the style's."
+        },
+        "toEnd": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "As fromEnd, at the target."
+        }
+      }
+    },
+    "BoardComposePath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "d"
+      ],
+      "properties": {
+        "d": {
+          "type": "string",
+          "maxLength": 20000,
+          "description": "SVG path data: M L H V C S Q T A Z, absolute or relative."
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "width": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "BoardComposeOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "description": "One intent; type selects the fields that apply.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "notes",
+            "text",
+            "shape",
+            "diagram",
+            "sketch",
+            "connect",
+            "arrange",
+            "sequence",
+            "usecase"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Names a text or shape so connectors in the same call reach it."
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "$ref": "#/schemas/BoardComposeNote"
+          }
+        },
+        "layout": {
+          "type": "string",
+          "enum": [
+            "grid",
+            "row",
+            "column"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000
+        },
+        "shape": {
+          "type": "string",
+          "enum": [
+            "rectangle",
+            "ellipse",
+            "diamond",
+            "triangle",
+            "rounded",
+            "terminal",
+            "actor",
+            "database",
+            "queue",
+            "cloud",
+            "component",
+            "document",
+            "note",
+            "lifeline",
+            "class",
+            "entity",
+            "fragment"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "description": "A class's, entity's or fragment's compartments, each one string with a member per line. A class sent as three or four one-line sections is regrouped into attributes and methods."
+        },
+        "attributes": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "A class's attributes, one per entry, in place of sections; drawn as its first compartment."
+        },
+        "methods": {
+          "type": "array",
+          "maxItems": 40,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "A class's methods, one per entry, in place of sections; drawn as its second compartment."
+        },
+        "columns": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": "An entity's columns, one per entry, in place of sections."
+        },
+        "fill": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "color": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "width": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "height": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0,
+          "maximum": 4000
+        },
+        "nodes": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/schemas/BoardComposeNode"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/schemas/BoardComposeEdge"
+          }
+        },
+        "viewBox": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "paths": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/schemas/BoardComposePath"
+          }
+        },
+        "from": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "to": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "refs": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "align": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right",
+            "top",
+            "middle",
+            "bottom"
+          ]
+        },
+        "distribute": {
+          "type": "string",
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
+        },
+        "gap": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "frame": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Wraps notes, a diagram or a sketch in a frame with this title."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "right",
+            "down"
+          ],
+          "description": "A diagram's flow: right (default) with flow connectors, or down with elbow connectors, parents above children."
+        },
+        "style": {
+          "$ref": "#/schemas/BoardComposeConnectorStyle"
+        },
+        "fragments": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/schemas/BoardComposeFragment"
+          },
+          "description": "A sequence's combined fragments."
+        }
+      }
+    },
+    "BoardComposeInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "ops"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "near": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Place beside this object."
+        },
+        "into": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Fill this frame; beside it when full."
+        },
+        "revisions": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/schemas/BoardComposeRevision"
+          },
+          "description": "Geometry revisions read of the objects an arrange op moves."
+        },
+        "ops": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "$ref": "#/schemas/BoardComposeOp"
+          }
+        },
+        "preview": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BoardComposeResult": {
+      "type": "object",
+      "required": [
+        "mutation",
+        "bounds",
+        "placement"
+      ],
+      "properties": {
+        "mutation": {
+          "$ref": "#/schemas/BoardMutation"
+        },
+        "bounds": {
+          "anyOf": [
+            {
+              "$ref": "#/schemas/BoardRect"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "view",
+            "partly",
+            "nearby",
+            "frame_full",
+            "unwatched",
+            ""
+          ],
+          "description": "Where the content landed for the person the Run works for: inside the area they look at; starting there but larger than its free part; beside a full view; beside a frame that had no room; or beside the content when nobody looks. Empty on a replay."
+        },
+        "preview": {
+          "$ref": "#/schemas/BoardVisualRegion"
+        }
+      }
+    },
+    "BoardContext": {
+      "type": "object",
+      "properties": {
+        "omittedCount": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "omittedIdsTruncated": {
+          "type": "boolean"
+        },
+        "board": {
+          "$ref": "#/schemas/Board"
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardItem"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardEdge"
+          }
+        },
+        "omittedIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "markdown": {
+          "type": "string"
+        },
+        "visuals": {
+          "$ref": "#/schemas/BoardVisuals"
+        }
+      },
+      "required": [
+        "omittedCount",
+        "omittedIdsTruncated",
+        "board",
+        "sequence",
+        "items",
+        "edges",
+        "omittedIds",
+        "truncated",
+        "markdown"
+      ]
+    },
+    "BoardFavoriteInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "favorite"
+      ],
+      "properties": {
+        "favorite": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BoardDragPreview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "x",
+        "y"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "x": {
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "BoardPresenceView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "description": "The area of the Board a browser shows, in Board units.",
+      "properties": {
+        "x": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "width": {
+          "type": "number",
+          "format": "double",
+          "exclusiveMinimum": 0,
+          "maximum": 2000000
+        },
+        "height": {
+          "type": "number",
+          "format": "double",
+          "exclusiveMinimum": 0,
+          "maximum": 2000000
+        }
+      }
+    },
+    "BoardRect": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "description": "An area in Board units.",
+      "properties": {
+        "x": {
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "type": "number",
+          "format": "double"
+        },
+        "width": {
+          "type": "number",
+          "format": "double"
+        },
+        "height": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "BoardPresenceInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionId",
+        "zoom"
+      ],
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "x": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "y": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "cameraX": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "cameraY": {
+          "type": "number",
+          "format": "double",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "zoom": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0.01,
+          "maximum": 8
+        },
+        "pointing": {
+          "type": "boolean"
+        },
+        "leave": {
+          "type": "boolean"
+        },
+        "selectionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maxItems": 100
+        },
+        "dragPreviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardDragPreview"
+          },
+          "maxItems": 100
+        },
+        "view": {
+          "$ref": "#/schemas/BoardPresenceView"
+        },
+        "focused": {
+          "type": "boolean",
+          "description": "The browser window has the keyboard focus; an Agent works where the focused window looks."
+        }
+      }
+    },
+    "BoardParticipant": {
+      "type": "object",
+      "properties": {
+        "sessionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "x": {
+          "type": "number",
+          "format": "double"
+        },
+        "y": {
+          "type": "number",
+          "format": "double"
+        },
+        "cameraX": {
+          "type": "number",
+          "format": "double"
+        },
+        "cameraY": {
+          "type": "number",
+          "format": "double"
+        },
+        "zoom": {
+          "type": "number",
+          "format": "double"
+        },
+        "pointing": {
+          "type": "boolean"
+        },
+        "selectionIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "dragPreviews": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardDragPreview"
+          }
+        },
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "cursor": {
+          "$ref": "./canvas.yaml#/schemas/CanvasDocumentCursor"
+        },
+        "presenting": {
+          "type": "boolean"
+        },
+        "actor": {
+          "$ref": "./_common.yaml#/schemas/ActorRef"
+        },
+        "runId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "view": {
+          "$ref": "#/schemas/BoardRect"
+        },
+        "workArea": {
+          "$ref": "#/schemas/BoardRect"
+        },
+        "focused": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "sessionId",
+        "x",
+        "y",
+        "cameraX",
+        "cameraY",
+        "zoom",
+        "pointing",
+        "userId",
+        "name",
+        "updatedAt",
+        "presenting",
+        "actor"
+      ]
+    },
+    "BoardPresence": {
+      "type": "object",
+      "required": [
+        "sessions"
+      ],
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardParticipant"
+          }
+        }
+      }
+    },
+    "BoardGrant": {
+      "type": "object",
+      "properties": {
+        "actor": {
+          "$ref": "./_common.yaml#/schemas/ActorRef"
+        },
+        "access": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit",
+            "manage"
+          ]
+        }
+      },
+      "required": [
+        "actor",
+        "access"
+      ]
+    },
+    "BoardAccessInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        },
+        "actor": {
+          "$ref": "./_common.yaml#/schemas/ActorRef"
+        },
+        "access": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit",
+            "manage",
+            "none"
+          ]
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "actor",
+        "access"
+      ]
+    },
+    "BoardAccess": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "$ref": "./_common.yaml#/schemas/ActorRef"
+        },
+        "permission": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit",
+            "manage"
+          ]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "company",
+            "public"
+          ]
+        },
+        "companyAccess": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit"
+          ]
+        },
+        "publicToken": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardGrant"
+          }
+        },
+        "url": {
+          "type": "string",
+          "description": "Canonical member web URL for sharing from web and Electron. Empty when no web origin is configured."
+        }
+      },
+      "required": [
+        "owner",
+        "permission",
+        "visibility",
+        "companyAccess",
+        "publicToken",
+        "revision",
+        "grants",
+        "url"
+      ]
+    },
+    "BoardVisibilityInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "company",
+            "public"
+          ]
+        },
+        "companyAccess": {
+          "type": "string",
+          "enum": [
+            "read",
+            "edit"
+          ]
+        }
+      },
+      "required": [
+        "expectedRevision",
+        "visibility",
+        "companyAccess"
+      ]
+    },
+    "BoardVisuals": {
+      "type": "object",
+      "required": [
+        "sequence",
+        "regions",
+        "totalRegions",
+        "nextOffset",
+        "hasMore",
+        "changed",
+        "planHash",
+        "regionsShifted"
+      ],
+      "description": "On-demand images, never persisted as captures or attachments. At most four region images and 6 MiB of PNG bytes per response, separate from the text maxBytes budget. Context and images are read in separate snapshots; visuals.sequence is the state the images show.",
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/BoardVisualRegion"
+          }
+        },
+        "totalRegions": {
+          "type": "integer"
+        },
+        "nextOffset": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hasMore": {
+          "type": "boolean"
+        },
+        "changed": {
+          "type": "boolean",
+          "description": "The Board moved past the expected sequence; this page shows the latest committed state."
+        },
+        "unavailable": {
+          "type": "string",
+          "description": "Why no images accompany otherwise complete context."
+        },
+        "planHash": {
+          "type": "string",
+          "description": "Identifies the region plan; it changes when regions are added, removed or moved."
+        },
+        "regionsShifted": {
+          "type": "boolean",
+          "description": "The region plan differs from the one the expected sequence produced; read again from offset 0 to be sure every region was seen."
+        },
+        "overview": {
+          "anyOf": [
+            {
+              "$ref": "#/schemas/BoardVisualRegion"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "First page only: the whole Board at low resolution, for choosing where to look."
+        }
+      }
+    },
+    "BoardVisualRegion": {
+      "type": "object",
+      "required": [
+        "index",
+        "bounds",
+        "itemIds",
+        "pixelWidth",
+        "pixelHeight",
+        "mimeType",
+        "data"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer"
+        },
+        "bounds": {
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "description": "Crop in board coordinates. Adjacent detail tiles overlap to preserve boundary context.",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "width": {
+              "type": "number"
+            },
+            "height": {
+              "type": "number"
+            }
+          }
+        },
+        "itemIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "pixelWidth": {
+          "type": "integer",
+          "maximum": 1280
+        },
+        "pixelHeight": {
+          "type": "integer",
+          "maximum": 1280
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "image/png"
+          ]
+        },
+        "data": {
+          "type": "string",
+          "format": "byte",
+          "description": "Base64 PNG. MCP returns these bytes as native image content, not JSON text."
+        }
+      }
+    },
+    "BoardFile": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "format": "int32"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "height": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "format": "int32"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hasPreview": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "attachmentId",
+        "filename",
+        "contentType",
+        "sizeBytes",
+        "width",
+        "height",
+        "hasPreview"
+      ]
+    },
+    "BoardFileInput": {
+      "type": "object",
+      "properties": {
+        "attachmentId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "attachmentId"
+      ],
+      "additionalProperties": false
+    },
+    "BoardClaimInput": {
+      "type": "object",
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "expectedRevision"
+      ]
+    },
+    "BoardChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "boardId",
+        "conversationId",
+        "joined",
+        "people",
+        "peopleTruncated"
+      ],
+      "properties": {
+        "boardId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "description": "The Board's chat, read through the discussion routes; null until someone opens it.",
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "joined": {
+          "type": "boolean",
+          "description": "Whether the caller is in the chat."
+        },
+        "people": {
+          "type": "array",
+          "maxItems": 500,
+          "description": "The people who can read the Board, by name; mentioning one who has not joined brings them into the chat.",
+          "items": {
+            "$ref": "#/schemas/BoardChannelPerson"
+          }
+        },
+        "peopleTruncated": {
+          "type": "boolean",
+          "description": "More people can read the Board than are listed."
+        }
+      }
+    },
+    "BoardChannelPerson": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "userId",
+        "displayName",
+        "avatarUrl",
+        "joined"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "avatarUrl": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "joined": {
+          "type": "boolean"
+        }
+      }
+    },
+    "BoardLineType": {
+      "type": "string",
+      "enum": [
+        "solid",
+        "dashed"
+      ],
+      "description": "A connector's line."
+    },
+    "BoardMarkerType": {
+      "type": "string",
+      "enum": [
+        "none",
+        "arrow",
+        "open",
+        "triangle",
+        "diamond",
+        "diamond_filled",
+        "one",
+        "zero_one",
+        "many",
+        "zero_many"
+      ],
+      "description": "What a connector shows at one end: a filled arrow, an open arrow, a hollow triangle (inheritance), a hollow or filled diamond (aggregation, composition), or an entity relationship's crow's-foot cardinality (one, zero_one, many, zero_many)."
+    },
+    "BoardRouteType": {
+      "type": "string",
+      "enum": [
+        "flow",
+        "straight",
+        "elbow",
+        "message"
+      ],
+      "description": "A connector's path: flow leaves the source's right side for the target's left side (the Board's usual connector); straight joins the boxes along the line between their centers; elbow turns once between their facing sides; message runs straight across at anchorY below the source's top, and is the one route that may return to its source (a sequence diagram's self message)."
+    },
+    "BoardHeadType": {
+      "type": "string",
+      "enum": [
+        "actor"
+      ],
+      "description": "How a lifeline's head is drawn: actor is an actor's figure over its name, a person or an outside system taking part in a sequence. Absent is a box."
+    },
+    "BoardShapeType": {
+      "type": "string",
+      "enum": [
+        "rectangle",
+        "ellipse",
+        "diamond",
+        "triangle",
+        "rounded",
+        "terminal",
+        "actor",
+        "database",
+        "queue",
+        "cloud",
+        "component",
+        "document",
+        "note",
+        "lifeline",
+        "class",
+        "entity",
+        "fragment"
+      ],
+      "description": "A shape's kind: basic shapes, and software diagram notation. rounded is a process or service; terminal a pill for a flow's start or end; actor a stick figure with its name below; database an upright cylinder; queue a cylinder on its side; component a box with two tabs; document a box with a wavy bottom; note a box with a folded corner; lifeline a sequence diagram participant (header box over a dashed line); class and entity boxes with compartments; fragment a sequence diagram's combined fragment (alt, loop, opt…)."
+    },
+    "BoardComposeConnectorStyle": {
+      "type": "string",
+      "enum": [
+        "arrow",
+        "line",
+        "both",
+        "dashed",
+        "inherits",
+        "implements",
+        "composes",
+        "aggregates",
+        "depends",
+        "associates",
+        "includes",
+        "extends",
+        "sync",
+        "async",
+        "reply"
+      ],
+      "description": "A connector preset: arrow (default), line, both, dashed; class relations inherits and implements (hollow triangle), composes and aggregates (filled or hollow diamond at the whole, the source), depends (dashed open arrow), associates; use case includes and extends (dashed, «include»/«extend»); sequence messages sync, async and reply (dashed)."
+    },
+    "BoardComposeFragment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "first",
+        "last"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "alt",
+            "opt",
+            "loop",
+            "par",
+            "break",
+            "critical"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "The first operand's guard, bracketed when drawn."
+        },
+        "first": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The first message it encloses, 1-based."
+        },
+        "last": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "else": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/schemas/BoardComposeBranch"
+          },
+          "description": "Further operands of alt and par: a fragment draws at most four operands."
+        }
+      }
+    },
+    "BoardComposeBranch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at"
+      ],
+      "properties": {
+        "at": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The message the operand starts at."
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    }
+  }
+}

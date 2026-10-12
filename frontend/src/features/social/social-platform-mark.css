@@ -1,0 +1,24 @@
+.social-platform-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--workspace-border);
+  background: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.social-platform-mark img {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+.social-platform-mark--instagram img,
+.social-platform-mark--tiktok img {
+  width: 28px;
+  height: 28px;
+}
+.social-platform-mark--tiktok img {
+  border-radius: 6px;
+}

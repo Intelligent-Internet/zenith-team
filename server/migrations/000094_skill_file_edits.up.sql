@@ -1,0 +1,1 @@
+ALTER TABLE skill_imports ADD COLUMN edited BOOLEAN NOT NULL DEFAULT false;

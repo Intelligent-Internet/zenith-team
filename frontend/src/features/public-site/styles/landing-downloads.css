@@ -1,0 +1,258 @@
+.landing-download-primary {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-download-button {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #a85438;
+  border-radius: 9px;
+  background: #a85438;
+  padding: 13px 20px;
+  color: #fffaf5;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgb(91 42 25 / 10%);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.landing-download-button:hover {
+  border-color: #91432b;
+  background: #91432b;
+  transform: translateY(-1px);
+}
+
+.landing-download-button:disabled {
+  border-color: #e5ded4;
+  background: #eeebe5;
+  color: #6b6056;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.landing-download-alternative {
+  color: #a85438;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.landing-download-channel {
+  display: block;
+  color: #6b6056;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.landing-download-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+
+.landing-download-option {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid #e5ded4;
+  border-radius: 13px;
+  background: #faf8f4;
+  padding: 22px;
+  color: #342b26;
+  font-family: inherit;
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+a.landing-download-option:hover {
+  border-color: #bca58f;
+  background: #fffdf8;
+  transform: translateY(-3px);
+}
+
+.landing-download-option-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  margin-bottom: 20px;
+  border: 1px solid #e5ded4;
+  border-radius: 10px;
+  background: #fffdf8;
+}
+
+.landing-download-option-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.landing-download-option-subtitle {
+  margin-top: 3px;
+  color: #6b6056;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.landing-download-option-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  color: #a85438;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.landing-download-option .landing-download-channel {
+  margin-top: 5px;
+}
+
+.landing-download-option-unavailable {
+  background: transparent;
+  color: #6b6056;
+}
+
+.landing-download-option-unavailable .landing-download-option-action {
+  color: #6b6056;
+}
+
+.landing-download-menu {
+  position: relative;
+  display: inline-block;
+  text-align: left;
+}
+
+.landing-download-menu > summary {
+  list-style: none;
+}
+
+.landing-download-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.landing-download-chevron {
+  transition: transform 160ms ease;
+}
+
+.landing-download-menu[open] .landing-download-chevron {
+  transform: rotate(180deg);
+}
+
+.landing-download-menu-panel {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 10px);
+  left: 50%;
+  width: min(290px, calc(100vw - 40px));
+  transform: translateX(-50%);
+  border: 1px solid #e5ded4;
+  border-radius: 13px;
+  background: #faf8f4;
+  padding: 8px;
+  color: #342b26;
+  font-family: inherit;
+  box-shadow: 0 16px 40px rgb(52 43 38 / 13%);
+}
+
+.landing-download-menu-label {
+  margin: 0;
+  padding: 7px 10px;
+  color: #6b6056;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.landing-download-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 7px;
+  padding: 12px 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-download-menu-item > span {
+  flex: 1;
+}
+
+a.landing-download-menu-item:hover {
+  background: #efe9df;
+}
+
+.landing-download-menu-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.landing-download-menu-description {
+  display: block;
+  color: #6b6056;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.landing-download-menu-item-unavailable {
+  color: #6b6056;
+}
+
+.landing-download-menu-help {
+  margin: 7px 10px 5px;
+  border-top: 1px solid #e5ded4;
+  padding-top: 11px;
+  color: #6b6056;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .landing-download-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-download-option {
+    padding: 19px 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-download-button,
+  .landing-download-option,
+  .landing-download-chevron {
+    transition: none;
+  }
+
+  .landing-download-button:hover,
+  a.landing-download-option:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,179 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+func newScheduleCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "schedule",
+		Short: "Inspect and control your schedules",
+	}
+	list := &cobra.Command{
+		Use:   "list",
+		Short: "List your schedules",
+		Args:  cobra.NoArgs,
+		RunE:  runScheduleList,
+	}
+	get := &cobra.Command{
+		Use:   "get <schedule-id>",
+		Short: "Show one schedule",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runScheduleGet,
+	}
+	runs := &cobra.Command{
+		Use:   "runs <schedule-id>",
+		Short: "List a schedule's firings",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runScheduleRuns,
+	}
+	runNow := &cobra.Command{
+		Use:   "run-now <schedule-id>",
+		Short: "Fire a schedule immediately",
+		Args:  cobra.ExactArgs(1),
+		RunE:  runScheduleRunNow,
+	}
+	cmd.AddCommand(list, get, runs, runNow)
+	for _, operation := range []string{"pause", "resume", "cancel"} {
+		operationCmd := &cobra.Command{
+			Use:   operation + " <schedule-id>",
+			Short: operation + " a schedule",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				return runScheduleLifecycle(cmd, args, operation)
+			},
+		}
+		addRevisionFlag(operationCmd)
+		cmd.AddCommand(operationCmd)
+	}
+	return cmd
+}
+
+func runScheduleList(cmd *cobra.Command, _ []string) error {
+	client, err := newAPIClient(cmd)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	var raw json.RawMessage
+	if err := client.get(ctx, client.companyPath("schedules"), &raw); err != nil {
+		return err
+	}
+	format, err := resolveOutput(cmd, outputTable)
+	if err != nil {
+		return err
+	}
+	if format == outputJSON {
+		return printJSON(cmd.OutOrStdout(), raw)
+	}
+	// The page is SchedulePage (docs/api/spec/schedules.yaml): the list
+	// travels under `schedules`, and each row names its next and last run.
+	var page struct {
+		Schedules []struct {
+			ID        string  `json:"id"`
+			Name      string  `json:"name"`
+			Status    string  `json:"status"`
+			AgentID   string  `json:"agentId"`
+			NextRunAt *string `json:"nextRunAt"`
+			LastRunAt *string `json:"lastRunAt"`
+		} `json:"schedules"`
+	}
+	if err := json.Unmarshal(raw, &page); err != nil {
+		return fmt.Errorf("decode schedules: %w", err)
+	}
+	rows := make([][]string, 0, len(page.Schedules))
+	for _, item := range page.Schedules {
+		rows = append(rows, []string{
+			item.ID, truncate(item.Name, 40), item.Status, shortID(item.AgentID),
+			stringOrDash(item.NextRunAt), stringOrDash(item.LastRunAt),
+		})
+	}
+	printTable(cmd.OutOrStdout(), []string{"ID", "NAME", "STATUS", "AGENT", "NEXT", "LAST"}, rows)
+	return nil
+}
+
+func scheduleTarget(cmd *cobra.Command, args []string) (*apiClient, string, error) {
+	client, err := newAPIClient(cmd)
+	if err != nil {
+		return nil, "", err
+	}
+	scheduleID, err := uuidArg("schedule id", args[0])
+	if err != nil {
+		return nil, "", err
+	}
+	return client, scheduleID, nil
+}
+
+func runScheduleGet(cmd *cobra.Command, args []string) error {
+	client, scheduleID, err := scheduleTarget(cmd, args)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	var raw json.RawMessage
+	if err := client.get(ctx, client.companyPath("schedules", scheduleID), &raw); err != nil {
+		return err
+	}
+	return printResult(cmd, raw, nil)
+}
+
+func runScheduleRuns(cmd *cobra.Command, args []string) error {
+	client, scheduleID, err := scheduleTarget(cmd, args)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	var raw json.RawMessage
+	if err := client.get(ctx, client.companyPath("schedules", scheduleID, "runs"), &raw); err != nil {
+		return err
+	}
+	format, err := resolveOutput(cmd, outputTable)
+	if err != nil {
+		return err
+	}
+	if format == outputJSON {
+		return printJSON(cmd.OutOrStdout(), raw)
+	}
+	return printJSON(cmd.OutOrStdout(), raw)
+}
+
+func runScheduleRunNow(cmd *cobra.Command, args []string) error {
+	client, scheduleID, err := scheduleTarget(cmd, args)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	path := client.companyPath("schedules", scheduleID, "runs")
+	body := map[string]any{"schemaVersion": 1, "requestKey": client.bodyRequestKey("POST", path, nil)}
+	var raw json.RawMessage
+	if err := client.post(ctx, path, body, &raw); err != nil {
+		return err
+	}
+	return printResult(cmd, raw, nil)
+}
+
+func runScheduleLifecycle(cmd *cobra.Command, args []string, operation string) error {
+	client, scheduleID, err := scheduleTarget(cmd, args)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := apiContext()
+	defer cancel()
+	path := client.companyPath("schedules", scheduleID)
+	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	if err != nil {
+		return err
+	}
+	var raw json.RawMessage
+	if err := client.post(ctx, path+"/"+operation, map[string]any{"schemaVersion": 1, "expectedRevision": revision}, &raw); err != nil {
+		return err
+	}
+	return printResult(cmd, raw, nil)
+}

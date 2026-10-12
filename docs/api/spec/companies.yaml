@@ -1,0 +1,2634 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/companies.md is its prose counterpart.
+
+parameters:
+  daemonId:
+    name: daemon_id
+    in: query
+    required: false
+    description: |
+      Restrict a resource list to the resources one daemon registered. The
+      storage rule is one local directory per daemon per company, so this is a
+      single-row lookup rather than a filter over a page. An empty value is
+      `422 validation_failed` like any other empty-valued parameter.
+    schema: { type: string, minLength: 1 }
+
+paths:
+  # ================================================================ companies
+
+  # /api/v1/companies
+  companies:
+    get:
+      tags: [companies]
+      operationId: listCompanies
+      summary: List the caller's companies
+      description: |
+        Every company where the caller holds an active membership, oldest first
+        (`createdAt`, then `id`). A company whose deletion has started is
+        excluded and never reappears. The collection is bounded by the caller's
+        memberships and is returned in full; this endpoint accepts no
+        pagination parameters.
+
+        `role` is the **caller's** role in that company, not a property of the
+        company: two members reading the same row get two different values, so
+        a client caching this object must key it by viewer as well.
+      responses:
+        '200':
+          description: All companies the caller actively belongs to.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Company' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '422':
+          description: |
+            `validation_failed` (unknown, repeated, or empty query parameter).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    post:
+      tags: [companies]
+      operationId: createCompany
+      summary: Create a company
+      description: |
+        Creates the bare tenant: the company row and the caller's owner
+        membership. No agents and no
+        conversations are seeded — an agent is bound to the runtime that
+        executes it, and no runtime can exist before the company does, so a
+        fresh company comes back with an empty org.
+
+        PostgreSQL generates the company `id`. The first successful write
+        returns `201`; the globally unique slug is the authoritative duplicate
+        boundary and maps collisions to `409 company_create_conflict`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, slug, taskPrefix]
+              properties:
+                name:
+                  type: string
+                  description: |
+                    1..120 runes and at most 480 UTF-8 bytes after trimming.
+                slug:
+                  type: string
+                  maxLength: 63
+                  pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+                  description: |
+                    At most 63 bytes and not one of the reserved slugs listed
+                    in companies.md.
+                taskPrefix:
+                  type: string
+                  pattern: '^[A-Z][A-Z0-9]{1,9}$'
+                  description: The prefix in `NWR-42`.
+                businessContext:
+                  type: string
+                  maxLength: 32768
+                  description: '`""` is accepted.'
+                websiteUrl:
+                  type: string
+                  format: uri
+                  description: |
+                    Absolute `http(s)` URL, or absent. The CEO Agent scans it
+                    during onboarding research.
+      responses:
+        '201':
+          description: |
+            Created with a database-generated `id`. The body is the company
+            object, identical to the one the list returns.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Company' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '409':
+          description: '`409 company_create_conflict` — the slug is taken.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: '`422 validation_failed` — a request field fails validation.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}
+  companies_companyId:
+    get:
+      tags: [companies]
+      operationId: getCompany
+      summary: Read one company
+      description: |
+        The company object at the top level — the same bytes the list carries
+        in `items`, and the same DTO `company.updated` carries on the socket.
+
+        Membership is enforced by the read itself, so a non-member and a
+        nonexistent company are the same `404`. A `companyId` that is not a
+        UUID is also `404 company_not_found`, not `400`: the membership gate
+        parses the segment before any handler sees it.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The company.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Company' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 company_not_found` — missing, malformed, not a member, or the
+            company is being deleted.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: '`422 validation_failed` — unknown query parameter.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+    delete:
+      tags: [companies]
+      operationId: deleteCompany
+      summary: Permanently delete a company (company.delete)
+      description: |
+        Requires `company.delete`, which only owners hold, and a human actor. Permanently removes the Company, its PostgreSQL-owned graph,
+        and its detached Company Activity and Run records, then revokes every
+        member's access. `expectedRevision` fences a stale confirmation against
+        a concurrent Company profile change.
+
+        Success is `204` with an empty body. A successful deletion has no
+        tombstone, so replay returns `404 company_not_found`. Authored local
+        workspace files on connected computers and content held by external
+        providers are not remotely deleted; local files are not a cloud backup.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '204': { description: Company deleted; response body is empty. }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 company_delete_conflict` — the Company revision changed.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/proactive-mode
+  companies_companyId_proactive_mode:
+    get:
+      tags: [companies]
+      operationId: getProactiveMode
+      summary: Read the Company's Proactive Mode setting
+      description: |
+        Member-gated read of the automation setting used by the exact
+        owner-to-top-level-CEO Conversation. `canManage` is true for members holding
+        `company.proactive_mode.manage` (owner, admin); other active members can
+        see the state but cannot change it.
+
+        The setting is disabled by default. Its `revision` is independent of
+        the Company projection's revision.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The current Proactive Mode setting for this Company.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProactiveMode' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+    patch:
+      tags: [companies]
+      operationId: updateProactiveMode
+      summary: Update the Company's Proactive Mode setting (company.proactive_mode.manage)
+      description: |
+        Requires `company.proactive_mode.manage`. `expectedRevision` protects concurrent settings edits. A
+        successful write returns the complete authoritative setting, so a
+        confirming read is unnecessary.
+
+        Enabling requires the owner's active direct Conversation with the
+        Company's top-level CEO Agent. If that exact Conversation is not
+        available, the setting remains unchanged.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [enabled, expectedRevision]
+              properties:
+                enabled: { type: boolean }
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: The authoritative Proactive Mode setting after the write.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ProactiveMode' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 proactive_mode_conflict` — `expectedRevision` did not match;
+            or `proactive_mode_conversation_required` — the owner's exact CEO
+            Conversation is unavailable.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/statistics
+  companies_companyId_statistics:
+    get:
+      tags: [companies]
+      operationId: getCompanyStatistics
+      summary: Read company membership and runtime counts
+      description: |
+        Member-gated aggregate counts that change independently of the company
+        row. Keeping them on this read prevents membership and heartbeat churn
+        from changing the company projection or its `revision`.
+
+        Any query parameter is `422 validation_failed`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Current company statistics.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyStatistics' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/profile
+  companies_companyId_reference_documents:
+    post:
+      tags: [companies]
+      operationId: addCompanyReferenceDocuments
+      summary: Keep uploaded files as Company reference documents (company.resources.manage)
+      description: |
+        Requires `company.resources.manage` and a human actor. Registers already-uploaded Attachments as the Company's
+        founder-supplied source material — the deck, brief or brand guide a
+        founder hands over at onboarding so the CEO Agent can read them before
+        interviewing.
+
+        The documents belong to the Company rather than to one message, so
+        every interactive Run receives them and the daemon places them in the
+        Company workspace under `assets/references/`. Registering also holds
+        the upload out of the abandoned-attachment sweep, which is what keeps a
+        founder's file from being collected before an Agent has read it.
+
+        Registration is idempotent: naming the same Attachment twice states one
+        fact twice.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attachmentIds]
+              properties:
+                attachmentIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items: { type: string, format: uuid }
+                  description: |
+                    Ready Attachments the caller uploaded to this Company that
+                    are not shared anywhere yet: no chat message, queued
+                    message or Project holds them. Every Run receives the
+                    reference documents, so a file with its own audience
+                    cannot become one (ADR 0017). An id naming another
+                    person's or tenant's file, a file already shared, or an
+                    upload that never completed is `422 validation_failed`.
+      responses:
+        '200':
+          description: The Attachments now kept as reference documents.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [registered]
+                properties:
+                  registered:
+                    type: array
+                    items: { type: string, format: uuid }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — an empty set, more than ten files, or an
+            id that names no ready Attachment of this Company.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_milestone_attestations:
+    post:
+      tags: [companies]
+      operationId: attestCompanyMilestones
+      summary: Record milestones already completed outside Zenith Team
+      description: |
+        Records what the founder has just confirmed already exists, so the
+        Company Plan never proposes rebuilding it.
+
+        Two gates, because this stores a person's statement but is written by an
+        Agent: the session must be the Company owner, and the request must carry
+        `X-Boardly-Run-Token` proving a live Run in the same Company. An owner
+        session alone would let any client assert the founder's history outside
+        the conversation where the founder was actually asked.
+
+        The whole set is written in one transaction — a founder lists what they
+        have rather than answering once per milestone, and a partial write would
+        leave the planner with a half-true history. Re-attesting restates the
+        fact rather than conflicting.
+
+        There is no read surface. The only consumer is the Agent, which receives
+        attestations in its frozen Run brief.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          description: Proof of a live Run in this Company.
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [milestones]
+              properties:
+                milestones:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: { $ref: './tasks.yaml#/schemas/TaskMilestoneTypeDto' }
+                note:
+                  type: string
+                  maxLength: 2000
+                  description: The founder's own words, carried verbatim.
+      responses:
+        '200':
+          description: The milestones now on record as already completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [attested]
+                properties:
+                  attested:
+                    type: array
+                    items: { $ref: './tasks.yaml#/schemas/TaskMilestoneTypeDto' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: '`401 run_token_invalid` — missing, unknown or foreign Run token.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — an empty set, a repeat, a value outside the
+            milestone catalogue, or an over-long note.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  companies_companyId_profile:
+    patch:
+      tags: [companies]
+      operationId: updateCompanyProfile
+      summary: Update the company profile (company.profile.update)
+      description: |
+        Requires `company.profile.update`. Despite the PATCH verb this **replaces** the profile: all
+        four profile fields must be present on every call, and omitting one is
+        `422 validation_failed` rather than "leave it alone".
+        `phoneCountryIso2` and `phoneNumber` move together — both strings or
+        both `null`; one of each is `422`.
+
+        `avatarAttachmentId` is optional: omit it to keep the current avatar,
+        send `null` to remove it, or select a ready upload made by the caller
+        in this Company. Avatars accept PNG, JPEG and WebP up to 5 MiB.
+        The selected attachment is retained and readable by active members;
+        replacing or removing it releases that grant and retention pin.
+
+        The version check runs **before** the no-change check, so a stale
+        `expectedRevision` paired with a payload that happens to match the
+        stored values is a `409`, not a silently swallowed conflict. A write
+        that changes nothing returns `200`, does not bump `revision`, and
+        raises no event.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, name, contactEmail, phoneCountryIso2, phoneNumber]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                avatarAttachmentId:
+                  type: [string, "null"]
+                  format: uuid
+                  description: Ready Company image upload, null to remove, omitted to preserve.
+                name:
+                  type: string
+                  description: |
+                    1..120 runes and at most 480 UTF-8 bytes after trimming.
+                contactEmail:
+                  type: [string, "null"]
+                  format: email
+                  maxLength: 320
+                  description: |
+                    Lowercased, must parse as a bare address with a dotted
+                    domain. `""` normalizes to `null`.
+                phoneCountryIso2:
+                  type: [string, "null"]
+                  description: |
+                    Supported ISO-3166 alpha-2, uppercased server-side.
+                phoneNumber:
+                  type: [string, "null"]
+                  description: 1..15 digits, digits only.
+      responses:
+        '200':
+          description: |
+            The updated (or unchanged) company. This is the authoritative
+            post-write state; no confirming `GET` is needed.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Company' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 company_profile_revision_conflict` — `expectedRevision` did
+            not match.
+            One of the responses that deliberately extend the error
+            envelope: `currentCompany` carries the server's current state so a
+            client rebases without a refetch. Treat it exactly as if it had
+            come from the read.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: './_common.yaml#/schemas/Error' }
+                  - type: object
+                    required: [currentCompany]
+                    properties:
+                      currentCompany: { $ref: '#/schemas/Company' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — a field is missing, of the wrong type, or
+            fails its rule.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/members
+  companies_companyId_members:
+    get:
+      tags: [companies]
+      operationId: listCompanyMembers
+      summary: List active members
+      description: |
+        Active memberships only, oldest first (`createdAt`, then the member's
+        user id). Revoked members are absent with no tombstone. All active
+        Company members may read the roster; a non-member gets `404`.
+
+        A row embeds a resolved actor ref plus the member's `email`, because
+        nothing else in the API can turn a user id into a person: there is no
+        `GET /users/{userId}` in the route table and there never was.
+
+        The active roster is returned in full; this endpoint accepts no
+        pagination parameters.
+
+        Consumed by the Team page.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: All active members.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/ActiveMember' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  companies_companyId_members_userId:
+    patch:
+      tags: [companies]
+      operationId: changeCompanyMemberRole
+      summary: Change another member's role
+      description: |
+        Requires `members.manage`. When the target is an owner, or the new
+        role is `owner`, the caller also needs `members.owners.manage`, which
+        only owners hold. A member never changes their own role here: leaving
+        and transferring ownership are the two self-directed moves. The last
+        active owner is never demoted (`409 team_last_owner`). Sending the
+        role the member already holds is a no-op that returns the current
+        row and emits nothing.
+
+        The change is a person's decision: a request carrying a Run proof is
+        refused with `403 human_actor_required`.
+
+        Success returns the updated roster row. The company receives
+        `member.updated`; the member receives `auth.company_access_changed`
+        with their new `role` and `permissions`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MemberRoleChange' }
+      responses:
+        '200':
+          description: The member's updated roster row.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ActiveMember' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company or active membership not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`team_last_owner` or `team_member_revision_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    delete:
+      tags: [companies]
+      operationId: removeCompanyMember
+      summary: Remove another member
+      description: |
+        Requires `members.manage`; removing an owner also requires
+        `members.owners.manage`. The last active owner cannot be removed. A
+        request carrying a Run proof is refused with `403 human_actor_required`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MembershipMutation' }
+      responses:
+        '204':
+          description: Membership revoked; company access ends immediately.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company or active membership not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Last owner cannot leave or be removed, or membership revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_members_userId_transfer_ownership:
+    post:
+      tags: [companies]
+      operationId: transferCompanyOwnership
+      summary: Transfer ownership to another member
+      description: |
+        Requires `members.owners.manage`. In one transaction the target
+        becomes `owner` and the caller becomes `admin`, so the Company keeps
+        at least one owner throughout. The target must be an active member
+        who is not already an owner. A request carrying a Run proof is
+        refused with `403 human_actor_required`.
+
+        Success returns both updated roster rows, the new owner first. Each
+        of them receives `auth.company_access_changed`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MembershipMutation' }
+      responses:
+        '200':
+          description: The new owner's row, then the former owner's.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/ActiveMember' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company or active membership not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`team_member_revision_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_leave:
+    post:
+      tags: [companies]
+      operationId: leaveCompany
+      summary: Leave the company
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MembershipMutation' }
+      responses:
+        '204':
+          description: Membership revoked; company access ends immediately.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: "`403 company_permission_required`."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company or active membership not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Last owner cannot leave or be removed, or membership revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_share_link:
+    get:
+      tags: [companies]
+      operationId: getCompanyShareLink
+      summary: getCompanyShareLink
+      description: Reusable invite link, managed by members holding `members.invite`. Links expire after seven days. Removed members need a fresh email invitation.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: Current invite link. The URL is null when disabled or expired.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyShareLink' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: "`403 company_permission_required`."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Link revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Invite links are not configured.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+    post:
+      tags: [companies]
+      operationId: createCompanyShareLink
+      summary: createCompanyShareLink
+      description: |
+        Reusable invite link, managed by members holding `members.invite`.
+        Anyone joining through it gets the link's `role` (`admin` or
+        `member`, default `member`). Links expire after seven days. Removed
+        members need a fresh email invitation. While a live link exists the
+        same URL is returned and the role is not changed; reset the link to
+        change its role.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                role: { $ref: '#/schemas/InvitableRole' }
+      responses:
+        '200':
+          description: Current invite link. The URL is null when disabled or expired.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyShareLink' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: "`403 company_permission_required`."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Link revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Invite links are not configured.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+    delete:
+      tags: [companies]
+      operationId: disableCompanyShareLink
+      summary: disableCompanyShareLink
+      description: Reusable invite link, managed by members holding `members.invite`. Links expire after seven days. Removed members need a fresh email invitation.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/MembershipMutation' }
+      responses:
+        '200':
+          description: Current invite link. The URL is null when disabled or expired.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyShareLink' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: "`403 company_permission_required`."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Link revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Invite links are not configured.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  companies_companyId_share_link_reset:
+    post:
+      tags: [companies]
+      operationId: resetCompanyShareLink
+      summary: resetCompanyShareLink
+      description: |
+        Replaces the link with a new URL. `role` sets the role the new link
+        grants; when omitted the link keeps its current role.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ShareLinkReset' }
+      responses:
+        '200':
+          description: Current invite link. The URL is null when disabled or expired.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyShareLink' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: "`403 company_permission_required`."
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Link revision changed.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503':
+          description: Invite links are not configured.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  # /api/v1/companies/{companyId}/search
+  companies_companyId_search:
+    post:
+      tags: [companies]
+      operationId: searchCompany
+      summary: Search tasks, conversations, and messages
+      description: |
+        One cross-entity search over tasks, conversations and messages. Member
+        gated. A POST because the query travels in the body, not because it
+        writes anything. Task hits and messages in task chats come only from
+        Projects the caller reads (ADR 0017); a task in any other Project is
+        never a hit.
+
+        `limit` is a **1..50, default 20** top-result cap. Search has no cursor
+        or continuation contract; a caller changes the query or raises the cap.
+
+        Matching is not uniform across kinds. Tasks and conversations
+        substring-match the whole whitespace-collapsed query
+        (case-insensitively, over task key, the displayed
+        `{taskPrefix}-{number}` label, title/description/status/priority,
+        and over conversation title plus agent name/title), so a
+        multi-word query hits only where the words are contiguous. Messages use
+        a token-built full-text query — the first 12 distinct alphanumeric
+        tokens, prefix-matched and ANDed. Ranking interleaves the kinds
+        round-robin, so a flood of message hits cannot bury the one matching
+        task.
+
+        The `message` kind searches only the two chat item types,
+        `user_message` and `agent_text`. A conversation is one stream that also
+        holds a run's reasoning and tool output, so this is an explicit fence,
+        written into the partial index the query is planned against: search
+        returns only what the caller could already read in the chat.
+
+        `includeArchived` also includes archived discussion messages. For Agent chats it affects only the conversation kind. It is not
+        applied to task matches at all, and message matches ignore it: an
+        archived direct conversation yields no message hits regardless of the
+        flag, while archived task conversations still surface them.
+
+        The body cap on this route is 4 KiB rather than the usual limit.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                conversationId: {type: string, format: uuid}
+                authorId: {type: string, format: uuid}
+                after: {type: string, format: date-time, description: Inclusive message creation boundary.}
+                before: {type: string, format: date-time, description: Exclusive message creation boundary.}
+                hasFile:
+                  type: boolean
+                  default: false
+                  description: |
+                    Only messages holding a file the caller may open. A file
+                    left out of the message for the caller (a Project file of a
+                    Project they do not read, ADR 0017) does not count, and
+                    neither does an upload that never finished.
+
+                query:
+                  type: string
+                  maxLength: 256
+                  description: |
+                    Whitespace-collapsed; at least 2 runes, at most 256 bytes,
+                    and at least one letter or digit.
+                kinds:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  description: |
+                    Restrict the union. Absent or `null` means all three; `[]`
+                    is `422`.
+                  items: { type: string, enum: [task, conversation, message] }
+                includeArchived: { type: boolean, default: false }
+                limit: { type: integer, minimum: 1, maximum: 50, default: 20, example: 50 }
+      responses:
+        '200':
+          description: A bounded ranked, interleaved union.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/SearchResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` (query too short or long, `kinds` empty,
+            unknown or duplicated, or `limit` outside 1..50).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+  # ================================================================ resources
+
+  # /api/v1/companies/{companyId}/resources
+  companies_companyId_resources:
+    get:
+      tags: [resources]
+      operationId: listCompanyResources
+      summary: List company resources (company.resources.manage)
+      description: |
+        A company resource is a typed handle on something outside Zenith Team that
+        agents work against. There is exactly one type — `local_directory`, a
+        directory on a machine where a daemon runs. Requires `company.resources.manage`. Ordered by
+        `position`, then `createdAt`, then `id`.
+
+        Members holding `company.resources.manage` (owner, admin) create a binding through POST on this collection.
+        Public Resource responses omit the filesystem path; the server stores
+        it and includes it in the private frozen daemon Run context. There is
+        no GitHub/repository Resource type.
+
+        `daemonStatus` and `daemonLastSeenAt` are derived from the runtimes the
+        row's daemon registered in this company. They are included in the full
+        public projection but are not writable and do not advance the resource
+        row's `revision`.
+
+        The matching resources are returned in full. `daemon_id` remains a
+        filter; this endpoint accepts no pagination parameters.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/daemonId'
+      responses:
+        '200':
+          description: All matching resources, ordered by position.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/CompanyResource' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: |
+            `validation_failed` (unknown query parameter or empty `daemon_id`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+    post:
+      tags: [resources]
+      operationId: createCompanyResource
+      summary: Bind a directory on one machine to this company
+      description: |
+        Attaches a local directory so non-Schedule runs claimed by that
+        machine's daemon execute **in place**, overriding managed main or a
+        Task worktree. Schedule runs remain isolated. Gate: `company.resources.manage` (owner, admin).
+
+        The daemon serializes access to the selected path. A managed directory
+        or Git worktree is not an OS sandbox guarantee. The managed-only
+        replacement is Planned in docs/specs/workspaces; this operation still
+        describes the served directory-binding baseline.
+
+        PostgreSQL generates the row `id`. Repeating the same `daemonId`,
+        `localPath`, `label`, and `position` returns the existing row with
+        `200`; changing any canonical field for a daemon that is already bound
+        is `409 company_resource_conflict`.
+
+        `localPath` is **not** checked against a filesystem here — the server
+        cannot see the caller's disk. A binding client needs local validation;
+        the daemon validates during preparation on the machine that will
+        actually execute there. HTTP authorization is owner access, not a
+        browser/desktop distinction.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [daemonId, localPath, label]
+              properties:
+                daemonId:
+                  type: string
+                  maxLength: 200
+                  description: |
+                    The machine this directory lives on. A company holds **one
+                    directory per daemon**: the daemon resolves its own row by
+                    this id, so a second row for the same machine would leave
+                    it choosing which of the user's folders to write into.
+                localPath:
+                  type: string
+                  maxLength: 4096
+                  description: |
+                    Absolute path on that machine. Omitted from public
+                    Resource responses; stored and included in private daemon
+                    Run context.
+                label:
+                  type: string
+                  maxLength: 120
+                position:
+                  type: integer
+                  format: int32
+                  minimum: 0
+                  default: 0
+      responses:
+        '200':
+          description: An identical daemon-scoped binding already existed.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyResource' }
+        '201':
+          description: Bound with a database-generated `id`.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyResource' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` — members cannot bind directories.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 company_resource_conflict` — this daemon already has a
+            directory bound with different canonical fields.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/resources/{resourceId}
+  companies_companyId_resources_resourceId:
+    get:
+      tags: [resources]
+      operationId: getCompanyResource
+      summary: Read one company resource (company.resources.manage)
+      description: |
+        Returns the resource object bare — the same bytes the list carries in
+        `items` and `resource.updated` carries on the socket. A company the
+        caller cannot see is `404 company_not_found`, the same code every other
+        company-scoped route uses; `company_resource_not_found` names only a
+        missing or foreign **resource**.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/resourceId'
+      responses:
+        '200':
+          description: The resource.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyResource' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            `404 company_not_found` (unknown or malformed company id, or no
+            active membership) or `404 company_resource_not_found` (unknown or
+            malformed resource id, or a resource in another company).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    patch:
+      tags: [resources]
+      operationId: updateCompanyResource
+      summary: Update a company resource (company.resources.manage)
+      description: |
+        A true partial update: send `expectedRevision` plus **at least one**
+        of `label` and `position`. Omitted fields keep their stored value, and
+        an explicit `null` is rejected for both — a resource without a label or
+        a position is not a thing the ordering can render.
+
+        A mismatched `expectedRevision` is a conflict, full stop. There is no
+        one-step replay allowance: "the stored values already match what you
+        asked for" is not the same statement as "your write won".
+
+        `metadata` is **not** an input. Its only recognized key, `checkoutRef`,
+        was rejected on a `local_directory` resource and that is the only type,
+        so it was contract surface for a resource type that does not exist. It
+        stays in the response as `{}` because the column is real.
+
+        The body cap on this and the delete is 32 KiB.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/resourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              minProperties: 2
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                label: { type: string, minLength: 1, maxLength: 120 }
+                position: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+      responses:
+        '200':
+          description: |
+            The full updated resource. A write whose values already match
+            returns `200`, does not bump `revision`, and emits no event.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyResource' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            `404 company_not_found` or `404 company_resource_not_found`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 company_resource_conflict` — `expectedRevision` did not
+            match. Re-read, re-apply, write again.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — `expectedRevision` out of range,
+            neither `label` nor `position` supplied, `label` empty or too long,
+            or `position` out of range.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    delete:
+      tags: [resources]
+      operationId: deleteCompanyResource
+      summary: Delete a company resource (company.resources.manage)
+      description: |
+        A hard delete — no tombstone is kept. Success is `204` with an empty
+        body; there is no row left to return, which is the one case the write
+        receipt rule exempts.
+
+        Requires a JSON **request body** carrying `expectedRevision`, with
+        `Content-Type: application/json`, because the version guard has nowhere
+        else to travel. A bodiless request is `400` and a missing content type
+        is `415`.
+
+        Not idempotent on replay: with no tombstone, repeating a successful
+        delete is `404 company_resource_not_found`, the same answer as for a
+        resource that never existed. The `resource.deleted` event carries
+        `expectedRevision + 1` as the version of the deletion, so a client
+        can order it against a snapshot it already holds.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/resourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '204':
+          description: Deleted. No body.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required` or `csrf_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            `404 company_not_found`, or `404 company_resource_not_found` —
+            including a replayed delete.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 company_resource_conflict` — `expectedRevision` did not
+            match the stored version.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — `expectedRevision` missing or out of
+            range.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # ======================================================== composites
+  # Named, hand-written screen reads. Each replaces a measured waterfall; see
+  # the resource file that owns it for the before/after and the use cases.
+
+  companies_companyId_initialization:
+    parameters:
+      - $ref: './_common.yaml#/parameters/companyId'
+    get:
+      tags: [companies]
+      operationId: getCompanyInitialization
+      summary: Resume the founder's initial business research
+      responses:
+        '200':
+          description: Durable initialization phase and current Run status.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyInitialization' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+    post:
+      tags: [companies]
+      operationId: advanceCompanyInitialization
+      summary: Start research or advance saved research to the CEO welcome
+      description: |
+        Requires agents.manage and a human actor. Company-serialized and
+        idempotent; repeating a request never duplicates a live Run or welcome.
+        The initial POST can reserve a durable receipt while waiting for models.
+        Enqueuing or retrying research requires a completed model discovery from
+        the founder's bound runtime advertising Luna. Uses no reasoning when
+        offered, otherwise its lowest supported level. The CEO model is unchanged.
+        The server advances completed research into its final saved context and
+        one welcome Run, including while the client is closed. Repeating POST
+        may also advance the same receipt. Failed phases require an explicit
+        retry; the background worker never starts discovery or retries them.
+        Workspace access is independent of preparation. Only the exact
+        initialization conversation waits for the validated welcome to finish.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/AdvanceCompanyInitialization' }
+      responses:
+        '200':
+          description: The existing or newly advanced initialization.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyInitialization' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409': { $ref: './_common.yaml#/responses/Conflict' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  # /api/v1/companies/{companyId}/bootstrap
+  companies_companyId_bootstrap:
+    get:
+      tags: [companies]
+      operationId: getCompanyBootstrap
+      summary: Load everything the authenticated session needs
+      description: |
+        One read replacing the ten an opening session made before rendering
+        anything: the shell's company and inbox counts, plus
+        home's root agent, the conversation to open, and the two
+        counters the top chrome draws. Gate: `agents.manage` (owner, admin). Every component is read
+        from one read-only `REPEATABLE READ` snapshot.
+
+        **Each object is the same DTO its own endpoint returns**, so a client
+        writes each part straight into the cache slot the individual read would
+        have filled, and the realtime events that follow update those slots
+        directly. The individual endpoints stay — this is an accelerator, not a
+        replacement.
+
+        This is session-scoped, not route-scoped: it is read once when a
+        company is opened and thereafter maintained over the socket. There is
+        deliberately no second composite for the home route. An earlier draft
+        had one, and it re-sent `company` and the unread
+        count that this response already carries — putting one entity in two
+        composites read on the same paint, so a single `company.updated` had to
+        patch two cache slots or leave one stale.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The session snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - company
+                  - inboxCounts
+                  - ceoAgent
+                  - ceoConversationId
+                  - activeTaskCount
+                  - queuedRunCount
+                  - activeRunCount
+                properties:
+                  company: { $ref: '#/schemas/Company' }
+                  inboxCounts: { $ref: './_common.yaml#/schemas/InboxCounts' }
+                  ceoAgent:
+                    description: |
+                      The company's root agent — the one agent with no manager.
+                      `null` until one exists.
+
+                      This is the shared `Agent` — the same wire type **every**
+                      agent response carries, so it is byte-identical to what
+                      the agent endpoints return and lands in the same cache
+                      slot.
+                    oneOf:
+                      - $ref: './_common.yaml#/schemas/Agent'
+                      - { type: "null" }
+                  ceoConversationId:
+                    type: [string, "null"]
+                    format: uuid
+                    description: |
+                      The caller's own direct conversation with the root agent.
+                      `null` when they have not started it yet — a different
+                      screen from "loading". Opening that chat is home's only
+                      job, and resolving it otherwise meant listing
+                      conversations and filtering client-side.
+
+                      An id rather than the conversation, because the client
+                      reads the conversation itself from
+                      `GET …/conversations/{conversationId}` when it opens the
+                      panel, and that read is the one the socket keeps fresh.
+                  activeTaskCount:
+                    type: integer
+                    format: int64
+                    example: 14
+                    description: |
+                      Company tasks whose status is not `done` or `cancelled`.
+                  queuedRunCount:
+                    type: integer
+                    format: int64
+                    example: 1
+                    description: |
+                      Company runs in `queued` or `deferred` — scheduled work
+                      that has not started. The standard counting vocabulary;
+                      no other run counter names exist.
+                  activeRunCount:
+                    type: integer
+                    format: int64
+                    example: 2
+                    description: |
+                      Company runs in `dispatched`, `waiting_local_directory`,
+                      or `running` — work currently in flight.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`403 company_permission_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: '`422 validation_failed` — unknown query parameter.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  invitations:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [companies]
+      operationId: listCompanyInvitations
+      summary: List the latest 100 invitations (members.invite)
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InvitationCollection' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+    post:
+      tags: [companies]
+      operationId: createCompanyInvitations
+      summary: Invite up to 20 email addresses
+      description: |
+        Requires `members.invite`. Every address in one call joins with the
+        same `role`, `admin` or `member` (default `member`); nobody is
+        invited as `owner`. An address that already has a pending invitation
+        keeps the role it was first invited with (`alreadyInvited`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [emails]
+              properties:
+                emails:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items: { type: string, maxLength: 254 }
+                role: { $ref: '#/schemas/InvitableRole' }
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InvitationResults' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  invitation:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: invitationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [companies]
+      operationId: cancelCompanyInvitation
+      summary: Cancel pending invitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyInvitation' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  invitationResend:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+      - name: invitationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [companies]
+      operationId: resendCompanyInvitation
+      summary: Resend invitation with a fresh link (60 second cooldown)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/CompanyInvitation' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  invitationPreview:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [companies]
+      operationId: previewCompanyInvitation
+      summary: Read invitation; an optional session adds recipient state
+      security: []
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InvitationPreview' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  invitationAccept:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [companies]
+      operationId: acceptCompanyInvitation
+      summary: Join with the verified invited account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Authoritative invitation result.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InvitationAcceptance' }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+  invitationRenewal:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [companies]
+      operationId: requestInvitationRenewal
+      summary: Ask company owners to renew an expired invitation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '204': { description: Request recorded. }
+        '400':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '401':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '403':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '429':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '503':
+          description: See the documented invitation error code and retry policy.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+schemas:
+  CompanyInitialization:
+    type: object
+    required: [phase, status]
+    properties:
+      phase: { type: string, enum: [not_started, research, greeting, ready] }
+      status: { type: string, enum: [idle, awaiting_model, queued, dispatched, running, waiting_local_directory, deferred, waiting_runtime, completed, failed] }
+      runId: { type: string, format: uuid }
+      conversationId: { type: string, format: uuid }
+      message: { type: string }
+  AdvanceCompanyInitialization:
+    type: object
+    additionalProperties: false
+    properties:
+      conversationId: { type: string, format: uuid }
+      modelDiscoveryId: { type: string, format: uuid }
+      retry: { type: boolean, default: false }
+  MembershipMutation:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+
+  MemberRoleChange:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision, role]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      role: { $ref: '#/schemas/CompanyRole' }
+
+  ActiveMember:
+    type: object
+    description: |
+      An active membership row. Carries a resolved actor ref plus the member's
+      email, because there is no `GET /users/{userId}` in the route table and a
+      roster that ships ids alone cannot be rendered at all.
+    required:
+      - companyId
+      - actor
+      - email
+      - role
+      - accountDisabled
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      companyId: { type: string, format: uuid }
+      actor:
+        description: |
+          `actor.id` is the user id — the value `member.removed` names on the
+          socket, and the value to compare against `GET /me` to find the
+          caller's own row.
+        $ref: './_common.yaml#/schemas/ActorRef'
+      email:
+        type: string
+        format: email
+        description: |
+          The member's address. Sits beside the ref rather than inside it: an
+          actor ref is also a message author and a task creator, and those
+          appear on screens where a member's address has no business being.
+          Every active member reads this roster, and it is the one place the
+          address appears. It is also the only thing separating two members
+          with the same display name, which is free text with no uniqueness
+          rule.
+      role: { $ref: '#/schemas/CompanyRole' }
+      accountDisabled:
+        type: boolean
+        description: |
+          The user's account is disabled. **Disabling an account does not
+          revoke the membership**, so a disabled user keeps an active row here
+          — and their runtimes drop out of the statistics read's
+          `runtimeOnlineCount`. Without this flag an owner sees a full roster
+          with no explanation for why an online runtime was excluded.
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  Company:
+    type: object
+    description: |
+      A company (tenant). `role` and `permissions` are the **calling
+      user's**: the role their membership holds and the permission set it
+      resolves to. Gate every UI affordance on `permissions`, never on the
+      role name, so client and server cannot drift.
+    required:
+      - id
+      - name
+      - slug
+      - taskPrefix
+      - businessContext
+      - websiteUrl
+      - contactEmail
+      - phoneCountryIso2
+      - phoneNumber
+      - role
+      - permissions
+      - revision
+      - createdAt
+      - updatedAt
+      - agentSetupCompletedAt
+      - firstPlanAppliedAt
+      - avatarAttachmentId
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      avatarAttachmentId:
+        type: [string, "null"]
+        format: uuid
+        description: Download through the authenticated attachment endpoint with this Company ID.
+      slug: { type: string }
+      taskPrefix:
+        type: string
+        description: Prefix for generated task keys, e.g. `NWR` in `NWR-42`.
+      businessContext: { type: string }
+      websiteUrl:
+        type: [string, "null"]
+        format: uri
+      contactEmail: { type: [string, "null"] }
+      phoneCountryIso2:
+        type: [string, "null"]
+        description: Two-letter ISO country code, uppercased server-side.
+      phoneNumber: { type: [string, "null"] }
+      role: { $ref: '#/schemas/CompanyRole' }
+      permissions:
+        type: array
+        description: |
+          The calling user's resolved permissions, sorted. Members receive
+          `conversations.discuss` and `plugins.manage`. Realtime
+          `company.updated` frames omit `role` and `permissions`; only
+          `auth.company_access_changed` moves them.
+        items: { $ref: '#/schemas/CompanyPermission' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      initializationPending:
+        type: boolean
+        description: |
+          This member has an unfinished initial research or welcome receipt.
+          Preparation can continue while the member uses the workspace. The
+          initialization conversation accepts new sends after the server has
+          validated and recorded welcome completion; other chats stay available.
+      agentSetupCompletedAt:
+        oneOf:
+          - $ref: './_common.yaml#/schemas/Timestamp'
+          - type: "null"
+        description: |
+          When the Company gained its root Agent, or `null` before it has one.
+          A server-owned stamp: it is written once and takes no part in
+          `revision`, so it never conflicts with a profile edit.
+      firstPlanAppliedAt:
+        oneOf:
+          - $ref: './_common.yaml#/schemas/Timestamp'
+          - type: "null"
+        description: |
+          When the Company's first Company Plan transaction applied, or `null`
+          before one has. Server-owned on the same terms as
+          `agentSetupCompletedAt`.
+
+  ProactiveMode:
+    type: object
+    description: |
+      The Company automation setting. It is a distinct mutable projection with
+      its own `revision`; `canManage` reflects the calling member's current
+      authority.
+    additionalProperties: false
+    required:
+      - companyId
+      - enabled
+      - enabledByUserId
+      - conversationId
+      - revision
+      - canManage
+    properties:
+      companyId: { type: string, format: uuid }
+      enabled: { type: boolean }
+      enabledByUserId:
+        type: [string, "null"]
+        format: uuid
+        description: The sponsoring owner while enabled; otherwise `null`.
+      conversationId:
+        type: [string, "null"]
+        format: uuid
+        description: The exact owner-to-top-level-CEO Conversation while enabled.
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      canManage:
+        type: boolean
+        description: Whether the caller may update this setting.
+
+
+  CompanyStatistics:
+    type: object
+    description: Aggregate company counts that are intentionally not Company fields.
+    required: [memberCount, runtimeCount, runtimeOnlineCount]
+    properties:
+      memberCount:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 4
+        description: Active company memberships.
+      runtimeCount:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 2
+        description: Runtimes registered in the company, online or offline.
+      runtimeOnlineCount:
+        type: integer
+        format: int64
+        minimum: 0
+        example: 1
+        description: |
+          Online runtimes owned by active members whose accounts are enabled.
+
+
+  CompanyResource:
+    type: object
+    description: |
+      A typed handle on something outside Zenith Team that agents work against.
+      One type exists: `local_directory`, a directory on a machine where a
+      daemon runs.
+    required:
+      - id
+      - companyId
+      - resourceType
+      - resourceRef
+      - daemonStatus
+      - daemonLastSeenAt
+      - label
+      - position
+      - metadata
+      - createdBy
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      resourceType: { type: string, enum: [local_directory] }
+      resourceRef:
+        description: |
+          The public projection of the handle. For `local_directory` it names
+          the daemon and nothing else. The filesystem path is stored but
+          omitted from public Resource responses and events; private daemon
+          Run context includes the frozen `localPath`.
+        $ref: './_common.yaml#/schemas/ResourceRef'
+      daemonStatus:
+        $ref: '#/schemas/DaemonStatus'
+      daemonLastSeenAt:
+        description: |
+          Newest heartbeat across the runtimes this daemon registered in this
+          company. `null` while the daemon is `unregistered` or has never
+          heartbeat. It is included in the full public projection but is not
+          writable and does not advance `revision` — it describes the machine,
+          not the row.
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/Timestamp' }
+          - { type: "null" }
+      label: { type: string, minLength: 1, maxLength: 120 }
+      position: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+      metadata: { $ref: '#/schemas/ResourceMetadata' }
+      createdBy: { $ref: './_common.yaml#/schemas/ActorRef' }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  CompanyRole:
+    type: string
+    description: |
+      A membership role. Roles are what people assign; code checks
+      permissions (`CompanyPermission`). An `owner` holds every permission.
+      An `admin` holds every permission except `company.delete`,
+      `members.owners.manage`, `commerce.manage` and `results.publish`. Company roles do not grant private content access. A
+      `member` holds `conversations.discuss` and `plugins.manage` — installing
+      plugins and connecting apps on their own computers — and no
+      Company-wide management permission: they work on Tasks and chats,
+      register their own runtimes, set Agents up on them and start the Tasks
+      assigned to them. A company keeps at least one active owner.
+    enum: [owner, admin, member]
+
+  CompanyPermission:
+    type: string
+    description: |
+      One action the server checks. The server resolves a member's set from
+      their role and publishes it on every `Company` read and on the
+      `auth.company_access_changed` frame; clients gate on the set. Runtime
+      ownership (a machine executes only its registrant's own work,
+      ADR 0014), a Task's assignee (only they start it) and actor type (a
+      person versus a Run acting through its proof) are separate rules that
+      no permission overrides. `tasks.assign` admits assigning a Task to
+      another member and handing a Task off; the current assignee may hand
+      their own Task off without it. `plugins.manage` installs plugins and
+      connects apps on the holder's own computers, the only ones a Plugins
+      action reaches, so every role holds it; `connectors.manage` (owner,
+      admin) reviews an app whose tools changed and sets Company Connector
+      policy.
+    enum:
+      - agents.manage
+      - approvals.resolve
+      - commerce.manage
+      - commerce.read
+      - company.delete
+      - company.plan.apply
+      - company.proactive_mode.manage
+      - conversations.discuss
+      - channels.manage
+      - company.profile.update
+      - company.resources.manage
+      - connectors.manage
+      - mailbox.manage
+      - members.invite
+      - members.manage
+      - members.owners.manage
+      - plugins.manage
+      - projects.manage
+      - wiki.publish
+      - whiteboards.read
+      - whiteboards.create
+      - whiteboards.edit
+      - whiteboards.manage
+      - results.publish
+      - results.review
+      - calendar.manage
+      - schedules.manage
+      - tasks.assign
+      - usage.read
+
+
+  DaemonStatus:
+    type: string
+    description: |
+      Whether the machine behind a `local_directory` resource can run anything
+      right now, derived from the runtimes that daemon registered in this
+      company.
+
+      - `online` — at least one of those runtimes is online; runs can start.
+      - `offline` — the daemon registered runtimes here and none is online.
+        `daemonLastSeenAt` says when it was last heard from. A daemon is marked
+        offline once its heartbeat falls behind the staleness threshold, so
+        this lags the machine going away by that window.
+      - `unregistered` — no runtime for this daemon exists in this company at
+        all. Not "offline for a while": the row is permanently dead and the fix
+        is to re-add the directory, not to wait.
+    enum: [online, offline, unregistered]
+
+
+  ResourceMetadata:
+    type: object
+    description: |
+      Free-form per-resource document, currently always `{}` for
+      `local_directory`. Response-only: it is not accepted on the update path.
+    additionalProperties: true
+
+
+  SearchResult:
+    description: |
+      Discriminated by `kind` — **branch on it before reading any other
+      field.** Navigation takes `routeKind` plus the conversation, which is
+      `conversationId` on a task or message hit and `id` on a conversation hit,
+      because a conversation hit *is* its conversation.
+    oneOf:
+      - type: object
+        title: SearchTaskResult
+        required: [kind, id, key, number, title, status, priority, agent, conversationId, routeKind, updatedAt]
+        properties:
+          kind: { type: string, const: task }
+          id: { type: string, format: uuid }
+          key: { type: string }
+          number:
+            type: integer
+            format: int64
+            description: |
+              What every surface displays as `{taskPrefix}-{number}`. The
+              query matches that label as well as `key`, so a person can
+              type what they read off the board.
+          title: { type: string }
+          status: { $ref: './_common.yaml#/schemas/TaskStatus' }
+          priority: { type: string }
+          agent:
+            description: |
+              The assignee agent. A task that is not assigned to an active
+              agent is invisible to search, so this is never null on a task
+              hit.
+            $ref: './_common.yaml#/schemas/NamedRef'
+          conversationId: { type: string, format: uuid }
+          routeKind: { $ref: '#/schemas/SearchRouteKind' }
+          updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      - type: object
+        title: SearchConversationResult
+        required: [kind, id, title, agent, routeKind, updatedAt]
+        properties:
+          kind: { type: string, const: conversation }
+          id:
+            type: string
+            format: uuid
+            description: |
+              The conversation. There is no separate `conversationId` on this
+              variant and no `taskId`: only `direct` conversations the caller
+              created themselves are searchable, so a task id would always be
+              null.
+          title: { type: string }
+          agent:
+            description: The conversation's counterpart agent.
+            $ref: './_common.yaml#/schemas/NamedRef'
+          routeKind: { $ref: '#/schemas/SearchRouteKind' }
+          updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      - type: object
+        title: SearchMessageResult
+        required:
+          - kind
+          - id
+          - seq
+          - conversationId
+          - conversationKind
+          - taskId
+          - agent
+          - key
+          - number
+          - title
+          - snippet
+          - author
+          - routeKind
+          - createdAt
+        properties:
+          threadRootId: {type: [string, "null"], format: uuid}
+          kind: { type: string, const: message }
+          id:
+            type: string
+            format: uuid
+            description: |
+              The message. Named `id` like every other element of the union —
+              it was `messageId` with no `id` at all, so the union disagreed
+              with itself about identity.
+          seq: { type: integer, format: int64, example: 41 }
+          conversationId: { type: string, format: uuid }
+          conversationKind: { type: string, enum: [task, direct, human_direct, channel] }
+          taskId:
+            type: [string, "null"]
+            format: uuid
+            description: |
+              `null` on a direct-conversation hit. The query used to substitute
+              the all-zeros UUID here, which clients followed as if it were a
+              real task.
+          agent:
+            description: The conversation's agent.
+            oneOf:
+              - { $ref: './_common.yaml#/schemas/NamedRef' }
+              - { type: "null" }
+          key:
+            type: [string, "null"]
+            description: The task key when the hit is inside a task conversation.
+          number:
+            type: [integer, "null"]
+            format: int64
+            description: The task number when the hit is inside a task conversation.
+          title: { type: string }
+          snippet:
+            type: string
+            description: |
+              Whitespace-collapsed, capped at 240 runes, windowed around the
+              first query token.
+          author:
+            description: |
+              The same actor ref the roster carries. A deleted author resolves
+              to `name: "Unknown"`.
+            $ref: './_common.yaml#/schemas/ActorRef'
+          routeKind: { $ref: '#/schemas/SearchRouteKind' }
+          createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+
+  SearchRouteKind:
+    type: string
+    description: |
+      Where the client should navigate for this hit. A **different** enum from
+      the result `kind`.
+
+      This replaces the former nested `route` object, which grouped nothing: on
+      a message hit it repeated `conversationId`, `taskId` and `agentId`
+      verbatim from the element containing it, so every message result
+      shipped the same values twice with nothing to say which copy was
+      authoritative. `route.kind` carried the only information the object
+      owned.
+    enum: [task, direct_conversation, task_conversation, discussion]
+
+  InvitableRole:
+    type: string
+    description: The role an invitation or share link grants. Never `owner`.
+    enum: [admin, member]
+  ShareLinkReset:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      role: { $ref: '#/schemas/InvitableRole' }
+  CompanyInvitation:
+    type: object
+    required: [id, email, role, status, deliveryStatus, expiresAt, createdAt, renewalRequestedAt, revision]
+    properties:
+      id: { type: string, format: uuid }
+      email: { type: string }
+      role:
+        description: The role accepting grants; always `admin` or `member`.
+        $ref: '#/schemas/CompanyRole'
+      status: { type: string, enum: [pending, accepted, revoked, expired] }
+      deliveryStatus: { type: string, enum: [queued, sending, sent, failed, cancelled] }
+      expiresAt: { type: string, format: date-time }
+      createdAt: { type: string, format: date-time }
+      renewalRequestedAt: { type: [string, 'null'], format: date-time }
+      revision: { type: integer, format: int64 }
+  InvitationCollection:
+    type: object
+    required: [items, enabled]
+    properties:
+      enabled: { type: boolean }
+      items:
+        type: array
+        items: { $ref: '#/schemas/CompanyInvitation' }
+  InvitationResults:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items:
+          type: object
+          required: [email, outcome, invitation]
+          properties:
+            email: { type: string }
+            outcome: { type: string, enum: [queued, alreadyMember, alreadyInvited] }
+            invitation:
+              oneOf:
+                - { $ref: '#/schemas/CompanyInvitation' }
+                - { type: 'null' }
+  CompanyShareLink:
+    type: object
+    required: [url, role, expiresAt, revision, available]
+    properties:
+      url: { type: [string, 'null'], format: uri }
+      role:
+        description: The role the link grants; `member` before any link was created.
+        $ref: '#/schemas/CompanyRole'
+      expiresAt: { type: [string, 'null'], format: date-time }
+      revision: { type: integer, format: int64, minimum: 0 }
+      available: { type: boolean }
+  InvitationPreview:
+    type: object
+    required: [type, companyId, companyName, inviterName, maskedEmail, role, state, expiresAt]
+    properties:
+      type: { type: string, enum: [email, link] }
+      companyId: { type: string, format: uuid }
+      companyName: { type: string }
+      inviterName: { type: string }
+      maskedEmail: { type: string }
+      role:
+        description: The role accepting grants.
+        $ref: '#/schemas/CompanyRole'
+      state: { type: string, enum: [pending, accepted, revoked, expired, replaced, wrong-account, already-member, removed] }
+      expiresAt: { type: string, format: date-time }
+  InvitationAcceptance:
+    type: object
+    required: [company, outcome]
+    properties:
+      company: { $ref: '#/schemas/Company' }
+      outcome: { type: string, enum: [joined, alreadyMember] }

@@ -1,0 +1,257 @@
+.pc-dialog.pc-pdf-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 95vw);
+  height: 90vh;
+  max-height: 90vh;
+}
+.pc-pdf-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--pc-line);
+  flex: none;
+  font-size: 12px;
+}
+.pc-pdf-toolbar > div {
+  flex: 1;
+  color: var(--pc-muted);
+}
+.pc-pdf-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pc-pdf-toolbar select {
+  padding: 6px 8px;
+  color: var(--pc-ink);
+  background: var(--pc-paper);
+  border: 1px solid var(--pc-line);
+  border-radius: 6px;
+}
+.pc-pdf-preview {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px;
+  background: var(--pc-raised);
+}
+.pc-pdf-error {
+  padding: 12px 24px;
+  color: var(--workspace-native-danger);
+}
+.pc-pdf-report {
+  --workspace-font-body: Arial, sans-serif;
+  --workspace-native-text: #20242b;
+  --workspace-native-text-muted: #58616e;
+  --workspace-panel-bg: #fff;
+  --pc-ink: #20242b;
+  --pc-muted: #58616e;
+  --pc-soft: #657181;
+  --pc-line: #dde1e6;
+  --pc-paper: #fff;
+  --pc-raised: #f4f6f8;
+  --pc-accent: #385470;
+  --workspace-native-success: #286544;
+  --workspace-native-danger: #b6404d;
+  box-sizing: border-box;
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 20mm 16mm;
+  background: white;
+  color: var(--pc-ink);
+  box-shadow: 0 4px 24px #0000000d;
+  font:
+    11pt/1.65 Arial,
+    sans-serif;
+  color-scheme: light;
+}
+.pc-pdf-report[data-paper="Letter"] {
+  width: 215.9mm;
+}
+.pc-pdf-cover {
+  padding: 0 0 24px;
+  margin: 0 0 28px;
+  border-bottom: 2px solid var(--pc-accent);
+}
+.pc-pdf-cover > p {
+  font:
+    9pt/1.5 Arial,
+    sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pc-muted);
+}
+.pc-pdf-cover h1 {
+  font:
+    600 32pt/1.15 Georgia,
+    serif;
+  letter-spacing: -0.03em;
+  margin: 18px 0;
+  overflow-wrap: anywhere;
+}
+.pc-pdf-cover time {
+  font:
+    9pt/1.5 Arial,
+    sans-serif;
+  color: var(--pc-muted);
+}
+.pc-pdf-report .pc-block-editor > .tiptap {
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+  color: var(--pc-ink);
+  font: inherit;
+}
+.pc-pdf-report :is(h2, h3, h4) {
+  break-after: avoid;
+}
+.pc-pdf-report h2 {
+  font:
+    600 18pt/1.3 Georgia,
+    serif;
+  margin: 26px 0 12px;
+}
+.pc-pdf-report p {
+  orphans: 3;
+  widows: 3;
+}
+.pc-pdf-report
+  :is(
+    .pc-block-scroll,
+    .pc-native-body,
+    .pc-live-document,
+    .pc-work-table,
+    .pc-work-lanes
+  ) {
+  overflow: visible;
+  height: auto;
+  max-height: none;
+}
+.pc-pdf-report .pc-work-lanes {
+  display: block;
+}
+.pc-pdf-report .pc-work-lane {
+  margin-bottom: 16px;
+}
+.pc-pdf-report :is(.pc-work-row, .pc-result-card, figure, tr) {
+  break-inside: avoid;
+}
+.pc-pdf-report :is(.pc-work-table table, table) {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.pc-pdf-report :is(td, th) {
+  overflow-wrap: anywhere;
+  padding: 8px;
+  border-bottom: 1px solid var(--pc-line);
+  text-align: left;
+  font-size: 9pt;
+}
+.pc-pdf-report thead {
+  display: table-header-group;
+}
+.pc-pdf-report img {
+  max-width: 100%;
+  max-height: 220mm;
+  object-fit: contain;
+  break-inside: avoid;
+}
+.pc-pdf-report pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pc-pdf-report .pc-result-excerpt {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+.pc-pdf-report
+  :is(
+    .pc-block-settings,
+    .pc-work-action,
+    .pc-work-more,
+    .collaboration-cursor__caret,
+    .collaboration-cursor__label
+  ) {
+  display: none;
+}
+.pc-pdf-report .pc-reference-heading button {
+  display: none;
+}
+.pc-pdf-report .pc-pdf-project-section {
+  margin-top: 32px;
+}
+.pc-pdf-executive {
+  --pc-accent: #254f58;
+  font-size: 10.5pt;
+}
+.pc-pdf-executive .pc-pdf-cover {
+  border-top: 8px solid var(--pc-accent);
+  border-bottom: 1px solid var(--pc-line);
+  padding-top: 20px;
+}
+.pc-pdf-executive .pc-pdf-cover h1 {
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  font-size: 28pt;
+}
+.pc-pdf-executive h2 {
+  font-family: Arial, sans-serif;
+  font-size: 16pt;
+}
+.pc-pdf-compact {
+  font-size: 9pt;
+  line-height: 1.45;
+}
+.pc-pdf-compact .pc-pdf-cover {
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.pc-pdf-compact .pc-pdf-cover h1 {
+  font:
+    600 22pt/1.2 Arial,
+    sans-serif;
+  margin: 10px 0;
+}
+.pc-pdf-compact h2 {
+  font:
+    600 14pt/1.3 Arial,
+    sans-serif;
+  margin-top: 18px;
+}
+.pc-pdf-compact .pc-work-row {
+  padding: 8px 0;
+}
+.pc-pdf-compact .pc-result-card {
+  padding: 12px;
+}
+@media print {
+  .pc-pdf-report {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+.pc-pdf-toolbar button {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--pc-paper);
+  background: var(--pc-accent);
+  font: inherit;
+  cursor: pointer;
+}
+.pc-pdf-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pc-pdf-toolbar :is(button, select):focus-visible {
+  outline: 2px solid var(--pc-accent);
+  outline-offset: 3px;
+}

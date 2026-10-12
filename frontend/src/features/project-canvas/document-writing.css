@@ -1,0 +1,41 @@
+.pc-writing-prompt {
+  display: grid;
+  gap: 12px;
+  width: min(440px, calc(100vw - 48px));
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 8px 28px #0002;
+  font-size: 14px;
+}
+.pc-writing-prompt label {
+  display: grid;
+  gap: 6px;
+}
+.pc-writing-prompt :is(select, textarea) {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+}
+.pc-writing-prompt footer {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+}
+.pc-writing-prompt button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.pc-writing-prompt button:disabled {
+  opacity: 0.5;
+}
+.pc-writing-prompt small,
+.pc-comment-agent-status {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}

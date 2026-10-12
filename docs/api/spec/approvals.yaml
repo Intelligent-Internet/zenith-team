@@ -1,0 +1,823 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/approvals.md is its prose counterpart.
+
+paths:
+
+  # ============================================ human-in-the-loop (see approvals.md)
+  # A run that raises one of these does not wait — it ends, and the answer
+  # arrives later as a new run with the outcome injected.
+
+  # /api/v1/companies/{companyId}/approvals
+  companies_companyId_approvals:
+    get:
+      tags: [approvals]
+      operationId: listApprovals
+      summary: List approvals awaiting a decision
+      description: |
+        Newest first (`createdAt DESC, id DESC`). The next page seeks strictly
+        before the previous `(createdAt, id)` boundary, so equal creation
+        timestamps remain deterministic.
+
+        A Task-origin Approval is listed to the readers of the Task chat it
+        was raised in, so it follows that chat's Project, also after the
+        Task is deleted (ADR 0017); a direct one only to its origin person.
+        Questions follow the same rule.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+        - name: status
+          in: query
+          required: false
+          description: |
+            Comma-separated set of statuses; an approval matching any listed
+            one is returned. The whole set travels in one value — repeating
+            the parameter is `422`, like every repeated parameter in the API.
+            Defaults to `pending`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/schemas/ApprovalStatus' }
+        - name: agent_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: task_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: view
+          in: query
+          required: false
+          description: |
+            `decide` keeps only the Approvals the caller may decide: a Company
+            Plan Approval raised in a Task chat with a Project needs
+            `project.approvals.resolve` there, every other one the Company
+            `approvals.resolve` (ADR 0017). The Company Approvals page and its
+            pending counts read this view. `decide` is the only value.
+          schema: { type: string, enum: [decide] }
+      responses:
+        '200':
+          description: A page of approvals.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Approval' }
+                  nextCursor: { type: [string, "null"] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/approvals/stats
+  companies_companyId_approvals_stats:
+    get:
+      tags: [approvals]
+      operationId: getApprovalStats
+      summary: How the company's approval gates are performing
+      description: |
+        Grouped by `kind`, so an owner can see which gates are load-bearing
+        and which are friction. A rule approved every time without exception is
+        a candidate for policy; a rule that mostly expires is one nobody
+        understands, and it is blocking work while looking healthy.
+
+        The counts are exactly the Approvals `view=decide` lists, whatever
+        their status, and nobody is refused (ADR 0017): a Company Plan
+        Approval raised in a Task chat with a Project counts where the caller
+        holds `project.approvals.resolve`; any other Approval of a Task chat
+        counts for holders of the Company `approvals.resolve` who read that
+        chat; an Approval raised outside a Task counts only for the member
+        who raised it, when they hold `approvals.resolve`. A member who
+        decides nowhere gets zeros.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: since
+          in: query
+          required: false
+          description: Requests raised at or after this instant. Defaults to 30 days ago.
+          schema: { type: string, format: date-time }
+        - name: agent_id
+          in: query
+          required: false
+          description: Restrict to requests raised by one agent.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Totals, and one row per rule.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [since, requested, approved, rejected, expired, cancelled, items]
+                properties:
+                  since: { $ref: './_common.yaml#/schemas/Timestamp' }
+                  requested: { type: integer, format: int64 }
+                  approved: { type: integer, format: int64 }
+                  rejected: { type: integer, format: int64 }
+                  expired: { type: integer, format: int64 }
+                  cancelled: { type: integer, format: int64 }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [kind, requested, approved, rejected, expired, cancelled]
+                      properties:
+                        kind: { type: string, enum: [company_plan_apply, commerce_manifest_publish] }
+                        requested: { type: integer, format: int64 }
+                        approved: { type: integer, format: int64 }
+                        rejected: { type: integer, format: int64 }
+                        expired: { type: integer, format: int64 }
+                        cancelled: { type: integer, format: int64 }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  # /api/v1/companies/{companyId}/approvals/{approvalId}
+  companies_companyId_approvals_approvalId:
+    get:
+      tags: [approvals]
+      operationId: getApproval
+      summary: Read one approval
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The approval, with its execution outcome once terminal.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Approval' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 approval_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/approvals/{approvalId}/approve
+  companies_companyId_approvals_approvalId_approve:
+    post:
+      tags: [approvals]
+      operationId: approveApproval
+      summary: Approve and execute a frozen Company Plan action
+      description: |
+        Resolves a `company_plan_apply` request and executes the frozen action
+        synchronously, so the response reports the real outcome rather than an
+        intent. A `commerce_manifest_publish` Approval is resolved only by the
+        exact Commerce `approve-publish` route after catalog activation; using
+        this generic route for it returns `409 approval_conflict`.
+
+        Who decides (ADR 0017): an Approval raised in a Task chat that has a
+        Project needs `project.approvals.resolve` on that Project, and the
+        Company role is not consulted; a caller who cannot read the Project
+        gets `404 approval_not_found`, a reader without the permission `403
+        project_permission_required`. Every other Approval needs the Company
+        `approvals.resolve`. Approving also runs the frozen Company Plan
+        apply as the caller. Raised in a Task chat with a Project, that apply
+        reaches the chat's Project alone, so approving needs
+        `project.tasks.write` there as well (`403
+        project_permission_required`) and no Company permission; any other
+        Approval runs a Company action and needs the Company
+        `company.plan.apply` as well (`403 approval_resolver_forbidden`).
+        Rejecting and cancelling need neither. A Task-origin Approval is sent
+        only to readers who may approve it. The execution result lists under
+        `skipped` any Project change the caller's Project permissions left
+        undone (see `PlanApplyResult`).
+
+        Resolution CAS, frozen Company Plan mutation, Inbox closure, and the
+        durable continuation intent share one database transaction. A lost
+        race is `409`; an infrastructure error rolls back to pending. This is
+        not a promise of exactly-once external side effects.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                decisionNote: { type: string, maxLength: 2048 }
+      responses:
+        '200':
+          description: Resolved, with the execution outcome.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Approval' }
+        '403':
+          description: '`403 approval_resolver_forbidden` — the caller does not satisfy the resolver policy, or raised it — or `403 project_permission_required` — a reader of a Task-origin Approval''s Project without `project.approvals.resolve`, or without `project.tasks.write` to approve it (ADR 0017). Approving a Company Plan also answers `403 company_permission_required` when the plan would move another member''s open Task to another agent, take it out of review, or delete it, and the decider is neither its assignee nor a `tasks.assign` holder; the Approval stays pending.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 approval_not_found`, or `404 work_plan_not_found` when approving a Company Plan whose apply names a Company entity that no longer exists; the Approval stays pending.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 approval_conflict` — already resolved, a revision mismatch, or a Commerce Approval that must use its manifest publish route — or `409 work_plan_conflict` — approving a Company Plan whose apply the current state refuses (for example a new Project under a key that is taken, or a terminal Task the plan would change); the Approval stays pending.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 approval_expired` — the TTL elapsed; no action executes.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/approvals/{approvalId}/reject
+  companies_companyId_approvals_approvalId_reject:
+    post:
+      tags: [approvals]
+      operationId: rejectApproval
+      summary: Reject a Company Plan approval without executing
+      description: A Commerce manifest Approval is domain-owned and returns `409 approval_conflict` on this generic route.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                decisionNote: { type: string, maxLength: 2048 }
+      responses:
+        '200':
+          description: Rejected. The agent is woken with the note.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Approval' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 approval_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 approval_expired`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/approvals/{approvalId}/cancel
+  companies_companyId_approvals_approvalId_cancel:
+    post:
+      tags: [approvals]
+      operationId: cancelApproval
+      summary: Withdraw an approval without a decision
+      description: Requires `approvals.resolve` for Company Plan approvals, or `project.approvals.resolve` on the Project of the Task chat a Task-origin Approval was raised in (ADR 0017; `403 project_permission_required`). A Commerce manifest Approval returns `409 approval_conflict` on this generic route.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: approvalId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                decisionNote: { type: string, maxLength: 2048 }
+      responses:
+        '200':
+          description: Cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Approval' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 approval_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 approval_expired`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/questions
+  companies_companyId_questions:
+    post:
+      tags: [approvals]
+      operationId: askQuestion
+      summary: Ask humans a question on behalf of a live run
+      description: |
+        Requires an ordinary bearer principal plus the supplemental live
+        `X-Boardly-Run-Token`. `Idempotency-Key` is a UUID scoped to this
+        Question operation and the originating run. First creation is `201`;
+        an exact replay returns the same Question with `200` — the status code
+        is the whole created-signal. A replay with a different payload is
+        `409 question_conflict`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/QuestionAskRequest' }
+      responses:
+        '200':
+          description: Exact idempotent replay — the durable Question, unchanged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Question' }
+        '201':
+          description: Created — the durable Question receipt.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Question' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: '`401 authentication_required` or `401 run_token_invalid`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 question_conflict` — the idempotency key was reused with another payload — or `409 no_eligible_resolver` — nobody who reads the Task chat''s Project holds `project.approvals.resolve`; the asking Run fails with `failureReason` `no_eligible_resolver` (ADR 0017).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+    get:
+      tags: [approvals]
+      operationId: listQuestions
+      summary: List questions awaiting an answer
+      description: |
+        Newest first (`createdAt DESC, id DESC`). The next page seeks strictly
+        before the previous `(createdAt, id)` boundary, so equal creation
+        timestamps remain deterministic.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+        - name: status
+          in: query
+          required: false
+          description: |
+            Comma-separated set of statuses, matching any listed one — the
+            same one-value mechanism every multi-status filter uses.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: '#/schemas/QuestionStatus' }
+        - name: agent_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: task_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: view
+          in: query
+          required: false
+          description: |
+            `decide` keeps only the Questions the caller may answer: one
+            raised in a Task chat with a Project needs
+            `project.approvals.resolve` there; the caller's own direct Question
+            and one of a Task chat with no Project need only reading it
+            (ADR 0017). `decide` is the only value.
+          schema: { type: string, enum: [decide] }
+      responses:
+        '200':
+          description: A page of questions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/Question' }
+                  nextCursor: { type: [string, "null"] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/questions/{questionId}
+  companies_companyId_questions_questionId:
+    get:
+      tags: [approvals]
+      operationId: getQuestion
+      summary: Read one question
+      description: |
+        The same visibility rule as the list: a task question is readable by
+        the readers of its task chat's Project (ADR 0017), a
+        direct-conversation question only by its origin user. Anything else is `404 question_not_found`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The question, with its answers once resolved.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Question' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 question_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+
+
+  # /api/v1/companies/{companyId}/questions/{questionId}/answer
+  companies_companyId_questions_questionId_answer:
+    post:
+      tags: [approvals]
+      operationId: answerQuestion
+      summary: Answer a question
+      description: |
+        Every `required` prompt must be answered. The asking agent is woken
+        with the answers in context. Requires a human actor; requests carrying
+        a Run proof cannot answer, including social publication reviews.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision, answers]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+                answers:
+                  type: array
+                  items: { $ref: '#/schemas/QuestionAnswer' }
+      responses:
+        '200':
+          description: Answered.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Question' }
+        '403':
+          description: '`403 human_actor_required` for Run-authenticated requests. `403 project_permission_required` — a Task-origin Question needs `project.approvals.resolve` on the Project of the Task chat it was asked in (ADR 0017).'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: '`404 question_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 question_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 question_expired`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+  # /api/v1/companies/{companyId}/questions/{questionId}/withdraw
+  companies_companyId_questions_questionId_withdraw:
+    post:
+      tags: [approvals]
+      operationId: withdrawQuestion
+      summary: Withdraw a question
+      description: Requires `project.approvals.resolve` on the Project of the Task chat a Task-origin Question was asked in (ADR 0017; `approvals.resolve` for a Task chat with no Project); the origin user for private direct origins.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: Withdrawn.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Question' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 question_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '410':
+          description: '`410 question_expired`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+
+schemas:
+
+  Approval:
+    type: object
+    description: |
+      A consequential action an agent wants a human to authorize. The run
+      that raised it has already ended by the time anyone sees this.
+    required:
+      - id
+      - companyId
+      - kind
+      - subjectId
+      - status
+      - title
+      - summary
+      - previewMarkdown
+      - presentation
+      - requestedByAgent
+      - originRunId
+      - taskId
+      - conversationId
+      - expiresAt
+      - decisionNote
+      - decidedBy
+      - execution
+      - continuationRunId
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      kind: { type: string, enum: [company_plan_apply, commerce_manifest_publish] }
+      subjectId:
+        type: [string, "null"]
+        format: uuid
+        description: Exact domain resource authorized by the Approval; the Commerce manifest ID for `commerce_manifest_publish` and null for Company Plan apply.
+      status:
+        allOf: [{ $ref: '#/schemas/ApprovalStatus' }]
+        description: |
+          A terminal status **is** the decision — `approved` and `rejected`
+          say what the human decided, `cancelled` and `expired` say no one
+          did. There is no separate decision field.
+      title: { type: string }
+      summary: { type: [string, "null"] }
+      previewMarkdown:
+        type: string
+        description: Rendered as Markdown, never as HTML.
+      presentation:
+        description: Structured Company Plan preview; null for other Approval kinds.
+        oneOf:
+          - { $ref: '#/schemas/CompanyPlanApprovalPresentation' }
+          - { type: "null" }
+      requestedByAgent: { $ref: './_common.yaml#/schemas/ActorRef' }
+      originRunId:
+        {"type": "string", "format": "uuid", "description": "Database-generated Run UUID."}
+      taskId: { type: [string, "null"], format: uuid }
+      conversationId: { type: string, format: uuid }
+      expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      decisionNote: { type: [string, "null"] }
+      decidedBy:
+        oneOf: [{ $ref: './_common.yaml#/schemas/ActorRef' }, { type: "null" }]
+      execution:
+        oneOf: [{ $ref: './_common.yaml#/schemas/ApprovalExecution' }, { type: "null" }]
+      continuationRunId:
+        {"type": ["string", "null"], "format": "uuid", "description": "The new run that carried the outcome back to the agent. It appears\nhere once that run exists — the id is stamped by the very transaction\nthat creates it — so a non-null value **always** names a run readable\nthrough the runs API. It is `null` while the continuation is pending\nor deferred to a later attempt, and stays `null` permanently when the\ncontinuation is abandoned: in those cases no run was ever created.\nDelivery and abandonment each advance `revision` and re-send\n`approval.resolved`, so a held snapshot learns either outcome.\n"}
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+
+  ApprovalStatus:
+    type: string
+    enum: [pending, approved, rejected, cancelled, expired]
+
+
+  CompanyPlanApprovalPresentation:
+    type: object
+    description: Safe review projection; the frozen authoritative action is never exposed.
+    required: [kind, companySlug, draftDigest, totalChanges, changes, plan]
+    properties:
+      kind: { type: string, const: company_plan }
+      companySlug: { type: string }
+      draftDigest: { type: string }
+      totalChanges: { type: integer, minimum: 0 }
+      changes:
+        type: array
+        items: { $ref: '#/schemas/CompanyPlanApprovalChange' }
+      plan: { $ref: '#/schemas/CompanyPlanApprovalDocument' }
+
+  CompanyPlanApprovalChange:
+    type: object
+    required: [entityType, operation, key]
+    properties:
+      entityType: { type: string, enum: [project, task, dependency] }
+      operation: { type: string, enum: [create, update, archive, delete] }
+      key: { type: string }
+      reason: { type: string }
+      fields:
+        type: array
+        items:
+          type: object
+          required: [field, before, after]
+          properties:
+            field: { type: string }
+            before: { type: string }
+            after: { type: string }
+
+  CompanyPlanApprovalDocument:
+    type: object
+    required: [formatVersion, company, projects, tasks]
+    properties:
+      formatVersion: { type: integer, const: 5 }
+      company: { type: string }
+      projects:
+        type: array
+        items: { $ref: '#/schemas/CompanyPlanProject' }
+      tasks:
+        type: array
+        items: { $ref: '#/schemas/CompanyPlanApprovalTask' }
+
+  CompanyPlanApprovalTask:
+    type: object
+    required: [key, projectKey, agentId, milestoneType, title, description, status, priority, dependsOn]
+    properties:
+      key: { type: string }
+      projectKey: { type: string }
+      agentId:
+        type: string
+        description: |
+          The id of the Agent the Task is executed by (ADR 0014); empty
+          when the assignee does the work themself. The applier is the
+          assignee of every Task the plan creates. A Task that keeps its
+          Agent may name an archived one.
+      milestoneType: { $ref: './tasks.yaml#/schemas/TaskMilestoneTypeDto' }
+      title: { type: string, maxLength: 240 }
+      description: { type: string }
+      status:
+        allOf: [{ $ref: './_common.yaml#/schemas/TaskStatus' }]
+        description: Desired task status in the reviewed plan.
+      priority: { $ref: './tasks.yaml#/schemas/TaskPriority' }
+      dependsOn:
+        type: array
+        items:
+          type: object
+          required: [taskKey]
+          properties:
+            taskKey: { type: string }
+
+
+  CompanyPlanProject:
+    type: object
+    required: [key, title, description, archived]
+    properties:
+      key: { type: string }
+      title: { type: string }
+      description: { type: string }
+      archived: { type: boolean }
+      readOnly:
+        type: boolean
+        description: |
+          Set by the export on a Project its reader may read but whose Tasks
+          they may not change (no `project.tasks.write`, ADR 0017). The apply
+          leaves such a Project, and its Tasks, alone. It can only narrow an
+          apply: the server still decides every write from the applier's
+          access.
+
+  Question:
+    type: object
+    description: |
+      Information an agent needs from a human to continue. Like an approval,
+      the run that asked has already ended.
+    required:
+      - id
+      - companyId
+      - status
+      - title
+      - askedByAgent
+      - originRunId
+      - taskId
+      - conversationId
+      - prompts
+      - expiresAt
+      - answers
+      - answeredBy
+      - continuationRunId
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      status: { $ref: '#/schemas/QuestionStatus' }
+      title: { type: string }
+      askedByAgent: { $ref: './_common.yaml#/schemas/ActorRef' }
+      originRunId: {"type": "string", "format": "uuid"}
+      taskId: { type: [string, "null"], format: uuid }
+      conversationId: { type: string, format: uuid }
+      prompts:
+        type: array
+        items: { $ref: './_common.yaml#/schemas/QuestionPrompt' }
+      expiresAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      answers:
+        oneOf:
+          - type: array
+            items: { $ref: '#/schemas/QuestionAnswer' }
+          - type: "null"
+      answeredBy:
+        oneOf: [{ $ref: './_common.yaml#/schemas/ActorRef' }, { type: "null" }]
+      continuationRunId:
+        {"type": ["string", "null"], "format": "uuid", "description": "Exactly as on an approval: present once the continuation run exists,\n`null` while it is pending or deferred, and `null` forever when it is\nabandoned. Delivery and abandonment each advance `revision` and re-send\n`question.resolved`.\n"}
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  QuestionStatus:
+    type: string
+    enum: [pending, answered, withdrawn, expired]
+
+  QuestionAskRequest:
+    type: object
+    required: [title, prompts]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 240 }
+      prompts:
+        type: array
+        minItems: 1
+        maxItems: 10
+        items: { $ref: './_common.yaml#/schemas/QuestionPrompt' }
+
+  QuestionAnswer:
+    type: object
+    required: [promptId]
+    properties:
+      promptId: { type: string }
+      optionIds:
+        type: array
+        items: { type: string }
+      text:
+        type: [string, "null"]
+        minLength: 1
+        maxLength: 16384
+        description: |
+          The free-text answer. For an option prompt this is accepted only
+          when `allowCustomAnswer` is true; it replaces a single selection or
+          may accompany multi selections.

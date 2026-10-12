@@ -1,0 +1,105 @@
+/* Shared control metrics also apply to Radix portals outside the app shell. */
+html[data-boardly-workspace-theme]
+  [data-slot="button"]:not([data-size="auto"]) {
+  border-radius: var(--workspace-radius-control);
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 500;
+  box-shadow: none;
+}
+
+html[data-boardly-workspace-theme]
+  [data-slot="button"]:is([data-size="default"], [data-size="sm"]) {
+  height: var(--workspace-control-size);
+  padding: 0 12px;
+}
+
+html[data-boardly-workspace-theme] [data-slot="button"][data-size="icon"] {
+  width: var(--workspace-control-size);
+  height: var(--workspace-control-size);
+  padding: 0;
+}
+
+html[data-boardly-workspace-theme]
+  :is([data-slot="input"], [data-slot="select-trigger"]) {
+  min-height: 36px;
+  border-color: var(--workspace-divider-strong);
+  border-radius: var(--workspace-radius-control);
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 400;
+  box-shadow: none;
+}
+
+html[data-boardly-workspace-theme]
+  :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) {
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+html[data-boardly-workspace-theme]
+  :is(
+    [data-slot="dialog-description"],
+    [data-slot="alert-dialog-description"]
+  ) {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+html[data-boardly-workspace-theme]
+  :is(
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="select-content"],
+    [data-slot="context-menu-content"]
+  ) {
+  padding: 5px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-overlay);
+  background: var(--workspace-overlay-bg);
+  color: var(--workspace-native-text);
+  box-shadow: var(--workspace-overlay-shadow);
+}
+
+html[data-boardly-workspace-theme]
+  :is(
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [data-slot="select-item"]
+  ) {
+  min-height: 30px;
+  border-radius: var(--workspace-radius-control);
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  font-weight: 400;
+}
+
+@media (pointer: coarse) {
+  html[data-boardly-workspace-theme]
+    [data-slot="button"]:is(
+      [data-size="default"],
+      [data-size="sm"],
+      [data-size="icon"]
+    ),
+  html[data-boardly-workspace-theme]
+    :is(
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [data-slot="select-item"],
+      [data-slot="select-trigger"]
+    ) {
+    min-height: 44px;
+  }
+
+  html[data-boardly-workspace-theme] [data-slot="button"][data-size="icon"] {
+    min-width: 44px;
+  }
+}

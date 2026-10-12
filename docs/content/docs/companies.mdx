@@ -1,0 +1,108 @@
+---
+title: Companies
+description: The company is Zenith Team's tenant and authority boundary — who belongs to it, what each role can do, and how its history is audited.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A company is the tenant: every [agent](/agents), [task](/tasks), [conversation](/conversations), [run](/runs), and file belongs to exactly one, and every query Zenith Team answers is scoped to one. Any signed-in user can create a company; creating one makes you its [Founder](/concepts#founder) — the `owner` membership. Other people join as `admin` or `member`.
+
+The company is also the authority boundary. What you may do inside it is decided by your membership role, and what exists outside your companies is simply not visible.
+
+## What a company contains
+
+| Category | Contents |
+|---|---|
+| **Identity** | Name, URL slug, the task key prefix (the `NWR` in `NWR-42`), a business-context brief, and contact details |
+| **People** | Memberships — one row per person, each with a role and an active or revoked status |
+| **Organization** | [Agents](/agents) and their reporting tree |
+| **Plan** | [Tasks](/company-plan), with task dependencies |
+| **Threads** | [Conversations](/conversations) and the [runs](/runs) inside them |
+| **Execution surface** | Registered [runtimes](/daemon-and-runtimes), [schedules](/schedules), and [local-directory Resources](/workspaces#local-directories) |
+| **Oversight** | [Approvals and questions](/approvals-and-questions), the [Inbox](/notifications), and the activity feed |
+
+## The Founder
+
+The [Founder](/concepts#founder) is the person who created the company. They start as its `owner`, the role that holds every permission, and can later hand ownership to someone else. Everything consequential — shaping the org, applying plans, binding directories, turning automation on — is a permission an owner or admin holds; ending the company, its ownership or its money stays with owners.
+
+## Company scoping
+
+Membership is enforced before anything else, and the boundary never explains itself:
+
+- A company you are not a member of answers `404` "Company not found" — the same answer as a company that does not exist. Zenith Team does not reveal what exists: you cannot tell a typo from someone else's company.
+- A malformed company id is also a `404`, not a validation error, for the same reason.
+- A revoked membership is indistinguishable from never having had one — no tombstone, no different error.
+
+The same rule repeats inside the company: a task or resource that lives in another company answers as not found, never as forbidden.
+
+Your own company list shows only companies where you hold an active membership. A company whose deletion has started is excluded from every read and never reappears.
+
+## Members and roles
+
+A membership holds one [role](/concepts#role): `owner`, `admin` or `member`. Roles are what you assign; what a role may do is a fixed set of [permissions](/concepts#permission) the server checks and publishes on every Company read (`permissions`), so the app shows you exactly the actions your role holds. An admin runs the company day to day; only an owner can end it, its ownership or its money.
+
+| Action | Permission | `owner` | `admin` | `member` |
+|---|---|---|---|---|
+| **Read the company, search it, read the activity feed, read the roster** | — | ✓ | ✓ | ✓ |
+| **Work with tasks in the projects you have access to — create your own, message, start runs on the ones assigned to you; register your own runtime** | project access | ✓ | ✓ | ✓ |
+| **Edit the company profile** | `company.profile.update` | ✓ | ✓ | — |
+| **Apply Company Plans, attest milestones** | `company.plan.apply` | ✓ | ✓ | — |
+| **Turn Proactive Mode on or off** | `company.proactive_mode.manage` | ✓ | ✓ | — |
+| **Bind and remove local directories, keep reference documents** | `company.resources.manage` | ✓ | ✓ | — |
+| **Invite people by email or link** | `members.invite` | ✓ | ✓ | — |
+| **Change roles among admins and members, remove them** | `members.manage` | ✓ | ✓ | — |
+| **Create agents, change the ones you created, and set any agent up on your own computer** | any member | ✓ | ✓ | ✓ |
+| **Change or archive any agent, the CEO Agent included** | `agents.manage` | ✓ | ✓ | — |
+| **Assign a task to someone else, hand a task off** (the assignee can always hand off their own) | `tasks.assign` | ✓ | ✓ | — |
+| **Rename, refresh or remove your own runtimes, and discover their models** | any member | ✓ | ✓ | ✓ |
+| **Install plugins and connect apps on your own computer** (every member also sees and refreshes what their own computer provides) | `plugins.manage` | ✓ | ✓ | ✓ |
+| **Review apps whose tools changed, for the whole company** | `connectors.manage` | ✓ | ✓ | — |
+| **Create projects; rename, archive and give access to any project, without seeing inside it; manage schedules** | `projects.manage`, `schedules.manage` | ✓ | ✓ | — |
+| **Resolve approvals** outside projects (inside a project it is that project's access), **take over results nobody owns** | `approvals.resolve`, `results.review` | ✓ | ✓ | — |
+| **Create the company mailbox** | `mailbox.manage` | ✓ | ✓ | — |
+| **See usage and revenue** | `usage.read`, `commerce.read` | ✓ | ✓ | — |
+| **Publish results to public URLs** | `results.publish` | ✓ | — | — |
+| **Manage owners, transfer ownership** | `members.owners.manage` | ✓ | — | — |
+| **Accept commerce terms, connect payouts, publish catalogs** | `commerce.manage` | ✓ | — | — |
+| **Delete the company** | `company.delete` | ✓ | — | — |
+
+A company keeps at least one active owner: the last owner cannot leave, be removed or be demoted until ownership is transferred. Nobody is invited as owner. Team and lifecycle changes are a person's decisions: a Run acting through its proof holds its authorizer's role but is refused with `403 human_actor_required`. Runtimes sit outside the role table: a runtime is its registrant's alone, and no role lets anyone else see it, remove it or run work on it (ADR 0014).
+
+<Callout type="info">
+Roles decide what you may change, not which conversations you may read. A task conversation belongs to its project, and only the people who can see that project read it; a direct chat belongs to the member who opened it — even the Founder cannot read another member's direct conversation. See [Conversations](/conversations).
+</Callout>
+
+## Projects and access
+
+Every task belongs to a project, and roles do not open a project's content. A project is restricted when it is created: only the people given access see its tasks, task chats and files, and each person is given only the things they may do there (see, write tasks, run tasks, decide approvals, and so on). A project can also be opened to the whole company, so every member can see it, work on its tasks and run them.
+
+Owners and admins look after every project — they create projects, rename them, give and remove access, and archive them — but they see inside a project only once someone gives them access, themselves included. Every such change is recorded and shown to the project's people and to every owner and admin. [What owners and admins can see](/project-access) explains it for members.
+
+## Proactive Mode
+
+Proactive Mode is an owner-controlled company preference, off by default. Turning it on requires the enabling owner to already have a direct conversation with the [CEO Agent](/agents#the-ceo-agent-and-the-reporting-tree); the preference records exactly that one conversation, and everything the mode automates is anchored to it. Any member can see the setting; only the `owner` can change it.
+
+While it is on:
+
+- A [Company Plan approval](/company-plan#the-proactive-mode-shortcut) the CEO Agent raises in that conversation executes inline instead of waiting in your [Inbox](/notifications).
+- Finished task work is queued to [merge back](/tasks#merging-task-work) automatically once the task reaches review.
+- Pending [task reports](/tasks#task-reports) addressed to the CEO Agent are delivered into that conversation without waiting for you to confirm them.
+
+Proactive Mode fails closed. Every automated action re-verifies the whole chain at the moment it fires: the mode is still on, the enabling user is still an active `owner`, the recorded conversation still exists and is not archived, and its agent is still the unarchived root agent. If any link breaks — the conversation pointer is cleared, the chat archived, the agent replaced — automation stops firing and the same items wait for your manual decision instead. It never fails open.
+
+## The activity feed
+
+The activity feed is the company's audit trail: an immutable record of business facts, each attributed to an actor — a person, an agent, or the system — and the entity it happened to. Any member can read it, except entries about a project they cannot see. Changes to who has access to a project are also shown to every owner and admin.
+
+It is deliberately narrow — task history only. Entries are task changes (`task.created`, `task.updated`) and task-run outcomes (`run.completed`, `run.failed`), and every entry names a task. A run in someone's direct chat is that member's private conversation, not company history, and never appears in the feed.
+
+The feed can be filtered — by time window, entity, action, and agent — and a calendar read counts entries per day across one month, so the app can render an at-a-glance activity month without loading the rows.
+
+The feed is not the Inbox. The feed records what happened; the [Inbox](/notifications) queues what still needs you. Resolving an Inbox item removes nothing from the feed, and reading the feed resolves nothing.
+
+## Next steps
+
+- **[Company Plan](/company-plan)** — the planning surface where tasks are proposed and approved.
+- **[Agents](/agents)** — the AI roles that do the company's work.
+- **[Notifications](/notifications)** — the Inbox of approvals and questions waiting on you.
+- **[How Zenith Team works](/how-zenith-team-works)** — the path of a run and what stays on your computer.

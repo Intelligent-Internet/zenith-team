@@ -1,0 +1,732 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/inbox.md is its prose counterpart.
+
+paths:
+
+  # ==================================================================== inbox
+
+  # /api/v1/companies/{companyId}/inbox
+  companies_companyId_inbox:
+    get:
+      tags: [inbox]
+      operationId: listInbox
+      summary: List the caller's inbox items
+      description: |
+        The caller's own items, newest first. The recipient is always the
+        caller: no parameter reads another member's inbox.
+
+        Pages **backward** (newest first) over `(createdAt, id)`. The next page
+        seeks with `(created_at, id) < (cursor_created_at, cursor_id)` and
+        over-fetches by one, so `nextCursor` is accurate even when timestamps
+        tie.
+
+        `status` selects a view, not a sort: `active` is everything unarchived,
+        `unread` is the unread half of that, `archived` is only archived items,
+        and `all` is the true union.
+
+        `status` and `kind` are independent filters and combine with AND, so
+        `status=unread&kind=blocker` is the unread blockers and nothing else.
+
+        Unknown, repeated, or empty-valued query parameters are `422`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: status
+          in: query
+          required: false
+          description: |
+            `all` is the true union, archived rows included. It previously meant
+            "all unarchived", so no value returned the union and a client
+            wanting full history made two calls and merged them; the default
+            view is now named `active` for what it is.
+          schema: { type: string, enum: [active, unread, archived, all], default: active }
+        - name: kind
+          in: query
+          required: false
+          description: |
+            One kind, not a list. Backs the blockers-only view, which otherwise
+            paged the whole inbox and filtered client-side. Accepts every kind
+            an item can carry — the filter vocabulary is the item vocabulary.
+          schema:
+            type: string
+            enum:
+              - task_assigned
+              - blocker
+              - run_completed
+              - run_failed
+              - approval_request
+              - question_request
+              - runtime_offline
+              - invitation_renewal
+              - task_run_requested
+              - task_handoff
+              - calendar_reminder
+              - calendar_update
+              - discussion_mention
+              - analytics_budget
+              - huddle_missed
+              - project_access_granted
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: A page of inbox items, newest first. `items` is `[]` when empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/InboxItem' }
+                  nextCursor: { type: [string, "null"] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` — unknown, or no longer an active member.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: |
+            `422 validation_failed` for an unknown, repeated or empty-valued
+            parameter, a `status` or `kind` outside its vocabulary, or a `limit`
+            outside 1..100. `422 invalid_cursor` for a malformed cursor or an
+            unsupported encoding version.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/inbox/counts
+  companies_companyId_inbox_counts:
+    get:
+      tags: [inbox]
+      operationId: getInboxCounts
+      summary: Unread count and counts version
+      description: |
+        The counts projection alone, for the badge. `unreadCount` counts items
+        that are neither read nor archived — the rows whose `unread` is `true`.
+        `countsVersion` orders count frames, so a stale one is discarded.
+
+        **Accepts no query parameters**; anything in the query string is `422`.
+        The handler used to skip parsing it entirely, so unknown parameters were
+        silently ignored here while the sibling list rejected them.
+
+        Never call this after a mutation: every write below returns the same
+        projection, read inside its own transaction.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The counts.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/InboxCounts' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` — unknown, or no longer an active member.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/inbox/read-all
+  companies_companyId_inbox_read_all:
+    post:
+      tags: [inbox]
+      operationId: readAllInbox
+      summary: Mark every unread item read
+      description: |
+        Marks every unread, unarchived item read in one transaction. Takes no
+        request body and no query parameters; archived items are left alone.
+
+        Returns the rows it changed, newest first, with their bumped
+        `revision`s. It used to answer counts alone, which left a client
+        holding a cached list to clear `readAt` on its own rows by guesswork.
+
+        When nothing was unread the call short-circuits: `items` `[]`, current
+        counts, and no event.
+
+        Raises **no** per-item `inbox.updated` frames — an unread backlog has
+        no upper bound and a frame per row can overrun the client send buffer.
+        The writer already holds the rows and the refreshed counts from this
+        receipt; another session converges on its next read.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: |
+            The rows that moved and the new counts.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InboxBulkReadResult' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/inbox/{itemId}
+  companies_companyId_inbox_itemId:
+    get:
+      tags: [inbox]
+      operationId: getInboxItem
+      summary: Read one inbox item
+      description: |
+        One item addressed to the caller. **Archived items are returned
+        normally** — the archive filter belongs to the list, not to identity.
+
+        A malformed `itemId` is `404 inbox_item_not_found`: a path id that
+        cannot name a row is indistinguishable from one that names nothing, and
+        that is how every other resource answers it. Any query parameter is
+        `422`; the handler used to ignore the query string entirely.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/itemId'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InboxItem' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 inbox_item_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/inbox/{itemId}/{mutation}
+  companies_companyId_inbox_itemId_mutation:
+    post:
+      tags: [inbox]
+      operationId: mutateInboxItem
+      summary: Mark an item read, unread, archived, or restored
+      description: |
+        The mutation is the **path segment**, not a body field. `read` and
+        `unread` set and clear `readAt`; `archive` and `restore` set and clear
+        `archivedAt`. **The two axes are independent** — archiving does not mark
+        an item read, and an archived item leaves `unreadCount` because the
+        count excludes archived rows, not because its `readAt` moved.
+
+        `expectedRevision` carries no struct-level rule but is still mandatory
+        — the service rejects anything below 1 — so an empty `{}` body is `422`
+        rather than an unconditional write. The requirement is invisible at the
+        transport layer.
+
+        A no-op mutation (read on an already-read item, restore on an unarchived
+        one) returns `200` with an **unchanged `revision`** and raises no
+        realtime event.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/itemId'
+        - name: mutation
+          in: path
+          required: true
+          schema: { type: string, enum: [read, unread, archive, restore] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: |
+            The item after the mutation — flat, at the top level — with the
+            refreshed counts beside it. `counts` rides along because reading it
+            separately is the request this response exists to remove.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/schemas/InboxItem'
+                  - $ref: '#/schemas/InboxCountsSidecar'
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 inbox_item_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 inbox_item_revision_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — an unrecognized `mutation` segment, or an
+            `expectedRevision` below 1 (including an omitted one).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/companies/{companyId}/inbox/read
+  companies_companyId_inbox_read:
+    post:
+      tags: [inbox]
+      operationId: readConversationInbox
+      summary: Mark one conversation's inbox items read
+      description: |
+        Replaces paging the entire unread inbox, filtering client-side, and
+        issuing one serial write per match — up to two hundred requests to
+        clear one conversation.
+
+        Marks every unread, unarchived item raised about the named conversation
+        read in one transaction. Archived items are untouched. There is no
+        `expectedRevision` and there cannot be a conflict: the write is a set
+        operation over rows the caller owns, and marking an already-read row
+        read is not a change.
+
+        A conversation with nothing unread answers `items: []` and raises no
+        event, so a repeated call is harmless; an id the caller cannot see is
+        `404`, so a typo never reads as "nothing to mark".
+
+        Every changed row also arrives as an `inbox.updated` frame on the user
+        scope — each frame carrying the refreshed `counts` beside the item —
+        so the caller's other sessions converge without a read. The set is
+        bounded by one conversation's unread notifications.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [conversationId]
+              properties:
+                conversationId:
+                  type: string
+                  format: uuid
+                  description: The conversation whose notifications to mark read.
+      responses:
+        '200':
+          description: |
+            The rows that moved and the resulting counts.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InboxBulkReadResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` or `404 conversation_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — a missing or non-uuid `conversationId`, or
+            any query parameter.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+
+  me_inbox:
+    get:
+      tags: [inbox]
+      operationId: accountListInbox
+      summary: List the caller's inbox items
+      description: |
+        The caller's own items, newest first. The recipient is always the
+        caller: no parameter reads another member's inbox.
+
+        Pages **backward** (newest first) over `(createdAt, id)`. The next page
+        seeks with `(created_at, id) < (cursor_created_at, cursor_id)` and
+        over-fetches by one, so `nextCursor` is accurate even when timestamps
+        tie.
+
+        `status` selects a view, not a sort: `active` is everything unarchived,
+        `unread` is the unread half of that, `archived` is only archived items,
+        and `all` is the true union.
+
+        `status` and `kind` are independent filters and combine with AND, so
+        `status=unread&kind=blocker` is the unread blockers and nothing else.
+
+        Unknown, repeated, or empty-valued query parameters are `422`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: |
+            `all` is the true union, archived rows included. It previously meant
+            "all unarchived", so no value returned the union and a client
+            wanting full history made two calls and merged them; the default
+            view is now named `active` for what it is.
+          schema: { type: string, enum: [active, unread, archived, all], default: active }
+        - name: kind
+          in: query
+          required: false
+          description: |
+            One kind, not a list. Backs the blockers-only view, which otherwise
+            paged the whole inbox and filtered client-side. Accepts every kind
+            an item can carry — the filter vocabulary is the item vocabulary.
+          schema:
+            type: string
+            enum:
+              - task_assigned
+              - blocker
+              - run_completed
+              - run_failed
+              - approval_request
+              - question_request
+              - runtime_offline
+              - invitation_renewal
+              - calendar_reminder
+              - calendar_update
+              - discussion_mention
+              - task_run_requested
+              - task_handoff
+              - huddle_missed
+              - project_access_granted
+        - $ref: './_common.yaml#/parameters/limit'
+        - $ref: './_common.yaml#/parameters/cursor'
+      responses:
+        '200':
+          description: A page of inbox items, newest first. `items` is `[]` when empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/InboxItem' }
+                  nextCursor: { type: [string, "null"] }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` — unknown, or no longer an active member.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422':
+          description: |
+            `422 validation_failed` for an unknown, repeated or empty-valued
+            parameter, a `status` or `kind` outside its vocabulary, or a `limit`
+            outside 1..100. `422 invalid_cursor` for a malformed cursor or an
+            unsupported encoding version.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  me_inbox_counts:
+    get:
+      tags: [inbox]
+      operationId: accountGetInboxCounts
+      summary: Unread count and counts version
+      description: |
+        The counts projection alone, for the badge. `unreadCount` counts items
+        that are neither read nor archived — the rows whose `unread` is `true`.
+        `countsVersion` orders count frames, so a stale one is discarded.
+
+        **Accepts no query parameters**; anything in the query string is `422`.
+        The handler used to skip parsing it entirely, so unknown parameters were
+        silently ignored here while the sibling list rejected them.
+
+        Never call this after a mutation: every write below returns the same
+        projection, read inside its own transaction.
+      responses:
+        '200':
+          description: The counts.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/InboxCounts' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` — unknown, or no longer an active member.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  me_inbox_read_all:
+    post:
+      tags: [inbox]
+      operationId: accountReadAllInbox
+      summary: Mark every unread item read
+      description: |
+        Marks every unread, unarchived item read in one transaction. Takes no
+        request body and no query parameters; archived items are left alone.
+
+        Returns the rows it changed, newest first, with their bumped
+        `revision`s. It used to answer counts alone, which left a client
+        holding a cached list to clear `readAt` on its own rows by guesswork.
+
+        When nothing was unread the call short-circuits: `items` `[]`, current
+        counts, and no event.
+
+        Raises **no** per-item `inbox.updated` frames — an unread backlog has
+        no upper bound and a frame per row can overrun the client send buffer.
+        The writer already holds the rows and the refreshed counts from this
+        receipt; another session converges on its next read.
+      responses:
+        '200':
+          description: |
+            The rows that moved and the new counts.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InboxBulkReadResult' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  me_inbox_itemId:
+    get:
+      tags: [inbox]
+      operationId: accountGetInboxItem
+      summary: Read one inbox item
+      description: |
+        One item addressed to the caller. **Archived items are returned
+        normally** — the archive filter belongs to the list, not to identity.
+
+        A malformed `itemId` is `404 inbox_item_not_found`: a path id that
+        cannot name a row is indistinguishable from one that names nothing, and
+        that is how every other resource answers it. Any query parameter is
+        `422`; the handler used to ignore the query string entirely.
+      parameters:
+        - $ref: './_common.yaml#/parameters/itemId'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/InboxItem' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 inbox_item_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  me_inbox_itemId_mutation:
+    post:
+      tags: [inbox]
+      operationId: accountMutateInboxItem
+      summary: Mark an item read, unread, archived, or restored
+      description: |
+        The mutation is the **path segment**, not a body field. `read` and
+        `unread` set and clear `readAt`; `archive` and `restore` set and clear
+        `archivedAt`. **The two axes are independent** — archiving does not mark
+        an item read, and an archived item leaves `unreadCount` because the
+        count excludes archived rows, not because its `readAt` moved.
+
+        `expectedRevision` carries no struct-level rule but is still mandatory
+        — the service rejects anything below 1 — so an empty `{}` body is `422`
+        rather than an unconditional write. The requirement is invisible at the
+        transport layer.
+
+        A no-op mutation (read on an already-read item, restore on an unarchived
+        one) returns `200` with an **unchanged `revision`** and raises no
+        realtime event.
+      parameters:
+        - $ref: './_common.yaml#/parameters/itemId'
+        - name: mutation
+          in: path
+          required: true
+          schema: { type: string, enum: [read, unread, archive, restore] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expectedRevision]
+              properties:
+                expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      responses:
+        '200':
+          description: |
+            The item after the mutation — flat, at the top level — with the
+            refreshed counts beside it. `counts` rides along because reading it
+            separately is the request this response exists to remove.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/schemas/InboxItem'
+                  - $ref: '#/schemas/InboxCountsSidecar'
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 inbox_item_not_found` or `company_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 inbox_item_revision_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — an unrecognized `mutation` segment, or an
+            `expectedRevision` below 1 (including an omitted one).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+schemas:
+
+  # ------------------------------------------------------------------ inbox
+
+  InboxItem:
+    type: object
+    description: |
+      One durable notification addressed to one member — always the caller on
+      these routes, and the socket-scope recipient on the realtime frames.
+      There is no create endpoint: items are inserted inside the transaction
+      of the mutation that caused them, deduped per recipient on the causing
+      event's identity.
+
+      One wire type — the reads here and the `inbox.created` / `inbox.updated`
+      frames carry these identical item bytes (the frames add the recipient's
+      refreshed `counts` beside them).
+
+      Note the Go field `Type` serializes as `kind`, matching every other
+      discriminator in the API.
+    required:
+      - id
+      - companyId
+      - kind
+      - title
+      - body
+      - unread
+      - readAt
+      - archivedAt
+      - createdAt
+      - updatedAt
+      - revision
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: [string, "null"], format: uuid }
+      kind:
+        type: string
+        enum:
+          - task_assigned
+          - blocker
+          - run_completed
+          - run_failed
+          - approval_request
+          - question_request
+          - runtime_offline
+          - invitation_renewal
+          - task_run_requested
+          - task_handoff
+          - calendar_reminder
+          - calendar_update
+          - discussion_mention
+          - analytics_budget
+          - huddle_missed
+          - project_access_granted
+        description: |
+          Closed vocabulary, validated on write. Branch on this for behaviour
+          and for styling — urgency is a fixed projection of the kind, so it
+          is not served as a second field.
+      title:
+        type: string
+        maxLength: 160
+        description: |
+          Frozen at write time. It is a record of the event, not a live view of
+          whatever raised it.
+      body:
+        type: string
+        description: Up to 2048 bytes. Frozen at write time.
+      deepLink:
+        type: string
+        description: |
+          A root-relative in-app path: always one leading `/`, never absolute or
+          protocol-relative, no backslash, at most 1024 characters.
+
+          `omitempty`, so it is **absent** rather than `null` when unset. Current
+          writers set it. It is a navigation hint only — the item's own `id` is
+          its identity.
+      unread:
+        type: boolean
+        description: |
+          `readAt === null && archivedAt === null` — the exact predicate behind
+          `unreadCount`. Two nullable timestamps are not the same question, and
+          the conjunction is the one clients get wrong in the direction that
+          matters: archiving an unread item lowers the badge without touching
+          `readAt`, so a client deriving unread from `readAt` alone drifts from
+          the server's own count and never converges.
+      readAt: { type: [string, "null"], format: date-time }
+      archivedAt: { type: [string, "null"], format: date-time }
+      createdAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  InboxCountsSidecar:
+    type: object
+    description: |
+      The recipient's counters, composed onto every inbox write so a badge
+      updates without a second read. They are read inside the same transaction
+      that performed the write, so they are at least as fresh as anything a
+      follow-up `GET .../inbox/counts` could return.
+
+      `counts` keeps its own key rather than being spread flat beside the row's
+      fields: it is not a group of the item's own scalars but the recipient's
+      projection, it has its own endpoint that returns it at the top level, and
+      the `inbox.created` / `inbox.updated` frames carry exactly these bytes beside
+      their item — one wire type, one cache slot, written whole.
+    required: [counts]
+    properties:
+      counts: { $ref: './_common.yaml#/schemas/InboxCounts' }
+
+  InboxBulkReadResult:
+    type: object
+    description: |
+      The result of a set write over the caller's own rows — `read-all`, or one
+      conversation's items.
+
+      `items` is the affected row set itself, not a page: there is no
+      `nextCursor`, and no separate change counter — the set's size is the
+      count. A second identical call answers `items: []` and raises no event.
+    required: [items, counts]
+    properties:
+      items:
+        type: array
+        description: The changed rows, newest first. `[]` when nothing moved.
+        items: { $ref: '#/schemas/InboxItem' }
+      counts: { $ref: './_common.yaml#/schemas/InboxCounts' }

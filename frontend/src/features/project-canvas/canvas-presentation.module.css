@@ -1,0 +1,283 @@
+.slateCanvas {
+  --canvas-background: #e8edf2;
+}
+:global(html[data-boardly-color-mode="dark"]) .slateCanvas {
+  --canvas-background: #202a36;
+}
+.slateCanvas:global(.project-canvas),
+.slateCanvas :global(.pc-header),
+.slateCanvas :global(.pc-surface) :global(.react-flow) {
+  background: var(--canvas-background);
+}
+
+.pc-view-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--pc-muted);
+}
+.pc-view-picker:hover {
+  color: var(--pc-ink);
+}
+.pc-artifact-selection:global(.pc-selection-tools) {
+  gap: 8px;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 7px;
+  border-radius: 16px;
+  flex-wrap: nowrap;
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
+}
+.pc-artifact-selection .pc-selection-open,
+.pc-artifact-selection .pc-selection-secondary,
+.pc-artifact-selection .pc-selection-version,
+.pc-artifact-selection .pc-selection-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+}
+.pc-artifact-selection .pc-selection-open {
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+}
+.pc-artifact-selection .pc-selection-secondary,
+.pc-artifact-selection .pc-selection-version,
+.pc-artifact-selection .pc-selection-more {
+  color: var(--pc-muted);
+}
+.pc-artifact-selection
+  :is(
+    .pc-selection-secondary,
+    .pc-selection-version,
+    .pc-selection-more
+  ):hover {
+  color: var(--pc-ink);
+  background: var(--workspace-control-bg);
+}
+.pc-artifact-selection .pc-selection-title {
+  min-width: 100px;
+  width: clamp(120px, 18vw, 230px);
+  max-width: 230px;
+  height: 36px;
+  padding: 0 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pc-ink);
+  font-size: 13px;
+  font-weight: 550;
+}
+.pc-artifact-selection input.pc-selection-title {
+  border: 0;
+  background: transparent;
+}
+.pc-artifact-selection input.pc-selection-title:hover,
+.pc-artifact-selection input.pc-selection-title:focus {
+  background: var(--workspace-control-bg);
+}
+.pc-artifact-selection .pc-selection-version {
+  padding-inline: 10px;
+}
+.pc-artifact-selection .pc-selection-more {
+  width: 36px;
+  padding: 0;
+}
+.pc-live-dot,
+.pc-pin-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--workspace-native-success);
+}
+.pc-pin-dot {
+  background: var(--pc-soft);
+}
+@media (max-width: 600px) {
+  .pc-artifact-selection:global(.pc-selection-tools) {
+    width: calc(100% - 24px);
+    max-width: none;
+    bottom: 76px;
+    flex-wrap: wrap;
+  }
+  .pc-artifact-selection .pc-selection-title {
+    flex: 1;
+    width: auto;
+    max-width: none;
+  }
+}
+:global(.pc-artifact-card).is-document-card {
+  border-radius: 20px;
+}
+.pc-card-legend {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 4px 0;
+  color: var(--pc-muted);
+  font-size: 12px;
+  line-height: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+.pc-card-legend > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-card-legend button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.pc-card-legend button:hover {
+  color: var(--pc-ink);
+  background: var(--workspace-control-bg);
+}
+.pc-card-legend :global(.pc-node-comments-badge) {
+  position: static;
+}
+:global(.pc-artifact-card):not([data-dragging="true"]):is(:hover, :focus-within)
+  .pc-card-legend,
+:global(.react-flow__node):is(:focus-visible, :global(.selected))
+  .pc-card-legend,
+.pc-card-legend[data-comments-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+:global(.react-flow__node):not(:global(.selected))
+  :is(.pc-node-media, .pc-node-audio) {
+  pointer-events: none;
+}
+:global(.pc-artifact-card) :global(.pc-node-document).is-paper-preview {
+  pointer-events: none;
+  user-select: none;
+}
+.pc-node-html {
+  width: 200%;
+  height: 200%;
+  border: 0;
+  transform: scale(0.5);
+  transform-origin: top left;
+  pointer-events: none;
+  background: white;
+}
+.pc-node-media {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.pc-node-audio {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  gap: 20px;
+  padding: 20px;
+  text-align: center;
+  color: var(--pc-muted);
+}
+.pc-node-audio audio {
+  max-width: 100%;
+  width: 260px;
+}
+@media (hover: none) {
+  .pc-card-legend {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-card-legend {
+    transition: none;
+  }
+}
+
+:global(.boardly-workspace-theme[data-desktop-mac="true"]) .fullscreenHeader {
+  padding-left: 88px;
+  -webkit-app-region: drag;
+}
+:global(.boardly-workspace-theme[data-desktop-mac="true"])
+  .fullscreenHeader
+  button {
+  -webkit-app-region: no-drag;
+}
+
+.resizeGrips .resizeGrip:global(.react-flow__resize-control) {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 24px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  z-index: 6;
+  touch-action: none;
+}
+.resizeGrips .resizeGrip > span {
+  width: 72px;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pc-ink) 28%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc-paper) 65%, transparent);
+  pointer-events: none;
+  transition: background 120ms ease;
+}
+.resizeGrips .resizeGrip:is(:hover, :active) > span {
+  background: var(--pc-ink);
+}
+.resizeGrips .resizeGrip:global(.left),
+.resizeGrips .resizeGrip:global(.right) {
+  width: 24px;
+  height: 96px;
+}
+.resizeGrips .resizeGrip:global(.left) > span,
+.resizeGrips .resizeGrip:global(.right) > span {
+  width: 3px;
+  height: 72px;
+}
+.resizeGrips > :global(.react-flow__handle-left) {
+  left: -16px;
+}
+.resizeGrips > :global(.react-flow__handle-right) {
+  right: -16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .resizeGrips .resizeGrip > span {
+    transition: none;
+  }
+}
+
+.commentsSidebar:global(.pc-node-comments) {
+  position: absolute;
+  top: 16px;
+  bottom: 88px;
+  right: 16px;
+  width: min(320px, calc(100% - 32px));
+  max-height: none;
+  z-index: 6;
+  border-radius: 16px;
+  box-shadow: var(--workspace-overlay-shadow);
+}
+.commentsSidebar > :global(.pc-node-thread-list) {
+  flex: 1;
+  min-height: 0;
+}

@@ -1,0 +1,492 @@
+/* The plugin install flow, after Codex's: the connect dialog, the "Connect
+   your apps" list, the install toasts and the inline progress ring. The
+   dialogs are 480px wide with 24px corners and open above the workspace's
+   own overlays. */
+
+.plugin-install-dialog__overlay {
+  z-index: 230;
+  background: rgb(3 8 13 / 45%);
+}
+
+.plugin-install-dialog[data-slot="dialog-content"] {
+  z-index: 231;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: min(720px, calc(100dvh - 32px));
+  overflow-y: auto;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 24px;
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
+  color: var(--workspace-native-text);
+}
+
+.plugin-install-dialog [data-slot="dialog-close"] {
+  top: 18px;
+  right: 18px;
+  color: var(--workspace-native-text-muted);
+}
+
+.plugin-install-dialog [data-slot="dialog-title"] {
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-title);
+  font-weight: 650;
+  line-height: var(--workspace-leading-title);
+  text-align: center;
+}
+
+.plugin-install-dialog [data-slot="dialog-description"] {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  text-align: center;
+}
+
+/* The product tile, three dots, then the app or plugin tile. */
+.plugin-install-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.plugin-install-logos[data-size="60"] {
+  gap: 16px;
+}
+
+.plugin-install-logos__brand {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 12px;
+  background: #000;
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+}
+
+.plugin-install-logos[data-size="60"] .plugin-install-logos__brand {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+}
+
+.plugin-install-logos__mark {
+  display: block;
+  width: 25px;
+  height: 30px;
+  overflow: hidden;
+}
+
+.plugin-install-logos__mark svg {
+  display: block;
+  width: auto;
+  max-width: none;
+  height: 30px;
+}
+
+.plugin-install-logos__dots {
+  display: flex;
+  gap: 4px;
+}
+
+.plugin-install-logos[data-size="60"] .plugin-install-logos__dots {
+  gap: 8px;
+}
+
+.plugin-install-logos__dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--workspace-divider-strong, var(--workspace-divider));
+}
+
+/* The dialogs' one filled action, in the workspace accent. */
+.plugin-install-dialog__primary {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--workspace-accent-fill);
+  border-radius: 12px;
+  padding: 0 16px;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  font-weight: 650;
+  white-space: nowrap;
+  transition:
+    background-color 120ms,
+    opacity 120ms;
+}
+
+.plugin-install-dialog__primary:hover:not(:disabled) {
+  background: var(--workspace-accent-hover, var(--workspace-accent-fill));
+}
+
+.plugin-install-dialog__primary:focus-visible,
+.plugin-install-dialog__secondary:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+.plugin-install-dialog__primary:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.plugin-install-dialog__primary--compact {
+  height: 36px;
+  padding: 0 12px;
+  font-size: var(--workspace-text-label);
+}
+
+.plugin-install-dialog__secondary {
+  display: inline-flex;
+  height: 36px;
+  align-items: center;
+  border: 1px solid var(--workspace-divider-strong, var(--workspace-divider));
+  border-radius: 12px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+}
+
+.plugin-install-dialog__secondary:hover {
+  background: var(--workspace-hover-bg);
+}
+
+/* Connect {app}. */
+.plugin-connect-dialog[data-slot="dialog-content"] {
+  gap: 24px;
+  padding: 32px 24px 24px;
+}
+
+.plugin-connect-dialog__heading {
+  display: grid;
+  gap: 4px;
+}
+
+.plugin-connect-dialog__facts {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 16px;
+  padding: 16px;
+  list-style: none;
+}
+
+.plugin-connect-dialog__facts li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.plugin-connect-dialog__facts svg {
+  margin-top: 2px;
+  color: var(--workspace-native-text-muted);
+}
+
+.plugin-connect-dialog__facts strong {
+  display: block;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 600;
+  line-height: var(--workspace-leading-body);
+}
+
+.plugin-connect-dialog__facts p {
+  margin: 2px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+/* Connect your apps to {plugin}. */
+.plugin-apps-dialog[data-slot="dialog-content"] {
+  gap: 0;
+  padding: 0;
+}
+
+.plugin-apps-dialog__header {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 36px 24px 16px;
+}
+
+.plugin-apps-dialog__header [data-slot="dialog-title"] {
+  font-size: var(--workspace-text-heading, var(--workspace-text-title));
+}
+
+.plugin-apps-dialog__header [data-slot="dialog-description"] {
+  max-width: 432px;
+  margin-top: -8px;
+}
+
+.plugin-apps-dialog__apps {
+  margin: 0;
+  padding: 0 24px;
+  list-style: none;
+}
+
+.plugin-apps-dialog__apps li {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--workspace-divider);
+  padding: 12px 0;
+}
+
+.plugin-apps-dialog__app {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.plugin-apps-dialog__app strong {
+  overflow: hidden;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-apps-dialog__app span {
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-apps-dialog__connect {
+  display: inline-flex;
+  min-width: 44px;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--workspace-divider-strong, var(--workspace-divider));
+  border-radius: 10px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+}
+
+.plugin-apps-dialog__connect:hover:not(:disabled) {
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-apps-dialog__connect:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+.plugin-apps-dialog__connect:disabled {
+  color: var(--workspace-native-text-muted);
+  cursor: default;
+}
+
+.plugin-apps-dialog__connect[data-status="waiting"],
+.plugin-apps-dialog__connect[data-status="launching"] {
+  cursor: progress;
+}
+
+.plugin-apps-dialog__footer {
+  display: flex;
+  height: 84px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--workspace-divider);
+  padding: 0 24px;
+  background: var(--workspace-panel-raised-bg, var(--workspace-panel-bg));
+}
+
+/* Toasts: the plugin's logo, one line and one action. The toaster's own
+   card (global.css, in the components layer) steps aside for this one. */
+@layer components {
+  .boardly-toast [data-sonner-toast].plugin-install-toast-host {
+    width: auto !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.plugin-install-toast {
+  display: grid;
+  width: 356px;
+  max-width: calc(100vw - 32px);
+  grid-template-columns: 28px minmax(0, 1fr) 20px;
+  align-items: start;
+  gap: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  padding: 14px 12px 14px 14px;
+  background: var(--workspace-overlay-bg);
+  box-shadow: var(--workspace-overlay-shadow);
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+}
+
+.plugin-install-toast__body {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.plugin-install-toast__body p {
+  margin: 4px 0 0;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.plugin-install-toast__action {
+  height: 28px;
+  border: 1px solid var(--workspace-accent-fill);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+}
+
+.plugin-install-toast__action[data-tone="outline"] {
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-accent) 60%,
+    transparent
+  );
+  background: transparent;
+  color: var(--workspace-native-accent);
+}
+
+.plugin-install-toast__action:focus-visible,
+.plugin-install-toast__close:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 2px;
+}
+
+.plugin-install-toast__close {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+}
+
+.plugin-install-toast__close:hover {
+  background: var(--workspace-hover-bg);
+}
+
+/* A small ring turning while an app's connect page opens or is open. */
+.plugin-install-spinner {
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  animation: plugin-install-spin 900ms linear infinite;
+}
+
+.plugin-install-spinner circle:first-child {
+  opacity: 0.16;
+}
+
+.plugin-install-spinner circle:last-child {
+  stroke-linecap: round;
+}
+
+@keyframes plugin-install-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-install-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* The inline progress in place of an install control. */
+.plugin-install-progress {
+  display: inline-flex;
+  height: 32px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 999px;
+  padding: 0 12px 0 10px;
+  background: var(--workspace-panel-raised-bg, var(--workspace-panel-bg));
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: progress;
+}
+
+/* On a plugin's page, the size of the page's buttons. */
+.plugin-install-progress--page {
+  height: 36px;
+  border-radius: 10px;
+}
+
+.plugin-install-progress__ring {
+  flex: none;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+}
+
+.plugin-install-progress__ring circle:first-child {
+  opacity: 0.16;
+}
+
+.plugin-install-progress__ring circle:last-child {
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 500ms ease-out,
+    opacity 500ms ease-out;
+}
+
+.plugin-install-progress__ring circle[data-empty] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-install-progress__ring circle:last-child {
+    transition: none;
+  }
+}

@@ -1,0 +1,701 @@
+/* Settings › Plugins › one plugin (plugin-detail-page.tsx). Plain CSS over
+   the workspace tokens, so it follows the light and dark themes; focus is
+   shown with borders and backgrounds, never outlines or rings. */
+
+.plugin-page {
+  container: plugin-page / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  min-width: 0;
+  max-width: 1000px;
+  margin-inline: auto;
+  color: var(--workspace-native-text);
+}
+
+.plugin-page__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+}
+
+.plugin-page__breadcrumb a {
+  flex: none;
+  border-radius: 4px;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.plugin-page__breadcrumb a:hover {
+  color: var(--workspace-native-text);
+}
+
+.plugin-page__breadcrumb a:focus-visible {
+  outline: none;
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugin-page__breadcrumb svg {
+  flex: none;
+}
+
+.plugin-page__breadcrumb [aria-current] {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--workspace-native-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-page__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px 20px;
+}
+
+.plugin-page__heading {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.plugin-page__heading h1 {
+  margin: 0;
+  font-size: var(--workspace-text-page);
+  font-weight: 600;
+  line-height: var(--workspace-leading-page);
+  overflow-wrap: anywhere;
+}
+
+.plugin-page__summary {
+  margin: 6px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.plugin-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 4px;
+  margin: 8px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.plugin-page__meta > * + *::before {
+  content: "·";
+  margin-inline: 8px;
+  color: var(--workspace-native-text-faint);
+}
+
+.plugin-page__meta-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plugin-page__dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--workspace-native-text-faint);
+}
+
+.plugin-page__dot[data-tone="success"] {
+  background: var(--workspace-native-success);
+}
+
+/* Warnings ask for attention in the accent, as the catalog's reconnect
+   line does, not in the approval colour. */
+.plugin-page__dot[data-tone="warning"] {
+  background: var(--workspace-native-accent);
+}
+
+.plugin-page__dot[data-tone="danger"] {
+  background: var(--workspace-native-danger);
+}
+
+.plugin-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.plugin-page__button {
+  display: inline-flex;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+  line-height: var(--workspace-leading-label);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.plugin-page__button:hover:not(:disabled, [aria-disabled="true"]) {
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-page__button:focus-visible {
+  outline: none;
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-page__button:disabled,
+.plugin-page__button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.plugin-page__button--icon {
+  width: 36px;
+  padding: 0;
+}
+
+/* Try now: the page's one filled action, inverted from the page text so it
+   reads in both themes. Focus inverts it back, which shows in every preset
+   (the accent can be as dark as the text). */
+.plugin-page__button--primary {
+  border-color: var(--workspace-native-text);
+  background: var(--workspace-native-text);
+  color: var(--workspace-panel-bg);
+}
+
+.plugin-page__button--primary:hover:not(:disabled, [aria-disabled="true"]) {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-text) 84%,
+    var(--workspace-panel-bg)
+  );
+}
+
+/* As specific as the hover rule above, so hovering a focused Try now keeps
+   the focus colours. */
+.plugin-page__button.plugin-page__button--primary:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugin-page__notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.plugin-page__notice[data-kind="error"] {
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-danger) 40%,
+    var(--workspace-divider)
+  );
+  background: var(--workspace-danger-soft, var(--workspace-panel-bg));
+  color: var(--workspace-native-danger);
+}
+
+/* The hero: the plugin's brand colour as a soft gradient, or a neutral one
+   from the theme. Prompt cards carry their own surface and the page text
+   colour, so they read whatever the brand colour is. */
+.plugin-hero {
+  display: grid;
+  place-items: center;
+  padding: 28px 24px;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 20px;
+  background:
+    radial-gradient(
+      90% 130% at 0% 100%,
+      var(--workspace-accent-soft),
+      transparent 70%
+    ),
+    radial-gradient(
+      80% 120% at 100% 0%,
+      var(--workspace-hover-bg),
+      transparent 70%
+    ),
+    var(--workspace-panel-raised-bg);
+}
+
+.plugin-hero[data-brand] {
+  --plugin-brand-pair: var(--plugin-brand);
+  background:
+    radial-gradient(
+      90% 140% at 0% 100%,
+      color-mix(in oklab, var(--plugin-brand) 72%, var(--workspace-panel-bg)),
+      transparent 72%
+    ),
+    radial-gradient(
+      80% 130% at 100% 0%,
+      color-mix(
+        in oklab,
+        var(--plugin-brand-pair) 58%,
+        var(--workspace-panel-bg)
+      ),
+      transparent 70%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--plugin-brand) 26%, var(--workspace-panel-bg)),
+      color-mix(
+        in oklab,
+        var(--plugin-brand-pair) 40%,
+        var(--workspace-panel-bg)
+      )
+    );
+}
+
+/* A neighbouring hue for the second glow, where relative colours exist. */
+@supports (color: oklch(from red l c h)) {
+  .plugin-hero[data-brand] {
+    --plugin-brand-pair: oklch(from var(--plugin-brand) l c calc(h - 50));
+  }
+}
+
+.plugin-hero__prompts {
+  display: flex;
+  width: min(100%, 640px);
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-hero__prompt {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 14px;
+  width: 100%;
+  padding: 12px 12px 12px 16px;
+  border: 1px solid
+    color-mix(in srgb, var(--workspace-divider-strong) 70%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--workspace-panel-bg) 90%, transparent);
+  color: var(--workspace-native-text);
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugin-hero__prompt:hover:not(:disabled) {
+  border-color: var(--workspace-divider-strong);
+  background: var(--workspace-panel-bg);
+}
+
+.plugin-hero__prompt:focus-visible {
+  outline: none;
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-panel-bg);
+}
+
+.plugin-hero__prompt:disabled {
+  cursor: not-allowed;
+}
+
+.plugin-hero__app {
+  display: inline-flex;
+  max-width: 180px;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+  line-height: var(--workspace-leading-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-hero__text {
+  min-width: 0;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.plugin-hero__go {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  transition: background-color 120ms;
+}
+
+.plugin-hero__prompt:is(:hover, :focus-visible) .plugin-hero__go {
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-page__description {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.plugin-section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.plugin-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--workspace-divider);
+  font-size: var(--workspace-text-title);
+  font-weight: 600;
+  line-height: var(--workspace-leading-title);
+}
+
+.plugin-section__count {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+}
+
+.plugin-section > .plugin-page__hint {
+  padding-top: 14px;
+}
+
+.plugin-page__hint {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.plugin-apps,
+.plugin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-app {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 0;
+}
+
+.plugin-app + .plugin-app {
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.plugin-app__text {
+  min-width: 0;
+}
+
+.plugin-app__text strong {
+  display: block;
+  font-size: var(--workspace-text-body);
+  font-weight: 600;
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.plugin-app__text p {
+  margin: 2px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  overflow-wrap: anywhere;
+}
+
+.plugin-app__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 16px;
+}
+
+.plugin-app__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  white-space: nowrap;
+}
+
+.plugin-app__state[data-tone="success"] {
+  color: var(--workspace-native-success);
+}
+
+.plugin-app__state[data-tone="warning"] {
+  color: var(--workspace-native-accent);
+}
+
+.plugin-app__state[data-tone="danger"] {
+  color: var(--workspace-native-danger);
+}
+
+.plugin-app__action {
+  display: inline-flex;
+  text-decoration: none;
+  min-height: 32px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+  line-height: var(--workspace-leading-label);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.plugin-app__action:is([data-kind="connect"], [data-kind="review"]) {
+  border-color: var(--workspace-divider);
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugin-app__action:hover:not([aria-disabled="true"]) {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugin-app__action:focus-visible {
+  outline: none;
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugin-app__action[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.plugin-list__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 0;
+  color: var(--workspace-native-text-muted);
+}
+
+.plugin-list__row + .plugin-list__row {
+  border-top: 1px solid var(--workspace-divider);
+}
+
+.plugin-list__row svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.plugin-list__row p {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.plugin-list__row strong {
+  color: var(--workspace-native-text);
+  font-weight: 500;
+}
+
+.plugin-agents {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding-top: 14px;
+}
+
+.plugin-agents ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plugin-agents__agent {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  text-decoration: none;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugin-agents__agent span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-agents__agent:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-agents__agent:focus-visible {
+  outline: none;
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugin-page__loading {
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.plugin-page__state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 32px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 16px;
+  background: var(--workspace-panel-bg);
+}
+
+.plugin-page__state h1 {
+  margin: 0;
+  font-size: var(--workspace-text-title);
+  line-height: var(--workspace-leading-title);
+}
+
+.plugin-page__state p {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.plugin-page__state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* The page sits beside the settings navigation, so its own width, not the
+   window's, decides when the header actions drop onto their own row. */
+@media (max-width: 760px) {
+  .plugin-page {
+    gap: 20px;
+  }
+}
+
+@container plugin-page (max-width: 720px) {
+  .plugin-page__header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .plugin-page__actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .plugin-app {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .plugin-app__status {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+}
+
+@container plugin-page (max-width: 520px) {
+  .plugin-page__header {
+    gap: 14px;
+  }
+
+  .plugin-page__heading h1 {
+    font-size: 22px;
+  }
+
+  .plugin-hero {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .plugin-hero__prompt {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 12px;
+  }
+
+  .plugin-hero__app {
+    grid-column: 1 / -1;
+  }
+
+  .plugin-page__state {
+    padding: 20px;
+  }
+}

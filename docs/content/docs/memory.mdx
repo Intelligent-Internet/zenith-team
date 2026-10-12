@@ -1,0 +1,69 @@
+---
+title: Memory
+description: The local Markdown notes agents keep across runs, and how those notes flow into future work.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Company Memory is the notes agents keep for themselves and each other — Markdown files in a `.memory/` directory that survive after a [run](/runs) ends. There is one Company Memory, in the Company `main` workspace, and every agent's direct conversation reads and writes it; task work carries its own copy in the task worktree until it merges. Where those directories sit in the workspace tree is owned by [Workspaces](/workspaces#memory-in-the-tree); this page covers how memory behaves.
+
+Memory is reference data, not instructions. Agents are told to read the relevant `.memory` files before starting work, and to treat what they find as background knowledge — never as higher-priority instructions than Zenith Team's own policy.
+
+<Callout type="info">
+"Workspace Memory" is how a run's own `.memory` is named in the agent's prompt; "Company Memory" names whose memory it is. Both refer to the same `.memory/` directories.
+</Callout>
+
+## What agents keep there
+
+One topic per file, named in lowercase kebab-case — `pricing-decisions.md`, `brand-voice.md`. A topic is worth a file when the work changed a durable preference, decision, constraint, convention, or learned fact that future runs in the scope would otherwise not know. Memory is deliberately not:
+
+- **Secrets or credentials** — those never belong in memory.
+- **Transcripts or temporary notes** — the [conversation](/conversations) is the record of what was said.
+- **Facts Zenith Team already records** — tasks and statuses live in the product, not in notes about the product.
+- **Task summaries or completion markers** — a run that changed nothing durable leaves memory untouched.
+
+## Who reads and writes what
+
+Each run gets exactly the memory its scope earns:
+
+| Run | Its own `.memory` | Company Memory |
+|---|---|---|
+| **Direct run** | Reads and writes `company/main/.memory` — Company Memory is its own memory, whichever agent the conversation is with | Already its own |
+| **Task run** | Reads and writes the `.memory` inside its task worktree | Read-only: the live `company/main/.memory` is mounted into every task run |
+| **Schedule run** | None | None |
+| **Tagged run** (an agent tagged in a channel or group DM) | None | None |
+
+The read-only column is a real mount, not a convention: the daemon hands every task run the live `company/main/.memory` directory as a read-only path, and the run's prompt says to read it before relevant work and never add, edit, move, or delete anything there. Any agent can therefore build on company-wide memory without being able to change it.
+
+A [schedule](/schedules) run executes in an [isolated workspace](/workspaces#isolated-workspaces) and receives no durable memory at all — neither its own scope's nor the company's.
+
+A tagged run does not either. It works with the access of the person who tagged the agent, and everyone in the chat reads its answer. Memory holds what that person's own work left behind, and project access does not cover it, so it should never end up in a shared chat. The run therefore starts in a new [isolated workspace](/workspaces#isolated-workspaces) with no `.memory`, no Company Memory, and a prompt that names none. On a protected Mac its sandbox also stops it from reading `company/main/.memory`, or any other memory in the workspaces folder or in your bound local directories.
+
+## How memory reaches future runs
+
+The `main` workspace persists, so a note written there is simply present for the next direct run of any agent. Task work is different — each task runs in a Git worktree cut from `main` — so memory travels through `main`'s commits:
+
+| Run | How a memory change becomes durable |
+|---|---|
+| **Direct run** | Stages only the changed `.memory` files and commits them before its final response, so future task worktrees inherit the update |
+| **Task run** | Leaves memory changes in its worktree, uncommitted, with the rest of the task's changes: the review takes every changed file. They become official only when the task workspace is reviewed and [merged back into `main`](/workspaces#merging-task-work-back) |
+
+Before its final response, every run with writable memory performs a Workspace Memory checkpoint: it reviews the completed work, decides whether something durable changed, and if so adds, edits, or deletes `.memory/*.md` to keep the relevant existing topic current — creating a new topic only when necessary. If nothing durable changed, it leaves memory exactly as it found it.
+
+## Accessing local memory
+
+Zenith Team no longer provides a Memory browser in the web or desktop app. The former `/memory` app routes have been removed.
+
+Existing `.memory/` files remain in the daemon-managed workspaces on the computer that owns them. Removing the browser does not delete these notes or change how agents read and write them.
+
+To inspect a note, read its Markdown file directly on that computer. See [Memory in the workspace tree](/workspaces#memory-in-the-tree) for its location. These local files are not synchronized to other computers.
+
+## What memory is not
+
+Memory is files on your machine, not cloud state. Zenith Team's cloud never stores or syncs `.memory` — the notes exist on the computer whose daemon owns the Company workspace, and deleting its `main` workspace deletes the memory with it (see the [warning in Workspaces](/workspaces#what-never-leaves-your-computer)). Memory is also separate from `assets/general/business_context.md`, the shared Company context Asset every run reads before planning.
+
+## Next steps
+
+- **[Workspaces](/workspaces)** — where `.memory/` lives in the per-company tree, and the merge that makes task memory official.
+- **[Tasks](/tasks)** — the review flow a task's memory changes ride along with.
+- **[Schedules](/schedules)** — a kind of run that executes with no memory at all, as a tagged run does.

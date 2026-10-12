@@ -1,0 +1,496 @@
+# Groups (Access TECH D3). Authored domain section of the Zenith Team API
+# contract. docs/api/spec/openapi.yaml is the index that references it, and
+# docs/api/groups.md is its prose counterpart. A Group's grant on a Project
+# is a Project route (projects.yaml, D4).
+
+paths:
+  groups:
+    get:
+      tags: [groups]
+      operationId: listGroups
+      summary: List the Company's Groups
+      description: |
+        Every Group of the Company, by name. Any active member may read them,
+        as they read the Team page. Each Group lists what it holds on the
+        Projects the caller can see (those they read, or every Project when
+        their Company role holds `projects.manage`). Refused with a Run proof
+        (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      responses:
+        '200':
+          description: The Company's Groups. `items` is `[]` when there are none.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/GroupCollection' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    post:
+      tags: [groups]
+      operationId: createGroup
+      summary: Create a Group
+      description: |
+        Creates an empty Group. Needs `members.manage` (owners and admins).
+        The name is 1 to 80 characters after trimming and unique in the
+        Company ignoring case (`409 group_conflict`); the description is at
+        most 500 characters. A Company holds at most 100 Groups (`409
+        group_limit_reached`). Recorded in Activity (`group.created`); every
+        member receives `group.changed`. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/GroupCreate' }
+      responses:
+        '201':
+          description: The new Group, with no members and no Projects.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Group' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: A Group already has this name (`group_conflict`), or the Company holds 100 Groups (`group_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  group:
+    get:
+      tags: [groups]
+      operationId: getGroup
+      summary: Read one Group with its members
+      description: |
+        Any active member may read a Group: its members (who added each, and
+        when) and what it holds on the Projects the caller can see. Refused
+        with a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/groupId'
+      responses:
+        '200':
+          description: The Group.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Group' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: Company not found, or no such Group in it, or a malformed `groupId` (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    patch:
+      tags: [groups]
+      operationId: updateGroup
+      summary: Rename or redescribe a Group
+      description: |
+        Needs `members.manage`. Changes the name, the description or both,
+        against the `revision` the caller read (`409 group_conflict` when it
+        moved, or when another Group has the name). Saving the same text
+        again writes nothing. It moves nobody's access. Recorded in Activity
+        (`group.updated`); every member receives `group.changed`. Refused
+        with a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/GroupUpdate' }
+      responses:
+        '200':
+          description: The Group after the change.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Group' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found, or no such Group in it (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: A stale `expectedRevision` or a name in use (`group_conflict`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+    delete:
+      tags: [groups]
+      operationId: deleteGroup
+      summary: Delete a Group
+      description: |
+        Needs `members.manage`. Deleting is the only way to retire a Group.
+        Every member loses what only this Group gave them, on every Project it
+        held; access they hold on their own, or through another Group, stays.
+        Each of those Projects records the Group's grant going
+        (`project_grant.group_changed` with `after: []`) and advances its
+        access revision; the Runs of anyone who lost read or run access there
+        end (`project_access_revoked`) and their queued messages there go.
+        "No laundering": the caller must manage access on every Project the
+        Group holds, and when they do only through their own grant, the
+        Group's set there must sit inside their own (`403
+        group_grant_permission_required`, naming no Project). Preview it first
+        with `POST /groups/{groupId}/preview` and `delete: true`. Every member
+        receives `group.deleted`. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/GroupRevision' }
+      responses:
+        '204':
+          description: The Group is gone.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required`, `group_grant_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found, or no such Group in it (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: A stale `expectedRevision` (`group_conflict`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  members:
+    post:
+      tags: [groups]
+      operationId: changeGroupMembers
+      summary: Add and remove a Group's members
+      description: |
+        The one way to change who is in a Group: who to add and who to take
+        out, in one change against one `revision` (the one the preview
+        answered). Needs `members.manage`. At most 500 ids in all; an id named
+        in both lists is `422 validation_failed`. Only active Team members
+        with an enabled account may join (`409 group_member_required`, an
+        Agent's id included; the answer names nobody). Adding someone already
+        in, or removing someone not in, changes nothing for them; a change
+        that adds or removes nobody writes nothing. A Group holds at most 500
+        members (`409 group_limit_reached`).
+
+        On every Project the Group holds, the change moves access exactly as
+        a person grant change would: the Project's access revision advances,
+        the Project gets one `project_grant.group_member_added` row naming
+        every added person whose stored access there moved (and one `_removed`
+        row for the people taken out), and whoever lost read or run access
+        has their Runs there ended and their queued messages removed. Access
+        adds up: someone taken out keeps what their own grant or another Group
+        gives. When the change lets people read a restricted Project they did
+        not read, an admin adding themself included, every person who manages
+        that Project's access (owners and admins included) gets one
+        `project_access_granted` Inbox item for that Project, except the
+        caller and, when only one person can now see it, that person. "No
+        laundering" applies as on
+        delete (`403 group_grant_permission_required`). Recorded in Activity
+        (`group.member_added`, `group.member_removed`); every member receives
+        `group.changed`. Refused with a Run proof (`403
+        human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/GroupMembersChange' }
+      responses:
+        '200':
+          description: The Group after the change, as `GET` answers it.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/Group' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required`, `group_grant_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found, or no such Group in it (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            A stale `expectedRevision` (`group_conflict`), someone who may not
+            join (`group_member_required`), or more than 500 members
+            (`group_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  preview:
+    post:
+      tags: [groups]
+      operationId: previewGroupChange
+      summary: Preview a change of members, or a delete
+      description: |
+        Answers what the change the dialog is about to send would do, as the
+        save would do it, with the Group's `revision` to save with. It writes
+        nothing and takes no lock. Needs `members.manage`, and refuses what
+        the save would refuse (`group_member_required`,
+        `group_limit_reached`, `group_grant_permission_required`). Send the
+        members body without `expectedRevision`, or `delete: true` with both
+        lists empty. Refused with a Run proof (`403 human_actor_required`).
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/groupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/GroupChangePreviewRequest' }
+      responses:
+        '200':
+          description: What the change would do.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/GroupChangePreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: '`company_permission_required`, `group_grant_permission_required` or `human_actor_required`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: Company not found, or no such Group in it (`group_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Someone who may not join (`group_member_required`) or more than 500 members (`group_limit_reached`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+parameters:
+  groupId:
+    name: groupId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+schemas:
+  GroupProject:
+    type: object
+    description: What a Group holds on one Project the caller can see.
+    required: [projectId, permissions]
+    properties:
+      projectId: { type: string, format: uuid }
+      permissions:
+        type: array
+        items: { $ref: './projects.yaml#/schemas/ProjectPermission' }
+  GroupMember:
+    type: object
+    description: One member of a Group. `addedBy` is `null` for a member nobody is recorded as adding.
+    required: [userId, addedBy, addedAt]
+    properties:
+      userId: { type: string, format: uuid }
+      addedBy: { type: [string, 'null'], format: uuid }
+      addedAt: { type: string, format: date-time }
+  GroupSummary:
+    type: object
+    description: |
+      A Group as the Team page lists it. `memberCount` counts its active Team
+      members; `projects` is what it holds on the Projects the caller can
+      see. `revision` is the `expectedRevision` of a change.
+    required: [id, name, description, memberCount, revision, createdAt, updatedAt, projects]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string, minLength: 1, maxLength: 80 }
+      description: { type: string, maxLength: 500 }
+      memberCount: { type: integer, format: int64 }
+      revision: { type: integer, format: int64 }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      projects:
+        type: array
+        items: { $ref: '#/schemas/GroupProject' }
+  Group:
+    type: object
+    description: One Group with its members, in the order they were added.
+    required: [id, name, description, memberCount, revision, createdAt, updatedAt, projects, members]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string, minLength: 1, maxLength: 80 }
+      description: { type: string, maxLength: 500 }
+      memberCount: { type: integer, format: int64 }
+      revision: { type: integer, format: int64 }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      projects:
+        type: array
+        items: { $ref: '#/schemas/GroupProject' }
+      members:
+        type: array
+        items: { $ref: '#/schemas/GroupMember' }
+  GroupCollection:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/GroupSummary' }
+  GroupCreate:
+    type: object
+    additionalProperties: false
+    required: [name]
+    properties:
+      name: { type: string, minLength: 1, maxLength: 80 }
+      description: { type: string, maxLength: 500 }
+  GroupUpdate:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    anyOf:
+      - required: [name]
+      - required: [description]
+    properties:
+      expectedRevision: { type: integer, format: int64, minimum: 1 }
+      name: { type: string, minLength: 1, maxLength: 80 }
+      description: { type: string, maxLength: 500 }
+  GroupRevision:
+    type: object
+    additionalProperties: false
+    required: [expectedRevision]
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        description: The Group's `revision` the caller read.
+  GroupMembersChange:
+    type: object
+    additionalProperties: false
+    required: [addUserIds, removeUserIds, expectedRevision]
+    properties:
+      addUserIds:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+      removeUserIds:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        description: The Group's `revision` the preview answered.
+  GroupChangePreviewRequest:
+    type: object
+    additionalProperties: false
+    required: [addUserIds, removeUserIds]
+    properties:
+      addUserIds:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+      removeUserIds:
+        type: array
+        maxItems: 500
+        items: { type: string, format: uuid }
+      delete:
+        type: boolean
+        description: Preview deleting the Group; both lists must then be empty.
+  GroupChangePreview:
+    type: object
+    description: |
+      What a Group change would do, read without writing. `projects` lists
+      each Project where someone's access moves, and who: what they hold
+      there before and after (the management permissions of a Company role
+      left out) and how many of their Runs there stop. `peopleAffected` and
+      `runsStopping` count across those Projects. `openedForCaller` lists the
+      restricted Projects the change would let the caller read.
+      `projectsHidden` is true when the change also moves access on a
+      Project the caller cannot see, which is left out with its people and
+      Runs. `revision` is what the save sends: the Group's revision for a
+      change of members or a delete, the Project's access revision for a
+      Group grant.
+    required: [revision, projects, peopleAffected, runsStopping, openedForCaller, projectsHidden]
+    properties:
+      revision: { type: integer, format: int64 }
+      projects:
+        type: array
+        items: { $ref: '#/schemas/GroupChangePreviewProject' }
+      peopleAffected: { type: integer }
+      runsStopping: { type: integer }
+      openedForCaller:
+        type: array
+        items: { type: string, format: uuid }
+      projectsHidden: { type: boolean }
+  GroupChangePreviewProject:
+    type: object
+    required: [projectId, people]
+    properties:
+      projectId: { type: string, format: uuid }
+      people:
+        type: array
+        items: { $ref: '#/schemas/GroupChangePreviewPerson' }
+  GroupChangePreviewPerson:
+    type: object
+    required: [userId, before, after, runsStopping]
+    properties:
+      userId: { type: string, format: uuid }
+      before:
+        type: array
+        items: { $ref: './projects.yaml#/schemas/ProjectPermission' }
+      after:
+        type: array
+        items: { $ref: './projects.yaml#/schemas/ProjectPermission' }
+      runsStopping: { type: integer }

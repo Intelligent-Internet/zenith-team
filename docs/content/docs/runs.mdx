@@ -1,0 +1,130 @@
+---
+title: Runs
+description: One agent execution — its lifecycle, capacity lanes, failure taxonomy, retries, usage, and how it changes its task.
+---
+
+A run is one agent execution in a [conversation](/conversations) — a "turn" in everyday prose. When it is created, its input is frozen: the prompt, the agent's instructions and model, and the initial company description are stamped onto the run. During preparation, interactive runs also receive the local `assets/general/business_context.md` when it exists. A [runtime](/daemon-and-runtimes) on one of your computers claims the run, the provider CLI executes it, its output is appended in order to the conversation's item sequence, and it ends exactly once. The path from trigger to transcript is drawn in [How Zenith Team works](/how-zenith-team-works).
+
+## Lifecycle
+
+A run is always in exactly one of eight statuses, enforced by the database:
+
+| Status | What it means |
+|---|---|
+| **`queued`** | Waiting for its runtime to claim it. A run can sit queued while every machine is offline — a closed laptop never rejects work. |
+| **`dispatched`** | Claimed by the daemon; the workspace and execution environment are being prepared. |
+| **`running`** | The provider CLI is executing on your computer. |
+| **`completed`** | The turn finished and its final answer is committed. Terminal. |
+| **`failed`** | The turn ended with an error; `failureReason` says which — see the [reference below](#failure-reason-reference). Terminal. |
+| **`cancelled`** | Stopped by you, stopped because the member it works for lost access to its project (`error` `project_access_revoked`; if they can still see the project, their Inbox says the run stopped because they can no longer run tasks there), or terminalized because its reviewed connector contract was no longer available at claim. Terminal. Only the member whose computer runs it, an owner or an admin can stop a run, and stopping a task run also needs the right to run tasks in its project. |
+| **`waiting_local_directory`** | Parked because another run is executing in the same pinned [local directory](/workspaces#local-directories); it continues when the path frees up. |
+| **`deferred`** | Parked until a set time — a retry backoff — and promoted to `queued` when that time arrives. |
+
+Terminal states are sinks: a `completed`, `failed`, or `cancelled` run never changes status again. A failed run stays failed forever, which is what keeps the transcript of an attempt stable — anything that happens next is a new run.
+
+## Lanes and capacity
+
+Every run belongs to one capacity lane, derived from its conversation's kind — the lane is never stored on the run itself:
+
+| Lane | Which runs | Capacity rule |
+|---|---|---|
+| **Task** | Runs whose conversation belongs to a [task](/tasks) | Counts against the agent's slots |
+| **Direct** | Runs in a private direct chat | Exempt — never waits for a slot, never holds one |
+| **Schedule** | Runs fired by a [schedule](/schedules) | Exempt in both directions, like direct |
+
+Each agent has a fixed number of slots for task work — its `max_concurrent_runs`, a setting on the [agent](/agents). A task-lane run holds a slot while it is `dispatched`, `running`, or `waiting_local_directory`, and gives it back when it reaches a terminal state. At capacity, further task runs stay `queued` untouched; direct and schedule runs dispatch past them. Within the task lane, an agent never works one task twice at once — at most one active run per task per agent — but several slots let it work several tasks in parallel.
+
+Deleting a task does not change an in-flight run's lane. The conversation outlives the delete and keeps its task kind, so the run keeps holding — and eventually returns — the slot it took. A run cannot jump the cap by losing its task.
+
+## Live output and committed messages
+
+While a run executes, the provider streams two kinds of output:
+
+- **Streaming deltas** — partial text as the model produces it. These stay on your machine: the cloud never receives them, and the desktop app may render them as a local live preview.
+- **Committed items** — completed messages, reasoning, tool calls, and tool results. Each one is appended durably, in order, to the conversation's single item sequence the moment it completes, and reaches your browser live.
+
+A committed message always wins. The preview is disposable and never a recovery source; anything worth keeping arrives as a committed item, and a run that is cancelled or fails keeps every item it had already committed — the words you read are never taken back.
+
+## Failures and automatic retries
+
+When a run fails for an infrastructure-shaped reason, Zenith Team retries it for you: a **retry child** is created in the same conversation, with `parentRunId` pointing at the failed run and `attempt` incremented. The child is a new run — the parent stays `failed` — and it inherits the parent's lane, prompt, and provider session. When the failure poisoned the provider session (an overflowing context, an unprocessable history), the child is forced onto a fresh session instead of resuming.
+
+A retry is created only when all of these hold, in plain language:
+
+- the failure reason is one Zenith Team considers transient infrastructure — `runtime_offline`, `runtime_recovery`, `timeout`, `skill_bundle_unavailable`, or `provider_network`;
+- the run's attempt count is still below that reason's ceiling — 2 attempts for most reasons, 3 for `provider_network`, whose final attempt waits about five seconds first;
+- for a task run: the task is still `in_progress`, still assigned to this agent, still on the same execution generation, and has no unfinished prerequisite.
+
+Agent-side errors other than a network drop are deliberately not retried — they are real problems you should see, not flakiness to paper over. There is no rerun button either: to re-ask the agent, send a new message.
+
+## Failure reason reference
+
+`failureReason` on a failed run is a coarse classifier. It is an open set — new reasons can ship — but these are the current values.
+
+**Platform side** — the failure is attributable to Zenith Team's scheduler, sweeper, or runtime layer, not to anything the agent process did.
+
+| Reason | Meaning | What to do |
+|---|---|---|
+| `queued_expired` | The run sat `queued` past its TTL without being claimed — typically the assignee's runtime was offline the whole time | Bring the machine [online](/daemon-and-runtimes#troubleshooting-an-offline-runtime), then send a new message |
+| `runtime_offline` | The runtime owning a dispatched or running run went offline | Automatically retried while budget remains; check the machine if it recurs |
+| `runtime_recovery` | The daemon restarted while the run was in flight; the prior process is unrecoverable | Automatically retried while budget remains |
+| `timeout` | A server- or runtime-side hard timeout expired | Automatically retried while budget remains; recurring timeouts suggest the machine is stuck |
+| `iteration_limit` | The agent reached its per-run iteration cap | Not retried; ask again with a narrower request |
+| `agent_blocked` | The agent intentionally stopped to ask for human input — not a system error | Nothing is broken; answer the agent |
+| `api_invalid_request` | The upstream LLM API rejected the request as invalid; the conversation history cannot be resumed safely | A follow-up starts over on a fresh provider session |
+| `skill_bundle_unavailable` | The daemon could not download the agent's [skill](/skills) bundles during preparation — the agent never launched | Automatically retried, and cheap to retry: bundles that did arrive are cached. Check the machine's connection to Zenith Team if it persists |
+| `run_context_invalid` | The frozen context the server handed the daemon failed its checks (schema version, identity or size), so the agent never launched | Not retried: a retry copies the same document. Send the message again; if it persists, the server and the daemon are out of step |
+| `no_eligible_resolver` | A Task Run asked for an approval or asked a question that nobody who can see the Task's Project may decide, so it was stopped. Nothing is wrong with the provider | Not retried. Give someone who can see the Project the right to answer approvals and questions, then reply in the Task chat |
+
+**Agent side (`agent_error.*`, prefix omitted)** — the failure surfaced from inside the agent process: the provider API, the CLI, or its configuration.
+
+| Reason | Meaning | What to do |
+|---|---|---|
+| `provider_auth_or_access` | 401/403 — not logged in, invalid key, or no access to the model | [Sign in to the provider CLI again](/providers#sign-in-and-credentials) on that machine |
+| `provider_quota_limit` | Balance or usage limit exhausted at the provider | Not retryable until the provider account is topped up |
+| `provider_capacity_or_rate_limit` | 429/529 — rate-limited or the provider has no capacity | Transient; send the message again once the pressure clears |
+| `provider_server_error` | Provider 5xx — internal error, unavailable, bad gateway | Transient; try again shortly |
+| `provider_network` | Stream disconnect, DNS failure, or i/o timeout mid-run | Transient; the one agent-side reason Zenith Team retries automatically |
+| `process_failure` | The agent subprocess crashed or exited non-zero | Check `zen daemon logs` on the machine |
+| `empty_or_unparseable_output` | The CLI returned empty output or output Zenith Team could not parse | Check the provider CLI's version and the daemon logs |
+| `agent_timeout` | The agent subprocess hit its hard per-run timeout | Split the work into smaller requests |
+| `context_overflow` | The prompt or context exceeded the model's window | The session cannot be resumed; a follow-up starts over fresh |
+| `missing_config` | A required environment variable, API key, or provider configuration is missing on the machine | Fix the machine's provider configuration |
+| `model_not_found_or_unavailable` | The chosen model does not exist or this account cannot use it | Pick a different model from the runtime's [model catalog](/providers#model-discovery) |
+| `runtime_version_unsupported` | The local provider CLI is below the minimum supported version | Update the provider CLI |
+| `runtime_missing_executable` | The provider CLI binary is not installed or not on `PATH` | Install the CLI on that machine, or fix `PATH` |
+| `unknown` | The classifier matched no rule | Read the run's `error` text for the raw diagnostic |
+
+## Usage
+
+Every run records what it consumed, per provider and model: input tokens, output tokens, cache reads, cache writes, and — when the provider reports one — a cost in USD. Usage facts are immutable accounting evidence and survive even if the run's other dimensions are later deleted.
+
+Each fact carries a `usage_basis` saying what its counters measure:
+
+- **`per_run`** — the counters cover this run's own consumption. The default, and how Claude Code reports.
+- **`session_cumulative`** — the counters are running totals for the whole resumed provider session. Codex reports on this basis, so a later run's fact supersedes — rather than adds to — the session's earlier runs.
+
+## Run completion and task status
+
+A terminal run projects its outcome onto its [task](/tasks) — but only while the task is still `in_progress`, still assigned to the run's agent, and still on the same execution generation the run was created for. A newer trigger, a reassignment, or a superseding run wins, and the stale run then has no task effect at all.
+
+When the projection applies:
+
+| Run outcome | Task becomes |
+|---|---|
+| **`completed`** | `in_review` — a finished turn is not a finished task; review decides `done` |
+| **`failed`** with no eligible retry | `error` — technical failure, restartable with a new message |
+| **`cancelled`** | `cancelled` |
+
+A failure that earns an automatic retry leaves the task `in_progress` — the child run is still working it. Separately from all of this, a live run's agent may declare the business outcome `failed` on the task — "this cannot be done" as a judgment, distinct from the technical `error` above. Cancelling a run, by contrast, never cancels its task: the task keeps its state and workspace, and a follow-up message starts a fresh turn.
+
+## Saved results and review
+
+An agent can explicitly present one immutable output from a run, with one primary file and ordered supporting files. Open **View Run result** in the conversation to see the saved set. A saved result is not reviewed on its own and creates no review work. A task leaves review when its assignee (or an owner or admin) accepts the agent's changes or marks the task done; see [Merging task work](/tasks#merging-task-work). Internal asset versions preserve the exact files that were presented.
+
+## Next steps
+
+- **[Daemon and runtimes](/daemon-and-runtimes)** — the machine-side process that claims and executes runs.
+- **[Workspaces](/workspaces)** — where on your computer each run is placed.
+- **[Conversations](/conversations)** — the item sequence a run's transcript belongs to.
+- **[Providers](/providers)** — what Codex and Claude Code each do with a claimed run.

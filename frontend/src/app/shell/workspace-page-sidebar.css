@@ -1,0 +1,51 @@
+.workspace-page-sidebar__dock {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-shrink: 0;
+}
+.workspace-page-sidebar__dock[hidden] {
+  display: none;
+}
+.workspace-page-sidebar__content {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+.workspace-page-sidebar__content > .zen-wiki__sidebar {
+  width: 100%;
+  flex: 1;
+}
+.workspace-sidebar-popup {
+  /* Keep dialogs above the floating navigation. */
+  z-index: 40;
+  width: max-content;
+  max-width: var(--radix-popover-content-available-width);
+  height: var(--radix-popover-trigger-height);
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--workspace-divider);
+  border-radius: 12px 0 0 12px;
+  background: var(--workspace-sidebar-bg);
+  color: var(--workspace-native-text);
+  box-shadow: 8px 0 24px rgb(0 0 0 / 10%);
+  font-family: var(--workspace-font-body);
+}
+.workspace-sidebar-popup__host,
+.workspace-sidebar-popup > :is(.workspace-chat-page, .zen-wiki) {
+  height: 100%;
+  min-height: 0;
+}
+.workspace-sidebar-popup .workspace-chat-navigator {
+  width: 100% !important;
+}
+.workspace-sidebar-popup :is(.workspace-chat-navigator, .zen-wiki__sidebar) {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.workspace-sidebar-popup__loading {
+  padding: 20px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+}

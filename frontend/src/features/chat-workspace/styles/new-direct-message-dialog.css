@@ -1,0 +1,387 @@
+.new-direct-message-dialog__overlay {
+  z-index: 220;
+  background: rgb(22 16 28 / 46%);
+}
+
+.new-direct-message-dialog {
+  z-index: 221;
+  display: flex;
+  width: min(520px, calc(100vw - 32px));
+  max-width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider, #e5dfe8);
+  border-radius: var(--workspace-radius-overlay, 14px);
+  padding: 0;
+  background: var(--workspace-overlay-bg, #fff);
+  color: var(--workspace-native-text, #2d2631);
+  box-shadow: var(--workspace-overlay-shadow, 0 16px 48px rgb(37 28 45 / 12%));
+  font-family: var(--workspace-font-body, sans-serif);
+}
+
+.new-direct-message-dialog__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 24px 20px;
+}
+
+.new-direct-message-dialog__heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.new-direct-message-dialog__title {
+  margin: 0;
+  font-family: var(--workspace-font-heading, sans-serif);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.new-direct-message-dialog__description {
+  margin: 6px 0 0;
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.new-direct-message-dialog__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text-muted, #706875);
+  cursor: pointer;
+}
+
+.new-direct-message-dialog__close:hover {
+  background: var(--workspace-hover-bg, #f1edf4);
+  color: var(--workspace-native-text, #2d2631);
+}
+
+.new-direct-message-dialog__search {
+  display: flex;
+  min-height: 44px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  margin: 0 24px 16px;
+  border: 1px solid var(--workspace-divider-strong, #d4cbdc);
+  border-radius: 9px;
+  padding: 0 12px;
+  background: var(--workspace-input-bg, #fff);
+  color: var(--workspace-native-text-muted, #706875);
+}
+
+.new-direct-message-dialog__search:focus-within {
+  border-color: var(--workspace-native-accent, #7556b9);
+}
+
+.new-direct-message-dialog__search > svg {
+  flex-shrink: 0;
+}
+
+.new-direct-message-dialog__search input {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text, #2d2631);
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.new-direct-message-dialog__search input::placeholder {
+  color: var(--workspace-native-text-muted, #706875);
+  opacity: 1;
+}
+
+.new-direct-message-dialog__body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px 12px;
+}
+
+.new-direct-message-dialog__recipients {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.new-direct-message-dialog__recipient {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 11px;
+  background: transparent;
+  color: var(--workspace-native-text, #2d2631);
+  text-align: left;
+  cursor: pointer;
+}
+
+.new-direct-message-dialog__recipient:hover {
+  background: var(--workspace-hover-bg, #f1edf4);
+}
+
+.new-direct-message-dialog__recipient:focus-visible {
+  border-color: var(--workspace-native-accent, #7556b9);
+  outline: none;
+  background: var(--workspace-selected-bg, #eee7f8);
+}
+
+.new-direct-message-dialog__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: var(--workspace-control-bg, #f1edf4);
+}
+
+.new-direct-message-dialog__avatar--person {
+  width: 32px;
+  height: 32px;
+  margin-inline: 4px;
+  border-radius: 8px;
+}
+
+.new-direct-message-dialog__avatar-image {
+  object-fit: cover;
+}
+
+.new-direct-message-dialog__initials {
+  border-radius: inherit;
+  background: var(--workspace-control-bg, #f1edf4);
+  color: var(--workspace-native-text, #2d2631);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.new-direct-message-dialog__identity {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.new-direct-message-dialog__name,
+.new-direct-message-dialog__role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-direct-message-dialog__name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.new-direct-message-dialog__role {
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.new-direct-message-dialog__kind {
+  flex-shrink: 0;
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: var(--workspace-control-bg, #f1edf4);
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.new-direct-message-dialog__arrow {
+  flex-shrink: 0;
+  color: var(--workspace-native-text-muted, #706875);
+}
+
+.new-direct-message-dialog__empty {
+  margin: 0;
+  padding: 32px 20px;
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.new-direct-message-dialog__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 12px 12px;
+  border: 1px solid var(--workspace-divider, #e5dfe8);
+  border-radius: 9px;
+  padding: 12px;
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.new-direct-message-dialog__error p {
+  margin: 0;
+}
+
+.new-direct-message-dialog__error button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 4px;
+  background: transparent;
+  color: var(--workspace-native-accent, #7556b9);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.new-direct-message-dialog__footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--workspace-divider, #e5dfe8);
+  padding: 14px 24px;
+  color: var(--workspace-native-text-muted, #706875);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .new-direct-message-dialog__header {
+    padding: 20px 20px 16px;
+  }
+
+  .new-direct-message-dialog__search {
+    margin-inline: 20px;
+  }
+
+  .new-direct-message-dialog__footer {
+    padding-inline: 20px;
+  }
+
+  .new-direct-message-dialog__recipient {
+    gap: 10px;
+  }
+}
+
+@media (pointer: coarse) {
+  .new-direct-message-dialog__close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .new-direct-message-dialog__error button {
+    min-height: 44px;
+  }
+}
+
+.new-direct-message-dialog__selected {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 110px;
+  overflow-y: auto;
+  padding: 0 24px 14px;
+}
+
+.new-direct-message-dialog__selected button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--workspace-selected-bg, #eee7f8);
+  color: var(--workspace-native-text, #2d2631);
+  font-size: 12px;
+}
+
+.new-direct-message-dialog__selected button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-direct-message-dialog__selected button svg {
+  flex-shrink: 0;
+}
+
+.new-direct-message-dialog__recipient[aria-pressed="true"] {
+  background: var(--workspace-selected-bg, #eee7f8);
+  border-color: var(--workspace-native-accent, #7556b9);
+}
+
+.new-direct-message-dialog__selection-space {
+  width: 17px;
+  flex-shrink: 0;
+}
+
+.new-direct-message-dialog__footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.new-direct-message-dialog__footer > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.new-direct-message-dialog__footer p {
+  margin: 0;
+}
+
+.new-direct-message-dialog__footer p + p {
+  margin-top: 4px;
+}
+
+.new-direct-message-dialog__start {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--workspace-accent-fill);
+  color: var(--workspace-accent-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.new-direct-message-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.new-direct-message-dialog__selected button:focus-visible,
+.new-direct-message-dialog__start:focus-visible {
+  outline: none;
+  background: var(--workspace-hover-bg, #f1edf4);
+  color: var(--workspace-native-text, #2d2631);
+}
+
+.new-direct-message-dialog__start:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--workspace-accent-hover);
+  color: var(--workspace-accent-foreground);
+}

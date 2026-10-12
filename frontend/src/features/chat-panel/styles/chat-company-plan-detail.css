@@ -1,0 +1,329 @@
+.chat-company-plan-detail {
+  --plan-detail-surface: var(--workspace-panel-bg, #18242f);
+  --plan-detail-text: var(--workspace-native-text, #f3f5f7);
+  --plan-detail-muted: var(--workspace-native-text-muted, #abb5bf);
+  --plan-detail-border: var(--workspace-divider, #2b3945);
+  --plan-detail-accent: var(--workspace-native-accent, #ffd84d);
+  z-index: 70 !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: 0 !important;
+  width: min(1120px, calc(100vw - 48px)) !important;
+  max-width: none !important;
+  height: min(760px, calc(100dvh - 48px));
+  max-height: calc(100dvh - 48px);
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--plan-detail-border) !important;
+  border-radius: 18px !important;
+  background: var(--plan-detail-surface) !important;
+  color: var(--plan-detail-text) !important;
+  box-shadow: 0 24px 80px rgb(18 14 23 / 24%) !important;
+  font-family: var(
+    --workspace-font-body,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  );
+  overflow-wrap: anywhere;
+}
+
+.chat-company-plan-detail__overlay {
+  z-index: 68 !important;
+  background: rgb(25 18 33 / 48%) !important;
+}
+
+.chat-company-plan-detail__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--plan-detail-border);
+}
+
+.chat-company-plan-detail__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.chat-company-plan-detail__identity .chat-company-plan-icon {
+  box-shadow: none;
+}
+
+.chat-company-plan-detail__title {
+  margin: 0;
+  color: var(--plan-detail-text);
+  font-family: var(--workspace-font-heading, inherit);
+  font-size: var(--workspace-text-title);
+  font-weight: 750;
+  line-height: var(--workspace-leading-title);
+}
+
+.chat-company-plan-detail__subtitle {
+  margin: 4px 0 0;
+  color: var(--plan-detail-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.chat-company-plan-detail__close {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--workspace-divider-strong, #3a4956);
+  border-radius: 8px;
+  background: var(--plan-detail-surface);
+  color: var(--plan-detail-text);
+  font-size: var(--workspace-text-label);
+  font-weight: 650;
+  line-height: var(--workspace-leading-label);
+  cursor: pointer;
+}
+
+.chat-company-plan-detail__close:hover {
+  background: var(--workspace-hover-bg, #253441);
+}
+
+.chat-company-plan-detail__body {
+  min-height: 0;
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--workspace-divider-strong, #3a4956) transparent;
+  scrollbar-width: thin;
+}
+
+.chat-company-plan-detail__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.68fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.chat-company-plan-detail__section-title {
+  margin: 0;
+  color: var(--plan-detail-text);
+  font-size: var(--workspace-text-label);
+  font-weight: 700;
+  line-height: var(--workspace-leading-label);
+}
+
+.chat-company-plan-detail__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.chat-company-plan-detail__summary-card {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--plan-detail-border);
+  border-radius: 12px;
+  background: var(--workspace-panel-raised-bg, #1d2a36);
+}
+
+.chat-company-plan-detail__summary-icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--workspace-accent-soft, #35404a);
+  color: var(--plan-detail-accent);
+}
+
+.chat-company-plan-detail__summary-label,
+.chat-company-plan-detail__summary-caption {
+  display: block;
+  color: var(--plan-detail-muted);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+}
+
+.chat-company-plan-detail__summary-value {
+  display: block;
+  margin: 3px 0;
+  color: var(--plan-detail-text);
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.chat-company-plan-detail__tasks {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0 16px 16px 54px;
+  list-style: decimal;
+}
+
+.chat-company-plan-detail__task {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--workspace-panel-raised-bg, #1d2a36);
+  color: var(--plan-detail-muted);
+}
+
+.chat-company-plan-detail__task::marker {
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.chat-company-plan-detail__task-title {
+  color: var(--plan-detail-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 650;
+  line-height: var(--workspace-leading-body);
+}
+.chat-company-plan-detail__task-outcome {
+  margin: 5px 0 0;
+  color: var(--plan-detail-muted);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  white-space: pre-wrap;
+}
+.chat-company-plan-detail__aside {
+  display: grid;
+  min-width: 0;
+  gap: 16px;
+}
+
+.chat-company-plan-detail__context {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--plan-detail-border);
+  border-radius: 12px;
+  background: var(--workspace-panel-raised-bg, #1d2a36);
+}
+
+.chat-company-plan-detail__objective {
+  margin: 10px 0 0;
+  color: var(--plan-detail-text);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  white-space: pre-wrap;
+}
+.chat-company-plan-detail__agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  color: var(--plan-detail-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+.chat-company-plan-detail__agent img {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.chat-company-plan-detail__agent strong {
+  color: var(--plan-detail-text);
+  font-weight: 700;
+}
+.chat-company-plan-detail__responsibilities {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chat-company-plan-detail__responsibilities li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  color: var(--plan-detail-text);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+}
+.chat-company-plan-detail__responsibilities svg {
+  margin-top: 3px;
+  color: var(--workspace-native-success, #9bd568);
+}
+
+.chat-company-plan-detail__notice {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--workspace-info-soft, #18343e);
+  color: var(--workspace-native-info, #67c7db);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+}
+
+.chat-company-plan-detail__notice strong {
+  font-weight: 700;
+}
+.chat-company-plan-detail__notice p {
+  margin: 4px 0 0;
+}
+.chat-company-plan-detail__footer {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 14px 24px;
+  border-top: 1px solid var(--plan-detail-border);
+  color: var(--plan-detail-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+@media (max-width: 860px) {
+  .chat-company-plan-detail__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-company-plan-detail {
+    width: calc(100vw - 24px) !important;
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 14px !important;
+  }
+  .chat-company-plan-detail__header,
+  .chat-company-plan-detail__body {
+    padding: 16px;
+  }
+  .chat-company-plan-detail__header {
+    gap: 12px;
+  }
+  .chat-company-plan-detail__identity {
+    gap: 10px;
+  }
+  .chat-company-plan-detail__title {
+    font-size: var(--workspace-text-title);
+    line-height: var(--workspace-leading-title);
+  }
+  .chat-company-plan-detail__summary-card {
+    flex-direction: column;
+    padding: 14px;
+    gap: 8px;
+  }
+  .chat-company-plan-detail__task-count {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .chat-company-plan-detail__tasks {
+    padding: 0 12px 14px 34px;
+  }
+  .chat-company-plan-detail__footer {
+    padding: 12px 16px;
+  }
+}

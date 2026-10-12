@@ -1,0 +1,1427 @@
+openapi: 3.1.0
+info:
+  title: Zenith Team API
+  version: "1.0.0"
+  summary: The Zenith Team HTTP surface — companies, agents, work, conversations, runs.
+  description: |
+    Machine-readable source of truth for the Zenith Team server. The prose guides in
+    this directory explain intent; this document pins the wire contract. When the
+    two disagree, this document is right.
+
+    ## Layout
+
+    This file is an **index**. It carries the document metadata, the security
+    schemes, and one `$ref` per path into a domain file beside it, named to
+    match its prose counterpart — `spec/companies.yaml` alongside
+    `../companies.md`. Each domain file holds that domain's path items and the
+    schemas only it uses; `_common.yaml` holds the reusable parameters, the
+    standard error responses, and every schema more than one domain shares.
+
+    Edit the domain files. `make api-bundle` flattens the whole thing into one
+    document for consumers that want a single file.
+
+    ## Conventions
+
+    These are stated once in `conventions.md` and are not repeated per
+    operation. An operation only documents where it *deviates*.
+
+    - Every JSON field the server serializes is camelCase. Query parameters are
+      snake_case.
+    - Timestamps are RFC3339, nanosecond precision, always UTC.
+    - Calendar days are date-only `YYYY-MM-DD`, never an instant.
+    - Bounded entity collections return their complete matching set and do not
+      accept `limit` or `cursor`. High-volume chronological feeds use seek
+      pagination and return `{items, nextCursor}`.
+    - A feed cursor is opaque and carries the `(createdAt, id)` sort tuple.
+      Newest-first feeds seek strictly before that tuple; oldest-first feeds
+      seek strictly after it. A malformed cursor is `422 invalid_cursor`.
+    - Messages and Conversation transcripts use their monotonic `seq` instead
+      of a timestamp cursor: `after_seq` reads rows with `seq > after_seq`.
+      The source Conversation sequence is gap-free, allocated as `max(seq) +
+      1` over committed rows under its row lock; each filtered read may skip
+      positions owned by item types it does not return.
+    - Mutable resources carry `revision` (int64); mutations that must not
+      clobber a concurrent edit take `expectedRevision` and answer `409`.
+    - A mutation returns the authoritative new projection, so a confirming
+      `GET` after a 2xx is unnecessary. Create and update events carry that
+      domain's complete public projection; deletion events carry a typed
+      removal receipt.
+    - An absent field is absent only where its schema permits omission; it is
+      not a generic field-level patch. `null` means cleared only where the
+      schema permits `null`, and `[]` means authoritatively empty.
+    - Counters that can exceed 2^53 (token totals, run counts) are serialized as
+      **strings**, because JavaScript consumes them.
+    - Company-scoped denial is `404`, never `403`. A non-member cannot tell
+      "does not exist" from "exists but is not yours".
+    - Request bodies are `application/json` unless stated. The decoder is strict:
+      unknown fields are rejected, the root must be an object, and the body is
+      size-capped. Wrong content type is `415`; oversize is `413`.
+    - Unknown, repeated, or empty-valued query parameters are `422`, everywhere.
+      A multi-valued filter travels as **one comma-separated value** in a
+      single parameter — that is the mechanism, not repetition.
+    - A path id that cannot name a row is `404`, never `422` — malformed and
+      missing are indistinguishable to the caller.
+    - Creation signals through the status code alone: `201` created, `200`
+      replayed or already-existing. No `{entity, created}` wrappers and no
+      `created` flags.
+    - An entity has exactly one public projection. Whenever REST and realtime
+      expose that entity they reuse the projection; routed events may wrap it
+      with routing ids, and signals remain their own typed payloads — see
+      `realtime.md`.
+
+    ## Error codes
+
+    Every failure uses `{detail, code, requestId}`. Branch on `code`, never on
+    `detail`. The full vocabulary and the retry policy for each code are in
+    `errors.md`, which a test diffs against the server's registry in both
+    directions.
+
+    ## Operations that lead the implementation
+
+    An operation carrying `x-boardly-status: planned` is contracted before it is
+    served. The route-table gate allows it to have no route and reports it as
+    awaiting implementation; the marker is removed in the commit that serves it.
+
+    ## Authentication
+
+    One credential in two containers, one per request:
+
+    - `sessionCookie` — `boardly_access`, set by the auth endpoints. Used by the
+      web app. Cookie-authenticated unsafe methods additionally require
+      `X-CSRF-Token` matching the `boardly_csrf` cookie (`/auth/refresh` and
+      `/auth/logout` validate against `boardly_refresh_csrf`); a mismatch is
+      `403 csrf_invalid`. Bearer callers never encounter CSRF.
+    - `bearerToken` — `Authorization: Bearer <accessToken>`. Used by the desktop
+      shell and by the machine-side daemon.
+
+    The default `security` for this document is "either user credential".
+    Operations that need no credential declare `security: []`. The daemon plane
+    (`/api/v1/daemon/*`) accepts that same bearer token, but from the
+    `Authorization` header only — never a cookie, so CSRF never applies there.
+    The spec spells that header-only rule as the `daemonToken` scheme; it is
+    not a distinct credential. The plane is tagged `daemon` so it stays
+    identifiable in the generated client.
+
+  contact:
+    name: Zenith Team engineering
+servers:
+  - url: http://localhost:8788
+    description: Local development
+  - url: /
+    description: Same-origin deployment
+
+security:
+  - sessionCookie: []
+  - bearerToken: []
+
+tags:
+  - name: wiki
+    description: Company Wiki pages, collections, links, and revision history, plus the read-only Agent Wiki routes and the Run evidence trail.
+  - name: calendar
+    description: Personal and company events with durable Inbox reminders.
+  - name: social
+    description: Personal social account connections.
+  - name: health
+    description: Liveness, readiness, and operator metrics. Outside `/api/v1`.
+  - name: auth
+    description: Signup, login, session lifecycle, OAuth, desktop handoff.
+  - name: account
+    description: The authenticated user's own record.
+  - name: companies
+    description: Companies, membership, profile, search.
+  - name: resources
+    description: Company resources (local directories bound to a daemon).
+  - name: groups
+    description: Named sets of Team members that hold Project access together.
+  - name: agents
+    description: Agents and their archive/restore lifecycle.
+  - name: connectors
+    description: Company Connector discovery, policy, and setup.
+  - name: plugins
+    description: Provider Plugin discovery and installation.
+  - name: tasks
+    description: Tasks, task dependencies, and task-triggered runs.
+  - name: schedules
+    description: Server-authoritative one-shot and recurring Schedules.
+  - name: workflows
+    description: The release-owned Workflow catalog the Workflows page launches as Tasks.
+  - name: plan
+    description: Whole-company plan apply (the only path that deletes work).
+  - name: conversations
+    description: Conversations, per-user state, and the run queue.
+  - name: messages
+    description: Message reads and sends, addressed by conversation or by task.
+  - name: attachments
+    description: Attachment upload, completion, and download.
+  - name: runs
+    description: Run reads and cancellation on the user plane.
+  - name: runtimes
+    description: Runtime reads on the user plane. Read-only — daemons register.
+  - name: approvals
+    description: |
+      Human-in-the-loop: permission approvals and mid-run questions. A run that
+      raises one does not wait — it ends, and the answer arrives as a new run.
+  - name: inbox
+    description: Per-recipient inbox items and unread counts.
+  - name: mailbox
+    description: Company Email configuration and retained inbound messages.
+  - name: agent-mail
+    description: Reviewable outbound email drafts produced by Agents.
+  - name: activity
+    description: The company activity feed.
+  - name: usage
+    description: Token/cost usage reports and the activity insight tile.
+  - name: diagnostics
+    description: Crash report intake.
+  - name: commerce
+    description: Stripe Connect setup, reviewed catalogs, and the thin Site Commerce gateway.
+  - name: realtime
+    description: WebSocket upgrade endpoints. Not HTTP request/response.
+  - name: daemon
+    description: |
+      The machine-side daemon plane. Not consumed by browser or desktop UI
+      code. The tag identifies the plane — a generator *could* filter on it,
+      though the default generated client currently includes it. Authenticated
+      with the standard bearer credential, header-only; every denial is `404`.
+
+
+  - name: whiteboards
+    description: Company collaborative Whiteboards.
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: boardly_access
+      description: |
+        Web session cookie issued by `/auth/login`, `/auth/signup`, and
+        `/auth/refresh`. Unsafe methods additionally require the `X-CSRF-Token`
+        header.
+    bearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Desktop access token from `session.accessToken`.
+    daemonToken:
+      type: http
+      scheme: bearer
+      description: |
+        The bearer token as the daemon plane accepts it: from the
+        `Authorization` header only. It is the daemon's own session
+        (`POST /auth/daemon-session`, D31) or, as older daemons send, the
+        person's `bearerToken`, authenticated by the same service. This
+        scheme exists to state the header-only rule for `/api/v1/daemon/*`:
+        cookies are never read there, so CSRF never applies. A daemon's own
+        session is refused everywhere else (`403 run_proof_required`) unless
+        the route accepts a Run and the request carries a live Run proof of
+        its person.
+  schemas:
+    BoardFileInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardFileInput"
+    BoardFile:
+      $ref: "./whiteboards.yaml#/schemas/BoardFile"
+    BoardPresence:
+      $ref: "./whiteboards.yaml#/schemas/BoardPresence"
+    BoardParticipant:
+      $ref: "./whiteboards.yaml#/schemas/BoardParticipant"
+    BoardPresenceInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardPresenceInput"
+    BoardPresenceView:
+      $ref: "./whiteboards.yaml#/schemas/BoardPresenceView"
+    BoardRect:
+      $ref: "./whiteboards.yaml#/schemas/BoardRect"
+    BoardDragPreview:
+      $ref: "./whiteboards.yaml#/schemas/BoardDragPreview"
+    BoardFavoriteInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardFavoriteInput"
+    BoardClaimInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardClaimInput"
+    BoardContext:
+      $ref: "./whiteboards.yaml#/schemas/BoardContext"
+    BoardContextInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardContextInput"
+    BoardAgentViewInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardAgentViewInput"
+    BoardAgentRef:
+      $ref: "./whiteboards.yaml#/schemas/BoardAgentRef"
+    BoardAgentView:
+      $ref: "./whiteboards.yaml#/schemas/BoardAgentView"
+    BoardComposeRevision:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeRevision"
+    BoardComposeNote:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeNote"
+    BoardComposeNode:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeNode"
+    BoardComposeConnectorStyle:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeConnectorStyle"
+    BoardComposeFragment:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeFragment"
+    BoardComposeBranch:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeBranch"
+    BoardComposeEdge:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeEdge"
+    BoardComposePath:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposePath"
+    BoardComposeOp:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeOp"
+    BoardComposeInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeInput"
+    BoardComposeResult:
+      $ref: "./whiteboards.yaml#/schemas/BoardComposeResult"
+    BoardTextResult:
+      $ref: "./whiteboards.yaml#/schemas/BoardTextResult"
+    BoardTextInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardTextInput"
+    BoardMutation:
+      $ref: "./whiteboards.yaml#/schemas/BoardMutation"
+    BoardBatch:
+      $ref: "./whiteboards.yaml#/schemas/BoardBatch"
+    BoardCommand:
+      $ref: "./whiteboards.yaml#/schemas/BoardCommand"
+    BoardHydration:
+      $ref: "./whiteboards.yaml#/schemas/BoardHydration"
+    BoardHydratedItem:
+      $ref: "./whiteboards.yaml#/schemas/BoardHydratedItem"
+    BoardHydrateInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardHydrateInput"
+    BoardSnapshot:
+      $ref: "./whiteboards.yaml#/schemas/BoardSnapshot"
+    BoardEdge:
+      $ref: "./whiteboards.yaml#/schemas/BoardEdge"
+    BoardLineType:
+      $ref: "./whiteboards.yaml#/schemas/BoardLineType"
+    BoardMarkerType:
+      $ref: "./whiteboards.yaml#/schemas/BoardMarkerType"
+    BoardRouteType:
+      $ref: "./whiteboards.yaml#/schemas/BoardRouteType"
+    BoardShapeType:
+      $ref: "./whiteboards.yaml#/schemas/BoardShapeType"
+    BoardItem:
+      $ref: "./whiteboards.yaml#/schemas/BoardItem"
+    BoardPoint:
+      $ref: "./whiteboards.yaml#/schemas/BoardPoint"
+    BoardProperties:
+      $ref: "./whiteboards.yaml#/schemas/BoardProperties"
+    BoardGeometry:
+      $ref: "./whiteboards.yaml#/schemas/BoardGeometry"
+    UpdateBoardInput:
+      $ref: "./whiteboards.yaml#/schemas/UpdateBoardInput"
+    CreateBoardInput:
+      $ref: "./whiteboards.yaml#/schemas/CreateBoardInput"
+    BoardList:
+      $ref: "./whiteboards.yaml#/schemas/BoardList"
+    BoardGrant:
+      $ref: "./whiteboards.yaml#/schemas/BoardGrant"
+    BoardAccess:
+      $ref: "./whiteboards.yaml#/schemas/BoardAccess"
+    BoardChannel:
+      $ref: "./whiteboards.yaml#/schemas/BoardChannel"
+    BoardChannelPerson:
+      $ref: "./whiteboards.yaml#/schemas/BoardChannelPerson"
+    BoardAccessInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardAccessInput"
+    BoardVisibilityInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardVisibilityInput"
+    Board:
+      $ref: "./whiteboards.yaml#/schemas/Board"
+    AgentSkillFile:
+      $ref: './agents.yaml#/schemas/AgentSkillFile'
+    AgentSkill:
+      $ref: './agents.yaml#/schemas/AgentSkill'
+    AgentSkillCandidate:
+      $ref: './agents.yaml#/schemas/AgentSkillCandidate'
+    AgentSkillPreview:
+      $ref: './agents.yaml#/schemas/AgentSkillPreview'
+    AgentSkillCollection:
+      $ref: './agents.yaml#/schemas/AgentSkillCollection'
+    AgentSkillReference:
+      $ref: './agents.yaml#/schemas/AgentSkillReference'
+    AgentSkillGitHubRequest:
+      $ref: './agents.yaml#/schemas/AgentSkillGitHubRequest'
+    AgentSkillInstallRequest:
+      $ref: './agents.yaml#/schemas/AgentSkillInstallRequest'
+    AgentSkillUpdateRequest:
+      $ref: './agents.yaml#/schemas/AgentSkillUpdateRequest'
+    AgentSkillRemoveRequest:
+      $ref: './agents.yaml#/schemas/AgentSkillRemoveRequest'
+
+    OverviewTask:
+      $ref: './pages.yaml#/schemas/OverviewTask'
+    PageChangeFeed:
+      $ref: './pages.yaml#/schemas/PageChangeFeed'
+    PageChange:
+      $ref: './pages.yaml#/schemas/PageChange'
+    ProjectOverview:
+      $ref: './pages.yaml#/schemas/ProjectOverview'
+    OverviewInput:
+      $ref: './pages.yaml#/schemas/OverviewInput'
+    PageOperation:
+      $ref: './pages.yaml#/schemas/PageOperation'
+    PageEditInput:
+      $ref: './pages.yaml#/schemas/PageEditInput'
+    PageEditResult:
+      $ref: './pages.yaml#/schemas/PageEditResult'
+    ProjectPresentationEntry:
+      $ref: './pages.yaml#/schemas/ProjectPresentationEntry'
+    ProjectPresentation:
+      $ref: './pages.yaml#/schemas/ProjectPresentation'
+    PresentationInput:
+      $ref: './pages.yaml#/schemas/PresentationInput'
+    PageChangeDetail:
+      $ref: './pages.yaml#/schemas/PageChangeDetail'
+    PageArtifactPreparation:
+      $ref: './pages.yaml#/schemas/PageArtifactPreparation'
+    PageSource:
+      $ref: './pages.yaml#/schemas/PageSource'
+    PageSourceState:
+      $ref: './pages.yaml#/schemas/PageSourceState'
+    PageCreateInput:
+      $ref: './pages.yaml#/schemas/PageCreateInput'
+    PageCreateResult:
+      $ref: './pages.yaml#/schemas/PageCreateResult'
+    Page:
+      $ref: './pages.yaml#/schemas/Page'
+    ProjectRead:
+      $ref: './pages.yaml#/schemas/ProjectRead'
+    PageMetadataInput:
+      $ref: './pages.yaml#/schemas/PageMetadataInput'
+    CanvasCommand:
+      $ref: './canvas.yaml#/schemas/CanvasCommand'
+    CanvasMove:
+      $ref: './canvas.yaml#/schemas/CanvasMove'
+    CanvasResult:
+      $ref: './canvas.yaml#/schemas/CanvasResult'
+    CanvasItem:
+      $ref: './canvas.yaml#/schemas/CanvasItem'
+    CanvasVersion:
+      $ref: './canvas.yaml#/schemas/CanvasVersion'
+    CanvasArtifact:
+      $ref: './canvas.yaml#/schemas/CanvasArtifact'
+    CanvasEdge:
+      $ref: './canvas.yaml#/schemas/CanvasEdge'
+    CanvasSnapshot:
+      $ref: './canvas.yaml#/schemas/CanvasSnapshot'
+    CanvasComment:
+      $ref: './canvas.yaml#/schemas/CanvasComment'
+    CanvasThread:
+      $ref: './canvas.yaml#/schemas/CanvasThread'
+    CanvasDecision:
+      $ref: './canvas.yaml#/schemas/CanvasDecision'
+    CanvasTimelineEntry:
+      $ref: './canvas.yaml#/schemas/CanvasTimelineEntry'
+    CanvasTimelinePage:
+      $ref: './canvas.yaml#/schemas/CanvasTimelinePage'
+    CanvasHistory:
+      $ref: './canvas.yaml#/schemas/CanvasHistory'
+    CanvasDocument:
+      $ref: './canvas.yaml#/schemas/CanvasDocument'
+    CanvasLibrary:
+      $ref: './canvas.yaml#/schemas/CanvasLibrary'
+    CanvasSearch:
+      $ref: './canvas.yaml#/schemas/CanvasSearch'
+    CanvasBlock:
+      $ref: './canvas.yaml#/schemas/CanvasBlock'
+    CanvasBlockIDs:
+      $ref: './canvas.yaml#/schemas/CanvasBlockIDs'
+    CanvasThreadList:
+      $ref: './canvas.yaml#/schemas/CanvasThreadList'
+    CanvasBody:
+      $ref: './canvas.yaml#/schemas/CanvasBody'
+    CanvasDocumentUpdate:
+      $ref: './canvas.yaml#/schemas/CanvasDocumentUpdate'
+    CanvasPresenceInput:
+      $ref: './canvas.yaml#/schemas/CanvasPresenceInput'
+    CanvasSession:
+      $ref: './canvas.yaml#/schemas/CanvasSession'
+    CanvasPresenceList:
+      $ref: './canvas.yaml#/schemas/CanvasPresenceList'
+    ChannelAgentStatus:
+      $ref: './conversations.yaml#/schemas/ChannelAgentStatus'
+    ChannelInvocation:
+      $ref: './conversations.yaml#/schemas/ChannelInvocation'
+    ChannelInvocationPage:
+      $ref: './conversations.yaml#/schemas/ChannelInvocationPage'
+    ChannelAgentActivityItem:
+      $ref: './conversations.yaml#/schemas/ChannelAgentActivityItem'
+    ChannelAgentActivity:
+      $ref: './conversations.yaml#/schemas/ChannelAgentActivity'
+    MemberPresenceRequest:
+      $ref: './conversations.yaml#/schemas/MemberPresenceRequest'
+    MemberPresenceResponse:
+      $ref: './conversations.yaml#/schemas/MemberPresenceResponse'
+    MemberPresence:
+      $ref: './conversations.yaml#/schemas/MemberPresence'
+    CalendarAttendee: { $ref: './calendar.yaml#/schemas/CalendarAttendee' }
+    Calendar: { $ref: './calendar.yaml#/schemas/Calendar' }
+    CalendarMember: { $ref: './calendar.yaml#/schemas/CalendarMember' }
+    CalendarCatalog: { $ref: './calendar.yaml#/schemas/CalendarCatalog' }
+    CalendarResponseInput: { $ref: './calendar.yaml#/schemas/CalendarResponseInput' }
+    CalendarReadResult: { $ref: './calendar.yaml#/schemas/CalendarReadResult' }
+    CalendarCommandResult: { $ref: './calendar.yaml#/schemas/CalendarCommandResult' }
+    CalendarCommandEventInput: { $ref: './calendar.yaml#/schemas/CalendarCommandEventInput' }
+    CalendarCommandInput: { $ref: './calendar.yaml#/schemas/CalendarCommandInput' }
+    CalendarEvent: { $ref: './calendar.yaml#/schemas/CalendarEvent' }
+    CalendarOccurrence: { $ref: './calendar.yaml#/schemas/CalendarOccurrence' }
+    CalendarInput: { $ref: './calendar.yaml#/schemas/CalendarInput' }
+    CalendarOccurrenceInput: { $ref: './calendar.yaml#/schemas/CalendarOccurrenceInput' }
+    CalendarOccurrences: { $ref: './calendar.yaml#/schemas/CalendarOccurrences' }
+    SocialPlatform: { $ref: './social.yaml#/schemas/SocialPlatform' }
+    SocialTarget: { $ref: './social.yaml#/schemas/SocialTarget' }
+    SocialConnection: { $ref: './social.yaml#/schemas/SocialConnection' }
+    SocialOAuthStartResponse: { $ref: './social.yaml#/schemas/SocialOAuthStartResponse' }
+    SocialPlatforms: { $ref: './social.yaml#/schemas/SocialPlatforms' }
+    SocialConnections: { $ref: './social.yaml#/schemas/SocialConnections' }
+    SocialDesktopRequest: { $ref: './social.yaml#/schemas/SocialDesktopRequest' }
+    SocialPostInput: { $ref: './social.yaml#/schemas/SocialPostInput' }
+    SocialPost: { $ref: './social.yaml#/schemas/SocialPost' }
+    SocialMedia: { $ref: './social.yaml#/schemas/SocialMedia' }
+    SocialReadResult: { $ref: './social.yaml#/schemas/SocialReadResult' }
+    CompanyInvitation: { $ref: './companies.yaml#/schemas/CompanyInvitation' }
+    InvitationCollection: { $ref: './companies.yaml#/schemas/InvitationCollection' }
+    InvitationResults: { $ref: './companies.yaml#/schemas/InvitationResults' }
+    InvitationPreview: { $ref: './companies.yaml#/schemas/InvitationPreview' }
+    InvitationAcceptance: { $ref: './companies.yaml#/schemas/InvitationAcceptance' }
+    ProjectRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/ProjectRealtimeEvent'
+    ProjectLifecyclePayload:
+      $ref: './realtime.yaml#/schemas/ProjectLifecyclePayload'
+    ProjectAccessChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/ProjectAccessChangedRealtimeEvent'
+    ProjectAccessChangedPayload:
+      $ref: './realtime.yaml#/schemas/ProjectAccessChangedPayload'
+    MessageCreatedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/MessageCreatedRealtimeEvent'
+    MessageCreatedPayload:
+      $ref: './realtime.yaml#/schemas/MessageCreatedPayload'
+    MessageUpdatedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/MessageUpdatedRealtimeEvent'
+    MessageUpdatedPayload:
+      $ref: './realtime.yaml#/schemas/MessageUpdatedPayload'
+    WikiPageRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/WikiPageRealtimeEvent'
+    WikiCollectionRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/WikiCollectionRealtimeEvent'
+    RealtimeEnvelope:
+      $ref: './realtime.yaml#/schemas/RealtimeEnvelope'
+    RunLifecyclePayload:
+      $ref: './runs.yaml#/schemas/RunLifecyclePayload'
+    TerminalRunLifecyclePayload:
+      $ref: './runs.yaml#/schemas/TerminalRunLifecyclePayload'
+    RunMessagePayload:
+      $ref: './realtime.yaml#/schemas/RunMessagePayload'
+    RunMessageRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/RunMessageRealtimeEvent'
+    TerminalRunRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/TerminalRunRealtimeEvent'
+    DeliverableEventPayload:
+      $ref: './realtime.yaml#/schemas/DeliverableEventPayload'
+    DeliverableRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/DeliverableRealtimeEvent'
+    ArtifactAccessRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/ArtifactAccessRealtimeEvent'
+    AgentStatusPayload:
+      $ref: './realtime.yaml#/schemas/AgentStatusPayload'
+    AgentStatusRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/AgentStatusRealtimeEvent'
+    AgentBindingChangedPayload:
+      $ref: './realtime.yaml#/schemas/AgentBindingChangedPayload'
+    AgentBindingChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/AgentBindingChangedRealtimeEvent'
+    DaemonRosterPayload:
+      $ref: './realtime.yaml#/schemas/DaemonRosterPayload'
+    DaemonRosterRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/DaemonRosterRealtimeEvent'
+    CompanyAccessChangedPayload:
+      $ref: './realtime.yaml#/schemas/CompanyAccessChangedPayload'
+    CompanyAccessChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/CompanyAccessChangedRealtimeEvent'
+    InvitationChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/InvitationChangedRealtimeEvent'
+    ShareLinkChangedPayload:
+      $ref: './realtime.yaml#/schemas/ShareLinkChangedPayload'
+    ShareLinkChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/ShareLinkChangedRealtimeEvent'
+    GroupChangedPayload:
+      $ref: './realtime.yaml#/schemas/GroupChangedPayload'
+    GroupChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/GroupChangedRealtimeEvent'
+    GroupDeletedPayload:
+      $ref: './realtime.yaml#/schemas/GroupDeletedPayload'
+    GroupDeletedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/GroupDeletedRealtimeEvent'
+    ConversationLifecyclePayload:
+      $ref: './realtime.yaml#/schemas/ConversationLifecyclePayload'
+    ConversationLifecycleRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/ConversationLifecycleRealtimeEvent'
+    InboxItemEventPayload:
+      $ref: './realtime.yaml#/schemas/InboxItemEventPayload'
+    InboxItemRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/InboxItemRealtimeEvent'
+    ConnectorCatalogRequest:
+      $ref: './connectors-and-plugins.yaml#/schemas/ConnectorCatalogRequest'
+    PluginProvider:
+      $ref: './connectors-and-plugins.yaml#/schemas/PluginProvider'
+    PluginCatalogRequest:
+      $ref: './connectors-and-plugins.yaml#/schemas/PluginCatalogRequest'
+    SchedulePreviewRequest:
+      $ref: './schedules.yaml#/schemas/SchedulePreviewRequest'
+    TaskReportReadyRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/TaskReportReadyRealtimeEvent'
+    TaskReportChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/TaskReportChangedRealtimeEvent'
+    MailboxChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/MailboxChangedRealtimeEvent'
+    MailboxDraftChangedRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/MailboxDraftChangedRealtimeEvent'
+
+
+paths:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history:
+    $ref: './document-history.yaml#/paths/output_list'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}:
+    $ref: './document-history.yaml#/paths/output_state'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/restore:
+    $ref: './document-history.yaml#/paths/output_restore'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/name:
+    $ref: './document-history.yaml#/paths/output_name'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history:
+    $ref: './document-history.yaml#/paths/project_list'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}:
+    $ref: './document-history.yaml#/paths/project_state'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/restore:
+    $ref: './document-history.yaml#/paths/project_restore'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/name:
+    $ref: './document-history.yaml#/paths/project_name'
+  /api/v1/companies/{companyId}/whiteboards:
+    $ref: "./whiteboards.yaml#/paths/library"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}:
+    $ref: "./whiteboards.yaml#/paths/board"
+  /api/v1/public/whiteboards/{token}:
+    $ref: "./whiteboards.yaml#/paths/publicBoard"
+  /api/v1/public/whiteboards/{token}/hydrate:
+    $ref: "./whiteboards.yaml#/paths/publicHydrate"
+  /api/v1/public/whiteboards/{token}/files/{attachmentId}:
+    $ref: "./whiteboards.yaml#/paths/publicFile"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/visibility:
+    $ref: "./whiteboards.yaml#/paths/visibility"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/channel:
+    $ref: "./whiteboards.yaml#/paths/channel"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/access:
+    $ref: "./whiteboards.yaml#/paths/access"
+  /api/v1/companies/{companyId}/runs/{runId}/whiteboards:
+    $ref: "./whiteboards.yaml#/paths/agentLibrary"
+  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/operations:
+    $ref: "./whiteboards.yaml#/paths/agentOperations"
+  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/compose:
+    $ref: "./whiteboards.yaml#/paths/agentCompose"
+  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/context:
+    $ref: "./whiteboards.yaml#/paths/agentContext"
+  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/view:
+    $ref: "./whiteboards.yaml#/paths/agentView"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/favorite:
+    $ref: "./whiteboards.yaml#/paths/favorite"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/claim:
+    $ref: "./whiteboards.yaml#/paths/claim"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/operations:
+    $ref: "./whiteboards.yaml#/paths/operations"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/hydrate:
+    $ref: "./whiteboards.yaml#/paths/hydrate"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/text:
+    $ref: "./whiteboards.yaml#/paths/text"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/context:
+    $ref: "./whiteboards.yaml#/paths/context"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/presence:
+    $ref: "./whiteboards.yaml#/paths/presence"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/files:
+    $ref: "./whiteboards.yaml#/paths/files"
+  /api/v1/companies/{companyId}/whiteboards/{boardId}/files/{attachmentId}:
+    $ref: "./whiteboards.yaml#/paths/file"
+
+
+
+
+
+
+
+  /api/v1/companies/{companyId}/agents/{agentId}/skills:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_skills'
+  /api/v1/companies/{companyId}/agents/{agentId}/skill-imports/upload:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_skill_imports_upload'
+  /api/v1/companies/{companyId}/agents/{agentId}/skill-imports/github:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_skill_imports_github'
+  /api/v1/companies/{companyId}/agents/{agentId}/skills/{skillId}:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_skills_skillId'
+  /api/v1/companies/{companyId}/agents/{agentId}/skills/{skillId}/reference:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_skills_skillId_reference'
+
+  /api/v1/companies/{companyId}/projects/{projectId}/overview:
+    $ref: './pages.yaml#/paths/overview'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages:
+    $ref: './pages.yaml#/paths/pages'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}:
+    $ref: './pages.yaml#/paths/page'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/threads:
+    $ref: "./pages.yaml#/paths/threads"
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/changes:
+    $ref: './pages.yaml#/paths/changes'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/changes/{changeId}:
+    $ref: './pages.yaml#/paths/change'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/presentation-preview:
+    $ref: './pages.yaml#/paths/preview'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/presentations:
+    $ref: './pages.yaml#/paths/pagePresentations'
+  /api/v1/companies/{companyId}/projects/{projectId}/presentations:
+    $ref: './pages.yaml#/paths/presentations'
+  /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}:
+    $ref: './pages.yaml#/paths/presentation'
+  /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/export:
+    $ref: './pages.yaml#/paths/export'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-project:
+    $ref: './pages.yaml#/paths/agentProject'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-sources:
+    $ref: './pages.yaml#/paths/agentSource'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages:
+    $ref: './pages.yaml#/paths/agentPages'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}:
+    $ref: './pages.yaml#/paths/agentPage'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/presentation-preview:
+    $ref: './pages.yaml#/paths/agentPreview'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/presentations:
+    $ref: './pages.yaml#/paths/agentPrepare'
+
+  /api/v1/companies/{companyId}/conversations/{conversationId}/studio/operations:
+    $ref: './conversations.yaml#/paths/studioOperations'
+  /api/v1/internal/huddle-ai/{attemptId}/claim:
+    $ref: './huddle-ai.yaml#/paths/claim'
+  /api/v1/internal/huddle-ai/{attemptId}/heartbeat:
+    $ref: './huddle-ai.yaml#/paths/heartbeat'
+  /api/v1/internal/huddle-ai/{attemptId}/chat:
+    $ref: './huddle-ai.yaml#/paths/chat'
+  /api/v1/internal/huddle-ai/{attemptId}/usage:
+    $ref: './huddle-ai.yaml#/paths/usage'
+  /api/v1/internal/huddle-ai/{attemptId}/tools:
+    $ref: './huddle-ai.yaml#/paths/tools'
+  /api/v1/internal/huddle-ai/{attemptId}/proposals:
+    $ref: './huddle-ai.yaml#/paths/proposals'
+  /api/v1/internal/huddle-ai/{attemptId}/leave:
+    $ref: './huddle-ai.yaml#/paths/leave'
+  /api/v1/internal/huddle-ai/{attemptId}/transcript:
+    $ref: './huddle-ai.yaml#/paths/transcript'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/ai/proposals/{proposalId}/submit:
+    $ref: './huddle-ai.yaml#/paths/submit'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/ai/proposals/{proposalId}:
+    $ref: './huddle-ai.yaml#/paths/proposal'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/ai:
+    $ref: './huddle-ai.yaml#/paths/ai'
+
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas:
+    $ref: './canvas.yaml#/paths/canvas'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/timeline:
+    $ref: './canvas.yaml#/paths/timeline'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/library:
+    $ref: './canvas.yaml#/paths/library'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/search:
+    $ref: './canvas.yaml#/paths/search'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/operations:
+    $ref: './canvas.yaml#/paths/operations'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/artifacts/{artifactId}/history:
+    $ref: './canvas.yaml#/paths/history'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/threads:
+    $ref: './canvas.yaml#/paths/threads'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/body:
+    $ref: './canvas.yaml#/paths/body'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document:
+    $ref: './canvas.yaml#/paths/document'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/ids:
+    $ref: './canvas.yaml#/paths/block_ids'
+  /api/v1/companies/{companyId}/projects/{projectId}/canvas/presence:
+    $ref: './canvas.yaml#/paths/presence'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/visibility:
+    $ref: './artifact-sharing.yaml#/paths/artifact_visibility'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/conversations/{conversationId}:
+    $ref: './artifact-sharing.yaml#/paths/artifact_conversation'
+  /api/v1/public/artifacts/{token}:
+    $ref: './artifact-sharing.yaml#/paths/public_artifact'
+  /api/v1/public/artifacts/{token}/items/{ordinal}/download:
+    $ref: './artifact-sharing.yaml#/paths/public_artifact_download'
+  /api/v1/me/calendar/catalog:
+    $ref: './calendar.yaml#/paths/catalog'
+  /api/v1/me/calendar/events/{eventId}/response:
+    $ref: './calendar.yaml#/paths/response'
+  /api/v1/companies/{companyId}/calendar/catalog:
+    $ref: './calendar.yaml#/paths/company_catalog'
+  /api/v1/companies/{companyId}/calendar/events:
+    $ref: './calendar.yaml#/paths/company_events'
+  /api/v1/companies/{companyId}/calendar/events/{eventId}:
+    $ref: './calendar.yaml#/paths/company_event'
+  /api/v1/companies/{companyId}/calendar/events/{eventId}/occurrences:
+    $ref: './calendar.yaml#/paths/company_occurrences'
+  /api/v1/companies/{companyId}/calendar/events/{eventId}/response:
+    $ref: './calendar.yaml#/paths/company_response'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/calendar:
+    $ref: './calendar.yaml#/paths/agent'
+  /api/v1/me/calendar/events:
+    $ref: './calendar.yaml#/paths/events'
+  /api/v1/me/calendar/events/{eventId}:
+    $ref: './calendar.yaml#/paths/event'
+  /api/v1/me/calendar/events/{eventId}/occurrences:
+    $ref: './calendar.yaml#/paths/occurrences'
+  /api/v1/companies/{companyId}/human-conversations:
+    $ref: './conversations.yaml#/paths/companies_companyId_human_conversations'
+  /api/v1/companies/{companyId}/human-conversations/{conversationId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_human_conversations_conversationId'
+  /api/v1/companies/{companyId}/channels:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels'
+  /api/v1/companies/{companyId}/channels/{conversationId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId'
+  /api/v1/companies/{companyId}/channels/{conversationId}/members/{userId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId_members_userId'
+  /api/v1/companies/{companyId}/channels/{conversationId}/agents/{agentId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId_agents_agentId'
+  /api/v1/companies/{companyId}/channels/{conversationId}/leave:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId_leave'
+  /api/v1/companies/{companyId}/channels/{conversationId}/archive:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId_archive'
+  /api/v1/companies/{companyId}/channels/{conversationId}/restore:
+    $ref: './conversations.yaml#/paths/companies_companyId_channels_conversationId_restore'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-messages:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_messages'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/huddles:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_huddles'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/connections:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_connections'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/connections/{connectionId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_connection'
+  /api/v1/companies/{companyId}/huddles/invitations:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_invitations'
+  /api/v1/companies/{companyId}/huddles/invitations/history:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_invitations_history'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/invitations:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_invitations'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/invitations/{invitationId}/respond:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_invitation_response'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/threads/{rootId}/messages:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_threads_rootId_messages'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-messages/{messageId}/context:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_messages_messageId_context'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-messages/{messageId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_messages_messageId'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-pins:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_pins'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-pins/{messageId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_pins_messageId'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-messages/{messageId}/reactions:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_messages_messageId_reactions'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-messages/{messageId}/reactions/{emoji}:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_messages_messageId_reactions_emoji'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/threads/{rootId}/state:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_threads_rootId_state'
+  /api/v1/companies/{companyId}/member-presence:
+    $ref: './conversations.yaml#/paths/companies_companyId_member_presence'
+  /api/v1/companies/{companyId}/conversation-states/query:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversation_states_query'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-read-state:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_read_state'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/discussion-state:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_discussion_state'
+  /api/v1/me/social/platforms:
+    $ref: './social.yaml#/paths/platforms'
+  /api/v1/me/social/connections:
+    $ref: './social.yaml#/paths/connections'
+  /api/v1/me/social/connections/{connectionId}:
+    $ref: './social.yaml#/paths/connection'
+  /api/v1/me/social/oauth/{platform}:
+    $ref: './social.yaml#/paths/start'
+  /api/v1/social/oauth/{platform}/callback:
+    $ref: './social.yaml#/paths/callback'
+  /api/v1/me/social/oauth/{platform}/desktop:
+    $ref: './social.yaml#/paths/desktop'
+  /api/v1/social/oauth/{platform}/launch:
+    $ref: './social.yaml#/paths/launch'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/social:
+    $ref: './social.yaml#/paths/agent'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/social/posts:
+    $ref: './social.yaml#/paths/posts'
+  /api/v1/companies/{companyId}/share-link:
+    $ref: './companies.yaml#/paths/companies_companyId_share_link'
+  /api/v1/companies/{companyId}/share-link/reset:
+    $ref: './companies.yaml#/paths/companies_companyId_share_link_reset'
+  /api/v1/companies/{companyId}/invitations:
+    $ref: './companies.yaml#/paths/invitations'
+  /api/v1/companies/{companyId}/invitations/{invitationId}:
+    $ref: './companies.yaml#/paths/invitation'
+  /api/v1/companies/{companyId}/invitations/{invitationId}/resend:
+    $ref: './companies.yaml#/paths/invitationResend'
+  /api/v1/invitations/{token}:
+    $ref: './companies.yaml#/paths/invitationPreview'
+  /api/v1/invitations/{token}/accept:
+    $ref: './companies.yaml#/paths/invitationAccept'
+  /api/v1/invitations/{token}/request-renewal:
+    $ref: './companies.yaml#/paths/invitationRenewal'
+  /api/v1/companies/{companyId}/projects:
+    $ref: './projects.yaml#/paths/projects'
+  /api/v1/companies/{companyId}/projects/access-report:
+    $ref: './projects.yaml#/paths/accessReport'
+  /api/v1/companies/{companyId}/projects/{projectId}:
+    $ref: './projects.yaml#/paths/project'
+  /api/v1/companies/{companyId}/projects/{projectId}/archive:
+    $ref: './projects.yaml#/paths/archive'
+  /api/v1/companies/{companyId}/projects/{projectId}/files:
+    $ref: './projects.yaml#/paths/files'
+  /api/v1/companies/{companyId}/projects/{projectId}/grants:
+    $ref: './projects.yaml#/paths/grants'
+  /api/v1/companies/{companyId}/projects/{projectId}/grants/{userId}:
+    $ref: './projects.yaml#/paths/grant'
+  /api/v1/companies/{companyId}/projects/{projectId}/grants/{userId}/preview:
+    $ref: './projects.yaml#/paths/grantPreview'
+  /api/v1/companies/{companyId}/projects/{projectId}/join:
+    $ref: './projects.yaml#/paths/join'
+  /api/v1/companies/{companyId}/projects/{projectId}/group-grants/{groupId}:
+    $ref: './projects.yaml#/paths/groupGrant'
+  /api/v1/companies/{companyId}/projects/{projectId}/group-grants/{groupId}/preview:
+    $ref: './projects.yaml#/paths/groupGrantPreview'
+  /api/v1/companies/{companyId}/groups:
+    $ref: './groups.yaml#/paths/groups'
+  /api/v1/companies/{companyId}/groups/{groupId}:
+    $ref: './groups.yaml#/paths/group'
+  /api/v1/companies/{companyId}/groups/{groupId}/members:
+    $ref: './groups.yaml#/paths/members'
+  /api/v1/companies/{companyId}/groups/{groupId}/preview:
+    $ref: './groups.yaml#/paths/preview'
+  /api/v1/companies/{companyId}/conversations/states:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_states'
+  /api/v1/companies/{companyId}/conversations/pins:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_pins'
+
+  # ---------------------------------------------------------- health
+  /healthz:
+    $ref: './health.yaml#/paths/healthz'
+  /readyz:
+    $ref: './health.yaml#/paths/readyz'
+  /metrics:
+    $ref: './health.yaml#/paths/metrics'
+  /health/realtime:
+    $ref: './health.yaml#/paths/health_realtime'
+
+  # ---------------------------------------------------------- realtime
+  /api/v1/ws:
+    $ref: './realtime.yaml#/paths/ws'
+
+  # ---------------------------------------------------------- authentication
+  /api/v1/auth/providers:
+    $ref: './authentication.yaml#/paths/auth_providers'
+  /api/v1/auth/signup:
+    $ref: './authentication.yaml#/paths/auth_signup'
+  /api/v1/auth/login:
+    $ref: './authentication.yaml#/paths/auth_login'
+  /api/v1/auth/refresh:
+    $ref: './authentication.yaml#/paths/auth_refresh'
+  /api/v1/auth/logout:
+    $ref: './authentication.yaml#/paths/auth_logout'
+  /api/v1/auth/daemon-session:
+    $ref: './authentication.yaml#/paths/auth_daemon_session'
+  /api/v1/auth/password-reset/request:
+    $ref: './authentication.yaml#/paths/auth_password_reset_request'
+  /api/v1/auth/password-reset/confirm:
+    $ref: './authentication.yaml#/paths/auth_password_reset_confirm'
+  /api/v1/auth/email-verification/verify:
+    $ref: './authentication.yaml#/paths/auth_email_verification_verify'
+  /api/v1/auth/email-verification/resend:
+    $ref: './authentication.yaml#/paths/auth_email_verification_resend'
+  /api/v1/auth/email-verification/status:
+    $ref: './authentication.yaml#/paths/auth_email_verification_status'
+  /api/v1/auth/google/web/start:
+    $ref: './authentication.yaml#/paths/auth_google_web_start'
+  /api/v1/auth/google/web/callback:
+    $ref: './authentication.yaml#/paths/auth_google_web_callback'
+  /api/v1/auth/google/desktop/start:
+    $ref: './authentication.yaml#/paths/auth_google_desktop_start'
+  /api/v1/auth/google/desktop/complete:
+    $ref: './authentication.yaml#/paths/auth_google_desktop_complete'
+  /api/v1/auth/desktop/handoff/start:
+    $ref: './authentication.yaml#/paths/auth_desktop_handoff_start'
+  /api/v1/auth/desktop/handoff/complete:
+    $ref: './authentication.yaml#/paths/auth_desktop_handoff_complete'
+  /api/v1/me:
+    $ref: './authentication.yaml#/paths/me'
+  /api/v1/me/profile:
+    $ref: './authentication.yaml#/paths/me_profile'
+
+  # ---------------------------------------------------------- health
+  /api/v1/crash-reports:
+    $ref: './health.yaml#/paths/crash_reports'
+  /api/v1/webhooks/resend/mailbox:
+    $ref: './mailbox.yaml#/paths/webhooks_resend_mailbox'
+
+  # ---------------------------------------------------------- companies
+  /api/v1/companies:
+    $ref: './companies.yaml#/paths/companies'
+  /api/v1/companies/{companyId}:
+    $ref: './companies.yaml#/paths/companies_companyId'
+  /api/v1/companies/{companyId}/proactive-mode:
+    $ref: './companies.yaml#/paths/companies_companyId_proactive_mode'
+  /api/v1/companies/{companyId}/statistics:
+    $ref: './companies.yaml#/paths/companies_companyId_statistics'
+  /api/v1/companies/{companyId}/profile:
+    $ref: './companies.yaml#/paths/companies_companyId_profile'
+  /api/v1/companies/{companyId}/reference-documents:
+    $ref: './companies.yaml#/paths/companies_companyId_reference_documents'
+  /api/v1/companies/{companyId}/milestone-attestations:
+    $ref: './companies.yaml#/paths/companies_companyId_milestone_attestations'
+  /api/v1/companies/{companyId}/members/{userId}:
+    $ref: './companies.yaml#/paths/companies_companyId_members_userId'
+  /api/v1/companies/{companyId}/members/{userId}/transfer-ownership:
+    $ref: './companies.yaml#/paths/companies_companyId_members_userId_transfer_ownership'
+  /api/v1/companies/{companyId}/leave:
+    $ref: './companies.yaml#/paths/companies_companyId_leave'
+  /api/v1/companies/{companyId}/members:
+    $ref: './companies.yaml#/paths/companies_companyId_members'
+  /api/v1/companies/{companyId}/search:
+    $ref: './companies.yaml#/paths/companies_companyId_search'
+  /api/v1/companies/{companyId}/resources:
+    $ref: './companies.yaml#/paths/companies_companyId_resources'
+  /api/v1/companies/{companyId}/resources/{resourceId}:
+    $ref: './companies.yaml#/paths/companies_companyId_resources_resourceId'
+
+  # ---------------------------------------------------------- commerce
+  /api/v1/companies/{companyId}/commerce/summary:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_summary'
+  /api/v1/companies/{companyId}/commerce/account-status:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_account_status'
+  /api/v1/companies/{companyId}/commerce/terms-acceptances:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_terms_acceptances'
+  /api/v1/companies/{companyId}/commerce/accounts/{environment}/account-session:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_account_session'
+  /api/v1/companies/{companyId}/commerce/accounts/{environment}/onboarding-link:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_onboarding_link'
+  /api/v1/companies/{companyId}/commerce/accounts/{environment}/dashboard-link:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_dashboard_link'
+  /api/v1/companies/{companyId}/commerce/manifests:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests'
+  /api/v1/companies/{companyId}/commerce/manifests/{manifestId}:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests_manifestId'
+  /api/v1/companies/{companyId}/commerce/manifests/{manifestId}/approve-publish:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests_manifestId_approve_publish'
+  /api/v1/companies/{companyId}/commerce/sites/{siteId}/signing-keys/sync:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_sites_siteId_signing_keys_sync'
+  /api/v1/companies/{companyId}/commerce/sites/{siteId}/signing-keys/{keyId}/revoke:
+    $ref: './commerce.yaml#/paths/companies_companyId_commerce_sites_siteId_signing_keys_keyId_revoke'
+  /api/v1/site-commerce/jwks:
+    $ref: './commerce.yaml#/paths/site_commerce_jwks'
+  /api/v1/site-commerce/challenges:
+    $ref: './commerce.yaml#/paths/site_commerce_challenges'
+  /api/v1/site-commerce/checkout-sessions:
+    $ref: './commerce.yaml#/paths/site_commerce_checkout_sessions'
+  /api/v1/site-commerce/portal-sessions:
+    $ref: './commerce.yaml#/paths/site_commerce_portal_sessions'
+  /api/v1/site-commerce/entitlements/verify:
+    $ref: './commerce.yaml#/paths/site_commerce_entitlements_verify'
+  /api/v1/webhooks/stripe/commerce:
+    $ref: './commerce.yaml#/paths/webhooks_stripe_commerce'
+
+  # ---------------------------------------------------------- agents
+  /api/v1/companies/{companyId}/agents:
+    $ref: './agents.yaml#/paths/companies_companyId_agents'
+  /api/v1/companies/{companyId}/agents/{agentId}:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId'
+  /api/v1/companies/{companyId}/agents/{agentId}/archive:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_archive'
+  /api/v1/companies/{companyId}/agents/{agentId}/binding:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_binding'
+  /api/v1/companies/{companyId}/agent-bindings:
+    $ref: './agents.yaml#/paths/companies_companyId_agent_bindings'
+  /api/v1/companies/{companyId}/agents/{agentId}/restore:
+    $ref: './agents.yaml#/paths/companies_companyId_agents_agentId_restore'
+  /api/v1/companies/{companyId}/platform-skills:
+    $ref: './agents.yaml#/paths/companies_companyId_platform_skills'
+
+  # ---------------------------------------------------------- workflows
+  /api/v1/companies/{companyId}/workflows:
+    $ref: './workflows.yaml#/paths/companies_companyId_workflows'
+  /api/v1/companies/{companyId}/workflows/{workflowKey}:
+    $ref: './workflows.yaml#/paths/companies_companyId_workflows_workflowKey'
+  /api/v1/companies/{companyId}/workflows/{workflowKey}/readiness:
+    $ref: './workflows.yaml#/paths/companies_companyId_workflows_workflowKey_readiness'
+
+  # ---------------------------------------------------------- connectors-and-plugins
+  /api/v1/companies/{companyId}/connectors:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_connectors'
+  /api/v1/companies/{companyId}/connectors/refresh:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_connectors_refresh'
+  /api/v1/companies/{companyId}/connectors/resolve:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_connectors_resolve'
+  /api/v1/companies/{companyId}/connectors/{connectorId}/connect:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_connectors_connectorId_connect'
+  /api/v1/companies/{companyId}/plugins:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_plugins'
+  /api/v1/companies/{companyId}/plugins/refresh:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_plugins_refresh'
+  /api/v1/companies/{companyId}/plugins/{pluginId}:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_plugins_pluginId'
+  /api/v1/companies/{companyId}/plugins/{pluginId}/install:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_plugins_pluginId_install'
+  /api/v1/companies/{companyId}/plugins/{pluginId}/uninstall:
+    $ref: './connectors-and-plugins.yaml#/paths/companies_companyId_plugins_pluginId_uninstall'
+
+  # ---------------------------------------------------------- activity-and-usage
+  /api/v1/companies/{companyId}/usage:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_usage'
+  /api/v1/companies/{companyId}/huddle-budget:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_huddle_budget'
+  /api/v1/companies/{companyId}/agents/{agentId}/usage:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_agents_agentId_usage'
+  /api/v1/companies/{companyId}/me/activity-insight:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_me_activity_insight'
+  /api/v1/companies/{companyId}/analytics/summary:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_summary'
+  /api/v1/companies/{companyId}/analytics/series:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_series'
+  /api/v1/companies/{companyId}/analytics/breakdown:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_breakdown'
+  /api/v1/companies/{companyId}/analytics/failures:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_failures'
+  /api/v1/companies/{companyId}/analytics/heatmap:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_heatmap'
+  /api/v1/companies/{companyId}/analytics/budget:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_analytics_budget'
+  /api/v1/companies/{companyId}/tasks/{taskId}/usage:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_tasks_taskId_usage'
+  /api/v1/companies/{companyId}/activity:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_activity'
+
+  # ---------------------------------------------------------- inbox
+  /api/v1/me/inbox:
+    $ref: './inbox.yaml#/paths/me_inbox'
+  /api/v1/me/inbox/counts:
+    $ref: './inbox.yaml#/paths/me_inbox_counts'
+  /api/v1/me/inbox/read-all:
+    $ref: './inbox.yaml#/paths/me_inbox_read_all'
+  /api/v1/me/inbox/{itemId}:
+    $ref: './inbox.yaml#/paths/me_inbox_itemId'
+  /api/v1/me/inbox/{itemId}/{mutation}:
+    $ref: './inbox.yaml#/paths/me_inbox_itemId_mutation'
+  /api/v1/companies/{companyId}/inbox:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox'
+  /api/v1/companies/{companyId}/inbox/counts:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox_counts'
+  /api/v1/companies/{companyId}/inbox/read-all:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox_read_all'
+  /api/v1/companies/{companyId}/inbox/{itemId}:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox_itemId'
+  /api/v1/companies/{companyId}/inbox/{itemId}/{mutation}:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox_itemId_mutation'
+
+  # ---------------------------------------------------------- tasks
+  /api/v1/companies/{companyId}/company-plan/apply:
+    $ref: './tasks.yaml#/paths/companies_companyId_company_plan_apply'
+  /api/v1/companies/{companyId}/tasks:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks'
+  /api/v1/companies/{companyId}/tasks/{taskId}:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId'
+  /api/v1/companies/{companyId}/tasks/{taskId}/dependencies:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_dependencies'
+  /api/v1/companies/{companyId}/task-dependencies:
+    $ref: './tasks.yaml#/paths/companies_companyId_task_dependencies'
+  /api/v1/companies/{companyId}/tasks/{taskId}/runs:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_runs'
+  /api/v1/companies/{companyId}/task-failures:
+    $ref: './tasks.yaml#/paths/companies_companyId_task_failures'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/task-reports:
+    $ref: './tasks.yaml#/paths/companies_companyId_conversations_conversationId_task_reports'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/task-reports/send:
+    $ref: './tasks.yaml#/paths/companies_companyId_conversations_conversationId_task_reports_send'
+
+  # ---------------------------------------------------------- schedules
+  /api/v1/companies/{companyId}/schedules/preview:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_preview'
+  /api/v1/companies/{companyId}/schedules:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules'
+  /api/v1/companies/{companyId}/schedules/{scheduleId}:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_scheduleId'
+  /api/v1/companies/{companyId}/schedules/{scheduleId}/pause:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_scheduleId_pause'
+  /api/v1/companies/{companyId}/schedules/{scheduleId}/resume:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_scheduleId_resume'
+  /api/v1/companies/{companyId}/schedules/{scheduleId}/cancel:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_scheduleId_cancel'
+  /api/v1/companies/{companyId}/schedules/{scheduleId}/runs:
+    $ref: './schedules.yaml#/paths/companies_companyId_schedules_scheduleId_runs'
+
+  # ---------------------------------------------------------- conversations
+  /api/v1/companies/{companyId}/conversations:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations'
+  /api/v1/companies/{companyId}/conversations/{conversationId}:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/transcript:
+    $ref: './conversations.yaml#/paths/companies_companyId_conversations_conversationId_transcript'
+  /api/v1/conversations/{conversationId}/model-settings:
+    $ref: './conversations.yaml#/paths/conversationModelSettings'
+  /api/v1/conversations/{conversationId}/state:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_state'
+  /api/v1/conversations/{conversationId}/run-queue:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_run_queue'
+  /api/v1/conversations/{conversationId}/run-queue/order:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_run_queue_order'
+  /api/v1/conversations/{conversationId}/run-queue/{queueItemId}:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_run_queue_queueItemId'
+  /api/v1/conversations/{conversationId}/messages:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_messages'
+  /api/v1/conversations/{conversationId}/messages/{messageId}/context:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_messages_messageId_context'
+  /api/v1/tasks/{taskId}/messages:
+    $ref: './conversations.yaml#/paths/tasks_taskId_messages'
+  /api/v1/attachments/initiate:
+    $ref: './conversations.yaml#/paths/attachments_initiate'
+  /api/v1/attachments/{attachmentId}/complete:
+    $ref: './conversations.yaml#/paths/attachments_attachmentId_complete'
+  /api/v1/attachments/{attachmentId}/download:
+    $ref: './conversations.yaml#/paths/attachments_attachmentId_download'
+
+  # ---------------------------------------------------------- mailbox-and-agent-mail
+  /api/v1/companies/{companyId}/mailbox:
+    $ref: './mailbox.yaml#/paths/companies_companyId_mailbox'
+  /api/v1/companies/{companyId}/mailbox/messages:
+    $ref: './mailbox.yaml#/paths/companies_companyId_mailbox_messages'
+  /api/v1/companies/{companyId}/mailbox/messages/{messageId}:
+    $ref: './mailbox.yaml#/paths/companies_companyId_mailbox_messages_messageId'
+  /api/v1/companies/{companyId}/mailbox/messages/{messageId}/read:
+    $ref: './mailbox.yaml#/paths/companies_companyId_mailbox_messages_messageId_read'
+  /api/v1/companies/{companyId}/mailbox/messages/{messageId}/attachments/{attachmentId}:
+    $ref: './mailbox.yaml#/paths/companies_companyId_mailbox_messages_messageId_attachments_attachmentId'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/mail-draft-groups:
+    $ref: './mailbox.yaml#/paths/companies_companyId_conversations_conversationId_mail_draft_groups'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/mail-draft-groups/{groupId}/send:
+    $ref: './mailbox.yaml#/paths/companies_companyId_conversations_conversationId_mail_draft_groups_groupId_send'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/mail-drafts/{draftId}:
+    $ref: './mailbox.yaml#/paths/companies_companyId_conversations_conversationId_mail_drafts_draftId'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/mail-drafts/{draftId}/send:
+    $ref: './mailbox.yaml#/paths/companies_companyId_conversations_conversationId_mail_drafts_draftId_send'
+
+  # ---------------------------------------------------------- runs
+  /api/v1/companies/{companyId}/runs:
+    $ref: './runs.yaml#/paths/companies_companyId_runs'
+  /api/v1/companies/{companyId}/runs/{runId}:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId'
+  /api/v1/companies/{companyId}/runs/{runId}/cancel:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_cancel'
+  /api/v1/runs/{runId}/output:
+    $ref: './runs.yaml#/paths/runs_runId_output'
+  /api/v1/companies/{companyId}/runs/{runId}/result/studio-canvas:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_result_studio_canvas'
+  /api/v1/companies/{companyId}/runs/{runId}/result:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_result'
+  /api/v1/companies/{companyId}/runs/{runId}/result/publication:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_result_publication'
+  /api/v1/companies/{companyId}/runs/{runId}/result/publication/subdomain:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_result_publication_subdomain'
+  /api/v1/companies/{companyId}/runs/{runId}/result/publication/unpublish:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_result_publication_unpublish'
+  /api/v1/companies/{companyId}/runs/{runId}/artifacts/{artifactId}/items/{ordinal}/download:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_artifacts_artifactId_items_ordinal_download'
+  /api/v1/companies/{companyId}/runs/{runId}/artifacts/{artifactId}/items/{ordinal}/share:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_artifacts_artifactId_items_ordinal_share'
+  /api/v1/companies/{companyId}/artifacts:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts'
+  /api/v1/companies/{companyId}/artifacts/resolve:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_resolve'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/open:
+    $ref: './artifact-sharing.yaml#/paths/output_document_open'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document:
+    $ref: './artifact-sharing.yaml#/paths/output_document_read'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/ids:
+    $ref: './artifact-sharing.yaml#/paths/output_document_ids'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/checkpoints:
+    $ref: './artifact-sharing.yaml#/paths/output_document_checkpoint'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/versions/{versionId}/body:
+    $ref: './artifact-sharing.yaml#/paths/output_document_version'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/presence:
+    $ref: './artifact-sharing.yaml#/paths/output_document_presence'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review:
+    $ref: './artifact-sharing.yaml#/paths/artifact_review'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/operations:
+    $ref: './artifact-sharing.yaml#/paths/artifact_review_operations'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_agent_artifacts_artifactId'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/items/{ordinal}/download:
+    $ref: './runs.yaml#/paths/companies_companyId_runs_runId_agent_artifacts_artifactId_items_ordinal_download'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_artifactId'
+  /api/v1/companies/{companyId}/artifacts/unowned:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_unowned'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/claim:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_artifactId_claim'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/grants/{userId}:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_artifactId_grants_userId'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/items/{ordinal}/download:
+    $ref: './runs.yaml#/paths/companies_companyId_artifacts_artifactId_items_ordinal_download'
+  /api/v1/companies/{companyId}/conversations/{conversationId}/artifacts:
+    $ref: './runs.yaml#/paths/companies_companyId_conversations_conversationId_artifacts'
+  /api/v1/companies/{companyId}/runtimes:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes'
+  /api/v1/companies/{companyId}/runtimes/{runtimeId}:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes_runtimeId'
+  /api/v1/companies/{companyId}/runtimes/{runtimeId}/remove:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes_runtimeId_remove'
+  /api/v1/companies/{companyId}/runtimes/{runtimeId}/refresh:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes_runtimeId_refresh'
+
+  /api/v1/companies/{companyId}/runtimes/{runtimeId}/models:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes_runtimeId_models'
+  /api/v1/companies/{companyId}/runtimes/{runtimeId}/models/{requestId}:
+    $ref: './runs.yaml#/paths/companies_companyId_runtimes_runtimeId_models_requestId'
+
+  # ---------------------------------------------------------- daemon
+  /api/v1/daemon/register:
+    $ref: './daemon.yaml#/paths/daemon_register'
+  /api/v1/daemon/deregister:
+    $ref: './daemon.yaml#/paths/daemon_deregister'
+  /api/v1/daemon/heartbeat:
+    $ref: './daemon.yaml#/paths/daemon_heartbeat'
+  /api/v1/daemon/config:
+    $ref: './daemon.yaml#/paths/daemon_config'
+  /api/v1/daemon/companies:
+    $ref: './daemon.yaml#/paths/daemon_companies'
+  /api/v1/daemon/companies/{companyId}/commerce/sites/{siteAlias}/local-signing-keys:
+    $ref: './daemon.yaml#/paths/daemon_companies_companyId_commerce_sites_siteAlias_local_signing_keys'
+  /api/v1/daemon/ws:
+    $ref: './daemon.yaml#/paths/daemon_ws'
+  /api/v1/daemon/runs/claim:
+    $ref: './daemon.yaml#/paths/daemon_runs_claim'
+  /api/v1/daemon/runtimes/{runtimeId}/model-discoveries/{requestId}/result:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_model_discoveries_requestId_result'
+  /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/prepare-lease:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_runs_runId_prepare_lease'
+  /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/attachments/{attachmentId}:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_runs_runId_attachments_attachmentId'
+  /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/skill-bundles/resolve:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_runs_runId_skill_bundles_resolve'
+  /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/studio-project:
+    $ref: './daemon.yaml#/paths/studioProject'
+  /api/v1/daemon/runtimes/{runtimeId}/tools:
+    $ref: './daemon.yaml#/paths/daemon_runtime_tools'
+  /api/v1/daemon/runtimes/{runtimeId}/agent-bindings:
+    $ref: './daemon.yaml#/paths/daemon_runtime_agent_bindings'
+  /api/v1/daemon/runtimes/{runtimeId}/recover-orphans:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_recover_orphans'
+  /api/v1/daemon/runtimes/{runtimeId}/task-merges/claim:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_task_merges_claim'
+  /api/v1/daemon/runtimes/{runtimeId}/task-merges/manual:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_task_merges_manual'
+  /api/v1/daemon/runtimes/{runtimeId}/task-merges/{jobId}/lease:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_task_merges_jobId_lease'
+  /api/v1/daemon/runtimes/{runtimeId}/task-merges/{jobId}/result:
+    $ref: './daemon.yaml#/paths/daemon_runtimes_runtimeId_task_merges_jobId_result'
+  /api/v1/daemon/companies/{companyId}/runtimes/{runtimeId}/connectors/discovery:
+    $ref: './connectors-and-plugins.yaml#/paths/daemon_companies_companyId_runtimes_runtimeId_connectors_discovery'
+  /api/v1/daemon/companies/{companyId}/runtimes/{runtimeId}/connectors/discovery/reaffirm:
+    $ref: './connectors-and-plugins.yaml#/paths/daemon_companies_companyId_runtimes_runtimeId_connectors_discovery_reaffirm'
+  /api/v1/daemon/companies/{companyId}/runtimes/{runtimeId}/plugins/discovery:
+    $ref: './connectors-and-plugins.yaml#/paths/daemon_companies_companyId_runtimes_runtimeId_plugins_discovery'
+  /api/v1/daemon/runs/{runId}/status:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_status'
+  /api/v1/daemon/runs/{runId}/start:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_start'
+  /api/v1/daemon/runs/{runId}/wait-studio-auth:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_wait_studio_auth'
+  /api/v1/daemon/runs/{runId}/wait-local-directory:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_wait_local_directory'
+  /api/v1/daemon/runs/{runId}/usage:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_usage'
+  /api/v1/daemon/runs/{runId}/session:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_session'
+  /api/v1/daemon/runs/{runId}/complete:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_complete'
+  /api/v1/daemon/runs/{runId}/fail:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_fail'
+  /api/v1/daemon/runs/{runId}/cancel-ack:
+    $ref: './daemon.yaml#/paths/daemon_runs_runId_cancel_ack'
+
+  # ---------------------------------------------------------- companies
+  /api/v1/companies/{companyId}/initialization:
+    $ref: './companies.yaml#/paths/companies_companyId_initialization'
+  /api/v1/companies/{companyId}/bootstrap:
+    $ref: './companies.yaml#/paths/companies_companyId_bootstrap'
+
+  # ---------------------------------------------------------- activity-and-usage
+  /api/v1/companies/{companyId}/activity/calendar:
+    $ref: './activity-and-usage.yaml#/paths/companies_companyId_activity_calendar'
+
+  # ---------------------------------------------------------- inbox
+  /api/v1/companies/{companyId}/inbox/read:
+    $ref: './inbox.yaml#/paths/companies_companyId_inbox_read'
+
+  # ---------------------------------------------------------- approvals
+  /api/v1/companies/{companyId}/approvals:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals'
+  /api/v1/companies/{companyId}/approvals/stats:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals_stats'
+  /api/v1/companies/{companyId}/approvals/{approvalId}:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals_approvalId'
+  /api/v1/companies/{companyId}/approvals/{approvalId}/approve:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals_approvalId_approve'
+  /api/v1/companies/{companyId}/approvals/{approvalId}/reject:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals_approvalId_reject'
+  /api/v1/companies/{companyId}/approvals/{approvalId}/cancel:
+    $ref: './approvals.yaml#/paths/companies_companyId_approvals_approvalId_cancel'
+  /api/v1/companies/{companyId}/questions:
+    $ref: './approvals.yaml#/paths/companies_companyId_questions'
+  /api/v1/companies/{companyId}/questions/{questionId}:
+    $ref: './approvals.yaml#/paths/companies_companyId_questions_questionId'
+  /api/v1/companies/{companyId}/questions/{questionId}/answer:
+    $ref: './approvals.yaml#/paths/companies_companyId_questions_questionId_answer'
+  /api/v1/companies/{companyId}/questions/{questionId}/withdraw:
+    $ref: './approvals.yaml#/paths/companies_companyId_questions_questionId_withdraw'
+
+  # ---------------------------------------------------------- tasks
+  /api/v1/companies/{companyId}/tasks/{taskId}/workspace:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_workspace'
+  /api/v1/companies/{companyId}/tasks/{taskId}/results:
+    $ref: './tasks.yaml#/paths/companies_companyId_tasks_taskId_results'
+
+  /api/v1/companies/{companyId}/wiki/collections:
+    $ref: './wiki.yaml#/paths/collections'
+  /api/v1/companies/{companyId}/wiki/collections/{collectionId}:
+    $ref: './wiki.yaml#/paths/collection'
+  /api/v1/companies/{companyId}/wiki/pages:
+    $ref: './wiki.yaml#/paths/pages'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}:
+    $ref: './wiki.yaml#/paths/page'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/document:
+    $ref: './wiki.yaml#/paths/document'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/document/ids:
+    $ref: './wiki.yaml#/paths/documentIds'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/document/metadata:
+    $ref: './wiki.yaml#/paths/documentMetadata'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/publish:
+    $ref: './wiki.yaml#/paths/publish'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/links:
+    $ref: './wiki.yaml#/paths/pageLinks'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/archive:
+    $ref: './wiki.yaml#/paths/archive'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/restore:
+    $ref: './wiki.yaml#/paths/restore'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/revisions:
+    $ref: './wiki.yaml#/paths/revisions'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/restore-revision:
+    $ref: './wiki.yaml#/paths/restoreRevision'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/favorite:
+    $ref: './wiki.yaml#/paths/favorite'
+  /api/v1/companies/{companyId}/wiki/graph:
+    $ref: './wiki.yaml#/paths/graph'
+  /api/v1/companies/{companyId}/wiki/pages/{pageId}/agent-reads:
+    $ref: './wiki.yaml#/paths/pageAgentReads'
+  /api/v1/companies/{companyId}/runs/{runId}/wiki-reads:
+    $ref: './wiki.yaml#/paths/runWikiReads'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/search:
+    $ref: './wiki.yaml#/paths/agentSearch'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages/{pageId}:
+    $ref: './wiki.yaml#/paths/agentPage'
+  /api/v1/companies/{companyId}/human-conversations/{conversationId}/members:
+    $ref: './conversations.yaml#/paths/humanConversationMembers'
+  /api/v1/companies/{companyId}/channels/{conversationId}/agent-invocations:
+    $ref: './conversations.yaml#/paths/channelInvocations'
+  /api/v1/companies/{companyId}/channels/{conversationId}/agents/{agentId}/activity:
+    $ref: './conversations.yaml#/paths/channelAgentActivity'
+  /api/v1/companies/{companyId}/channels/{conversationId}/agent-invocations/{invocationId}/retry:
+    $ref: './conversations.yaml#/paths/channelInvocationRetry'

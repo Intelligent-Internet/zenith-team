@@ -1,0 +1,168 @@
+{
+  "appPages": [
+    {
+      "data": [
+        {
+          "id": "app-connected",
+          "name": "Connected\u0000 Drive",
+          "description": "Connected files\nwithout exposing credentials.",
+          "logoUrl": "https://cdn.example.test/drive.png?token=SECRET_LOGO_TOKEN",
+          "installUrl": "https://chatgpt.com/apps/drive/app-connected",
+          "isAccessible": true,
+          "isEnabled": true,
+          "labels": {"authorization": "Bearer SECRET_LABEL"},
+          "config": {"env": {"TOKEN": "SECRET_CONFIG"}, "path": "/Users/example/.codex"}
+        },
+        {
+          "id": "app-available",
+          "name": "Available App",
+          "description": "Install through ChatGPT.",
+          "logoUrl": "http://unsafe.example.test/icon.png",
+          "installUrl": "https://chatgpt.com/apps/available/app-available",
+          "isAccessible": false,
+          "isEnabled": true
+        },
+        {
+          "id": "app-not-ready",
+          "name": "Installed App",
+          "description": "Accessible but not callable.",
+          "installUrl": "https://chatgpt.com/apps/installed/app-not-ready",
+          "isAccessible": true,
+          "isEnabled": true
+        },
+        {
+          "id": "bad-url",
+          "name": "Bad URL",
+          "installUrl": "https://chatgpt.com.evil.test/apps/bad-url",
+          "isAccessible": false,
+          "isEnabled": true
+        },
+        {
+          "id": " bad-id ",
+          "name": "Bad ID",
+          "installUrl": "https://chatgpt.com/apps/bad-id",
+          "isAccessible": false,
+          "isEnabled": true
+        }
+      ],
+      "nextCursor": "apps-page-2"
+    },
+    {
+      "data": [
+        {
+          "id": "app-available",
+          "name": "Conflicting Duplicate",
+          "installUrl": "https://chatgpt.com/apps/conflict/app-available",
+          "isAccessible": true,
+          "isEnabled": false
+        }
+      ]
+    }
+  ],
+  "installed": {
+    "apps": [
+      {"id": "app-connected", "runtimeName": "Runtime Drive", "enabled": true, "callable": true},
+      {"id": "app-connected", "runtimeName": "Conflicting Runtime", "enabled": false, "callable": false},
+      {"id": "app-not-ready", "runtimeName": "Installed App", "enabled": true, "callable": false},
+      {"id": "app-runtime-only", "runtimeName": "Runtime Only", "enabled": true, "callable": true}
+    ]
+  },
+  "appReads": [
+    {
+      "apps": [
+        {
+          "id": "app-connected",
+          "toolSummaries": [
+            {"name": "files/search", "isEnabled": true, "isReadOnly": true}
+          ]
+        },
+        {
+          "id": "app-runtime-only",
+          "toolSummaries": [
+            {"name": "runtime/read", "isEnabled": true, "isReadOnly": true}
+          ]
+        }
+      ],
+      "missingAppIds": []
+    }
+  ],
+  "mcpPages": [
+    {
+      "data": [
+        {
+          "name": "figma",
+          "authStatus": "oAuth",
+          "serverInfo": {"name": "figma-server", "title": "Figma", "description": "Design files", "version": "1"},
+          "tools": {"read_design": {"name": "read_design", "inputSchema": {"headers": {"Authorization": "Bearer SECRET_TOOL"}, "path": "/tmp/private"}}},
+          "resources": [],
+          "resourceTemplates": []
+        },
+        {
+          "name": "slack",
+          "authStatus": "notLoggedIn",
+          "serverInfo": {"name": "slack-server", "title": "Slack", "description": "Messages", "version": "1"},
+          "tools": {},
+          "resources": [],
+          "resourceTemplates": []
+        },
+        {
+          "name": "idle-mcp",
+          "authStatus": "notLoggedIn",
+          "serverInfo": {"name": "idle-server", "title": "Idle MCP", "description": "Needs setup", "version": "1"},
+          "tools": {},
+          "resources": [],
+          "resourceTemplates": []
+        }
+      ],
+      "nextCursor": "mcp-page-2"
+    },
+    {
+      "data": [
+        {
+          "name": "figma",
+          "authStatus": "notLoggedIn",
+          "serverInfo": {"name": "duplicate", "title": "Conflicting Figma", "version": "1"},
+          "tools": {},
+          "resources": [],
+          "resourceTemplates": []
+        },
+        {
+          "name": "app-connected",
+          "authStatus": "notLoggedIn",
+          "serverInfo": {"name": "collision", "title": "Source Collision", "version": "1"},
+          "tools": {},
+          "resources": [],
+          "resourceTemplates": []
+        },
+        {
+          "name": "bad\u0000mcp",
+          "authStatus": "oAuth",
+          "serverInfo": {"name": "bad", "title": "Bad MCP", "version": "1"},
+          "tools": {},
+          "resources": [],
+          "resourceTemplates": []
+        }
+      ]
+    }
+  ],
+  "notifications": [
+    {
+      "method": "mcpServer/startupStatus/updated",
+      "params": {
+        "name": "slack",
+        "status": "failed",
+        "failureReason": "reauthenticationRequired",
+        "error": "SECRET_REMOTE_ERROR /Users/example/.codex/config.toml"
+      }
+    },
+    {
+      "method": "mcpServer/startupStatus/updated",
+      "params": {
+        "name": "app-available",
+        "status": "failed",
+        "failureReason": "reauthenticationRequired",
+        "error": "A colliding MCP status must not reclassify the hosted app."
+      }
+    }
+  ]
+}

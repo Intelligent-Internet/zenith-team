@@ -1,0 +1,139 @@
+---
+title: What owners and admins can see
+description: Who can see a project, how groups give access, what owners and admins see and change without being let in, and how you know when someone lets themselves in.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Every [task](/tasks) belongs to a project, and each project decides who can see it. This page explains what that means for you, and what the owners and admins of your [company](/companies) can and cannot see.
+
+## Who can see a project
+
+Only the people added to a project see it. Seeing a project means seeing its tasks and boards, its task chats, its files, and the approvals, questions and results that come from its tasks.
+
+To give the whole team access, open **Team › Project access**, choose **Add** and tick **Select all**. People who join the company later are not added on their own.
+
+Some older projects are **open to everyone** in the company: a line above the access list says "Open to everyone". Every member can see such a project, write and change its tasks, post in its task chats and run its tasks; anything more, such as deciding approvals, is still given to each person. Someone who may change who sees the project can choose **Limit access** on that line; it asks once before limiting the project to the people added.
+
+Access is given to one person, or one [group](#groups), at a time, on one project, as a set of things they may do there:
+
+| On this project, you may… | Which covers |
+|---|---|
+| View tasks, chats and files | see its tasks, boards, task chats and files |
+| Create and edit tasks | create and change tasks, and post in their chats |
+| Run tasks with agents | start the agent on a task, on your own computer |
+| Manage project files | change the project's logo and documents, and upload files to its canvas |
+| Answer approvals and questions | answer what an agent asks inside the project |
+| Edit project details | change its name and description |
+| Manage people's access | add people, change what they may do, remove them |
+| Archive the project | close the project for good, or let a [plan](/company-plan) delete its open tasks |
+| Change who can see the project | limit a project open to everyone to the people added |
+
+The list in the app shows them in this order, in three groups split by a thin line: work, decisions and management.
+
+**Archive project** is in the project's **Edit project** window. If you may archive but not edit the project, it is in the project's menu in the project list and on its **Settings** page instead. It asks first, for example "Archive Payroll?", with **Cancel** and **Archive**, and works only once nothing in the project is open or running: every task is done or cancelled, no agent is still running on one, and no changes are still being merged. Nothing brings an archived project back. Its tasks, chats and files stay, and it moves to **Archived** in the project list.
+
+Anyone given something on a project can also see it.
+
+Answering what an agent asks in a task chat needs only **Answer approvals and questions**, not **Create and edit tasks**. If you can't answer, the question says which item you need. Only people who can answer are told the task needs their input or response: on its card, in its panel, its chat and the chat list. Everyone else sees the task's usual status.
+
+On the project's canvas, uploading a file needs only **Manage project files**, not **Create and edit tasks**. Creating a document or a frame needs **Create and edit tasks**. You only see the buttons you can use.
+
+When an agent finishes a task, the task waits in review. Its assignee accepts the agent's changes, which needs **Run tasks with agents**; without it, accepting says "You can't run tasks here." The assignee, an owner or an admin can also mark it done, which needs **Create and edit tasks**. There is no separate item for reviewing results. Only people who can do one of these see **Needs your review** on the task's card, in its panel, on its full page and in the project overview, and only when the agent's last run on it completed, so there is work to review; for them its status reads **Needs review**. Everyone else sees its usual status, **In review**. A task moved to review by hand, with no run or after a run that failed or was stopped, shows its status only, even to them.
+
+### Team › Project access
+
+Pick a project at the top left. Below it is one list: the groups that have access first, then the people. A crown next to a name marks the company's owner and a shield an admin; both look after every project through their role.
+
+Each row shows what that person or group may do on the project as one short label: the largest of the common sets below that they have in full, then **+1**, **+2** and so on for each item they have beyond it. **View +1**, for example, means they can see the project and have one more item, such as **Manage people's access**. A small people mark after the label means some of it comes from a group; a building means some of it comes from the project being open to everyone.
+
+If you can change access, click the label to see every item and change it. Everyone else sees the label only. The list that opens has four common sets on top and every item below, each with a check:
+
+| Common set | They may |
+|---|---|
+| **View** | see the project's tasks, chats and files |
+| **Edit and run** | also create, edit and run tasks |
+| **Approve** | also answer approvals and questions |
+| **Manage** | everything in the table above |
+
+Pick a common set, or tick and untick single items: a person can have any mix. **View tasks, chats and files** stays ticked (in grey) while anything else is, because everything else needs it. Nothing changes until you choose **Save**. **Remove access** at the bottom of the list is the one place to take their access away; on your own row it reads **Leave**. You are asked first only when it matters, the same as for a group: "Change access?" if the change stops a task of theirs that is running now (it takes away **Run tasks with agents** or **View tasks, chats and files** while one runs), and, for example, "Remove Mia Member from Payroll?" if they lose the project ("Leave Payroll?" for yourself). Anything else saves straight away. If a group still gives them the project, removing their own access keeps them on the list.
+
+**Add**, at the top right, adds several people or groups at once, or every person with **Select all**. Each one you tick starts at **Edit and run**, and has the same label and list to change before adding; the list opens beside the dialog, or over its list when the window is narrower, and never covers **Cancel** and **Add**.
+
+If you can give access on a project but are not an owner or admin, you can only give what you have there yourself. Items beyond your own access are greyed, with a lock where their tick box would be, and common sets you can't give are greyed; hover either to see "Beyond your access". And someone whose own access on the project goes beyond yours shows their label with no list and a lock at the end of their row: only an owner, an admin or someone with at least as much access can change or remove it. Owners and admins can give anything. The same limit holds when you give access to a group.
+
+## Groups
+
+A group is a named set of people, such as Finance, that you can give a project to in one step. Groups hold people only, never agents.
+
+- **Who manages them.** Owners and admins manage groups on **Team › Project access**. In **Add**, **New group** creates one (it is ticked for you) and the pencil next to a group edits it. A group's **···** menu in the list has **Edit group** (its name, description and people) and **Delete group**; **Remove access** is at the bottom of the group's list, as for a person. Everyone else sees the groups but cannot change them.
+- **Giving a group a project.** **Add** lists groups first. A group gets the same items as a person, and everyone in it gets that access.
+- **Access adds up.** A person can have access of their own and through one or more groups. A people mark after the label on their row shows that some of it comes from a group; in their list, items a group gives are ticked and locked, and the group mark's tooltip says "From Finance". Removing them from Finance, or removing Finance from the project, leaves the access they were given themselves. Removing the access you gave them while a group still gives them the project keeps them on the list with the group's access.
+- **Asked only when it matters.** When you change a group's members, or what a group may do on a project, it saves straight away, unless someone loses a project, someone's running tasks stop, or it changes projects you can't see. Then a short question, such as "Change Finance?", shows who it changes, on which projects, what they keep (for example **View +7**) and which runs stop, and nothing changes until you choose **Change**. A plus marks someone who gets more, an arrow down someone who keeps their projects with less, and a minus someone who loses a project. An owner or admin keeps looking after a project they can no longer see inside, so they get the arrow and their crown or shield, not the minus. Removing a group from a project asks on the same terms; deleting a group always asks.
+- **Who is told.** When adding someone to a group lets them see a restricted project, everyone else who manages access to that project, owners and admins included, gets one notice in their Inbox, with **Open access**. You are not told about your own change. When only one person was added, they are not told either.
+
+Leaving the company ends every group membership. Coming back does not restore it.
+
+## What owners and admins can always see
+
+Owners and admins look after every project, including ones they cannot see inside. Without being let in, they see only what they need to run the company:
+
+- **The project itself**: its name, description, whether it is open to everyone, and whether it is archived.
+- **Who has access**: the list of people on the project and what each may do.
+- **Every change to that list**: who gave or removed access, for whom, and what changed.
+- **The access report**: the members who have open tasks in a project, or started work there in the last 30 days, but can no longer see it. It names people and projects only.
+
+Without being let in, they can also rename a project, give or remove access, and archive it.
+
+## What they cannot see without access
+
+Without access that has been recorded for them, owners and admins do **not** see:
+
+- the project's tasks and boards,
+- its task chats, or anything said in them,
+- its files, including a project file someone shared in a channel or a direct message,
+- the approvals, questions and results that come from its tasks,
+- activity and notifications about its work.
+
+They also cannot change who sees the project, change its files, or decide anything inside it, until someone gives them that access. Their agents cannot see any of it either: an agent only ever sees what the person it works for can see.
+
+The same holds in shared chats. When you tag an agent in a channel or a group DM, it works with your access, and everyone in the chat reads its answer, so tag it where everyone may see what you ask for. In a huddle, the voice assistant works with the access of the person who shared Company context with it. That person must be in the call and is responsible for what it says, because everyone in the call hears it. When they leave the call, the assistant stops.
+
+A file that belongs to a project stays hidden from anyone who cannot see that project, wherever it was shared. In a channel, people who cannot see the project see the message without the file.
+
+## When someone lets themselves in
+
+An owner or admin can give themselves access to a project, the same way they give it to anyone else. The way in is **Join**, with an arrow going in, next to the project picker on **Team › Project access**: it gives them only the right to see the project, and anything more is a change to their own access afterwards. In the project picker, a project they have not joined has an eye struck out.
+
+<Callout type="info">
+Every change to who has access is recorded in the project's activity, including a change someone makes for themselves. The **By** column names who made it, and the entry says what happened and where: one person's access reads "Project access changed" over "Mia Member · Payroll", a group's reads like "Gave Finance View" over "Payroll" or "Added Mia Member" over "Finance", and a change to your own access reads "Joined project", "Left project" or "Changed own access" over the project. Open an entry to see the permissions it gave (a plus) and took away (a minus). Everyone who can see the project, and every owner and admin, can see that record. If an admin lets themselves into your project, you will see it.
+</Callout>
+
+## When you lose access
+
+When someone removes your access, takes you out of the only group that gave it, or limits a project that was open to everyone to the people added:
+
+- The project, its tasks, chats and files disappear for you right away. If you have it open, you're taken back to **Projects**, with no error on the way.
+- Your agents' work in that project stops; runs that were waiting or running are cancelled.
+- Messages you had queued in its task chats are removed.
+- Notifications about the project are hidden. They come back if your access does.
+- Tasks assigned to you stay yours until an owner or admin who can see the project hands them to someone else.
+
+When someone takes away only **Run tasks with agents** from you in a project, and you can still see it:
+
+- Your runs there that were waiting or running are cancelled.
+- Your Inbox tells you which run stopped, with a `run_failed` item that names the agent and the task or chat it was working in.
+- Your tasks there say "You can't run tasks here" until someone who manages it lets you again, or gives the task to someone who can. Others see, for example, "Mia can't run tasks here". Anyone who can change the project's access also sees **Manage access** next to it, which opens **Team › Project access** on that project. Until then nobody can post in those tasks' chats, since a message there needs a run you can't start; the chat says so instead of asking you to set the agent up.
+- In **New task**, choosing an agent for a task of your own in that project says "You can't run tasks here" and doesn't create it, with **Manage access** next to it if you can change the project's access. A task you do yourself, or give to someone else, still works.
+
+Leaving the company removes all your access. Coming back does not restore it.
+
+## After the upgrade to project access
+
+When project access was introduced, every existing project became restricted, and only the company's owners were given access. Everyone else lost access the same way as above: their runs there were cancelled and the messages they had queued in its task chats were removed. If you had tasks in a project and can no longer see it, ask an owner or admin: the access report shows them who needs to be added back.
+
+## Next steps
+
+- **[Companies](/companies#members-and-roles)**: what each role may do across the company.
+- **[Tasks](/tasks)**: how a task belongs to its project.
+- **[Attachments](/attachments)**: who can open a file shared in a chat.

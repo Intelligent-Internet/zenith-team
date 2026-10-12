@@ -1,0 +1,2041 @@
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/daemon.md is its prose counterpart.
+
+paths:
+  studioProject:
+    parameters:
+      - { $ref: './_common.yaml#/parameters/runtimeId' }
+      - { $ref: './_common.yaml#/parameters/runId' }
+      - name: X-Boardly-Daemon-ID
+        in: header
+        required: true
+        schema: { type: string }
+    post:
+      operationId: resolveConversationStudioProject
+      tags: [daemon]
+      summary: Resolve the exact live Run's conversation-owned Studio project
+      description: >-
+        Requires the owning daemon session and exact live Run proof. Version 2
+        get/ensure uses the shared receipt reservation owner and frozen Run origin.
+        Legacy get/reserve/bind remains available to the managed Run launcher and
+        is fenced by the exact live Run proof and configured Studio origin.
+      security: [{ daemonToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [action, runToken]
+              properties:
+                schemaVersion: { type: integer, enum: [2] }
+                requestId: { type: string, format: uuid }
+                action: { type: string, enum: [get, reserve, bind, ensure] }
+                runToken: { type: string, minLength: 1, maxLength: 256, writeOnly: true }
+                title: { type: string, maxLength: 200 }
+                description: { type: string, maxLength: 4000 }
+                bindingId: { type: string, format: uuid }
+                projectId: { type: string, format: uuid }
+                apiOrigin:
+                  type: string
+                  maxLength: 512
+                  description: Studio API origin supplied by the authenticated daemon for legacy reservations.
+      responses:
+        '200':
+          description: Current binding; empty IDs mean this conversation has no reservation yet.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    required: [id, projectId, title, description, canCreate]
+                    properties:
+                      id: { type: string }
+                      projectId: { type: string }
+                      title: { type: string }
+                      description: { type: string }
+                      canCreate: { type: boolean }
+                  - type: object
+                    additionalProperties: false
+                    required: [schemaVersion, requestId, binding]
+                    properties:
+                      schemaVersion: { type: integer, const: 2 }
+                      requestId: { type: string, format: uuid }
+                      binding:
+                        anyOf:
+                          - { $ref: './conversations.yaml#/schemas/StudioEditorBinding' }
+                          - { type: 'null' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: The project or conversation already has a different binding.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  daemon_runtime_tools:
+    parameters:
+      - { $ref: './_common.yaml#/parameters/runtimeId' }
+      - name: X-Boardly-Daemon-ID
+        in: header
+        required: true
+        description: Must match the Runtime's owning daemon; required independently of the legacy header rollout setting.
+        schema: { type: string }
+    post:
+      operationId: reportRuntimeTools
+      tags: [daemon]
+      summary: Replace sanitized Tool observations for the exact daemon-owned runtime
+      security: [{ daemonToken: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              additionalProperties: false
+              properties:
+                items:
+                  type: array
+                  maxItems: 4096
+                  items: { $ref: './runs.yaml#/schemas/ToolObservation' }
+      responses:
+        '204': { description: Observation stored. }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+  daemon_runtime_agent_bindings:
+    parameters:
+      - { $ref: './_common.yaml#/parameters/runtimeId' }
+      - $ref: './_common.yaml#/parameters/daemonIDHeader'
+    get:
+      operationId: listDaemonRuntimeAgentBindings
+      tags: [daemon]
+      summary: Read one of this daemon's runtimes and its person's Agent bindings on it
+      description: |
+        The daemon checks it before a local Tool sign-in and before it
+        publishes Tool status. The runtime must be this daemon's
+        (`X-Boardly-Daemon-ID`) and the signed-in person's, in a Company they
+        still belong to; anything else is `404 runtime_not_found` or
+        `404 company_not_found`. `items` are the person's own bindings on the
+        runtime, as `GET /companies/{companyId}/agent-bindings?runtime_id=`
+        lists them. The daemon's own session (D31) cannot read that member
+        route, so the daemon plane carries this read.
+      security: [{ daemonToken: [] }]
+      responses:
+        '200':
+          description: The runtime and the bindings on it.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [runtime, items]
+                properties:
+                  runtime:
+                    type: object
+                    required: [id, companyId, provider, daemonId]
+                    properties:
+                      id: { type: string, format: uuid }
+                      companyId: { type: string, format: uuid }
+                      provider: { type: string }
+                      daemonId: { type: string }
+                  items:
+                    type: array
+                    items: { $ref: './_common.yaml#/schemas/AgentBinding' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+  # ===================================================================== DAEMON
+  # Everything below is tagged `daemon` so the plane is identifiable — no UI
+  # client code calls it, though the default generated client includes it.
+  #
+  # Plane-wide notes that are not repeated per operation:
+  #
+  #   * Authentication is the standard user bearer credential, accepted from
+  #     the `Authorization` header only — never a cookie, so CSRF never applies
+  #     on this plane. The spec spells that header-only rule as the
+  #     `daemonToken` scheme. Every authorization denial is `404`, never
+  #     `403`: a caller who is not an active member of the owning company
+  #     answers `404 company_not_found` — except heartbeat, which folds the
+  #     membership denial into its `404 runtime_not_found`.
+  #   * Runtime-scoped operations (listed with the `daemonIDHeader`
+  #     parameter, as the run-scoped ones below also are) additionally prove
+  #     the caller is the machine that registered the runtime:
+  #     `X-Boardly-Daemon-ID` must equal the runtime's `daemonId`. A
+  #     mismatch is the same non-disclosing `404 runtime_not_found`; on the
+  #     deregister batch the id is skipped.
+  #     Rollout: a missing header is admitted with a warning this release and
+  #     refused as `400 invalid_request` once the server runs with
+  #     `APP_DAEMON_ID_REQUIRED=true`. Claim and the task-merge routes also
+  #     prove `daemonId` from the body, as before.
+  #   * A runtime is private to its registrant (ADR 0014): runtime-scoped
+  #     operations and the claim also require the signed-in user to be the
+  #     runtime's registrant. Run-scoped operations (`/daemon/runs/{runId}/…`)
+  #     apply both checks to the run's runtime, and answer a run on another
+  #     daemon's or another member's runtime as `404 run_not_found`, the
+  #     same as an unknown run — reads included.
+  #   * Timestamps on these objects follow the API-wide convention: RFC3339,
+  #     UTC. The daemon plane deviates from the user plane in nothing here.
+  #   * Per-entry struct validation runs where the binding struct spells
+  #     `dive`: `runtimes` on register and `skills` on skill-bundle resolve.
+  #     Completed transcript items are appended one at a time over the daemon
+  #     WebSocket; there are no HTTP message or delta batch write endpoints.
+  #   * Response wrapping follows the user plane: lists are `{"items": …}`,
+  #     lifecycle transitions return the bare run object, and a
+  #     `{"status": "ok"}` receipt is served only where an operation truly has
+  #     no row to return — and only after the write actually happened.
+
+  # /api/v1/daemon/register
+  daemon_register:
+    post:
+      tags: [daemon]
+      operationId: daemonRegister
+      summary: Register a daemon's runtimes
+      description: |
+        Upserts on `(company_id, daemon_id, provider)`. The caller must be an
+        active member of `companyId`, else `404`.
+
+        > Registration is **one transaction**: a failure part-way returns
+        > `500` with nothing registered and nothing broadcast. Two entries
+        > with the same provider collapse onto one row and the response
+        > repeats the same id.
+
+        A blank `name` is filled in by the server as `provider` or
+        `"<provider> (<deviceName>)"`. Provider names are exact and
+        case-sensitive; registration does not trim, lowercase, or substitute
+        unknown values.
+
+        An entry may carry `unusableReason` for a provider the daemon found
+        but cannot run (below the minimum version, not executable). Such an
+        entry is stored `offline` regardless of `status`, and the reason is
+        served on the user-plane `Runtime`; an entry without it clears any
+        reason stored earlier. An unknown `code`, a missing `message`, or a
+        message over 256 characters is `422 validation_failed` before any
+        database access.
+
+        An entry may also carry `signIn`, the provider CLI's own sign-in
+        verdict from this probe round. It is stored beside the version and
+        served on the user-plane `Runtime`; an entry without it keeps the
+        verdict stored earlier, so an older daemon never blanks it. An
+        unknown `state` or a `checkedAt` that is not RFC 3339 is
+        `422 validation_failed`.
+
+        Each entry also carries `credentialIsolation`, `enforced` or
+        `not_enforced` (the daemon's sandbox verdict for this computer). Any
+        other value is `422 validation_failed`. The server accepts it and
+        does not store it yet; an entry without it is accepted, as from an
+        older daemon.
+      security:
+        - daemonToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId, daemonId, runtimes]
+              properties:
+                companyId: { type: string, format: uuid }
+                daemonId: { type: string }
+                deviceName: { type: string }
+                cliVersion: { type: string }
+                launchedBy: { type: string }
+                runtimes:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [provider]
+                    properties:
+                      name: { type: string }
+                      provider: { $ref: '#/schemas/Provider' }
+                      version: { type: string }
+                      status: { type: string, enum: [online, offline] }
+                      unusableReason: { $ref: './_common.yaml#/schemas/RuntimeUnusableReason' }
+                      signIn: { $ref: './_common.yaml#/schemas/RuntimeSignIn' }
+                      credentialIsolation: { $ref: './_common.yaml#/schemas/CredentialIsolation' }
+      responses:
+        '200':
+          description: The registered runtimes.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/schemas/DaemonRuntime' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: '`404 company_not_found` — unknown company, or not a member.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/deregister
+  daemon_deregister:
+    post:
+      tags: [daemon]
+      operationId: daemonDeregister
+      summary: Mark runtimes offline
+      description: |
+        Marks each submitted runtime of the caller's offline. An id that names
+        no runtime of the caller's — or one registered by another daemon — is
+        skipped — deregistering something already gone is the converged
+        state, not an error — but a **failed write is `500`**, with nothing
+        confirmed. The `200` receipt means the batch was applied.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runtimeIds]
+              properties:
+                runtimeIds:
+                  type: array
+                  minItems: 1
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Every named runtime of the caller's is now offline.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/heartbeat
+  daemon_heartbeat:
+    post:
+      tags: [daemon]
+      operationId: daemonHeartbeat
+      summary: Keep a runtime marked online
+      description: |
+        The reply names the runtime it acknowledges, so the HTTP body and the
+        WebSocket `daemon.heartbeat_ack` carry the same payload.
+
+        > The handler's `400 "runtime_id must be a valid uuid"` branch is
+        > unreachable over HTTP: the `uuid` struct rule rejects the same inputs
+        > one layer earlier as `422`.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runtimeId]
+              properties:
+                runtimeId: { type: string, format: uuid }
+                credentialIsolation:
+                  $ref: './_common.yaml#/schemas/CredentialIsolation'
+                  description: |
+                    The runtime's current sandbox verdict, repeated on every
+                    beat so a computer whose sandbox stops working says so
+                    within one heartbeat. Accepted and not stored yet.
+      responses:
+        '200':
+          description: Acknowledged, with the server's capability set.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, runtimeId, serverCapabilities]
+                properties:
+                  status: { type: string }
+                  runtimeId:
+                    type: string
+                    format: uuid
+                    description: |
+                      Echo of the acknowledged runtime, for parity with the
+                      WebSocket `daemon.heartbeat_ack`.
+                  serverCapabilities:
+                    type: array
+                    items: { type: string }
+                  pendingModelList:
+                    $ref: '#/schemas/DaemonPendingModelList'
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` — unknown runtime, one outside the caller's
+            companies, or one registered by another daemon.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/config
+  daemon_config:
+    get:
+      tags: [daemon]
+      operationId: daemonGetConfig
+      summary: Read server-owned daemon endpoint configuration
+      description: |
+        Read once at daemon startup before Studio tools or runs start. Restart
+        daemons after changing the server endpoint. No credentials are included;
+        Studio credentials remain on each user's machine and are isolated by origin.
+      security:
+        - daemonToken: []
+      responses:
+        '200':
+          description: Endpoint configuration for this server deployment.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [studioApiOrigin]
+                properties:
+                  studioApiOrigin:
+                    type: string
+                    format: uri
+                    description: Canonical Studio API origin, without a path.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/daemon/companies
+  daemon_companies:
+    get:
+      tags: [daemon]
+      operationId: daemonListCompanies
+      summary: List companies the daemon's user belongs to
+      description: |
+        Returns the authenticated user's complete non-deleting company set.
+        This bounded collection has no pagination parameters.
+      security:
+        - daemonToken: []
+      responses:
+        '200':
+          description: All non-deleting companies, id/name/slug only.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, name, slug]
+                      properties:
+                        id: { type: string, format: uuid }
+                        name: { type: string }
+                        slug: { type: string }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/daemon/companies/{companyId}/commerce/sites/{siteAlias}/local-signing-keys
+  daemon_companies_companyId_commerce_sites_siteAlias_local_signing_keys:
+    post:
+      tags: [daemon, commerce]
+      operationId: daemonRegisterLocalCommerceSigningKey
+      summary: Register the daemon-managed key for a local Commerce Site
+      description: |
+        Requires both the daemon user's ordinary bearer credential and the
+        exact live `brt_` proof for the Task Run starting Commerce development.
+        Zenith Team derives company, Task, and Run scope from that proof; none is
+        accepted from the JSON body. It matches a sandbox Site by exact Task,
+        alias, and loopback origin while locking the acting membership. A draft
+        Site records the key as pending and owner publication promotes it. A
+        later live Run of that same authoring Task may replace an active
+        memory-only development key after daemon restart while preserving the
+        normal retiring overlap. This endpoint never creates or publishes a
+        Site. Exact key replay is idempotent.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: X-Boardly-Run-Token
+          in: header
+          required: true
+          description: Exact live `brt_` proof for the authoring Task Run.
+          schema: { type: string, pattern: '^brt_[a-f0-9]{64}$' }
+        - name: siteAlias
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonCommerceSigningKeyRequest' }
+      responses:
+        '200':
+          description: Matched local Site and registered or replayed its signing key.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonCommerceSigningKey' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401':
+          description: The daemon bearer credential or Run proof is invalid.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: Site binding or signing-key state conflicts with the active manifest.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+
+  # /api/v1/daemon/ws
+  daemon_ws:
+    get:
+      tags: [daemon]
+      operationId: daemonWebSocket
+      summary: Open the daemon control socket
+      description: |
+        WebSocket upgrade. The daemon id comes from the `X-Boardly-Daemon-ID`
+        header, falling back to the `daemon_id` query parameter; `runtime_ids` is
+        a comma-separated scope. The caller's complete company set is resolved
+        server-side so heartbeats and RPCs reuse the HTTP checks.
+
+        RPC method `runs.claim` carries the batch claim over the socket; it
+        reuses the HTTP endpoint's request and response bodies, and the HTTP
+        route remains its fallback.
+
+        Completed provider items use RPC method `runs.transcript.append` one
+        at a time. The daemon waits for its post-commit receipt before sending
+        the next durable item, so PostgreSQL always owns a contiguous prefix.
+        The request's `itemKey` is the provider item's natural replay identity;
+        the surrounding RPC `requestId` is transport correlation only. The
+        canonical JSON for one `{itemKey, role, parts}` item is limited to
+        2 MiB; an oversized item is rejected before transport and again at the
+        server write seam.
+
+        > Registered **only** when a WebSocket hub is configured. Without one
+        > the path answers `404 route_not_found` in the standard
+        > `{detail, code, requestId}` envelope.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - name: daemon_id
+          in: query
+          required: false
+          description: |
+            Fallback for the `X-Boardly-Daemon-ID` header. When neither is
+            present the upgrade follows the header's rollout rule: admitted
+            with a warning, or `400 invalid_request` once required.
+          schema: { type: string }
+        - name: runtime_ids
+          in: query
+          required: false
+          description: |
+            Comma-separated runtime ids this socket is scoped to. The server
+            keeps only runtimes the signed-in user registered, from this
+            daemon, in one of their companies, and drops the rest without
+            refusing the upgrade; a malformed id is `400 invalid_request`.
+            Wakeups and `runs.transcript.append` are limited to the kept
+            runtimes.
+          schema: { type: string }
+      responses:
+        '101':
+          description: Switching protocols.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+      x-boardly-rpc-methods:
+        runs.claim:
+          request: { $ref: '#/schemas/DaemonClaimRunsRequest' }
+          response: { $ref: '#/schemas/DaemonClaimRunsResponse' }
+        runs.transcript.append:
+          request: { $ref: '#/schemas/RunTranscriptAppendRequest' }
+          response: { $ref: '#/schemas/RunTranscriptAppendReceipt' }
+
+
+  # /api/v1/daemon/runs/claim
+  daemon_runs_claim:
+    post:
+      tags: [daemon]
+      operationId: daemonClaimRunsBatch
+      summary: Claim a batch of runs across runtimes
+      description: |
+        > A negative `maxRuns` is `400 invalid_request`, contradicting the
+        > malformed-is-400 / semantically-invalid-is-422 split.
+
+        A mid-batch database failure is `500` with the standard error
+        envelope — a `200` means the claim attempt ran to completion. Runs
+        already claimed before such a failure stay claimed and are re-served
+        by the stale-claim reclaim, so the daemon retries the claim rather
+        than guessing what it holds.
+
+        Claimed runs carry the claim-only fields `authToken`,
+        `priorSessionId` and `priorSessionThroughSeq`, which no lifecycle
+        response includes.
+      security:
+        - daemonToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonClaimRunsRequest' }
+      responses:
+        '200':
+          description: The claimed runs. `items` is `[]` when nothing was claimable.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonClaimRunsResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/model-discoveries/{requestId}/result
+  daemon_runtimes_runtimeId_model_discoveries_requestId_result:
+    post:
+      tags: [daemon]
+      operationId: daemonReportRuntimeModelDiscovery
+      summary: Report a runtime model-discovery result
+      description: |
+        Reports the terminal result for the request atomically claimed by a
+        heartbeat. A duplicate report after any terminal status is idempotent
+        and returns `200` without replacing the first result. Unknown requests,
+        cross-runtime paths, and foreign runtimes are non-disclosing `404`s.
+
+        `completed` carries a bounded provider-native catalog. `failed` carries
+        a typed, user-safe error and no stderr, executable path, environment,
+        credential, or token data.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [completed, failed]
+                models:
+                  type: array
+                  maxItems: 100
+                  items: { $ref: './runs.yaml#/schemas/RuntimeModel' }
+                error: { $ref: './runs.yaml#/schemas/ModelDiscoveryError' }
+      responses:
+        '200':
+          description: Stored, or accepted as a terminal duplicate.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon, or
+            `404 model_discovery_not_found` for a missing/cross-runtime request.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 model_discovery_not_running`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/task-merges/claim
+  daemon_runtimes_runtimeId_task_merges_claim:
+    post:
+      tags: [daemon]
+      operationId: daemonClaimTaskMerge
+      summary: Claim the next proactive Task merge for a runtime
+      description: |
+        Atomically leases one merge job whose completed Run belongs to this
+        exact runtime and daemon. The claim rechecks the enabled owner, the
+        selected active root-Agent Conversation, the Task generation, and the
+        daemon's active Company membership. A reclaimed expired lease returns
+        the same durable job identity with a new positive `attempt` fencing
+        token. Lease renewal and result delivery must present the exact attempt
+        returned by this claim.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonTaskMergeClaimRequest' }
+      responses:
+        '200':
+          description: One exact merge job was claimed.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonTaskMergeClaim' }
+        '204':
+          description: No eligible merge job is currently claimable.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown or inaccessible runtime, or
+            one registered by another daemon.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/task-merges/manual
+  daemon_runtimes_runtimeId_task_merges_manual:
+    post:
+      tags: [daemon]
+      operationId: daemonClaimManualTaskMerge
+      summary: Fence one explicitly reviewed Task merge
+      description: |
+        Immediately leases the latest completed Run for the exact Task,
+        revision, execution generation, runtime, and daemon supplied by the
+        desktop review surface. The Company, active acting membership, Task,
+        and durable job are locked in lifecycle order before the claim is
+        returned. A live merge attempt wins; a pending proactive job may be
+        converted to this manual authority because it has caused no local
+        side effect yet. Merging a Task's work runs that Task, so the
+        daemon's member needs `project.tasks.execute` on the Task's Project
+        (ADR 0017). That is asked first, under the Task lock, before the
+        revision: a member without it gets `403
+        project_permission_required`, never the stale-review `409`, and the
+        daemon tells the desktop the same code. A member who cannot read the
+        Project gets `404 task_merge_claim_not_found`, as a missing Task
+        does.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonManualTaskMergeClaimRequest' }
+      responses:
+        '200':
+          description: The exact manual merge attempt is durably leased.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonTaskMergeClaim' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403':
+          description: |
+            `403 project_permission_required` — the daemon's member may not
+            run Tasks in the Task's Project (`project.tasks.execute`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '404':
+          description: |
+            Unknown runtime (or one registered by another daemon), Company
+            membership, or Task merge authority, or a Task whose Project the
+            daemon's member cannot read (`task_merge_claim_not_found`).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: Stale revision/generation/Run or a live competing merge attempt.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/task-merges/{jobId}/lease
+  daemon_runtimes_runtimeId_task_merges_jobId_lease:
+    post:
+      tags: [daemon]
+      operationId: daemonRenewTaskMergeLease
+      summary: Renew a proactive Task merge lease
+      description: |
+        Extends the lease for the exact currently executing attempt. The daemon
+        renews after it acquires local workspace serialization, before Git
+        mutation, and while it delivers the durable result. An expired,
+        superseded, or otherwise stale attempt fails closed with
+        `task_merge_conflict`.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonTaskMergeLeaseRequest' }
+      responses:
+        '204':
+          description: Lease renewed for the exact current attempt.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon, or
+            `404 task_merge_claim_not_found` for a missing/cross-daemon job.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 task_merge_conflict` for a stale or non-executing attempt.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/task-merges/{jobId}/result
+  daemon_runtimes_runtimeId_task_merges_jobId_result:
+    post:
+      tags: [daemon]
+      operationId: daemonRecordTaskMergeResult
+      summary: Record a proactive Task merge result
+      description: |
+        Records the authenticated source daemon's durable result for the exact
+        claimed attempt. A byte-for-byte replay of a terminal result with the
+        same attempt is idempotent. Authority captured at claim remains
+        sufficient after the local Git operation starts, even if the Company
+        disables Proactive Mode before this acknowledgement arrives.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/DaemonTaskMergeResultRequest' }
+      responses:
+        '204':
+          description: Stored, or accepted as an exact terminal replay.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon, or
+            `404 task_merge_claim_not_found` for a missing/cross-daemon job.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 task_merge_conflict` for a non-identical replay or stale Task state.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/prepare-lease
+  daemon_runtimes_runtimeId_runs_runId_prepare_lease:
+    post:
+      tags: [daemon]
+      operationId: daemonExtendRunPrepareLease
+      summary: Extend a claimed run's preparation lease
+      description: |
+        Keeps a dispatched run protected while the daemon prepares its workspace.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/runId'
+      responses:
+        '200':
+          description: Lease extended.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon;
+            `404 run_not_found` for an unknown run, or a run that does not
+            belong to this runtime and company.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/attachments/{attachmentId}
+  daemon_runtimes_runtimeId_runs_runId_attachments_attachmentId:
+    get:
+      tags: [daemon]
+      operationId: daemonDownloadRunAttachment
+      summary: Download a file frozen into a claimed run's context
+      description: |
+        Serves one file the run context froze, so the daemon can place it
+        under the run's env root, outside the workspace, before the provider
+        starts: a Company reference document, a file on the channel messages
+        the run answers, a document of the Task's Project, or a file attached
+        to the run's Task.
+
+        The allowlist is exactly the frozen `companyReferences`,
+        `channelAttachments`, `projectDocuments` and `taskAttachments`; an id
+        outside it is `404`. The run must still be in its startup window
+        (`dispatched` or `waiting_local_directory`), else `409`.
+
+        The allowlist says what the run may ask for. The person who
+        authorized the run (under ADR 0014 also the owner of this machine)
+        must also still be allowed to read the file now (ADR 0017):
+        - A Project file needs that person's access to one of its Projects.
+          A file in the run's frozen `projectDocuments` stays readable after
+          it is removed from the Project, so a dispatched run and its retries
+          still get the document they were given, while the person keeps
+          access to the Project.
+        - A chat file, including a file attached to the run's Task, follows
+          the chat's readers, and an unshared upload its uploader.
+        - A Company reference document that no chat message carries and no
+          Project has held is open to any active member's run.
+        - A run with no authorizer downloads nothing.
+
+        A file the person may no longer read is `404 attachment_not_found`,
+        the same as a file outside the allowlist. The response is the raw
+        file, not JSON.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/runId'
+        - name: attachmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: |
+            The file bytes, with `Content-Type`, `Content-Length` and a
+            `Content-Disposition` naming the original filename.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon; `404 run_not_found` for an unknown run, or a run
+            that does not belong to this runtime and company;
+            `404 attachment_not_found` for a file outside the run's allowlist,
+            or one the run's authorizer may no longer read.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 run_not_preparing`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/daemon/runtimes/{runtimeId}/runs/{runId}/skill-bundles/resolve
+  daemon_runtimes_runtimeId_runs_runId_skill_bundles_resolve:
+    post:
+      tags: [daemon]
+      operationId: daemonResolveSkillBundles
+      summary: Fetch skill bundles for a claimed run
+      description: |
+        The allowlist is the immutable run_skills relation frozen at enqueue.
+        Each reference identifies a cloud skill version in this Company, with
+        source `company`. The Run must be dispatched or waiting_local_directory.
+        Bundle bytes are verified against frozen metadata before delivery and again
+        by the daemon. Supporting files may carry base64 `data` for binary bytes.
+        contractVersion must be 1; older daemons receive agent_skill_daemon_upgrade.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contractVersion, skills]
+              properties:
+                contractVersion: { type: integer, enum: [1] }
+                skills:
+                  type: array
+                  minItems: 1
+                  maxItems: 32
+                  items:
+                    type: object
+                    required: [id, source]
+                    properties:
+                      id: { type: string }
+                      source: { type: string }
+      responses:
+        '200':
+          description: Verified immutable bundles in request order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` for an unknown runtime or one registered by
+            another daemon;
+            `404 run_not_found` for an unknown run, or a run that does not
+            belong to this runtime and company; `404 skill_not_found` for a
+            skill outside the run's allowlist.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 run_not_preparing` or `409 agent_skill_daemon_upgrade`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422':
+          description: |
+            `422 validation_failed` — `skills` missing, empty, over 32 entries,
+            or an entry missing `id`/`source` (this array **does** validate
+            per-entry).
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runtimes/{runtimeId}/recover-orphans
+  daemon_runtimes_runtimeId_recover_orphans:
+    post:
+      tags: [daemon]
+      operationId: daemonRecoverOrphans
+      summary: Fail every in-flight run of a runtime after a daemon restart
+      description: |
+        Funnels the orphans through the same post-failure pipeline as the runtime
+        sweeper, so `run.failed` events and auto-retry behave identically.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+      responses:
+        '200':
+          description: How many runs were orphaned and how many got retry children.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orphaned, retried]
+                properties:
+                  orphaned: { type: integer }
+                  retried: { type: integer }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 runtime_not_found` — unknown runtime, or one registered by
+            another daemon.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/status
+  daemon_runs_runId_status:
+    get:
+      tags: [daemon]
+      operationId: daemonGetRunStatus
+      summary: Read just a run's status
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      responses:
+        '200':
+          description: |
+            The run's status, and for a cancelled run the reason it was
+            cancelled. `task_reassigned` means a confirmed handoff cancelled
+            it (ADR 0014): the task's workspace generation moved on, so the
+            daemon marks the run's worktree superseded — kept, never
+            continued — instead of completed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    $ref: './_common.yaml#/schemas/RunStatus'
+                  reason:
+                    type: string
+                    description: |
+                      The cancellation reason of a `cancelled` run (for
+                      example `task_reassigned` or `user_cancelled`). Absent
+                      for every other status and for a cancel that recorded
+                      none.
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # /api/v1/daemon/runs/{runId}/start
+  daemon_runs_runId_start:
+    post:
+      tags: [daemon]
+      operationId: daemonStartRun
+      summary: Move a claimed run to running
+      description: |
+        `runtimeId` names the runtime the caller believes it claimed. The
+        transition is fenced on it, so a daemon that lost the claim — or a
+        second daemon that never held it — cannot start the run out from under
+        the one that did. The server does not read the runtime off the row it
+        is about to update: that would compare the value to itself and fence
+        nothing.
+
+        Returns the **bare** run object, not a `{"run": …}` wrapper.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [runtimeId]
+              properties:
+                runtimeId:
+                  type: string
+                  format: uuid
+                  description: The runtime this daemon claimed the run for.
+      responses:
+        '200':
+          description: The run, now running.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonRun' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 run_not_startable` — the run is not in a startable status;
+            usually a lost race with a cancel or a sweeper. Re-read the run.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/wait-local-directory
+  daemon_runs_runId_wait_local_directory:
+    post:
+      tags: [daemon]
+      operationId: daemonWaitLocalDirectory
+      summary: Park a run waiting on a contested local directory
+      description: |
+        The server records the fixed public reason code
+        `local_directory_busy`. This bodyless operation also parks direct
+        runs waiting for the managed Company main; it accepts no
+        filesystem path. Returns the bare daemon run object, whose frozen
+        context can contain baseline local-directory Resource paths.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      responses:
+        '200':
+          description: The run, now waiting.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonRun' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 run_wait_unavailable` — the run cannot park for the local
+            directory in its current status. Re-read the run; do not retry
+            unchanged.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/wait-studio-auth
+  daemon_runs_runId_wait_studio_auth:
+    post:
+      tags: [daemon]
+      operationId: daemonWaitStudioAuth
+      summary: Wait for Zenith Studio sign-in
+      description: |
+        Sets or clears studio_auth_required on a running Run only when a Studio
+        command requests sign-in. Execution remains running and the command
+        resumes in place after authentication, without requeue or confirmation.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [waiting]
+              properties:
+                waiting: { type: boolean }
+      responses:
+        '200':
+          description: The run, now waiting.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonRun' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 run_wait_unavailable` — the run cannot wait for Studio
+            sign-in in its current status. Re-read the run; do not retry
+            unchanged.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/usage
+  daemon_runs_runId_usage:
+    post:
+      tags: [daemon]
+      operationId: daemonReportRunUsage
+      summary: Report token and cost counters
+      description: |
+        One final immutable fact per `(runId, provider, model)`. Replaying the
+        exact normalized fact succeeds without creating another row. Replaying
+        the same key with different counters, cost, or `rawJson` is
+        `409 run_usage_conflict`; a report is never replaced or accumulated.
+
+        `provider` is validated **exactly** against the supported provider
+        set, case-sensitively — no lowercasing, trimming, or substitution —
+        the same rule registration applies. An unknown provider is `422`.
+
+        Counters travel **as JSON numbers** here, while every response in the
+        API serializes counters over 2^53 as strings — an asymmetry across the
+        two directions. `rawJson` is the sanitized provider usage fragment
+        retained for audit; it must be a JSON object whose canonical JSON
+        encoding is at most 16 KiB after server-side sanitization.
+
+        `costUsdTicks` is the provider's own price in units of 1e-10 USD.
+        Absent or `null` means the provider supplied no price and is stored as
+        NULL. An explicit `0` is an exact provider-reported zero-cost fact.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usage]
+              properties:
+                usage:
+                  type: array
+                  items: { $ref: '#/schemas/RunUsageFact' }
+      responses:
+        '200':
+          description: Accepted, including an exact replay of every fact.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 run_usage_conflict` — an existing `(runId, provider, model)`
+            fact differs from the submitted fact.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/session
+  daemon_runs_runId_session:
+    post:
+      tags: [daemon]
+      operationId: daemonPinRunSession
+      summary: Pin the run's resume pointer
+      description: |
+        > **No status precondition.** It writes the resume pointer to a run in
+        > any state, including terminal ones.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionId: { type: string }
+      responses:
+        '200':
+          description: Pinned.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 run_wait_unavailable` — the run cannot park for the local
+            directory in its current status. Re-read the run; do not retry
+            unchanged.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/complete
+  daemon_runs_runId_complete:
+    post:
+      tags: [daemon]
+      operationId: daemonCompleteRun
+      summary: Complete a run from its committed transcript
+      description: |
+        The callback proves the exact PostgreSQL-committed transcript head and
+        nominates the run's answer by item key. Inside one transaction the
+        server locks the Conversation and the Run, verifies the proof, checks
+        that the nominated item is the run's newest `agent_text`, and
+        transitions the Run. Provider output text in the callback is neither
+        accepted nor trusted.
+
+        **Nothing is copied.** The agent's answer was committed as an ordinary
+        `agent_text` item of the Conversation when the daemon appended it, so
+        completion selects rather than derives, and a run that said nothing
+        simply omits `finalItemKey`.
+
+        An exact replay of an already-completed callback returns the completed
+        Run. A stale head or invalid final item is a typed `409`; it never marks
+        the Run terminal.
+
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [throughSeq]
+              properties:
+                throughSeq:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  description: |
+                    The Conversation `seq` of the newest item the daemon saw
+                    acknowledged for this Run — not a count of its items. It is
+                    the whole proof: the server allocates `seq` under the
+                    Conversation row lock and never rewrites a committed item,
+                    so one `seq` names one history.
+                finalItemKey:
+                  type: string
+                  maxLength: 512
+                  description: |
+                    Which committed `agent_text` item is this run's answer.
+                    Omitted when the successful turn produced no final agent
+                    text — a tool-only or reasoning-only turn — and the Run
+                    then completes with no `agent_text` item at all.
+                sessionId: { type: string }
+                sessionRolloutMissing:
+                  type: boolean
+                  description: |
+                    The daemon withheld this run's session because its rollout
+                    was missing; store NULL and flag the continuity gap.
+                retiredSessionId:
+                  type: string
+                  description: |
+                    A session this run proved unresumable. Distinct from an empty
+                    `sessionId`, which only means "nothing to report".
+      responses:
+        '200':
+          description: The completed Run, including an exact callback replay.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonRun' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `run_transcript_head_mismatch` — the proof does not name the Run's
+            committed prefix. The body carries the server's own head beside the
+            standard envelope fields; reconcile against it rather than
+            retrying the same proof.
+
+            `run_terminal_item_invalid` — `finalItemKey` names no committed
+            `agent_text` item of this Run, or names one a later `agent_text`
+            item superseded. Plain envelope, no head: there is nothing to
+            reconcile, so re-read the transcript.
+
+            Neither performs the terminal transition.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/RunTerminalConflict' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/fail
+  daemon_runs_runId_fail:
+    post:
+      tags: [daemon]
+      operationId: daemonFailRun
+      summary: Fail a run
+      description: |
+        A retryable `failureReason` causes the server to enqueue a child run with
+        `parentRunId` set and `attempt + 1`, up to a per-reason ceiling. Returns
+        the bare run object.
+
+        The callback proves the exact PostgreSQL-committed transcript head
+        before the failure transition. It does not need a final agent text
+        item. The `error` text is stored and readable through the user-plane
+        Run read, but is stripped from the outbound `run.failed` event.
+
+        Whatever the agent already said stays in the Conversation either way:
+        an `agent_text` item is committed when it is appended, not when the Run
+        succeeds, so failing a Run never costs the user an answer it already
+        received.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [throughSeq]
+              properties:
+                throughSeq:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  description: |
+                    The Conversation `seq` of the newest item the daemon saw
+                    acknowledged for this Run.
+                finalItemKey:
+                  type: string
+                  maxLength: 512
+                error: { type: string }
+                sessionId: { type: string }
+                failureReason: { type: string }
+                sessionRolloutMissing: { type: boolean }
+                retiredSessionId: { type: string }
+      responses:
+        '200':
+          description: The failed run.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonRun' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `run_transcript_head_mismatch`, with the server's own head flat on
+            the envelope. The Run stays non-terminal: adopt that head, replay
+            any unacknowledged item, and re-send — a repeat of the same proof
+            is refused again and strands the Run.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/RunTerminalHeadMismatchError' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
+  # /api/v1/daemon/runs/{runId}/cancel-ack
+  daemon_runs_runId_cancel_ack:
+    post:
+      tags: [daemon]
+      operationId: daemonAckRunCancelled
+      summary: Acknowledge that a cancelled run's process is dead
+      description: |
+        > **No state check.** It succeeds against a run that was never cancelled.
+      security:
+        - daemonToken: []
+      parameters:
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+        - $ref: './_common.yaml#/parameters/runId'
+      responses:
+        '200':
+          description: Acknowledged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DaemonStatusOk' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404':
+          description: |
+            `404 run_not_found` for an unknown run, or a run on a runtime
+            another daemon or another member registered.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+  # ======================================================== composites
+  # Named, hand-written screen reads. Each replaces a measured waterfall; see
+  # the resource file that owns it for the before/after and the use cases.
+
+
+schemas:
+  DaemonCommercePublicJWK:
+    type: object
+    additionalProperties: false
+    required: [kty, crv, x, y]
+    properties:
+      kty: { type: string, const: EC }
+      crv: { type: string, const: P-256 }
+      x: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+      y: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+
+  DaemonCommerceSigningKeyRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, origin, publicJwk, fingerprint]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      origin:
+        type: string
+        format: uri
+        description: Exact loopback HTTP origin from the active sandbox manifest.
+      publicJwk: { $ref: '#/schemas/DaemonCommercePublicJWK' }
+      fingerprint: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+
+  DaemonCommerceSigningKey:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, siteId, environment, keyId]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      siteId: { type: string, format: uuid }
+      environment: { type: string, const: sandbox }
+      keyId: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+
+
+  # ----------------------------------------------------------------- daemon
+
+  Provider:
+    type: string
+    description: The exact, case-sensitive provider identifier accepted by Zenith Team.
+    enum: [claude, codex]
+
+  DaemonPendingModelList:
+    type: object
+    required: [requestId]
+    properties:
+      requestId: { type: string, format: uuid }
+
+  DaemonClaimRunsRequest:
+    type: object
+    description: |
+      The batch claim body, shared verbatim by `POST /api/v1/daemon/runs/claim`
+      and the `runs.claim` WebSocket RPC.
+    required: [daemonId]
+    properties:
+      daemonId: { type: string }
+      runtimeIds:
+        type: array
+        items: { type: string, format: uuid }
+      maxRuns: { type: integer, minimum: 0 }
+
+  DaemonClaimRunsResponse:
+    type: object
+    description: |
+      The batch claim result, shared verbatim by `POST /api/v1/daemon/runs/claim`
+      and the `runs.claim` WebSocket RPC. `items` is `[]` when there is nothing
+      to claim — the stable success shape, so callers decode without branching
+      on status.
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/DaemonRun' }
+
+  DaemonTaskMergeClaimRequest:
+    type: object
+    additionalProperties: false
+    required: [daemonId]
+    properties:
+      daemonId: { type: string, minLength: 1, maxLength: 256 }
+
+  DaemonManualTaskMergeClaimRequest:
+    type: object
+    additionalProperties: false
+    required:
+      - daemonId
+      - taskId
+      - runId
+      - expectedRevision
+      - expectedExecutionGeneration
+    properties:
+      daemonId: { type: string, minLength: 1, maxLength: 256 }
+      taskId: { type: string, format: uuid }
+      runId: {"type": "string", "format": "uuid"}
+      expectedRevision: { $ref: './_common.yaml#/schemas/Revision' }
+      expectedExecutionGeneration:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+
+  DaemonTaskMergeClaim:
+    type: object
+    additionalProperties: false
+    required: [jobId, companyId, taskId, runId, taskExecutionGeneration, conversationId, attempt, context]
+    properties:
+      jobId: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      runId: {"type": "string", "format": "uuid"}
+      taskExecutionGeneration:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+      conversationId: { type: string, format: uuid }
+      attempt: { type: integer, format: int32, minimum: 1 }
+      context:
+        type: object
+        additionalProperties: true
+
+  DaemonTaskMergeLeaseRequest:
+    type: object
+    additionalProperties: false
+    required: [daemonId, attempt]
+    properties:
+      daemonId: { type: string, minLength: 1, maxLength: 256 }
+      attempt: { type: integer, format: int32, minimum: 1 }
+
+  DaemonTaskMergeResultRequest:
+    type: object
+    additionalProperties: false
+    required: [daemonId, attempt, status]
+    properties:
+      daemonId: { type: string, minLength: 1, maxLength: 256 }
+      attempt: { type: integer, format: int32, minimum: 1 }
+      status:
+        type: string
+        enum: [merged, blocked]
+      resultCode: { type: string, maxLength: 256 }
+      mergedCommit:
+        type: string
+        maxLength: 256
+        description: Lowercase 40- or 64-hex Git object id for `merged`; empty for `blocked`.
+
+  DaemonRun:
+    type: object
+    description: |
+      The daemon-plane run object: exactly what the daemon reads to execute —
+      the routing ids, the enqueue-time context document, the resume pointer,
+      and (on a claim only) the run's `brt_` auth token. Lifecycle fields the
+      daemon never reads — status, attempts, timestamps, failure text — are
+      not served; the user plane's `Run` is where those live.
+
+      There is no trigger-message id beside `id`: the words the run answers
+      arrive frozen in `context.prompt` (ADR 0001), so the daemon never
+      resolves a prompt by id.
+    required: [id, companyId, agentId, conversationId, runtimeId, forceFreshSession]
+    properties:
+      id: {"type": "string", "format": "uuid"}
+      companyId: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+      taskId:
+        type: string
+        format: uuid
+        description: Present for Task-conversation runs; absent for direct and Schedule runs.
+      conversationId: { type: string, format: uuid }
+      runtimeId: { type: string, format: uuid }
+      context:
+        type: object
+        description: |
+          The frozen execution context (prompt, Agent and initial Company description,
+          execution profile), enriched at claim with the exact Runtime's
+          reviewed Connector snapshot. Every non-Schedule enqueue also
+          freezes `conversationSnapshot`, the bounded prior chat of the Run's
+          Conversation with each message's author, and, when a member's
+          message started the Run, `trigger`, that member and the enqueue
+          time. Normal enqueue does not currently produce custom Skill
+          bundles/references.
+          Current non-Schedule Resource bindings can include `localPath` here;
+          this private daemon shape is not the public Resource projection.
+          The versioned managed-only replacement is Planned in docs/specs/runs
+          and docs/specs/workspaces, not required by this baseline schema.
+        additionalProperties: true
+      forceFreshSession: { type: boolean }
+      authToken:
+        type: string
+        description: |
+          Claim responses only. A `brt_` run token verified by the server's
+          RunProofResolver for scoped MCP and Commerce operations.
+      priorSessionId:
+        type: string
+        description: |
+          Claim responses only. Offered only when the prior Run ran on this
+          Run's runtime: a provider session lives on the machine that made it.
+      priorSessionThroughSeq:
+        type: integer
+        format: int64
+        description: |
+          Claim responses only, beside `priorSessionId` or in its place when
+          that session exists but cannot be resumed: the Conversation seq
+          through which the prior provider session provably received the
+          chat. Snapshot items with a greater seq were never delivered to it.
+
+
+  DaemonRuntime:
+    type: object
+    description: |
+      The daemon-plane runtime object — exactly the fields the daemon decodes,
+      nothing more.
+    required: [id, companyId, name, provider, status]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      name: { type: string }
+      provider: { $ref: '#/schemas/Provider' }
+      status: { $ref: './_common.yaml#/schemas/RuntimeStatus' }
+
+
+  DaemonStatusOk:
+    type: object
+    required: [status]
+    properties:
+      status: { type: string, const: ok }
+
+  RunTranscriptAppendRequest:
+    type: object
+    description: |
+      One immutable completed provider item. Its canonical JSON representation
+      over `itemKey`, `role`, and `parts` must not exceed 2 MiB (2,097,152
+      bytes). The limit applies to the complete item rather than any one field.
+    additionalProperties: false
+    required: [runId, itemKey, role, parts]
+    properties:
+      runId: {"type": "string", "format": "uuid"}
+      itemKey:
+        type: string
+        minLength: 1
+        maxLength: 512
+      role:
+        type: string
+        enum: [agent, tool, system]
+      parts:
+        type: array
+        minItems: 1
+        maxItems: 128
+        items: { $ref: './runs.yaml#/schemas/RunItemPart' }
+
+  RunTranscriptAppendReceipt:
+    type: object
+    description: |
+      Returned only after PostgreSQL commits the item. `seq` and `throughSeq`
+      are Conversation-wide, not per-Run ordinals: the server allocates the
+      number under the Conversation row lock. User messages and other Runs
+      share that sequence, so a Run slice can have gaps and the daemon cannot
+      predict its assigned seq. Both are bounded by 2^53-1. The receipt acknowledges database
+      commit, not client socket delivery. itemDigest hashes one canonical item,
+      not a transcript hash chain; head equality alone cannot prove that a
+      client received every earlier item.
+    additionalProperties: false
+    required:
+      - id
+      - runId
+      - itemKey
+      - seq
+      - throughSeq
+      - itemDigest
+      - committedAt
+    properties:
+      id: { type: string, format: uuid }
+      runId: {"type": "string", "format": "uuid"}
+      itemKey: { type: string }
+      seq: { type: integer, format: int64, minimum: 1 }
+      throughSeq: { type: integer, format: int64, minimum: 1 }
+      itemDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+      committedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  RunTerminalHeadMismatch:
+    type: object
+    description: |
+      The body of the `409 run_transcript_head_mismatch` a terminal transition
+      returns when the proof does not name the Run's committed transcript
+      prefix. It rides **flat** on the standard `{detail, code, requestId}`
+      envelope and carries the server's own head, which is what makes the
+      refusal recoverable.
+
+      On receiving it the daemon must reconcile, not retry unchanged: adopt
+      `throughSeq` as its head, first re-sending any item it
+      never saw acknowledged (an exact replay is idempotent through the
+      `(runId, itemKey)` fence and returns the receipt that also identifies the
+      item), then re-send the terminal transition with the new proof. It must
+      never invent a head it was not told, and never re-send the stale one.
+    required: [runId, throughSeq]
+    properties:
+      runId:
+        {"type": "string", "format": "uuid", "description": "Echoes the run in the path. A body naming a different run is not a\nhead to adopt — validate before using it.\n"}
+      throughSeq:
+        type: integer
+        format: int64
+        minimum: 0
+        description: |
+          The Conversation `seq` of the newest item committed to this Run —
+          the exact value a fresh proof must carry to be accepted.
+
+  RunTerminalHeadMismatchError:
+    description: |
+      The `run_transcript_head_mismatch` refusal: the standard error envelope
+      with the server's head flat beside it.
+    allOf:
+      - $ref: './_common.yaml#/schemas/Error'
+      - $ref: '#/schemas/RunTerminalHeadMismatch'
+      - type: object
+        properties:
+          code: { const: run_transcript_head_mismatch }
+
+  RunTerminalConflict:
+    description: |
+      What a refused terminal transition returns. Branch on `code`: only
+      `run_transcript_head_mismatch` carries a head to reconcile against;
+      every other terminal conflict is the plain envelope.
+    oneOf:
+      - $ref: '#/schemas/RunTerminalHeadMismatchError'
+      - $ref: './_common.yaml#/schemas/Error'
+
+
+  RunUsageFact:
+    type: object
+    description: |
+      One provider/model's final immutable usage fact for the run named by the
+      path. Exact replay is idempotent; no field can be corrected in place.
+    required:
+      - provider
+      - model
+      - inputTokens
+      - outputTokens
+      - cacheReadTokens
+      - cacheWriteTokens
+      - rawJson
+    properties:
+      provider:
+        type: string
+        description: |
+          Matched exactly, case-sensitively, against the supported provider
+          set — never normalized.
+        enum: [claude, codex]
+      model: { type: string, minLength: 1, maxLength: 255 }
+      usageBasis:
+        type: string
+        enum: [per_run, session_cumulative]
+        default: per_run
+        description: |
+          What the counters measure. `per_run` — this run's own consumption,
+          the default when omitted. `session_cumulative` — the provider
+          reports the consumption belonging to this run after the adapter
+          subtracts any resumed-session baseline.
+      inputTokens: { type: integer, format: int64, minimum: 0 }
+      outputTokens: { type: integer, format: int64, minimum: 0 }
+      cacheReadTokens: { type: integer, format: int64, minimum: 0 }
+      cacheWriteTokens: { type: integer, format: int64, minimum: 0 }
+      costUsdTicks:
+        type: [integer, "null"]
+        format: int64
+        minimum: 0
+        description: |
+          Provider-reported cost in 1e-10 USD ticks. Omit or send `null` when
+          the provider supplied no price. An explicit `0` means exactly zero.
+      rawJson:
+        type: object
+        description: |
+          Sanitized provider usage fragment retained for audit. Its canonical
+          JSON encoding must be at most 16 KiB after server-side sanitization;
+          request and database validation enforce the encoded-byte limit.
+        additionalProperties: true
+      reasoningTokens: { type: [integer, "null"], format: int64, minimum: 0 }
+      turns: { type: [integer, "null"], format: int32, minimum: 0 }
+      providerDurationMs: { type: [integer, "null"], format: int64, minimum: 0 }
+      billingMode:
+        type: string
+        enum: [api, subscription, unknown]
+
+  # -------------------------------------------------- human-in-the-loop

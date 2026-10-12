@@ -1,0 +1,33 @@
+{
+  "successResponse": {
+    "authorizationUrl": "https://auth.example.test/oauth/authorize?state=transient-state&code_challenge=challenge"
+  },
+  "startupNotification": {
+    "method": "mcpServer/startupStatus/updated",
+    "params": {
+      "name": "figma",
+      "status": "failed",
+      "failureReason": "reauthenticationRequired",
+      "error": "SECRET_STARTUP_ERROR /Users/example/.codex/config.toml"
+    }
+  },
+  "successNotification": {
+    "method": "mcpServer/oauthLogin/completed",
+    "params": {
+      "name": "figma",
+      "success": true,
+      "error": null
+    }
+  },
+  "failureNotification": {
+    "method": "mcpServer/oauthLogin/completed",
+    "params": {
+      "name": "figma",
+      "success": false,
+      "error": "SECRET_PROVIDER_ERROR /Users/example/.codex/config.toml"
+    }
+  },
+  "malformedResponse": {
+    "authorizationUrl": "http://auth.example.test/oauth/authorize?token=SECRET"
+  }
+}

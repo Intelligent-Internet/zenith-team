@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zenith-helia
+spec:
+  replicas: 0 # Enable only after the Phase 5 staging checklist and model-access check.
+  selector:
+    matchLabels: { app: zenith-helia }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels: { app: zenith-helia }
+    spec:
+      terminationGracePeriodSeconds: 3935
+      containers:
+        - name: helia
+          image: zenith-helia:0.1.0 # Replace with the registry image digest on promotion.
+          ports: [{ name: health, containerPort: 8081 }]
+          envFrom:
+            - secretRef: { name: zenith-helia }
+          resources:
+            requests: { cpu: '2', memory: 4Gi }
+            limits: { cpu: '2', memory: 4Gi }
+          readinessProbe:
+            httpGet: { path: '/', port: health }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: '/', port: health }
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities: { drop: [ALL] }

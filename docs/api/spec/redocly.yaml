@@ -1,0 +1,38 @@
+# Lint configuration for docs/api/spec/openapi.yaml.
+#
+# Run via `make api-lint`. Rules are disabled only where the default does not
+# apply to a private, self-hosted API — never to hide a real defect. Each
+# exemption carries its reason so the next person can re-enable it deliberately.
+
+extends:
+  - recommended
+
+rules:
+  # Zenith Team is not a published API and ships no licence in its spec. The
+  # licence that governs the code governs the contract.
+  info-license: off
+
+  # servers[0] is http://localhost:8788, the documented local development
+  # address from docs/quickstart.md. The rule exists to catch specs shipped
+  # with a placeholder host; ours is a real, intentional one.
+  no-server-example.com: off
+
+  # Exactly three operations have no 4xx, and all three are probes:
+  #   GET /healthz   GET /readyz   GET /metrics
+  # They answer 200, or 503 when the dependency they report on is down. The
+  # rule's assumption that every operation has a client-error path does not
+  # hold for a liveness probe.
+  #
+  # Re-verified after the contract reshape, which is how GET /auth/providers
+  # was found — it promised 422 on any query parameter and declared no error
+  # response at all. That was fixed rather than exempted. Re-enable this rule
+  # after any large change; it earns its keep.
+  operation-4xx-response: off
+
+  # Exactly three operations have no 2xx, and all three are correct:
+  #   GET /api/v1/ws         101 Switching Protocols (WebSocket upgrade)
+  #   GET /api/v1/daemon/ws  101 Switching Protocols (WebSocket upgrade)
+  #   GET /api/v1/auth/google/web/callback  303 See Other (browser redirect)
+  # If a fourth appears, it is probably a mistake — re-enable this rule to
+  # find it.
+  operation-2xx-response: off

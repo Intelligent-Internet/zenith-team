@@ -1,0 +1,949 @@
+.studio-graph {
+  --studio-edge: var(--workspace-native-accent);
+  --studio-edge-active: var(--workspace-native-accent);
+  --studio-grid: color-mix(
+    in srgb,
+    var(--workspace-native-text-muted) 50%,
+    transparent
+  );
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  background: color-mix(
+    in srgb,
+    var(--workspace-control-bg) 48%,
+    var(--workspace-content-bg)
+  );
+  outline: none;
+}
+
+.studio-graph .react-flow__edge-path {
+  stroke: var(--studio-edge);
+  stroke-width: 2.25px;
+  filter: none;
+}
+
+.studio-graph .react-flow__edge.selected .react-flow__edge-path,
+.studio-graph .react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--studio-edge-active);
+  stroke-width: 3px;
+}
+
+.studio-graph .react-flow__connection-path {
+  stroke: var(--studio-edge-active);
+  stroke-width: 2.5px;
+}
+
+.studio-graph .react-flow__node-studio {
+  contain: layout style;
+}
+
+.studio-graph .react-flow__pane {
+  cursor: grab;
+}
+
+.studio-graph .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.studio-graph-node {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text);
+  box-shadow:
+    0 0 0 1px var(--workspace-divider-strong),
+    0 5px 18px rgb(24 32 42 / 7%);
+  transition: box-shadow 140ms ease;
+}
+
+.studio-graph-node.is-read-only {
+  opacity: 0.9;
+}
+
+.studio-graph-node.is-group {
+  min-height: 140px;
+  border: 1px dashed var(--workspace-native-accent);
+  border-radius: var(--workspace-radius-overlay);
+  padding: 0;
+  background: color-mix(
+    in srgb,
+    var(--workspace-accent-soft) 22%,
+    var(--workspace-panel-bg)
+  );
+  box-shadow: none;
+}
+
+.studio-graph-node.is-group .studio-graph-node__preview {
+  background: transparent;
+}
+
+.studio-graph-node.is-group .studio-graph-node__port-label {
+  display: none;
+}
+
+.studio-graph .react-flow__resize-control.line {
+  display: none;
+}
+
+.studio-graph .react-flow__resize-control.handle {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: auto;
+  transition:
+    transform 140ms ease,
+    opacity 140ms ease;
+}
+
+.studio-graph .react-flow__resize-control.handle::after {
+  position: absolute;
+  inset: 9px;
+  border: 2px solid var(--workspace-panel-bg);
+  border-radius: 999px;
+  background: var(--workspace-native-accent);
+  box-shadow:
+    0 1px 2px rgb(29 43 66 / 18%),
+    0 0 0 1px
+      color-mix(in srgb, var(--workspace-native-accent) 24%, transparent);
+  content: "";
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.studio-graph .react-flow__resize-control.handle:hover {
+  opacity: 1;
+}
+
+.studio-graph-node:is(:hover, :focus-within, .is-selected)
+  .react-flow__resize-control.handle {
+  opacity: 1;
+}
+
+.studio-graph .react-flow__resize-control.handle:hover::after {
+  transform: scale(1.25);
+  background: var(--workspace-accent-hover);
+  box-shadow:
+    0 2px 5px rgb(29 43 66 / 22%),
+    0 0 0 4px
+      color-mix(in srgb, var(--workspace-native-accent) 16%, transparent);
+}
+
+/* Node chrome sits above the media bounds so resizing preserves its ratio. */
+.studio-graph-node__header {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  height: 26px;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+}
+.studio-graph-node__kind-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--workspace-native-text);
+}
+.studio-graph-node__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+.studio-graph-node__identity strong {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-graph-node__model {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 72%;
+  height: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: color-mix(in srgb, var(--workspace-panel-bg) 78%, transparent);
+  color: var(--workspace-native-text-muted);
+  font-size: 10.5px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.studio-graph-node__model > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.studio-graph-node__model > svg {
+  flex-shrink: 0;
+}
+.studio-graph-node__model:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+.studio-graph-node__model:focus-visible {
+  outline: 2px solid var(--workspace-native-accent);
+  outline-offset: 3px;
+}
+.studio-graph-node__label {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  overflow: hidden;
+  max-width: calc(100% - 24px);
+  border-radius: 5px;
+  padding: 4px 8px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.studio-graph-node.has-visual-media .studio-graph-node__label {
+  background: rgb(15 23 35 / 40%);
+  color: #fff;
+}
+.studio-graph-node__execution {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+}
+.studio-graph-node[data-status="failed"] .studio-graph-node__execution {
+  color: #b84036;
+}
+
+.studio-graph-node__preview {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--workspace-panel-bg);
+}
+.studio-graph-node.has-visual-media .studio-graph-node__preview {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.studio-graph-node__generating {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  isolation: isolate;
+  border-radius: inherit;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+
+.studio-graph-node__sheen {
+  position: absolute;
+  inset-block: 0;
+  left: -45%;
+  width: 45%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--workspace-native-text) 12%, transparent) 52%,
+    transparent
+  );
+  animation: studio-generating-sheen 1.2s linear infinite;
+}
+
+@keyframes studio-generating-sheen {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(340%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-graph-node__sheen {
+    animation: none;
+    transform: translate3d(150%, 0, 0);
+    opacity: 0.5;
+  }
+}
+
+.studio-graph-node.is-selected {
+  box-shadow:
+    0 0 0 2px
+      color-mix(in srgb, var(--workspace-native-accent) 16%, transparent),
+    0 10px 26px rgb(45 51 55 / 11%);
+}
+
+.studio-graph-node__text {
+  display: -webkit-box;
+  overflow: hidden;
+  max-height: 100%;
+  margin: 0;
+  padding: 18px;
+  color: var(--workspace-native-text);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+}
+
+.studio-graph-node__empty {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 14px;
+}
+.studio-graph-node__empty p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+.studio-graph-node__preview:has(.studio-graph-node__label)
+  .studio-graph-node__text {
+  padding-top: 46px;
+}
+.studio-graph-node__empty p[data-has-prompt="true"] {
+  color: var(--workspace-native-text);
+}
+.studio-graph-node__preview:has(.studio-graph-node__label)
+  .studio-graph-node__empty {
+  padding-top: 46px;
+}
+.studio-graph-node__edit {
+  display: inline-flex;
+  align-self: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.studio-graph-node__edit:hover {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-accent-soft);
+  color: var(--workspace-native-accent);
+}
+
+.studio-graph-node__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.studio-graph-node__actions .studio-generate-button {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.studio-graph-node__actions .studio-generate-button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-graph-node__actions .studio-generate-button > svg {
+  flex-shrink: 0;
+}
+
+.studio-graph-node__preview img,
+.studio-graph-node__preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.studio-graph-node__preview audio {
+  width: calc(100% - 24px);
+}
+
+.studio-graph-node__port-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  padding: 2px 4px;
+  border-radius: var(--workspace-radius-control);
+  background: color-mix(in srgb, var(--workspace-control-bg) 90%, transparent);
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.studio-graph-node__port-label.is-input {
+  right: calc(100% + 8px);
+}
+
+.studio-graph-node__port-label.is-output {
+  left: calc(100% + 8px);
+}
+
+.studio-graph .react-flow__handle {
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.studio-graph .react-flow__handle-left {
+  left: 0;
+}
+
+.studio-graph .react-flow__handle-right {
+  right: 0;
+}
+
+.studio-graph .react-flow__handle::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--workspace-native-accent);
+  border-radius: 50%;
+  background: var(--workspace-control-bg);
+  box-shadow: 0 0 0 3px var(--workspace-content-bg);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  content: "";
+}
+
+.studio-graph .react-flow__handle:hover::after,
+.studio-graph .react-flow__handle.connecting::after {
+  background: var(--workspace-accent-soft);
+  box-shadow: 0 0 0 3px var(--workspace-accent-soft);
+}
+
+.studio-graph .react-flow__controls,
+.studio-graph .react-flow__minimap {
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-overlay);
+  background: color-mix(in srgb, var(--workspace-panel-bg) 94%, transparent);
+  box-shadow: 0 10px 26px rgb(45 51 55 / 12%);
+}
+
+.studio-graph .react-flow__controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--workspace-radius-panel);
+  padding: 4px 6px;
+}
+
+.studio-graph .react-flow__minimap {
+  bottom: 52px;
+}
+
+.studio-graph .react-flow__controls-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--workspace-radius-control);
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+
+/* Override React Flow's separator on horizontal controls. */
+.studio-graph .react-flow__controls.horizontal .react-flow__controls-button {
+  border-right: 0;
+}
+
+.studio-graph .react-flow__controls-button:hover,
+.studio-graph .react-flow__controls-button:focus-visible {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.studio-graph__zoom-value {
+  min-width: 46px;
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.studio-graph__context {
+  position: absolute;
+  z-index: 10;
+  width: 208px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-overlay);
+  background: var(--workspace-panel-bg);
+  box-shadow: 0 8px 20px rgb(45 51 55 / 14%);
+  font-size: 12px;
+}
+.studio-graph__context strong {
+  overflow: hidden;
+  padding: 7px 8px;
+  color: var(--workspace-native-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.studio-graph__context button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--workspace-radius-control);
+  color: var(--workspace-native-text);
+  text-align: left;
+}
+
+.studio-graph__context button:hover:not(:disabled) {
+  background: var(--workspace-hover-bg);
+}
+
+.studio-graph__context button:disabled {
+  color: var(--workspace-native-text-muted);
+  cursor: not-allowed;
+}
+
+.studio-graph .react-flow__minimap {
+  width: 144px;
+  height: 96px;
+}
+
+.studio-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.studio-media__status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: 12px;
+}
+.studio-media__status button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: var(--workspace-radius-control);
+  padding: 5px 8px;
+  background: var(--workspace-panel-bg);
+  cursor: pointer;
+}
+.studio-media__spinner {
+  animation: studio-media-spin 1s linear infinite;
+}
+@keyframes studio-media-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-media__spinner {
+    animation: none;
+  }
+}
+
+.studio-player {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-width: none;
+  max-height: none;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #111719;
+  color: #fff;
+}
+.studio-graph-node__preview .studio-player::after {
+  content: none;
+}
+.studio-graph-node__preview .studio-player video {
+  object-fit: contain;
+}
+.studio-player button {
+  display: grid;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    opacity 160ms ease;
+}
+.studio-player button:hover {
+  background: rgb(255 255 255 / 16%);
+}
+.studio-player button:focus-visible,
+.studio-player input:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+.studio-player .studio-player__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border: 1px solid
+    color-mix(in srgb, var(--workspace-native-accent) 12%, transparent);
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-accent);
+  box-shadow:
+    0 4px 16px
+      color-mix(in srgb, var(--workspace-native-accent) 7%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 60%);
+  transform: translate(-50%, -50%);
+}
+.studio-player .studio-player__play:hover {
+  background: var(--workspace-hover-bg);
+}
+.studio-player__duration {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: rgb(18 25 27 / 28%);
+  backdrop-filter: blur(12px);
+  color: rgb(255 255 255 / 90%);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+.studio-player__controls {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 24px 20px 16px;
+  background: linear-gradient(transparent, rgb(0 0 0 / 64%));
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.studio-player:hover .studio-player__controls,
+.studio-player:focus-within .studio-player__controls {
+  opacity: 1;
+}
+.studio-player--video.is-playing .studio-player__play {
+  opacity: 0;
+}
+.studio-player--video.is-playing:hover .studio-player__play,
+.studio-player--video.is-playing:focus-within .studio-player__play {
+  opacity: 1;
+}
+.studio-player__controls input {
+  display: block;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0 0 2px;
+  background: transparent;
+  cursor: pointer;
+}
+.studio-player__controls input::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    currentColor var(--media-progress),
+    var(--media-track) var(--media-progress)
+  );
+}
+.studio-player__controls input::-moz-range-track {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--media-track);
+}
+.studio-player__controls input::-moz-range-progress {
+  height: 2px;
+  background: currentColor;
+}
+.studio-player__controls input::-webkit-slider-thumb {
+  appearance: none;
+  width: 7px;
+  height: 7px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.studio-player__controls input::-moz-range-thumb {
+  width: 7px;
+  height: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+.studio-player {
+  --media-track: rgb(255 255 255 / 25%);
+}
+.studio-player__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.studio-player__time {
+  flex: 1;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.studio-player__time span,
+.studio-player .is-muted {
+  opacity: 0.5;
+}
+.studio-player--audio {
+  --media-track: color-mix(
+    in srgb,
+    var(--workspace-native-accent) 16%,
+    transparent
+  );
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    color-mix(
+      in srgb,
+      var(--workspace-native-accent) 7%,
+      var(--workspace-panel-bg)
+    ),
+    var(--workspace-panel-bg) 70%
+  );
+  color: var(--workspace-native-accent);
+}
+.studio-player--audio audio {
+  display: none;
+}
+.studio-player--audio .studio-player__duration {
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+}
+.studio-player--audio .studio-player__controls {
+  padding-top: 8px;
+  background: transparent;
+}
+.studio-player--audio .studio-player__time {
+  color: var(--workspace-native-text-muted);
+}
+.studio-player--audio button:hover {
+  background: var(--workspace-hover-bg);
+}
+@media (hover: none) {
+  .studio-player__controls,
+  .studio-player--video.is-playing .studio-player__play {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-player button,
+  .studio-player__controls {
+    transition: none;
+  }
+}
+.studio-player__toasts:popover-open {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  pointer-events: none;
+}
+.studio-player__toasts [data-sonner-toaster] {
+  pointer-events: auto;
+}
+/* Keep the same media element in the top layer when the viewer opens. */
+.studio-player.is-expanded:modal {
+  position: fixed;
+  inset: 50% 0 auto;
+  transform: translateY(-50%);
+  width: min(88vw, 1080px, calc(84dvh * var(--media-ratio)));
+  height: auto;
+  margin: 0 auto;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+.studio-player::backdrop {
+  background: rgb(9 11 14 / 55%);
+  backdrop-filter: blur(6px);
+}
+.studio-graph-node__preview .studio-player.is-expanded video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: var(--media-ratio);
+  object-fit: contain;
+  background: #000;
+  cursor: pointer;
+}
+.studio-player.is-expanded .studio-player__duration {
+  display: none;
+}
+.studio-player.is-expanded .studio-player__controls {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 84px;
+  padding: 24px 18px 0 64px;
+  background: linear-gradient(transparent, rgb(0 0 0 / 54%));
+  opacity: 1;
+}
+.studio-player.is-expanded .studio-player__controls input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.studio-player.is-expanded .studio-player__toolbar {
+  gap: 14px;
+}
+.studio-player.is-expanded .studio-player__time {
+  font-size: 11px;
+  color: rgb(255 255 255 / 90%);
+}
+.studio-player.is-expanded .studio-player__play {
+  z-index: 2;
+  top: auto;
+  bottom: 14px;
+  left: 16px;
+  width: 32px;
+  height: 32px;
+  transform: none;
+  border: 0;
+  background: #fff;
+  color: var(--workspace-native-accent);
+  box-shadow: none;
+  opacity: 1;
+}
+.studio-player.is-expanded .studio-player__play:hover {
+  background: #e9edef;
+}
+.studio-player .studio-player__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  background: rgb(18 20 24 / 65%);
+  backdrop-filter: blur(12px);
+}
+.studio-player .studio-player__close:hover {
+  background: rgb(18 20 24 / 90%);
+}
+.studio-player__controls {
+  z-index: 1;
+}
+
+.studio-graph-node__port-label {
+  opacity: 0;
+}
+.studio-graph-node:is(:hover, :focus-within, .is-selected)
+  .studio-graph-node__port-label {
+  opacity: 1;
+}
+.studio-graph .react-flow__edge-path {
+  stroke-width: 1.6px;
+}
+.studio-graph .react-flow__edge.selected .react-flow__edge-path,
+.studio-graph .react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2px;
+}
+.studio-graph .react-flow__node.dragging .studio-graph-node {
+  box-shadow: 0 4px 16px rgb(24 32 42 / 9%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-graph-node {
+    transition: none;
+  }
+}

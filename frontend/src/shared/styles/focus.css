@@ -1,0 +1,43 @@
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Menu items show focus with their own highlight, not a ring. A panel
+   that takes focus only from code (tabindex -1) so its contents are read
+   next is not a control and gets no ring either. The exclusions sit in
+   :where() so the rule keeps its old specificity and every override of it
+   still wins. */
+html[data-boardly-workspace-theme]
+  :is(button, a, input, textarea, select, [tabindex]):where(
+    :not([role^="menuitem"], :is(aside, article, section, main)[tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--workspace-native-text-muted);
+  outline-offset: 2px;
+}
+
+/* Text fields use their existing border; compound fields own the outer border. */
+html[data-boardly-workspace-theme]
+  :is(
+    input:where(
+      :not(
+        [type="button"],
+        [type="submit"],
+        [type="reset"],
+        [type="checkbox"],
+        [type="radio"],
+        [type="range"],
+        [type="color"],
+        [type="file"]
+      )
+    ),
+    textarea,
+    select,
+    [data-slot="select-trigger"]
+  ):focus {
+  outline: none;
+  border-color: var(--workspace-native-accent);
+
+  &[aria-invalid="true"] {
+    border-color: var(--workspace-native-danger);
+  }
+}

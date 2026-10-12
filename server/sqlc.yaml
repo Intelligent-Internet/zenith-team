@@ -1,0 +1,29 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "pkg/db/queries/"
+    schema: "migrations/"
+    gen:
+      go:
+        package: "db"
+        out: "pkg/db/generated"
+        sql_package: "pgx/v5"
+        emit_json_tags: true
+        emit_empty_slices: true
+        # Without these every uuid column arrives as pgtype.UUID and the code
+        # spends hundreds of calls converting to and from google/uuid at each
+        # seam. pgx v5 encodes and decodes uuid.UUID directly — there is no
+        # codec to register — so the conversion never bought anything.
+        overrides:
+          - db_type: "uuid"
+            go_type: "github.com/google/uuid.UUID"
+          - db_type: "uuid"
+            nullable: true
+            go_type: "github.com/google/uuid.NullUUID"
+          # The UNION view deliberately returns NULL for Run subject revisions.
+          - column: "activity_subject_states.revision"
+            go_type: "github.com/jackc/pgx/v5/pgtype.Int8"
+          # Only its Task arm always names a Project; a chat or Run of a
+          # direct, Schedule or channel chat names none.
+          - column: "activity_subject_states.project_id"
+            go_type: "github.com/google/uuid.NullUUID"

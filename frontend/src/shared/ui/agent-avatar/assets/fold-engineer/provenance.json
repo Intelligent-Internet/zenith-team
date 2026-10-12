@@ -1,0 +1,20 @@
+{
+  "model": "openai/gpt-image-2.5/sunburst/edit",
+  "requestId": "01a0f6f3-d364-7440-a4c1-dadcc9eba9e5",
+  "reference": "Approved Eli engineering character preview, 2026-10-01",
+  "prompt": "Create a production puppet sprite atlas from the supplied approved Eli engineering mascot. Preserve the exact beautiful soft periwinkle blue clay appearance, ivory eyes, navy utility belt and brushed metal wrench. This is a disassembly sheet for animation, not an assembled character.\nCanvas 1536 x 1024, transparent RGBA background. EXACTLY six isolated parts in a rigid 3-column by 2-row grid, each cell 512x512. Each part centered within its own cell with 40px empty safe margins. No lines, no labels, no text, no backgrounds, no floor shadows, no checkerboard drawn into image, no overlap between cells.\nTOP LEFT: ONLY the rounded square blue torso with folded upper-right corner and navy utility belt with two pouches. Completely FACELESS: no eyes or mouth; no arms, hands, feet or legs. Fill the hidden areas with matching uninterrupted blue clay so other parts can move over it. Front view.\nTOP MIDDLE: ONLY the pair of ivory oval eyes with glossy dark pupils and highlights, horizontally spaced, matching the reference. No face, no body, no nose, no eyelids, no mouth. Two eyes isolated together.\nTOP RIGHT: ONLY the small curved dark smiling mouth, soft dimensional dark clay curve, no face or other parts.\nBOTTOM LEFT: ONLY the blue arm and mitten hand holding the large upright silver open-ended wrench, as on the viewer's LEFT in reference. Entire wrench from open jaws to rounded handle end, hand wrapped around its middle. No body, no belt, no feet. Arm and wrench must stay attached as one object for animation.\nBOTTOM MIDDLE: ONLY the blue free bent arm and mitten hand from the viewer's RIGHT in reference. No torso or other parts.\nBOTTOM RIGHT: ONLY two blue clay stubby legs and feet, separated slightly from one another, front view. No body or other parts.\nSoft consistent upper-left studio lighting; faithfully keep reference material, shape and colors. All missing/occluded attachment areas must be fully rendered. Transparent alpha around every part.",
+  "sourceSize": [
+    1536,
+    1024
+  ],
+  "format": "lossless WebP with alpha",
+  "assets": {
+    "wrench.webp": "92a76990df8be8d04f8f0f0114ebe250255d7776b87d9a346cfb85a9a4a16888",
+    "arm.webp": "96367f3ddf12358a747516f98440f695e32170eabee8b4f07b27e055cb3c590f",
+    "mouth.webp": "e26ad7949119ea00ec94febdca405d798cb75945db2d352055665dea6de4ccb5",
+    "body.webp": "a4dddc8e3058a22125ca92f3114e59c70e5dcb696c9aaa41b0398c50521d1a30",
+    "feet.webp": "10859b01f99371cbcb5c6037fb7d8587794730da9a3e46e4d852bd9d0f59a433",
+    "eyes.webp": "4b26ea1cb78b65ef6e8fc06cec13f3f0e2b6168e20fc5d7d3839c063d5f871aa"
+  },
+  "processing": "Lossless rectangular crops from the transparent generated atlas; no recoloring or painted replacements."
+}

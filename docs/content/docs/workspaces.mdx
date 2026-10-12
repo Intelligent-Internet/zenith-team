@@ -1,0 +1,99 @@
+---
+title: Workspaces
+description: The per-company directory tree on your computer where every run executes, and how a run is placed in it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Every [run](/runs) executes in exactly one workspace on the connected computer. The [daemon](/daemon-and-runtimes) owns a per-company directory tree, picks one placement per run, and keeps the tree — and everything in it — on your machine. Zenith Team's cloud stores conversations, statuses, and usage; it never stores the workspace itself.
+
+## The company workspace tree
+
+The tree lives under the daemon's workspaces root — `~/boardly_workspaces` by default (override it with `BOARDLY_WORKSPACES_ROOT` or the `workspaces-root` daemon setting). Inside it, each company gets one container holding a single `company` scope — shared by every [agent](/agents), the CEO Agent included — with a durable `main` workspace and a `worktrees` area for task work:
+
+```text
+~/boardly_workspaces/
+├── .metadata/                        signed workspace lifecycle records
+├── .skill-cache/                     resolved skill bundles
+├── .local-scratch/<run-id>/          provider homes for execute-in-place runs
+├── <company-id>/
+│   └── company/                      the one scope every agent shares
+│       ├── main/                     durable Company main workspace (a Git repository)
+│       │   └── .memory/              Company Memory
+│       └── worktrees/
+│           └── <conversation-id>/    one Task worktree per Task conversation
+│               └── workdir/          the agent's working directory
+│                   └── .memory/
+└── <isolated-id>/                    single-use workspaces for schedule and tagged runs
+    └── workdir/
+
+~/boardly_workspaces-repos/           shared repository cache
+```
+
+An installation from before agents-only may still hold `<department-key>/` containers beside `company/`; a task worktree created there keeps running there until it merges, and nothing new is created under them.
+
+Two shapes in this tree are deliberate:
+
+- **`main` is a real Git repository.** On first use the daemon initializes it on a `main` branch with an "Initialize workspace" commit. It is durable, never garbage-collected, and it is the directory task work eventually [merges back into](#merging-task-work-back).
+- **The agent's working directory is `workdir`, one level below the lifecycle root.** Sibling artifacts — metadata, logs — live next to it without ever moving the agent's current directory. The current directory must never move, because provider CLIs key their resumable sessions to the exact path; a moved directory would silently break [session resumption](/providers).
+
+## How a run is placed
+
+The daemon picks exactly one placement per run, from the run's frozen context:
+
+| Placement | Which runs | Where |
+|---|---|---|
+| **Local directory** | A direct-conversation run whose frozen resources pin a `local_directory` to this daemon | Your own directory — the run executes in place |
+| **Main workspace** | Direct-conversation runs with no pinned local directory | `<company-id>/company/main` |
+| **Task worktree** | Task runs | `<company-id>/company/worktrees/<conversation-id>/workdir` |
+| **Isolated workspace** | Schedule runs, and runs started by tagging an agent in a channel or group DM | A single-use directory derived from the conversation and run |
+
+Schedule and tagged runs are always isolated — even a pinned local directory does not apply to them. A tagged run works with the access of the person who tagged the agent, and everyone in the chat reads its answer. Project access does not cover your own directory, the Company `main` workspace or its memory, so a tagged run never works in them. On a Mac that reports itself as protected, its sandbox also keeps it from reading them: it sees only its own workspace, the Company's business context, and the tools it uses.
+
+### Local directories
+
+A [Resource](/concepts#resource) binds one local directory per daemon per company, so an agent can work directly in a folder you already have. The run executes in place: your directory is used as-is, and the provider's own home and settings are kept out of it, in a per-run root under `.local-scratch/`.
+
+In-process path locking makes the directory single-occupancy: if another run is already executing there, the new run parks as `waiting_local_directory` and continues when the path frees up — it does not fail.
+
+### Main workspaces
+
+The durable `main` workspace is where every direct-chat run executes, whichever agent the conversation is with. Runs execute in place here too, under the same path lock, and a cross-process gate serializes mutations, so two runs never change one main workspace at once.
+
+Because the main workspace persists across runs, it accumulates: files an agent produced last week are simply there for the next conversation, with any agent. This is also where the company's [`.memory/`](/memory) lives.
+
+### Task worktrees
+
+A task run gets a Git worktree of the Company `main`, on a branch named `boardly/task-<run-id>`. The worktree is created once per task conversation and reused across the task's runs: a later run's branch is cut from the previous run's branch when it still exists, so work on the task accumulates until it merges. Reusing the same directory is what lets the provider resume the task's session.
+
+A signed metadata record binds each worktree to the exact run that populated it, and completed or orphaned worktrees are garbage-collected on a retention schedule. The `main` workspace is never collected.
+
+### Isolated workspaces
+
+A [schedule](/schedules) run executes in a single-use workspace whose identity is derived from the schedule's conversation and the run. It is never reused — files from one occurrence can never become ambient input to the next — and it never touches a durable workspace.
+
+A run started by tagging an agent in a channel or group DM is placed the same way: a new single-use workspace for every run, never your local directory or the Company `main` workspace. The one Company folder it gets is `main`'s `assets/general`, read-only, when it holds the shared business context. Everything else it needs from the Company it reads through `zen`, which shows it only what the person who tagged the agent can see. It also starts a new provider session each time; the chat's recent messages come with its prompt instead.
+
+## Memory in the tree
+
+Workspace preparation creates a `.memory/` directory in the `main` workspace and every task `workdir`. Every task run additionally receives the live `company/main/.memory` mounted read-only, so an agent can read company-wide memory (and the shared business context asset) without being able to change it — a worktree only carries what `main` had committed when it branched. Schedule runs and tagged runs get no durable memory at all. What agents keep there and how the local files are read and retained is covered in [Memory](/memory).
+
+## Merging task work back
+
+Task work stays on its `boardly/task-<run-id>` branch until a merge is requested — proactively after completion, or manually from the task. The merge is performed by the daemon that ran the completed run, on the machine where the worktree lives: it merges the task branch into the Company `main` workspace. When a task is finished and merged, its outcome is durable in `main`; the worktree itself is disposable. The product-side flow — who requests a merge and when — is described in [Tasks](/tasks#merging-task-work).
+
+## What never leaves your computer
+
+- **The tree itself.** Zenith Team's cloud has no copy of your workspaces, and local paths never appear in the product surface.
+- **Your code and files.** Only what an agent explicitly says in a conversation — its messages and transcript — is stored by Zenith Team.
+- **Provider credentials and native configuration.** Sign-in belongs to the vendor CLIs; connector secrets stay with the daemon. See [Connectors and plugins](/connectors-and-plugins).
+
+<Callout type="warning">
+The workspaces root is daemon-managed state. Deleting directories under `~/boardly_workspaces` while the daemon is running can strand in-flight runs, and deleting a scope's `main` workspace permanently discards every file agents accumulated there, including its `.memory/`. Stop the daemon first, and treat `main` directories as durable data.
+</Callout>
+
+## Next steps
+
+- **[Memory](/memory)** — what agents keep in `.memory/` and how those local notes are read and retained.
+- **[Tasks](/tasks)** — the work unit whose runs execute in task worktrees.
+- **[Daemon and runtimes](/daemon-and-runtimes)** — the process that owns this tree.

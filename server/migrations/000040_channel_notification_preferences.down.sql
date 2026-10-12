@@ -1,0 +1,1 @@
+ALTER TABLE conversation_user_states DROP COLUMN notification_level;

@@ -1,0 +1,1019 @@
+/* Settings › Plugins, laid out after the Codex Plugins page: a header with
+   the computer, when it last synced and refresh, a search field, calm
+   one-line notices, the Installed logo strip, then Featured and category
+   sections of two-column rows. Everything reads from workspace tokens so the
+   light and dark themes follow; focus shows as a border and background. */
+.plugins-page {
+  container: plugins-page / inline-size;
+  /* Switching views scrolls the page's top into view below the frame's gutter. */
+  scroll-margin-top: var(--workspace-page-gutter-block, 24px);
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  padding-bottom: 24px;
+  color: var(--workspace-native-text);
+}
+
+/* The page's own header (SettingsShell `ownsHeader`), aligned with the
+   catalog: the title, and at its right the computer the catalog is read
+   from and refresh. */
+.plugins-header {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.plugins-header__heading {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.plugins-header__heading h1 {
+  margin: 0;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-page);
+  font-weight: 700;
+  letter-spacing: -0.65px;
+  line-height: var(--workspace-leading-page);
+  overflow-wrap: anywhere;
+}
+
+.plugins-header__heading p {
+  margin: 6px 0 0;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.plugins-header__actions {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+/* One full-width search field under the header. */
+.plugins-toolbar {
+  display: flex;
+  min-width: 0;
+  margin-top: 20px;
+}
+
+.plugins-search {
+  display: flex;
+  min-width: 0;
+  height: 40px;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 999px;
+  padding: 0 16px;
+  background: var(--workspace-input-bg);
+  transition: border-color 120ms;
+}
+
+.plugins-search:focus-within {
+  border-color: var(--workspace-native-accent);
+}
+
+.plugins-search__icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--workspace-native-text-muted);
+}
+
+.plugins-search input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: var(--workspace-native-text);
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.plugins-search input::placeholder {
+  color: var(--workspace-native-text-faint);
+  opacity: 1;
+}
+
+.plugins-search input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.plugins-computer {
+  position: relative;
+  display: flex;
+  width: 280px;
+  min-width: 0;
+  height: 40px;
+  flex: 0 1 auto;
+  align-items: center;
+}
+
+.plugins-computer select {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  padding: 0 34px 0 38px;
+  appearance: none;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  outline: none;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-computer select:hover:not(:disabled) {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-computer select:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-computer select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.plugins-computer__icon,
+.plugins-computer__chevron {
+  position: absolute;
+  top: 50%;
+  color: var(--workspace-native-text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.plugins-computer__icon {
+  left: 12px;
+  width: 18px;
+  height: 18px;
+}
+
+.plugins-computer__chevron {
+  right: 12px;
+  width: 16px;
+  height: 16px;
+}
+
+@container plugins-page (max-width: 559px) {
+  .plugins-header__actions {
+    flex-basis: 100%;
+  }
+
+  .plugins-computer {
+    width: auto;
+    flex: 1 1 0;
+  }
+}
+
+/* Icon-only buttons: row "+" and "…", the Installed gear, refresh. */
+.plugins-icon-button {
+  display: inline-grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.plugins-icon-button:hover:not(:disabled, [aria-disabled="true"]),
+.plugins-icon-button[data-state="open"] {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-icon-button:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-icon-button:disabled,
+.plugins-icon-button[aria-disabled="true"] {
+  color: var(--workspace-native-text-faint);
+  cursor: not-allowed;
+}
+
+.plugins-icon-button[aria-busy="true"] {
+  color: var(--workspace-native-text-muted);
+  cursor: progress;
+}
+
+/* When the computer last reported its catalog, beside refresh. */
+.plugins-sync {
+  flex: none;
+  color: var(--workspace-native-text-faint);
+  font-size: var(--workspace-text-caption);
+  line-height: var(--workspace-leading-caption);
+  white-space: nowrap;
+}
+
+.plugins-icon-button--framed {
+  width: 40px;
+  height: 40px;
+  border-color: var(--workspace-divider);
+  border-radius: 10px;
+  background: var(--workspace-input-bg);
+  color: var(--workspace-native-text-muted);
+}
+
+.plugins-icon-button--framed:hover:not(:disabled) {
+  color: var(--workspace-native-text);
+}
+
+.plugins-icon-button--framed:disabled {
+  opacity: 0.5;
+}
+
+/* One quiet line per notice; a coloured dot carries the tone. */
+.plugins-notices {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.plugins-notices:empty {
+  display: none;
+}
+
+.plugins-notice {
+  --plugins-notice-tone: var(--workspace-native-text-faint);
+  min-width: 0;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: var(--workspace-panel-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  line-height: 20px;
+}
+
+/* The reconnect line asks for attention in the accent (amber in the dark
+   theme) rather than a warning box. */
+.plugins-notice[data-tone="attention"] {
+  --plugins-notice-tone: var(--workspace-native-accent);
+}
+
+.plugins-notice[data-tone="info"] {
+  --plugins-notice-tone: var(--workspace-native-info);
+}
+
+.plugins-notice[data-tone="danger"] {
+  --plugins-notice-tone: var(--workspace-native-danger);
+  border-color: color-mix(
+    in srgb,
+    var(--workspace-native-danger) 30%,
+    var(--workspace-divider)
+  );
+}
+
+.plugins-notice__line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.plugins-notice__dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--plugins-notice-tone);
+}
+
+.plugins-notice__text {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.plugins-notice[data-tone="danger"] .plugins-notice__text {
+  color: var(--workspace-native-danger);
+}
+
+.plugins-notice__strong {
+  color: var(--workspace-native-text);
+  font-weight: 500;
+}
+
+.plugins-text-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin: -4px -8px -4px 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-text-button > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.plugins-text-button--attention {
+  color: var(--workspace-native-accent);
+}
+
+.plugins-text-button:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-text-button:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+/* Apps whose tools changed: one quiet line of their logos, a count and
+   Reconnect, which opens the list of them. */
+.plugins-reconnect-card {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  padding: 8px 8px 8px 12px;
+  background: var(--workspace-panel-bg);
+}
+
+.plugins-reconnect-card__avatars {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+}
+
+.plugins-reconnect-card__avatars > * {
+  box-shadow: 0 0 0 2px var(--workspace-panel-bg);
+}
+
+.plugins-reconnect-card__avatars > * + * {
+  margin-left: -8px;
+}
+
+.plugins-reconnect-card__more {
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  padding: 0 6px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.plugins-reconnect-card__title {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+  line-height: var(--workspace-leading-body);
+  overflow-wrap: anywhere;
+}
+
+.plugins-reconnect-card__button {
+  display: inline-flex;
+  height: 28px;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--workspace-text-body);
+  font-weight: 500;
+  line-height: var(--workspace-leading-body);
+  white-space: nowrap;
+  transition: background-color 120ms;
+}
+
+.plugins-reconnect-card__button > svg {
+  flex: none;
+  color: var(--workspace-native-text-muted);
+  transition: transform 120ms;
+}
+
+.plugins-reconnect-card__button[data-state="open"] > svg {
+  transform: rotate(180deg);
+}
+
+.plugins-reconnect-card__button:hover,
+.plugins-reconnect-card__button:focus-visible,
+.plugins-reconnect-card__button[data-state="open"] {
+  background: var(--workspace-hover-bg);
+}
+
+/* The list Reconnect opens: each app with its own Reconnect, then
+   Reconnect all. */
+.plugins-reconnect-popover {
+  z-index: 240;
+  display: flex;
+  width: min(340px, calc(100vw - 32px));
+  max-height: min(440px, var(--radix-popover-content-available-height));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 12px;
+  background: var(--workspace-overlay-bg);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 16%);
+  color: var(--workspace-native-text);
+  font-family: var(--workspace-font-body);
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+}
+
+.plugins-reconnect-popover:focus,
+.plugins-reconnect-popover:focus-visible {
+  outline: none;
+}
+
+.plugins-reconnect-popover__header {
+  padding: 12px 14px 6px;
+}
+
+.plugins-reconnect-popover__header p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.plugins-reconnect-popover__header p + p {
+  margin-top: 2px;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-caption);
+  font-weight: 400;
+  line-height: var(--workspace-leading-caption);
+}
+
+.plugins-reconnect-popover__list {
+  min-height: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  overflow-y: auto;
+  padding: 2px 6px 6px;
+  list-style: none;
+}
+
+.plugins-reconnect-popover__list > li {
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 4px 0 8px;
+}
+
+.plugins-reconnect-popover__list > li:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-reconnect-popover__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugins-reconnect-popover__action,
+.plugins-reconnect-popover__all {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--workspace-native-accent);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-reconnect-popover__action {
+  height: 28px;
+  padding: 0 8px;
+}
+
+.plugins-reconnect-popover__action > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.plugins-reconnect-popover__footer {
+  border-top: 1px solid var(--workspace-divider);
+  padding: 6px;
+}
+
+.plugins-reconnect-popover__all {
+  width: 100%;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.plugins-reconnect-popover__action:hover:not([aria-disabled="true"]),
+.plugins-reconnect-popover__all:hover:not([aria-disabled="true"]) {
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-accent) 10%,
+    transparent
+  );
+}
+
+.plugins-reconnect-popover__action:focus-visible,
+.plugins-reconnect-popover__all:focus-visible {
+  border-color: var(--workspace-native-accent);
+  outline: none;
+}
+
+.plugins-reconnect-popover__action[aria-disabled="true"],
+.plugins-reconnect-popover__all[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.plugins-reconnect-popover__action[aria-busy="true"] {
+  cursor: progress;
+  opacity: 1;
+}
+
+/* The Installed, Featured or category view that replaced the All view. */
+.plugins-view-header {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 24px;
+  border-bottom: 1px solid var(--workspace-divider);
+  padding-bottom: 12px;
+}
+
+.plugins-view-header h2 {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  color: var(--workspace-native-text);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  overflow-wrap: anywhere;
+}
+
+.plugins-view-header__count {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  font-weight: 400;
+  line-height: var(--workspace-leading-label);
+}
+
+.plugins-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: -8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 500;
+  line-height: var(--workspace-leading-label);
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.plugins-back > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.plugins-back:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugins-back:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+/* Sections. */
+.plugins-section {
+  min-width: 0;
+  margin-top: 28px;
+}
+
+.plugins-view-header + .plugins-section {
+  margin-top: 12px;
+}
+
+.plugins-view-header + .plugins-section:has(.plugins-section__header) {
+  margin-top: 24px;
+}
+
+.plugins-section__header {
+  display: flex;
+  min-width: 0;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--workspace-divider);
+  padding-bottom: 8px;
+}
+
+.plugins-section__header h2 {
+  min-width: 0;
+  margin: 0;
+  color: var(--workspace-native-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.plugins-section__header .plugins-icon-button {
+  margin-right: -6px;
+  color: var(--workspace-native-text-muted);
+}
+
+.plugins-section__header .plugins-icon-button:hover,
+.plugins-section__header .plugins-icon-button:focus-visible {
+  color: var(--workspace-native-text);
+}
+
+/* The Installed strip: logo tiles that open each plugin's page. */
+.plugins-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  justify-items: start;
+  gap: 8px 0;
+  margin: 14px 0 0 -4px;
+  padding: 0;
+  list-style: none;
+}
+
+.plugins-strip__tile,
+.plugins-strip__more {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 0;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-strip__tile:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-strip__tile:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-strip__tile:is([data-status="disabled"], [data-status="error"])
+  .app-avatar {
+  opacity: 0.5;
+}
+
+.plugins-strip__more {
+  border-color: var(--workspace-divider);
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+}
+
+.plugins-strip__more:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugins-strip__more:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+/* Rows: the name is a link stretched over the whole row, so the row opens
+   the plugin's page while its "+" or "…" stays its own control. */
+.plugins-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 32px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@container plugins-page (max-width: 639px) {
+  .plugins-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.plugins-row {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 64px;
+  align-items: center;
+  gap: 14px;
+  margin: 0 -8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 8px;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-row:hover {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-row:has(.plugins-row__link:focus-visible) {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-row__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plugins-row__link {
+  overflow: hidden;
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 600;
+  line-height: var(--workspace-leading-body);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugins-row__link::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+}
+
+.plugins-row__description {
+  overflow: hidden;
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-label);
+  line-height: var(--workspace-leading-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugins-row__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 56px;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+}
+
+.plugins-row__status {
+  color: var(--workspace-native-text-muted);
+  font-size: var(--workspace-text-micro);
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.plugins-row__status[data-status="disabled"] {
+  color: var(--workspace-native-accent);
+}
+
+.plugins-row__status[data-status="error"] {
+  color: var(--workspace-native-danger);
+}
+
+/* "See HubSpot, Linear, and 38 more" opens the section's own view. */
+.plugins-see-more {
+  display: inline-flex;
+  max-width: calc(100% + 8px);
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 0 -8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 6px 10px 6px 8px;
+  background: transparent;
+  color: var(--workspace-native-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  line-height: var(--workspace-leading-body);
+  text-align: left;
+  transition:
+    background-color 120ms,
+    border-color 120ms,
+    color 120ms;
+}
+
+.plugins-see-more:hover {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugins-see-more:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
+
+.plugins-see-more > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.plugins-see-more__avatars {
+  display: inline-flex;
+  flex: none;
+}
+
+.plugins-see-more__avatars .app-avatar {
+  box-shadow: 0 0 0 2px var(--workspace-content-bg);
+}
+
+.plugins-see-more__avatars .app-avatar + .app-avatar {
+  margin-left: -8px;
+}
+
+/* The row menu's Uninstall reads as destructive in both themes. */
+.plugins-menu-item--danger,
+.plugins-menu-item--danger:focus {
+  color: var(--workspace-native-danger);
+}
+
+/* Empty, loading and error states, and the catalog's Load more. */
+.plugins-state {
+  display: flex;
+  min-width: 0;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--workspace-native-text-muted);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.plugins-state.is-compact {
+  min-height: 200px;
+}
+
+.plugins-state > svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  color: var(--workspace-native-text-faint);
+}
+
+.plugins-state strong {
+  color: var(--workspace-native-text);
+  font-size: var(--workspace-text-body);
+  font-weight: 600;
+  line-height: var(--workspace-leading-body);
+}
+
+.plugins-state p {
+  max-width: 420px;
+  margin: 6px 0 0;
+  font-size: var(--workspace-text-label);
+  line-height: 20px;
+}
+
+.plugins-state button,
+.plugins-load-more {
+  display: inline-flex;
+  min-width: 120px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--workspace-divider-strong);
+  border-radius: 8px;
+  padding: 0 14px;
+  background: var(--workspace-control-bg);
+  color: var(--workspace-native-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--workspace-text-label);
+  font-weight: 600;
+  line-height: var(--workspace-leading-label);
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+
+.plugins-state button {
+  margin-top: 14px;
+}
+
+.plugins-load-more {
+  align-self: center;
+  margin-top: 24px;
+}
+
+.plugins-state button:hover,
+.plugins-load-more:hover:not(:disabled) {
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-state button:focus-visible,
+.plugins-load-more:focus-visible {
+  border-color: var(--workspace-native-accent);
+  background: var(--workspace-hover-bg);
+}
+
+.plugins-load-more:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

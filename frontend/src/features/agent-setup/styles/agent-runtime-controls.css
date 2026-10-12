@@ -1,0 +1,54 @@
+.agent-runtime-select {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  align-items: center;
+  border-radius: var(--workspace-radius-control, 6px);
+}
+
+.agent-runtime-select select {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  appearance: none;
+  border: 1px solid var(--workspace-divider-strong, rgba(255, 255, 255, 0.16));
+  border-radius: inherit;
+  background: var(--workspace-input-bg, rgba(255, 255, 255, 0.1));
+  padding: 0 36px 0 12px;
+  color: var(--workspace-native-text, #fff);
+  font: inherit;
+  font-size: var(--workspace-text-body);
+  font-weight: 400;
+  line-height: var(--workspace-leading-body);
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.agent-runtime-select:has(select:focus-visible) {
+  box-shadow: 0 0 0 2px var(--workspace-native-accent, #ffd84d);
+}
+
+.agent-runtime-select select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.agent-runtime-select select option {
+  background: var(--workspace-overlay-bg, #18213a);
+  color: var(--workspace-native-text, #fff);
+}
+
+.agent-runtime-select__icon {
+  position: absolute;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.56));
+  pointer-events: none;
+}
+
+.agent-runtime-select:has(select:disabled) .agent-runtime-select__icon {
+  opacity: 0.55;
+}

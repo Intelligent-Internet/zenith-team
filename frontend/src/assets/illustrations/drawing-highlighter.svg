@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="156" viewBox="0 0 64 156" fill="none">
+  <defs>
+    <linearGradient id="drawing-highlighter-body" x1="12" y1="100" x2="52" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#c9cacc"/>
+      <stop offset=".22" stop-color="#f5f5f4"/>
+      <stop offset=".55" stop-color="#fff"/>
+      <stop offset=".85" stop-color="#ededec"/>
+      <stop offset="1" stop-color="#c9cbcc"/>
+    </linearGradient>
+    <linearGradient id="drawing-highlighter-ink" x1="13" y1="40" x2="51" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-opacity=".12"/>
+      <stop offset=".45" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset="1" stop-opacity=".08"/>
+    </linearGradient>
+  </defs>
+  <path d="M23 39V25C23 23 24 21 26 20L39 13C41 12 42 13 42 15V39Z" fill="currentColor"/>
+  <path d="M23 39V25C23 23 24 21 26 20L39 13C41 12 42 13 42 15V39Z" fill="url(#drawing-highlighter-ink)"/>
+  <path d="M12 156V82C12 71 21 64 21 53V36H43V53C43 64 52 71 52 82V156" fill="url(#drawing-highlighter-body)" stroke="#b5b7b9" stroke-opacity=".35"/>
+  <path d="M12 93H52V107H12Z" fill="currentColor"/>
+  <path d="M12 93H52V107H12Z" fill="url(#drawing-highlighter-ink)"/>
+  <path d="M21 38H43M12 109H52M12 142H52" stroke="#b5b7b9" stroke-opacity=".25"/>
+  <path d="M19 114V153" stroke="#fff" stroke-opacity=".75" stroke-width="2"/>
+</svg>

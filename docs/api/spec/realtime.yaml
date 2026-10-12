@@ -1,0 +1,710 @@
+# Project lifecycle facts project.created, project.updated and project.archived
+# reach the Project's readers and the projects.manage holders (ADR 0017) and
+# carry ProjectLifecyclePayload: the Project without its files or access.
+# project.access_changed is an opaque per-person invalidation carrying
+# ProjectAccessChangedPayload.
+# Wiki page facts wiki.page_created, wiki.page_updated, wiki.page_archived and
+# wiki.page_restored are Company-visible envelopes carrying WikiPageEventPayload;
+# wiki.collection_created, wiki.collection_updated and wiki.collection_deleted carry
+# WikiCollectionEventPayload.
+# Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index
+# that references it, and docs/api/realtime.md is its prose counterpart.
+
+paths:
+
+  # =============================================================== realtime WS
+
+  # /api/v1/ws
+  ws:
+    get:
+      tags: [realtime]
+      operationId: openClientWebSocket
+      summary: Open the client realtime socket
+      description: |
+        Receive-only WebSocket upgrade. Authentication rides the upgrade by
+        cookie or bearer header; the origin is checked at the socket boundary.
+        The server routes frames through the authenticated company and eligible
+        company-user typed audiences. There is no initialization, ready,
+        subscription, or application ping frame.
+      parameters:
+        - name: company_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+          description: Company whose membership and event audience are used.
+      responses:
+        '101':
+          description: Switching protocols. The socket carries the event stream.
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+      # OpenAPI has no native WebSocket frame channel, so authored event
+      # schemas hang off the upgrade operation as an extension. They are also
+      # exported from openapi.yaml components so client generators retain them.
+      x-boardly-events:
+        - $ref: '#/schemas/ProjectRealtimeEvent'
+        - $ref: '#/schemas/ProjectAccessChangedRealtimeEvent'
+        - $ref: '#/schemas/WikiPageRealtimeEvent'
+        - $ref: '#/schemas/WikiCollectionRealtimeEvent'
+        - $ref: '#/schemas/RunMessageRealtimeEvent'
+        - $ref: '#/schemas/TerminalRunRealtimeEvent'
+        - $ref: '#/schemas/AgentStatusRealtimeEvent'
+        - $ref: '#/schemas/AgentBindingChangedRealtimeEvent'
+        - $ref: '#/schemas/DaemonRosterRealtimeEvent'
+        - $ref: '#/schemas/ConversationLifecycleRealtimeEvent'
+        - $ref: '#/schemas/MessageCreatedRealtimeEvent'
+        - $ref: '#/schemas/MessageUpdatedRealtimeEvent'
+        - $ref: '#/schemas/InboxItemRealtimeEvent'
+        - $ref: '#/schemas/TaskReportReadyRealtimeEvent'
+        - $ref: '#/schemas/TaskReportChangedRealtimeEvent'
+        - $ref: '#/schemas/MailboxChangedRealtimeEvent'
+        - $ref: '#/schemas/MailboxDraftChangedRealtimeEvent'
+        - $ref: '#/schemas/ArtifactAccessRealtimeEvent'
+        - $ref: '#/schemas/CompanyAccessChangedRealtimeEvent'
+        - $ref: '#/schemas/InvitationChangedRealtimeEvent'
+        - $ref: '#/schemas/ShareLinkChangedRealtimeEvent'
+        - $ref: '#/schemas/GroupChangedRealtimeEvent'
+        - $ref: '#/schemas/GroupDeletedRealtimeEvent'
+
+  # ====================================================================== auth
+
+schemas:
+
+  CompanyAccessChangedRealtimeEvent:
+    description: |
+      Delivered to the affected member alone, across their sockets. `role`
+      and `permissions` are the member's new access in `companyId`; a client
+      re-gates from the frame and then refetches the Company.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [auth.company_access_changed]
+          payload:
+            $ref: '#/schemas/CompanyAccessChangedPayload'
+
+  CompanyAccessChangedPayload:
+    type: object
+    required: [companyId, role, permissions, reason]
+    properties:
+      companyId: { type: string, format: uuid }
+      role: { $ref: './companies.yaml#/schemas/CompanyRole' }
+      permissions:
+        type: array
+        items: { $ref: './companies.yaml#/schemas/CompanyPermission' }
+      reason:
+        type: string
+        enum: [membership_granted, membership_reactivated, role_changed]
+
+  InvitationChangedRealtimeEvent:
+    description: |
+      Delivered only to members whose role holds `members.invite`, on their
+      sockets in the Company. The payload is the invitation the Team page
+      renders after the change.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [invitation.changed]
+          payload:
+            $ref: './companies.yaml#/schemas/CompanyInvitation'
+
+  ShareLinkChangedRealtimeEvent:
+    description: |
+      Delivered only to members whose role holds `members.invite`. The frame
+      never carries the URL; a client showing the link refetches it.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [invitation.share_link_changed]
+          payload:
+            $ref: '#/schemas/ShareLinkChangedPayload'
+
+  ShareLinkChangedPayload:
+    type: object
+    required: [role, expiresAt, revision, available]
+    properties:
+      role: { $ref: './companies.yaml#/schemas/CompanyRole' }
+      expiresAt: { type: [string, 'null'], format: date-time }
+      revision: { type: integer, format: int64, minimum: 0 }
+      available: { type: boolean }
+
+  GroupChangedRealtimeEvent:
+    description: |
+      A Group was created or renamed, or gained or lost members (a member
+      leaving the Company included). Delivered to the whole Company: every
+      active member reads the Groups, as they read the Team page. The frame
+      names the Group and its new revision only; refetch `GET /groups`.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [group.changed] }
+          payload: { $ref: '#/schemas/GroupChangedPayload' }
+
+  GroupChangedPayload:
+    type: object
+    additionalProperties: false
+    required: [groupId, revision]
+    properties:
+      groupId: { type: string, format: uuid }
+      revision:
+        type: integer
+        format: int64
+        description: The Group's revision after the change.
+
+  GroupDeletedRealtimeEvent:
+    description: |
+      A Group was deleted. Delivered to the whole Company; drop the Group
+      and refetch `GET /groups`. The Projects it held send their own
+      `project.access_changed`.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [group.deleted] }
+          payload: { $ref: '#/schemas/GroupDeletedPayload' }
+
+  GroupDeletedPayload:
+    type: object
+    additionalProperties: false
+    required: [groupId]
+    properties:
+      groupId: { type: string, format: uuid }
+
+  ProjectRealtimeEvent:
+    description: |
+      A Project was created, changed or archived. Delivered to the Project's
+      readers and the members holding `projects.manage`, or to the whole
+      Company when the Project is Company-visible (ADR 0017). The payload
+      carries no files and nobody's access: refetch the Project for those.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [project.created, project.updated, project.archived]
+          payload:
+            $ref: '#/schemas/ProjectLifecyclePayload'
+
+  ProjectLifecyclePayload:
+    type: object
+    additionalProperties: false
+    required: [id, companyId, key, title, description, visibility, revision, createdAt, updatedAt, archivedAt]
+    properties:
+      id: { type: string, format: uuid }
+      companyId: { type: string, format: uuid }
+      key: { type: string, pattern: '^[a-z][a-z0-9_]{0,63}$' }
+      title: { type: string, maxLength: 240 }
+      description: { type: string, maxLength: 65536 }
+      visibility: { $ref: './projects.yaml#/schemas/ProjectVisibility' }
+      revision: { type: integer, format: int64 }
+      createdAt: { type: string, format: date-time }
+      updatedAt: { type: string, format: date-time }
+      archivedAt: { type: [string, 'null'], format: date-time }
+
+  MessageCreatedRealtimeEvent:
+    description: |
+      A member's message committed in a Task, direct or Schedule chat, with
+      its attachments nested as the chat read returns them. When any file on
+      the message is an active Project file, that file shows only to the
+      Project's readers, not to this frame's audience (ADR 0017): the frame
+      then carries `attachments: []` and `attachmentsWithheld: true`, and a
+      client refetches the chat's messages to get the files it may open. The
+      read says the same field again for that reader.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [message.created] }
+          payload: { $ref: '#/schemas/MessageCreatedPayload' }
+
+  MessageCreatedPayload:
+    description: |
+      `attachmentsWithheld` is true when the frame withheld every attachment
+      because one is an active Project file; refetch the message's
+      attachments. Before this field it was named `attachmentsFiltered`.
+    allOf:
+      - $ref: './_common.yaml#/schemas/MessageWithAttachments'
+
+  MessageUpdatedRealtimeEvent:
+    description: |
+      A file on this message joined or left a Project, which changes who
+      sees it in the chat (ADR 0017). Delivered to whoever may see the chat.
+      The frame names no file: refetch the chat's messages (a channel or
+      human direct message through the discussion read) to get the files the
+      viewer may open.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [message.updated] }
+          payload: { $ref: '#/schemas/MessageUpdatedPayload' }
+
+  MessageUpdatedPayload:
+    type: object
+    required: [conversationId, messageId]
+    properties:
+      conversationId: { type: string, format: uuid }
+      messageId: { type: string, format: uuid }
+
+  ProjectAccessChangedRealtimeEvent:
+    description: |
+      Who may do what on a Project changed (ADR 0017): a grant set or
+      removed, a Join, a visibility change, a Group's grant or members
+      changed or the Group deleted, or a member leaving the Company.
+      Delivered to the Project's readers before and after the change, the
+      members holding `projects.manage` and the actor; a Project that was or
+      became Company-visible reaches the whole Company. The frame names
+      nobody: refetch `GET /projects/{projectId}` and its grants. A 404 on
+      the refetch means the viewer lost the Project; drop it and everything
+      under it from the cache.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [project.access_changed] }
+          payload: { $ref: '#/schemas/ProjectAccessChangedPayload' }
+
+  ProjectAccessChangedPayload:
+    type: object
+    additionalProperties: false
+    required: [projectId, revision]
+    properties:
+      projectId: { type: string, format: uuid }
+      revision:
+        type: integer
+        format: int64
+        description: The Project's access revision after the change.
+
+  WikiPageRealtimeEvent:
+    description: |
+      Company-visible fact published after a Wiki page commit. The payload
+      identifies the page and its new revision; clients refetch the page rather
+      than reading a body from the frame.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [wiki.page_created, wiki.page_updated, wiki.page_archived, wiki.page_restored]
+          payload:
+            $ref: '#/schemas/WikiPageEventPayload'
+
+  WikiPageEventPayload:
+    type: object
+    required: [id, title, status, revision, contentRevision, currentRevisionId]
+    properties:
+      id: { type: string, format: uuid }
+      title: { type: string }
+      status: { type: string, enum: [active, archived] }
+      revision: { type: integer, format: int64, minimum: 1 }
+      contentRevision: { type: integer, format: int64, minimum: 1 }
+      currentRevisionId: { type: string, format: uuid }
+
+  WikiCollectionRealtimeEvent:
+    description: |
+      Company-visible fact published after a Wiki collection is created or
+      renamed or deleted. Clients refetch collections and pages; deletion moves pages to Unfiled.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [wiki.collection_created, wiki.collection_updated, wiki.collection_deleted]
+          payload:
+            $ref: '#/schemas/WikiCollectionEventPayload'
+
+  WikiCollectionEventPayload:
+    type: object
+    required: [id, name, revision]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      revision: { type: integer, format: int64, minimum: 1 }
+
+  RealtimeEnvelope:
+    type: object
+    additionalProperties: false
+    required: [eventId, type, companyId, createdAt, actorId, actorType, payload]
+    properties:
+      eventId:
+        type: string
+        minLength: 1
+        description: Opaque id used to deduplicate local and relay delivery.
+      type:
+        type: string
+        pattern: '^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$'
+      companyId:
+        type: [string, "null"]
+        format: uuid
+        description: |
+          The tenant the fact belongs to. Null for the facts that follow a
+          person across every company they belong to — a profile edit, a
+          revoked session, a changed membership set — which no single tenant
+          owns.
+      createdAt: { type: string, format: date-time }
+      actorId: { type: [string, "null"] }
+      actorType:
+        type: string
+        enum: [user, agent, system]
+        description: |
+          The one actor-kind vocabulary the whole API uses. The envelope's
+          required keys are a protected surface — installed clients validate
+          them — so keys never change; this value set is the contract.
+      payload:
+        type: object
+        additionalProperties: true
+        description: Event-specific typed body.
+
+  RunMessagePayload:
+    allOf:
+      - $ref: './runs.yaml#/schemas/RunTranscriptEntry'
+      - type: object
+        description: |
+          Full post-commit Conversation transcript item, attributed to its Run.
+          Routing identities let a client apply the item without another read.
+          `throughSeq` describes
+          the committed PostgreSQL head after this item, so reconnect logic can
+          detect a gap without treating WebSocket delivery as durable. The run itself, already cached from lifecycle
+          events, carries any further context — the payload repeats nothing a
+          client can join from `runId`.
+
+          This is the **only** delivery of agent content. An `agent_text` item
+          arrives here and nowhere else; there is no second frame after the run
+          completes, so a chat panel renders from this payload rather than
+          waiting for one.
+
+          The payload does not repeat the item's stored `type`, so a client that
+          shows agent replies derives it: this item is the chat reply when
+          `role` is `agent` **and** `parts` holds a non-empty `text` part. That
+          is exactly the predicate the append applied to store the row as
+          `agent_text`, and it takes precedence over any reasoning or tool part
+          in the same item. A looser rule puts run detail in the user's chat; a
+          stricter one drops the answer.
+        required:
+          - runId
+          - conversationId
+          - throughSeq
+        properties:
+          runId: {"type": "string", "format": "uuid"}
+          conversationId: { type: string, format: uuid }
+          throughSeq:
+            type: integer
+            format: int64
+            minimum: 1
+
+  RunMessageRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: run.message_created }
+          payload: { $ref: '#/schemas/RunMessagePayload' }
+
+  TerminalRunRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type:
+            type: string
+            enum: [run.completed, run.failed, run.cancelled]
+          payload: { $ref: './runs.yaml#/schemas/TerminalRunLifecyclePayload' }
+
+  DeliverableEventPayload:
+    description: Opaque invalidation for authorized artifact viewers; refresh protected reads for current state.
+    type: object
+    additionalProperties: false
+
+  DeliverableRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type:
+            type: string
+            enum: [deliverable.created, deliverable.reviewed, deliverable.superseded]
+          payload: { $ref: '#/schemas/DeliverableEventPayload' }
+
+  ArtifactAccessRealtimeEvent:
+    description: An opaque invalidation delivered to the owner, actor, and changed recipient.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, enum: [artifact.access_changed] }
+          payload:
+            type: object
+            additionalProperties: false
+            description: Carries no Artifact metadata; clients refetch authorized views.
+
+  AgentStatusPayload:
+    type: object
+    description: |
+      One batched availability transition, delivered to the member whose
+      bindings it concerns (ADR 0014): every agent the recipient has bound
+      to the runtime whose liveness changed — a runtime going offline flips
+      every binding on it at once — arrives in one frame, so a client
+      patches N cache rows from one delivery instead of receiving N frames.
+      Availability is per viewer, so no other member receives the frame.
+    required: [agents]
+    properties:
+      agents:
+        type: array
+        minItems: 1
+        items:
+          type: object
+          required: [agentId, runtimeAvailable]
+          properties:
+            agentId: { type: string, format: uuid }
+            runtimeAvailable:
+              type: boolean
+              description: |
+                The same composite the Agent projection carries for the
+                recipient: not archived, bound, runtime online and usable,
+                and not signed out of its provider.
+
+  AgentStatusRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: agent.status_changed }
+          payload: { $ref: '#/schemas/AgentStatusPayload' }
+
+  AgentBindingChangedPayload:
+    type: object
+    description: |
+      The recipient's binding of one agent changed: they set it up on one
+      of their runtimes, moved it, or removed it (`binding: null`). The
+      frame is delivered to the binder alone (ADR 0014) — a binding is a
+      member's private setup — and carries the same `AgentBinding` the
+      agent projection embeds, so a client patches the agent's `binding`
+      and `access.execute` from the frame and refetches the agent for the
+      derived availability.
+    required: [agentId, binding]
+    properties:
+      agentId: { type: string, format: uuid }
+      binding:
+        oneOf:
+          - { $ref: './_common.yaml#/schemas/AgentBinding' }
+          - { type: "null" }
+
+  AgentBindingChangedRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: agent.binding_changed }
+          payload: { $ref: '#/schemas/AgentBindingChangedPayload' }
+
+  DaemonRosterPayload:
+    type: object
+    additionalProperties: false
+    description: |
+      A runtime roster moved: a daemon registered, deregistered, was swept
+      offline, was garbage-collected, a machine was renamed, a runtime was
+      removed, or a runtime's tool state changed. A `deregister` also reaches
+      a person whose runtimes went offline because someone else signed in on
+      the same computer (D33). Delivered to the
+      registrant (ADR 0014), except `stale_sweep` and `runtime_gc`, which
+      name no machine and go to the whole Company. A refetch signal — the
+      roster is a join across daemons and runtimes with no single row to
+      carry — so a client re-reads runtimes (and agents on `update`, whose
+      binding runtime refs carry the custom
+      name, and on `remove`, whose bindings may have moved to the target
+      runtime) rather than patching a cache. `daemonId` and `runtimeIds` are
+      present on `register`, `update`, `remove` and `tools_changed`, where one
+      machine's rows are the subject.
+    required: [action]
+    properties:
+      action:
+        type: string
+        enum: [register, deregister, stale_sweep, runtime_gc, update, remove, tools_changed]
+        description: |
+          `update` is a user-plane change to rows that still exist: the
+          rename (`PATCH …/runtimes/{runtimeId}`) moved their displayed
+          name — refetch the roster and the Agent projections, whose binding
+          runtime refs carry the name. `remove` is the registrant's removal
+          (`DELETE …/runtimes/{runtimeId}` or
+          `POST …/runtimes/{runtimeId}/remove`): the named row left the
+          roster for good unless its machine registers again, and every
+          `agent.binding_changed` for a moved or dropped binding precedes it.
+          `tools_changed` only changes the tool projection in runtime list
+          and detail reads. It does not invalidate Agent, Run or conversation
+          projections. Repeated observations with the same tool state do not
+          publish a signal, even when `observedAt` changes.
+      companyId: { type: string, format: uuid }
+      daemonId:
+        type: string
+        description: The machine whose runtimes changed.
+      runtimeIds:
+        type: array
+        items: { type: string, format: uuid }
+        description: The runtimes the change touched.
+
+  DaemonRosterRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: daemon.roster_changed }
+          payload: { $ref: '#/schemas/DaemonRosterPayload' }
+
+  ConversationLifecyclePayload:
+    type: object
+    description: |
+      The routed payload `conversation.created` and `conversation.updated`
+      both carry — one shape for both, so a client runs one upsert handler.
+      `conversation` is the owning domain's public projection and `summary`
+      is the same object a conversation list row carries, so both slots write
+      straight into existing cache entries. Per-user state is deliberately
+      absent: the event fans out to every visible member, and pin/archive
+      state belongs to one user.
+    required: [conversation, summary]
+    properties:
+      conversation: { $ref: './_common.yaml#/schemas/Conversation' }
+      summary: { $ref: './conversations.yaml#/schemas/ConversationSummary' }
+
+  ConversationLifecycleRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type:
+            type: string
+            enum: [conversation.created, conversation.updated]
+          payload: { $ref: '#/schemas/ConversationLifecyclePayload' }
+
+  InboxItemEventPayload:
+    allOf:
+      - $ref: './inbox.yaml#/schemas/InboxItem'
+      - $ref: './inbox.yaml#/schemas/InboxCountsSidecar'
+    description: |
+      The item flat with the recipient's refreshed `counts` beside it — the
+      identical shape every inbox mutation response uses, so frame and receipt
+      land in the same cache slots. The counts ride the data-bearing frames;
+      there is no separate counts-only event.
+
+  InboxItemRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type:
+            type: string
+            enum: [inbox.created, inbox.updated]
+          payload: { $ref: '#/schemas/InboxItemEventPayload' }
+
+  TaskReportReadyPayload:
+    type: object
+    additionalProperties: false
+    description: Refetch signal for a newly durable pending Task outcome report.
+    required: [taskReportEventId, recipientAgentId, taskId, taskRevision]
+    properties:
+      taskReportEventId: { type: string, format: uuid }
+      recipientAgentId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      taskRevision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  TaskReportChangedPayload:
+    type: object
+    additionalProperties: false
+    description: Refetch signal after the pending Task report queue changes.
+    required: [recipientAgentId, taskId, taskRevision]
+    properties:
+      recipientAgentId: { type: string, format: uuid }
+      taskId: { type: string, format: uuid }
+      taskRevision: { $ref: './_common.yaml#/schemas/Revision' }
+
+  TaskReportReadyRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: task.report_ready }
+          payload: { $ref: '#/schemas/TaskReportReadyPayload' }
+
+  TaskReportChangedRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: task.report_changed }
+          payload: { $ref: '#/schemas/TaskReportChangedPayload' }
+
+  MailboxChangedPayload:
+    type: object
+    additionalProperties: false
+    description: PII-free signal to refetch the Company Email projection.
+    required: [reason]
+    properties:
+      reason:
+        type: string
+        enum: [configured, message_received, message_read, message_removed]
+      messageId:
+        type: string
+        format: uuid
+        description: Present for a message change and absent for configuration.
+
+  MailboxDraftChangedPayload:
+    type: object
+    additionalProperties: false
+    description: PII-free signal to refetch Agent Mail for one Conversation.
+    required: [groupId, draftId, status, recipientCount, reason]
+    properties:
+      groupId: { type: string, format: uuid }
+      draftId: { type: string, format: uuid }
+      status:
+        type: string
+        enum: [draft, sending, sent, failed, deleted]
+      recipientCount: { type: integer, minimum: 1, maximum: 100 }
+      reason:
+        type: string
+        enum: [created, updated, deleted, queued, sent, failed]
+
+  MailboxChangedRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: mailbox.changed }
+          payload: { $ref: '#/schemas/MailboxChangedPayload' }
+
+  MailboxDraftChangedRealtimeEvent:
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        required: [type, payload]
+        properties:
+          type: { type: string, const: mailbox.draft_changed }
+          payload: { $ref: '#/schemas/MailboxDraftChangedPayload' }

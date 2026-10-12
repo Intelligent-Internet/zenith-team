@@ -1,0 +1,1019 @@
+# Authored Connector and Plugin section of the Zenith Team API contract.
+# Both are owned by the Agent domain: the user plane reads Company policy and
+# the daemon plane publishes provider-local discovery snapshots.
+
+paths:
+  companies_companyId_connectors:
+    get:
+      tags: [connectors]
+      operationId: listConnectors
+      summary: List the active provider's Connector catalog
+      description: >-
+        Any active member, for a Runtime the caller registered (ADR 0014);
+        another member's machine is never a discovery context. This is a
+        seek-paged Runtime discovery catalog. runtime_id selects one of the
+        caller's Runtimes in this company, including an offline one. A
+        runtime_id that is not one of the caller's Runtimes — another
+        member's, another company's, removed or unknown — returns
+        `404 runtime_not_found`, like every runtime route. The caller's own
+        Runtime under another provider, or no Runtime at all, returns 409.
+        Neither falls back to another computer. When omitted, the caller's
+        default Runtime — the one carrying a binding of an active Agent — is
+        selected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: provider
+          in: query
+          required: false
+          schema: { $ref: '#/schemas/ConnectorProvider' }
+        - name: runtime_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: query
+          in: query
+          required: false
+          schema: { type: string }
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - name: source
+          in: query
+          required: false
+          description: >-
+            Restrict rows and catalog counts to this source, retaining every
+            connection status. Must match provider when both are supplied.
+          schema: { $ref: '#/schemas/ConnectorSource' }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, const: connected }
+        - name: review_required
+          in: query
+          required: false
+          schema: { type: boolean, const: true }
+        - $ref: './_common.yaml#/parameters/cursor'
+        - $ref: './_common.yaml#/parameters/limit'
+      responses:
+        '200':
+          description: Connector catalog page.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConnectorCatalogResponseV1' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 runtime_not_found` — runtime_id is not one of the caller''s Runtimes.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 connector_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_connectors_refresh:
+    post:
+      tags: [connectors]
+      operationId: refreshConnectors
+      summary: Ask the active Runtime to refresh Connector discovery
+      description: >-
+        Any active member, for their own default Runtime (ADR 0014): the
+        computer is the caller's, so no Company permission is needed. The
+        cloud cannot reach the machine, so a Runtime of the caller's answers
+        `503 connector_action_unavailable`; Zenith Team Desktop asks its own
+        daemon to publish a new snapshot instead. With no Runtime of the
+        caller's, `409 connector_provider_unavailable`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ConnectorActionRequest' }
+      responses:
+        '202':
+          description: Refresh queued.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConnectorOperationResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: '`409 connector_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_connectors_resolve:
+    post:
+      tags: [connectors]
+      operationId: resolveConnectors
+      summary: Resolve exact provider Connector identities
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ConnectorResolveRequestV1' }
+      responses:
+        '200':
+          description: Exact identities resolved in request order.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConnectorResolveResponseV1' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 connector_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 connector_provider_unavailable` or `connector_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_connectors_connectorId_connect:
+    post:
+      tags: [connectors]
+      operationId: connectConnector
+      summary: Begin or resume Connector setup
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/connectorId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ConnectorActionRequest' }
+      responses:
+        '200':
+          description: Current setup operation state.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/ConnectorOperationResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 connector_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: |
+            `409 connector_provider_unavailable`, `connector_conflict`, or
+            `connector_version_exhausted`.
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_plugins:
+    get:
+      tags: [plugins]
+      operationId: listPlugins
+      summary: List the active provider's Plugin catalog
+      description: >-
+        Any active member, for a Runtime the caller registered (ADR 0014);
+        another member's machine is never a discovery context. This is a
+        seek-paged Runtime discovery catalog. runtime_id selects one of the
+        caller's Runtimes in this company, including an offline one. A
+        runtime_id that is not one of the caller's Runtimes — another
+        member's, another company's, removed or unknown — returns
+        `404 runtime_not_found`, like every runtime route. The caller's own
+        Runtime under another provider, or no Runtime at all, returns 409.
+        Neither falls back to another computer. When omitted, the caller's
+        default Runtime — the one carrying a binding of an active Agent — is
+        selected.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - name: provider
+          in: query
+          required: false
+          schema: { $ref: '#/schemas/PluginProvider' }
+        - name: runtime_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: query
+          in: query
+          required: false
+          schema: { type: string }
+        - name: category
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: '#/schemas/PluginStatus' }
+        - name: featured
+          in: query
+          required: false
+          schema: { type: boolean, const: true }
+        - $ref: './_common.yaml#/parameters/cursor'
+        - $ref: './_common.yaml#/parameters/limit'
+      responses:
+        '200':
+          description: Plugin catalog page.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PluginCatalogResponseV1' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 runtime_not_found` — runtime_id is not one of the caller''s Runtimes.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 plugin_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_plugins_pluginId:
+    get:
+      tags: [plugins]
+      operationId: getPlugin
+      summary: Read one Plugin's page as its Runtime observed it
+      description: >-
+        Any active member, for a Runtime the caller registered (ADR 0014), like the
+        catalog. Returns the same `plugin` projection as a catalog row plus the
+        presentation the Runtime observed (long description, default prompts, brand
+        colour, developer and links), the bundled apps resolved against that Runtime's
+        Connector observations, and the Agents the caller has bound to that Runtime
+        that can use the Plugin. runtime_id has the same meaning as on the catalog: one
+        of the caller's own Runtimes in this company, or, when omitted, the caller's
+        default Runtime — the one carrying a binding of an active Agent. Another
+        company's Plugin, a Plugin the selected Runtime has not observed, and a caller
+        with no such Runtime (including a runtime_id that is not one of the caller's
+        Runtimes, which the catalog answers with runtime_not_found) return 404
+        plugin_not_found.
+        Unknown or empty query parameters return 422.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/pluginId'
+        - name: runtime_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The Plugin as the selected Runtime observed it.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PluginDetailResponseV1' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 plugin_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  companies_companyId_plugins_refresh:
+    post:
+      tags: [plugins]
+      operationId: refreshPlugins
+      summary: Ask the active Runtime to refresh Plugin discovery
+      description: >-
+        Any active member, for their own default Runtime (ADR 0014): the
+        computer is the caller's, so no Company permission is needed.
+        Install and uninstall take `plugins.manage`, which every role holds
+        (D28). The cloud cannot reach
+        the machine, so a Runtime of the caller's answers
+        `503 plugin_action_unavailable`; Zenith Team Desktop asks its own
+        daemon to publish a new snapshot instead. With no Runtime of the
+        caller's, `409 plugin_provider_unavailable`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PluginActionRequest' }
+      responses:
+        '202':
+          description: Refresh queued.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PluginOperationResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '409':
+          description: '`409 plugin_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_plugins_pluginId_install:
+    post:
+      tags: [plugins]
+      operationId: installPlugin
+      summary: Install a Plugin through its active Runtime
+      description: "Gate: `plugins.manage`, which every role holds: it reaches only the caller's own computer."
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/pluginId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PluginActionRequest' }
+      responses:
+        '200':
+          description: Current installation operation state.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PluginOperationResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 plugin_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 plugin_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  companies_companyId_plugins_pluginId_uninstall:
+    post:
+      tags: [plugins]
+      operationId: uninstallPlugin
+      summary: Uninstall a Plugin through its active Runtime
+      description: "Gate: `plugins.manage`, which every role holds: it reaches only the caller's own computer."
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: '#/parameters/pluginId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PluginActionRequest' }
+      responses:
+        '200':
+          description: Current uninstall operation state.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/PluginOperationResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 plugin_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '409':
+          description: '`409 plugin_provider_unavailable`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
+
+  daemon_companies_companyId_runtimes_runtimeId_connectors_discovery:
+    put:
+      tags: [daemon, connectors]
+      operationId: publishConnectorDiscovery
+      summary: Replace one Runtime's Connector discovery snapshot
+      description: >-
+        The body is capped at 8 MiB, like the Plugin snapshot (413 past it). A
+        Codex computer signed in to ChatGPT sends the whole hosted app
+        directory, which alone is over 2 MiB.
+      security: [{ daemonToken: [] }]
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ConnectorDiscoveryRequestV1' }
+      responses:
+        '200':
+          description: Snapshot applied, or a harmless replay acknowledged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DiscoveryResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 connector_discovery_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  daemon_companies_companyId_runtimes_runtimeId_connectors_discovery_reaffirm:
+    post:
+      tags: [daemon, connectors]
+      operationId: reaffirmConnectorDiscovery
+      summary: Renew the freshness of an unchanged Connector discovery generation
+      description: |
+        The daemon re-observed its provider and found the manifest unchanged.
+        Instead of resending the whole snapshot, it reaffirms the generation it
+        last published: the server renews only that generation's `observedAt`,
+        which is what Run claims, invalidation and the catalog `stale` flag read
+        as freshness. No catalog or observation row is rewritten; the only policy
+        write is enabling a connected, executable Connector that is not enabled
+        yet (a binding placed on this Runtime since the last publish).
+
+        `generation` and `manifestDigest` must equal the Runtime's current
+        generation, otherwise `409 connector_discovery_conflict` and the daemon
+        falls back to a full `publishConnectorDiscovery`. An `observedAt` that
+        is not later than the stored one is acknowledged with `applied: false`.
+      security: [{ daemonToken: [] }]
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/ConnectorDiscoveryReaffirmRequestV1' }
+      responses:
+        '200':
+          description: Freshness renewed, or a no-op for an observation that is not newer.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DiscoveryResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 connector_discovery_conflict`: no current generation, or a different generation or digest.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+  daemon_companies_companyId_runtimes_runtimeId_plugins_discovery:
+    put:
+      tags: [daemon, plugins]
+      operationId: publishPluginDiscovery
+      summary: Replace one Runtime's Plugin discovery snapshot
+      security: [{ daemonToken: [] }]
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - $ref: './_common.yaml#/parameters/runtimeId'
+        - $ref: './_common.yaml#/parameters/daemonIDHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/PluginDiscoveryRequestV1' }
+      responses:
+        '200':
+          description: Snapshot applied, or a harmless replay acknowledged.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/DiscoveryResponse' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '409':
+          description: '`409 plugin_discovery_conflict`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
+parameters:
+  connectorId:
+    name: connectorId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+  pluginId:
+    name: pluginId
+    in: path
+    required: true
+    schema: { type: string, format: uuid }
+
+schemas:
+  ConnectorProvider:
+    type: string
+    enum: [codex, claude]
+
+  ConnectorSource:
+    type: string
+    enum: [codex_app, codex_mcp, claude_plugin, claude_mcp, claude_cloud]
+
+  ConnectorStatus:
+    type: string
+    enum:
+      [available, installed_not_ready, needs_auth, connected, managed_in_provider, unavailable, error]
+
+  ConnectorAction:
+    type: string
+    enum: [install_and_auth, authenticate, manage_in_provider, none]
+
+  ConnectorItemV1:
+    type: object
+    required:
+      - action
+      - canExecute
+      - desiredEnabled
+      - effectiveEnabled
+      - id
+      - name
+      - nativeId
+      - observedAt
+      - provider
+      - revision
+      - source
+      - status
+    properties:
+      action: { $ref: '#/schemas/ConnectorAction' }
+      canExecute: { type: boolean }
+      category: { type: string }
+      description: { type: string }
+      desiredEnabled: { type: boolean }
+      effectiveEnabled: { type: boolean }
+      iconUrl: { type: string, format: uri }
+      id: { type: string, format: uuid }
+      installCount:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9007199254740991
+      name: { type: string }
+      nativeId: { type: string }
+      observedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      provider: { $ref: '#/schemas/ConnectorProvider' }
+      reviewRequired: { type: boolean }
+      revision: { $ref: './_common.yaml#/schemas/Revision' }
+      source: { $ref: '#/schemas/ConnectorSource' }
+      status: { $ref: '#/schemas/ConnectorStatus' }
+
+  ConnectorRuntimeSummary:
+    type: object
+    required: [id, name, online]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      online: { type: boolean }
+
+  ConnectorCategoryCount:
+    type: object
+    required: [category, count]
+    properties:
+      category: { type: string }
+      count: { type: integer, format: int64, minimum: 0 }
+
+  ConnectorCatalogResponseV1:
+    type: object
+    required:
+      [schemaVersion, activeProvider, runtime, connectors, nextCursor, totalCount, connectedCount, categoryCounts, stale]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      activeProvider: { $ref: '#/schemas/ConnectorProvider' }
+      runtime:
+        oneOf:
+          - { $ref: '#/schemas/ConnectorRuntimeSummary' }
+          - { type: "null" }
+      connectors:
+        type: array
+        items: { $ref: '#/schemas/ConnectorItemV1' }
+      nextCursor: { type: [string, "null"] }
+      totalCount: { type: integer, format: int64, minimum: 0 }
+      connectedCount: { type: integer, format: int64, minimum: 0 }
+      categoryCounts:
+        type: array
+        items: { $ref: '#/schemas/ConnectorCategoryCount' }
+      stale: { type: boolean }
+
+  ConnectorCatalogRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      runtimeId: { type: string, format: uuid }
+      provider: { $ref: '#/schemas/ConnectorProvider' }
+      source: { $ref: '#/schemas/ConnectorSource' }
+      query: { type: string }
+      category: { type: string }
+      status: { type: string, const: connected }
+      reviewRequired: { type: boolean, const: true }
+      cursor: { type: string }
+      limit: { type: integer, minimum: 1, maximum: 100 }
+
+  ConnectorResolveIdentity:
+    type: object
+    additionalProperties: false
+    required: [source, nativeId]
+    properties:
+      source: { $ref: '#/schemas/ConnectorSource' }
+      nativeId: { type: string, minLength: 1, maxLength: 240 }
+
+  ConnectorResolveRequestV1:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, identities]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      identities:
+        type: array
+        minItems: 1
+        maxItems: 64
+        items: { $ref: '#/schemas/ConnectorResolveIdentity' }
+
+  ConnectorResolveResponseV1:
+    type: object
+    required: [schemaVersion, connectors]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      connectors:
+        type: array
+        items: { $ref: '#/schemas/ConnectorItemV1' }
+
+  ConnectorOperationState:
+    type: string
+    enum: [queued, installing, awaiting_user, verifying, complete, failed]
+
+  ConnectorOperationResponse:
+    type: object
+    required: [state]
+    properties:
+      state: { $ref: '#/schemas/ConnectorOperationState' }
+      operationId: { type: string }
+      continueUrl: { type: string, format: uri }
+
+  ConnectorActionRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+
+  PluginProvider:
+    $ref: '#/schemas/ConnectorProvider'
+
+  PluginStatus:
+    type: string
+    enum: [available, installed, disabled, error]
+
+  PluginAction:
+    type: string
+    enum: [install, uninstall, none]
+
+  PluginComponentCounts:
+    type: object
+    required: [apps, mcpServers, skills]
+    properties:
+      apps: { type: integer, minimum: 0, maximum: 2048 }
+      mcpServers: { type: integer, minimum: 0, maximum: 2048 }
+      skills: { type: integer, minimum: 0, maximum: 2048 }
+
+  PluginItemV1:
+    type: object
+    required:
+      - id
+      - provider
+      - nativeId
+      - name
+      - status
+      - installed
+      - enabled
+      - featured
+      - action
+      - componentCounts
+      - connectorIdentities
+      - observedAt
+    properties:
+      id: { type: string, format: uuid }
+      provider: { $ref: '#/schemas/PluginProvider' }
+      nativeId: { type: string }
+      name: { type: string }
+      description: { type: string }
+      category: { type: string }
+      iconUrl: { type: string, format: uri }
+      shareUrl: { type: string, format: uri }
+      status: { $ref: '#/schemas/PluginStatus' }
+      installed: { type: boolean }
+      enabled: { type: boolean }
+      featured: { type: boolean }
+      action: { $ref: '#/schemas/PluginAction' }
+      installCount:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9007199254740991
+      componentCounts: { $ref: '#/schemas/PluginComponentCounts' }
+      connectorIdentities:
+        type: array
+        items: { $ref: '#/schemas/ConnectorResolveIdentity' }
+      observedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  PluginRuntimeSummary:
+    type: object
+    required: [id, name, online]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      online: { type: boolean }
+
+  PluginCategoryCount:
+    type: object
+    required: [category, count]
+    properties:
+      category: { type: string }
+      count: { type: integer, format: int64, minimum: 0 }
+
+  PluginCatalogResponseV1:
+    type: object
+    required:
+      [schemaVersion, activeProvider, runtime, plugins, nextCursor, totalCount, installedCount, categoryCounts, stale, observedAt]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      activeProvider: { $ref: '#/schemas/PluginProvider' }
+      runtime:
+        oneOf:
+          - { $ref: '#/schemas/PluginRuntimeSummary' }
+          - { type: "null" }
+      plugins:
+        type: array
+        items: { $ref: '#/schemas/PluginItemV1' }
+      nextCursor: { type: [string, "null"] }
+      totalCount: { type: integer, format: int64, minimum: 0 }
+      installedCount: { type: integer, format: int64, minimum: 0 }
+      categoryCounts:
+        type: array
+        items: { $ref: '#/schemas/PluginCategoryCount' }
+      stale: { type: boolean }
+      observedAt:
+        type: [string, "null"]
+        format: date-time
+        description: >-
+          When the selected Runtime last reported its Plugin catalog; null
+          before its first discovery.
+
+  PluginCatalogRequest:
+    type: object
+    additionalProperties: false
+    properties:
+      runtimeId: { type: string, format: uuid }
+      provider: { $ref: '#/schemas/PluginProvider' }
+      query: { type: string }
+      category: { type: string }
+      status: { $ref: '#/schemas/PluginStatus' }
+      featured: { type: boolean, const: true }
+      cursor: { type: string }
+      limit: { type: integer, minimum: 1, maximum: 100 }
+
+  PluginDetailApp:
+    type: object
+    required: [source, nativeId, name]
+    description: >-
+      One app the Plugin bundles, resolved from `plugin.connectorIdentities` against
+      the Runtime's Connector observations. `connectorId`, `status` and `action` are
+      present only when the Runtime observed the app as a Connector.
+    properties:
+      source: { $ref: '#/schemas/ConnectorSource' }
+      nativeId: { type: string }
+      connectorId: { type: string, format: uuid }
+      name: { type: string }
+      description: { type: string }
+      iconUrl: { type: string, format: uri }
+      status: { $ref: '#/schemas/ConnectorStatus' }
+      action: { $ref: '#/schemas/ConnectorAction' }
+
+  PluginAgentUse:
+    type: object
+    required: [agentId, name]
+    description: >-
+      An unarchived Agent the caller has bound to the selected Runtime (ADR 0014),
+      for which the Plugin is installed there and not disabled.
+    properties:
+      agentId: { type: string, format: uuid }
+      name: { type: string }
+
+  PluginDetailResponseV1:
+    type: object
+    required: [schemaVersion, plugin, runtime, stale, defaultPrompts, apps, usedBy]
+    description: >-
+      The presentation fields are omitted when the Runtime did not report them (every
+      Claude Plugin, and a daemon that predates `plugin-presentation-v1`).
+      `defaultPrompts` is always present and may be empty.
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      plugin: { $ref: '#/schemas/PluginItemV1' }
+      runtime:
+        description: The Runtime whose observation was read.
+        oneOf:
+          - { $ref: '#/schemas/PluginRuntimeSummary' }
+          - { type: "null" }
+      stale: { type: boolean }
+      longDescription: { type: string }
+      defaultPrompts:
+        type: array
+        maxItems: 3
+        items: { type: string }
+      brandColor: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
+      developerName: { type: string }
+      websiteUrl: { type: string, format: uri }
+      privacyPolicyUrl: { type: string, format: uri }
+      termsOfServiceUrl: { type: string, format: uri }
+      apps:
+        type: array
+        items: { $ref: '#/schemas/PluginDetailApp' }
+      usedBy:
+        type: array
+        items: { $ref: '#/schemas/PluginAgentUse' }
+
+  PluginOperationState:
+    type: string
+    enum: [queued, installing, awaiting_user, complete, failed]
+
+  PluginOperationResponse:
+    type: object
+    required: [state]
+    properties:
+      state: { $ref: '#/schemas/PluginOperationState' }
+      operationId: { type: string }
+      continueUrl: { type: string, format: uri }
+
+  PluginActionRequest:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+
+  ConnectorToolObservation:
+    type: object
+    additionalProperties: false
+    required: [name, enabled, readOnly]
+    properties:
+      name: { type: string }
+      enabled: { type: boolean }
+      readOnly: { type: boolean }
+
+  ConnectorObservation:
+    type: object
+    additionalProperties: false
+    required: [source, nativeId, name, status, action, canExecute]
+    properties:
+      source: { $ref: '#/schemas/ConnectorSource' }
+      nativeId: { type: string, minLength: 1, maxLength: 240 }
+      name: { type: string, minLength: 1, maxLength: 160 }
+      description: { type: string, maxLength: 1000 }
+      category: { type: string, maxLength: 80 }
+      iconUrl: { type: string, format: uri, maxLength: 1024 }
+      installCount:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9007199254740991
+      status: { $ref: '#/schemas/ConnectorStatus' }
+      action: { $ref: '#/schemas/ConnectorAction' }
+      canExecute: { type: boolean }
+      contractDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+      tools:
+        type: array
+        maxItems: 128
+        items: { $ref: '#/schemas/ConnectorToolObservation' }
+
+  ConnectorDiscoveryRequestV1:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, generation, manifestDigest, observedAt, items]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      generation: { type: string, format: uuid }
+      manifestDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+      observedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      items:
+        type: array
+        maxItems: 10000
+        items: { $ref: '#/schemas/ConnectorObservation' }
+
+  PluginObservation:
+    type: object
+    additionalProperties: false
+    required:
+      [nativeId, name, status, installed, enabled, featured, action, catalogRank, componentCounts]
+    properties:
+      nativeId: { type: string, minLength: 1, maxLength: 240 }
+      name: { type: string, minLength: 1, maxLength: 160 }
+      description: { type: string, maxLength: 1000 }
+      category: { type: string, maxLength: 80 }
+      iconUrl: { type: string, format: uri, maxLength: 2048 }
+      shareUrl: { type: string, format: uri, maxLength: 2048 }
+      status: { $ref: '#/schemas/PluginStatus' }
+      installed: { type: boolean }
+      enabled: { type: boolean }
+      featured: { type: boolean }
+      action: { $ref: '#/schemas/PluginAction' }
+      catalogRank: { type: integer, minimum: 0, maximum: 9999 }
+      installCount:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 9007199254740991
+      componentCounts: { $ref: '#/schemas/PluginComponentCounts' }
+      connectorIdentities:
+        type: array
+        maxItems: 4096
+        items: { $ref: '#/schemas/ConnectorResolveIdentity' }
+      # The presentation fields below are Codex-only and are sent only after the
+      # server advertised the plugin-presentation-v1 capability in a heartbeat ack.
+      longDescription:
+        type: string
+        maxLength: 4000
+        description: >-
+          Sent only for an installed or featured Plugin. Paragraphs are kept as
+          single newlines (at most two in a row); other control characters are
+          removed.
+      defaultPrompts:
+        type: array
+        maxItems: 3
+        items: { type: string, minLength: 1, maxLength: 128 }
+      brandColor: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
+      developerName: { type: string, maxLength: 120 }
+      websiteUrl:
+        type: string
+        format: uri
+        maxLength: 2048
+        description: An https URL without credentials or fragment.
+      privacyPolicyUrl:
+        type: string
+        format: uri
+        maxLength: 2048
+        description: An https URL without credentials or fragment.
+      termsOfServiceUrl:
+        type: string
+        format: uri
+        maxLength: 2048
+        description: An https URL without credentials or fragment.
+
+  PluginDiscoveryRequestV1:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, generation, manifestDigest, observedAt, items]
+    properties:
+      schemaVersion: { type: integer, const: 1 }
+      generation: { type: string, format: uuid }
+      manifestDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+      observedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+      items:
+        type: array
+        maxItems: 10000
+        items: { $ref: '#/schemas/PluginObservation' }
+
+  ConnectorDiscoveryReaffirmRequestV1:
+    type: object
+    additionalProperties: false
+    required: [schemaVersion, generation, manifestDigest, observedAt]
+    properties:
+      schemaVersion: { type: integer, enum: [1] }
+      generation: { type: string, format: uuid }
+      manifestDigest: { type: string, pattern: '^[0-9a-f]{64}$' }
+      observedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
+
+  DiscoveryResponse:
+    type: object
+    required: [applied]
+    properties:
+      applied: { type: boolean }

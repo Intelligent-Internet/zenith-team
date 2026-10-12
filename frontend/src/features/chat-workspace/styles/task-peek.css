@@ -1,0 +1,28 @@
+.boardly-workspace-theme .workspace-task-peek.workspace-room-task-peek {
+  border-radius: 0 !important;
+  background: var(--workspace-chat-bg, var(--workspace-panel-bg)) !important;
+  box-shadow: none !important;
+}
+
+.boardly-workspace-theme
+  .workspace-task-peek.workspace-room-task-peek[data-presentation="modal"] {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 30;
+  width: min(640px, calc(100vw - 32px));
+  height: min(760px, calc(100dvh - 48px));
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  border: 1px solid var(--workspace-divider);
+  border-radius: 16px !important;
+}
+
+.boardly-workspace-theme .workspace-room-task-peek.workspace-task-peek footer {
+  background: var(--workspace-chat-bg, var(--workspace-panel-bg)) !important;
+}
+
+.boardly-workspace-theme
+  .workspace-task-peek.workspace-room-task-peek
+  > header {
+  height: 68px;
+}

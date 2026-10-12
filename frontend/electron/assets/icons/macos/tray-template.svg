@@ -1,0 +1,28 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 36 36"
+  fill="none"
+>
+  <path
+    d="M10.25 5.85C13.88 4.58 18.68 3.48 21.75 3.72C24.4 3.93 25.56 5.33 26.25 7.6C27.2 10.72 28.18 12.6 31 13.05V26.25C31 29.45 28.45 32 25.25 32H10.75C7.55 32 5 29.45 5 26.25V12.95C5 9.62 7.03 6.98 10.25 5.85Z"
+    stroke="#000"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M21.75 3.72C21.62 7.9 22.62 11.18 25.05 12.73C26.72 13.8 28.75 13.88 31 13.05"
+    stroke="#000"
+    stroke-width="2.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <ellipse cx="13.75" cy="18.75" rx="1.85" ry="3.05" fill="#000" />
+  <ellipse cx="22.45" cy="18.35" rx="1.85" ry="3.05" fill="#000" />
+  <path
+    d="M14.9 25.1C16.82 27.18 19.55 27.3 21.65 24.92"
+    stroke="#000"
+    stroke-width="2.5"
+    stroke-linecap="round"
+  />
+</svg>
