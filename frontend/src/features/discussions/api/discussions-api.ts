@@ -416,7 +416,6 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       DiscussionSession & { includeHidden: boolean },
       string | null
     >({
-      keepUnusedDataFor: 0,
       infiniteQueryOptions: {
         initialPageParam: null,
         // Sidebar pages accumulate from the head; evicting it would also
@@ -447,7 +446,6 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       ChannelListRequest,
       string | null
     >({
-      keepUnusedDataFor: 0,
       infiniteQueryOptions: {
         initialPageParam: null,
         getNextPageParam: (page) => page.nextCursor ?? undefined,
@@ -479,7 +477,6 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       ChannelListRequest,
       string | null
     >({
-      keepUnusedDataFor: 0,
       infiniteQueryOptions: {
         initialPageParam: null,
         getNextPageParam: (page) => page.nextCursor ?? undefined,

@@ -890,6 +890,10 @@ its layer order in both the editor and public viewer.
   Presence uses the shared Company
   polling batch; unavailable or stale presence hides the indicator. The row's
   tooltip and accessible label include the current status.
+  Channel, direct-message and channel-management lists use the shared five-minute
+  RTK cache after their last subscriber leaves, so quick route or view switches
+  reuse loaded pages. Mutation and realtime invalidation still refresh changed
+  lists; cache keys retain the Company, user and discussion-session generation.
   Returning to a recently opened discussion reuses its bounded RTK history and
   cached details while a state check runs in the background. A healthy connection
   and matching access generations are required for this immediate display;
