@@ -41,6 +41,7 @@ const updateDialogListeners = new Set();
 const updateStateListeners = new Set();
 const workbenchStatusListeners = new Set();
 const huddleCallActionListeners = new Set();
+const screenShareActionListeners = new Set();
 const websitePreviewListeners = new Set();
 let localRunPreviewEmptyDrains = 0;
 let localRunPreviewPollInFlight = false;
@@ -66,6 +67,8 @@ const SHOW_UPDATE_DIALOG_CHANNEL = "desktop:show-update-dialog";
 const UPDATE_STATE_UPDATED_CHANNEL = "desktop:update-state-updated";
 const WORKBENCH_STATUS_UPDATED_CHANNEL = "desktop:workbench-status-updated";
 const HUDDLE_CALL_ACTION_CHANNEL = "desktop:huddle-call-action";
+const SCREEN_SHARE_ACTION_CHANNEL = "desktop:screen-share-action";
+const SCREEN_SHARE_ACTIONS = new Set(["mute", "camera", "stop"]);
 window.addEventListener("error", (event) => {
   sendRendererDiagnostic({
     kind: "window-error",
@@ -111,6 +114,13 @@ ipcRenderer.on(NATIVE_THEME_UPDATED_CHANNEL, (_event, theme) => {
 
   for (const listener of nativeThemeListeners) {
     listener(theme);
+  }
+});
+
+ipcRenderer.on(SCREEN_SHARE_ACTION_CHANNEL, (_event, action) => {
+  if (!SCREEN_SHARE_ACTIONS.has(action)) return;
+  for (const listener of screenShareActionListeners) {
+    listener(action);
   }
 });
 
@@ -711,6 +721,38 @@ contextBridge.exposeInMainWorld("boardlyDesktop", {
     return ipcRenderer.invoke(
       "desktop:open-huddle-start-window",
       conversationId,
+    );
+  },
+  listScreenShareSources: () =>
+    ipcRenderer.invoke("desktop:list-screen-share-sources"),
+  openScreenShareSettings: () =>
+    ipcRenderer.invoke("desktop:open-screen-share-settings"),
+  reportScreenShareState: (state) =>
+    ipcRenderer.invoke("desktop:screen-share-state", {
+      sharing: state?.sharing === true,
+      muted: state?.muted === true,
+      camera: state?.camera === true,
+    }),
+  onScreenShareAction: (listener) => {
+    if (typeof listener !== "function") {
+      return () => {};
+    }
+    screenShareActionListeners.add(listener);
+    return () => {
+      screenShareActionListeners.delete(listener);
+    };
+  },
+  selectScreenShareSource: (sourceId, shareAudio) => {
+    if (typeof sourceId !== "string" || sourceId.length > 256) {
+      return Promise.resolve({
+        ok: false,
+        reason: "Choose a screen or window to share.",
+      });
+    }
+    return ipcRenderer.invoke(
+      "desktop:select-screen-share-source",
+      sourceId,
+      shareAudio === true,
     );
   },
   onMenuCommand: (listener) => {

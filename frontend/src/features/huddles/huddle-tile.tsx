@@ -1,4 +1,12 @@
-import { MicOff, Monitor, Pin, PinOff } from "@/shared/ui/icons";
+import {
+  Maximize2,
+  MicOff,
+  Minimize2,
+  Monitor,
+  Pin,
+  PinOff,
+  Scan,
+} from "@/shared/ui/icons";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { HuddleAgentAvatar } from "./huddle-agent-avatar";
 import type { components } from "@/shared/api/generated/api.generated";
@@ -212,24 +220,40 @@ export function HuddleScreenTile({
   name,
   pinned,
   compact = false,
+  focused = false,
   onPin,
+  onFocus,
   onStopSharing,
 }: {
   video: HuddleVideo;
   name: string;
   pinned: boolean;
   compact?: boolean;
+  focused?: boolean;
   onPin: () => void;
+  onFocus?: () => void;
   onStopSharing: () => void;
 }) {
   const presenter = video.local ? "You are" : `${name} is`;
+  const tileRef = useRef<HTMLDivElement>(null);
+  // Full screen shows only the shared screen; Esc or a double-click leaves.
+  const toggleFullScreen = () => {
+    const tile = tileRef.current;
+    if (!tile) return;
+    if (document.fullscreenElement === tile) void document.exitFullscreen();
+    else void tile.requestFullscreen().catch(() => {});
+  };
+  const viewing = !video.local && !compact;
   return (
     <div
+      ref={tileRef}
       className="huddle-tile huddle-screen-tile"
       data-compact={compact}
       data-local={video.local}
+      data-focused={focused}
       role="group"
       aria-label={`${name}’s shared screen`}
+      onDoubleClick={viewing ? toggleFullScreen : undefined}
     >
       <HuddleVideoSurface video={video} />
       {video.local && !compact && (
@@ -241,7 +265,32 @@ export function HuddleScreenTile({
           </button>
         </div>
       )}
-      <PinButton name={`${name}’s screen`} pinned={pinned} onPin={onPin} />
+      {!focused && (
+        <PinButton name={`${name}’s screen`} pinned={pinned} onPin={onPin} />
+      )}
+      {viewing && (
+        <div className="huddle-screen-actions">
+          {onFocus && (
+            <button
+              type="button"
+              aria-pressed={focused}
+              onClick={onFocus}
+              data-tooltip={focused ? "Exit focus (Esc)" : "Focus on screen"}
+            >
+              {focused ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              {focused ? "Exit focus" : "Focus"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={toggleFullScreen}
+            data-tooltip="Full screen (double-click)"
+          >
+            <Scan size={16} />
+            Full screen
+          </button>
+        </div>
+      )}
       <span className="huddle-tile-name">
         <Monitor size={13} />
         {compact ? name : `${presenter} presenting`}

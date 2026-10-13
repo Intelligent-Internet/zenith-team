@@ -50,6 +50,12 @@ import { useSetHuddleAIMutation } from "./huddle-ai-api";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import { HuddleAgentAvatar } from "./huddle-agent-avatar";
+import { HuddleScreenPicker } from "./huddle-screen-picker";
+import {
+  canPickDesktopScreenShareSource,
+  reportDesktopScreenShareState,
+  subscribeToDesktopScreenShareActions,
+} from "@/app/desktop/desktop-environment.service";
 
 type HuddleCallPanelProps = {
   media: HuddleMedia;
@@ -173,6 +179,7 @@ export function HuddleCallPanel({
     cameraDeviceId,
   });
   const [chatOpen, setChatOpen] = useState(true);
+  const [screenPickerOpen, setScreenPickerOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"chat" | "work">("chat");
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
@@ -181,6 +188,8 @@ export function HuddleCallPanel({
     microphoneDeviceId ?? "",
   );
   const [pinnedKey, setPinnedKey] = useState("");
+  // A shared screen focused to fill the call; the rail and chat step aside.
+  const [focusedScreenKey, setFocusedScreenKey] = useState("");
   const stageRef = useRef<HTMLDivElement>(null);
   const [pageSize, setPageSize] = useState(9);
   const [pagination, setPagination] = useState({ spotlightKey: "", page: 0 });
@@ -410,6 +419,20 @@ export function HuddleCallPanel({
     : spotlightScreen
       ? `screen:${spotlightScreen.id}`
       : "";
+  const focusedScreen = screens.find(
+    (screen) => `screen:${screen.id}` === focusedScreenKey,
+  );
+  const focusing = Boolean(focusedScreen);
+  useEffect(() => {
+    if (!focusing) return;
+    const exit = (event: KeyboardEvent) => {
+      // Esc leaves full screen first; the browser handles that one itself.
+      if (event.key === "Escape" && !document.fullscreenElement)
+        setFocusedScreenKey("");
+    };
+    window.addEventListener("keydown", exit);
+    return () => window.removeEventListener("keydown", exit);
+  }, [focusing]);
   const togglePin = (key: string) =>
     setPinnedKey((current) => (current === key ? "" : key));
   const pageItems = [
@@ -537,6 +560,39 @@ export function HuddleCallPanel({
     selectedCamera,
   });
   shortcutsRef.current = { toggleMicrophone, toggleCamera, selectedCamera };
+
+  // The desktop sharing toolbar works the call from over other apps.
+  const shareControlsRef = useRef({ toggleScreenShare, screenSharing });
+  shareControlsRef.current = { toggleScreenShare, screenSharing };
+  useEffect(
+    () =>
+      subscribeToDesktopScreenShareActions((action) => {
+        if (action === "mute") void shortcutsRef.current.toggleMicrophone();
+        else if (action === "camera")
+          void shortcutsRef.current.toggleCamera(
+            shortcutsRef.current.selectedCamera,
+          );
+        else if (shareControlsRef.current.screenSharing)
+          void shareControlsRef.current.toggleScreenShare();
+      }),
+    [],
+  );
+  useEffect(() => {
+    reportDesktopScreenShareState({
+      sharing: screenSharing,
+      muted,
+      camera: cameraEnabled,
+    });
+  }, [screenSharing, muted, cameraEnabled]);
+  useEffect(
+    () => () =>
+      reportDesktopScreenShareState({
+        sharing: false,
+        muted: false,
+        camera: false,
+      }),
+    [],
+  );
   useEffect(() => {
     if (!connected) return undefined;
     const onKey = (event: KeyboardEvent) => {
@@ -593,7 +649,16 @@ export function HuddleCallPanel({
       name={screen.local ? "You" : rosterName(screen.identity, screen.name)}
       compact={compact}
       pinned={pinnedKey === `screen:${screen.id}`}
+      focused={focusedScreen === screen}
       onPin={() => togglePin(`screen:${screen.id}`)}
+      onFocus={
+        compact
+          ? undefined
+          : () =>
+              setFocusedScreenKey((current) =>
+                current === `screen:${screen.id}` ? "" : `screen:${screen.id}`,
+              )
+      }
       onStopSharing={() => void toggleScreenShare()}
     />
   );
@@ -620,9 +685,16 @@ export function HuddleCallPanel({
         </span>
       </div>
     );
+  } else if (focusedScreen) {
+    stage = (
+      <div className="huddle-focus">{renderScreen(focusedScreen, false)}</div>
+    );
   } else if (spotlightKey) {
     stage = (
-      <div className="huddle-spotlight">
+      <div
+        className="huddle-spotlight"
+        data-screen={!pinnedTile && Boolean(spotlightScreen)}
+      >
         <div className="huddle-spotlight-main">
           {pinnedTile
             ? renderTile(pinnedTile, false)
@@ -657,7 +729,8 @@ export function HuddleCallPanel({
   return (
     <section
       className="huddle-call"
-      data-chat-open={chatOpen}
+      data-chat-open={chatOpen && !focusedScreen}
+      data-focus={Boolean(focusedScreen)}
       aria-label="Huddle call"
     >
       <header className="huddle-stage-header">
@@ -785,7 +858,7 @@ export function HuddleCallPanel({
       <aside
         id="huddle-chat-sidebar"
         className="huddle-sidebar"
-        hidden={!chatOpen}
+        hidden={!chatOpen || Boolean(focusedScreen)}
         aria-label="Huddle messages and work proposals"
       >
         <header className="huddle-chat-header">
@@ -942,19 +1015,33 @@ export function HuddleCallPanel({
             aria-pressed={screenSharing}
             aria-label={screenSharing ? "Stop presenting" : "Share screen"}
             data-tooltip={screenSharing ? "Stop presenting" : "Share screen"}
-            onClick={() => void toggleScreenShare()}
+            onClick={() =>
+              !screenSharing && canPickDesktopScreenShareSource()
+                ? setScreenPickerOpen(true)
+                : void toggleScreenShare()
+            }
           >
             <Monitor size={20} />
           </button>
           <button
             type="button"
             className="huddle-control"
-            data-active={chatOpen}
-            aria-label={chatOpen ? "Hide Huddle chat" : "Show Huddle chat"}
-            aria-pressed={chatOpen}
+            data-active={chatOpen && !focusedScreen}
+            aria-label={
+              chatOpen && !focusedScreen
+                ? "Hide Huddle chat"
+                : "Show Huddle chat"
+            }
+            aria-pressed={chatOpen && !focusedScreen}
             aria-controls="huddle-chat-sidebar"
             data-tooltip="In-call messages"
-            onClick={() => setChatOpen(!chatOpen)}
+            onClick={() => {
+              // Opening chat while focused brings the call layout back.
+              if (focusedScreen) {
+                setFocusedScreenKey("");
+                setChatOpen(true);
+              } else setChatOpen(!chatOpen);
+            }}
           >
             <MessageSquareText size={20} />
           </button>
@@ -1073,6 +1160,11 @@ export function HuddleCallPanel({
           )}
         </div>
       </footer>
+      <HuddleScreenPicker
+        open={screenPickerOpen && connected && !screenSharing}
+        onClose={() => setScreenPickerOpen(false)}
+        onShare={toggleScreenShare}
+      />
     </section>
   );
 }

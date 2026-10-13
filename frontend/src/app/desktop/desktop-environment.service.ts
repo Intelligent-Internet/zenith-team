@@ -413,6 +413,22 @@ export type DesktopHuddleCallNotification = {
   title: string;
 };
 
+export type DesktopScreenShareSource = {
+  id: string;
+  name: string;
+  kind: "screen" | "window";
+  thumbnail: string;
+  appIcon: string;
+};
+
+export type DesktopScreenShareState = {
+  sharing: boolean;
+  muted: boolean;
+  camera: boolean;
+};
+
+export type DesktopScreenShareAction = "mute" | "camera" | "stop";
+
 export type DesktopHuddleCallAction = {
   action: "join";
   invitationId: string;
@@ -1022,6 +1038,23 @@ export type BoardlyDesktopBridge = {
   ): Promise<{ ok: true } | { ok: false; reason: string }>;
   openHuddleStartWindow?(
     conversationId: string,
+  ): Promise<{ ok: true } | { ok: false; reason: string }>;
+  listScreenShareSources?(): Promise<
+    | { ok: true; sources: DesktopScreenShareSource[]; audio?: boolean }
+    | { ok: false; reason: string; blocked?: boolean }
+  >;
+  reportScreenShareState?(
+    state: DesktopScreenShareState,
+  ): Promise<{ ok: true } | { ok: false; reason: string }>;
+  onScreenShareAction?(
+    listener: (action: DesktopScreenShareAction) => void,
+  ): () => void;
+  openScreenShareSettings?(): Promise<
+    { ok: true } | { ok: false; reason: string }
+  >;
+  selectScreenShareSource?(
+    sourceId: string,
+    shareAudio?: boolean,
   ): Promise<{ ok: true } | { ok: false; reason: string }>;
   onMenuCommand(listener: (command: DesktopMenuCommand) => void): () => void;
   onRunPreview?(listener: (frame: DesktopRunPreviewFrame) => void): () => void;
@@ -2192,6 +2225,73 @@ export function subscribeToDesktopHuddleCallActions(
     getBoardlyDesktopBridge(globalScope)?.onHuddleCallAction?.(listener) ??
     (() => {})
   );
+}
+
+// The desktop app picks a screen or window in the Huddle window itself; the
+// web relies on the browser's own picker.
+export function canPickDesktopScreenShareSource(
+  globalScope: DesktopGlobalLike = globalThis,
+) {
+  return Boolean(getBoardlyDesktopBridge(globalScope)?.listScreenShareSources);
+}
+
+// DesktopScreenSharePermissionError means the OS, not Zenith, is refusing
+// screen capture, and the person can fix it in system settings.
+export class DesktopScreenSharePermissionError extends Error {}
+
+export async function listDesktopScreenShareSources(
+  globalScope: DesktopGlobalLike = globalThis,
+): Promise<{ sources: DesktopScreenShareSource[]; audio: boolean }> {
+  const result =
+    await getBoardlyDesktopBridge(globalScope)?.listScreenShareSources?.();
+  if (!result) throw new Error("Screen sharing is not available here.");
+  if (!result.ok) {
+    throw result.blocked
+      ? new DesktopScreenSharePermissionError(result.reason)
+      : new Error(result.reason);
+  }
+  return { sources: result.sources, audio: result.audio === true };
+}
+
+// The desktop app marks the shared screen and floats sharing controls over
+// other apps while a Huddle window shares.
+export function reportDesktopScreenShareState(
+  state: DesktopScreenShareState,
+  globalScope: DesktopGlobalLike = globalThis,
+) {
+  void getBoardlyDesktopBridge(globalScope)
+    ?.reportScreenShareState?.(state)
+    .catch(() => {});
+}
+
+export function subscribeToDesktopScreenShareActions(
+  listener: (action: DesktopScreenShareAction) => void,
+  globalScope: DesktopGlobalLike = globalThis,
+) {
+  return (
+    getBoardlyDesktopBridge(globalScope)?.onScreenShareAction?.(listener) ??
+    (() => {})
+  );
+}
+
+export function openDesktopScreenShareSettings(
+  globalScope: DesktopGlobalLike = globalThis,
+) {
+  void getBoardlyDesktopBridge(globalScope)
+    ?.openScreenShareSettings?.()
+    .catch(() => {});
+}
+
+export async function selectDesktopScreenShareSource(
+  sourceId: string,
+  shareAudio: boolean,
+  globalScope: DesktopGlobalLike = globalThis,
+) {
+  const result = await getBoardlyDesktopBridge(
+    globalScope,
+  )?.selectScreenShareSource?.(sourceId, shareAudio);
+  if (!result) throw new Error("Screen sharing is not available here.");
+  if (!result.ok) throw new Error(result.reason);
 }
 
 export function subscribeToDesktopWorkbenchState(

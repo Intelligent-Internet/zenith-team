@@ -1,13 +1,5 @@
 const path = require("node:path");
-const {
-  app,
-  BrowserWindow,
-  desktopCapturer,
-  dialog,
-  ipcMain,
-  session,
-  webContents,
-} = require("electron");
+const { app, ipcMain, session, webContents } = require("electron");
 const { createDesktopRuntimeEnv } = require("./release-env.cjs");
 const {
   getDesktopAppUserModelId,
@@ -62,6 +54,11 @@ const {
 const { registerDesktopWorkbench } = require("./workbench.cjs");
 const { registerDesktopWebsitePreview } = require("./website-preview.cjs");
 const { registerDesktopLinkPreview } = require("./link-preview.cjs");
+const {
+  registerScreenSharePicker,
+  takeSelectedScreenShare,
+} = require("./screen-share.cjs");
+const { registerScreenShareOverlay } = require("./screen-share-overlay.cjs");
 const { createMainWindow, isHuddleWebContents } = require("./windows.cjs");
 const { getUserDataPath } = require("./app-data.cjs");
 const {
@@ -236,6 +233,8 @@ if (!hasSingleInstanceLock) {
     });
     registerDesktopWebsitePreview({ ipcMain, getMainWindow: () => mainWindow });
     registerDesktopLinkPreview({ ipcMain, getMainWindow: () => mainWindow });
+    registerScreenSharePicker({ ipcMain });
+    registerScreenShareOverlay({ ipcMain });
     registerNativeActions({
       getMainWindow: () => mainWindow,
       iconPath: APP_ICON_PATH,
@@ -594,50 +593,45 @@ function denyUnexpectedPermissions() {
       (permission === "media" ||
         (permission === "display-capture" && isHuddleWebContents(contents))),
   );
-  session.defaultSession.setDisplayMediaRequestHandler(
-    async (request, callback) => {
-      const frame = request.frame;
-      const contents = webContents
-        .getAllWebContents()
-        .find((item) => item.mainFrame === frame);
-      if (
-        !frame ||
-        !contents ||
-        !isHuddleWebContents(contents) ||
-        !isTrustedRenderer(contents) ||
-        frame.parent ||
-        frame.url !== contents.getURL() ||
-        request.securityOrigin !== frame.origin ||
-        !request.videoRequested
-      ) {
-        callback(null);
-        return;
-      }
-      const window = BrowserWindow.fromWebContents(contents);
-      let selectedSource = null;
-      try {
-        const sources = await desktopCapturer.getSources({
-          types: ["screen", "window"],
-        });
-        if (sources.length && window && !window.isDestroyed()) {
-          const choice = await dialog.showMessageBox(window, {
-            type: "question",
-            title: "Share a screen or window",
-            message: "Choose what to share in this Huddle",
-            buttons: [...sources.map((source) => source.name), "Cancel"],
-            cancelId: sources.length,
-            noLink: true,
-          });
-          if (!window.isDestroyed() && choice.response < sources.length) {
-            selectedSource = sources[choice.response];
-          }
-        }
-      } catch {
-        // A canceled or unavailable picker leaves the call unchanged.
-      }
-      callback(selectedSource ? { video: selectedSource } : null);
-    },
-  );
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    const frame = request.frame;
+    const contents = webContents
+      .getAllWebContents()
+      .find((item) => item.mainFrame === frame);
+    if (
+      !frame ||
+      !contents ||
+      !isHuddleWebContents(contents) ||
+      !isTrustedRenderer(contents) ||
+      frame.parent ||
+      frame.url !== contents.getURL() ||
+      !isSameOrigin(request.securityOrigin, frame.origin) ||
+      !request.videoRequested
+    ) {
+      callback(null);
+      return;
+    }
+    // The Huddle window shows its own picker first and names the chosen
+    // source; nothing is captured without that choice.
+    const choice = takeSelectedScreenShare(contents);
+    if (!choice) {
+      callback(null);
+      return;
+    }
+    callback(
+      choice.audio && request.audioRequested
+        ? { video: choice.source, audio: "loopback" }
+        : { video: choice.source },
+    );
+  });
+}
+
+// Electron reports the request's security origin with a trailing slash
+// ("http://host/"), while frame.origin has none.
+function isSameOrigin(left, right) {
+  const trim = (origin) =>
+    typeof origin === "string" ? origin.replace(/\/$/, "") : "";
+  return Boolean(trim(left)) && trim(left) === trim(right);
 }
 
 function isTrustedRenderer(webContents) {

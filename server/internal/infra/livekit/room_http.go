@@ -40,7 +40,7 @@ func NewHTTPRoomProvider(baseURL string, issuer *TokenIssuer, client *http.Clien
 func (p *HTTPRoomProvider) IssueParticipantToken(_ context.Context, roomName, identity string) (MediaToken, error) {
 	token, err := p.issuer.IssueParticipantToken(time.Now().UTC(), ParticipantTokenRequest{
 		RoomName: roomName, Identity: identity, CanPublish: true,
-		PublishSources: []string{"microphone", "camera", "screen_share"},
+		PublishSources: []string{"microphone", "camera", "screen_share", "screen_share_audio"},
 	})
 	if err != nil {
 		return MediaToken{}, err

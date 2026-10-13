@@ -175,9 +175,11 @@ export function useHuddleRoom(
     if (!room) return;
     setVideoError("");
     try {
+      // Audio is offered, not forced: the browser picker (or the desktop
+      // picker's Share audio box) decides whether any audio is captured.
       await room.localParticipant.setScreenShareEnabled(
         !room.localParticipant.isScreenShareEnabled,
-        { audio: false },
+        { audio: true },
       );
       setScreenSharing(room.localParticipant.isScreenShareEnabled);
     } catch (cause) {

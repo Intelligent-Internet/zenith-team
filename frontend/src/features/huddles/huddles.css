@@ -128,6 +128,15 @@
 .huddle-call[data-chat-open="false"] {
   grid-template-columns: minmax(0, 1fr);
 }
+.huddle-stage > .huddle-focus {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+}
+.huddle-focus > .huddle-tile {
+  flex: 1;
+}
 
 /* ─── Header ─────────────────────────────────────────────────────────── */
 .huddle-stage-header {
@@ -414,6 +423,30 @@
 .huddle-rail > .huddle-tile {
   flex: 0 0 124px;
 }
+/* A shared screen takes the full width; people sit in a strip below it. */
+.huddle-spotlight[data-screen="true"] {
+  flex-direction: column;
+}
+.huddle-spotlight[data-screen="true"] > .huddle-rail {
+  flex: 0 0 120px;
+  flex-direction: row;
+  /* "safe" keeps the first people reachable when the strip overflows. */
+  justify-content: safe center;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.huddle-spotlight[data-screen="true"] > .huddle-rail > .huddle-tile {
+  flex: 0 0 200px;
+}
+@media (max-width: 640px) {
+  .huddle-spotlight[data-screen="true"] > .huddle-rail {
+    flex-basis: 96px;
+    justify-content: flex-start;
+  }
+  .huddle-spotlight[data-screen="true"] > .huddle-rail > .huddle-tile {
+    flex-basis: 140px;
+  }
+}
 
 /* ─── Tiles ──────────────────────────────────────────────────────────── */
 .huddle-tile {
@@ -497,6 +530,54 @@
 }
 .huddle-screen-tile .huddle-tile-video {
   object-fit: contain;
+}
+.huddle-screen-tile:fullscreen {
+  border-radius: 0;
+  background: #000;
+}
+.huddle-screen-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.18s,
+    transform 0.18s var(--ease-out);
+}
+.huddle-screen-tile:hover .huddle-screen-actions,
+.huddle-screen-actions:focus-within,
+.huddle-screen-tile[data-focused="true"] .huddle-screen-actions {
+  opacity: 1;
+  transform: none;
+}
+.huddle-screen-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--overlay-strong);
+  color: var(--foreground);
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+}
+.huddle-screen-actions button:hover {
+  background: var(--surface-raised);
+}
+.huddle-screen-actions button[aria-pressed="true"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.huddle-screen-tile:fullscreen .huddle-screen-actions button {
+  background: rgb(20 20 20 / 72%);
+  color: #fff;
 }
 
 /* The avatar and its level-driven speaking rings. */
@@ -1937,4 +2018,184 @@
   .huddle-join-card {
     padding: 30px 24px;
   }
+}
+
+/* ─── Screen share picker (desktop) ──────────────────────────────────── */
+[data-slot="dialog-content"].huddle-dialog.huddle-screen-picker {
+  max-width: 720px;
+  gap: 20px;
+}
+.huddle-screen-picker-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  width: min(320px, 100%);
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--control);
+}
+.huddle-screen-picker-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  outline: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 0.15s var(--ease-out),
+    color 0.15s var(--ease-out);
+}
+.huddle-screen-picker-tabs button:hover {
+  color: var(--foreground);
+}
+.huddle-screen-picker-tabs button[aria-selected="true"] {
+  background: var(--surface-raised);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 14%);
+}
+.huddle-screen-picker-tabs button span {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+.huddle-screen-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  align-content: start;
+  gap: 10px;
+  height: min(380px, 50dvh);
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 4px;
+}
+.huddle-screen-picker-grid > p {
+  grid-column: 1 / -1;
+  align-self: center;
+  margin-top: 64px;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.huddle-screen-picker-source {
+  display: grid;
+  gap: 8px;
+  padding: 6px 6px 8px;
+  border: 0;
+  border-radius: 14px;
+  outline: none;
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  transition: background 0.15s var(--ease-out);
+}
+.huddle-screen-picker-source:hover {
+  background: var(--control-hover);
+}
+.huddle-screen-picker-source[aria-selected="true"] {
+  background: var(--accent);
+}
+.huddle-screen-picker-thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--tile);
+  color: var(--muted-foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.huddle-screen-picker-source[aria-selected="true"] .huddle-screen-picker-thumb {
+  box-shadow:
+    0 0 0 2px var(--surface-raised),
+    0 0 0 4px var(--primary);
+}
+.huddle-screen-picker-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.huddle-screen-picker-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.huddle-screen-picker-name img {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.huddle-screen-picker-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.huddle-screen-picker-skeleton {
+  aspect-ratio: 16 / 10;
+  margin: 6px 6px 30px;
+  border-radius: 10px;
+  background: var(--tile);
+  animation: huddle-screen-picker-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes huddle-screen-picker-pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .huddle-screen-picker-skeleton {
+    animation: none;
+  }
+}
+.huddle-screen-picker-error {
+  color: var(--destructive);
+}
+.huddle-screen-permission {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 28px 16px 8px;
+  text-align: center;
+}
+.huddle-screen-permission-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: 18px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.huddle-screen-permission strong {
+  font-size: 16px;
+}
+.huddle-screen-permission p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.huddle-screen-permission ol {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding: 12px 16px 12px 34px;
+  border-radius: 12px;
+  background: var(--control);
+  text-align: left;
+}
+.huddle-screen-picker-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  font-size: 12px;
+  font-weight: 600;
 }
