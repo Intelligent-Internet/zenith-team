@@ -71,7 +71,6 @@ type Handler struct {
 	TaskService              TaskService
 	BoardService             canvas.BoardService
 	BoardMediaService        canvas.BoardMediaService
-	BoardChannelService      conversation.BoardChannelService
 	EphemeralRelay           *realtime.EphemeralRelay
 	CanvasService            canvas.CanvasService
 	PageService              canvas.PageService

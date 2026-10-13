@@ -94,7 +94,8 @@ export function useConversationArtifactsPanel(
     feedbackRevision: state.feedbackRevision,
     focusRequestKey,
     open: () => update({ open: true, mailSelection: null }),
-    close: () => update({ open: false }),
+    // Closing ends what was open, so the panel reopens on the list.
+    close: () => update({ open: false, selection: null }),
     select: (selection: ConversationArtifactReference) =>
       update({ open: true, selection }),
     back: () => update({ selection: null }),

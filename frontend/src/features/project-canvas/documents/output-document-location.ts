@@ -3,6 +3,7 @@ import type { RunOutput } from "@/features/run-deliverables/model/run-deliverabl
 export function outputDocumentLocation(output: RunOutput) {
   if (
     output.type === "app" ||
+    output.type === "whiteboard" ||
     !output.items.some(
       (item) =>
         /\.(md|markdown)$/i.test(item.displayName) ||

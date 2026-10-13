@@ -22,7 +22,6 @@ import { discussionsApi } from "../api/discussions-api";
 import { useDiscussionUpdates } from "./discussion-provider";
 import { discussionError } from "../model/discussion-runtime";
 import { ChannelInputRequests } from "./channel-input-requests";
-import { useCompactDiscussion } from "./discussion-compact";
 
 type Agent = components["schemas"]["ChannelAgentStatus"];
 type Invocation = components["schemas"]["ChannelInvocation"];
@@ -325,7 +324,6 @@ export function ChannelAgentPanel({
   onBack: (threadRootId?: string) => void;
 }) {
   const state = useChannelAgents();
-  const compact = useCompactDiscussion();
   const runtime = useDiscussionUpdates();
   const selected = state.selected;
   const agent = state.agents.find(
@@ -392,10 +390,7 @@ export function ChannelAgentPanel({
       </header>
       <div className="channel-agent-privacy">
         <LockKeyhole size={13} />
-        <span>
-          Only you can see your runs
-          {compact ? null : <> · Managed by {agent.managerName}</>}
-        </span>
+        <span>Only you can see your runs · Managed by {agent.managerName}</span>
       </div>
       <div className="channel-agent-activity">
         {activity.isError ? (

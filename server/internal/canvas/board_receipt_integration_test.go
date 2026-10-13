@@ -114,16 +114,9 @@ func TestBoardReceiptsKeepOnlyTheAcknowledgement(t *testing.T) {
 		`UPDATE board_operations SET created_at=now()-interval '31 days' WHERE board_id=$1`,
 		board.ID,
 	)
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`UPDATE board_create_receipts SET created_at=now()-interval '31 days' WHERE board_id=$1`,
-		board.ID,
-	)
 	sweep, err := s.Sweep(ctx, time.Now())
-	if err != nil || sweep.Receipts != 4 {
-		t.Fatalf("sweep = %+v, %v; want three operation receipts and one create receipt", sweep, err)
+	if err != nil || sweep.Receipts != 3 {
+		t.Fatalf("sweep = %+v, %v; want three operation receipts", sweep, err)
 	}
 	snapshot, err := s.Snapshot(ctx, p, scope, 0)
 	if err != nil || len(snapshot.Items) != 2 {

@@ -121,6 +121,17 @@ establishes counter baselines. Unavailable metrics are null. Only the latest
 entry of each kind is retained; diagnostics stay local and contain no tokens,
 participant identities, or network addresses.
 
+### Whiteboards
+
+A Whiteboard is an Artifact of type `whiteboard`; its Board id is the
+Artifact id. "+ Whiteboard" in a DM, group DM or channel's tab row sends a
+message that creates one there, and it opens in the chat's side panel like any
+Artifact (`?artifactId=`). Open full view shows it on the Artifact page
+(`/companies/:companyId/artifacts/:artifactId`), and a public Artifact link
+(`/share/artifacts/:token`) shows it view only. Sharing is the Artifact's.
+Closing the panel, opening another Artifact or chat, or leaving the page waits
+for pending changes to save.
+
 ### Whiteboard files
 
 Drop any file onto an editable Whiteboard to add it at the pointer position,
@@ -133,7 +144,8 @@ each can be selected. Upload progress participates in the existing
 save/navigation guard; placed files use the Board's normal persistence and
 undo/redo. Pasting objects copied from another Board of the same company
 references the same files when the member can read them there. Requires the
-server's member-only `POST /companies/{companyId}/whiteboards/{boardId}/files`.
+server's member-only
+`POST /companies/{companyId}/artifacts/{artifactId}/whiteboard/files`.
 
 New strokes, shapes, notes, text and images use the highest current layer plus
 one, including local changes still waiting to save. Selecting an object keeps

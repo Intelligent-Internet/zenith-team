@@ -301,50 +301,6 @@ func TestSearchDiscussionMembershipAndFilters(t *testing.T) {
 	}
 }
 
-// A Board's chat stays on its Board: its own members never find its messages
-// in Company search.
-func TestSearchLeavesBoardChatsOnTheirBoard(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := context.Background()
-	if err := db.MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var board uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO boards (company_id, title, created_by) VALUES ($1, 'Plan', $2) RETURNING id`,
-		f.CompanyA, f.UserA).
-		Scan(&board); err != nil {
-		t.Fatal(err)
-	}
-	id := dbtest.SeedBoardChannel(t, ctx, pool, f.CompanyA, board, f.UserA, nil)
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,
-		request_key,send_fingerprint,body,content) VALUES($1,$2,1,'user_message','user',$3,gen_random_uuid(),
-		decode(repeat('00',32),'hex'),'{"version":1,"markdown":"roadmap","references":[]}','roadmap')`,
-		f.CompanyA,
-		id,
-		f.UserA,
-	)
-	store, err := db.NewStore(pool)
-	if err != nil {
-		t.Fatal(err)
-	}
-	service, err := NewSearchService(store)
-	if err != nil {
-		t.Fatal(err)
-	}
-	page, err := service.Search(ctx, auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA}, SearchInput{
-		Query: "roadmap", Types: []SearchType{SearchTypeMessage}, Limit: 50,
-	})
-	if err != nil || len(page.Items) != 0 {
-		t.Fatalf("search found the Board's chat: %+v, %v", page, err)
-	}
-}
-
 // Search finds a Task, and a message in its chat, only for people who read
 // the Task's Project (ADR 0017). A member without a grant on a restricted
 // Project finds neither; the same member with project.read finds both.

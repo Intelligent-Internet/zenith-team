@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Location } from "react-router";
 import { useWorkspaceNavigationBlocker } from "@/app/shell/workspace-navigation-guard";
 import {
   Dialog,
@@ -8,16 +9,23 @@ import {
 } from "@/shared/ui/core/dialog";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 
+/** Whether a navigation from `current` to `next` closes the Board. */
+export type BoardLeaves = (current: Location, next: Location) => boolean;
+const leavesPage: BoardLeaves = (current, next) =>
+  current.pathname !== next.pathname;
+
 export function useBoardSaveFeedback({
   editable,
   pending,
   hasPendingChanges,
   flush,
+  leaves = leavesPage,
 }: {
   editable: boolean;
   pending: boolean;
   hasPendingChanges: () => boolean;
   flush: () => Promise<void>;
+  leaves?: BoardLeaves;
 }) {
   const [feedback, setFeedback] = useState<
     "saving" | "saved" | "failed" | null
@@ -31,11 +39,7 @@ export function useBoardSaveFeedback({
   const leaveAttempt = useRef(0);
   const blocker = useWorkspaceNavigationBlocker(
     ({ currentLocation, nextLocation }) => {
-      const leavingBoard =
-        currentLocation.pathname !== nextLocation.pathname ||
-        new URLSearchParams(currentLocation.search).get("companyId") !==
-          new URLSearchParams(nextLocation.search).get("companyId");
-      if (!leavingBoard) return false;
+      if (!leaves(currentLocation, nextLocation)) return false;
       if (document.activeElement instanceof HTMLElement)
         document.activeElement.blur();
       return hasPendingChanges();
@@ -163,7 +167,7 @@ export function useBoardSaveFeedback({
     >
       <DialogContent
         className="wb-dialog wb-leave-dialog"
-        overlayClassName="wb-details-overlay"
+        overlayClassName="wb-leave-overlay"
         onInteractOutside={(event) => event.preventDefault()}
       >
         <DialogTitle>
@@ -171,9 +175,9 @@ export function useBoardSaveFeedback({
         </DialogTitle>
         <DialogDescription>
           {leaveError ||
-            "Your changes are still saving. We'll open the next page when they're saved."}
+            "Your changes are still saving. We'll continue when they're saved."}
         </DialogDescription>
-        <footer className="wb-details-footer">
+        <footer className="wb-leave-footer">
           <button type="button" onClick={stay}>
             Stay on board
           </button>

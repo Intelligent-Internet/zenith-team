@@ -19,7 +19,7 @@ JOIN agents a ON a.company_id=t.company_id AND a.id=$2::uuid AND a.archived_at I
 WHERE t.company_id=$3::uuid AND t.id=$4::uuid AND t.project_id IS NOT NULL AND t.status='open'
 ON CONFLICT(document_thread_id,agent_id,created_by_user_id) WHERE document_thread_id IS NOT NULL
 DO UPDATE SET title=EXCLUDED.title
-RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 type EnsureDocumentAgentConversationParams struct {
@@ -59,7 +59,6 @@ func (q *Queries) EnsureDocumentAgentConversation(ctx context.Context, arg Ensur
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }

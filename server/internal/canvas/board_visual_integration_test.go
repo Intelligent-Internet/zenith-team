@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"image/png"
+	"math"
 	"testing"
 
 	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/pkg/protocol"
 )
 
 func TestBoardVisualsPageAcknowledgedInkWithoutPersistingImages(t *testing.T) {
@@ -20,17 +20,8 @@ func TestBoardVisualsPageAcknowledgedInkWithoutPersistingImages(t *testing.T) {
 	boards, pool, owner, member := boardFixture(t)
 	board := createTestBoard(t, boards, owner, member)
 	ctx := t.Context()
-	agent, run := boardTestRun(t, pool, member)
-	if err := grantTestBoardAccess(
-		t,
-		boards,
-		owner,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"read",
-	); err != nil {
-		t.Fatal(err)
-	}
+	_, run := boardTestRun(t, pool, member)
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "view")
 	var commands []BoardCommand
 	for i := range 7 {
 		commands = append(
@@ -118,18 +109,58 @@ func TestBoardVisualsPageAcknowledgedInkWithoutPersistingImages(t *testing.T) {
 	if err != nil || !later.Changed || later.Sequence != mutation.Sequence+1 {
 		t.Fatalf("page after a concurrent edit = %+v, %v; want the latest state marked changed", later, err)
 	}
-	if err := grantTestBoardAccess(
-		t,
-		boards,
-		owner,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"none",
-	); err != nil {
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "none")
+	if _, err := service.Visuals(ctx, member, scope, input); !errors.Is(err, ErrBoardNotFound) {
+		t.Fatalf("revoked access = %v", err)
+	}
+}
+
+// A Whiteboard card's preview frames all of the Board 16:9, is not drawn
+// again for the sequence a client holds, and follows the Artifact's access.
+func TestBoardPreviewFramesTheWholeBoard(t *testing.T) {
+	t.Parallel()
+	boards, pool, owner, member := boardFixture(t)
+	board := createTestBoard(t, boards, owner)
+	ctx := t.Context()
+	store, _ := db.NewStore(pool)
+	service := NewBoardMediaService(store, nil)
+	scope := BoardScope{BoardID: board.ID}
+	empty, err := service.Preview(ctx, owner, scope, -1)
+	if err != nil || empty.Image != nil || empty.NotModified {
+		t.Fatalf("empty Board preview = %+v, %v; want no image", empty, err)
+	}
+	mutation, err := boards.Mutate(ctx, owner, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{
+		stickyCommand("note", "Launch plan"),
+		{
+			Type:       "create_item",
+			DraftID:    "ink",
+			ItemType:   "stroke",
+			Geometry:   &BoardGeometry{X: 2400, Y: 900, Width: 80, Height: 40},
+			Points:     []BoardPoint{{X: 6, Y: 6}, {X: 74, Y: 34}},
+			Properties: &BoardProperties{Color: "#000000"},
+		},
+	}})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Visuals(ctx, member, scope, input); !errors.Is(err, ErrBoardForbidden) {
-		t.Fatalf("revoked invitation = %v", err)
+	got, err := service.Preview(ctx, owner, scope, empty.Sequence)
+	if err != nil || got.Image == nil || got.NotModified || got.Sequence != mutation.Sequence {
+		t.Fatalf("preview = %+v, %v; want an image at sequence %d", got, err, mutation.Sequence)
+	}
+	frame := got.Image.Bounds
+	if math.Abs(frame.Width*9-frame.Height*16) > 1e-6 || len(got.Image.ItemIDs) != 2 {
+		t.Fatalf("preview frame %+v shows %d items; want 16:9 around both", frame, len(got.Image.ItemIDs))
+	}
+	image, err := png.Decode(bytes.NewReader(got.Image.Data))
+	if err != nil || image.Bounds().Dx() > boardPreviewPixels {
+		t.Fatalf("preview image %v, %v", image.Bounds(), err)
+	}
+	again, err := service.Preview(ctx, owner, scope, got.Sequence)
+	if err != nil || !again.NotModified || again.Image != nil {
+		t.Fatalf("unchanged Board preview = %+v, %v; want not modified", again, err)
+	}
+	if _, err := service.Preview(ctx, member, scope, -1); !errors.Is(err, ErrBoardNotFound) {
+		t.Fatalf("preview without access = %v", err)
 	}
 }
 

@@ -1244,6 +1244,53 @@ paths:
         '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
         '500': { $ref: './_common.yaml#/responses/InternalError' }
 
+  conversations_conversationId_whiteboards:
+    post:
+      tags: [messages]
+      operationId: createConversationWhiteboard
+      summary: Make a Whiteboard in an Agent or Task chat
+      description: |
+        Makes a Whiteboard in an Agent chat or a Task's chat, owned by the
+        caller and titled as given. The chat gets no message for it: every
+        turn there asks the Agent, so the Whiteboard joins the chat's Artifacts
+        (`GET /companies/{companyId}/conversations/{conversationId}/artifacts`)
+        and every later Run of the chat is told of it. Others open it only
+        once its owner shares it, as with any Artifact. The answer is the new
+        Artifact as that list shows it. A group chat makes its Whiteboards
+        with a discussion message instead.
+
+        Reaching the chat follows the message send: an unknown or unreadable
+        chat is `404 conversation_not_found`, and a Task chat needs
+        `project.tasks.write` on its Project (`403
+        project_permission_required`). A blank title, or one over 200
+        characters, is `422`.
+      parameters:
+        - $ref: './_common.yaml#/parameters/conversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/schemas/CreateChatWhiteboardRequest' }
+      responses:
+        '201':
+          description: Whiteboard made.
+          content:
+            application/json:
+              schema: { $ref: './runs.yaml#/schemas/ArtifactRunResult' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404':
+          description: '`404 conversation_not_found`.'
+          content:
+            application/json:
+              schema: { $ref: './_common.yaml#/schemas/Error' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+
+
   # ============================================================== attachments
 
 
@@ -4885,6 +4932,16 @@ schemas:
               final. It is never below `attempt`.
 
 
+  CreateChatWhiteboardRequest:
+    type: object
+    additionalProperties: false
+    required: [title]
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+        description: Surrounding space is trimmed; the rest must hold 1 to 200 characters.
   SendMessageResult:
     type: object
     description: |
@@ -5270,7 +5327,6 @@ schemas:
     - headSeq
     - memberCount
     - agentCount
-    - boardId
     - capabilities
     - userState
     properties:
@@ -5333,12 +5389,6 @@ schemas:
         format: int64
         minimum: 0
         maximum: 9007199254740991
-      boardId:
-        description: The Board whose chat this is. A Board's chat lives on its Board, never in the Chat lists; null for any other chat.
-        oneOf:
-        - type: string
-          format: uuid
-        - type: 'null'
       peer:
         oneOf:
         - $ref: '#/schemas/DiscussionPeer'
@@ -5844,11 +5894,25 @@ schemas:
           - type: string
             format: uuid
           - type: 'null'
+      whiteboard:
+        $ref: '#/schemas/DiscussionWhiteboardInput'
     description: >-
-      128 KiB request cap. Up to twenty ready file attachments and ten Artifacts may be shared. threadRootId may identify a root or
+      128 KiB request cap. Up to twenty ready file attachments and ten Artifacts may be shared. A whiteboard
+      creates a new Whiteboard Artifact owned by the sender in the same transaction and shares it into the chat
+      like an Artifact in artifactIds, so its people can open it; it is not allowed in a Huddle chat or a thread. threadRootId may identify a root or
       reply; reply parents resolve to their original root before fingerprinting. Exact retries return
       the current edited/deleted message, including after archive, with current read access. Zero
       Runs.
+  DiscussionWhiteboardInput:
+    type: object
+    additionalProperties: false
+    required:
+      - title
+    properties:
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
   QueryDiscussionStatesRequest:
     type: object
     additionalProperties: false

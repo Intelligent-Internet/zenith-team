@@ -33,11 +33,6 @@ SELECT EXISTS(
     JOIN users u ON u.id=v.caller_user_id AND u.disabled_at IS NULL AND u.deleted_at IS NULL
     JOIN agents a ON a.id=v.agent_id AND a.archived_at IS NULL
     WHERE v.id=sqlc.arg(invocation_id)::uuid AND v.status<>'cancelled'
-      -- A tag in a Board's chat holds while its caller can read the Board and
-      -- the Agent is still invited to it, before membership catches up.
-      AND (c.board_id IS NULL OR (
-          EXISTS(SELECT 1 FROM board_access ba WHERE ba.company_id=c.company_id AND ba.board_id=c.board_id AND ba.user_id=v.caller_user_id)
-          AND EXISTS(SELECT 1 FROM board_agent_access bg WHERE bg.company_id=c.company_id AND bg.board_id=c.board_id AND bg.agent_id=v.agent_id)))
 )::boolean;
 
 -- name: GetChannelInvocation :one

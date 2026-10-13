@@ -114,7 +114,7 @@ func (s *DefaultChannelInvocationService) List(
 					Name:          a.Name,
 					ManagerUserID: util.NullUUIDPtr(a.CreatedByUserID),
 					ManagerName:   a.ManagerName,
-					CanInvoke: discussionOpen(access) &&
+					CanInvoke: !access.ArchivedAt.Valid &&
 						auth.CompanyRole(access.CompanyRole).
 							Can(auth.PermissionConversationsDiscuss) &&
 						a.ViewerBound,
@@ -147,7 +147,7 @@ func (s *DefaultChannelInvocationService) List(
 					return err
 				}
 				canRetry := allowed && v.CallerUserID == p.UserID && v.Status == "failed" &&
-					discussionOpen(access) &&
+					!access.ArchivedAt.Valid &&
 					auth.CompanyRole(access.CompanyRole).Can(auth.PermissionConversationsDiscuss)
 				result.Items = append(result.Items, ChannelInvocation{
 					InputRequestIDs:   v.InputRequestIds,
@@ -256,7 +256,7 @@ func (s *DefaultChannelInvocationService) Retry(
 		if err != nil {
 			return err
 		}
-		if !discussionOpen(access) ||
+		if access.ArchivedAt.Valid ||
 			!auth.CompanyRole(access.CompanyRole).Can(auth.PermissionConversationsDiscuss) {
 			return ErrDiscussionForbidden
 		}

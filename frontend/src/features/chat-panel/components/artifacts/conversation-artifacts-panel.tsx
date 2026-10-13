@@ -7,11 +7,19 @@ import {
   FolderOpen,
   ImageIcon,
   Globe2,
+  LayoutDashboard,
   Loader2,
+  Plus,
   RefreshCw,
   Search,
   X,
 } from "@/shared/ui/icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/shared/ui/dropdown-menu";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ViewSwitch,
@@ -20,6 +28,7 @@ import {
 
 import type { ConversationArtifact } from "@/features/chat-panel/api/conversation-artifacts-api";
 import { ArtifactThumbnail } from "@/features/chat-panel/components/artifacts/artifact-thumbnail";
+import { BoardPreview } from "@/features/whiteboards/board-preview";
 import type { useConversationArtifacts } from "@/features/chat-panel/hooks/use-conversation-artifacts";
 import {
   conversationArtifactReference,
@@ -43,6 +52,7 @@ export function ConversationArtifactsPanel({
   onShowAll,
   onClose,
   onSelect,
+  onCreateWhiteboard,
 }: {
   companyId: string;
   artifacts: ReturnType<typeof useConversationArtifacts>;
@@ -54,6 +64,8 @@ export function ConversationArtifactsPanel({
   onShowAll?: () => void;
   onClose?: () => void;
   onSelect: (artifact: ConversationArtifactReference) => void;
+  /** Makes a new Artifact here; a Whiteboard is the kind people make. */
+  onCreateWhiteboard?: () => void;
 }) {
   const [view, setView] = useState<CollectionViewMode>("grid");
   const [search, setSearch] = useState("");
@@ -109,6 +121,26 @@ export function ConversationArtifactsPanel({
             {artifacts.count}
             {artifacts.hasMore ? "+" : ""}
           </span>
+        ) : null}
+        {onCreateWhiteboard ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="artifacts-new-button"
+                title="New artifact"
+                type="button"
+              >
+                <Plus aria-hidden size={15} />
+                New
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-44">
+              <DropdownMenuItem onSelect={onCreateWhiteboard}>
+                <LayoutDashboard size={17} />
+                Whiteboard
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : null}
         <button
           aria-label="Refresh artifacts"
@@ -353,6 +385,7 @@ function ArtifactRow({
     media: ImageIcon,
     text: FileText,
     file: File,
+    whiteboard: LayoutDashboard,
   }[artifact.artifact.type];
   return (
     <button
@@ -413,6 +446,11 @@ function ArtifactRowPreview({
   primary: ConversationArtifact["artifact"]["items"][number] | undefined;
 }) {
   if (artifact.artifact.type === "text") return null;
+  // A Whiteboard has no files; its card shows a small image of the Board.
+  if (artifact.artifact.type === "whiteboard")
+    return (
+      <BoardPreview companyId={companyId} boardId={artifact.artifact.id} />
+    );
   if (artifact.artifact.type === "app") {
     const rawUrl = artifact.publication?.customUrl || artifact.publication?.url;
     const url = rawUrl ? artifactAppUrl(rawUrl) : null;
@@ -494,6 +532,7 @@ function artifactDetail(artifact: ConversationArtifact) {
     return `${count} media ${count === 1 ? "item" : "items"}`;
   }
   if (artifact.artifact.type === "text") return "Document";
+  if (artifact.artifact.type === "whiteboard") return "Whiteboard";
   return `${count} saved ${count === 1 ? "file" : "files"}`;
 }
 

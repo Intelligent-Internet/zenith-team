@@ -5,6 +5,7 @@ import {
   File,
   FileText,
   Image,
+  LayoutDashboard,
   Monitor,
   type IconComponent,
 } from "@/shared/ui/icons";
@@ -36,6 +37,7 @@ const typeIcons: Record<ArtifactType, IconComponent> = {
   media: Image,
   text: FileText,
   file: File,
+  whiteboard: LayoutDashboard,
 };
 
 // `[[a:` (or `[[artifact:`) narrows the picker to Artifacts.
@@ -72,7 +74,10 @@ function artifactMeta(result: ArtifactRunResult) {
   const count = result.artifact.items.length;
   return [
     result.artifact.type[0].toUpperCase() + result.artifact.type.slice(1),
-    `${count} item${count === 1 ? "" : "s"}`,
+    // A Whiteboard is one live Board, not a set of files.
+    ...(result.artifact.type === "whiteboard"
+      ? []
+      : [`${count} item${count === 1 ? "" : "s"}`]),
     new Date(result.artifact.createdAt).toLocaleDateString(undefined, {
       dateStyle: "medium",
     }),

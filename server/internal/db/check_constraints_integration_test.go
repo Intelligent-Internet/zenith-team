@@ -41,7 +41,6 @@ import (
 // structural projection invariant.
 var wantCheckConstraints = []string{
 	"conversations_document_thread_check",
-	"conversations_board_check",
 	"document_changes_storage_check",
 	"document_changes_sequence_check",
 	"document_writing_requests_sequence_check",
@@ -57,11 +56,6 @@ var wantCheckConstraints = []string{
 	"page_suggestion_reviews_before_theme_check",
 	"page_suggestion_reviews_result_theme_check",
 	"output_documents_submitted_sequence_check",
-	"board_agent_access_access_check",
-	"board_member_access_access_check",
-	"boards_visibility_check",
-	"boards_company_access_check",
-	"boards_visibility_token_check",
 	"board_items_creator_run_attribution",
 	"board_items_updater_run_attribution",
 	"board_edges_creator_run_attribution",

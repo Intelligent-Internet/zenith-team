@@ -6,6 +6,7 @@ import {
   FileText,
   Globe2,
   ImageIcon,
+  LayoutDashboard,
   Music,
   Video,
 } from "@/shared/ui/icons";
@@ -34,8 +35,18 @@ export function TurnArtifactCard({
 }) {
   const multiple = files.length > 1;
   const fileName = files[0]?.fileName;
+  const caption =
+    subtitle ||
+    (type === "whiteboard"
+      ? "Whiteboard"
+      : fileName !== title
+        ? fileName
+        : undefined);
+  // An app or a Whiteboard is one experience, not the files it holds.
   const variant =
-    type === "app" ? "app" : fileVariant(files[0]?.contentType, type);
+    type === "app" || type === "whiteboard"
+      ? type
+      : fileVariant(files[0]?.contentType, type);
   const Icon = fileIcons[variant];
   const content = (
     <>
@@ -74,12 +85,9 @@ export function TurnArtifactCard({
               </span>
             ) : null}
           </span>
-        ) : subtitle || (fileName && fileName !== title) ? (
-          <span
-            className="turn-artifact-card__filename"
-            title={subtitle ?? fileName}
-          >
-            {subtitle ?? fileName}
+        ) : caption ? (
+          <span className="turn-artifact-card__filename" title={caption}>
+            {caption}
           </span>
         ) : null}
       </span>
@@ -122,6 +130,7 @@ const fileIcons = {
   video: Video,
   text: FileText,
   file: File,
+  whiteboard: LayoutDashboard,
 };
 
 function fileVariant(contentType?: string, fallback: ArtifactType = "file") {

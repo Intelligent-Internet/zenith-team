@@ -1,4 +1,10 @@
-import { FileText, Globe, Image, PackageCheck } from "@/shared/ui/icons";
+import {
+  FileText,
+  Globe,
+  Image,
+  LayoutDashboard,
+  PackageCheck,
+} from "@/shared/ui/icons";
 import { artifactFileSelection } from "../../model/artifact-file-access";
 import type { LibraryArtifact } from "../../api/artifact-library-api";
 import { ArtifactThumbnail } from "../artifacts/artifact-thumbnail";
@@ -29,6 +35,7 @@ export function ArtifactPickerThumbnail({
     text: FileText,
     media: Image,
     file: PackageCheck,
+    whiteboard: LayoutDashboard,
   }[artifact.type];
 
   return (

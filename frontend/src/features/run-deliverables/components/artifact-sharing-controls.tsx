@@ -54,6 +54,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   triggerRef: React.RefObject<HTMLButtonElement | null>;
+  whiteboard?: boolean;
 };
 type Notice = { text: string; error?: boolean; href?: string };
 type RemovalTarget = {
@@ -63,19 +64,52 @@ type RemovalTarget = {
   trigger: HTMLButtonElement | null;
 };
 
-const permissionOptions = [
-  { value: "view", label: "Can view", description: "Read and comment" },
-  {
-    value: "edit",
-    label: "Can edit",
-    description: "Read, comment, and edit documents",
+// A Whiteboard is drawn on and has no files to download or comments, so the
+// same access levels read differently for it.
+const sharingWording = {
+  artifact: {
+    noun: "artifact",
+    permissions: [
+      { value: "view", label: "Can view", description: "Read and comment" },
+      {
+        value: "edit",
+        label: "Can edit",
+        description: "Read, comment, and edit documents",
+      },
+      {
+        value: "manage",
+        label: "Can manage",
+        description: "Edit documents and manage sharing",
+      },
+    ],
+    grantHelp: {
+      view: "Can read, download, and comment.",
+      edit: "Can read, comment, and edit documents.",
+      manage: "Can edit documents and manage sharing.",
+    },
+    company: "Active members can view and download",
+    public: "View final files without signing in",
   },
-  {
-    value: "manage",
-    label: "Can manage",
-    description: "Edit documents and manage sharing",
+  whiteboard: {
+    noun: "whiteboard",
+    permissions: [
+      { value: "view", label: "Can view", description: "Open it read-only" },
+      { value: "edit", label: "Can edit", description: "Draw and edit" },
+      {
+        value: "manage",
+        label: "Can manage",
+        description: "Draw, edit, and manage sharing",
+      },
+    ],
+    grantHelp: {
+      view: "Can open the whiteboard read-only.",
+      edit: "Can draw and edit the whiteboard.",
+      manage: "Can draw, edit, and manage sharing.",
+    },
+    company: "Active members can view it",
+    public: "View it read-only without signing in",
   },
-];
+};
 
 export function ArtifactSharingControls(props: Props) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -110,7 +144,10 @@ function SharingContent({
   url,
   title,
   onOpenChange,
+  whiteboard,
 }: Props) {
+  const wording = sharingWording[whiteboard ? "whiteboard" : "artifact"];
+  const permissionOptions = wording.permissions;
   const dispatch = useAppDispatch();
   const userId = useSessionSnapshot().userId;
   const canManage = access.permission === "manage";
@@ -335,12 +372,12 @@ function SharingContent({
     {
       value: "company",
       label: "Everyone in the company",
-      description: "Active members can view and download",
+      description: wording.company,
     },
     {
       value: "public",
       label: "Anyone with the link",
-      description: "View final files without signing in",
+      description: wording.public,
     },
   ];
   const scopeLabel = scopeOptions.find(
@@ -351,7 +388,7 @@ function SharingContent({
     <>
       <header className="artifact-dialog-heading">
         <div className="artifact-dialog-title-row">
-          <DialogTitle>Share artifact</DialogTitle>
+          <DialogTitle>Share {wording.noun}</DialogTitle>
           <DialogClose asChild>
             <button
               type="button"
@@ -408,11 +445,7 @@ function SharingContent({
               >
                 {recipient.type === "conversation"
                   ? "Posts in chat. Current and future members can view."
-                  : permission === "manage"
-                    ? "Can edit documents and manage sharing."
-                    : permission === "edit"
-                      ? "Can read, comment, and edit documents."
-                      : "Can read, download, and comment."}
+                  : wording.grantHelp[permission]}
               </p>
             ) : null}
           </section>
@@ -651,6 +684,7 @@ function SharingContent({
       {removal ? (
         <RemoveAccessDialog
           target={removal}
+          noun={wording.noun}
           busy={busy}
           error={notice?.error ? notice.text : null}
           onCancel={() => {
@@ -667,6 +701,7 @@ function SharingContent({
 
 function RemoveAccessDialog({
   target,
+  noun,
   busy,
   error,
   onCancel,
@@ -674,6 +709,7 @@ function RemoveAccessDialog({
   fallbackFocusRef,
 }: {
   target: RemovalTarget;
+  noun: string;
   busy: boolean;
   error: string | null;
   onCancel: () => void;
@@ -715,7 +751,7 @@ function RemoveAccessDialog({
           ) : (
             <>
               <strong>{target.name}</strong> will lose their direct access to
-              this artifact.
+              this {noun}.
             </>
           )}
         </DialogDescription>

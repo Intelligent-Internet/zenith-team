@@ -20,34 +20,17 @@ import (
 	"boardly.dev/boardly/server/internal/mcp/apiclient"
 )
 
-type WhiteboardListInput struct {
-	Offset int32 `json:"offset,omitempty" jsonschema:"Zero for the first page. When hasMore is true request the next page with offset increased by 100."`
-}
-
-type WhiteboardReadInput struct {
-	BoardID          string   `json:"boardId,omitempty"          jsonschema:"Board ID from whiteboard_list; leave it out in a Board chat."`
-	Area             string   `json:"area,omitempty"             jsonschema:"view (default): what the person you work for is looking at, with a margin. all: the whole Board."`
-	ItemRefs         []string `json:"itemRefs,omitempty"         jsonschema:"Up to 100 refs to read in full, with who created and last changed them. Read objects before changing or deleting them."`
-	Image            bool     `json:"image,omitempty"            jsonschema:"Also look at the area. Needed for drawings, handwriting, images and layout; text needs none."`
-	VisualOffset     int      `json:"visualOffset,omitempty"     jsonschema:"With area=all and image: the next page of whole-Board images, as the previous page said."`
-	ExpectedSequence *int64   `json:"expectedSequence,omitempty" jsonschema:"With visualOffset: the sequence the first image page gave."`
-}
-
-type WhiteboardEditInput struct {
-	BoardID    string           `json:"boardId,omitempty"`
-	RequestKey string           `json:"requestKey,omitempty" jsonschema:"Only to finish a change whose outcome was unknown: the key that error named. The commands may then be left out."`
-	Commands   []map[string]any `json:"commands,omitempty"   jsonschema:"One atomic batch of at most 100 native commands: create_item, geometry, content, text, delete_item, restore_item, create_edge, update_edge, delete_edge, restore_edge. Name objects by their refs; revisions are filled from your reads. New objects use draftId, itemType (sticky,text,shape,stroke,frame) and geometry {x,y,width,height}. Connectors use sourceRef/targetRef (refs or draftIds), label, relation, line (solid|dashed), startMarker/endMarker (none,arrow,open,triangle,diamond,diamond_filled,one,zero_one,many,zero_many), route (flow|straight|elbow|message with anchorY), sourceLabel/targetLabel; update_edge keeps the notation it does not name. geometry moves or resizes (id, geometry naming only what changes, e.g. {x:300}); content restyles (id, properties naming only what changes, e.g. {title:\"Orders\"}; null clears one): color and fill (a swatch name as read, e.g. pink, or #rrggbb), shape, strokeWidth, brush, title, sections, head, locked; shapes and frames show title; class/entity sections are compartments; a lifeline's head is a box or actor. text replaces a note's text (id, text); delete_item removes. Prefer whiteboard_draw to add new content."`
-}
-
-// WhiteboardDrawInput adds content by intent; the server lays it out and
-// places it where the person the Run works for is looking.
-type WhiteboardDrawInput struct {
-	BoardID    string             `json:"boardId,omitempty"`
+// ArtifactEditInput changes a Whiteboard Artifact: ops add content by intent
+// and the server lays it out and places it where the person the Run works
+// for is looking; commands change objects the Run read, by ref.
+type ArtifactEditInput struct {
+	ArtifactID string             `json:"artifactId"           jsonschema:"The Whiteboard Artifact ID."`
 	Ops        []WhiteboardDrawOp `json:"ops,omitempty"        jsonschema:"What to add, in order: 1 to 20 ops, placed together as one group."`
-	Near       string             `json:"near,omitempty"       jsonschema:"Ref of an object to put the new content beside."`
-	Into       string             `json:"into,omitempty"       jsonschema:"Ref of a frame to fill; content goes beside it when the frame is full."`
-	Preview    bool               `json:"preview,omitempty"    jsonschema:"Also return an image of the result, to check a sketch or a layout once."`
-	RequestKey string             `json:"requestKey,omitempty" jsonschema:"Only to finish a call whose outcome was unknown: the key that error named. The ops may then be left out."`
+	Near       string             `json:"near,omitempty"       jsonschema:"With ops: ref of an object to put the new content beside."`
+	Into       string             `json:"into,omitempty"       jsonschema:"With ops: ref of a frame to fill; content goes beside it when the frame is full."`
+	Preview    bool               `json:"preview,omitempty"    jsonschema:"With ops: also return an image of the result, to check a sketch or a layout once."`
+	Commands   []map[string]any   `json:"commands,omitempty"   jsonschema:"Or change objects you read, as one atomic batch of at most 100 native commands: create_item, geometry, content, text, delete_item, restore_item, create_edge, update_edge, delete_edge, restore_edge. Name objects by their refs; revisions are filled from your reads. New objects use draftId, itemType (sticky,text,shape,stroke,frame) and geometry {x,y,width,height}. Connectors use sourceRef/targetRef (refs or draftIds), label, relation, line (solid|dashed), startMarker/endMarker (none,arrow,open,triangle,diamond,diamond_filled,one,zero_one,many,zero_many), route (flow|straight|elbow|message with anchorY), sourceLabel/targetLabel; update_edge keeps the notation it does not name. geometry moves or resizes (id, geometry naming only what changes, e.g. {x:300}); content restyles (id, properties naming only what changes, e.g. {title:\"Orders\"}; null clears one): color and fill (a swatch name as read, e.g. pink, or #rrggbb), shape, strokeWidth, brush, title, sections, head, locked; shapes and frames show title; class/entity sections are compartments; a lifeline's head is a box or actor. text replaces a note's text (id, text); delete_item removes. Prefer ops to add new content."`
+	RequestKey string             `json:"requestKey,omitempty" jsonschema:"Only to finish a call whose outcome was unknown: the key that error named. Its ops or commands may then be left out."`
 }
 
 type WhiteboardDrawOp struct {
@@ -146,10 +129,8 @@ type whiteboardAPI interface {
 }
 
 type WhiteboardToolService interface {
-	List(context.Context, WhiteboardListInput) (map[string]any, error)
-	Read(context.Context, WhiteboardReadInput) (WhiteboardReading, error)
-	Edit(context.Context, WhiteboardEditInput) (string, error)
-	Draw(context.Context, WhiteboardDrawInput) (WhiteboardReading, error)
+	Read(context.Context, ArtifactInspectInput) (WhiteboardReading, error)
+	Edit(context.Context, ArtifactEditInput) (WhiteboardReading, error)
 }
 
 var _ WhiteboardToolService = (*DefaultWhiteboardToolService)(nil)
@@ -170,7 +151,7 @@ type DefaultWhiteboardToolService struct {
 	// pending keeps the exact request of a change whose outcome is unknown,
 	// so finishing it needs only its key and sends the same bytes.
 	pending map[string]whiteboardBatch
-	// drawing does the same for whiteboard_draw.
+	// drawing does the same for ops.
 	drawing map[string]whiteboardCompose
 }
 
@@ -291,52 +272,27 @@ func (s *DefaultWhiteboardToolService) path(id string) string {
 		s.run.CompanyID,
 	) + "/runs/" + url.PathEscape(
 		s.run.RunID,
-	) + "/whiteboards"
-	if id != "" {
-		base += "/" + url.PathEscape(id)
-	}
+	) + "/agent-artifacts/" + url.PathEscape(id) + "/whiteboard"
 	return base
 }
 
-func (s *DefaultWhiteboardToolService) List(ctx context.Context, in WhiteboardListInput) (map[string]any, error) {
-	var result map[string]any
-	if in.Offset < 0 {
-		return nil, errors.New("whiteboard_list offset must be nonnegative")
-	}
-	path := s.path("")
-	if in.Offset > 0 {
-		path += "?offset=" + strconv.FormatInt(int64(in.Offset), 10)
-	}
-	err := s.api.FetchRunJSON(ctx, path, &result)
-	return result, err
-}
-
-// board is the Board a call names, or the Board chat's own.
-func (s *DefaultWhiteboardToolService) board(id string) string {
-	if id == "" {
-		return s.run.WhiteboardID
-	}
-	return id
-}
-
-func (s *DefaultWhiteboardToolService) Read(ctx context.Context, in WhiteboardReadInput) (WhiteboardReading, error) {
+func (s *DefaultWhiteboardToolService) Read(ctx context.Context, in ArtifactInspectInput) (WhiteboardReading, error) {
 	var reading WhiteboardReading
-	in.BoardID = s.board(in.BoardID)
-	if in.BoardID == "" || len(in.ItemRefs) > 100 || in.Area != "" && in.Area != "view" && in.Area != "all" {
+	if in.ArtifactID == "" || len(in.ItemRefs) > 100 || in.Area != "" && in.Area != "view" && in.Area != "all" {
 		return reading, errors.New(
-			"whiteboard_read requires a Board, area view or all, and at most 100 itemRefs",
+			"artifact_inspect reads a Whiteboard with area view or all and at most 100 itemRefs",
 		)
 	}
 	if in.VisualOffset < 0 || in.ExpectedSequence != nil && *in.ExpectedSequence < 0 ||
 		in.VisualOffset > 0 && (in.ExpectedSequence == nil || in.Area != "all" || !in.Image) {
 		return reading, errors.New(
-			"whiteboard_read continues image pages only with area=all, image=true and the first page's expectedSequence",
+			"artifact_inspect continues image pages only with area=all, image=true and the first page's expectedSequence",
 		)
 	}
 	// Whole-Board images come in pages; the text comes with the first one.
 	wholeImages := in.Area == "all" && in.Image && len(in.ItemRefs) == 0
 	if in.VisualOffset == 0 {
-		view, err := s.view(ctx, in.BoardID, in.Area, in.ItemRefs, in.Image && !wholeImages)
+		view, err := s.view(ctx, in.ArtifactID, in.Area, in.ItemRefs, in.Image && !wholeImages)
 		if err != nil {
 			return reading, err
 		}
@@ -394,7 +350,7 @@ func (s *DefaultWhiteboardToolService) view(
 // up to four detailed regions per page.
 func (s *DefaultWhiteboardToolService) wholeImages(
 	ctx context.Context,
-	in WhiteboardReadInput,
+	in ArtifactInspectInput,
 	reading *WhiteboardReading,
 ) error {
 	request := struct {
@@ -407,7 +363,7 @@ func (s *DefaultWhiteboardToolService) wholeImages(
 	}{MaxItems: 1, MaxBytes: 4096, IncludeVisuals: true, VisualOffset: in.VisualOffset, ExpectedSequence: in.ExpectedSequence}
 	if in.VisualOffset > 0 {
 		s.mu.Lock()
-		request.ExpectedPlan = s.plans[in.BoardID]
+		request.ExpectedPlan = s.plans[in.ArtifactID]
 		s.mu.Unlock()
 	}
 	key, err := runRequestKey("whiteboard_read", s.run, in)
@@ -427,7 +383,7 @@ func (s *DefaultWhiteboardToolService) wholeImages(
 			Unavailable    string             `json:"unavailable"`
 		} `json:"visuals"`
 	}
-	if err := s.api.PostRunJSON(ctx, s.path(in.BoardID)+"/context", key, request, &result); err != nil {
+	if err := s.api.PostRunJSON(ctx, s.path(in.ArtifactID)+"/context", key, request, &result); err != nil {
 		return err
 	}
 	visuals := result.Visuals
@@ -436,7 +392,7 @@ func (s *DefaultWhiteboardToolService) wholeImages(
 	}
 	if in.VisualOffset == 0 && visuals.PlanHash != "" {
 		s.mu.Lock()
-		s.plans[in.BoardID] = visuals.PlanHash
+		s.plans[in.ArtifactID] = visuals.PlanHash
 		s.mu.Unlock()
 	}
 	if visuals.Overview != nil {
@@ -470,7 +426,7 @@ func (s *DefaultWhiteboardToolService) wholeImages(
 	}
 	if visuals.HasMore && visuals.NextOffset != nil {
 		notes = append(notes, fmt.Sprintf(
-			"More regions remain: whiteboard_read area=all image=true visualOffset=%d expectedSequence=%d.",
+			"More regions remain: artifact_inspect area=all image=true visualOffset=%d expectedSequence=%d.",
 			*visuals.NextOffset, *in.ExpectedSequence,
 		))
 	}
@@ -714,7 +670,7 @@ func (s *DefaultWhiteboardToolService) expand(
 	}
 	if len(unread) > 0 {
 		return nil, fmt.Errorf(
-			"read %s before changing them (whiteboard_read itemRefs=[%s]); this turn has not seen them, "+
+			"read %s before changing them (artifact_inspect itemRefs=[%s]); this turn has not seen them, "+
 				"so a collaborator's newer change could be overwritten",
 			strings.Join(unread, ", "), strings.Join(unread, ", "),
 		)
@@ -740,16 +696,39 @@ func (s *DefaultWhiteboardToolService) expand(
 	return expanded, nil
 }
 
-func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in WhiteboardEditInput) (string, error) {
-	in.BoardID = s.board(in.BoardID)
-	if in.BoardID == "" || len(in.Commands) > 100 {
-		return "", errors.New("whiteboard_edit requires a Board and at most 100 commands")
+// Edit is artifact_edit on a Whiteboard: ops add content, commands change
+// objects, and a requestKey alone finishes the call it left unfinished.
+func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in ArtifactEditInput) (WhiteboardReading, error) {
+	if in.ArtifactID == "" {
+		return WhiteboardReading{}, errors.New("artifact_edit requires an artifactId")
+	}
+	if len(in.Ops) > 0 && len(in.Commands) > 0 {
+		return WhiteboardReading{}, errors.New("artifact_edit takes ops or commands, not both")
+	}
+	ops := len(in.Ops) > 0
+	if !ops && len(in.Commands) == 0 && in.RequestKey != "" {
+		if parsed, err := uuid.Parse(in.RequestKey); err == nil {
+			s.mu.Lock()
+			_, ops = s.drawing[parsed.String()]
+			s.mu.Unlock()
+		}
+	}
+	if ops {
+		return s.draw(ctx, in)
+	}
+	text, err := s.change(ctx, in)
+	return WhiteboardReading{Text: text}, err
+}
+
+func (s *DefaultWhiteboardToolService) change(ctx context.Context, in ArtifactEditInput) (string, error) {
+	if in.ArtifactID == "" || len(in.Commands) > 100 {
+		return "", errors.New("artifact_edit takes at most 100 commands")
 	}
 	var batch whiteboardBatch
 	if in.RequestKey != "" {
 		parsed, err := uuid.Parse(in.RequestKey)
 		if err != nil {
-			return "", errors.New("whiteboard_edit requestKey must be a UUID")
+			return "", errors.New("artifact_edit requestKey must be a UUID")
 		}
 		s.mu.Lock()
 		cached, ok := s.pending[parsed.String()]
@@ -762,9 +741,9 @@ func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in WhiteboardEd
 	}
 	if batch.Commands == nil {
 		if len(in.Commands) == 0 {
-			return "", errors.New("whiteboard_edit requires 1 to 100 commands")
+			return "", errors.New("artifact_edit takes 1 to 100 commands")
 		}
-		commands, err := s.expand(ctx, in.BoardID, in.Commands)
+		commands, err := s.expand(ctx, in.ArtifactID, in.Commands)
 		if err != nil {
 			return "", err
 		}
@@ -775,7 +754,7 @@ func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in WhiteboardEd
 		}
 	}
 	var result whiteboardMutation
-	err := s.api.PostRunJSON(ctx, s.path(in.BoardID)+"/operations", batch.RequestKey, batch, &result)
+	err := s.api.PostRunJSON(ctx, s.path(in.ArtifactID)+"/operations", batch.RequestKey, batch, &result)
 	var verdict *apiclient.APIError
 	if err != nil && (!errors.As(err, &verdict) || verdict.StatusCode >= http.StatusBadGateway) {
 		// Without the server's verdict the batch may already be saved.
@@ -783,8 +762,8 @@ func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in WhiteboardEd
 		s.pending[batch.RequestKey] = batch
 		s.mu.Unlock()
 		return "", fmt.Errorf(
-			"whiteboard_edit outcome is unknown (%w): the change may already be saved; "+
-				"call whiteboard_edit again with requestKey=%s and no commands to finish it without duplicating it",
+			"artifact_edit outcome is unknown (%w): the change may already be saved; "+
+				"call artifact_edit again with requestKey=%s and no commands to finish it without duplicating it",
 			err,
 			batch.RequestKey,
 		)
@@ -796,13 +775,13 @@ func (s *DefaultWhiteboardToolService) Edit(ctx context.Context, in WhiteboardEd
 		if verdict.Code == "whiteboard_conflict" {
 			return "", fmt.Errorf(
 				"%w. A collaborator changed one of these objects after you read it: read them again "+
-					"(whiteboard_read itemRefs) and decide again; never resend the same change blindly",
+					"(artifact_inspect itemRefs) and decide again; never resend the same change blindly",
 				err,
 			)
 		}
 		return "", err
 	}
-	return s.mutationSummary(in.BoardID, result), nil
+	return s.mutationSummary(in.ArtifactID, result), nil
 }
 
 // resolve turns refs into IDs: a full ID stays, a ref this Run read maps
@@ -840,11 +819,11 @@ func (s *DefaultWhiteboardToolService) resolve(
 	return ids, nil
 }
 
-// composeRequest builds what whiteboard_draw sends: refs resolved to IDs,
+// composeRequest builds what ops send: refs resolved to IDs,
 // and each arranged object's geometry revision from this Run's reads.
 func (s *DefaultWhiteboardToolService) composeRequest(
 	ctx context.Context,
-	in WhiteboardDrawInput,
+	in ArtifactEditInput,
 ) (whiteboardCompose, error) {
 	request := whiteboardCompose{Preview: in.Preview, Ops: make([]WhiteboardDrawOp, len(in.Ops))}
 	keys := map[string]bool{}
@@ -875,7 +854,7 @@ func (s *DefaultWhiteboardToolService) composeRequest(
 			add(edge.To)
 		}
 	}
-	ids, err := s.resolve(ctx, in.BoardID, refs)
+	ids, err := s.resolve(ctx, in.ArtifactID, refs)
 	if err != nil {
 		return request, err
 	}
@@ -903,7 +882,7 @@ func (s *DefaultWhiteboardToolService) composeRequest(
 		if op.Type == "arrange" {
 			arranged := make([]string, 0, len(op.Refs))
 			for _, ref := range op.Refs {
-				seen, ok := s.lookup(in.BoardID, ref)
+				seen, ok := s.lookup(in.ArtifactID, ref)
 				if !ok {
 					if !slices.Contains(unread, ref) {
 						unread = append(unread, ref)
@@ -928,24 +907,23 @@ func (s *DefaultWhiteboardToolService) composeRequest(
 	}
 	if len(unread) > 0 {
 		return request, fmt.Errorf(
-			"read %s before arranging them (whiteboard_read itemRefs=[%s])",
+			"read %s before arranging them (artifact_inspect itemRefs=[%s])",
 			strings.Join(unread, ", "), strings.Join(unread, ", "),
 		)
 	}
 	return request, nil
 }
 
-func (s *DefaultWhiteboardToolService) Draw(ctx context.Context, in WhiteboardDrawInput) (WhiteboardReading, error) {
+func (s *DefaultWhiteboardToolService) draw(ctx context.Context, in ArtifactEditInput) (WhiteboardReading, error) {
 	var reading WhiteboardReading
-	in.BoardID = s.board(in.BoardID)
-	if in.BoardID == "" || len(in.Ops) > 20 {
-		return reading, errors.New("whiteboard_draw requires a Board and at most 20 ops")
+	if in.ArtifactID == "" || len(in.Ops) > 20 {
+		return reading, errors.New("artifact_edit takes at most 20 ops")
 	}
 	var request whiteboardCompose
 	if in.RequestKey != "" {
 		parsed, err := uuid.Parse(in.RequestKey)
 		if err != nil {
-			return reading, errors.New("whiteboard_draw requestKey must be a UUID")
+			return reading, errors.New("artifact_edit requestKey must be a UUID")
 		}
 		s.mu.Lock()
 		cached, ok := s.drawing[parsed.String()]
@@ -958,7 +936,7 @@ func (s *DefaultWhiteboardToolService) Draw(ctx context.Context, in WhiteboardDr
 	}
 	if request.Ops == nil {
 		if len(in.Ops) == 0 {
-			return reading, errors.New("whiteboard_draw requires 1 to 20 ops")
+			return reading, errors.New("artifact_edit takes 1 to 20 ops")
 		}
 		key := request.RequestKey
 		var err error
@@ -976,15 +954,15 @@ func (s *DefaultWhiteboardToolService) Draw(ctx context.Context, in WhiteboardDr
 		Placement string             `json:"placement"`
 		Preview   *whiteboardRegion  `json:"preview"`
 	}
-	err := s.api.PostRunJSON(ctx, s.path(in.BoardID)+"/compose", request.RequestKey, request, &result)
+	err := s.api.PostRunJSON(ctx, s.path(in.ArtifactID)+"/compose", request.RequestKey, request, &result)
 	var verdict *apiclient.APIError
 	if err != nil && (!errors.As(err, &verdict) || verdict.StatusCode >= http.StatusBadGateway) {
 		s.mu.Lock()
 		s.drawing[request.RequestKey] = request
 		s.mu.Unlock()
 		return reading, fmt.Errorf(
-			"whiteboard_draw outcome is unknown (%w): the content may already be on the Board; "+
-				"call whiteboard_draw again with requestKey=%s and no ops to finish it without duplicating it",
+			"artifact_edit outcome is unknown (%w): the content may already be on the Board; "+
+				"call artifact_edit again with requestKey=%s and no ops to finish it without duplicating it",
 			err,
 			request.RequestKey,
 		)
@@ -1026,7 +1004,7 @@ func (s *DefaultWhiteboardToolService) Draw(ctx context.Context, in WhiteboardDr
 			fmt.Fprintf(&text, "Placed at %s.\n", where)
 		}
 	}
-	text.WriteString(s.mutationSummary(in.BoardID, result.Mutation))
+	text.WriteString(s.mutationSummary(in.ArtifactID, result.Mutation))
 	reading.Text = text.String()
 	if result.Preview != nil {
 		reading.Images = append(reading.Images, WhiteboardImage{
@@ -1136,7 +1114,7 @@ func (s *DefaultWhiteboardToolService) mutationSummary(board string, result whit
 	return text.String()
 }
 
-// whiteboardComposedConnector matches the drafts whiteboard_draw gives a
+// whiteboardComposedConnector matches the drafts ops give a
 // diagram's links and a sequence's messages.
 var whiteboardComposedConnector = regexp.MustCompile(`^o\d+\.[em]\d+$`)
 

@@ -122,10 +122,25 @@ VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING;
 DELETE FROM output_conversation_grants WHERE company_id=$1 AND output_id=$2 AND conversation_id=$3;
 
 -- name: ListOutputConversationGrants :many
+-- A member sees the name the chat list shows: a channel's title, or a direct
+-- message's other participants (ListDiscussionAccess's group naming).
 SELECT grant_row.conversation_id,
  CASE WHEN EXISTS (SELECT 1 FROM conversation_members member WHERE member.conversation_id=conversation.id
     AND member.company_id=conversation.company_id AND member.user_id=sqlc.arg(actor_user_id)::uuid AND member.status='active')
- THEN COALESCE(conversation.title,'Conversation') ELSE 'Private conversation' END::text AS title,
+ THEN COALESCE(NULLIF(conversation.title,''),(
+    SELECT string_agg(person.name, ', ' ORDER BY person.kind,person.id) FROM (
+        SELECT other.user_id AS id, 'human' AS kind, left(account.display_name,256) AS name
+        FROM conversation_members other JOIN users account ON account.id=other.user_id
+        JOIN company_members other_member ON other_member.company_id=other.company_id AND other_member.user_id=other.user_id
+        WHERE other.conversation_id=conversation.id AND other.company_id=conversation.company_id
+            AND other.user_id<>sqlc.arg(actor_user_id)::uuid AND other.status='active' AND other_member.status='active'
+            AND account.deleted_at IS NULL AND account.disabled_at IS NULL
+        UNION ALL
+        SELECT participant.agent_id AS id, 'agent' AS kind, left(agent.name,256) AS name
+        FROM conversation_agents participant JOIN agents agent ON agent.id=participant.agent_id AND agent.company_id=participant.company_id
+        WHERE participant.conversation_id=conversation.id AND participant.company_id=conversation.company_id
+            AND participant.status='active' AND agent.archived_at IS NULL
+    ) person),'Direct message') ELSE 'Private conversation' END::text AS title,
  grant_row.created_at
 FROM output_conversation_grants grant_row
 JOIN conversations conversation ON conversation.id=grant_row.conversation_id AND conversation.company_id=grant_row.company_id

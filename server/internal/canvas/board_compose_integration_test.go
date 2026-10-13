@@ -20,7 +20,7 @@ func TestBoardComposeAppliesOneReceiptedBatchWhereTheRequesterLooks(t *testing.T
 	boards, pool, owner, member := boardFixture(t)
 	board := createTestBoard(t, boards, owner, member)
 	ctx := t.Context()
-	agent, run := boardTestRun(t, pool, member)
+	_, run := boardTestRun(t, pool, member)
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	focus := BoardFocus{Present: true, View: BoardVisualBounds{X: 2000, Y: 1000, Width: 1600, Height: 900}}
 	input := BoardComposeInput{
@@ -37,19 +37,11 @@ func TestBoardComposeAppliesOneReceiptedBatchWhereTheRequesterLooks(t *testing.T
 			},
 		},
 	}
-	invite := func(access string) {
-		t.Helper()
-		if err := grantTestBoardAccess(
-			t, boards, owner, board.ID, protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent}, access,
-		); err != nil {
-			t.Fatal(err)
-		}
-	}
-	invite("read")
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "view")
 	if _, err := boards.Compose(ctx, member, scope, input, focus); !errors.Is(err, ErrBoardForbidden) {
-		t.Fatalf("compose on a read invitation = %v, want forbidden", err)
+		t.Fatalf("compose for a viewer = %v, want forbidden", err)
 	}
-	invite("edit")
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "edit")
 	first, err := boards.Compose(ctx, member, scope, input, focus)
 	if err != nil {
 		t.Fatal(err)
@@ -115,10 +107,9 @@ func TestBoardComposeAppliesOneReceiptedBatchWhereTheRequesterLooks(t *testing.T
 	}
 }
 
-// A tag in a Board's chat works on the Board for the person who tagged: the
-// Agent's invitation decides whether it may draw, and nobody else's proof
-// carries that Run.
-func TestBoardComposeFromATagInTheBoardsChat(t *testing.T) {
+// A tag in a chat works on the Board for the person who tagged: their access
+// decides whether it may draw, and nobody else's proof carries that Run.
+func TestBoardComposeFromATagInAChat(t *testing.T) {
 	t.Parallel()
 	boards, pool, owner, member := boardFixture(t)
 	board := createTestBoard(t, boards, owner, member)
@@ -132,7 +123,7 @@ func TestBoardComposeFromATagInTheBoardsChat(t *testing.T) {
 		Scan(&runtime); err != nil {
 		t.Fatal(err)
 	}
-	channel := dbtest.SeedBoardChannel(t, ctx, pool, owner.CompanyID, board.ID, member.UserID, []uuid.UUID{agent})
+	channel := dbtest.SeedDiscussionChannel(t, ctx, pool, owner.CompanyID, member.UserID, []uuid.UUID{agent})
 	run := dbtest.SeedTaggedRun(t, ctx, pool, owner.CompanyID, channel, agent, runtime, member.UserID)
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	focus := BoardFocus{Present: true, View: BoardVisualBounds{X: -400, Y: 300, Width: 1200, Height: 800}}
@@ -140,19 +131,11 @@ func TestBoardComposeFromATagInTheBoardsChat(t *testing.T) {
 		RequestKey: uuid.New(),
 		Ops:        []BoardComposeOp{{Type: "notes", Items: []BoardComposeNote{{Text: "From the chat"}}}},
 	}
-	invite := func(access string) {
-		t.Helper()
-		if err := grantTestBoardAccess(
-			t, boards, owner, board.ID, protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent}, access,
-		); err != nil {
-			t.Fatal(err)
-		}
-	}
-	invite("read")
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "view")
 	if _, err := boards.Compose(ctx, member, scope, input, focus); !errors.Is(err, ErrBoardForbidden) {
-		t.Fatalf("a tag drawing on a read invitation = %v, want forbidden", err)
+		t.Fatalf("a tag drawing for a viewer = %v, want forbidden", err)
 	}
-	invite("edit")
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "edit")
 	if _, err := boards.Compose(ctx, owner, scope, input, focus); err == nil {
 		t.Fatal("another member carried the tag's Run onto the Board")
 	}
@@ -172,12 +155,8 @@ func TestBoardComposeSequencePersistsAndReplays(t *testing.T) {
 	boards, pool, owner, member := boardFixture(t)
 	board := createTestBoard(t, boards, owner, member)
 	ctx := t.Context()
-	agent, run := boardTestRun(t, pool, member)
-	if err := grantTestBoardAccess(
-		t, boards, owner, board.ID, protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent}, "edit",
-	); err != nil {
-		t.Fatal(err)
-	}
+	_, run := boardTestRun(t, pool, member)
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "edit")
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	focus := BoardFocus{Present: true, View: BoardVisualBounds{Width: 2000, Height: 1400}}
 	input := BoardComposeInput{RequestKey: uuid.New(), Ops: []BoardComposeOp{{

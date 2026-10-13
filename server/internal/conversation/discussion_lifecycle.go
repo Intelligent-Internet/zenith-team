@@ -43,9 +43,7 @@ func RevokeDiscussionMembersInTx(
 			return err
 		}
 		*pending = append(*pending, discussionRevokeEvent(revoked))
-		// A Board's chat stays open with no one in it and records no
-		// departures: its people come and go with Board access.
-		if row.Kind == "channel" && !row.BoardID.Valid {
+		if row.Kind == "channel" {
 			count, err := q.CountActiveDiscussionMembers(ctx, row.ID)
 			if err != nil {
 				return err
@@ -122,7 +120,7 @@ func RevokeDiscussionAgentsInTx(
 		); err != nil {
 			return err
 		}
-		if row.Kind == "human_direct" || row.BoardID.Valid {
+		if row.Kind == "human_direct" {
 			if _, err = finishDiscussionChange(ctx, q, pending, discussionChange{
 				CompanyID: input.CompanyID, ConversationID: row.ID, Actor: events.SystemActor(),
 			}); err != nil {

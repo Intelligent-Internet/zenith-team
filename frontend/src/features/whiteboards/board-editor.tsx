@@ -6,8 +6,9 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ReactNode,
 } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import {
   Background,
   BackgroundVariant,
@@ -20,7 +21,7 @@ import {
   type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Trash2, LockKeyhole, MessagesSquare, Users } from "@/shared/ui/icons";
+import { Trash2, LockKeyhole } from "@/shared/ui/icons";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { toast } from "@/shared/ui/sonner";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
@@ -62,8 +63,8 @@ import {
   selectionWithChildren,
 } from "./board-clipboard";
 import { BoardPresence } from "./board-presence";
-import { BoardSharing } from "./board-sharing";
-import { BoardChatDock, type BoardChatFocus } from "./board-chat-dock";
+import { BoardShareButton } from "./board-share";
+import { BoardTitle } from "./board-title";
 import {
   boardCompartmentsHeight,
   boardCompartmentsWidth,
@@ -82,7 +83,7 @@ import {
 } from "./board-edge";
 import { boardHandles } from "./board-handles";
 import { BoardSaveStatus, type BoardSaveState } from "./board-save-status";
-import { useBoardSaveFeedback } from "./board-save-feedback";
+import { useBoardSaveFeedback, type BoardLeaves } from "./board-save-feedback";
 import { BoardToolbar, type BoardTool } from "./board-toolbar";
 import { BoardStyleToolbar } from "./board-style-toolbar";
 import { hasTextBackground, textBackground } from "./board-text";
@@ -92,68 +93,48 @@ const errorMessage = (error: unknown) =>
 // A clean note session that is no longer shown is released after this delay,
 // so panning back soon reuses it.
 const noteReleaseDelay = 30_000;
-// The URL parameters the Board's chat opens a file or artifact with.
-const previewParams = ["artifactId", "runId", "fileId"];
-export function WhiteboardEditor({ scope }: { scope: BoardScope }) {
+// Board shortcuts apply on the canvas, never while typing or in a dialog.
+const isCanvasKeyTarget = (
+  surface: HTMLElement | null,
+  target: EventTarget | null,
+) =>
+  target instanceof Element &&
+  !!surface?.contains(target) &&
+  !target.closest(
+    'input,textarea,[contenteditable]:not([contenteditable="false"]),select,[role="dialog"]',
+  );
+type EditorProps = {
+  scope: BoardScope;
+  /** Shown until the Board loads, such as the Artifact title. */
+  title?: string;
+  /** A smaller header for the chat's side panel. */
+  compact?: boolean;
+  /** Before the title, such as a way back. */
+  leading?: ReactNode;
+  /** After Share, such as opening the full view or closing the panel. */
+  actions?: ReactNode;
+  /** Which navigations close this Board; by default, leaving the page. */
+  leaves?: BoardLeaves;
+};
+export function WhiteboardEditor(props: EditorProps) {
   return (
     <ReactFlowProvider>
-      <EditorSurface scope={scope} />
+      <EditorSurface {...props} />
     </ReactFlowProvider>
   );
 }
-function EditorSurface({ scope }: { scope: BoardScope }) {
-  const [routeParams, setRouteParams] = useSearchParams();
+function EditorSurface({
+  scope,
+  title = "Whiteboard",
+  compact = false,
+  leading,
+  actions,
+  leaves,
+}: EditorProps) {
+  const [routeParams] = useSearchParams();
   const targetItem = routeParams.get("itemId");
   const focusedItem = useRef<string | null>(null);
   const user = useSessionSnapshot();
-  const [sharingOpen, setSharingOpen] = useState(false);
-  const sharingTrigger = useRef<HTMLButtonElement>(null);
-  // Whether the Board's chat is docked beside it, remembered per Board. A
-  // link to a message in the chat opens it there.
-  const chatKey = `wb-chat-open:${scope.companyId}:${scope.boardId}`;
-  const chatConversation = routeParams.get("conversationId");
-  const chatMessage = routeParams.get("messageId");
-  const chatThread = routeParams.get("threadRootId");
-  const chatFocus = useMemo<BoardChatFocus | undefined>(
-    () =>
-      chatConversation
-        ? {
-            conversationId: chatConversation,
-            messageId: chatMessage ?? undefined,
-            threadRootId: chatThread ?? undefined,
-          }
-        : undefined,
-    [chatConversation, chatMessage, chatThread],
-  );
-  const [chatOpen, setChatOpen] = useState(() => {
-    if (chatFocus) return true;
-    try {
-      return window.localStorage.getItem(chatKey) === "1";
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    if (chatFocus) setChatOpen(true);
-  }, [chatFocus]);
-  const toggleChat = (open: boolean) => {
-    setChatOpen(open);
-    // Closing the chat takes any file or artifact it had open off the URL.
-    if (!open && previewParams.some((key) => routeParams.has(key)))
-      setRouteParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          for (const key of previewParams) next.delete(key);
-          return next;
-        },
-        { replace: true },
-      );
-    try {
-      window.localStorage.setItem(chatKey, open ? "1" : "0");
-    } catch {
-      // Remembering the panel is a convenience.
-    }
-  };
   const [presenceTarget, setPresenceTarget] = useState<HTMLDivElement | null>(
     null,
   );
@@ -345,8 +326,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
     query.error &&
     "status" in query.error &&
     [401, 403, 404].includes(query.error.status ?? 0);
-  const editing =
-    !!snapshot?.board.canEdit && !snapshot.board.archivedAt && !accessDenied;
+  const editing = !!snapshot?.board.canEdit && !accessDenied;
   // React Flow re-renders a node whose object changed. Unchanged nodes keep
   // their derived object while the tool and editing state hold; a style
   // preview replaces only the objects it previews.
@@ -410,13 +390,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
   const commit = useCallback(
     (commands: BoardCommand[]) => {
       const current = lastSnapshot.current;
-      if (
-        !commands.length ||
-        !current ||
-        !current.board.canEdit ||
-        current.board.archivedAt
-      )
-        return;
+      if (!commands.length || !current?.board.canEdit) return;
       void scene
         .commit(commands, current.items, current.edges)
         .catch(errorMessage);
@@ -480,8 +454,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
           item.lifecycleRevision,
           user.userId ?? "",
           () => hydration.get(item.id),
-          !!lastSnapshot.current?.board.canEdit &&
-            !lastSnapshot.current.board.archivedAt,
+          !!lastSnapshot.current?.board.canEdit,
         );
         sessions.current.set(key, session);
         // Copying and draft recovery open sessions that no note shows.
@@ -539,8 +512,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
             !item ||
             item.deleted ||
             item.lifecycleRevision !== Number(lifecycle) ||
-            !current?.board.canEdit ||
-            current.board.archivedAt
+            !current?.board.canEdit
           ) {
             orphans.push(row);
           } else {
@@ -695,7 +667,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
   const createSelected = useCallback(
     async (commands: BoardCommand[]) => {
       const current = lastSnapshot.current;
-      if (!current?.board.canEdit || current.board.archivedAt) return;
+      if (!current?.board.canEdit) return;
       const result = await scene.commit(
         boardIntoFrames(commands, current.items),
         current.items,
@@ -752,8 +724,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
   const dirty = scene.dirty || notesDirty || fileImport.isUploading;
   const sceneDrafts = [...scene.drafts.values()];
   let saveState: BoardSaveState = "idle";
-  if (snapshot?.board.archivedAt) saveState = "archived";
-  else if (!editing) saveState = "read-only";
+  if (!editing) saveState = "read-only";
   else if (recoveringNotes) saveState = "recovering";
   else if (
     noteRecoveryError ||
@@ -802,6 +773,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
     pending: dirty,
     hasPendingChanges,
     flush: flushPendingChanges,
+    leaves,
   });
   const selectionChanged = useCallback(
     ({ nodes, edges }: { nodes: WhiteboardFlowNode[]; edges: Edge[] }) => {
@@ -888,11 +860,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
   );
   useEffect(() => {
     const handles = (event: Event) =>
-      event.target instanceof Element &&
-      surface.current?.contains(event.target) &&
-      !event.target.closest(
-        'input,textarea,[contenteditable]:not([contenteditable="false"]),select,[role="dialog"]',
-      );
+      isCanvasKeyTarget(surface.current, event.target);
     const copy = (event: ClipboardEvent) => {
       if (!handles(event) || !snapshot || !selected.length) return;
       const items = structuredClone(
@@ -1017,20 +985,6 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
         setTool("move");
         setNodes((nodes) => nodes.map((node) => ({ ...node, selected: true })));
         setEdges((edges) => edges.map((edge) => ({ ...edge, selected: true })));
-        return;
-      }
-      if (event.key === "Escape") {
-        typedAhead.current = null;
-        setTrayOpen(false);
-        setTool("move");
-        setNodes((nodes) =>
-          nodes.map((node) => ({ ...node, selected: false })),
-        );
-        setEdges((edges) =>
-          edges.map((edge) => ({ ...edge, selected: false })),
-        );
-        setSelected([]);
-        setSelectedEdges([]);
         return;
       }
       if (event.key === "Delete" || event.key === "Backspace") {
@@ -1412,17 +1366,33 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
       })),
     ]);
   };
-  if (query.isLoading)
-    return <div className="wb-message">Opening Whiteboard…</div>;
-  if (accessDenied || !snapshot)
+  const Heading = compact ? "h2" : "h1";
+  const headerClass = compact
+    ? "wb-editor-header wb-editor-header--compact"
+    : "wb-editor-header";
+  if (query.isLoading || accessDenied || !snapshot)
     return (
-      <div className="wb-message" role="alert">
-        <h2>This Whiteboard is unavailable</h2>
-        <p>{getBoardlyQueryErrorMessage(query.error)}</p>
-        <p>Unsaved local drafts are retained for this account.</p>
-        <Link to="/whiteboards">Back to Whiteboards</Link>
-        <button onClick={() => void query.refetch()}>Retry</button>
-      </div>
+      <section className="wb-editor" aria-label={title}>
+        <header className={headerClass}>
+          {leading}
+          <div className="wb-board-heading">
+            <Heading title={title}>{title}</Heading>
+          </div>
+          {actions ? <div className="wb-header-actions">{actions}</div> : null}
+        </header>
+        {query.isLoading ? (
+          <div className="wb-message" role="status">
+            Opening Whiteboard…
+          </div>
+        ) : (
+          <div className="wb-message" role="alert">
+            <h2>This Whiteboard is unavailable</h2>
+            <p>{getBoardlyQueryErrorMessage(query.error)}</p>
+            <p>Unsaved local drafts are retained for this account.</p>
+            <button onClick={() => void query.refetch()}>Retry</button>
+          </div>
+        )}
+      </section>
     );
   // Unsaved note drafts that cannot save right now: refused, offline, or
   // waiting for a note that failed to load.
@@ -1560,9 +1530,15 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
   return (
     <BoardNodeContext.Provider value={nodeContext}>
       <section className="wb-editor" aria-label={snapshot.board.title}>
-        <header className="wb-editor-header">
+        <header className={headerClass}>
+          {leading}
           <div className="wb-board-heading">
-            <h1 title={snapshot.board.title}>{snapshot.board.title}</h1>
+            <BoardTitle
+              scope={scope}
+              title={snapshot.board.title}
+              canEdit={snapshot.board.canEdit}
+              as={Heading}
+            />
             <BoardSaveStatus
               state={saveState}
               feedback={feedback}
@@ -1571,32 +1547,17 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
           </div>
           <div className="wb-header-actions">
             <div ref={setPresenceTarget} className="wb-header-presence" />
-            <button
-              type="button"
-              className="wb-agent-toggle"
-              aria-pressed={chatOpen}
-              onClick={() => toggleChat(!chatOpen)}
-            >
-              <MessagesSquare size={18} /> Chat
-            </button>
-            <button
-              ref={sharingTrigger}
-              className="wb-primary wb-share-button"
-              onClick={() => setSharingOpen(true)}
-            >
-              <Users size={18} /> Share
-            </button>
+            {snapshot.board.canShare ? (
+              <BoardShareButton
+                scope={scope}
+                title={snapshot.board.title}
+                compact={compact}
+              />
+            ) : null}
+            {actions}
           </div>
         </header>
         {leaveDialog}
-        {sharingOpen && (
-          <BoardSharing
-            scope={scope}
-            title={snapshot.board.title}
-            triggerRef={sharingTrigger}
-            onClose={() => setSharingOpen(false)}
-          />
-        )}
         <div className="wb-editor-body">
           <div
             ref={surface}
@@ -1605,6 +1566,30 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
             tabIndex={0}
             aria-label="Whiteboard canvas"
             {...fileImport.handlers}
+            onKeyDown={(event) => {
+              // Escape puts down the tool and selection on the Board, so a
+              // panel around it does not close too. Menus and fields that
+              // used it already have marked it.
+              if (
+                event.key !== "Escape" ||
+                event.nativeEvent.isComposing ||
+                event.defaultPrevented
+              )
+                return;
+              event.preventDefault();
+              if (!isCanvasKeyTarget(surface.current, event.target)) return;
+              typedAhead.current = null;
+              setTrayOpen(false);
+              setTool("move");
+              setNodes((nodes) =>
+                nodes.map((node) => ({ ...node, selected: false })),
+              );
+              setEdges((edges) =>
+                edges.map((edge) => ({ ...edge, selected: false })),
+              );
+              setSelected([]);
+              setSelectedEdges([]);
+            }}
             onPointerDownCapture={(event) => {
               typedAhead.current = null;
               if (
@@ -1773,12 +1758,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
                       });
                 }
                 const current = lastSnapshot.current;
-                if (
-                  !commands.length ||
-                  !current?.board.canEdit ||
-                  current.board.archivedAt
-                )
-                  return;
+                if (!commands.length || !current?.board.canEdit) return;
                 void scene
                   .commit(commands, current.items, current.edges)
                   .catch((error: unknown) => {
@@ -1853,9 +1833,7 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
               readOnlyReason={
                 editing
                   ? undefined
-                  : snapshot.board.archivedAt
-                    ? "This Whiteboard is archived and read-only."
-                    : "You have view-only access to this Whiteboard."
+                  : "You have view-only access to this Whiteboard."
               }
               canUndo={scene.canUndo && !scenePending}
               canRedo={scene.canRedo && !scenePending}
@@ -1999,13 +1977,6 @@ function EditorSurface({ scope }: { scope: BoardScope }) {
               )}
             </BoardToolbar>
           </div>
-          {chatOpen && (
-            <BoardChatDock
-              scope={scope}
-              title={snapshot.board.title}
-              focus={chatFocus}
-            />
-          )}
         </div>
         {edgeEdit && (
           <BoardConnectorDialog

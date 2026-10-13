@@ -15,48 +15,18 @@ import { applyWorkCacheEvent } from "@/app/shell/realtime-sync/work-cache-update
 import type { AppDispatch } from "@/state/store";
 
 const refreshBatchDelayMs = 75;
-const whiteboardLibraryRefreshMs = 3000;
-const whiteboardLibraryRefreshes = new Map<
-  string,
-  ReturnType<typeof setTimeout>
->();
-
-function refreshWhiteboardLibrary(context: RealtimeSyncContext) {
-  const companyId = context.companyId;
-  if (!companyId || whiteboardLibraryRefreshes.has(companyId)) return;
-  whiteboardLibraryRefreshes.set(
-    companyId,
-    setTimeout(() => {
-      whiteboardLibraryRefreshes.delete(companyId);
-      context.dispatch(
-        boardlyApi.util.invalidateTags([{ type: "Whiteboard", id: companyId }]),
-      );
-    }, whiteboardLibraryRefreshMs),
-  );
-}
 
 export function applyRealtimeCacheEvent(
   context: RealtimeSyncContext,
   event: BoardlyRealtimeEvent,
 ) {
-  if (event.type === "whiteboard.changed" && "boardId" in event.payload) {
-    // An open Board catches up from its own subscription. The library refreshes
-    // here at most every few seconds, however busy a Board is; an open sharing
-    // dialog only when sharing, visibility or a claim changed.
-    if (event.payload.access === true)
-      context.dispatch(
-        boardlyApi.util.invalidateTags([
-          {
-            type: "Whiteboard",
-            id: `${context.companyId}:${event.payload.boardId}:access`,
-          },
-          {
-            type: "Whiteboard",
-            id: `${context.companyId}:${event.payload.boardId}:channel`,
-          },
-        ]),
-      );
-    refreshWhiteboardLibrary(context);
+  // An open Board catches up from its own subscription; its sharing is the
+  // Whiteboard Artifact's, refreshed below with every other Artifact.
+  if (event.type === "whiteboard.changed") return;
+  // A new title names the Whiteboard in Artifact lists too; an open Board
+  // re-reads its own header from its subscription.
+  if (event.type === "whiteboard.renamed") {
+    context.requestRefresh("artifacts");
     return;
   }
   if (event.type === "calendar.changed") {
@@ -175,6 +145,8 @@ export function applyRealtimeCacheEvent(
         { type: "Deliverable" },
         { type: "Canvas" },
         { type: "CanvasHistory" },
+        // A chat's people read the Whiteboards shared into it.
+        { type: "Whiteboard" },
       ]),
     );
   }
@@ -185,6 +157,8 @@ export function applyRealtimeCacheEvent(
         { type: "Deliverable" },
         { type: "Canvas" },
         { type: "CanvasHistory" },
+        // An open Whiteboard re-reads whether this member may edit or share it.
+        { type: "Whiteboard" },
         { id: context.companyId, type: "Inbox" },
         { id: `${context.companyId}:counts`, type: "Inbox" },
         { id: context.companyId, type: "Activity" },

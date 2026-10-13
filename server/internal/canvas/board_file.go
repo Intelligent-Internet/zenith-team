@@ -75,6 +75,9 @@ type BoardMediaService interface {
 		area BoardVisualBounds,
 		maxPixels int,
 	) (BoardVisualRegion, error)
+	// Preview draws the whole Board small for its Artifact's card, unless the
+	// Board is still at the sequence known.
+	Preview(ctx context.Context, p auth.UserPrincipal, scope BoardScope, known int64) (BoardPreview, error)
 }
 
 var _ BoardMediaService = (*DefaultBoardMediaService)(nil)

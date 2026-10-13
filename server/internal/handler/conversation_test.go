@@ -585,6 +585,7 @@ type conversationServiceStub struct {
 	listMessages        func(context.Context, auth.UserPrincipal, conversation.MessageTarget, conversation.MessageListOptions) (conversation.MessagePage, error)
 	transcript          func(context.Context, auth.UserPrincipal, uuid.UUID, conversation.TranscriptListOptions) (conversation.TranscriptPage, error)
 	send                func(context.Context, auth.UserPrincipal, conversation.MessageTarget, conversation.SendInput) (conversation.SendResult, error)
+	createWhiteboard    func(context.Context, auth.UserPrincipal, conversation.MessageTarget, string) (conversation.CreatedWhiteboard, error)
 	getRunQueue         func(context.Context, auth.UserPrincipal, uuid.UUID) (conversation.RunQueueProjection, error)
 	reorderQueue        func(context.Context, auth.UserPrincipal, uuid.UUID, conversation.RunQueueOrderInput) (conversation.RunQueueProjection, error)
 	deleteQueueItem     func(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, conversation.DeleteRunQueueItemInput) (conversation.RunQueueProjection, error)
@@ -678,6 +679,18 @@ func (s *conversationServiceStub) Send(
 		return conversation.SendResult{}, errors.New("unexpected Send")
 	}
 	return s.send(ctx, principal, target, input)
+}
+
+func (s *conversationServiceStub) CreateWhiteboard(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	target conversation.MessageTarget,
+	title string,
+) (conversation.CreatedWhiteboard, error) {
+	if s.createWhiteboard == nil {
+		return conversation.CreatedWhiteboard{}, errors.New("unexpected CreateWhiteboard")
+	}
+	return s.createWhiteboard(ctx, principal, target, title)
 }
 
 func (s *conversationServiceStub) FetchRunQueue(

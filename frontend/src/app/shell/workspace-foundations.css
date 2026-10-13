@@ -203,11 +203,6 @@ html[data-boardly-workspace-theme]
   font-weight: 500;
 }
 
-.boardly-workspace-theme .workspace-rail .workspace-primary-nav-label--compact {
-  font-size: 10px;
-  letter-spacing: -0.025em;
-}
-
 .boardly-workspace-theme[data-boardly-theme="zenith-sky"]
   .workspace-primary-nav-item.is-active {
   font-weight: 600;

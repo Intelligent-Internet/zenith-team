@@ -100,6 +100,10 @@ type RunContext struct {
 	ChannelAttachments            []RunAttachedFile `json:"channelAttachments,omitempty"`
 	ChannelAttachmentRoot         string            `json:"-"`
 	UnavailableChannelAttachments []string          `json:"-"`
+	// ChatWhiteboards are the Whiteboards of the chat the Run answers that its
+	// Authorizer can open, newest first: those shared into the channel that
+	// tagged the Agent, or those made in the Agent or Task chat.
+	ChatWhiteboards []RunWhiteboardContext `json:"chatWhiteboards,omitempty"`
 	// TaskAttachments are the files members attached to the Task, on its
 	// Conversation's messages. Every Run of the Task receives them under its
 	// env root at task-files/<attachment id>/<name>, never in the workspace or
@@ -116,6 +120,12 @@ type RunContext struct {
 	// Trigger names the member whose message this Run answers. Absent for
 	// assignment Runs and for continuations the server composed itself.
 	Trigger *RunTriggerContext `json:"trigger,omitempty"`
+}
+
+// RunWhiteboardContext names a Whiteboard Artifact by ID and title.
+type RunWhiteboardContext struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
 }
 
 // RunChannelInvocation identifies the shared destination and context revision;
@@ -244,18 +254,11 @@ type RunProjectContext struct {
 }
 
 type RunExecutionProfileContext struct {
-	DocumentWriting  bool   `json:"documentWriting,omitempty"`
-	DocumentThreadID string `json:"documentThreadId,omitempty"`
-	// Whiteboard is the Board whose chat tagged the Agent; the Run works on it.
-	Whiteboard *RunWhiteboardContext `json:"whiteboard,omitempty"`
-	Project    *RunProjectContext    `json:"project,omitempty"`
-	Source     string                `json:"source,omitempty"`
-	Task       *RunTaskContext       `json:"task,omitempty"`
-}
-
-type RunWhiteboardContext struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	DocumentWriting  bool               `json:"documentWriting,omitempty"`
+	DocumentThreadID string             `json:"documentThreadId,omitempty"`
+	Project          *RunProjectContext `json:"project,omitempty"`
+	Source           string             `json:"source,omitempty"`
+	Task             *RunTaskContext    `json:"task,omitempty"`
 }
 
 type RunTaskContext struct {

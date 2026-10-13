@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/auth"
+	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/execution"
 )
 
@@ -152,5 +153,72 @@ func TestParseConversationArtifactRunFilter(t *testing.T) {
 	}
 	if _, err := parseArtifactListOptions("runId=" + id.String()); err == nil {
 		t.Fatal("company-wide listing accepted a conversation-only filter")
+	}
+}
+
+// chatWhiteboardArtifactsStub resolves the Whiteboard an Agent or Task chat
+// just made, recording the Company it was resolved in.
+type chatWhiteboardArtifactsStub struct {
+	deliverableDownloadStub
+	resolvedIn uuid.UUID
+}
+
+func (s *chatWhiteboardArtifactsStub) ResolveArtifacts(
+	_ context.Context,
+	principal auth.UserPrincipal,
+	ids []uuid.UUID,
+) ([]execution.ArtifactRunResult, error) {
+	s.resolvedIn = principal.CompanyID
+	items := make([]execution.ArtifactRunResult, 0, len(ids))
+	for _, id := range ids {
+		items = append(items, execution.ArtifactRunResult{Artifact: execution.DeliverableOutput{ID: id}})
+	}
+	return items, nil
+}
+
+// A Whiteboard made in an Agent or Task chat answers as the chat's Artifacts
+// list it, resolved in the chat's Company, which the route does not name.
+func TestChatWhiteboardAnswersWithTheNewArtifact(t *testing.T) {
+	t.Parallel()
+	userID, chatID, companyID, artifactID := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	conversations := &conversationServiceStub{
+		createWhiteboard: func(
+			_ context.Context,
+			_ auth.UserPrincipal,
+			target conversation.MessageTarget,
+			title string,
+		) (conversation.CreatedWhiteboard, error) {
+			if target.Kind != conversation.TargetConversation || target.ID != chatID || title != "Plan" {
+				t.Errorf("CreateWhiteboard(%+v, %q)", target, title)
+			}
+			return conversation.CreatedWhiteboard{CompanyID: companyID, ArtifactID: artifactID}, nil
+		},
+	}
+	artifacts := &chatWhiteboardArtifactsStub{}
+	handler := New(Handler{
+		AuthService:         authenticatedAuthStub(userID),
+		ConversationService: conversations,
+		DeliverableService:  artifacts,
+	})
+	response := serveBearerJSON(handler, http.MethodPost,
+		"/api/v1/conversations/"+chatID.String()+"/whiteboards", []byte(`{"title":"Plan"}`))
+	if response.Code != http.StatusCreated {
+		t.Fatalf("status = %d; body=%s", response.Code, response.Body.String())
+	}
+	var body struct {
+		Artifact struct {
+			ID uuid.UUID `json:"id"`
+		} `json:"artifact"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil || body.Artifact.ID != artifactID {
+		t.Fatalf("body = %s, %v", response.Body.String(), err)
+	}
+	if artifacts.resolvedIn != companyID {
+		t.Fatalf("resolved in Company %s; want %s", artifacts.resolvedIn, companyID)
+	}
+	if missing := serveBearerJSON(handler, http.MethodPost,
+		"/api/v1/conversations/"+uuid.NewString()+"/whiteboards", []byte(`{}`)); missing.Code < 400 ||
+		missing.Code >= 500 {
+		t.Fatalf("untitled status = %d; body=%s", missing.Code, missing.Body.String())
 	}
 }

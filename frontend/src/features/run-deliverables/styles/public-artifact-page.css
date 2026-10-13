@@ -189,6 +189,20 @@
   padding: 24px;
 }
 
+.public-artifact-whiteboard {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+.public-artifact-view-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .public-artifact-preview .artifact-preview-message {
   min-height: 240px;
   color: var(--text-secondary);

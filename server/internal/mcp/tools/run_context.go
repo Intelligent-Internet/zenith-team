@@ -16,8 +16,6 @@ type RunContext struct {
 	TaskID         string `json:"taskId,omitempty"`
 	RunID          string `json:"runId"`
 	AgentID        string `json:"agentId"`
-	// WhiteboardID is the Board a Board chat's Run works on.
-	WhiteboardID string `json:"whiteboardId,omitempty"`
 }
 
 func validateRunContext(runContext RunContext) error {

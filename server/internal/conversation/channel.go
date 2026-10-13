@@ -261,11 +261,6 @@ func (s *DefaultConversationService) mutateChannel(
 		if access.Kind != "channel" {
 			return ErrDiscussionNotFound
 		}
-		// A Board's chat follows the Board: its people and Agents come from
-		// Board access, and it never leaves, renames or archives by hand.
-		if access.BoardID.Valid {
-			return ErrDiscussionForbidden
-		}
 		if !input.Leave && !role.Can(auth.PermissionChannelsManage) {
 			return ErrDiscussionForbidden
 		}

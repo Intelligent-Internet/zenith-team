@@ -70,3 +70,28 @@ JOIN output_access access ON access.company_id=output.company_id AND access.outp
  AND access.user_id=sqlc.arg(actor_user_id)::uuid
 WHERE message.deleted_at IS NULL
 ORDER BY reference.message_id, output.created_at, output.id;
+
+-- name: ListRunChannelWhiteboards :many
+-- The Whiteboards shared into the chat that tagged a Run and its caller, the
+-- Run's Authorizer, may open, newest first: the Run's prompt names them.
+SELECT output.id, output.title
+FROM outputs output
+JOIN output_conversation_grants shared ON shared.company_id=output.company_id AND shared.output_id=output.id
+ AND shared.conversation_id=sqlc.arg(conversation_id)::uuid
+JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+ AND access.user_id=sqlc.arg(actor_user_id)::uuid
+WHERE output.company_id=sqlc.arg(company_id)::uuid AND output.type='whiteboard'
+ORDER BY output.created_at DESC, output.id DESC
+LIMIT 20;
+
+-- name: ListRunConversationWhiteboards :many
+-- The Whiteboards made in the Agent or Task chat a Run answers that the Run's
+-- Authorizer may open, newest first: the Run's prompt names them.
+SELECT output.id, output.title
+FROM outputs output
+JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+ AND access.user_id=sqlc.arg(actor_user_id)::uuid
+WHERE output.company_id=sqlc.arg(company_id)::uuid
+  AND output.conversation_id=sqlc.arg(conversation_id)::uuid AND output.type='whiteboard'
+ORDER BY output.created_at DESC, output.id DESC
+LIMIT 20;

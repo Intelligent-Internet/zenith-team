@@ -18,7 +18,7 @@ import (
 )
 
 func discussionWritable(row generated.ListDiscussionAccessRow) error {
-	if row.Kind == "huddle" || !discussionOpen(row) {
+	if row.Kind == "huddle" || row.ArchivedAt.Valid || (row.Kind == "human_direct" && !row.PeerActive) {
 		return ErrDiscussionReadOnly
 	}
 	if !auth.CompanyRole(row.CompanyRole).Can(auth.PermissionConversationsDiscuss) {

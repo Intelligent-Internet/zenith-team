@@ -12,20 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const advanceBoardAccessRevision = `-- name: AdvanceBoardAccessRevision :exec
-UPDATE boards SET revision=revision+1,updated_at=now() WHERE company_id=$1 AND id=$2
-`
-
-type AdvanceBoardAccessRevisionParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	ID        uuid.UUID `json:"id"`
-}
-
-func (q *Queries) AdvanceBoardAccessRevision(ctx context.Context, arg AdvanceBoardAccessRevisionParams) error {
-	_, err := q.db.Exec(ctx, advanceBoardAccessRevision, arg.CompanyID, arg.ID)
-	return err
-}
-
 const advanceBoardHead = `-- name: AdvanceBoardHead :one
 UPDATE boards SET head_seq=head_seq+1,updated_at=CASE WHEN updated_at < now()-interval '1 minute' THEN now() ELSE updated_at END
 WHERE company_id=$1 AND id=$2 RETURNING head_seq
@@ -36,84 +22,13 @@ type AdvanceBoardHeadParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
-// Recent activity orders the library to the minute, so a burst of commits
-// updates only head_seq and stays a heap-only update.
+// updated_at moves at most once a minute, so a burst of commits updates only
+// head_seq and stays a heap-only update.
 func (q *Queries) AdvanceBoardHead(ctx context.Context, arg AdvanceBoardHeadParams) (int64, error) {
 	row := q.db.QueryRow(ctx, advanceBoardHead, arg.CompanyID, arg.ID)
 	var head_seq int64
 	err := row.Scan(&head_seq)
 	return head_seq, err
-}
-
-const boardFavorite = `-- name: BoardFavorite :one
-SELECT EXISTS(SELECT 1 FROM board_favorites WHERE board_id=$1 AND user_id=$2)::boolean
-`
-
-type BoardFavoriteParams struct {
-	BoardID uuid.UUID `json:"board_id"`
-	UserID  uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) BoardFavorite(ctx context.Context, arg BoardFavoriteParams) (bool, error) {
-	row := q.db.QueryRow(ctx, boardFavorite, arg.BoardID, arg.UserID)
-	var column_1 bool
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
-const boardOwnerProfile = `-- name: BoardOwnerProfile :one
-SELECT coalesce(u.display_name,'Former member')::text AS name,u.avatar_url FROM boards b LEFT JOIN users u ON u.id=b.created_by AND u.deleted_at IS NULL WHERE b.company_id=$1 AND b.id=$2
-`
-
-type BoardOwnerProfileParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	ID        uuid.UUID `json:"id"`
-}
-
-type BoardOwnerProfileRow struct {
-	Name      string      `json:"name"`
-	AvatarUrl pgtype.Text `json:"avatar_url"`
-}
-
-func (q *Queries) BoardOwnerProfile(ctx context.Context, arg BoardOwnerProfileParams) (BoardOwnerProfileRow, error) {
-	row := q.db.QueryRow(ctx, boardOwnerProfile, arg.CompanyID, arg.ID)
-	var i BoardOwnerProfileRow
-	err := row.Scan(&i.Name, &i.AvatarUrl)
-	return i, err
-}
-
-const claimUnownedBoard = `-- name: ClaimUnownedBoard :one
-UPDATE boards SET revision=revision+1,updated_at=now()
-WHERE boards.company_id=$1::uuid AND boards.id=$2::uuid AND boards.revision=$3::bigint
- AND NOT EXISTS(SELECT 1 FROM board_access a WHERE a.company_id=boards.company_id AND a.board_id=boards.id AND a.access='manage')
-RETURNING id, company_id, title, purpose, visibility, company_access, public_token, head_seq, revision, created_by, created_at, updated_at, archived_at
-`
-
-type ClaimUnownedBoardParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	ID        uuid.UUID `json:"id"`
-	Revision  int64     `json:"revision"`
-}
-
-func (q *Queries) ClaimUnownedBoard(ctx context.Context, arg ClaimUnownedBoardParams) (Board, error) {
-	row := q.db.QueryRow(ctx, claimUnownedBoard, arg.CompanyID, arg.ID, arg.Revision)
-	var i Board
-	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
-		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
-	)
-	return i, err
 }
 
 const compactBoardChanges = `-- name: CompactBoardChanges :exec
@@ -140,25 +55,6 @@ func (q *Queries) CompactBoardChanges(ctx context.Context, arg CompactBoardChang
 	return err
 }
 
-const countBoardAgentGrants = `-- name: CountBoardAgentGrants :one
-SELECT count(*) FROM board_agent_access g
-JOIN agents a ON a.company_id=g.company_id AND a.id=g.agent_id AND a.archived_at IS NULL
-WHERE g.company_id=$1 AND g.board_id=$2
-`
-
-type CountBoardAgentGrantsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-}
-
-// An archived Agent leaves the Board's chat, so it holds no place in it.
-func (q *Queries) CountBoardAgentGrants(ctx context.Context, arg CountBoardAgentGrantsParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countBoardAgentGrants, arg.CompanyID, arg.BoardID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const countBoardEdges = `-- name: CountBoardEdges :one
 SELECT count(*) FROM board_edges WHERE board_id=$1 AND deleted_at IS NULL
 `
@@ -181,41 +77,18 @@ func (q *Queries) CountBoardItems(ctx context.Context, boardID uuid.UUID) (int64
 	return count, err
 }
 
-const createBoard = `-- name: CreateBoard :one
-INSERT INTO boards(company_id,title,purpose,created_by) VALUES($1,$2,$3,$4) RETURNING id, company_id, title, purpose, visibility, company_access, public_token, head_seq, revision, created_by, created_at, updated_at, archived_at
+const createBoard = `-- name: CreateBoard :exec
+INSERT INTO boards(company_id,id) VALUES($1,$2)
 `
 
 type CreateBoardParams struct {
 	CompanyID uuid.UUID `json:"company_id"`
-	Title     string    `json:"title"`
-	Purpose   string    `json:"purpose"`
-	CreatedBy uuid.UUID `json:"created_by"`
+	ID        uuid.UUID `json:"id"`
 }
 
-func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) (Board, error) {
-	row := q.db.QueryRow(ctx, createBoard,
-		arg.CompanyID,
-		arg.Title,
-		arg.Purpose,
-		arg.CreatedBy,
-	)
-	var i Board
-	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
-		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
-	)
-	return i, err
+func (q *Queries) CreateBoard(ctx context.Context, arg CreateBoardParams) error {
+	_, err := q.db.Exec(ctx, createBoard, arg.CompanyID, arg.ID)
+	return err
 }
 
 const createBoardEdge = `-- name: CreateBoardEdge :one
@@ -402,33 +275,31 @@ func (q *Queries) CreateBoardStroke(ctx context.Context, arg CreateBoardStrokePa
 	return err
 }
 
-const deleteBoardAgentAccess = `-- name: DeleteBoardAgentAccess :exec
-DELETE FROM board_agent_access WHERE company_id=$1 AND board_id=$2 AND agent_id=$3
+const createWhiteboardOutput = `-- name: CreateWhiteboardOutput :one
+INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id,conversation_id)
+VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+RETURNING id
 `
 
-type DeleteBoardAgentAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	AgentID   uuid.UUID `json:"agent_id"`
+type CreateWhiteboardOutputParams struct {
+	CompanyID      uuid.UUID     `json:"company_id"`
+	Title          string        `json:"title"`
+	ActorUserID    uuid.NullUUID `json:"actor_user_id"`
+	ConversationID uuid.NullUUID `json:"conversation_id"`
 }
 
-func (q *Queries) DeleteBoardAgentAccess(ctx context.Context, arg DeleteBoardAgentAccessParams) error {
-	_, err := q.db.Exec(ctx, deleteBoardAgentAccess, arg.CompanyID, arg.BoardID, arg.AgentID)
-	return err
-}
-
-const deleteBoardFavorite = `-- name: DeleteBoardFavorite :exec
-DELETE FROM board_favorites WHERE board_id=$1 AND user_id=$2
-`
-
-type DeleteBoardFavoriteParams struct {
-	BoardID uuid.UUID `json:"board_id"`
-	UserID  uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) DeleteBoardFavorite(ctx context.Context, arg DeleteBoardFavoriteParams) error {
-	_, err := q.db.Exec(ctx, deleteBoardFavorite, arg.BoardID, arg.UserID)
-	return err
+// A Whiteboard is an Artifact: its Output carries the title, owner and
+// sharing, and the Board keeps the live scene under the Output's ID.
+func (q *Queries) CreateWhiteboardOutput(ctx context.Context, arg CreateWhiteboardOutputParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createWhiteboardOutput,
+		arg.CompanyID,
+		arg.Title,
+		arg.ActorUserID,
+		arg.ConversationID,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const deleteBoardItemEdges = `-- name: DeleteBoardItemEdges :many
@@ -460,51 +331,6 @@ func (q *Queries) DeleteBoardItemEdges(ctx context.Context, arg DeleteBoardItemE
 			return nil, err
 		}
 		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const deleteBoardMemberAccess = `-- name: DeleteBoardMemberAccess :exec
-DELETE FROM board_member_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3
-`
-
-type DeleteBoardMemberAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) DeleteBoardMemberAccess(ctx context.Context, arg DeleteBoardMemberAccessParams) error {
-	_, err := q.db.Exec(ctx, deleteBoardMemberAccess, arg.CompanyID, arg.BoardID, arg.UserID)
-	return err
-}
-
-const deleteMemberBoardGrants = `-- name: DeleteMemberBoardGrants :many
-DELETE FROM board_member_access WHERE company_id=$1 AND user_id=$2 RETURNING board_id
-`
-
-type DeleteMemberBoardGrantsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	UserID    uuid.UUID `json:"user_id"`
-}
-
-// Board grants go with the membership (ADR 0017): a rejoin restores none.
-func (q *Queries) DeleteMemberBoardGrants(ctx context.Context, arg DeleteMemberBoardGrantsParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, deleteMemberBoardGrants, arg.CompanyID, arg.UserID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []uuid.UUID{}
-	for rows.Next() {
-		var board_id uuid.UUID
-		if err := rows.Scan(&board_id); err != nil {
-			return nil, err
-		}
-		items = append(items, board_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -548,23 +374,6 @@ func (q *Queries) DetachBoardChildren(ctx context.Context, arg DetachBoardChildr
 	return items, nil
 }
 
-const getBoardAgentAccess = `-- name: GetBoardAgentAccess :one
-SELECT access FROM board_agent_access WHERE company_id=$1 AND board_id=$2 AND agent_id=$3
-`
-
-type GetBoardAgentAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	AgentID   uuid.UUID `json:"agent_id"`
-}
-
-func (q *Queries) GetBoardAgentAccess(ctx context.Context, arg GetBoardAgentAccessParams) (string, error) {
-	row := q.db.QueryRow(ctx, getBoardAgentAccess, arg.CompanyID, arg.BoardID, arg.AgentID)
-	var access string
-	err := row.Scan(&access)
-	return access, err
-}
-
 const getBoardChange = `-- name: GetBoardChange :one
 SELECT changes FROM board_changes WHERE board_id=$1 AND seq=$2
 `
@@ -579,30 +388,6 @@ func (q *Queries) GetBoardChange(ctx context.Context, arg GetBoardChangeParams) 
 	var changes []byte
 	err := row.Scan(&changes)
 	return changes, err
-}
-
-const getBoardCreateReceipt = `-- name: GetBoardCreateReceipt :one
-SELECT company_id, actor_user_id, request_key, board_id, request_hash, created_at FROM board_create_receipts WHERE company_id=$1 AND actor_user_id=$2 AND request_key=$3
-`
-
-type GetBoardCreateReceiptParams struct {
-	CompanyID   uuid.UUID `json:"company_id"`
-	ActorUserID uuid.UUID `json:"actor_user_id"`
-	RequestKey  uuid.UUID `json:"request_key"`
-}
-
-func (q *Queries) GetBoardCreateReceipt(ctx context.Context, arg GetBoardCreateReceiptParams) (BoardCreateReceipt, error) {
-	row := q.db.QueryRow(ctx, getBoardCreateReceipt, arg.CompanyID, arg.ActorUserID, arg.RequestKey)
-	var i BoardCreateReceipt
-	err := row.Scan(
-		&i.CompanyID,
-		&i.ActorUserID,
-		&i.RequestKey,
-		&i.BoardID,
-		&i.RequestHash,
-		&i.CreatedAt,
-	)
-	return i, err
 }
 
 const getBoardEdge = `-- name: GetBoardEdge :one
@@ -689,41 +474,6 @@ func (q *Queries) GetBoardItem(ctx context.Context, arg GetBoardItemParams) (Boa
 		&i.AttachmentID,
 	)
 	return i, err
-}
-
-const getBoardMemberAccess = `-- name: GetBoardMemberAccess :one
-SELECT access FROM board_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3
-`
-
-type GetBoardMemberAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) GetBoardMemberAccess(ctx context.Context, arg GetBoardMemberAccessParams) (string, error) {
-	row := q.db.QueryRow(ctx, getBoardMemberAccess, arg.CompanyID, arg.BoardID, arg.UserID)
-	var access string
-	err := row.Scan(&access)
-	return access, err
-}
-
-const getBoardMemberGrant = `-- name: GetBoardMemberGrant :one
-SELECT access FROM board_member_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3
-`
-
-type GetBoardMemberGrantParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-}
-
-// The member's own grant on one Board, without the creator or Company arms.
-func (q *Queries) GetBoardMemberGrant(ctx context.Context, arg GetBoardMemberGrantParams) (string, error) {
-	row := q.db.QueryRow(ctx, getBoardMemberGrant, arg.CompanyID, arg.BoardID, arg.UserID)
-	var access string
-	err := row.Scan(&access)
-	return access, err
 }
 
 const getBoardNote = `-- name: GetBoardNote :one
@@ -843,29 +593,6 @@ func (q *Queries) InsertBoardChange(ctx context.Context, arg InsertBoardChangePa
 	return err
 }
 
-const insertBoardCreateReceipt = `-- name: InsertBoardCreateReceipt :exec
-INSERT INTO board_create_receipts(company_id,actor_user_id,request_key,board_id,request_hash) VALUES($1,$2,$3,$4,$5)
-`
-
-type InsertBoardCreateReceiptParams struct {
-	CompanyID   uuid.UUID `json:"company_id"`
-	ActorUserID uuid.UUID `json:"actor_user_id"`
-	RequestKey  uuid.UUID `json:"request_key"`
-	BoardID     uuid.UUID `json:"board_id"`
-	RequestHash []byte    `json:"request_hash"`
-}
-
-func (q *Queries) InsertBoardCreateReceipt(ctx context.Context, arg InsertBoardCreateReceiptParams) error {
-	_, err := q.db.Exec(ctx, insertBoardCreateReceipt,
-		arg.CompanyID,
-		arg.ActorUserID,
-		arg.RequestKey,
-		arg.BoardID,
-		arg.RequestHash,
-	)
-	return err
-}
-
 const insertBoardReceipt = `-- name: InsertBoardReceipt :exec
 INSERT INTO board_operations(company_id,board_id,actor_user_id,actor_run_id,request_key,request_hash,seq,ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8)
 `
@@ -895,68 +622,18 @@ func (q *Queries) InsertBoardReceipt(ctx context.Context, arg InsertBoardReceipt
 	return err
 }
 
-const listBoardAccess = `-- name: ListBoardAccess :many
-SELECT g.user_id::uuid AS actor_id,'user'::text AS actor_type,coalesce(u.display_name,'Former member')::text AS name,g.access,u.avatar_url
-FROM board_member_access g LEFT JOIN users u ON u.id=g.user_id AND u.deleted_at IS NULL
-WHERE g.company_id=$1 AND g.board_id=$2
-UNION ALL
-SELECT g.agent_id::uuid,'agent'::text,a.name,g.access,NULL::text AS avatar_url FROM board_agent_access g
-JOIN agents a ON a.company_id=g.company_id AND a.id=g.agent_id
-WHERE g.company_id=$1 AND g.board_id=$2 ORDER BY name,actor_type,actor_id
-`
-
-type ListBoardAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-}
-
-type ListBoardAccessRow struct {
-	ActorID   uuid.UUID   `json:"actor_id"`
-	ActorType string      `json:"actor_type"`
-	Name      string      `json:"name"`
-	Access    string      `json:"access"`
-	AvatarUrl pgtype.Text `json:"avatar_url"`
-}
-
-func (q *Queries) ListBoardAccess(ctx context.Context, arg ListBoardAccessParams) ([]ListBoardAccessRow, error) {
-	rows, err := q.db.Query(ctx, listBoardAccess, arg.CompanyID, arg.BoardID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListBoardAccessRow{}
-	for rows.Next() {
-		var i ListBoardAccessRow
-		if err := rows.Scan(
-			&i.ActorID,
-			&i.ActorType,
-			&i.Name,
-			&i.Access,
-			&i.AvatarUrl,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listBoardAudience = `-- name: ListBoardAudience :many
-SELECT access.user_id FROM board_access access JOIN company_members m ON m.company_id=access.company_id AND m.user_id=access.user_id
-WHERE access.company_id=$1 AND access.board_id=$2 AND m.role=ANY($3::text[]) ORDER BY access.user_id
+SELECT user_id FROM output_access WHERE company_id=$1 AND output_id=$2 ORDER BY user_id
 `
 
 type ListBoardAudienceParams struct {
-	CompanyID  uuid.UUID `json:"company_id"`
-	BoardID    uuid.UUID `json:"board_id"`
-	ActorRoles []string  `json:"actor_roles"`
+	CompanyID uuid.UUID `json:"company_id"`
+	OutputID  uuid.UUID `json:"output_id"`
 }
 
+// Everyone who can open the Whiteboard Artifact hears of its changes.
 func (q *Queries) ListBoardAudience(ctx context.Context, arg ListBoardAudienceParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listBoardAudience, arg.CompanyID, arg.BoardID, arg.ActorRoles)
+	rows, err := q.db.Query(ctx, listBoardAudience, arg.CompanyID, arg.OutputID)
 	if err != nil {
 		return nil, err
 	}
@@ -1355,202 +1032,9 @@ func (q *Queries) ListBoardNoteTexts(ctx context.Context, arg ListBoardNoteTexts
 	return items, nil
 }
 
-const listBoards = `-- name: ListBoards :many
-SELECT b.id, b.company_id, b.title, b.purpose, b.visibility, b.company_access, b.public_token, b.head_seq, b.revision, b.created_by, b.created_at, b.updated_at, b.archived_at, access.access, EXISTS(SELECT 1 FROM board_favorites f WHERE f.board_id=b.id AND f.user_id=$1)::boolean AS favorite
-FROM boards b JOIN board_access access ON access.company_id=b.company_id AND access.board_id=b.id AND access.user_id=$1 WHERE b.company_id=$2
- AND ((b.archived_at IS NOT NULL)=$3::boolean)
- AND (NOT $4::boolean OR EXISTS(SELECT 1 FROM board_favorites f WHERE f.board_id=b.id AND f.user_id=$1))
- AND ($5::text='' OR b.title ILIKE '%'||$5||'%' ESCAPE '\' OR b.purpose ILIKE '%'||$5||'%' ESCAPE '\'
-  OR ($6::text<>'' AND b.id IN (SELECT n.board_id FROM board_notes n JOIN board_items i ON i.id=n.item_id
-   WHERE n.company_id=$2 AND i.deleted_at IS NULL AND to_tsvector('simple',n.plain_text) @@ to_tsquery('simple',$6))))
-ORDER BY b.updated_at DESC,b.id LIMIT $8::int OFFSET $7::int
-`
-
-type ListBoardsParams struct {
-	ActorUserID uuid.UUID `json:"actor_user_id"`
-	CompanyID   uuid.UUID `json:"company_id"`
-	Archived    bool      `json:"archived"`
-	Favorites   bool      `json:"favorites"`
-	Search      string    `json:"search"`
-	NoteQuery   string    `json:"note_query"`
-	RowOffset   int32     `json:"row_offset"`
-	RowLimit    int32     `json:"row_limit"`
-}
-
-type ListBoardsRow struct {
-	ID            uuid.UUID          `json:"id"`
-	CompanyID     uuid.UUID          `json:"company_id"`
-	Title         string             `json:"title"`
-	Purpose       string             `json:"purpose"`
-	Visibility    string             `json:"visibility"`
-	CompanyAccess string             `json:"company_access"`
-	PublicToken   uuid.NullUUID      `json:"public_token"`
-	HeadSeq       int64              `json:"head_seq"`
-	Revision      int64              `json:"revision"`
-	CreatedBy     uuid.UUID          `json:"created_by"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt    pgtype.Timestamptz `json:"archived_at"`
-	Access        string             `json:"access"`
-	Favorite      bool               `json:"favorite"`
-}
-
-func (q *Queries) ListBoards(ctx context.Context, arg ListBoardsParams) ([]ListBoardsRow, error) {
-	rows, err := q.db.Query(ctx, listBoards,
-		arg.ActorUserID,
-		arg.CompanyID,
-		arg.Archived,
-		arg.Favorites,
-		arg.Search,
-		arg.NoteQuery,
-		arg.RowOffset,
-		arg.RowLimit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListBoardsRow{}
-	for rows.Next() {
-		var i ListBoardsRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.CompanyID,
-			&i.Title,
-			&i.Purpose,
-			&i.Visibility,
-			&i.CompanyAccess,
-			&i.PublicToken,
-			&i.HeadSeq,
-			&i.Revision,
-			&i.CreatedBy,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ArchivedAt,
-			&i.Access,
-			&i.Favorite,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listBoardsForAgent = `-- name: ListBoardsForAgent :many
-SELECT b.id, b.company_id, b.title, b.purpose, b.visibility, b.company_access, b.public_token, b.head_seq, b.revision, b.created_by, b.created_at, b.updated_at, b.archived_at,g.access,access.access AS member_access FROM boards b
-JOIN board_agent_access g ON g.company_id=b.company_id AND g.board_id=b.id
-JOIN board_access access ON access.company_id=b.company_id AND access.board_id=b.id AND access.user_id=$1
-WHERE b.company_id=$2 AND g.agent_id=$3 AND b.archived_at IS NULL ORDER BY b.updated_at DESC,b.id LIMIT 101 OFFSET $4::int
-`
-
-type ListBoardsForAgentParams struct {
-	ActorUserID uuid.UUID `json:"actor_user_id"`
-	CompanyID   uuid.UUID `json:"company_id"`
-	AgentID     uuid.UUID `json:"agent_id"`
-	RowOffset   int32     `json:"row_offset"`
-}
-
-type ListBoardsForAgentRow struct {
-	Board        Board  `json:"board"`
-	Access       string `json:"access"`
-	MemberAccess string `json:"member_access"`
-}
-
-func (q *Queries) ListBoardsForAgent(ctx context.Context, arg ListBoardsForAgentParams) ([]ListBoardsForAgentRow, error) {
-	rows, err := q.db.Query(ctx, listBoardsForAgent,
-		arg.ActorUserID,
-		arg.CompanyID,
-		arg.AgentID,
-		arg.RowOffset,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListBoardsForAgentRow{}
-	for rows.Next() {
-		var i ListBoardsForAgentRow
-		if err := rows.Scan(
-			&i.Board.ID,
-			&i.Board.CompanyID,
-			&i.Board.Title,
-			&i.Board.Purpose,
-			&i.Board.Visibility,
-			&i.Board.CompanyAccess,
-			&i.Board.PublicToken,
-			&i.Board.HeadSeq,
-			&i.Board.Revision,
-			&i.Board.CreatedBy,
-			&i.Board.CreatedAt,
-			&i.Board.UpdatedAt,
-			&i.Board.ArchivedAt,
-			&i.Access,
-			&i.MemberAccess,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listUnownedBoards = `-- name: ListUnownedBoards :many
-SELECT b.id, b.company_id, b.title, b.purpose, b.visibility, b.company_access, b.public_token, b.head_seq, b.revision, b.created_by, b.created_at, b.updated_at, b.archived_at FROM boards b WHERE b.company_id=$1::uuid
- AND NOT EXISTS(SELECT 1 FROM board_access a WHERE a.company_id=b.company_id AND a.board_id=b.id AND a.access='manage')
-ORDER BY b.updated_at DESC,b.id LIMIT $3::int OFFSET $2::int
-`
-
-type ListUnownedBoardsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	RowOffset int32     `json:"row_offset"`
-	RowLimit  int32     `json:"row_limit"`
-}
-
-// A Board nobody active manages: its creator left and no active member holds
-// a manage grant. Company Whiteboard managers may claim it.
-func (q *Queries) ListUnownedBoards(ctx context.Context, arg ListUnownedBoardsParams) ([]Board, error) {
-	rows, err := q.db.Query(ctx, listUnownedBoards, arg.CompanyID, arg.RowOffset, arg.RowLimit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Board{}
-	for rows.Next() {
-		var i Board
-		if err := rows.Scan(
-			&i.ID,
-			&i.CompanyID,
-			&i.Title,
-			&i.Purpose,
-			&i.Visibility,
-			&i.CompanyAccess,
-			&i.PublicToken,
-			&i.HeadSeq,
-			&i.Revision,
-			&i.CreatedBy,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ArchivedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const lockBoard = `-- name: LockBoard :one
-SELECT id, company_id, title, purpose, visibility, company_access, public_token, head_seq, revision, created_by, created_at, updated_at, archived_at FROM boards WHERE company_id=$1 AND id=$2 FOR UPDATE
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+WHERE b.company_id=$1 AND b.id=$2 FOR UPDATE OF b
 `
 
 type LockBoardParams struct {
@@ -1558,23 +1042,21 @@ type LockBoardParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
-func (q *Queries) LockBoard(ctx context.Context, arg LockBoardParams) (Board, error) {
+type LockBoardRow struct {
+	Board Board  `json:"board"`
+	Title string `json:"title"`
+}
+
+func (q *Queries) LockBoard(ctx context.Context, arg LockBoardParams) (LockBoardRow, error) {
 	row := q.db.QueryRow(ctx, lockBoard, arg.CompanyID, arg.ID)
-	var i Board
+	var i LockBoardRow
 	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
+		&i.Board.ID,
+		&i.Board.CompanyID,
+		&i.Board.HeadSeq,
+		&i.Board.CreatedAt,
+		&i.Board.UpdatedAt,
 		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
 	)
 	return i, err
 }
@@ -1708,7 +1190,8 @@ func (q *Queries) MoveBoardItem(ctx context.Context, arg MoveBoardItemParams) (B
 }
 
 const readBoard = `-- name: ReadBoard :one
-SELECT id, company_id, title, purpose, visibility, company_access, public_token, head_seq, revision, created_by, created_at, updated_at, archived_at FROM boards WHERE company_id=$1 AND id=$2
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+WHERE b.company_id=$1 AND b.id=$2
 `
 
 type ReadBoardParams struct {
@@ -1716,72 +1199,67 @@ type ReadBoardParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
+type ReadBoardRow struct {
+	Board Board  `json:"board"`
+	Title string `json:"title"`
+}
+
 // Reads run in REPEATABLE READ snapshots, so they never lock the Board row.
-func (q *Queries) ReadBoard(ctx context.Context, arg ReadBoardParams) (Board, error) {
+func (q *Queries) ReadBoard(ctx context.Context, arg ReadBoardParams) (ReadBoardRow, error) {
 	row := q.db.QueryRow(ctx, readBoard, arg.CompanyID, arg.ID)
-	var i Board
+	var i ReadBoardRow
 	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
+		&i.Board.ID,
+		&i.Board.CompanyID,
+		&i.Board.HeadSeq,
+		&i.Board.CreatedAt,
+		&i.Board.UpdatedAt,
 		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
 	)
 	return i, err
 }
 
 const readPublicBoard = `-- name: ReadPublicBoard :one
-SELECT b.id, b.company_id, b.title, b.purpose, b.visibility, b.company_access, b.public_token, b.head_seq, b.revision, b.created_by, b.created_at, b.updated_at, b.archived_at FROM boards b JOIN companies c ON c.id=b.company_id AND c.deleting_at IS NULL WHERE b.public_token=$1 AND b.visibility='public' AND b.archived_at IS NULL
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b
+JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+JOIN companies c ON c.id=b.company_id AND c.deleting_at IS NULL
+WHERE o.public_token=$1::uuid AND o.visibility='public'
 `
 
-func (q *Queries) ReadPublicBoard(ctx context.Context, publicToken uuid.NullUUID) (Board, error) {
-	row := q.db.QueryRow(ctx, readPublicBoard, publicToken)
-	var i Board
+type ReadPublicBoardRow struct {
+	Board Board  `json:"board"`
+	Title string `json:"title"`
+}
+
+// An unrevoked public Artifact link reads its Board.
+func (q *Queries) ReadPublicBoard(ctx context.Context, token uuid.UUID) (ReadPublicBoardRow, error) {
+	row := q.db.QueryRow(ctx, readPublicBoard, token)
+	var i ReadPublicBoardRow
 	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
+		&i.Board.ID,
+		&i.Board.CompanyID,
+		&i.Board.HeadSeq,
+		&i.Board.CreatedAt,
+		&i.Board.UpdatedAt,
 		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
 	)
 	return i, err
 }
 
-const setBoardAgentAccess = `-- name: SetBoardAgentAccess :exec
-INSERT INTO board_agent_access(company_id,board_id,agent_id,access)
-VALUES($1,$2,$3,$4) ON CONFLICT (board_id,agent_id) DO UPDATE SET access=excluded.access
+const renameWhiteboardOutput = `-- name: RenameWhiteboardOutput :exec
+UPDATE outputs SET title=$1::text
+WHERE company_id=$2::uuid AND id=$3::uuid AND type='whiteboard'
 `
 
-type SetBoardAgentAccessParams struct {
+type RenameWhiteboardOutputParams struct {
+	Title     string    `json:"title"`
 	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	AgentID   uuid.UUID `json:"agent_id"`
-	Access    string    `json:"access"`
+	ID        uuid.UUID `json:"id"`
 }
 
-func (q *Queries) SetBoardAgentAccess(ctx context.Context, arg SetBoardAgentAccessParams) error {
-	_, err := q.db.Exec(ctx, setBoardAgentAccess,
-		arg.CompanyID,
-		arg.BoardID,
-		arg.AgentID,
-		arg.Access,
-	)
+// The title lives on the Whiteboard Artifact; the caller holds the Board.
+func (q *Queries) RenameWhiteboardOutput(ctx context.Context, arg RenameWhiteboardOutputParams) error {
+	_, err := q.db.Exec(ctx, renameWhiteboardOutput, arg.Title, arg.CompanyID, arg.ID)
 	return err
 }
 
@@ -1837,21 +1315,6 @@ func (q *Queries) SetBoardEdgeDeleted(ctx context.Context, arg SetBoardEdgeDelet
 	return i, err
 }
 
-const setBoardFavorite = `-- name: SetBoardFavorite :exec
-INSERT INTO board_favorites(company_id,board_id,user_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING
-`
-
-type SetBoardFavoriteParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) SetBoardFavorite(ctx context.Context, arg SetBoardFavoriteParams) error {
-	_, err := q.db.Exec(ctx, setBoardFavorite, arg.CompanyID, arg.BoardID, arg.UserID)
-	return err
-}
-
 const setBoardItemDeleted = `-- name: SetBoardItemDeleted :one
 UPDATE board_items SET deleted_at=$4,lifecycle_revision=lifecycle_revision+1,content_revision=content_revision+1,geometry_revision=geometry_revision+1,updated_by=$5,updated_at=now()
 WHERE company_id=$1 AND board_id=$2 AND id=$3 AND content_revision=$6 RETURNING id, company_id, board_id, type, x, y, width, height, rotation, stack_order, parent_frame_id, reading_order, properties, geometry_revision, content_revision, created_by, updated_by, created_by_agent_id, updated_by_agent_id, created_by_run_id, updated_by_run_id, created_at, updated_at, deleted_at, lifecycle_revision, attachment_id
@@ -1905,51 +1368,6 @@ func (q *Queries) SetBoardItemDeleted(ctx context.Context, arg SetBoardItemDelet
 		&i.AttachmentID,
 	)
 	return i, err
-}
-
-const setBoardMemberAccess = `-- name: SetBoardMemberAccess :exec
-INSERT INTO board_member_access(company_id,board_id,user_id,access) VALUES($1,$2,$3,$4)
-ON CONFLICT (board_id,user_id) DO UPDATE SET access=excluded.access
-`
-
-type SetBoardMemberAccessParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	Access    string    `json:"access"`
-}
-
-func (q *Queries) SetBoardMemberAccess(ctx context.Context, arg SetBoardMemberAccessParams) error {
-	_, err := q.db.Exec(ctx, setBoardMemberAccess,
-		arg.CompanyID,
-		arg.BoardID,
-		arg.UserID,
-		arg.Access,
-	)
-	return err
-}
-
-const setBoardVisibility = `-- name: SetBoardVisibility :exec
-UPDATE boards SET visibility=$3,company_access=$4,
-public_token=CASE WHEN visibility='public' AND $3='public' THEN public_token WHEN $3='public' THEN gen_random_uuid() ELSE NULL END,
-updated_at=now() WHERE company_id=$1 AND id=$2
-`
-
-type SetBoardVisibilityParams struct {
-	CompanyID     uuid.UUID `json:"company_id"`
-	ID            uuid.UUID `json:"id"`
-	Visibility    string    `json:"visibility"`
-	CompanyAccess string    `json:"company_access"`
-}
-
-func (q *Queries) SetBoardVisibility(ctx context.Context, arg SetBoardVisibilityParams) error {
-	_, err := q.db.Exec(ctx, setBoardVisibility,
-		arg.CompanyID,
-		arg.ID,
-		arg.Visibility,
-		arg.CompanyAccess,
-	)
-	return err
 }
 
 const stampBoardEdgesAttribution = `-- name: StampBoardEdgesAttribution :exec
@@ -2010,47 +1428,6 @@ func (q *Queries) StampBoardItemsAttribution(ctx context.Context, arg StampBoard
 		arg.Ids,
 	)
 	return err
-}
-
-const updateBoard = `-- name: UpdateBoard :one
-UPDATE boards SET title=$3,purpose=$4,archived_at=$5,revision=revision+1,updated_at=now() WHERE company_id=$1 AND id=$2 AND revision=$6 RETURNING id, company_id, title, purpose, visibility, company_access, public_token, head_seq, revision, created_by, created_at, updated_at, archived_at
-`
-
-type UpdateBoardParams struct {
-	CompanyID  uuid.UUID          `json:"company_id"`
-	ID         uuid.UUID          `json:"id"`
-	Title      string             `json:"title"`
-	Purpose    string             `json:"purpose"`
-	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
-	Revision   int64              `json:"revision"`
-}
-
-func (q *Queries) UpdateBoard(ctx context.Context, arg UpdateBoardParams) (Board, error) {
-	row := q.db.QueryRow(ctx, updateBoard,
-		arg.CompanyID,
-		arg.ID,
-		arg.Title,
-		arg.Purpose,
-		arg.ArchivedAt,
-		arg.Revision,
-	)
-	var i Board
-	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
-		&i.Title,
-		&i.Purpose,
-		&i.Visibility,
-		&i.CompanyAccess,
-		&i.PublicToken,
-		&i.HeadSeq,
-		&i.Revision,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ArchivedAt,
-	)
-	return i, err
 }
 
 const updateBoardEdge = `-- name: UpdateBoardEdge :one

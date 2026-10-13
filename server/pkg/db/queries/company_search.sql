@@ -165,9 +165,7 @@ WITH search_input AS MATERIALIZED (
               AND tasks.status NOT IN ('done', 'failed', 'cancelled')
               AND assignee_agents.id IS NOT NULL
           )
-          -- A Board's chat stays on its Board, out of search.
-          OR (conversations.kind IN ('channel','human_direct') AND conversations.board_id IS NULL
-              AND discussion_member.user_id IS NOT NULL)
+          OR (conversations.kind IN ('channel','human_direct') AND discussion_member.user_id IS NOT NULL)
           OR (
               conversations.kind = 'direct'
               AND conversations.created_by_user_id = sqlc.arg(actor_user_id)::uuid

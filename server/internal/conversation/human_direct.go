@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (s *DefaultConversationService) CreateHumanDirect(
@@ -254,8 +253,6 @@ type discussionGrant struct {
 	CompanyID, ConversationID, UserID, ActorUserID uuid.UUID
 	SourceType                                     string
 	HeadSeq                                        int64
-	// NotificationLevel starts the person's notifications; empty means all.
-	NotificationLevel string
 }
 
 func grantDiscussionHuman(
@@ -294,10 +291,6 @@ func grantDiscussionHuman(
 			ConversationID:  input.ConversationID,
 			UserID:          input.UserID,
 			GrantGeneration: row.Generation,
-			NotificationLevel: pgtype.Text{
-				String: input.NotificationLevel,
-				Valid:  input.NotificationLevel != "",
-			},
 		},
 	)
 	return row, err

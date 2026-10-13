@@ -14,30 +14,25 @@ import (
 	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/pkg/protocol"
 )
 
 // A Run reads the area its member looks at in the compact form, full text
 // of what it asks for by ref, and an image of exactly that area; the same
-// invitation fence as every Board read applies.
+// access fence as every Board read applies.
 func TestBoardAgentViewReadsTheRequestersAreaThroughTheRunFence(t *testing.T) {
 	t.Parallel()
 	boards, pool, owner, member := boardFixture(t)
-	board := createTestBoard(t, boards, owner, member)
+	board := createTestBoard(t, boards, owner)
 	ctx := t.Context()
-	agent, run := boardTestRun(t, pool, member)
+	_, run := boardTestRun(t, pool, member)
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	looked := BoardVisualBounds{X: 0, Y: 0, Width: 1000, Height: 600}
 	focus := BoardFocus{Present: true, Name: "Member", View: looked}
 	_, err := boards.AgentView(ctx, member, scope, BoardAgentViewInput{}, focus)
 	if !errors.Is(err, ErrBoardForbidden) && !errors.Is(err, ErrBoardNotFound) {
-		t.Fatalf("view without an invitation = %v, want refused", err)
+		t.Fatalf("view without access = %v, want refused", err)
 	}
-	if err := grantTestBoardAccess(
-		t, boards, owner, board.ID, protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent}, "read",
-	); err != nil {
-		t.Fatal(err)
-	}
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "view")
 	long := strings.Repeat("Onboarding step ", 40)
 	near := stickyCommand("near", long)
 	far := stickyCommand("far", "Far away")
@@ -104,16 +99,6 @@ func TestBoardRunCallsLeaveTheirViewerReady(t *testing.T) {
 	board := createTestBoard(t, boards, owner, member)
 	ctx := t.Context()
 	agent, run := boardTestRun(t, pool, member)
-	if err := grantTestBoardAccess(
-		t, boards, owner, board.ID, protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent}, "edit",
-	); err != nil {
-		t.Fatal(err)
-	}
-	if err := grantTestBoardAccess(
-		t, boards, owner, board.ID, protocol.ActorRef{ID: member.UserID, Kind: protocol.ActorKindUser}, "edit",
-	); err != nil {
-		t.Fatal(err)
-	}
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	key := boardViewerKey{company: member.CompanyID, user: member.UserID, board: board.ID, run: run}
 	ready := func(call string) {

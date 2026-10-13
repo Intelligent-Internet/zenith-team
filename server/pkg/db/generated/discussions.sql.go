@@ -31,7 +31,7 @@ func (q *Queries) AllocateDiscussionSequence(ctx context.Context, arg AllocateDi
 
 const bumpDiscussionConversation = `-- name: BumpDiscussionConversation :one
 UPDATE conversations SET version=version+1,updated_at=clock_timestamp()
-WHERE id=$1::uuid AND company_id=$2::uuid AND kind IN ('human_direct','channel','huddle') RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+WHERE id=$1::uuid AND company_id=$2::uuid AND kind IN ('human_direct','channel','huddle') RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 type BumpDiscussionConversationParams struct {
@@ -64,7 +64,6 @@ func (q *Queries) BumpDiscussionConversation(ctx context.Context, arg BumpDiscus
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -82,7 +81,7 @@ func (q *Queries) CountActiveDiscussionMembers(ctx context.Context, conversation
 
 const createGeneralChannel = `-- name: CreateGeneralChannel :one
 INSERT INTO conversations(company_id,kind,title,request_key,is_general)
-VALUES($1::uuid,'channel','general',gen_random_uuid(),true) RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+VALUES($1::uuid,'channel','general',gen_random_uuid(),true) RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 func (q *Queries) CreateGeneralChannel(ctx context.Context, companyID uuid.UUID) (Conversation, error) {
@@ -110,7 +109,6 @@ func (q *Queries) CreateGeneralChannel(ctx context.Context, companyID uuid.UUID)
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -233,7 +231,7 @@ func (q *Queries) GetDiscussionAgentHistoryGrant(ctx context.Context, arg GetDis
 }
 
 const getDiscussionCreationReceipt = `-- name: GetDiscussionCreationReceipt :one
-SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, c.board_id, ch.create_fingerprint FROM conversations c
+SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, ch.create_fingerprint FROM conversations c
 LEFT JOIN conversation_channels ch ON ch.conversation_id=c.id
 WHERE c.company_id=$1::uuid AND c.created_by_user_id=$2::uuid AND c.request_key=$3::uuid
 `
@@ -266,7 +264,6 @@ type GetDiscussionCreationReceiptRow struct {
 	ChannelContextRevision     int64              `json:"channel_context_revision"`
 	ProjectID                  uuid.NullUUID      `json:"project_id"`
 	DocumentThreadID           uuid.NullUUID      `json:"document_thread_id"`
-	BoardID                    uuid.NullUUID      `json:"board_id"`
 	CreateFingerprint          []byte             `json:"create_fingerprint"`
 }
 
@@ -295,7 +292,6 @@ func (q *Queries) GetDiscussionCreationReceipt(ctx context.Context, arg GetDiscu
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 		&i.CreateFingerprint,
 	)
 	return i, err
@@ -397,7 +393,7 @@ func (q *Queries) GetDiscussionSendReceipt(ctx context.Context, arg GetDiscussio
 }
 
 const getGeneralChannelForUpdate = `-- name: GetGeneralChannelForUpdate :one
-SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id FROM conversations WHERE company_id=$1::uuid AND is_general FOR UPDATE
+SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id FROM conversations WHERE company_id=$1::uuid AND is_general FOR UPDATE
 `
 
 func (q *Queries) GetGeneralChannelForUpdate(ctx context.Context, companyID uuid.UUID) (Conversation, error) {
@@ -425,7 +421,6 @@ func (q *Queries) GetGeneralChannelForUpdate(ctx context.Context, companyID uuid
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -588,7 +583,7 @@ func (q *Queries) InsertChannelDetail(ctx context.Context, arg InsertChannelDeta
 
 const insertDiscussionConversation = `-- name: InsertDiscussionConversation :one
 INSERT INTO conversations(company_id,kind,created_by_user_id,title,request_key)
-VALUES($1::uuid,$2::text,$3::uuid,$4::text,$5::uuid) RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+VALUES($1::uuid,$2::text,$3::uuid,$4::text,$5::uuid) RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 type InsertDiscussionConversationParams struct {
@@ -630,7 +625,6 @@ func (q *Queries) InsertDiscussionConversation(ctx context.Context, arg InsertDi
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -780,7 +774,7 @@ func (q *Queries) ListCompanyMemberPresence(ctx context.Context, arg ListCompany
 }
 
 const listDiscussionAccess = `-- name: ListDiscussionAccess :many
-SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, c.board_id, ch.topic, ch.configuration_revision, ch.create_fingerprint,
+SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, ch.topic, ch.configuration_revision, ch.create_fingerprint,
     pair.user_low_id, pair.user_high_id,
     cm.role AS company_role, cm.version AS company_membership_revision,
     m.generation AS grant_generation, m.version AS grant_revision,
@@ -789,8 +783,7 @@ SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.creat
     s.version AS state_revision, s.pinned_at AS state_pinned_at,
     s.hidden_at, s.hidden_through_seq, COALESCE(s.notification_level,'all')::text AS notification_level,
     (m.user_id IS NOT NULL)::boolean AS content_access,
-    (c.kind='channel' AND c.board_id IS NULL AND cm.role=ANY($1::text[]))::boolean AS management_access,
-    board.archived_at AS board_archived_at,
+    (c.kind='channel' AND cm.role=ANY($1::text[]))::boolean AS management_access,
     (SELECT count(*) FROM conversation_members members WHERE members.conversation_id=c.id AND members.status='active')::bigint AS member_count,
     (SELECT count(*) FROM conversation_agents agents WHERE agents.conversation_id=c.id AND agents.status='active')::bigint AS agent_count,
     CASE WHEN pair.participant_ids IS NOT NULL THEN COALESCE((
@@ -825,14 +818,8 @@ LEFT JOIN conversation_human_directs pair ON pair.conversation_id=c.id
 LEFT JOIN users peer ON peer.id=CASE WHEN pair.user_low_id=cm.user_id THEN pair.user_high_id ELSE pair.user_low_id END
 LEFT JOIN company_members peer_member ON peer_member.company_id=c.company_id AND peer_member.user_id=peer.id
 LEFT JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=cm.user_id AND m.status='active'
-    AND (c.board_id IS NULL OR EXISTS(SELECT 1 FROM board_access ba
-        WHERE ba.company_id=c.company_id AND ba.board_id=c.board_id AND ba.user_id=cm.user_id))
 LEFT JOIN conversation_user_states s ON s.conversation_id=c.id AND s.user_id=cm.user_id AND s.grant_generation=m.generation
-LEFT JOIN boards board ON board.company_id=c.company_id AND board.id=c.board_id
 WHERE c.company_id=$3::uuid AND (c.kind IN ('human_direct','channel') OR (c.kind='huddle' AND cardinality($4::uuid[])>0))
-  -- Like a Huddle chat, a Board's channel lists only when asked for by ID: it
-  -- lives on its Board, not in Chat.
-  AND (c.board_id IS NULL OR cardinality($4::uuid[])>0)
   AND (cardinality($4::uuid[])=0 OR c.id=ANY($4::uuid[]))
   AND ($5::text='' OR c.kind=$5::text)
   AND ($6::boolean OR c.archived_at IS NULL)
@@ -840,8 +827,7 @@ WHERE c.company_id=$3::uuid AND (c.kind IN ('human_direct','channel') OR (c.kind
   AND ($8::text='' OR strpos(lower(c.title),lower($8::text))>0)
   AND ((NOT $9::boolean AND
         (m.user_id IS NOT NULL))
-       OR ($9::boolean AND c.kind='channel' AND c.board_id IS NULL
-           AND cm.role=ANY($1::text[])))
+       OR ($9::boolean AND c.kind='channel' AND cm.role=ANY($1::text[])))
   AND ($10::boolean OR s.hidden_at IS NULL)
   AND ($11::timestamptz IS NULL OR (c.updated_at,c.id)<($11::timestamptz,$12::uuid))
 ORDER BY c.updated_at DESC,c.id DESC LIMIT $13::int
@@ -885,7 +871,6 @@ type ListDiscussionAccessRow struct {
 	ChannelContextRevision     int64              `json:"channel_context_revision"`
 	ProjectID                  uuid.NullUUID      `json:"project_id"`
 	DocumentThreadID           uuid.NullUUID      `json:"document_thread_id"`
-	BoardID                    uuid.NullUUID      `json:"board_id"`
 	Topic                      pgtype.Text        `json:"topic"`
 	ConfigurationRevision      pgtype.Int8        `json:"configuration_revision"`
 	CreateFingerprint          []byte             `json:"create_fingerprint"`
@@ -905,7 +890,6 @@ type ListDiscussionAccessRow struct {
 	NotificationLevel          string             `json:"notification_level"`
 	ContentAccess              bool               `json:"content_access"`
 	ManagementAccess           bool               `json:"management_access"`
-	BoardArchivedAt            pgtype.Timestamptz `json:"board_archived_at"`
 	MemberCount                int64              `json:"member_count"`
 	AgentCount                 int64              `json:"agent_count"`
 	PeerDisplayName            string             `json:"peer_display_name"`
@@ -915,9 +899,6 @@ type ListDiscussionAccessRow struct {
 
 // Discussion reads use a single scoped projection under a repeatable-read
 // transaction. Management authorization never becomes content authorization.
-// A Board's channel is read by its joined people while they can still read
-// the Board, so access lost on the Board is lost here before membership
-// catches up.
 func (q *Queries) ListDiscussionAccess(ctx context.Context, arg ListDiscussionAccessParams) ([]ListDiscussionAccessRow, error) {
 	rows, err := q.db.Query(ctx, listDiscussionAccess,
 		arg.ManageRoles,
@@ -963,7 +944,6 @@ func (q *Queries) ListDiscussionAccess(ctx context.Context, arg ListDiscussionAc
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 			&i.Topic,
 			&i.ConfigurationRevision,
 			&i.CreateFingerprint,
@@ -983,7 +963,6 @@ func (q *Queries) ListDiscussionAccess(ctx context.Context, arg ListDiscussionAc
 			&i.NotificationLevel,
 			&i.ContentAccess,
 			&i.ManagementAccess,
-			&i.BoardArchivedAt,
 			&i.MemberCount,
 			&i.AgentCount,
 			&i.PeerDisplayName,
@@ -1575,7 +1554,7 @@ func (q *Queries) ListGeneralChannelEligibleUsers(ctx context.Context, companyID
 }
 
 const lockDiscussionConversation = `-- name: LockDiscussionConversation :one
-SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id FROM conversations WHERE company_id=$1::uuid AND id=$2::uuid
+SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id FROM conversations WHERE company_id=$1::uuid AND id=$2::uuid
     AND kind IN ('human_direct','channel','huddle') FOR UPDATE
 `
 
@@ -1609,7 +1588,6 @@ func (q *Queries) LockDiscussionConversation(ctx context.Context, arg LockDiscus
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -1665,7 +1643,7 @@ func (q *Queries) LockDiscussionEligibleAgents(ctx context.Context, arg LockDisc
 }
 
 const lockDiscussionsForAgentRevocation = `-- name: LockDiscussionsForAgentRevocation :many
-SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, c.board_id FROM conversations c JOIN conversation_agents g ON g.conversation_id=c.id
+SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id FROM conversations c JOIN conversation_agents g ON g.conversation_id=c.id
 WHERE c.company_id=$1::uuid AND g.agent_id=$2::uuid AND g.status='active'
 ORDER BY c.id FOR UPDATE OF c
 `
@@ -1706,7 +1684,6 @@ func (q *Queries) LockDiscussionsForAgentRevocation(ctx context.Context, arg Loc
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 		); err != nil {
 			return nil, err
 		}
@@ -1719,7 +1696,7 @@ func (q *Queries) LockDiscussionsForAgentRevocation(ctx context.Context, arg Loc
 }
 
 const lockDiscussionsForUserRevocation = `-- name: LockDiscussionsForUserRevocation :many
-SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id, c.board_id FROM conversations c JOIN conversation_members m ON m.conversation_id=c.id
+SELECT c.id, c.company_id, c.kind, c.task_id, c.schedule_id, c.agent_id, c.created_by_user_id, c.title, c.request_key, c.pinned_at, c.archived_at, c.created_at, c.updated_at, c.version, c.head_seq, c.is_general, c.channel_id, c.channel_execution_generation, c.channel_context_revision, c.project_id, c.document_thread_id FROM conversations c JOIN conversation_members m ON m.conversation_id=c.id
 WHERE c.company_id=$1::uuid AND m.user_id=$2::uuid AND m.status='active'
 ORDER BY c.id FOR UPDATE OF c
 `
@@ -1760,7 +1737,6 @@ func (q *Queries) LockDiscussionsForUserRevocation(ctx context.Context, arg Lock
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 		); err != nil {
 			return nil, err
 		}
@@ -1773,19 +1749,17 @@ func (q *Queries) LockDiscussionsForUserRevocation(ctx context.Context, arg Lock
 }
 
 const resetDiscussionUserState = `-- name: ResetDiscussionUserState :exec
-INSERT INTO conversation_user_states(company_id,conversation_id,user_id,grant_generation,main_read_seq,notification_level)
-SELECT $1::uuid,$2::uuid,$3::uuid,$4::bigint,joined_seq,
-    COALESCE($5::text,'all') FROM conversation_members WHERE conversation_id=$2::uuid AND user_id=$3::uuid
+INSERT INTO conversation_user_states(company_id,conversation_id,user_id,grant_generation,main_read_seq)
+SELECT $1::uuid,$2::uuid,$3::uuid,$4::bigint,joined_seq FROM conversation_members WHERE conversation_id=$2::uuid AND user_id=$3::uuid
 ON CONFLICT(conversation_id,user_id) DO UPDATE SET grant_generation=EXCLUDED.grant_generation,
-    main_read_seq=EXCLUDED.main_read_seq,unread_count=0,manual_unread_seq=NULL,pinned_at=NULL,hidden_at=NULL,hidden_through_seq=0,notification_level=EXCLUDED.notification_level,version=conversation_user_states.version+1,updated_at=now()
+    main_read_seq=EXCLUDED.main_read_seq,unread_count=0,manual_unread_seq=NULL,pinned_at=NULL,hidden_at=NULL,hidden_through_seq=0,notification_level='all',version=conversation_user_states.version+1,updated_at=now()
 `
 
 type ResetDiscussionUserStateParams struct {
-	CompanyID         uuid.UUID   `json:"company_id"`
-	ConversationID    uuid.UUID   `json:"conversation_id"`
-	UserID            uuid.UUID   `json:"user_id"`
-	GrantGeneration   int64       `json:"grant_generation"`
-	NotificationLevel pgtype.Text `json:"notification_level"`
+	CompanyID       uuid.UUID `json:"company_id"`
+	ConversationID  uuid.UUID `json:"conversation_id"`
+	UserID          uuid.UUID `json:"user_id"`
+	GrantGeneration int64     `json:"grant_generation"`
 }
 
 func (q *Queries) ResetDiscussionUserState(ctx context.Context, arg ResetDiscussionUserStateParams) error {
@@ -1794,7 +1768,6 @@ func (q *Queries) ResetDiscussionUserState(ctx context.Context, arg ResetDiscuss
 		arg.ConversationID,
 		arg.UserID,
 		arg.GrantGeneration,
-		arg.NotificationLevel,
 	)
 	return err
 }

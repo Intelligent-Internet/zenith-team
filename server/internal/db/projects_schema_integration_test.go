@@ -135,6 +135,7 @@ func TestProjectsSchemaEnforcesTaskAndDependencyScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{
+		"000113_whiteboard_artifacts.down.sql",
 		"000108_whiteboard_collaboration.down.sql",
 		"000107_company_whiteboards.down.sql",
 		"000106_document_agents.down.sql",

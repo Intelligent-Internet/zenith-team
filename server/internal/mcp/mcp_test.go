@@ -34,18 +34,8 @@ func TestResolveRunContextUsesOnlyRunScopedIdentity(t *testing.T) {
 		got.ConversationID != values["BOARDLY_MCP_CONVERSATION_ID"] ||
 		got.TaskID != values["BOARDLY_MCP_TASK_ID"] ||
 		got.RunID != values["BOARDLY_MCP_RUN_ID"] ||
-		got.AgentID != values["BOARDLY_MCP_AGENT_ID"] || got.WhiteboardID != "" {
+		got.AgentID != values["BOARDLY_MCP_AGENT_ID"] {
 		t.Fatalf("resolveRunContext() = %+v", got)
-	}
-	// A Board chat's Run carries its Board; anything else is refused.
-	values["BOARDLY_MCP_WHITEBOARD_ID"] = "01990ad8-0bb0-7de0-acfa-9f2821fc1a56"
-	if got, err = resolveRunContext(func(key string) string { return values[key] }); err != nil ||
-		got.WhiteboardID != values["BOARDLY_MCP_WHITEBOARD_ID"] {
-		t.Fatalf("resolveRunContext() with a Board = %+v, %v", got, err)
-	}
-	values["BOARDLY_MCP_WHITEBOARD_ID"] = "board"
-	if _, err = resolveRunContext(func(key string) string { return values[key] }); err == nil {
-		t.Fatal("an invalid Board ID was accepted")
 	}
 }
 

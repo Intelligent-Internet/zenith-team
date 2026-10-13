@@ -234,6 +234,14 @@ func normalizeDiscussionSend(input DiscussionSendInput) (normalizedDiscussionSen
 		(input.ThreadRootID != nil && *input.ThreadRootID == uuid.Nil) {
 		return normalizedDiscussionSend{}, ErrDiscussionInvalid
 	}
+	// A Whiteboard is made at the chat's top level, never in a thread.
+	if input.Whiteboard != nil {
+		title := strings.TrimSpace(input.Whiteboard.Title)
+		if title == "" || utf8.RuneCountInString(title) > 200 || input.ThreadRootID != nil {
+			return normalizedDiscussionSend{}, ErrDiscussionInvalid
+		}
+		input.Whiteboard = &DiscussionWhiteboard{Title: title}
+	}
 	for _, ids := range [][]uuid.UUID{input.AttachmentIDs, input.ArtifactIDs} {
 		seen := map[uuid.UUID]bool{}
 		for _, id := range ids {
@@ -248,7 +256,8 @@ func normalizeDiscussionSend(input DiscussionSendInput) (normalizedDiscussionSen
 	}
 	source := input.Body.Markdown
 	if !utf8.ValidString(source) ||
-		(strings.TrimSpace(source) == "" && len(input.AttachmentIDs) == 0 && len(input.ArtifactIDs) == 0) {
+		(strings.TrimSpace(source) == "" && len(input.AttachmentIDs) == 0 && len(input.ArtifactIDs) == 0 &&
+			input.Whiteboard == nil) {
 		return normalizedDiscussionSend{}, ErrDiscussionInvalid
 	}
 	for _, r := range source {
@@ -283,13 +292,14 @@ func normalizeDiscussionSend(input DiscussionSendInput) (normalizedDiscussionSen
 		input.AttachmentIDs = []uuid.UUID{}
 	}
 	canonical, err := json.Marshal(struct {
-		Operation     string         `json:"operation"`
-		Version       int            `json:"version"`
-		Body          DiscussionBody `json:"body"`
-		AttachmentIDs []uuid.UUID    `json:"attachmentIds"`
-		ArtifactIDs   []uuid.UUID    `json:"artifactIds,omitempty"`
-		ThreadRootID  *uuid.UUID     `json:"threadRootId"`
-	}{"discussion.send", 1, input.Body, input.AttachmentIDs, input.ArtifactIDs, input.ThreadRootID})
+		Operation     string                `json:"operation"`
+		Version       int                   `json:"version"`
+		Body          DiscussionBody        `json:"body"`
+		AttachmentIDs []uuid.UUID           `json:"attachmentIds"`
+		ArtifactIDs   []uuid.UUID           `json:"artifactIds,omitempty"`
+		ThreadRootID  *uuid.UUID            `json:"threadRootId"`
+		Whiteboard    *DiscussionWhiteboard `json:"whiteboard,omitempty"`
+	}{"discussion.send", 1, input.Body, input.AttachmentIDs, input.ArtifactIDs, input.ThreadRootID, input.Whiteboard})
 	if err != nil {
 		return normalizedDiscussionSend{}, fmt.Errorf("encode send fingerprint: %w", err)
 	}

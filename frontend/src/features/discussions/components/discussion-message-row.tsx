@@ -50,7 +50,6 @@ import { DiscussionAvatar } from "./discussion-identity";
 import { DiscussionReactionPeople } from "./discussion-reaction-people";
 import { DiscussionAttachments } from "./discussion-attachment";
 import { useDiscussionPreview } from "./discussion-preview";
-import { useCompactDiscussion } from "./discussion-compact";
 
 export const DiscussionMessageRow = memo(function DiscussionMessageRow({
   message,
@@ -70,7 +69,6 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
   const runtime = useDiscussionRuntime();
   const { openArtifact } = useDiscussionPreview();
   const channelAgents = useChannelAgents();
-  const compactChat = useCompactDiscussion();
   const id = detail.conversation.id;
   const busy = useSyncExternalStore(
     runtime.subscribe,
@@ -208,7 +206,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
           <header>
             <MemberProfileTrigger profile={profile}>
               <strong>{author.displayName}</strong>
-              {author.type === "agent" && !compactChat ? (
+              {author.type === "agent" ? (
                 <small>
                   Managed by{" "}
                   {channelAgents.agents.find(

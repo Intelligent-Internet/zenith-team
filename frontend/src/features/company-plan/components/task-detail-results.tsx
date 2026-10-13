@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { DeliveryFreshness } from "@/features/run-deliverables/components/delivery-freshness";
 import "../styles/task-detail-page.css";
-import { ArrowUpRight, FileText, Globe2 } from "@/shared/ui/icons";
+import {
+  ArrowUpRight,
+  FileText,
+  Globe2,
+  LayoutDashboard,
+} from "@/shared/ui/icons";
 import { ArtifactThumbnail } from "@/features/chat-panel/components/artifacts/artifact-thumbnail";
 import { artifactFileSelection } from "@/features/chat-panel/model/artifact-file-access";
 
@@ -137,8 +142,14 @@ function ResultGroup({
             : ""}
         </span>
         <span>
-          {result.artifact.items.length} saved{" "}
-          {result.artifact.items.length === 1 ? "file" : "files"}
+          {result.artifact.type === "whiteboard" ? (
+            "Whiteboard"
+          ) : (
+            <>
+              {result.artifact.items.length} saved{" "}
+              {result.artifact.items.length === 1 ? "file" : "files"}
+            </>
+          )}
         </span>
         <time dateTime={result.artifact.createdAt}>
           {new Date(result.artifact.createdAt).toLocaleString(undefined, {
@@ -156,17 +167,26 @@ function ResultGroup({
       {result.artifact.summary ? <p>{result.artifact.summary}</p> : null}
       <DeliveryFreshness output={result.artifact} />
       <div className="task-detail-files">
-        {result.artifact.type === "app" ? (
+        {result.artifact.type === "app" ||
+        result.artifact.type === "whiteboard" ? (
           <button
             type="button"
             className="task-detail-file"
             onClick={() => onSelect(result)}
           >
             <span className="task-detail-file-icon">
-              <Globe2 size={20} />
+              {result.artifact.type === "app" ? (
+                <Globe2 size={20} />
+              ) : (
+                <LayoutDashboard size={20} />
+              )}
             </span>
             <span className="task-detail-file-name">
-              <strong>Open app</strong>
+              <strong>
+                {result.artifact.type === "app"
+                  ? "Open app"
+                  : "Open whiteboard"}
+              </strong>
             </span>
             <ArrowUpRight size={16} />
           </button>

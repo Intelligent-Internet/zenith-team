@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
-
 	"boardly.dev/boardly/server/pkg/agent"
 )
 
@@ -1434,59 +1432,41 @@ func TestCEOPlanningPolicyTeachesWikiOnlyWithWikiTools(t *testing.T) {
 	}
 }
 
-// A tag in a Board's chat works on that Board: only the Board tools, a
-// question to the person and the Wiki; a prompt naming the Board and the
-// channel's rules; Run channel rows that reach no other Board; and, like any
-// tag, a fresh folder with no session, Memory or the person's own folders,
-// and an answer it has to prove.
-func TestBoardChatRunWorksOnItsBoard(t *testing.T) {
+// A Whiteboard is an Artifact: every Run that inspects Artifacts can edit a
+// Whiteboard, and no Whiteboard tool of its own is offered. A Run of a chat
+// with Whiteboards, a channel tag or an Agent chat, learns their IDs and how
+// to draw; other Runs do not carry that prompt.
+func TestWhiteboardsComeThroughTheArtifactTools(t *testing.T) {
 	t.Parallel()
-	board := "6f9619ff-8b86-4011-b42d-00c04fc964ff"
-	doc := RunContext{
-		ExecutionProfile: RunExecutionProfileContext{
-			Source: "message", Whiteboard: &RunWhiteboardContext{ID: board, Title: "Sprint Q4"},
+	tagged := RunContext{
+		ChannelInvocation: &RunChannelInvocation{ID: "invocation"},
+		ChatWhiteboards: []RunWhiteboardContext{
+			{ID: "6f9619ff-8b86-4011-b42d-00c04fc964ff", Title: "Sprint Q4"},
 		},
-		ChannelInvocation: &RunChannelInvocation{ID: uuid.NewString()},
 	}
-	if !isTaggedRun(doc) || runUsesMainWorkspace(doc) || localDirectoryFor(doc, "daemon") != nil {
-		t.Fatal("a tag in a Board's chat works in its person's own folders")
+	tools := boardlyMCPToolsForRun(tagged)
+	if !slices.Contains(tools, "artifact_inspect") || !slices.Contains(tools, "artifact_edit") {
+		t.Fatalf("tools = %v; want artifact_inspect and artifact_edit", tools)
 	}
-	want := []string{
-		"ask_human",
-		"wiki_read",
-		"wiki_search",
-		"whiteboard_read",
-		"whiteboard_draw",
-		"whiteboard_edit",
-	}
-	got := boardlyMCPToolsForRun(doc)
-	slices.Sort(got)
-	slices.Sort(want)
-	if !slices.Equal(got, want) {
-		t.Fatalf("tools = %v, want %v", got, want)
-	}
-	prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
-	if !strings.Contains(prompt, `the Board "Sprint Q4" (`+board+`)`) ||
-		!strings.Contains(prompt, "Channel conversation (platform policy)") ||
-		strings.Contains(prompt, "whiteboard_list") {
-		t.Fatalf("prompt does not name the Board and the channel's rules, or offers other Boards:\n%s", prompt)
-	}
-	run := Run{CompanyID: "company", ID: uuid.MustParse("01990d25-3d7a-7000-8000-000000000071")}
-	own := "/companies/company/runs/" + run.ID.String() + "/whiteboards/"
-	reaches := func(path string) bool {
-		for _, command := range runCLICommands(run, doc) {
-			if strings.HasPrefix(command.Tool, "whiteboard_") &&
-				runCLIPatternMatches(command.Operation.Pattern, path) {
-				return true
-			}
+	for _, tool := range tools {
+		if strings.HasPrefix(tool, "whiteboard_") {
+			t.Fatalf("tools = %v; want no Whiteboard tool of its own", tools)
 		}
-		return false
 	}
-	if !reaches(own+board+"/compose") || !reaches(own+board+"/view") {
-		t.Fatal("the Board chat's Run cannot reach its Board")
+	prompt := buildRunSystemPrompt(tagged, "/scratch", runMemoryContext{})
+	if !strings.Contains(prompt, `"Sprint Q4", artifactId 6f9619ff-8b86-4011-b42d-00c04fc964ff`) ||
+		!strings.Contains(prompt, "artifact_edit ops") {
+		t.Fatalf("prompt does not name the chat's Whiteboards:\n%s", prompt)
 	}
-	if reaches(own+uuid.NewString()+"/compose") || reaches(own+uuid.NewString()+"/view") {
-		t.Fatal("the Board chat's Run reaches another Board")
+	agentChat := RunContext{ChatWhiteboards: tagged.ChatWhiteboards}
+	if prompt := buildRunSystemPrompt(agentChat, "/scratch", runMemoryContext{}); !strings.Contains(
+		prompt, `"Sprint Q4", artifactId 6f9619ff-8b86-4011-b42d-00c04fc964ff`,
+	) {
+		t.Fatalf("an Agent chat Run's prompt does not name the chat's Whiteboards:\n%s", prompt)
+	}
+	plain := buildRunSystemPrompt(RunContext{}, "/scratch", runMemoryContext{})
+	if strings.Contains(plain, "Whiteboards in this chat") {
+		t.Fatal("a Run without Whiteboards carries the Whiteboard prompt")
 	}
 }
 

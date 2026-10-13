@@ -268,13 +268,6 @@ func TestErrorMappersGolden(t *testing.T) {
 				"whiteboard_limit",
 			},
 			{
-				"archived",
-				canvas.ErrBoardArchived,
-				409,
-				"This Whiteboard is archived",
-				"whiteboard_archived",
-			},
-			{
 				"locked object",
 				canvas.ErrBoardLocked,
 				409,

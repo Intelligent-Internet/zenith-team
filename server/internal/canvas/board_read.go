@@ -29,9 +29,7 @@ func (s *DefaultBoardService) Snapshot(
 			return err
 		}
 		result, err = boardSnapshotInTx(ctx, q, p, b, after)
-		result.Board.CanEdit = viewer.CanEdit
-		result.Board.CanShare = viewer.CanShare
-		result.Board.CanManage = viewer.CanShare && result.Board.CanManage
+		result.Board = boardDTO(b, viewer)
 		return err
 	})
 	return result, boardError(err)
@@ -44,22 +42,17 @@ func boardSnapshotInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	after int64,
 ) (BoardSnapshot, error) {
 	result := BoardSnapshot{
-		Board:    boardDTO(b, p),
+		Board:    boardDTO(b, BoardViewer{}),
 		Sequence: b.HeadSeq,
 		Full:     after == 0 || after > b.HeadSeq,
 		Items:    []BoardItem{},
 		Edges:    []BoardEdge{},
 		Removed:  []uuid.UUID{},
 	}
-	favorite, err := q.BoardFavorite(ctx, generated.BoardFavoriteParams{BoardID: b.ID, UserID: p.UserID})
-	if err != nil {
-		return result, err
-	}
-	result.Board.Favorite = favorite
 	selected := map[uuid.UUID]bool{}
 	if !result.Full && after < b.HeadSeq {
 		rows, err := q.ListBoardChanges(ctx, generated.ListBoardChangesParams{BoardID: b.ID, Seq: after})
@@ -89,6 +82,7 @@ func boardSnapshotInTx(
 	if result.Full {
 		selected = nil
 	}
+	var err error
 	result.Items, result.Edges, result.Removed, err = boardObjectsInTx(ctx, q, p, b, selected)
 	return result, err
 }
@@ -101,7 +95,7 @@ func boardObjectsInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	selected map[uuid.UUID]bool,
 ) ([]BoardItem, []BoardEdge, []uuid.UUID, error) {
 	items, edges, removed := []BoardItem{}, []BoardEdge{}, []uuid.UUID{}
@@ -302,10 +296,7 @@ func (s *DefaultBoardService) Context(
 		if err != nil {
 			return err
 		}
-		result.Board = snapshot.Board
-		result.Board.CanEdit = viewer.CanEdit
-		result.Board.CanShare = viewer.CanShare
-		result.Board.CanManage = viewer.CanShare && result.Board.CanManage
+		result.Board = boardDTO(board, viewer)
 		result.Sequence = snapshot.Sequence
 		wanted := map[uuid.UUID]bool{}
 		for _, itemID := range input.ItemIDs {
@@ -326,7 +317,7 @@ func (s *DefaultBoardService) Context(
 			textBytes[size.ItemID] = int(size.TextBytes)
 		}
 		// JSON and Markdown repeat text; reserve room for both and context metadata.
-		used := len(board.Title) + len(board.Purpose) + 1024
+		used := len(board.Title) + 1024
 		var notes []uuid.UUID
 		for _, item := range snapshot.Items {
 			if len(wanted) > 0 && !wanted[item.ID] {
@@ -427,7 +418,7 @@ func (s *DefaultBoardService) Context(
 // included items and edges, and returns the answer's encoded size.
 func boardContextFinish(
 	result *BoardContext,
-	board generated.Board,
+	board boardRecord,
 	included, omitted map[uuid.UUID]bool,
 	used, maxBytes int,
 ) ([]byte, error) {
@@ -461,16 +452,15 @@ func boardContextFinish(
 	var md strings.Builder
 	fmt.Fprintf(
 		&md,
-		"# %s\n\n%s\n\nBoard %s, committed sequence %d.\n",
+		"# %s\n\nBoard %s, committed sequence %d.\n",
 		board.Title,
-		board.Purpose,
 		board.ID,
 		board.HeadSeq,
 	)
 	for _, item := range result.Items {
 		fmt.Fprintf(
 			&md,
-			"\n## %s %s\n\nID: %s; geometry revision %d; content revision %d; text revision %d.\nCreated by %s (%s); updated by %s (%s).\n[Open item](/whiteboards/%s?companyId=%s&itemId=%s)\n\n%s\n",
+			"\n## %s %s\n\nID: %s; geometry revision %d; content revision %d; text revision %d.\nCreated by %s (%s); updated by %s (%s).\n[Open item](/companies/%s/artifacts/%s?itemId=%s)\n\n%s\n",
 			item.Type,
 			item.Properties.Title,
 			item.ID,
@@ -481,8 +471,8 @@ func boardContextFinish(
 			item.CreatedBy.ID,
 			item.UpdatedBy.DisplayName,
 			item.UpdatedBy.ID,
-			board.ID,
 			board.CompanyID,
+			board.ID,
 			item.ID,
 			item.Text,
 		)
@@ -548,7 +538,7 @@ func boardContextFinish(
 func boardHydrateInTx(
 	ctx context.Context,
 	q *generated.Queries,
-	board generated.Board,
+	board boardRecord,
 	input BoardHydrateInput,
 	withState bool,
 ) (BoardHydration, error) {

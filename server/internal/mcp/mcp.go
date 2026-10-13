@@ -68,11 +68,11 @@ func Run(ctx context.Context, getenv func(string) string) error {
 		toolExplicitlyAllowed(allowedTools, "page_edit")
 	milestonesEnabled := toolExplicitlyAllowed(allowedTools, tools.AttestMilestonesToolName)
 	artifactsEnabled := toolExplicitlyAllowed(allowedTools, "artifact_inspect") ||
-		toolExplicitlyAllowed(allowedTools, "artifact_fetch")
-	whiteboardsEnabled := toolExplicitlyAllowed(allowedTools, "whiteboard_list") ||
-		toolExplicitlyAllowed(allowedTools, "whiteboard_read") ||
-		toolExplicitlyAllowed(allowedTools, "whiteboard_edit") ||
-		toolExplicitlyAllowed(allowedTools, "whiteboard_draw")
+		toolExplicitlyAllowed(allowedTools, "artifact_fetch") ||
+		toolExplicitlyAllowed(allowedTools, "artifact_edit")
+	// A Whiteboard is read and changed through the Artifact tools.
+	whiteboardsEnabled := toolExplicitlyAllowed(allowedTools, "artifact_inspect") ||
+		toolExplicitlyAllowed(allowedTools, "artifact_edit")
 	outputEnabled := toolExplicitlyAllowed(allowedTools, "present_output")
 	var runContext tools.RunContext
 	commerceEnabled := toolExplicitlyAllowed(allowedTools, "commerce_account_status") ||
@@ -278,15 +278,6 @@ func resolveRunContext(getenv func(string) string) (tools.RunContext, error) {
 		TaskID:         strings.TrimSpace(getenv("BOARDLY_MCP_TASK_ID")),
 		RunID:          strings.TrimSpace(getenv("BOARDLY_MCP_RUN_ID")),
 		AgentID:        strings.TrimSpace(getenv("BOARDLY_MCP_AGENT_ID")),
-		WhiteboardID:   strings.TrimSpace(getenv("BOARDLY_MCP_WHITEBOARD_ID")),
-	}
-	if runContext.WhiteboardID != "" {
-		if parsed, err := uuid.Parse(
-			runContext.WhiteboardID,
-		); err != nil ||
-			parsed.String() != runContext.WhiteboardID {
-			return tools.RunContext{}, errors.New("Zenith Team run Whiteboard ID is invalid")
-		}
 	}
 	for name, value := range map[string]string{
 		"company":      runContext.CompanyID,

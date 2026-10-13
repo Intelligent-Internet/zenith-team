@@ -11,11 +11,11 @@ import (
 	generated "boardly.dev/boardly/server/pkg/db/generated"
 )
 
-// An unrevoked opaque link grants reads only. Recheck it in the read's snapshot
-// for each scene, hydration and file request.
-func publicBoardRead(ctx context.Context, q *generated.Queries, token uuid.UUID) (generated.Board, error) {
-	b, err := q.ReadPublicBoard(ctx, uuid.NullUUID{UUID: token, Valid: true})
-	return b, boardError(err)
+// A Whiteboard Artifact's unrevoked public link grants reads only. Recheck it
+// in the read's snapshot for each scene, hydration and file request.
+func publicBoardRead(ctx context.Context, q *generated.Queries, token uuid.UUID) (boardRecord, error) {
+	row, err := q.ReadPublicBoard(ctx, token)
+	return boardRecord{Board: row.Board, Title: row.Title}, boardError(err)
 }
 
 func (s *DefaultBoardService) PublicSnapshot(ctx context.Context, token uuid.UUID) (BoardSnapshot, error) {

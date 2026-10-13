@@ -1371,10 +1371,11 @@ schemas:
 
   ArtifactType:
     type: string
-    enum: [app, media, text, file]
+    enum: [app, media, text, file, whiteboard]
     description: |
       The dedicated Artifact experience: running app preview, image/audio/video media,
-      readable text such as a plan, or a general file collection.
+      readable text such as a plan, a general file collection, or a live Whiteboard that
+      a member made in a chat. A Run presents only the first four.
 
   AppPreviewCommand:
     type: object
@@ -1425,9 +1426,10 @@ schemas:
             app: {}
     properties:
       type:
-        allOf: [{ $ref: '#/schemas/ArtifactType' }]
+        type: string
+        enum: [app, media, text, file]
         default: file
-        description: App requires an app command document and no file items.
+        description: App requires an app command document and no file items. A Run never presents a Whiteboard.
       app:
         $ref: '#/schemas/PresentRunAppOutput'
       presentationId:

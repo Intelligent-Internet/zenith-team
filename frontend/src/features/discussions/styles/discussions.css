@@ -712,6 +712,9 @@ html[data-boardly-workspace-theme] .discussion-composer textarea:focus {
   min-height: 0;
   overflow-y: auto;
 }
+.discussion-whiteboard-dialog {
+  width: min(440px, calc(100vw - 28px));
+}
 .discussion-dialog-header h2 {
   margin: 0;
   font-size: 17px;

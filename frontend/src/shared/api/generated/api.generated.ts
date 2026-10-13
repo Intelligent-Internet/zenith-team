@@ -140,25 +140,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List whiteboards */
-        get: operations["listWhiteboards"];
-        put?: never;
-        /** Create whiteboard */
-        post: operations["createWhiteboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard": {
         parameters: {
             query?: never;
             header?: never;
@@ -172,28 +154,10 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update whiteboard */
-        patch: operations["updateWhiteboard"];
-        trace?: never;
-    };
-    "/api/v1/public/whiteboards/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read an unrevoked public Board link; no sign-in required */
-        get: operations["getPublicWhiteboard"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/whiteboards/{token}/hydrate": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/operations": {
         parameters: {
             query?: never;
             header?: never;
@@ -202,32 +166,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Read an unrevoked public Board link; no sign-in required */
-        post: operations["hydratePublicWhiteboard"];
+        /** Operations whiteboard */
+        post: operations["operationsWhiteboard"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/public/whiteboards/{token}/files/{attachmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download a file a public Board link still places; no sign-in required */
-        get: operations["downloadPublicWhiteboardFile"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/visibility": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/hydrate": {
         parameters: {
             query?: never;
             header?: never;
@@ -235,8 +182,45 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set Private, Company or Public visibility; leaving Public revokes its link */
-        put: operations["setWhiteboardVisibility"];
+        put?: never;
+        /** Hydrate whiteboard */
+        post: operations["hydrateWhiteboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Text whiteboard */
+        post: operations["textWhiteboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/title": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename whiteboard
+         * @description Retitles the Whiteboard Artifact for a member who may edit its Board. Every reader of the Artifact receives `whiteboard.renamed`, since the title also names it in chats and Artifact lists.
+         */
+        put: operations["renameWhiteboard"];
         post?: never;
         delete?: never;
         options?: never;
@@ -244,60 +228,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/channel": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/presence": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Read the Board's chat and the people who can read the Board
-         * @description Reads the Board's chat without joining it: the chat once someone started it, whether the caller joined, and the people who can read the Board to mention. A person who cannot read the Board gets 404.
-         */
-        get: operations["getWhiteboardChannel"];
+        get?: never;
+        /** Update whiteboard presence */
+        put: operations["updateWhiteboardPresence"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         /**
-         * Open the Board's chat, starting it the first time
-         * @description Joins the caller to the Board's chat, starting the chat the first time, and brings its people and Agents in step with the Board: people who can no longer read the Board leave, and its Agents are the Agents invited to the Board. The chat is an ordinary channel read through the discussion routes by its ID; it never lists in Chat. A person who cannot read the Board gets 404.
+         * Reference an uploaded file from a whiteboard
+         * @description Member-only. Registers a file on the Board so items can place it. Accepts the caller's own ready upload that no chat, Project, Output or other Board shares yet, or a file the caller can already read on another Whiteboard of the Company (copy between Whiteboards). Any file type is accepted; PNG, JPEG, GIF and WebP images must decode, are limited to 32 MiB and 32 Mi pixels, and keep a bounded preview. Retrying the same attachment on the same Board returns the same registration. The scene item is created separately through operations.
          */
-        post: operations["joinWhiteboardChannel"];
+        post: operations["attachWhiteboardFile"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/access": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/files/{attachmentId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Read Board visibility and person/Agent grants */
-        get: operations["getWhiteboardAccess"];
-        /** Grant, change or revoke person/Agent access */
-        put: operations["setWhiteboardAccess"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/runs/{runId}/whiteboards": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Agent list whiteboards
-         * @description Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans.
-         */
-        get: operations["agentListWhiteboards"];
+        /** Download a file placed on a whiteboard */
+        get: operations["downloadWhiteboardFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -306,7 +282,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/operations": {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a whiteboard as a small image
+         * @description A small PNG of all of the Board's content, framed 16:9 for the Whiteboard Artifact's card. The ETag names the Board sequence it shows, so an unchanged Board is not drawn again.
+         */
+        get: operations["previewWhiteboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/operations": {
         parameters: {
             query?: never;
             header?: never;
@@ -317,7 +313,7 @@ export interface paths {
         put?: never;
         /**
          * Agent operations whiteboard
-         * @description Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans.
+         * @description Requires the exact live Run proof and its authorizing member, who must be able to read this Whiteboard Artifact; edits need their edit access. Revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans.
          */
         post: operations["agentOperationsWhiteboard"];
         delete?: never;
@@ -326,7 +322,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/compose": {
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/compose": {
         parameters: {
             query?: never;
             header?: never;
@@ -346,7 +342,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/context": {
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/context": {
         parameters: {
             query?: never;
             header?: never;
@@ -357,7 +353,7 @@ export interface paths {
         put?: never;
         /**
          * Agent context whiteboard
-         * @description Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans.
+         * @description Requires the exact live Run proof and its authorizing member, who must be able to read this Whiteboard Artifact; edits need their edit access. Revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans.
          */
         post: operations["agentContextWhiteboard"];
         delete?: never;
@@ -366,7 +362,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/view": {
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/view": {
         parameters: {
             query?: never;
             header?: never;
@@ -377,7 +373,7 @@ export interface paths {
         put?: never;
         /**
          * Agent view whiteboard
-         * @description The compact reading an Agent works from: by default the area the person who authorized the Run is looking at (their focused browser window, else their latest one, else the view they left a few minutes ago), one line per object with a short ref, with an optional image of exactly that area. The same Run proof and invitation as context apply. The Agent's presence moves to the area it read.
+         * @description The compact reading an Agent works from: by default the area the person who authorized the Run is looking at (their focused browser window, else their latest one, else the view they left a few minutes ago), one line per object with a short ref, with an optional image of exactly that area. The same Run proof and access as context apply. The Agent's presence moves to the area it read.
          */
         post: operations["agentViewWhiteboard"];
         delete?: never;
@@ -386,16 +382,19 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/favorite": {
+    "/api/v1/public/artifacts/{token}/whiteboard": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        /** Favorite whiteboard */
-        put: operations["favoriteWhiteboard"];
+        /**
+         * Read an unrevoked public Board link; no sign-in required
+         * @description Read a Whiteboard Artifact through its unrevoked public link; no sign-in required
+         */
+        get: operations["getPublicWhiteboard"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -403,7 +402,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/claim": {
+    "/api/v1/public/artifacts/{token}/whiteboard/hydrate": {
         parameters: {
             query?: never;
             header?: never;
@@ -413,130 +412,28 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Claim an unowned whiteboard
-         * @description A Company Whiteboard manager takes manage access to a Board no active member manages.
+         * Read an unrevoked public Board link; no sign-in required
+         * @description Read a Whiteboard Artifact through its unrevoked public link; no sign-in required
          */
-        post: operations["claimWhiteboard"];
+        post: operations["hydratePublicWhiteboard"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/operations": {
+    "/api/v1/public/artifacts/{token}/whiteboard/files/{attachmentId}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /** Operations whiteboard */
-        post: operations["operationsWhiteboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/hydrate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Hydrate whiteboard */
-        post: operations["hydrateWhiteboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/text": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Text whiteboard */
-        post: operations["textWhiteboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/context": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Context whiteboard */
-        post: operations["contextWhiteboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/presence": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update whiteboard presence */
-        put: operations["updateWhiteboardPresence"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
-         * Reference an uploaded file from a whiteboard
-         * @description Member-only. Registers a file on the Board so items can place it. Accepts the caller's own ready upload that no chat, Project, Output or other Board shares yet, or a file the caller can already read on another Board of the Company (copy between Boards). Any file type is accepted; PNG, JPEG, GIF and WebP images must decode, are limited to 32 MiB and 32 Mi pixels, and keep a bounded preview. Retrying the same attachment on the same Board returns the same registration. The scene item is created separately through operations.
+         * Download a file a public Board link still places; no sign-in required
+         * @description Download a file a Whiteboard Artifact still places, through its unrevoked public link; no sign-in required
          */
-        post: operations["attachWhiteboardFile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/whiteboards/{boardId}/files/{attachmentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download a file placed on a whiteboard */
-        get: operations["downloadWhiteboardFile"];
+        get: operations["downloadPublicWhiteboardFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7205,6 +7102,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/conversations/{conversationId}/whiteboards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Make a Whiteboard in an Agent or Task chat
+         * @description Makes a Whiteboard in an Agent chat or a Task's chat, owned by the
+         *     caller and titled as given. The chat gets no message for it: every
+         *     turn there asks the Agent, so the Whiteboard joins the chat's Artifacts
+         *     (`GET /companies/{companyId}/conversations/{conversationId}/artifacts`)
+         *     and every later Run of the chat is told of it. Others open it only
+         *     once its owner shares it, as with any Artifact. The answer is the new
+         *     Artifact as that list shows it. A group chat makes its Whiteboards
+         *     with a discussion message instead.
+         *
+         *     Reaching the chat follows the message send: an unknown or unreadable
+         *     chat is `404 conversation_not_found`, and a Task chat needs
+         *     `project.tasks.write` on its Project (`403
+         *     project_permission_required`). A blank title, or one over 200
+         *     characters, is `422`.
+         */
+        post: operations["createConversationWhiteboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tasks/{taskId}/messages": {
         parameters: {
             query?: never;
@@ -10463,13 +10393,6 @@ export interface components {
             /** Format: double */
             y: number;
         };
-        BoardFavoriteInput: {
-            favorite: boolean;
-        };
-        BoardClaimInput: {
-            /** Format: int64 */
-            expectedRevision: number;
-        };
         BoardContext: {
             /** Format: int64 */
             omittedCount: number;
@@ -10501,7 +10424,7 @@ export interface components {
              */
             expectedSequence?: number;
             /**
-             * @description Render ephemeral PNG regions of the acknowledged scene. Nearby content is grouped; distant content and oversized groups are split. Enabled automatically by whiteboard_read.
+             * @description Render ephemeral PNG regions of the acknowledged scene. Nearby content is grouped; distant content and oversized groups are split. Enabled automatically when artifact_inspect reads a Whiteboard.
              * @default false
              */
             includeVisuals: boolean;
@@ -10717,6 +10640,10 @@ export interface components {
             /** Format: byte */
             stateVector?: string;
         };
+        BoardTitleInput: {
+            /** @description Surrounding space is trimmed; the rest must hold 1 to 200 characters. */
+            title: string;
+        };
         BoardMutation: {
             /** Format: int64 */
             sequence: number;
@@ -10921,100 +10848,21 @@ export interface components {
             /** Format: int64 */
             readingOrder: number;
         };
-        UpdateBoardInput: {
-            /** Format: int64 */
-            expectedRevision: number;
-            title?: string | null;
-            purpose?: string | null;
-            archived?: boolean | null;
-        };
-        CreateBoardInput: {
-            /** Format: uuid */
-            requestKey: string;
-            title: string;
-            purpose?: string;
-        };
-        BoardList: {
-            boards: components["schemas"]["Board"][];
-            hasMore: boolean;
-        };
-        BoardGrant: {
-            actor: components["schemas"]["ActorRef"];
-            /** @enum {string} */
-            access: "read" | "edit" | "manage";
-        };
-        BoardAccess: {
-            owner: components["schemas"]["ActorRef"];
-            /** @enum {string} */
-            permission: "read" | "edit" | "manage";
-            /** @enum {string} */
-            visibility: "private" | "company" | "public";
-            /** @enum {string} */
-            companyAccess: "read" | "edit";
-            publicToken: string | null;
-            /** Format: int64 */
-            revision: number;
-            grants: components["schemas"]["BoardGrant"][];
-            /** @description Canonical member web URL for sharing from web and Electron. Empty when no web origin is configured. */
-            url: string;
-        };
-        BoardChannel: {
-            /** Format: uuid */
-            boardId: string;
-            /** @description The Board's chat, read through the discussion routes; null until someone opens it. */
-            conversationId: string | null;
-            /** @description Whether the caller is in the chat. */
-            joined: boolean;
-            /** @description The people who can read the Board, by name; mentioning one who has not joined brings them into the chat. */
-            people: components["schemas"]["BoardChannelPerson"][];
-            /** @description More people can read the Board than are listed. */
-            peopleTruncated: boolean;
-        };
-        BoardChannelPerson: {
-            /** Format: uuid */
-            userId: string;
-            displayName: string;
-            avatarUrl: string | null;
-            joined: boolean;
-        };
-        BoardAccessInput: {
-            /** Format: int64 */
-            expectedRevision: number;
-            actor: components["schemas"]["ActorRef"];
-            /** @enum {string} */
-            access: "read" | "edit" | "manage" | "none";
-        };
-        BoardVisibilityInput: {
-            /** Format: int64 */
-            expectedRevision: number;
-            /** @enum {string} */
-            visibility: "private" | "company" | "public";
-            /** @enum {string} */
-            companyAccess: "read" | "edit";
-        };
         Board: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             companyId: string;
+            /** @description The Whiteboard Artifact title. */
             title: string;
-            purpose: string;
             /** Format: int64 */
             sequence: number;
-            /** Format: int64 */
-            revision: number;
-            /** Format: uuid */
-            createdBy: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
-            archivedAt: string | null;
-            favorite: boolean;
             canEdit: boolean;
-            canManage: boolean;
-            /** @enum {string} */
-            visibility: "private" | "company" | "public";
+            /** @description The caller owns or manages the Artifact, so it may change who has access. */
             canShare: boolean;
         };
         AgentSkillFile: {
@@ -13036,6 +12884,13 @@ export interface components {
             name: string;
             avatarUrl: string | null;
         };
+        CanvasDocumentCursor: {
+            clientId: number;
+            /** Format: byte */
+            anchor: string;
+            /** Format: byte */
+            head: string;
+        };
         BoardVisualRegion: {
             index: number;
             /** @description Crop in board coordinates. Adjacent detail tiles overlap to preserve boundary context. */
@@ -13074,13 +12929,6 @@ export interface components {
             regionsShifted: boolean;
             /** @description First page only: the whole Board at low resolution, for choosing where to look. */
             overview?: components["schemas"]["BoardVisualRegion"] | null;
-        };
-        CanvasDocumentCursor: {
-            clientId: number;
-            /** Format: byte */
-            anchor: string;
-            /** Format: byte */
-            head: string;
         };
         AgentSkillPreviewVersion: {
             /** Format: uuid */
@@ -13642,6 +13490,7 @@ export interface components {
         ArtifactConversationGrant: {
             /** Format: uuid */
             conversationId: string;
+            /** @description The conversation's name as the chat list shows it to the caller, a channel's title or a direct message's other participants; `Private conversation` when the caller is not in it. */
             title: string;
             grantedAt: components["schemas"]["Timestamp"];
         };
@@ -13669,10 +13518,11 @@ export interface components {
         };
         /**
          * @description The dedicated Artifact experience: running app preview, image/audio/video media,
-         *     readable text such as a plan, or a general file collection.
+         *     readable text such as a plan, a general file collection, or a live Whiteboard that
+         *     a member made in a chat. A Run presents only the first four.
          * @enum {string}
          */
-        ArtifactType: "app" | "media" | "text" | "file";
+        ArtifactType: "app" | "media" | "text" | "file" | "whiteboard";
         PublicArtifactItem: {
             /** @enum {string} */
             role: "primary" | "final";
@@ -13757,8 +13607,6 @@ export interface components {
             memberCount: number;
             /** Format: int64 */
             agentCount: number;
-            /** @description The Board whose chat this is. A Board's chat lives on its Board, never in the Chat lists; null for any other chat. */
-            boardId: string | null;
             peer?: components["schemas"]["DiscussionPeer"] | null;
             capabilities: components["schemas"]["DiscussionCapabilities"];
             userState: components["schemas"]["DiscussionUserState"] | null;
@@ -14033,7 +13881,10 @@ export interface components {
             /** Format: int64 */
             streamHeadSeq: number;
         };
-        /** @description 128 KiB request cap. Up to twenty ready file attachments and ten Artifacts may be shared. threadRootId may identify a root or reply; reply parents resolve to their original root before fingerprinting. Exact retries return the current edited/deleted message, including after archive, with current read access. Zero Runs. */
+        DiscussionWhiteboardInput: {
+            title: string;
+        };
+        /** @description 128 KiB request cap. Up to twenty ready file attachments and ten Artifacts may be shared. A whiteboard creates a new Whiteboard Artifact owned by the sender in the same transaction and shares it into the chat like an Artifact in artifactIds, so its people can open it; it is not allowed in a Huddle chat or a thread. threadRootId may identify a root or reply; reply parents resolve to their original root before fingerprinting. Exact retries return the current edited/deleted message, including after archive, with current read access. Zero Runs. */
         SendDiscussionRequest: {
             /** Format: uuid */
             requestKey: string;
@@ -14041,6 +13892,7 @@ export interface components {
             attachmentIds?: string[];
             artifactIds?: string[];
             threadRootId?: string | null;
+            whiteboard?: components["schemas"]["DiscussionWhiteboardInput"];
         };
         DiscussionReceipt: {
             message: components["schemas"]["DiscussionMessage"];
@@ -14338,7 +14190,7 @@ export interface components {
          *     policy.
          * @enum {string}
          */
-        CompanyPermission: "agents.manage" | "approvals.resolve" | "commerce.manage" | "commerce.read" | "company.delete" | "company.plan.apply" | "company.proactive_mode.manage" | "conversations.discuss" | "channels.manage" | "company.profile.update" | "company.resources.manage" | "connectors.manage" | "mailbox.manage" | "members.invite" | "members.manage" | "members.owners.manage" | "plugins.manage" | "projects.manage" | "wiki.publish" | "whiteboards.read" | "whiteboards.create" | "whiteboards.edit" | "whiteboards.manage" | "results.publish" | "results.review" | "calendar.manage" | "schedules.manage" | "tasks.assign" | "usage.read";
+        CompanyPermission: "agents.manage" | "approvals.resolve" | "commerce.manage" | "commerce.read" | "company.delete" | "company.plan.apply" | "company.proactive_mode.manage" | "conversations.discuss" | "channels.manage" | "company.profile.update" | "company.resources.manage" | "connectors.manage" | "mailbox.manage" | "members.invite" | "members.manage" | "members.owners.manage" | "plugins.manage" | "projects.manage" | "wiki.publish" | "results.publish" | "results.review" | "calendar.manage" | "schedules.manage" | "tasks.assign" | "usage.read";
         /**
          * @description A company (tenant). `role` and `permissions` are the **calling
          *     user's**: the role their membership holds and the permission set it
@@ -18231,6 +18083,128 @@ export interface components {
             /** @description Present when `disposition` is `queued`. */
             queueItem?: components["schemas"]["RunQueueItem"];
         };
+        CreateChatWhiteboardRequest: {
+            /** @description Surrounding space is trimmed; the rest must hold 1 to 200 characters. */
+            title: string;
+        };
+        /** @description Present on Company list and resolve results. Source details require separate source access. */
+        ArtifactLibraryMetadata: {
+            ownerName: string;
+            owned: boolean;
+            canShare: boolean;
+            source: {
+                /** @enum {string} */
+                type: "channel" | "direct" | "task" | "schedule" | "restricted";
+                title: string;
+                detail: string;
+            };
+        };
+        /**
+         * @description Exactly one primary item is the lead final result. Additional final items are completed deliverables requested by the user. Supporting items are sources or intermediate files.
+         * @enum {string}
+         */
+        DeliverableItemRole: "primary" | "final" | "supporting";
+        DeliverableOutputItem: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            assetVersionId: string;
+            contentType: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            ordinal: number;
+            role: components["schemas"]["DeliverableItemRole"];
+            label: string;
+            kind: string;
+            displayName: string;
+            detail: string;
+        };
+        DeliverableOutput: {
+            /** @enum {string} */
+            actorType?: "user" | "agent";
+            /** Format: uuid */
+            actorUserId?: string;
+            /** Format: uuid */
+            actorAgentId?: string;
+            /**
+             * @description Current comparison with authorized shared content; never changes delivery or approval.
+             * @enum {string}
+             */
+            freshness?: "current" | "stale" | "unavailable" | "unknown" | "not_applicable";
+            /** @description Authorized destination for current shared content. */
+            liveUrl?: string;
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["ArtifactType"];
+            /** Format: uri */
+            url?: string;
+            /** @description Relative authenticated URL for this exact immutable Project presentation. */
+            presentationUrl?: string;
+            /** @description Relative authenticated Project canvas URL for this exact saved Output version; omitted when unregistered. */
+            canvasUrl?: string;
+            title: string;
+            summary: string;
+            submissionNotes?: string;
+            items: components["schemas"]["DeliverableOutputItem"][];
+            createdAt: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DeliverableStatus: "ready_for_review" | "approved" | "changes_requested" | "superseded";
+        Deliverable: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            runId: string | null;
+            status: components["schemas"]["DeliverableStatus"];
+            output: components["schemas"]["DeliverableOutput"];
+            submittedAt: components["schemas"]["Timestamp"];
+            reviewedAt?: components["schemas"]["Timestamp"];
+            reviewFeedback?: string;
+            revision: components["schemas"]["Revision"];
+        };
+        /** @enum {string} */
+        PublicationStatus: "queued" | "uploading" | "building" | "deploying" | "routing" | "published" | "unpublishing" | "unpublished" | "failed";
+        /** @enum {string} */
+        PublicationFailureCode: "source_invalid" | "build_failed" | "deploy_failed" | "provider_unavailable";
+        OutputPublication: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            outputId: string;
+            providerType: string;
+            status: components["schemas"]["PublicationStatus"];
+            /** Format: uri */
+            url?: string;
+            /**
+             * Format: uri
+             * @description Custom URL after routing succeeds.
+             */
+            customUrl?: string;
+            /** @description Name reserved for this output across unpublish and republish. */
+            subdomain?: string;
+            failureCode?: components["schemas"]["PublicationFailureCode"];
+            failureDetail?: string;
+            publishedAt?: components["schemas"]["Timestamp"];
+            unpublishedAt?: components["schemas"]["Timestamp"];
+            createdAt: components["schemas"]["Timestamp"];
+            updatedAt: components["schemas"]["Timestamp"];
+            revision: components["schemas"]["Revision"];
+        };
+        ArtifactRunResult: {
+            library?: components["schemas"]["ArtifactLibraryMetadata"];
+            /** Format: uuid */
+            runId: string | null;
+            /**
+             * Format: uuid
+             * @description The runtime the run executed on, for the member who registered it;
+             *     `null` for every other reader (ADR 0014).
+             */
+            runtimeId: string | null;
+            runStatus: string;
+            artifact: components["schemas"]["DeliverableOutput"];
+            deliverable: components["schemas"]["Deliverable"] | null;
+            publication: components["schemas"]["OutputPublication"] | null;
+        };
         /** @enum {string} */
         MailboxStatus: "disabled" | "unconfigured" | "active";
         CompanyMailbox: {
@@ -18416,11 +18390,6 @@ export interface components {
         PresentRunAppOutput: {
             commands: components["schemas"]["AppPreviewCommand"][];
         };
-        /**
-         * @description Exactly one primary item is the lead final result. Additional final items are completed deliverables requested by the user. Supporting items are sources or intermediate files.
-         * @enum {string}
-         */
-        DeliverableItemRole: "primary" | "final" | "supporting";
         PresentRunOutputItemRequest: {
             role: components["schemas"]["DeliverableItemRole"];
             label: string;
@@ -18431,10 +18400,11 @@ export interface components {
         } & (unknown | unknown);
         PresentRunOutputRequest: {
             /**
-             * @description App requires an app command document and no file items.
+             * @description App requires an app command document and no file items. A Run never presents a Whiteboard.
              * @default file
+             * @enum {string}
              */
-            type: components["schemas"]["ArtifactType"];
+            type: "app" | "media" | "text" | "file";
             app?: components["schemas"]["PresentRunAppOutput"];
             /**
              * Format: uuid
@@ -18488,92 +18458,6 @@ export interface components {
             /** Format: date-time */
             addedAt: string;
         };
-        DeliverableOutputItem: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            assetVersionId: string;
-            contentType: string;
-            /** Format: int64 */
-            sizeBytes: number;
-            ordinal: number;
-            role: components["schemas"]["DeliverableItemRole"];
-            label: string;
-            kind: string;
-            displayName: string;
-            detail: string;
-        };
-        DeliverableOutput: {
-            /** @enum {string} */
-            actorType?: "user" | "agent";
-            /** Format: uuid */
-            actorUserId?: string;
-            /** Format: uuid */
-            actorAgentId?: string;
-            /**
-             * @description Current comparison with authorized shared content; never changes delivery or approval.
-             * @enum {string}
-             */
-            freshness?: "current" | "stale" | "unavailable" | "unknown" | "not_applicable";
-            /** @description Authorized destination for current shared content. */
-            liveUrl?: string;
-            /** Format: uuid */
-            id: string;
-            type: components["schemas"]["ArtifactType"];
-            /** Format: uri */
-            url?: string;
-            /** @description Relative authenticated URL for this exact immutable Project presentation. */
-            presentationUrl?: string;
-            /** @description Relative authenticated Project canvas URL for this exact saved Output version; omitted when unregistered. */
-            canvasUrl?: string;
-            title: string;
-            summary: string;
-            submissionNotes?: string;
-            items: components["schemas"]["DeliverableOutputItem"][];
-            createdAt: components["schemas"]["Timestamp"];
-        };
-        /** @enum {string} */
-        DeliverableStatus: "ready_for_review" | "approved" | "changes_requested" | "superseded";
-        Deliverable: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            runId: string | null;
-            status: components["schemas"]["DeliverableStatus"];
-            output: components["schemas"]["DeliverableOutput"];
-            submittedAt: components["schemas"]["Timestamp"];
-            reviewedAt?: components["schemas"]["Timestamp"];
-            reviewFeedback?: string;
-            revision: components["schemas"]["Revision"];
-        };
-        /** @enum {string} */
-        PublicationStatus: "queued" | "uploading" | "building" | "deploying" | "routing" | "published" | "unpublishing" | "unpublished" | "failed";
-        /** @enum {string} */
-        PublicationFailureCode: "source_invalid" | "build_failed" | "deploy_failed" | "provider_unavailable";
-        OutputPublication: {
-            /** Format: uuid */
-            id: string;
-            /** Format: uuid */
-            outputId: string;
-            providerType: string;
-            status: components["schemas"]["PublicationStatus"];
-            /** Format: uri */
-            url?: string;
-            /**
-             * Format: uri
-             * @description Custom URL after routing succeeds.
-             */
-            customUrl?: string;
-            /** @description Name reserved for this output across unpublish and republish. */
-            subdomain?: string;
-            failureCode?: components["schemas"]["PublicationFailureCode"];
-            failureDetail?: string;
-            publishedAt?: components["schemas"]["Timestamp"];
-            unpublishedAt?: components["schemas"]["Timestamp"];
-            createdAt: components["schemas"]["Timestamp"];
-            updatedAt: components["schemas"]["Timestamp"];
-            revision: components["schemas"]["Revision"];
-        };
         PublicationSubdomainOptions: {
             baseDomain: string;
             canSet: boolean;
@@ -18614,33 +18498,6 @@ export interface components {
         ArtifactShareLink: {
             /** Format: uri */
             url: string;
-        };
-        /** @description Present on Company list and resolve results. Source details require separate source access. */
-        ArtifactLibraryMetadata: {
-            ownerName: string;
-            owned: boolean;
-            canShare: boolean;
-            source: {
-                /** @enum {string} */
-                type: "channel" | "direct" | "task" | "schedule" | "restricted";
-                title: string;
-                detail: string;
-            };
-        };
-        ArtifactRunResult: {
-            library?: components["schemas"]["ArtifactLibraryMetadata"];
-            /** Format: uuid */
-            runId: string | null;
-            /**
-             * Format: uuid
-             * @description The runtime the run executed on, for the member who registered it;
-             *     `null` for every other reader (ADR 0014).
-             */
-            runtimeId: string | null;
-            runStatus: string;
-            artifact: components["schemas"]["DeliverableOutput"];
-            deliverable: components["schemas"]["Deliverable"] | null;
-            publication: components["schemas"]["OutputPublication"] | null;
         };
         ConversationArtifactPage: {
             items: components["schemas"]["ArtifactRunResult"][];
@@ -20514,88 +20371,6 @@ export interface operations {
             };
         };
     };
-    listWhiteboards: {
-        parameters: {
-            query?: {
-                search?: string;
-                archived?: boolean;
-                favorites?: boolean;
-                /** @description Company Whiteboard managers only: Boards no active member manages, which they may claim. */
-                unowned?: boolean;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardList"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    createWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateBoardInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Board"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     getWhiteboard: {
         parameters: {
             query?: {
@@ -20605,7 +20380,8 @@ export interface operations {
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
                 companyId: components["parameters"]["companyId"];
-                boardId: string;
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
             };
             cookie?: never;
         };
@@ -20631,20 +20407,21 @@ export interface operations {
             };
         };
     };
-    updateWhiteboard: {
+    operationsWhiteboard: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
                 companyId: components["parameters"]["companyId"];
-                boardId: string;
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateBoardInput"];
+                "application/json": components["schemas"]["BoardBatch"];
             };
         };
         responses: {
@@ -20654,10 +20431,521 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["BoardMutation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    hydrateWhiteboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardHydrateInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardHydration"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    textWhiteboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardTextInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardTextResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    renameWhiteboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardTitleInput"];
+            };
+        };
+        responses: {
+            /** @description The Board under its new title */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["Board"];
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateWhiteboardPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardPresenceInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardPresence"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    attachWhiteboardFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardFileInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardFile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadWhiteboardFile: {
+        parameters: {
+            query?: {
+                /** @description `preview` returns the bounded image preview when the file has one; otherwise the original file. */
+                variant?: "original" | "preview";
+            };
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File bytes. Member downloads revalidate with an ETag, so a cached copy is reused only after the server resolves current Board access. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description The cached copy named by If-None-Match is still current and readable. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    previewWhiteboard: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-None-Match"?: string;
+            };
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PNG of the Board's content. Revalidate with the ETag; a cached copy is reused only after the server resolves current Artifact access. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description The Board has nothing on it. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description The Board is still at the sequence named by If-None-Match. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    agentOperationsWhiteboard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
+                "X-Boardly-Run-Token": string;
+            };
+            path: {
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardBatch"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardMutation"];
+                };
+            };
+            401: components["responses"]["UnauthorizedRunProof"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    agentComposeWhiteboard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
+                "X-Boardly-Run-Token": string;
+            };
+            path: {
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardComposeInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardComposeResult"];
+                };
+            };
+            401: components["responses"]["UnauthorizedRunProof"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    agentContextWhiteboard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
+                "X-Boardly-Run-Token": string;
+            };
+            path: {
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardContextInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardContext"];
+                };
+            };
+            401: components["responses"]["UnauthorizedRunProof"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    agentViewWhiteboard: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
+                "X-Boardly-Run-Token": string;
+            };
+            path: {
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description The Whiteboard Artifact. */
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BoardAgentViewInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardAgentView"];
+                };
+            };
+            401: components["responses"]["UnauthorizedRunProof"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
@@ -20763,807 +21051,6 @@ export interface operations {
                 content: {
                     "*/*": string;
                 };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    setWhiteboardVisibility: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardVisibilityInput"];
-            };
-        };
-        responses: {
-            /** @description Invitation updated */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    getWhiteboardChannel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The Board's chat */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardChannel"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    joinWhiteboardChannel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The Board's chat, joined */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardChannel"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    getWhiteboardAccess: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Your invitations */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardAccess"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    setWhiteboardAccess: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardAccessInput"];
-            };
-        };
-        responses: {
-            /** @description Invitation updated */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    agentListWhiteboards: {
-        parameters: {
-            query?: {
-                /** @description Skip this many invitations. Responses contain at most 100 Boards. */
-                offset?: number;
-            };
-            header: {
-                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
-            };
-            path: {
-                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
-                runId: components["parameters"]["runId"];
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardList"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    agentOperationsWhiteboard: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
-            };
-            path: {
-                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
-                runId: components["parameters"]["runId"];
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardBatch"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardMutation"];
-                };
-            };
-            401: components["responses"]["UnauthorizedRunProof"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    agentComposeWhiteboard: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
-            };
-            path: {
-                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
-                runId: components["parameters"]["runId"];
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardComposeInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardComposeResult"];
-                };
-            };
-            401: components["responses"]["UnauthorizedRunProof"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    agentContextWhiteboard: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
-            };
-            path: {
-                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
-                runId: components["parameters"]["runId"];
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardContextInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardContext"];
-                };
-            };
-            401: components["responses"]["UnauthorizedRunProof"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    agentViewWhiteboard: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
-            };
-            path: {
-                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
-                runId: components["parameters"]["runId"];
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardAgentViewInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardAgentView"];
-                };
-            };
-            401: components["responses"]["UnauthorizedRunProof"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    favoriteWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardFavoriteInput"];
-            };
-        };
-        responses: {
-            /** @description Preference saved */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    claimWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardClaimInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Board"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    operationsWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardBatch"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardMutation"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    hydrateWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardHydrateInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardHydration"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    textWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardTextInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardTextResult"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    contextWhiteboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardContextInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardContext"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    updateWhiteboardPresence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardPresenceInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardPresence"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    attachWhiteboardFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["BoardFileInput"];
-            };
-        };
-        responses: {
-            /** @description Authorized committed result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardFile"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            413: components["responses"]["PayloadTooLarge"];
-            422: components["responses"]["ValidationFailed"];
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    downloadWhiteboardFile: {
-        parameters: {
-            query?: {
-                /** @description `preview` returns the bounded image preview when the file has one; otherwise the original file. */
-                variant?: "original" | "preview";
-            };
-            header?: {
-                "If-None-Match"?: string;
-            };
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                boardId: string;
-                attachmentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description File bytes. Member downloads revalidate with an ETag, so a cached copy is reused only after the server resolves current Board access. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": string;
-                };
-            };
-            /** @description The cached copy named by If-None-Match is still current and readable. */
-            304: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Request could not be completed */
             default: {
@@ -39774,6 +39261,48 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createConversationWhiteboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: components["parameters"]["conversationId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChatWhiteboardRequest"];
+            };
+        };
+        responses: {
+            /** @description Whiteboard made. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactRunResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description `404 conversation_not_found`. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["ValidationFailed"];
+            500: components["responses"]["InternalError"];
         };
     };
     listTaskMessages: {

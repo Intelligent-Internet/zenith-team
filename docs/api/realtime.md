@@ -470,7 +470,8 @@ lists and creators never appear in the JSON payload.
 | `schedule.changed` | `{id}` | Schedule creator only; refresh definitions, lifecycle and firing receipts, including worker pause/skip/failure transitions. |
 | `calendar.changed` | `{}` | Company calendar changes reach that Company; personal/shared changes reach the organizer and affected invitees across their Company tabs. Occurrence completion reaches only the acting user. |
 | `wiki.run_reads_changed` | `{runId}` | Task Run evidence reaches its Company; direct and Schedule evidence reaches only the Conversation creator. Channel execution evidence is not exposed by this read surface. |
-| `whiteboard.changed` | `{boardId, sequence}` | Current Board readers. Readers with the Board open (a presence session) receive it at once and catch up by delta from their last sequence; the rest of the audience receive one deferred hint per Board every few seconds, carrying the latest sequence, and refresh the library. A sharing change reaches both the old and the new audience at once, so a reader who lost access refetches and is refused. A replayed request emits nothing. |
+| `whiteboard.changed` | `{boardId, sequence}` | Readers of the Whiteboard Artifact (`boardId` is its Artifact ID) who have the Board open (a presence session); they catch up by delta from their last sequence. A sharing change is the Artifact's own `artifact.access_changed`. A replayed request emits nothing. |
+| `whiteboard.renamed` | `{boardId, sequence}` | Every reader of the Whiteboard Artifact, open Board or not: the title also names it in chats and Artifact lists, so they refresh the Board header, discussion cards and Artifact reads. |
 
 `whiteboard.presence` (`{boardId, session, leave}`) is not a post-commit signal:
 it is an ephemeral frame, relayed across nodes without the durable stream,

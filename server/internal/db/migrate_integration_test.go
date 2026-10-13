@@ -34,14 +34,10 @@ var expectedBusinessTables = []string{
 	"assets",
 	"attachments",
 	"auth_sessions",
-	"board_agent_access",
 	"board_changes",
-	"board_create_receipts",
 	"board_edges",
-	"board_favorites",
 	"board_files",
 	"board_items",
-	"board_member_access",
 	"board_notes",
 	"board_operations",
 	"board_strokes",
@@ -228,7 +224,6 @@ var removedBusinessTables = []string{
 // projections also record their latest write; immutable event, link, token,
 // and usage-fact rows deliberately do not.
 var retainedTableHasUpdatedAt = map[string]bool{
-	"board_agent_access":            false,
 	"board_files":                   false,
 	"boards":                        true,
 	"board_items":                   true,
@@ -237,8 +232,6 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"board_edges":                   true,
 	"board_operations":              false,
 	"board_changes":                 false,
-	"board_create_receipts":         false,
-	"board_favorites":               false,
 	"page_suggestion_reviews":       false,
 	"task_result_sets":              false,
 	"task_result_items":             false,
@@ -269,7 +262,6 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"canvas_personal_views":        false,
 	"wiki_block_ids":               false,
 	"project_canvases":             false,
-	"board_member_access":          false,
 	"project_artifacts":            true,
 	"project_file_assets":          false,
 	"project_artifact_versions":    false,
@@ -2433,5 +2425,103 @@ func TestWhiteboardMigrationsPreserveExistingContent(t *testing.T) {
 			t.Fatal(err)
 		}
 
+	}
+}
+
+// 000113 makes a Whiteboard an Artifact: Boards made before have no Output
+// and go, a Board is the scene of a whiteboard Output under its ID, and the
+// Board's own access tables and chat column leave. Rollback removes the
+// Whiteboard Artifacts and brings 000112's schema back empty.
+func TestWhiteboardArtifactMigration(t *testing.T) {
+	t.Parallel()
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := runMigration(
+		ctx,
+		pool,
+		"000108",
+		func(m *migrate.Migrate) error { return m.Migrate(108) },
+	); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	// An old Board with its chat: deleting the chat leaves deferred
+	// discussion checks that must run before the chat table is altered.
+	dbtest.MustExec(t, ctx, pool, `WITH board AS (
+		INSERT INTO boards(company_id,title,created_by) VALUES($1,'Old board',$2) RETURNING id
+	), chat AS (
+		INSERT INTO conversations(company_id,kind,created_by_user_id,title,request_key,board_id)
+		SELECT $1,'channel',$2,'whiteboard',gen_random_uuid(),id FROM board RETURNING id
+	), detail AS (
+		INSERT INTO conversation_channels(company_id,conversation_id,create_fingerprint)
+		SELECT $1,id,decode(repeat('00',32),'hex') FROM chat RETURNING conversation_id
+	)
+	INSERT INTO conversation_members(company_id,conversation_id,user_id,source_type)
+	SELECT $1,conversation_id,$2,'channel' FROM detail`, f.CompanyA, f.UserA)
+	for _, step := range []struct {
+		name    string
+		version uint
+	}{
+		{"upgrade", 113},
+		{"rollback", 112},
+		{"reapply", 113},
+	} {
+		if err := runMigration(
+			ctx,
+			pool,
+			step.name,
+			func(m *migrate.Migrate) error { return m.Migrate(step.version) },
+		); err != nil {
+			t.Fatal(err)
+		}
+		if step.version == 112 {
+			var whiteboards int
+			if err := pool.QueryRow(ctx, `SELECT count(*) FROM outputs WHERE type='whiteboard'`).
+				Scan(&whiteboards); err != nil {
+				t.Fatalf("rollback type check: %v", err)
+			}
+			if _, err := pool.Exec(ctx, `SELECT board_id FROM conversations LIMIT 0;
+ SELECT title,visibility,public_token,created_by,archived_at FROM boards LIMIT 0;
+ SELECT access FROM board_member_access LIMIT 0`); err != nil || whiteboards != 0 {
+				t.Fatalf("rollback schema: %v, %d Whiteboard Artifacts left", err, whiteboards)
+			}
+			continue
+		}
+		var boards int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM boards`).Scan(&boards); err != nil || boards != 0 {
+			t.Fatalf("%s Boards = %d, %v; want the ones without an Output gone", step.name, boards, err)
+		}
+		for _, table := range []string{"board_member_access", "board_agent_access", "board_favorites", "board_create_receipts"} {
+			assertTableDoesNotExist(t, ctx, pool, table)
+		}
+		var output uuid.UUID
+		if err := pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id)
+ VALUES($1,'Plan','','','whiteboard',$2,'user',$2) RETURNING id`, f.CompanyA, f.UserA).
+			Scan(&output); err != nil {
+			t.Fatalf("%s whiteboard Output: %v", step.name, err)
+		}
+		dbtest.MustExec(t, ctx, pool, `INSERT INTO boards(company_id,id) VALUES($1,$2)`, f.CompanyA, output)
+		assertStatementRejected(
+			t,
+			ctx,
+			pool,
+			"23503",
+			`INSERT INTO boards(company_id,id) VALUES($1,gen_random_uuid())`,
+			f.CompanyA,
+		)
+		var owner uuid.UUID
+		if err := pool.QueryRow(ctx, `SELECT user_id FROM output_access WHERE output_id=$1`, output).
+			Scan(&owner); err != nil ||
+			owner != f.UserA {
+			t.Fatalf("%s Whiteboard reader = %v, %v; want its owner", step.name, owner, err)
+		}
+		// The Whiteboard keeps a scene, so rolling back has deferred checks
+		// of its own to run before it alters the Board tables.
+		dbtest.MustExec(t, ctx, pool, `WITH parent AS (
+			INSERT INTO board_items(company_id,board_id,type,x,y,width,height,created_by,updated_by)
+			VALUES($1,$2,'frame',0,0,400,300,$3,$3) RETURNING id
+		)
+		INSERT INTO board_items(company_id,board_id,type,x,y,width,height,parent_frame_id,created_by,updated_by)
+		SELECT $1,$2,'sticky',10,10,200,100,id,$3,$3 FROM parent`, f.CompanyA, output, f.UserA)
 	}
 }

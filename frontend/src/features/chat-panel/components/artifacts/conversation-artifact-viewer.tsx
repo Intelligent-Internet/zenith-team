@@ -10,6 +10,10 @@ const OutputDocumentWorkspace = lazy(
   () => import("@/features/project-canvas/documents/output-document-workspace"),
 );
 
+const BoardArtifact = lazy(
+  () => import("@/features/whiteboards/board-artifact"),
+);
+
 export function ConversationArtifactViewer({
   artifact,
   companyId,
@@ -29,6 +33,34 @@ export function ConversationArtifactViewer({
   onOpenStudio?: () => void;
   onFeedback?: (artifact: ConversationArtifactReference) => void;
 }) {
+  // A Whiteboard has no files: the panel opens the live Board itself.
+  if (artifact.artifact.type === "whiteboard")
+    return (
+      <section
+        className="artifact-viewer"
+        data-type="whiteboard"
+        aria-label={`${artifact.artifact.title} whiteboard`}
+      >
+        <Suspense
+          fallback={
+            <div role="status" className="artifact-text-view">
+              Opening whiteboard…
+            </div>
+          }
+        >
+          <BoardArtifact
+            key={artifact.artifact.id}
+            companyId={companyId}
+            artifactId={artifact.artifact.id}
+            title={artifact.artifact.title}
+            layout="panel"
+            onBack={onBack === onClose ? undefined : onBack}
+            backLabel={backLabel ?? "Back to artifacts"}
+            onClose={onClose ?? onBack}
+          />
+        </Suspense>
+      </section>
+    );
   const location = outputDocumentLocation(artifact.artifact);
   // Submitted results keep their immutable evidence and Task review controls.
   if (location && !artifact.deliverable)

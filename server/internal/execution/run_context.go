@@ -79,19 +79,11 @@ type runProjectBrief struct {
 }
 
 type runExecutionProfile struct {
-	DocumentWriting  bool   `json:"documentWriting,omitempty"`
-	DocumentThreadID string `json:"documentThreadId,omitempty"`
-	// Whiteboard is the Board whose chat tagged the Agent, found through the
-	// tag's Agent chat, so retries and queued tags keep it.
-	Whiteboard *runWhiteboardBrief `json:"whiteboard,omitempty"`
-	Project    *runProjectBrief    `json:"project,omitempty"`
-	Source     RunEnqueueSource    `json:"source"`
-	Task       *runTaskBrief       `json:"task,omitempty"`
-}
-
-type runWhiteboardBrief struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	DocumentWriting  bool             `json:"documentWriting,omitempty"`
+	DocumentThreadID string           `json:"documentThreadId,omitempty"`
+	Project          *runProjectBrief `json:"project,omitempty"`
+	Source           RunEnqueueSource `json:"source"`
+	Task             *runTaskBrief    `json:"task,omitempty"`
 }
 
 type runTaskBrief struct {
@@ -245,6 +237,8 @@ func buildRunContext(
 		if err := freezeChannelInvocation(ctx, q, in, document); err != nil {
 			return nil, err
 		}
+	} else if err := freezeConversationWhiteboards(ctx, q, in, document); err != nil {
+		return nil, err
 	}
 	trigger, err := runContextTriggerBrief(ctx, q, in)
 	if err != nil {
@@ -438,15 +432,6 @@ func runContextExecutionProfile(
 	} else if !errors.Is(documentErr, pgx.ErrNoRows) {
 		return nil, documentErr
 	}
-	board, boardErr := q.GetConversationBoard(
-		ctx,
-		db.GetConversationBoardParams{CompanyID: in.CompanyID, ConversationID: in.ConversationID},
-	)
-	if boardErr == nil {
-		profile.Whiteboard = &runWhiteboardBrief{ID: board.ID.String(), Title: board.Title}
-	} else if !errors.Is(boardErr, pgx.ErrNoRows) {
-		return nil, boardErr
-	}
 	if in.TaskID.Valid {
 		task, err := runContextTaskBrief(ctx, q, in)
 		if err != nil {
@@ -618,4 +603,28 @@ func runContextResources(
 		})
 	}
 	return resources, nil
+}
+
+// freezeConversationWhiteboards names the Whiteboards made in the Agent or
+// Task chat a Run answers that its Authorizer may open, as a channel Run
+// names its channel's, so the Run knows which ones it can work on.
+func freezeConversationWhiteboards(
+	ctx context.Context,
+	q *db.Queries,
+	in RunTrigger,
+	document map[string]json.RawMessage,
+) error {
+	whiteboards, err := q.ListRunConversationWhiteboards(ctx, db.ListRunConversationWhiteboardsParams{
+		CompanyID:      in.CompanyID,
+		ConversationID: in.ConversationID,
+		ActorUserID:    in.AuthorizedByUserID,
+	})
+	if err != nil {
+		return fmt.Errorf("freeze chat Whiteboards: %w", err)
+	}
+	briefs := make([]runWhiteboardBrief, 0, len(whiteboards))
+	for _, board := range whiteboards {
+		briefs = append(briefs, runWhiteboardBrief{ID: board.ID.String(), Title: board.Title})
+	}
+	return freezeChatWhiteboards(document, briefs)
 }

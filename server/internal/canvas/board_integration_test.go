@@ -7,10 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/reearth/ygo/crdt"
 	"golang.org/x/sync/errgroup"
@@ -20,7 +22,6 @@ import (
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
 )
 
 func boardFixture(t *testing.T) (*DefaultBoardService, *pgxpool.Pool, auth.UserPrincipal, auth.UserPrincipal) {
@@ -55,6 +56,9 @@ func boardFixture(t *testing.T) (*DefaultBoardService, *pgxpool.Pool, auth.UserP
 		}
 }
 
+// createTestBoard makes a Whiteboard Artifact the member owns, as a message
+// in one of the Company's chats does, with an edit grant for each
+// collaborator.
 func createTestBoard(
 	t *testing.T,
 	s *DefaultBoardService,
@@ -62,42 +66,66 @@ func createTestBoard(
 	collaborators ...auth.UserPrincipal,
 ) Board {
 	t.Helper()
-	b, e := s.Create(
-		t.Context(),
-		p,
-		CreateBoardInput{RequestKey: uuid.New(), Title: "Ideas", Purpose: "Decide explicitly"},
-	)
-	if e != nil {
-		t.Fatal(e)
-	}
-	for _, collaborator := range collaborators {
-		if err := s.store.Queries().
-			SetBoardMemberAccess(t.Context(), generated.SetBoardMemberAccessParams{CompanyID: p.CompanyID, BoardID: b.ID, UserID: collaborator.UserID, Access: "edit"}); err != nil {
-			t.Fatal(err)
+	ctx := t.Context()
+	var id uuid.UUID
+	if err := s.store.WithinRawTx(ctx, pgx.TxOptions{}, func(tx generated.DBTX, q *generated.Queries) error {
+		var chat uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT id FROM conversations WHERE company_id=$1 ORDER BY created_at LIMIT 1`,
+			p.CompanyID).
+			Scan(&chat); err != nil {
+			return err
 		}
+		var err error
+		if id, err = CreateWhiteboardInTx(ctx, q, p, chat, "Ideas"); err != nil {
+			return err
+		}
+		for _, collaborator := range collaborators {
+			if _, err = q.UpsertOutputGrant(ctx, generated.UpsertOutputGrantParams{
+				CompanyID: p.CompanyID, OutputID: id, UserID: collaborator.UserID, Permission: "edit",
+				ActorUserID: p.UserID,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
 	}
-	return b
+	snapshot, err := s.Snapshot(ctx, p, BoardScope{BoardID: id}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return snapshot.Board
 }
 
+// grantTestBoardAccess gives a member view, edit or manage on a Whiteboard
+// Artifact, or with "none" takes their grant away.
 func grantTestBoardAccess(
 	t *testing.T,
 	s *DefaultBoardService,
-	p auth.UserPrincipal,
-	id uuid.UUID,
-	actor protocol.ActorRef,
-	access string,
-) error {
+	owner auth.UserPrincipal,
+	id, user uuid.UUID,
+	permission string,
+) {
 	t.Helper()
-	current, err := s.Access(t.Context(), p, id)
-	if err != nil {
-		return err
+	q := s.store.Queries()
+	if permission == "none" {
+		if _, err := q.DeleteOutputGrant(t.Context(), generated.DeleteOutputGrantParams{
+			CompanyID: owner.CompanyID, OutputID: id, UserID: user,
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return
 	}
-	return s.SetAccess(
-		t.Context(),
-		p,
-		id,
-		BoardAccessInput{ExpectedRevision: current.Revision, Actor: actor, Access: access},
-	)
+	if _, err := q.UpsertOutputGrant(t.Context(), generated.UpsertOutputGrantParams{
+		CompanyID:   owner.CompanyID,
+		OutputID:    id,
+		UserID:      user,
+		Permission:  permission,
+		ActorUserID: owner.UserID,
+	}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func stickyCommand(draft, text string) BoardCommand {
@@ -130,36 +158,27 @@ func boardTestRun(t *testing.T, pool *pgxpool.Pool, p auth.UserPrincipal) (uuid.
 	return agent, run
 }
 
+// An Agent's Run works on a Whiteboard with the access of the member it works
+// for: none reads nothing, view reads, edit draws. It keeps its own
+// attribution and receipts, merges with a person's buffered text and stops
+// at a revoked grant, a terminal Run or an outdated Task generation.
 func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 	t.Parallel()
 	s, pool, p, other := boardFixture(t)
 	ctx := t.Context()
-	board := createTestBoard(t, s, p, other)
-	agent, run := boardTestRun(t, pool, p)
+	board := createTestBoard(t, s, p)
+	agent, run := boardTestRun(t, pool, other)
 	scope := BoardScope{BoardID: board.ID, RunID: run}
 	batch := BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("agent", "Hello")}}
-	if _, err := s.Mutate(ctx, p, scope, batch); !errors.Is(err, ErrBoardForbidden) {
-		t.Fatalf("uninvited agent: %v", err)
+	if _, err := s.Mutate(ctx, other, scope, batch); !errors.Is(err, ErrBoardNotFound) {
+		t.Fatalf("Run of a member without access: %v", err)
 	}
-	if err := grantTestBoardAccess(
-		t,
-		s,
-		p,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"edit",
-	); err != nil {
-		t.Fatal(err)
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "view")
+	if _, err := s.Mutate(ctx, other, scope, batch); !errors.Is(err, ErrBoardForbidden) {
+		t.Fatalf("Run of a viewer: %v", err)
 	}
-	listed, err := s.ListForRun(ctx, p, run, 0)
-	if err != nil || len(listed.Boards) != 1 || !listed.Boards[0].CanEdit || listed.Boards[0].CanManage {
-		t.Fatalf("invited Board library: %+v, %v", listed, err)
-	}
-	page, err := s.ListForRun(ctx, p, run, 100)
-	if err != nil || len(page.Boards) != 0 || page.HasMore {
-		t.Fatalf("invitation pagination: %+v, %v", page, err)
-	}
-	created, err := s.Mutate(ctx, p, scope, batch)
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "edit")
+	created, err := s.Mutate(ctx, other, scope, batch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +187,7 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 		*item.CreatedByRunID != run {
 		t.Fatalf("agent attribution: %+v", item)
 	}
-	if _, err := s.Mutate(ctx, other, scope, batch); !errors.Is(err, ErrBoardForbidden) {
+	if _, err := s.Mutate(ctx, p, scope, batch); !errors.Is(err, ErrBoardForbidden) {
 		t.Fatalf("wrong member: %v", err)
 	}
 	// Two live Runs must not share receipts, even on the same member's binding.
@@ -177,14 +196,14 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 		Scan(&secondRun); err != nil {
 		t.Fatal(err)
 	}
-	second, err := s.Mutate(ctx, p, BoardScope{BoardID: board.ID, RunID: secondRun}, batch)
+	second, err := s.Mutate(ctx, other, BoardScope{BoardID: board.ID, RunID: secondRun}, batch)
 	if err != nil || second.IDs["agent"] == item.ID {
 		t.Fatalf("independent Run receipt: %+v, %v", second, err)
 	}
 	// A human has a buffered CRDT edit while the Agent edits the same note.
 	hydrated, err := s.Hydrate(
 		ctx,
-		other,
+		p,
 		BoardScope{BoardID: board.ID},
 		BoardHydrateInput{ItemIDs: []uuid.UUID{item.ID}},
 	)
@@ -211,12 +230,12 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 			},
 		},
 	}
-	if _, err := s.Mutate(ctx, p, scope, text); err != nil {
+	if _, err := s.Mutate(ctx, other, scope, text); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.Mutate(
 		ctx,
-		p,
+		other,
 		scope,
 		BoardBatch{RequestKey: uuid.New(), Commands: text.Commands},
 	); !errors.Is(
@@ -227,7 +246,7 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 	}
 	merged, err := s.Text(
 		ctx,
-		other,
+		p,
 		BoardScope{BoardID: board.ID},
 		BoardTextInput{
 			RequestKey:        uuid.New(),
@@ -242,7 +261,7 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 	geometry := BoardGeometry{X: 400, Y: 300, Width: 220, Height: 150}
 	moved, err := s.Mutate(
 		ctx,
-		other,
+		p,
 		BoardScope{BoardID: board.ID},
 		BoardBatch{
 			RequestKey: uuid.New(),
@@ -257,53 +276,26 @@ func TestBoardHumanAndAgentCollaboration(t *testing.T) {
 		},
 	)
 	if err != nil || moved.Items[0].TextRevision != merged.TextRevision ||
-		moved.Items[0].UpdatedBy.ID != other.UserID ||
+		moved.Items[0].UpdatedBy.ID != p.UserID ||
 		moved.Items[0].UpdatedByRunID != nil ||
 		moved.Items[0].CreatedBy.ID != agent {
 		t.Fatalf("independent geometry and actual attribution: %+v, %v", moved, err)
 	}
-	if err := grantTestBoardAccess(
-		t,
-		s,
-		p,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"read",
-	); err != nil {
-		t.Fatal(err)
-	}
-	read, err := s.Context(ctx, p, scope, BoardContextInput{})
-	if err != nil || read.Board.CanEdit || read.Board.CanManage {
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "view")
+	read, err := s.Context(ctx, other, scope, BoardContextInput{})
+	if err != nil || read.Board.CanEdit || read.Board.CanShare {
 		t.Fatalf("read-only context authority: %+v, %v", read.Board, err)
 	}
-	if _, err := s.Mutate(ctx, p, scope, batch); !errors.Is(err, ErrBoardForbidden) {
+	if _, err := s.Mutate(ctx, other, scope, batch); !errors.Is(err, ErrBoardForbidden) {
 		t.Fatalf("read-only replay: %v", err)
 	}
-	if err := grantTestBoardAccess(
-		t,
-		s,
-		p,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"none",
-	); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.Context(ctx, p, scope, BoardContextInput{}); !errors.Is(err, ErrBoardForbidden) {
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "none")
+	if _, err := s.Context(ctx, other, scope, BoardContextInput{}); !errors.Is(err, ErrBoardNotFound) {
 		t.Fatalf("revoked read: %v", err)
 	}
-	if err := grantTestBoardAccess(
-		t,
-		s,
-		p,
-		board.ID,
-		protocol.ActorRef{ID: agent, Kind: protocol.ActorKindAgent},
-		"edit",
-	); err != nil {
-		t.Fatal(err)
-	}
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "edit")
 	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='cancelled' WHERE id=$1`, run)
-	if _, err := s.Mutate(ctx, p, scope, batch); !errors.Is(err, ErrBoardForbidden) {
+	if _, err := s.Mutate(ctx, other, scope, batch); !errors.Is(err, ErrBoardForbidden) {
 		t.Fatalf("terminal replay: %v", err)
 	}
 	var taskRun, taskID uuid.UUID
@@ -388,48 +380,15 @@ func TestBoardAtomicCommandsReceiptsAndLifecycle(t *testing.T) {
 	if _, err = s.Snapshot(ctx, foreign, BoardScope{BoardID: board.ID}, 0); !errors.Is(err, ErrBoardNotFound) {
 		t.Fatalf("foreign read = %v", err)
 	}
-	archived := true
-	if _, err = s.Update(
-		ctx,
-		other,
-		board.ID,
-		UpdateBoardInput{ExpectedRevision: 1, Archived: &archived},
-	); !errors.Is(
-		err,
-		ErrBoardForbidden,
-	) {
-		t.Fatalf("member archive = %v", err)
-	}
-	saved, err := s.Update(ctx, p, board.ID, UpdateBoardInput{ExpectedRevision: 1, Archived: &archived})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// A viewer reads the scene but cannot change it.
+	grantTestBoardAccess(t, s, p, board.ID, other.UserID, "view")
 	if _, err = s.Mutate(
 		ctx,
-		p,
+		other,
 		BoardScope{BoardID: board.ID},
 		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("new", "no")}},
-	); !errors.Is(
-		err,
-		ErrBoardArchived,
-	) {
-		t.Fatalf("archived mutate = %v", err)
-	}
-	archived = false
-	if _, err = s.Update(
-		ctx,
-		p,
-		board.ID,
-		UpdateBoardInput{ExpectedRevision: saved.Revision, Archived: &archived},
-	); err != nil {
-		t.Fatal(err)
-	}
-	if err = s.Favorite(ctx, other, board.ID, true); err != nil {
-		t.Fatal(err)
-	}
-	list, err := s.List(ctx, other, BoardListInput{Search: "Tiếng Việt", Favorites: true})
-	if err != nil || len(list.Boards) != 1 {
-		t.Fatalf("search = %+v, %v", list, err)
+	); !errors.Is(err, ErrBoardForbidden) {
+		t.Fatalf("viewer mutate = %v", err)
 	}
 }
 
@@ -635,45 +594,13 @@ func TestBoardBoundedContextAndLazySnapshot(t *testing.T) {
 	}
 }
 
-func TestBoardCreateRetryAndSnapshotBoundary(t *testing.T) {
+// A snapshot after a known sequence is a delta while the change feed holds
+// it, and the whole scene once the feed was compacted.
+func TestBoardSnapshotDeltaBoundary(t *testing.T) {
 	t.Parallel()
 	s, pool, p, b := boardFixture(t)
 	ctx := t.Context()
-	request := CreateBoardInput{RequestKey: uuid.New(), Title: "One Board"}
-	ids := make(chan uuid.UUID, 8)
-	group := new(errgroup.Group)
-	for range 8 {
-		group.Go(func() error {
-			board, err := s.Create(ctx, p, request)
-			if err == nil {
-				ids <- board.ID
-			}
-			return err
-		})
-	}
-	if err := group.Wait(); err != nil {
-		t.Fatal(err)
-	}
-	close(ids)
-	var first uuid.UUID
-	for id := range ids {
-		if first == uuid.Nil {
-			first = id
-		}
-		if id != first {
-			t.Fatal("concurrent create retry duplicated a Board")
-		}
-	}
-	if err := grantTestBoardAccess(
-		t,
-		s,
-		p,
-		first,
-		protocol.ActorRef{ID: b.UserID, Kind: protocol.ActorKindUser},
-		"edit",
-	); err != nil {
-		t.Fatal(err)
-	}
+	first := createTestBoard(t, s, p, b).ID
 	result, err := s.Mutate(
 		ctx,
 		p,
@@ -701,10 +628,6 @@ func TestBoardCreateRetryAndSnapshotBoundary(t *testing.T) {
 	snapshot, err = s.Snapshot(ctx, p, BoardScope{BoardID: first}, result.Sequence)
 	if err != nil || !snapshot.Full || len(snapshot.Items) != 2 {
 		t.Fatalf("compacted fallback = %+v,%v", snapshot, err)
-	}
-	request.Title = "changed"
-	if _, err = s.Create(ctx, p, request); !errors.Is(err, ErrBoardRequestKeyReused) {
-		t.Fatalf("create key reuse = %v", err)
 	}
 }
 
@@ -1062,5 +985,45 @@ func TestBoardConnectorNotationRoundTrips(t *testing.T) {
 		) {
 			t.Fatalf("%s = %v, want invalid", name, err)
 		}
+	}
+}
+
+// Someone who may edit a Whiteboard renames it, and every reader of the
+// Artifact hears of it; a reader alone may not, nor may a blank title stand.
+func TestBoardRenameReachesEveryReader(t *testing.T) {
+	s, _, owner, reader := boardFixture(t)
+	ctx := t.Context()
+	board := createTestBoard(t, s, owner)
+	grantTestBoardAccess(t, s, owner, board.ID, reader.UserID, "view")
+	var renamed []events.Event
+	if err := s.bus.Subscribe(EventBoardRenamed, func(_ context.Context, e events.Event) error {
+		renamed = append(renamed, e)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	scope := BoardScope{BoardID: board.ID}
+	if _, err := s.Rename(ctx, reader, scope, "Theirs"); !errors.Is(err, ErrBoardForbidden) {
+		t.Fatalf("a reader's rename = %v; want %v", err, ErrBoardForbidden)
+	}
+	if _, err := s.Rename(ctx, owner, scope, "   "); !errors.Is(err, ErrBoardInvalid) {
+		t.Fatalf("a blank rename = %v; want %v", err, ErrBoardInvalid)
+	}
+	result, err := s.Rename(ctx, owner, scope, "  Roadmap  ")
+	if err != nil || result.Title != "Roadmap" || !result.CanEdit {
+		t.Fatalf("rename = %+v, %v", result, err)
+	}
+	snapshot, err := s.Snapshot(ctx, reader, scope, 0)
+	if err != nil || snapshot.Board.Title != "Roadmap" {
+		t.Fatalf("the reader sees %q, %v", snapshot.Board.Title, err)
+	}
+	if len(renamed) != 1 {
+		t.Fatalf("renamed events = %d; want 1", len(renamed))
+	}
+	change, err := events.PayloadOf[BoardChanged](renamed[0])
+	if err != nil || change.BoardID != board.ID ||
+		!slices.Contains(change.RecipientUserIDs, owner.UserID) ||
+		!slices.Contains(change.RecipientUserIDs, reader.UserID) {
+		t.Fatalf("renamed event = %+v, %v; want every reader", change, err)
 	}
 }

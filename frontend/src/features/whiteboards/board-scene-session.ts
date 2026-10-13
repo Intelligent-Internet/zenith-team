@@ -389,8 +389,6 @@ function rejectionMessage(error: unknown, draft: SceneDraft) {
     return history
       ? `This ${history} is blocked because an object is locked. Unlock it, discard this draft and try again.`
       : `This object is locked. Unlock it before moving it. ${retained}`;
-  if (code === "whiteboard_archived")
-    return `This Whiteboard is archived. ${retained}`;
   if (code === "whiteboard_conflict")
     return `A collaborator changed this object. ${retained}`;
   if (code === "whiteboard_item_not_found")

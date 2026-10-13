@@ -33,7 +33,6 @@ import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import { useDiscussionUpdates } from "./discussion-provider";
 import { useDiscussionPreview } from "./discussion-preview";
-import { useCompactDiscussion } from "./discussion-compact";
 import { attachmentService } from "@/shared/api/attachment.service";
 import type { DiscussionDraftAttachment } from "../model/discussion-runtime";
 
@@ -49,7 +48,7 @@ export function DiscussionComposer({
   mentionMembers = [],
   conversationType,
   channelName,
-  placeholder,
+  onCreateWhiteboard,
 }: {
   conversationId: string;
   rootId?: string;
@@ -60,11 +59,10 @@ export function DiscussionComposer({
   conversationType?: DiscussionSummary["type"];
   // The channel's own name, also for a reply in one of its threads.
   channelName?: string;
-  // In place of "Message <title>" outside a thread.
-  placeholder?: string;
+  /** Makes a Whiteboard in the chat. */
+  onCreateWhiteboard?: () => void;
 }) {
   const isChannel = conversationType === "channel";
-  const compact = useCompactDiscussion();
   const runtime = useDiscussionUpdates();
   const preview = useDiscussionPreview();
   const channelAgents = useChannelAgents();
@@ -176,7 +174,7 @@ export function DiscussionComposer({
       const member = {
         id: agent.agentId,
         name: agent.name,
-        description: compact ? "Agent" : `Managed by ${agent.managerName}`,
+        description: `Managed by ${agent.managerName}`,
         kind: "agent" as const,
       };
       if (agent.canInvoke) return [member];
@@ -201,18 +199,13 @@ export function DiscussionComposer({
             kind: "human" as const,
             broadcastScope: "everyone" as const,
           },
-          // A Board's chat offers @everyone alone.
-          ...(compact
-            ? []
-            : [
-                {
-                  id: "here",
-                  name: "here",
-                  description: "Online channel members",
-                  kind: "human" as const,
-                  broadcastScope: "here" as const,
-                },
-              ]),
+          {
+            id: "here",
+            name: "here",
+            description: "Online channel members",
+            kind: "human" as const,
+            broadcastScope: "here" as const,
+          },
         ]
       : []),
   ];
@@ -234,7 +227,7 @@ export function DiscussionComposer({
     placeholder: canSend
       ? rootId
         ? "Reply…"
-        : (placeholder ?? `Message ${title}`)
+        : `Message ${title}`
       : "This conversation is read-only",
     describedBy:
       [
@@ -324,7 +317,7 @@ export function DiscussionComposer({
             void runtime.send(conversationId, false, rootId);
         }}
       >
-        {!compact && formattingOpen && (
+        {formattingOpen && (
           <div id={formattingId}>
             <DiscussionRichFormatting
               editor={rich.editor}
@@ -450,37 +443,32 @@ export function DiscussionComposer({
               uploadDisabled={uploading || failedUploads.length > 0}
               onUpload={() => fileInput.current?.click()}
               onSelectArtifact={() => setArtifactPickerOpen(true)}
+              onCreateWhiteboard={onCreateWhiteboard}
             />
-            {compact ? null : (
-              <button
-                className="discussion-icon-button"
-                type="button"
-                aria-label="Message formatting"
-                aria-expanded={formattingOpen}
-                aria-controls={formattingOpen ? formattingId : undefined}
-                title={formattingOpen ? "Hide formatting" : "Show formatting"}
-                disabled={!canSend}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => setFormattingOpen((open) => !open)}
-              >
-                <Text size={18} aria-hidden />
-              </button>
-            )}
-            {compact ? null : (
-              <DiscussionRichEmoji editor={rich.editor} disabled={!canSend} />
-            )}
-            {compact ? null : (
-              <button
-                className="discussion-icon-button"
-                type="button"
-                aria-label="Mention someone"
-                title="Mention someone"
-                disabled={!canSend}
-                onClick={rich.insertMention}
-              >
-                <AtSign size={17} />
-              </button>
-            )}
+            <button
+              className="discussion-icon-button"
+              type="button"
+              aria-label="Message formatting"
+              aria-expanded={formattingOpen}
+              aria-controls={formattingOpen ? formattingId : undefined}
+              title={formattingOpen ? "Hide formatting" : "Show formatting"}
+              disabled={!canSend}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => setFormattingOpen((open) => !open)}
+            >
+              <Text size={18} aria-hidden />
+            </button>
+            <DiscussionRichEmoji editor={rich.editor} disabled={!canSend} />
+            <button
+              className="discussion-icon-button"
+              type="button"
+              aria-label="Mention someone"
+              title="Mention someone"
+              disabled={!canSend}
+              onClick={rich.insertMention}
+            >
+              <AtSign size={17} />
+            </button>
             <input
               ref={fileInput}
               className="discussion-file-input"

@@ -1,153 +1,5 @@
 {
   "paths": {
-    "library": {
-      "get": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "listWhiteboards",
-        "summary": "List whiteboards",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "maxLength": 200
-            }
-          },
-          {
-            "name": "archived",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "favorites",
-            "in": "query",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "unowned",
-            "in": "query",
-            "description": "Company Whiteboard managers only: Boards no active member manages, which they may claim.",
-            "schema": {
-              "type": "boolean"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 40
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Authorized committed result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/BoardList"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "createWhiteboard",
-        "summary": "Create whiteboard",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Authorized committed result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/Board"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/CreateBoardInput"
-              }
-            }
-          }
-        }
-      }
-    },
     "board": {
       "get": {
         "tags": [
@@ -160,13 +12,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "after_seq",
@@ -199,143 +52,6 @@
             }
           }
         }
-      },
-      "patch": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "updateWhiteboard",
-        "summary": "Update whiteboard",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Authorized committed result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/Board"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/UpdateBoardInput"
-              }
-            }
-          }
-        }
-      }
-    },
-    "favorite": {
-      "put": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "favoriteWhiteboard",
-        "summary": "Favorite whiteboard",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "Preference saved"
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/BoardFavoriteInput"
-              }
-            }
-          }
-        }
       }
     },
     "operations": {
@@ -350,13 +66,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
@@ -423,13 +140,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
@@ -496,13 +214,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
@@ -557,34 +276,36 @@
         }
       }
     },
-    "context": {
-      "post": {
+    "title": {
+      "put": {
         "tags": [
           "whiteboards"
         ],
-        "operationId": "contextWhiteboard",
-        "summary": "Context whiteboard",
+        "operationId": "renameWhiteboard",
+        "summary": "Rename whiteboard",
+        "description": "Retitles the Whiteboard Artifact for a member who may edit its Board. Every reader of the Artifact receives `whiteboard.renamed`, since the title also names it in chats and Artifact lists.",
         "parameters": [
           {
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
           "200": {
-            "description": "Authorized committed result",
+            "description": "The Board under its new title",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/schemas/BoardContext"
+                  "$ref": "#/schemas/Board"
                 }
               }
             }
@@ -608,12 +329,6 @@
           "404": {
             "$ref": "./_common.yaml#/responses/NotFound"
           },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
           "422": {
             "$ref": "./_common.yaml#/responses/ValidationFailed"
           }
@@ -623,7 +338,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/schemas/BoardContextInput"
+                "$ref": "#/schemas/BoardTitleInput"
               }
             }
           }
@@ -642,13 +357,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
@@ -715,13 +431,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "attachmentId",
@@ -782,50 +499,54 @@
         }
       }
     },
-    "agentLibrary": {
+    "preview": {
       "get": {
         "tags": [
           "whiteboards"
         ],
-        "operationId": "agentListWhiteboards",
-        "summary": "Agent list whiteboards",
+        "operationId": "previewWhiteboard",
+        "summary": "Preview a whiteboard as a small image",
+        "description": "A small PNG of all of the Board's content, framed 16:9 for the Whiteboard Artifact's card. The ETag names the Board sequence it shows, so an unchanged Board is not drawn again.",
         "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/runId"
-          },
           {
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            },
-            "description": "Skip this many invitations. Responses contain at most 100 Boards."
-          },
-          {
-            "name": "X-Boardly-Run-Token",
-            "in": "header",
+            "name": "artifactId",
+            "in": "path",
             "required": true,
-            "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
             "schema": {
               "type": "string",
-              "pattern": "^brt_[0-9a-f]{64}$"
+              "format": "uuid"
+            },
+            "description": "The Whiteboard Artifact."
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Authorized committed result",
+            "description": "PNG of the Board's content. Revalidate with the ETag; a cached copy is reused only after the server resolves current Artifact access.",
             "content": {
-              "application/json": {
+              "image/png": {
                 "schema": {
-                  "$ref": "#/schemas/BoardList"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
+          },
+          "204": {
+            "description": "The Board has nothing on it."
+          },
+          "304": {
+            "description": "The Board is still at the sequence named by If-None-Match."
           },
           "default": {
             "description": "Request could not be completed",
@@ -837,8 +558,7 @@
               }
             }
           }
-        },
-        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+        }
       }
     },
     "agentOperations": {
@@ -856,13 +576,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "X-Boardly-Run-Token",
@@ -925,7 +646,7 @@
             }
           }
         },
-        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+        "description": "Requires the exact live Run proof and its authorizing member, who must be able to read this Whiteboard Artifact; edits need their edit access. Revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
       }
     },
     "agentCompose": {
@@ -943,13 +664,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "X-Boardly-Run-Token",
@@ -1030,13 +752,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "X-Boardly-Run-Token",
@@ -1099,7 +822,7 @@
             }
           }
         },
-        "description": "Requires the exact live Run proof, its authorizing member, and an invitation to this Board. Read invitations cannot edit; revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
+        "description": "Requires the exact live Run proof and its authorizing member, who must be able to read this Whiteboard Artifact; edits need their edit access. Revocation and terminal Runs fence retries. The native Board services and wire schemas are shared with humans."
       }
     },
     "agentView": {
@@ -1117,13 +840,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           },
           {
             "name": "X-Boardly-Run-Token",
@@ -1186,272 +910,7 @@
             }
           }
         },
-        "description": "The compact reading an Agent works from: by default the area the person who authorized the Run is looking at (their focused browser window, else their latest one, else the view they left a few minutes ago), one line per object with a short ref, with an optional image of exactly that area. The same Run proof and invitation as context apply. The Agent's presence moves to the area it read."
-      }
-    },
-    "access": {
-      "get": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "getWhiteboardAccess",
-        "summary": "Read Board visibility and person/Agent grants",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Your invitations",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/BoardAccess"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "setWhiteboardAccess",
-        "summary": "Grant, change or revoke person/Agent access",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/BoardAccessInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Invitation updated"
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        }
-      }
-    },
-    "visibility": {
-      "put": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "setWhiteboardVisibility",
-        "summary": "Set Private, Company or Public visibility; leaving Public revokes its link",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/BoardVisibilityInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "204": {
-            "description": "Invitation updated"
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        }
-      }
-    },
-    "channel": {
-      "get": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "getWhiteboardChannel",
-        "summary": "Read the Board's chat and the people who can read the Board",
-        "description": "Reads the Board's chat without joining it: the chat once someone started it, whether the caller joined, and the people who can read the Board to mention. A person who cannot read the Board gets 404.",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The Board's chat",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/BoardChannel"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "joinWhiteboardChannel",
-        "summary": "Open the Board's chat, starting it the first time",
-        "description": "Joins the caller to the Board's chat, starting the chat the first time, and brings its people and Agents in step with the Board: people who can no longer read the Board leave, and its Agents are the Agents invited to the Board. The chat is an ordinary channel read through the discussion routes by its ID; it never lists in Chat. A person who cannot read the Board gets 404.",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "The Board's chat, joined",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/BoardChannel"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          }
-        }
+        "description": "The compact reading an Agent works from: by default the area the person who authorized the Run is looking at (their focused browser window, else their latest one, else the view they left a few minutes ago), one line per object with a short ref, with an optional image of exactly that area. The same Run proof and access as context apply. The Agent's presence moves to the area it read."
       }
     },
     "publicBoard": {
@@ -1494,7 +953,8 @@
             }
           }
         },
-        "security": []
+        "security": [],
+        "description": "Read a Whiteboard Artifact through its unrevoked public link; no sign-in required"
       }
     },
     "publicHydrate": {
@@ -1547,7 +1007,8 @@
             }
           }
         },
-        "security": []
+        "security": [],
+        "description": "Read a Whiteboard Artifact through its unrevoked public link; no sign-in required"
       }
     },
     "publicFile": {
@@ -1613,7 +1074,8 @@
             }
           }
         },
-        "security": []
+        "security": [],
+        "description": "Download a file a Whiteboard Artifact still places, through its unrevoked public link; no sign-in required"
       }
     },
     "files": {
@@ -1628,13 +1090,14 @@
             "$ref": "./_common.yaml#/parameters/companyId"
           },
           {
-            "name": "boardId",
+            "name": "artifactId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "The Whiteboard Artifact."
           }
         ],
         "responses": {
@@ -1687,81 +1150,7 @@
             }
           }
         },
-        "description": "Member-only. Registers a file on the Board so items can place it. Accepts the caller's own ready upload that no chat, Project, Output or other Board shares yet, or a file the caller can already read on another Board of the Company (copy between Boards). Any file type is accepted; PNG, JPEG, GIF and WebP images must decode, are limited to 32 MiB and 32 Mi pixels, and keep a bounded preview. Retrying the same attachment on the same Board returns the same registration. The scene item is created separately through operations."
-      }
-    },
-    "claim": {
-      "post": {
-        "tags": [
-          "whiteboards"
-        ],
-        "operationId": "claimWhiteboard",
-        "summary": "Claim an unowned whiteboard",
-        "parameters": [
-          {
-            "$ref": "./_common.yaml#/parameters/companyId"
-          },
-          {
-            "name": "boardId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Authorized committed result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/schemas/Board"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Request could not be completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "./_common.yaml#/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "./_common.yaml#/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "./_common.yaml#/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "./_common.yaml#/responses/NotFound"
-          },
-          "409": {
-            "$ref": "./_common.yaml#/responses/Conflict"
-          },
-          "413": {
-            "$ref": "./_common.yaml#/responses/PayloadTooLarge"
-          },
-          "422": {
-            "$ref": "./_common.yaml#/responses/ValidationFailed"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/schemas/BoardClaimInput"
-              }
-            }
-          }
-        },
-        "description": "A Company Whiteboard manager takes manage access to a Board no active member manages."
+        "description": "Member-only. Registers a file on the Board so items can place it. Accepts the caller's own ready upload that no chat, Project, Output or other Board shares yet, or a file the caller can already read on another Whiteboard of the Company (copy between Whiteboards). Any file type is accepted; PNG, JPEG, GIF and WebP images must decode, are limited to 32 MiB and 32 Mi pixels, and keep a bounded preview. Retrying the same attachment on the same Board returns the same registration. The scene item is created separately through operations."
       }
     }
   },
@@ -1778,22 +1167,12 @@
           "format": "uuid"
         },
         "title": {
-          "type": "string"
-        },
-        "purpose": {
-          "type": "string"
+          "type": "string",
+          "description": "The Whiteboard Artifact title."
         },
         "sequence": {
           "type": "integer",
           "format": "int64"
-        },
-        "revision": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "createdBy": {
-          "type": "string",
-          "format": "uuid"
         },
         "createdAt": {
           "type": "string",
@@ -1803,139 +1182,23 @@
           "type": "string",
           "format": "date-time"
         },
-        "archivedAt": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "date-time"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "favorite": {
-          "type": "boolean"
-        },
         "canEdit": {
           "type": "boolean"
         },
-        "canManage": {
-          "type": "boolean"
-        },
-        "visibility": {
-          "type": "string",
-          "enum": [
-            "private",
-            "company",
-            "public"
-          ]
-        },
         "canShare": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "The caller owns or manages the Artifact, so it may change who has access."
         }
       },
       "required": [
         "id",
         "companyId",
         "title",
-        "purpose",
         "sequence",
-        "revision",
-        "createdBy",
         "createdAt",
         "updatedAt",
-        "archivedAt",
-        "favorite",
         "canEdit",
-        "canManage",
-        "visibility",
         "canShare"
-      ]
-    },
-    "BoardList": {
-      "type": "object",
-      "properties": {
-        "boards": {
-          "type": "array",
-          "items": {
-            "$ref": "#/schemas/Board"
-          }
-        },
-        "hasMore": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "boards",
-        "hasMore"
-      ]
-    },
-    "CreateBoardInput": {
-      "type": "object",
-      "properties": {
-        "requestKey": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "title": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 200
-        },
-        "purpose": {
-          "type": "string",
-          "maxLength": 2000
-        }
-      },
-      "required": [
-        "requestKey",
-        "title"
-      ]
-    },
-    "UpdateBoardInput": {
-      "type": "object",
-      "properties": {
-        "expectedRevision": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "title": {
-          "anyOf": [
-            {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 200
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "purpose": {
-          "anyOf": [
-            {
-              "type": "string",
-              "maxLength": 2000
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "archived": {
-          "anyOf": [
-            {
-              "type": "boolean"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "required": [
-        "expectedRevision"
       ]
     },
     "BoardGeometry": {
@@ -2684,6 +1947,21 @@
         "update"
       ]
     },
+    "BoardTitleInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Surrounding space is trimmed; the rest must hold 1 to 200 characters."
+        }
+      },
+      "required": [
+        "title"
+      ]
+    },
     "BoardContextInput": {
       "type": "object",
       "properties": {
@@ -2722,7 +2000,7 @@
         "includeVisuals": {
           "type": "boolean",
           "default": false,
-          "description": "Render ephemeral PNG regions of the acknowledged scene. Nearby content is grouped; distant content and oversized groups are split. Enabled automatically by whiteboard_read."
+          "description": "Render ephemeral PNG regions of the acknowledged scene. Nearby content is grouped; distant content and oversized groups are split. Enabled automatically when artifact_inspect reads a Whiteboard."
         },
         "expectedPlan": {
           "type": "string",
@@ -3407,18 +2685,6 @@
         "markdown"
       ]
     },
-    "BoardFavoriteInput": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "favorite"
-      ],
-      "properties": {
-        "favorite": {
-          "type": "boolean"
-        }
-      }
-    },
     "BoardDragPreview": {
       "type": "object",
       "additionalProperties": false,
@@ -3692,150 +2958,6 @@
         }
       }
     },
-    "BoardGrant": {
-      "type": "object",
-      "properties": {
-        "actor": {
-          "$ref": "./_common.yaml#/schemas/ActorRef"
-        },
-        "access": {
-          "type": "string",
-          "enum": [
-            "read",
-            "edit",
-            "manage"
-          ]
-        }
-      },
-      "required": [
-        "actor",
-        "access"
-      ]
-    },
-    "BoardAccessInput": {
-      "type": "object",
-      "properties": {
-        "expectedRevision": {
-          "type": "integer",
-          "format": "int64",
-          "minimum": 1
-        },
-        "actor": {
-          "$ref": "./_common.yaml#/schemas/ActorRef"
-        },
-        "access": {
-          "type": "string",
-          "enum": [
-            "read",
-            "edit",
-            "manage",
-            "none"
-          ]
-        }
-      },
-      "required": [
-        "expectedRevision",
-        "actor",
-        "access"
-      ]
-    },
-    "BoardAccess": {
-      "type": "object",
-      "properties": {
-        "owner": {
-          "$ref": "./_common.yaml#/schemas/ActorRef"
-        },
-        "permission": {
-          "type": "string",
-          "enum": [
-            "read",
-            "edit",
-            "manage"
-          ]
-        },
-        "visibility": {
-          "type": "string",
-          "enum": [
-            "private",
-            "company",
-            "public"
-          ]
-        },
-        "companyAccess": {
-          "type": "string",
-          "enum": [
-            "read",
-            "edit"
-          ]
-        },
-        "publicToken": {
-          "anyOf": [
-            {
-              "type": "string",
-              "format": "uuid"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "revision": {
-          "type": "integer",
-          "format": "int64",
-          "minimum": 1
-        },
-        "grants": {
-          "type": "array",
-          "items": {
-            "$ref": "#/schemas/BoardGrant"
-          }
-        },
-        "url": {
-          "type": "string",
-          "description": "Canonical member web URL for sharing from web and Electron. Empty when no web origin is configured."
-        }
-      },
-      "required": [
-        "owner",
-        "permission",
-        "visibility",
-        "companyAccess",
-        "publicToken",
-        "revision",
-        "grants",
-        "url"
-      ]
-    },
-    "BoardVisibilityInput": {
-      "type": "object",
-      "properties": {
-        "expectedRevision": {
-          "type": "integer",
-          "format": "int64",
-          "minimum": 1
-        },
-        "visibility": {
-          "type": "string",
-          "enum": [
-            "private",
-            "company",
-            "public"
-          ]
-        },
-        "companyAccess": {
-          "type": "string",
-          "enum": [
-            "read",
-            "edit"
-          ]
-        }
-      },
-      "required": [
-        "expectedRevision",
-        "visibility",
-        "companyAccess"
-      ]
-    },
     "BoardVisuals": {
       "type": "object",
       "required": [
@@ -4033,96 +3155,6 @@
         "attachmentId"
       ],
       "additionalProperties": false
-    },
-    "BoardClaimInput": {
-      "type": "object",
-      "properties": {
-        "expectedRevision": {
-          "type": "integer",
-          "format": "int64",
-          "minimum": 1
-        }
-      },
-      "required": [
-        "expectedRevision"
-      ]
-    },
-    "BoardChannel": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "boardId",
-        "conversationId",
-        "joined",
-        "people",
-        "peopleTruncated"
-      ],
-      "properties": {
-        "boardId": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "conversationId": {
-          "description": "The Board's chat, read through the discussion routes; null until someone opens it.",
-          "oneOf": [
-            {
-              "type": "string",
-              "format": "uuid"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "joined": {
-          "type": "boolean",
-          "description": "Whether the caller is in the chat."
-        },
-        "people": {
-          "type": "array",
-          "maxItems": 500,
-          "description": "The people who can read the Board, by name; mentioning one who has not joined brings them into the chat.",
-          "items": {
-            "$ref": "#/schemas/BoardChannelPerson"
-          }
-        },
-        "peopleTruncated": {
-          "type": "boolean",
-          "description": "More people can read the Board than are listed."
-        }
-      }
-    },
-    "BoardChannelPerson": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "userId",
-        "displayName",
-        "avatarUrl",
-        "joined"
-      ],
-      "properties": {
-        "userId": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "displayName": {
-          "type": "string"
-        },
-        "avatarUrl": {
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "joined": {
-          "type": "boolean"
-        }
-      }
     },
     "BoardLineType": {
       "type": "string",

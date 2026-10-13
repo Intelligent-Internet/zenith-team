@@ -186,7 +186,7 @@ tags:
 
 
   - name: whiteboards
-    description: Company collaborative Whiteboards.
+    description: Whiteboard Artifacts, drawn together by the people of the chat they were made in and their Agents.
 
 components:
   securitySchemes:
@@ -245,10 +245,6 @@ components:
       $ref: "./whiteboards.yaml#/schemas/BoardRect"
     BoardDragPreview:
       $ref: "./whiteboards.yaml#/schemas/BoardDragPreview"
-    BoardFavoriteInput:
-      $ref: "./whiteboards.yaml#/schemas/BoardFavoriteInput"
-    BoardClaimInput:
-      $ref: "./whiteboards.yaml#/schemas/BoardClaimInput"
     BoardContext:
       $ref: "./whiteboards.yaml#/schemas/BoardContext"
     BoardContextInput:
@@ -285,6 +281,8 @@ components:
       $ref: "./whiteboards.yaml#/schemas/BoardTextResult"
     BoardTextInput:
       $ref: "./whiteboards.yaml#/schemas/BoardTextInput"
+    BoardTitleInput:
+      $ref: "./whiteboards.yaml#/schemas/BoardTitleInput"
     BoardMutation:
       $ref: "./whiteboards.yaml#/schemas/BoardMutation"
     BoardBatch:
@@ -317,24 +315,6 @@ components:
       $ref: "./whiteboards.yaml#/schemas/BoardProperties"
     BoardGeometry:
       $ref: "./whiteboards.yaml#/schemas/BoardGeometry"
-    UpdateBoardInput:
-      $ref: "./whiteboards.yaml#/schemas/UpdateBoardInput"
-    CreateBoardInput:
-      $ref: "./whiteboards.yaml#/schemas/CreateBoardInput"
-    BoardList:
-      $ref: "./whiteboards.yaml#/schemas/BoardList"
-    BoardGrant:
-      $ref: "./whiteboards.yaml#/schemas/BoardGrant"
-    BoardAccess:
-      $ref: "./whiteboards.yaml#/schemas/BoardAccess"
-    BoardChannel:
-      $ref: "./whiteboards.yaml#/schemas/BoardChannel"
-    BoardChannelPerson:
-      $ref: "./whiteboards.yaml#/schemas/BoardChannelPerson"
-    BoardAccessInput:
-      $ref: "./whiteboards.yaml#/schemas/BoardAccessInput"
-    BoardVisibilityInput:
-      $ref: "./whiteboards.yaml#/schemas/BoardVisibilityInput"
     Board:
       $ref: "./whiteboards.yaml#/schemas/Board"
     AgentSkillFile:
@@ -605,50 +585,38 @@ paths:
     $ref: './document-history.yaml#/paths/project_restore'
   /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/name:
     $ref: './document-history.yaml#/paths/project_name'
-  /api/v1/companies/{companyId}/whiteboards:
-    $ref: "./whiteboards.yaml#/paths/library"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard:
     $ref: "./whiteboards.yaml#/paths/board"
-  /api/v1/public/whiteboards/{token}:
-    $ref: "./whiteboards.yaml#/paths/publicBoard"
-  /api/v1/public/whiteboards/{token}/hydrate:
-    $ref: "./whiteboards.yaml#/paths/publicHydrate"
-  /api/v1/public/whiteboards/{token}/files/{attachmentId}:
-    $ref: "./whiteboards.yaml#/paths/publicFile"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/visibility:
-    $ref: "./whiteboards.yaml#/paths/visibility"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/channel:
-    $ref: "./whiteboards.yaml#/paths/channel"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/access:
-    $ref: "./whiteboards.yaml#/paths/access"
-  /api/v1/companies/{companyId}/runs/{runId}/whiteboards:
-    $ref: "./whiteboards.yaml#/paths/agentLibrary"
-  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/operations:
-    $ref: "./whiteboards.yaml#/paths/agentOperations"
-  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/compose:
-    $ref: "./whiteboards.yaml#/paths/agentCompose"
-  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/context:
-    $ref: "./whiteboards.yaml#/paths/agentContext"
-  /api/v1/companies/{companyId}/runs/{runId}/whiteboards/{boardId}/view:
-    $ref: "./whiteboards.yaml#/paths/agentView"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/favorite:
-    $ref: "./whiteboards.yaml#/paths/favorite"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/claim:
-    $ref: "./whiteboards.yaml#/paths/claim"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/operations:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/operations:
     $ref: "./whiteboards.yaml#/paths/operations"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/hydrate:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/hydrate:
     $ref: "./whiteboards.yaml#/paths/hydrate"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/text:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/text:
     $ref: "./whiteboards.yaml#/paths/text"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/context:
-    $ref: "./whiteboards.yaml#/paths/context"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/presence:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/title:
+    $ref: "./whiteboards.yaml#/paths/title"
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/presence:
     $ref: "./whiteboards.yaml#/paths/presence"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/files:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/files:
     $ref: "./whiteboards.yaml#/paths/files"
-  /api/v1/companies/{companyId}/whiteboards/{boardId}/files/{attachmentId}:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/files/{attachmentId}:
     $ref: "./whiteboards.yaml#/paths/file"
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/preview:
+    $ref: "./whiteboards.yaml#/paths/preview"
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/operations:
+    $ref: "./whiteboards.yaml#/paths/agentOperations"
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/compose:
+    $ref: "./whiteboards.yaml#/paths/agentCompose"
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/context:
+    $ref: "./whiteboards.yaml#/paths/agentContext"
+  /api/v1/companies/{companyId}/runs/{runId}/agent-artifacts/{artifactId}/whiteboard/view:
+    $ref: "./whiteboards.yaml#/paths/agentView"
+  /api/v1/public/artifacts/{token}/whiteboard:
+    $ref: "./whiteboards.yaml#/paths/publicBoard"
+  /api/v1/public/artifacts/{token}/whiteboard/hydrate:
+    $ref: "./whiteboards.yaml#/paths/publicHydrate"
+  /api/v1/public/artifacts/{token}/whiteboard/files/{attachmentId}:
+    $ref: "./whiteboards.yaml#/paths/publicFile"
 
 
 
@@ -1191,6 +1159,8 @@ paths:
     $ref: './conversations.yaml#/paths/conversations_conversationId_messages'
   /api/v1/conversations/{conversationId}/messages/{messageId}/context:
     $ref: './conversations.yaml#/paths/conversations_conversationId_messages_messageId_context'
+  /api/v1/conversations/{conversationId}/whiteboards:
+    $ref: './conversations.yaml#/paths/conversations_conversationId_whiteboards'
   /api/v1/tasks/{taskId}/messages:
     $ref: './conversations.yaml#/paths/tasks_taskId_messages'
   /api/v1/attachments/initiate:

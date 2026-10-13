@@ -676,7 +676,7 @@ WITH parent_lock AS MATERIALIZED (
     WHERE child.id=$1::uuid AND child.company_id=$2::uuid
     FOR NO KEY UPDATE OF parent
 )
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 WHERE (SELECT count(*) FROM parent_lock)>=0 AND conversations.id = $1::uuid
   AND conversations.company_id = $2::uuid
@@ -716,7 +716,6 @@ func (q *Queries) LockConversationForSystemRunQueueMutation(ctx context.Context,
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }

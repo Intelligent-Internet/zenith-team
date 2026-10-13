@@ -13,8 +13,6 @@ import { runDeliverablesApi } from "@/features/run-deliverables/api/run-delivera
 import store from "@/state/store";
 
 export const NOTIFICATIONS_ROUTE = "/settings/notifications";
-// A Board's page, where a mention in its chat opens.
-const boardPath = /^\/whiteboards\/[0-9a-f-]{36}$/i;
 const INTERNAL_ORIGIN = "https://boardly.internal";
 const MAX_INTERNAL_PATH_LENGTH = 1_024;
 
@@ -60,8 +58,7 @@ export function sanitizeNotificationPath(
       url.pathname !== "/revenue" &&
       url.pathname !== "/analytics" &&
       !isScheduleDetailPath(url.pathname) &&
-      !isRuntimeDetailPath(url.pathname) &&
-      !boardPath.test(url.pathname)
+      !isRuntimeDetailPath(url.pathname)
     ) {
       return NOTIFICATIONS_ROUTE;
     }
@@ -282,23 +279,6 @@ function hasRequiredNotificationTarget(
   kind: NotificationKind,
 ): boolean {
   const params = url.searchParams;
-  if (kind === "discussion_mention" && boardPath.test(url.pathname)) {
-    // A Board's chat opens on its Board, at the message or thread.
-    const allowed = new Set([
-      "companyId",
-      "conversationId",
-      "messageId",
-      "threadRootId",
-    ]);
-    return (
-      [...params.keys()].every((key) => allowed.has(key)) &&
-      ["companyId", "conversationId", "messageId"].every((key) =>
-        /^[0-9a-f-]{36}$/i.test(params.get(key) ?? ""),
-      ) &&
-      (!params.has("threadRootId") ||
-        /^[0-9a-f-]{36}$/i.test(params.get("threadRootId") ?? ""))
-    );
-  }
   if (kind === "discussion_mention") {
     return (
       url.pathname === "/app" &&

@@ -870,3 +870,24 @@ research Run's last publish. A later draft sequence means a person edited the
 page, published or not, and the Run no longer replaces it. Purely additive and
 nullable: rows written before it have no Agent author and are checked by
 published revision alone. Rollback drops both columns.
+
+## Whiteboard artifacts (000113)
+
+A Whiteboard is now an Artifact made in a chat. `outputs.type` admits
+`whiteboard`, and `boards` keeps only the live scene under its Output's ID
+(`boards_output_fkey`, cascading): the title, owner, grants, chat sharing and
+public link are the Output's, and `output_access` is the one access rule, which
+`attachment_access` follows for Board files. The Board's own title, purpose,
+visibility, public token, creator, archive and revision columns go, with
+`board_member_access`, `board_agent_access`, `board_favorites`,
+`board_create_receipts`, the `board_access` view and the library indexes.
+Boards made before had no Output to belong to, so they are deleted.
+
+A Board no longer has a chat of its own either: Board channels are deleted,
+`conversations.board_id` is dropped, and the discussion shape and identity
+triggers and `conversation_readers` return to their 000107 form.
+
+Rollback deletes the Whiteboard Artifacts (their Boards cascade) and restores
+000108's schema empty: the Board columns, access tables, views, indexes, the
+chat column and its triggers. The deleted Boards and Board channels do not come
+back.

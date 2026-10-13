@@ -200,8 +200,7 @@ func (s *DefaultHuddleService) Start(
 			return err
 		}
 		source, err := currentDiscussion(ctx, q, principal, sourceConversationID, false)
-		if err != nil || !source.ContentAccess || (source.Kind != "human_direct" && source.Kind != "channel") ||
-			source.BoardID.Valid {
+		if err != nil || !source.ContentAccess || (source.Kind != "human_direct" && source.Kind != "channel") {
 			return ErrHuddleNotFound
 		}
 

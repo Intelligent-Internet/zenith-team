@@ -1,8 +1,6 @@
-.wb-library,
 .wb-editor,
 .wb-dialog,
-.wb-message,
-.wb-artifact-preview {
+.wb-message {
   font-family: var(--workspace-font-body);
   font-size: 13px;
   color: var(--workspace-native-text);
@@ -10,48 +8,14 @@
   --wb-paper: var(--workspace-panel-bg);
   --wb-muted: var(--workspace-native-text-muted);
 }
-.wb-library {
-  width: min(1040px, 100%);
-  margin: 0 auto;
-  padding: 20px 32px 40px;
-  overflow: auto;
-  height: 100%;
-  background: var(--workspace-content-bg);
-}
-.wb-library-header {
-  min-height: 96px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--wb-line);
-}
-.wb-library-header > div {
-  min-width: 0;
-}
-.wb-library-header > button {
-  flex-shrink: 0;
-  min-height: 40px;
-  padding-inline: 16px;
-  font-weight: 500;
-}
-.wb-library h1,
 .wb-editor h1 {
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.03em;
   margin: 0;
 }
-.wb-library p {
-  color: var(--wb-muted);
-  margin: 7px 0 0;
-  line-height: 1.6;
-}
-/* The docked chat keeps its own controls' styles. */
-.wb-library button,
-.wb-editor button:where(:not(.wb-chat-dock *)),
-.wb-dialog button,
-.wb-artifact-preview button {
+.wb-editor button,
+.wb-dialog button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -61,23 +25,17 @@
   cursor: pointer;
   min-height: 32px;
 }
-.wb-library button:hover,
-.wb-editor button:where(:not(.wb-chat-dock *)):hover,
-.wb-dialog button:hover,
-.wb-artifact-preview button:hover {
+.wb-editor button:hover,
+.wb-dialog button:hover {
   background: var(--workspace-hover-bg);
 }
-.wb-library button:disabled,
-.wb-editor button:where(:not(.wb-chat-dock *)):disabled,
+.wb-editor button:disabled,
 .wb-dialog button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-.wb-library button:focus-visible,
-.wb-library a:focus-visible,
-.wb-editor button:where(:not(.wb-chat-dock *)):focus-visible,
-.wb-dialog button:focus-visible,
-.wb-artifact-preview button:focus-visible {
+.wb-editor button:focus-visible,
+.wb-dialog button:focus-visible {
   outline: 2px solid var(--workspace-native-text-muted);
   outline-offset: 2px;
 }
@@ -92,36 +50,6 @@
 .wb-primary:active:not(:disabled) {
   background: var(--workspace-accent-active) !important;
 }
-.wb-library-filters {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 24px 0;
-}
-.wb-library-tabs {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 3px;
-  border: 1px solid var(--wb-line);
-  border-radius: 10px;
-  background: var(--workspace-control-bg);
-}
-.wb-library-tabs button {
-  padding: 6px 11px;
-  color: var(--wb-muted);
-  font-size: 12px;
-  min-height: 32px;
-  border-radius: 7px;
-}
-.wb-library-tabs button[aria-pressed="true"] {
-  color: var(--workspace-native-text);
-  background: var(--wb-paper);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 8%);
-  font-weight: 500;
-}
 .wb-toolbar button[aria-pressed="true"] {
   color: var(--workspace-native-accent);
   background: color-mix(
@@ -130,215 +58,6 @@
     transparent
   );
 }
-.wb-library-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 300px;
-  max-width: 100%;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--wb-line);
-  border-radius: 10px;
-  color: var(--wb-muted);
-  background: color-mix(
-    in srgb,
-    var(--workspace-control-bg) 45%,
-    var(--workspace-input-bg)
-  );
-  transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease,
-    background 150ms ease;
-}
-.wb-library-search:hover {
-  border-color: var(--workspace-divider-strong);
-}
-.wb-library-search:focus-within {
-  border-color: var(--workspace-native-accent);
-  background: var(--workspace-input-bg);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--workspace-native-accent) 10%, transparent);
-}
-.wb-library-search svg {
-  flex-shrink: 0;
-}
-.wb-library-search input::placeholder {
-  color: var(--workspace-native-text-faint);
-}
-.wb-library-search input {
-  flex: 1;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  outline: none;
-  background: transparent;
-  color: var(--workspace-native-text);
-  font: inherit;
-  min-width: 0;
-  width: 100%;
-}
-.wb-library .wb-library-search-clear {
-  flex: none;
-  width: 24px;
-  min-height: 24px;
-  padding: 0;
-  border-radius: 6px;
-  color: var(--wb-muted);
-}
-.wb-board-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-  gap: 16px;
-}
-.wb-board-card {
-  border: 1px solid var(--wb-line);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--wb-paper);
-  display: flex;
-  flex-direction: column;
-  transition:
-    border-color 150ms ease,
-    box-shadow 150ms ease;
-}
-.wb-board-card:has(.wb-board-open:hover),
-.wb-board-card:focus-within {
-  border-color: var(--workspace-divider-strong);
-  box-shadow: 0 3px 12px rgb(0 0 0 / 5%);
-}
-.wb-board-open {
-  width: 100%;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  padding: 18px 18px 16px;
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-}
-.wb-library .wb-board-open:focus-visible {
-  outline-offset: -3px;
-  border-radius: 11px 11px 0 0;
-}
-.wb-board-identity {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-.wb-board-symbol {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 38px;
-  height: 38px;
-  color: var(--workspace-native-text-muted);
-  background: var(--workspace-control-bg);
-  border-radius: 10px;
-}
-.wb-board-type {
-  font-size: 11px;
-  color: var(--wb-muted);
-}
-.wb-board-open-arrow {
-  margin-left: auto;
-  color: var(--wb-muted);
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-.wb-board-open:is(:hover, :focus-visible) .wb-board-open-arrow {
-  opacity: 1;
-}
-.wb-board-card h2 {
-  font-weight: 600;
-  font-size: 15px;
-  line-height: 21px;
-  letter-spacing: -0.015em;
-  margin: 14px 0 0;
-  min-height: 42px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  width: 100%;
-}
-.wb-board-card p {
-  min-height: 36px;
-  margin: 6px 0 0;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  line-height: 18px;
-  font-size: 12px;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  width: 100%;
-}
-.wb-board-card time {
-  min-width: 0;
-  font-size: 11px;
-  color: var(--wb-muted);
-}
-.wb-board-card footer {
-  border-top: 1px solid var(--wb-line);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px 8px 18px;
-  justify-content: space-between;
-}
-.wb-board-actions {
-  display: flex;
-  flex: none;
-  gap: 2px;
-}
-.wb-board-actions button {
-  width: 30px;
-  min-height: 30px;
-  padding: 6px;
-  color: var(--wb-muted);
-}
-.wb-board-actions .wb-board-claim {
-  width: auto;
-  gap: 4px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
-.wb-board-actions button:is(:hover, [aria-pressed="true"]) {
-  color: var(--workspace-native-accent);
-}
-.wb-board-placeholder {
-  height: 222px;
-  border: 1px solid var(--wb-line);
-  border-radius: 12px;
-  padding: 18px;
-}
-.wb-board-placeholder span {
-  display: block;
-  background: var(--workspace-control-bg);
-  border-radius: 6px;
-}
-.wb-board-placeholder span:first-child {
-  width: 38px;
-  height: 38px;
-  margin-bottom: 18px;
-}
-.wb-board-placeholder span:nth-child(2) {
-  width: 65%;
-  height: 14px;
-  margin-bottom: 12px;
-}
-.wb-board-placeholder span:last-child {
-  width: 90%;
-  height: 36px;
-}
-.wb-empty,
 .wb-message {
   padding: 60px 24px;
   display: flex;
@@ -347,10 +66,6 @@
   justify-content: center;
   gap: 12px;
   text-align: center;
-}
-.wb-empty {
-  min-height: 380px;
-  color: var(--wb-muted);
 }
 .wb-message h2 {
   margin: 0;
@@ -364,37 +79,11 @@
   color: var(--wb-muted);
   line-height: 1.6;
 }
+.wb-editor > .wb-message,
 .wb-public-message {
-  min-height: 100dvh;
+  flex: 1;
+  min-height: 0;
   background: var(--workspace-content-bg);
-}
-.wb-empty-symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 6px;
-  border: 1px solid var(--wb-line);
-  border-radius: 16px;
-  background: var(--wb-paper);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 3%);
-}
-.wb-empty p {
-  margin: 0 0 8px;
-  max-width: 320px;
-}
-.wb-empty h2 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 500;
-  letter-spacing: -0.025em;
-  color: var(--workspace-native-text);
-}
-.wb-pagination {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 18px;
 }
 .wb-modal-backdrop {
   position: fixed;
@@ -460,102 +149,6 @@
 .wb-dialog [role="alert"] {
   color: var(--workspace-native-danger);
 }
-.wb-details-overlay {
-  z-index: 150;
-  background: rgb(0 0 0 / 28%);
-  backdrop-filter: blur(3px);
-}
-.wb-details-dialog[data-slot="dialog-content"] {
-  z-index: 151;
-  display: block;
-  width: min(460px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
-  padding: 0;
-  border-radius: 12px;
-  box-shadow: var(--workspace-overlay-shadow);
-}
-.wb-details-header {
-  padding: 28px 28px 22px;
-}
-.wb-details-symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 18px;
-  border: 1px solid var(--wb-line);
-  border-radius: 12px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-}
-.wb-details-header h2 {
-  margin: 0;
-  line-height: 1.3;
-  letter-spacing: -0.025em;
-}
-.wb-details-header p {
-  margin: 7px 0 0;
-  font-size: 13px;
-}
-.wb-details-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 0 28px 24px;
-}
-.wb-details-fields label {
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.wb-details-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.wb-details-label > span {
-  color: var(--wb-muted);
-  font-size: 11px;
-  font-weight: 400;
-}
-.wb-details-fields :is(input, textarea) {
-  background: var(--workspace-input-bg);
-  border-color: var(--workspace-divider-strong);
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 20px;
-  padding: 10px 12px;
-  outline: none;
-}
-.wb-details-fields :is(input, textarea):focus {
-  border-color: var(--workspace-native-accent);
-}
-.wb-details-fields :is(input, textarea)::placeholder {
-  color: var(--workspace-native-text-faint);
-}
-.wb-details-fields textarea {
-  min-height: 100px;
-}
-.wb-details-footer {
-  border-top: 1px solid var(--wb-line);
-  padding: 16px 28px;
-}
-.wb-details-footer button {
-  min-height: 36px;
-  padding-inline: 13px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.wb-details-dialog > [data-slot="dialog-close"] {
-  top: 18px;
-  right: 18px;
-  padding: 6px;
-  min-height: 28px;
-  border-radius: 8px;
-  color: var(--wb-muted);
-}
 .wb-editor {
   height: 100%;
   min-height: 0;
@@ -563,6 +156,11 @@
   display: flex;
   flex-direction: column;
   background: var(--workspace-content-bg);
+}
+/* Hosted as an Artifact: the chat's side panel or the Artifact page. */
+.artifact-viewer > .wb-editor,
+.artifact-share-page > .wb-editor {
+  flex: 1;
 }
 .wb-editor-header {
   height: 56px;
@@ -583,12 +181,48 @@
   gap: 12px;
   overflow: hidden;
 }
-.wb-editor-header h1 {
+.wb-editor-header :is(h1, h2) {
   min-width: 0;
+  margin: 0;
   font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.wb-editor .wb-title-button {
+  display: block;
+  max-width: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 4px;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+.wb-title-field {
+  width: min(100%, 360px);
+  min-width: 0;
+  padding: 1px 4px;
+  margin-inline: -5px;
+  border: 1px solid var(--workspace-native-accent, currentColor);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  outline: none;
+}
+.wb-editor-header--compact .wb-title-field {
+  font-size: var(--workspace-text-chat, 14px);
+  letter-spacing: 0;
 }
 .wb-board-status {
   min-width: 0;
@@ -613,8 +247,69 @@
   color: var(--wb-muted);
   line-height: 1.5;
 }
+.wb-leave-overlay {
+  z-index: 150;
+  background: rgb(0 0 0 / 28%);
+  backdrop-filter: blur(3px);
+}
+.wb-leave-footer {
+  border-top: 1px solid var(--wb-line);
+  padding: 16px 28px;
+}
+.wb-leave-footer button {
+  min-height: 36px;
+  padding-inline: 13px;
+  font-size: 12px;
+  font-weight: 500;
+}
 .wb-header-actions > button {
   flex-shrink: 0;
+}
+.wb-editor .wb-icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
+  padding: 0;
+  color: var(--wb-muted);
+}
+.wb-editor .wb-icon-button:hover:not(:disabled) {
+  color: var(--workspace-native-text);
+}
+/* In a chat's side panel the header matches the other Artifact viewers:
+   the title over its save state, then presence and icon actions. */
+.wb-editor-header.wb-editor-header--compact {
+  height: var(--workspace-conversation-header-height, 64px);
+  gap: 8px;
+  padding: 9px 12px 9px 16px;
+  background: transparent;
+}
+.wb-editor-header--compact .wb-board-heading {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+}
+.wb-editor-header--compact :is(h1, h2) {
+  max-width: 100%;
+  font-size: var(--workspace-text-chat, 14px);
+  line-height: var(--workspace-leading-chat, 20px);
+  letter-spacing: 0;
+}
+.wb-editor-header--compact .wb-board-status,
+.wb-editor-header--compact .wb-save-details {
+  max-width: 100%;
+}
+.wb-editor .wb-editor-header--compact .wb-save-details {
+  min-height: 0;
+  padding: 0 4px;
+  margin-left: -4px;
+}
+.wb-editor-header--compact .wb-header-actions {
+  gap: 2px;
+}
+.wb-editor-header--compact .wb-presence-name {
+  display: none;
 }
 .wb-editor-body {
   position: relative;
@@ -1943,49 +1638,6 @@
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: 2px;
 }
-.wb-artifact-preview {
-  padding: 24px;
-  overflow: auto;
-  height: 100%;
-}
-.wb-artifact-preview h2 {
-  font-weight: 600;
-  font-size: 20px;
-}
-.wb-artifact-preview header p {
-  color: var(--wb-muted);
-  margin: 6px 0;
-}
-.wb-artifact-preview header a {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  color: var(--workspace-native-accent);
-}
-.wb-export-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 16px 0;
-}
-.wb-export-buttons button {
-  border: 1px solid var(--wb-line);
-}
-.wb-artifact-image {
-  max-width: 100%;
-  border: 1px solid var(--wb-line);
-  background: white;
-}
-.wb-artifact-preview details {
-  margin-top: 20px;
-}
-.wb-artifact-preview pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 11px;
-  line-height: 1.5;
-  padding: 14px;
-}
 @media (max-width: 900px) {
   .wb-tool-dock {
     left: 16px;
@@ -2007,42 +1659,51 @@
   }
 }
 @media (max-width: 600px) {
-  .wb-library {
-    padding: 0 16px 24px;
-  }
-  .wb-library-header {
-    align-items: flex-start;
-    padding: 24px 0;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .wb-library-filters {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 20px 0;
-  }
-  .wb-library-tabs button {
-    flex: 1;
-  }
-  .wb-library-search {
-    width: 100%;
-  }
-  .wb-details-header {
-    padding: 24px 20px 20px;
-  }
-  .wb-details-fields {
-    padding: 0 20px 20px;
-  }
-  .wb-details-footer {
+  .wb-leave-footer {
     padding: 14px 20px;
+  }
+}
+/* The chat's side panel can be much narrower than the window. */
+@container artifact-panel (max-width: 900px) {
+  .wb-tool-dock {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    bottom: 70px;
+    width: auto;
+    max-width: none;
+  }
+  .wb-zoom-controls {
+    right: 12px;
+    bottom: 20px;
+  }
+}
+@container artifact-panel (max-width: 420px) {
+  .wb-pen-tray__main {
+    gap: 10px;
+    padding-inline: 10px 16px;
+  }
+  .wb-color-control__swatches {
+    gap: 12px;
+  }
+  .wb-style-controls {
+    padding: 16px;
+  }
+  .wb-pen-tray__colors {
+    grid-template-columns: repeat(3, 28px);
+    gap: 12px;
+  }
+  .wb-editor .wb-color-swatch,
+  .wb-editor .wb-custom-color {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .wb-editor *,
   .wb-tool-preview ::before,
-  .wb-tool-preview ::after,
-  .wb-library *,
-  .wb-details-dialog {
+  .wb-tool-preview ::after {
     scroll-behavior: auto !important;
     transition: none !important;
     animation: none !important;
@@ -2122,106 +1783,6 @@
 .wb-header-presence:empty {
   display: none;
 }
-.wb-header-actions .wb-agent-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 7px 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-  font-weight: 500;
-  white-space: nowrap;
-}
-.wb-header-actions .wb-agent-toggle[aria-pressed="true"] {
-  border-color: var(--workspace-accent-fill);
-  color: var(--workspace-accent-fill);
-}
-/* The Agent chat docks beside the Board: the canvas narrows, so the view it
-   reports is the one the person sees. */
-.wb-chat-dock {
-  display: flex;
-  flex-direction: column;
-  width: min(420px, 42vw);
-  min-width: 320px;
-  min-height: 0;
-  border-left: 1px solid var(--workspace-divider);
-  background: var(--workspace-chat-bg, var(--workspace-surface, transparent));
-}
-.wb-chat-dock__status {
-  margin: 12px 14px;
-  font-size: 13px;
-  color: var(--workspace-native-text-muted);
-}
-.wb-chat-dock__status[role="alert"] {
-  color: var(--workspace-danger, #dc2626);
-}
-/* The chat's own layout reads the window width; in the dock it is one
-   column, and a thread, an Agent's activity or a preview takes its place. */
-.wb-chat-dock__pane {
-  flex: 1;
-  min-height: 0;
-}
-.wb-chat-dock .discussion-content > * {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-}
-.wb-chat-dock .discussion-thread-panel,
-.wb-chat-dock .artifacts-aside {
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  border-left: 0;
-}
-.wb-chat-dock .discussion-main-stream {
-  display: flex;
-}
-/* The composer runs edge to edge along the dock's foot: a rule above it
-   instead of a floating card. */
-.wb-chat-dock .discussion-compose-area,
-.wb-chat-dock .discussion-thread-panel .discussion-compose-area {
-  padding: 0;
-}
-.wb-chat-dock .discussion-composer {
-  border: 0;
-  border-top: 1px solid var(--workspace-divider);
-  border-radius: 0;
-  box-shadow: none;
-}
-.wb-chat-dock .discussion-send-state {
-  padding: 10px 14px;
-}
-/* The round send button of the workspace's other chats. */
-.wb-chat-dock .discussion-send {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-}
-.wb-chat-dock .discussion-send:disabled {
-  background: var(--workspace-accent-fill);
-  color: var(--workspace-accent-foreground);
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-@media (max-width: 760px) {
-  .wb-chat-dock {
-    position: absolute;
-    inset: 0 0 0 auto;
-    z-index: 20;
-    width: 100%;
-    min-width: 0;
-  }
-}
 .wb-header-actions .wb-share-button {
   min-height: 34px;
   padding: 7px 14px;
@@ -2288,7 +1849,8 @@
   .wb-header-actions {
     gap: 4px;
   }
-  .wb-header-actions .wb-presence-avatars {
+  /* The side panel keeps the faces and drops the name instead. */
+  .wb-editor-header:not(.wb-editor-header--compact) .wb-presence-avatars {
     display: none;
   }
   .wb-board-heading {
@@ -2304,8 +1866,8 @@
   }
 }
 .wb-public-editor {
-  height: 100%;
-  min-height: 70vh;
+  flex: 1;
+  min-height: 360px;
 }
 .wb-public-access {
   display: flex;

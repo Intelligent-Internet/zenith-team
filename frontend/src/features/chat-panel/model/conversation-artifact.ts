@@ -28,6 +28,7 @@ export function artifactTypeLabel(type: ArtifactType) {
     media: "Media",
     text: "Text",
     file: "File",
+    whiteboard: "Whiteboard",
   }[type];
 }
 

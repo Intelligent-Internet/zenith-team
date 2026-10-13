@@ -63,7 +63,7 @@ SET updated_at = statement_clock.now_at,
 FROM statement_clock
 WHERE conversations.id = $1::uuid
   AND conversations.company_id = $2::uuid
-RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 `
 
 type BumpConversationProjectionParams struct {
@@ -96,7 +96,6 @@ func (q *Queries) BumpConversationProjection(ctx context.Context, arg BumpConver
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -113,7 +112,7 @@ SET updated_at = statement_clock.now_at,
 FROM statement_clock, target_ids
 WHERE conversations.id = target_ids.conversation_id
   AND conversations.company_id = $1::uuid
-RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 `
 
 type BumpConversationProjectionsBulkParams struct {
@@ -152,7 +151,6 @@ func (q *Queries) BumpConversationProjectionsBulk(ctx context.Context, arg BumpC
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 		); err != nil {
 			return nil, err
 		}
@@ -167,7 +165,7 @@ func (q *Queries) BumpConversationProjectionsBulk(ctx context.Context, arg BumpC
 const detachDeletedTaskConversation = `-- name: DetachDeletedTaskConversation :one
 UPDATE conversations SET task_id = NULL, version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = $1::uuid AND id = $2::uuid
-  AND task_id = $3::uuid RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+  AND task_id = $3::uuid RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 type DetachDeletedTaskConversationParams struct {
@@ -201,7 +199,6 @@ func (q *Queries) DetachDeletedTaskConversation(ctx context.Context, arg DetachD
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -401,7 +398,7 @@ func (q *Queries) GetConversationStudioProject(ctx context.Context, arg GetConve
 }
 
 const getDirectConversationByAgent = `-- name: GetDirectConversationByAgent :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members AS actor_membership
@@ -458,13 +455,12 @@ func (q *Queries) GetDirectConversationByAgent(ctx context.Context, arg GetDirec
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
 
 const getDirectConversationByRequestKey = `-- name: GetDirectConversationByRequestKey :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id FROM conversations
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members ON company_members.company_id = conversations.company_id
  AND company_members.user_id = $1::uuid
@@ -507,13 +503,12 @@ func (q *Queries) GetDirectConversationByRequestKey(ctx context.Context, arg Get
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
 
 const getDirectConversationForCreator = `-- name: GetDirectConversationForCreator :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members AS actor_membership
@@ -558,13 +553,12 @@ func (q *Queries) GetDirectConversationForCreator(ctx context.Context, arg GetDi
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
 
 const getDirectConversationReplay = `-- name: GetDirectConversationReplay :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members AS actor_membership
@@ -616,7 +610,6 @@ func (q *Queries) GetDirectConversationReplay(ctx context.Context, arg GetDirect
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -897,7 +890,7 @@ JOIN agents
 WHERE companies.id = $5::uuid
   AND companies.deleting_at IS NULL
 ON CONFLICT DO NOTHING
-RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 `
 
 type InsertDirectConversationParams struct {
@@ -944,7 +937,6 @@ func (q *Queries) InsertDirectConversation(ctx context.Context, arg InsertDirect
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -1329,7 +1321,7 @@ func (q *Queries) ListDirectConversationSummaryBasesBulk(ctx context.Context, ar
 }
 
 const listDirectConversationsForCreator = `-- name: ListDirectConversationsForCreator :many
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members AS actor_membership
@@ -1381,7 +1373,6 @@ func (q *Queries) ListDirectConversationsForCreator(ctx context.Context, arg Lis
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 		); err != nil {
 			return nil, err
 		}
@@ -1707,7 +1698,7 @@ func (q *Queries) LockCompanyPlanTaskConversations(ctx context.Context, arg Lock
 }
 
 const lockConversationForActiveUserMutation = `-- name: LockConversationForActiveUserMutation :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
 JOIN company_members AS actor_membership
@@ -1761,13 +1752,12 @@ func (q *Queries) LockConversationForActiveUserMutation(ctx context.Context, arg
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
 
 const lockHumanInputOriginConversation = `-- name: LockHumanInputOriginConversation :one
-SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+SELECT conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 FROM conversations
 WHERE conversations.id = $1::uuid
   AND conversations.company_id = $2::uuid
@@ -1830,7 +1820,6 @@ func (q *Queries) LockHumanInputOriginConversation(ctx context.Context, arg Lock
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -2094,7 +2083,7 @@ func (q *Queries) ReserveStudioReceipt(ctx context.Context, arg ReserveStudioRec
 
 const resolveConversationStateForActiveUser = `-- name: ResolveConversationStateForActiveUser :one
 SELECT
-    conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id,
+    conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id,
     tasks.id AS resolved_task_id
 FROM conversations
 JOIN companies ON companies.id = conversations.company_id
@@ -2146,7 +2135,6 @@ type ResolveConversationStateForActiveUserRow struct {
 	ChannelContextRevision     int64              `json:"channel_context_revision"`
 	ProjectID                  uuid.NullUUID      `json:"project_id"`
 	DocumentThreadID           uuid.NullUUID      `json:"document_thread_id"`
-	BoardID                    uuid.NullUUID      `json:"board_id"`
 	ResolvedTaskID             uuid.NullUUID      `json:"resolved_task_id"`
 }
 
@@ -2175,7 +2163,6 @@ func (q *Queries) ResolveConversationStateForActiveUser(ctx context.Context, arg
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 		&i.ResolvedTaskID,
 	)
 	return i, err
@@ -2327,7 +2314,7 @@ WHERE conversations.id = $3::uuid
       $1::boolean <> (conversations.pinned_at IS NOT NULL)
       OR $2::boolean <> (conversations.archived_at IS NOT NULL)
   )
-RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 `
 
 type UpdateDirectConversationUserStateParams struct {
@@ -2373,7 +2360,6 @@ func (q *Queries) UpdateDirectConversationUserState(ctx context.Context, arg Upd
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -2403,7 +2389,7 @@ WHERE conversations.id = $2::uuid
   AND conversations.version < 9007199254740991
   AND companies.id = $3::uuid
   AND companies.deleting_at IS NULL
-RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 `
 
 type UpdateScheduleConversationDefinitionParams struct {
@@ -2449,7 +2435,6 @@ func (q *Queries) UpdateScheduleConversationDefinition(ctx context.Context, arg 
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }

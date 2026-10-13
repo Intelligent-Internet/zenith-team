@@ -25,7 +25,7 @@ AND NOT EXISTS(SELECT 1 FROM asset_versions v WHERE v.company_id=a.company_id AN
 -- again (copy/paste between Boards). The copy keeps its preview and dimensions.
 -- name: GetReadableBoardFileSource :one
 SELECT f.* FROM board_files f
-JOIN board_access access ON access.company_id=f.company_id AND access.board_id=f.board_id AND access.user_id=sqlc.arg(user_id)
+JOIN output_access access ON access.company_id=f.company_id AND access.output_id=f.board_id AND access.user_id=sqlc.arg(user_id)
 JOIN attachment_access readable ON readable.company_id=f.company_id AND readable.attachment_id=f.attachment_id
  AND readable.user_id=sqlc.arg(user_id)
 JOIN attachments a ON a.company_id=f.company_id AND a.id=f.attachment_id AND a.status='ready'
@@ -66,10 +66,6 @@ DELETE FROM board_files f WHERE (f.company_id,f.board_id,f.attachment_id) IN (
 -- name: PurgeBoardReceipts :execrows
 DELETE FROM board_operations WHERE (board_id,actor_user_id,actor_run_id,request_key) IN (
  SELECT board_id,actor_user_id,actor_run_id,request_key FROM board_operations
- WHERE created_at < sqlc.arg(cutoff)::timestamptz LIMIT sqlc.arg(batch_size)::integer FOR UPDATE SKIP LOCKED);
--- name: PurgeBoardCreateReceipts :execrows
-DELETE FROM board_create_receipts WHERE (company_id,actor_user_id,request_key) IN (
- SELECT company_id,actor_user_id,request_key FROM board_create_receipts
  WHERE created_at < sqlc.arg(cutoff)::timestamptz LIMIT sqlc.arg(batch_size)::integer FOR UPDATE SKIP LOCKED);
 -- A file a Board places, or its preview. Another surface (a Project) refuses
 -- it rather than leave its file readable by the Board's audience.

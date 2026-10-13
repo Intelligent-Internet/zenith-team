@@ -1743,7 +1743,7 @@ func (q *Queries) LockCanvasItem(ctx context.Context, arg LockCanvasItemParams) 
 }
 
 const lockCanvasOutput = `-- name: LockCanvasOutput :one
-SELECT id FROM outputs WHERE company_id=$1 AND id=$2 FOR SHARE
+SELECT id FROM outputs WHERE company_id=$1 AND id=$2 AND type<>'whiteboard' FOR SHARE
 `
 
 type LockCanvasOutputParams struct {
@@ -1751,6 +1751,8 @@ type LockCanvasOutputParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
+// A Whiteboard is live content in its chat, not a result a Project canvas
+// places.
 func (q *Queries) LockCanvasOutput(ctx context.Context, arg LockCanvasOutputParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, lockCanvasOutput, arg.CompanyID, arg.ID)
 	var id uuid.UUID

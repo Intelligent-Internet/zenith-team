@@ -16,7 +16,6 @@ import (
 	"boardly.dev/boardly/server/internal/attachment"
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/realtime"
 	"boardly.dev/boardly/server/pkg/protocol"
 )
@@ -38,7 +37,7 @@ func TestWhiteboardUploadRefusesRuns(t *testing.T) {
 	h.BoardService, h.BoardMediaService = &boardHTTPStub{}, &boardVisualHTTPStub{}
 	h = New(*h)
 	for _, scope := range []string{"/runs/" + f.runID.String()} {
-		path := "/api/v1/companies/" + f.principal.CompanyID.String() + scope + "/whiteboards/" + uuid.NewString() + "/files"
+		path := "/api/v1/companies/" + f.principal.CompanyID.String() + scope + "/agent-artifacts/" + uuid.NewString() + "/whiteboard/files"
 		request := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{}`))
 		request.Header.Set("Authorization", "Bearer access-token")
 		request.Header.Set("Content-Type", "application/json")
@@ -77,6 +76,7 @@ type boardVisualHTTPStub struct {
 	scope canvas.BoardScope
 	calls int
 	err   error
+	empty bool
 }
 
 func (s *boardVisualHTTPStub) Visuals(
@@ -115,7 +115,7 @@ func TestWhiteboardContextImagesUseRunProofAndCommittedSequence(t *testing.T) {
 			h.BoardService, h.BoardMediaService = &boardHTTPStub{}, visuals
 			h = New(*h)
 			board := uuid.New()
-			path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/runs/" + f.runID.String() + "/whiteboards/" + board.String() + "/context"
+			path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/runs/" + f.runID.String() + "/agent-artifacts/" + board.String() + "/whiteboard/context"
 			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(tt.body))
 			req.Header.Set("Authorization", "Bearer access-token")
 			req.Header.Set("Content-Type", "application/json")
@@ -213,7 +213,12 @@ func TestWhiteboardRunCallsShowTheAgentLikeAPerson(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		response := call(http.MethodPut, "/whiteboards/"+board.String()+"/presence", string(body), false)
+		response := call(
+			http.MethodPut,
+			"/artifacts/"+board.String()+"/whiteboard/presence",
+			string(body),
+			false,
+		)
 		if response.Code != http.StatusOK {
 			t.Fatalf("presence = %d: %s", response.Code, response.Body.String())
 		}
@@ -245,7 +250,7 @@ func TestWhiteboardRunCallsShowTheAgentLikeAPerson(t *testing.T) {
 	if sessions := heartbeat(); len(sessions) != 1 || sessions[0].View == nil || !sessions[0].Focused {
 		t.Fatalf("member session = %+v; want its view and focus kept", sessions)
 	}
-	runPath := "/runs/" + f.runID.String() + "/whiteboards/" + board.String()
+	runPath := "/runs/" + f.runID.String() + "/agent-artifacts/" + board.String() + "/whiteboard"
 	if response := call(http.MethodPost, runPath+"/context", `{}`, true); response.Code != http.StatusOK {
 		t.Fatalf("context = %d: %s", response.Code, response.Body.String())
 	}
@@ -322,7 +327,7 @@ func TestWhiteboardAgentAppearsOnlyWhereItWorks(t *testing.T) {
 		return nil
 	}
 	runPath := func(board uuid.UUID) string {
-		return "/runs/" + f.runID.String() + "/whiteboards/" + board.String()
+		return "/runs/" + f.runID.String() + "/agent-artifacts/" + board.String() + "/whiteboard"
 	}
 
 	unseen := uuid.New()
@@ -340,8 +345,8 @@ func TestWhiteboardAgentAppearsOnlyWhereItWorks(t *testing.T) {
 
 	left := uuid.New()
 	view := `{"sessionId":"` + uuid.NewString() + `","zoom":1,"view":{"x":0,"y":0,"width":800,"height":400}`
-	call(http.MethodPut, "/whiteboards/"+left.String()+"/presence", view+`}`, false)
-	call(http.MethodPut, "/whiteboards/"+left.String()+"/presence", view+`,"leave":true}`, false)
+	call(http.MethodPut, "/artifacts/"+left.String()+"/whiteboard/presence", view+`}`, false)
+	call(http.MethodPut, "/artifacts/"+left.String()+"/whiteboard/presence", view+`,"leave":true}`, false)
 	call(http.MethodPost, runPath(left)+"/context", `{}`, true)
 	if session := agent(left); session == nil || session.X != 400 || session.Y != 200 {
 		t.Fatalf("Agent after its person left = %+v; want it where they last looked", session)
@@ -374,14 +379,14 @@ func TestWhiteboardCollaborationRoutesSeparateMemberAndRunAuthority(t *testing.T
 		kind               string
 		want               int
 	}{
-		{"member", "whiteboards", "", "direct", 200},
+		{"member", "artifacts", "", "direct", 200},
 		{"Agent direct", "runs", wikiAgentRunToken, "direct", 200},
 		{"Agent task", "runs", wikiAgentRunToken, "task", 200},
 		{"Agent channel", "runs", wikiAgentRunToken, "channel", 200},
 		{"missing proof", "runs", "", "direct", 401},
 		{"invalid proof", "runs", "brt_invalid", "direct", 401},
 		{"schedule proof", "runs", wikiAgentRunToken, "schedule", 401},
-		{"proof on member route", "whiteboards", wikiAgentRunToken, "direct", 403},
+		{"proof on member route", "artifacts", wikiAgentRunToken, "direct", 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -390,14 +395,14 @@ func TestWhiteboardCollaborationRoutesSeparateMemberAndRunAuthority(t *testing.T
 			h := fixture.handler()
 			h.BoardService = s
 			h = New(*h)
-			path := "/api/v1/companies/" + fixture.principal.CompanyID.String() + "/whiteboards/"
+			path := "/api/v1/companies/" + fixture.principal.CompanyID.String() + "/artifacts/"
 			if tc.route == "runs" {
-				path = "/api/v1/companies/" + fixture.principal.CompanyID.String() + "/runs/" + fixture.runID.String() + "/whiteboards/"
+				path = "/api/v1/companies/" + fixture.principal.CompanyID.String() + "/runs/" + fixture.runID.String() + "/agent-artifacts/"
 			}
 			board := uuid.New()
 			req := httptest.NewRequest(
 				http.MethodPost,
-				path+board.String()+"/operations",
+				path+board.String()+"/whiteboard/operations",
 				strings.NewReader(
 					`{"requestKey":"99987986-33e6-4ec7-b7d4-a19bc936ce48","commands":[{"type":"create_item","draftId":"note","itemType":"sticky"}]}`,
 				),
@@ -457,7 +462,7 @@ func TestWhiteboardHTTPRejectsInvalidCommandsBeforeService(t *testing.T) {
 				}
 				c.Request = c.Request.WithContext(auth.WithUserPrincipal(c.Request.Context(), p))
 			})
-			r.POST("/boards/:boardId", h.mutateWhiteboard)
+			r.POST("/boards/:artifactId", h.mutateWhiteboard)
 			req := httptest.NewRequest(http.MethodPost, tc.path, strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -469,46 +474,6 @@ func TestWhiteboardHTTPRejectsInvalidCommandsBeforeService(t *testing.T) {
 				t.Fatalf("service calls=%d", s.calls)
 			}
 		})
-	}
-}
-
-func (s *boardHTTPStub) Access(_ context.Context, p auth.UserPrincipal, _ uuid.UUID) (canvas.BoardAccess, error) {
-	return canvas.BoardAccess{
-		Owner:         protocol.ActorRef{ID: p.UserID, Kind: protocol.ActorKindUser},
-		Permission:    "manage",
-		Visibility:    "private",
-		CompanyAccess: "read",
-		Revision:      1,
-		Grants:        []canvas.BoardGrant{},
-	}, nil
-}
-
-func TestWhiteboardSharingUsesCanonicalWebLink(t *testing.T) {
-	t.Parallel()
-	f := newWikiAgentFixture("direct")
-	h := f.handler()
-	h.BoardService = &boardHTTPStub{}
-	h.OAuthWebAppOrigin = "https://zenith.test"
-	h = New(*h)
-	board := uuid.New()
-	request := httptest.NewRequest(
-		http.MethodGet,
-		"/api/v1/companies/"+f.principal.CompanyID.String()+"/whiteboards/"+board.String()+"/access",
-		nil,
-	)
-	request.Header.Set("Authorization", "Bearer access-token")
-	response := httptest.NewRecorder()
-	h.ServeHTTP(response, request)
-	if response.Code != http.StatusOK {
-		t.Fatalf("sharing: %d %s", response.Code, response.Body.String())
-	}
-	var access canvas.BoardAccess
-	if err := json.Unmarshal(response.Body.Bytes(), &access); err != nil {
-		t.Fatal(err)
-	}
-	expected := "https://zenith.test/whiteboards/" + board.String() + "?companyId=" + f.principal.CompanyID.String()
-	if access.URL != expected {
-		t.Fatalf("sharing URL=%q, want %q", access.URL, expected)
 	}
 }
 
@@ -543,7 +508,7 @@ func TestWhiteboardFileAttachBoundary(t *testing.T) {
 			h = New(*h)
 			request := httptest.NewRequest(
 				http.MethodPost,
-				"/api/v1/companies/"+f.principal.CompanyID.String()+"/whiteboards/"+uuid.NewString()+"/files",
+				"/api/v1/companies/"+f.principal.CompanyID.String()+"/artifacts/"+uuid.NewString()+"/whiteboard/files",
 				strings.NewReader(tt.body),
 			)
 			request.Header.Set("Authorization", "Bearer access-token")
@@ -597,8 +562,8 @@ func TestWhiteboardFileDownloadsRevalidate(t *testing.T) {
 	h.BoardService, h.BoardMediaService = &boardHTTPStub{}, media
 	h = New(*h)
 	file := uuid.New()
-	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/whiteboards/" + uuid.NewString() +
-		"/files/" + file.String()
+	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/artifacts/" + uuid.NewString() +
+		"/whiteboard/files/" + file.String()
 	download := func(etag string) *httptest.ResponseRecorder {
 		request := httptest.NewRequest(http.MethodGet, path, nil)
 		request.Header.Set("Authorization", "Bearer access-token")
@@ -621,6 +586,67 @@ func TestWhiteboardFileDownloadsRevalidate(t *testing.T) {
 		media.calls != 2 {
 		t.Fatalf("revalidation = %d %q, ETag %q, service calls %d", again.Code, again.Body.String(),
 			again.Header().Get("ETag"), media.calls)
+	}
+}
+
+func (s *boardVisualHTTPStub) Preview(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	scope canvas.BoardScope,
+	known int64,
+) (canvas.BoardPreview, error) {
+	s.calls++
+	s.scope = scope
+	result := canvas.BoardPreview{Sequence: 7, NotModified: known == 7}
+	if s.empty {
+		result.Sequence = 0
+	} else if !result.NotModified {
+		result.Image = &canvas.BoardVisualRegion{MIMEType: "image/png", Data: []byte("PNG")}
+	}
+	return result, s.err
+}
+
+// A Whiteboard card's preview is drawn again only when the Board changed: the
+// ETag names the sequence it shows. An empty Board has no preview.
+func TestWhiteboardPreviewRevalidatesBySequence(t *testing.T) {
+	t.Parallel()
+	f := newWikiAgentFixture("direct")
+	h := f.handler()
+	media := &boardVisualHTTPStub{}
+	h.BoardService, h.BoardMediaService = &boardHTTPStub{}, media
+	h = New(*h)
+	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/artifacts/" + uuid.NewString() +
+		"/whiteboard/preview"
+	preview := func(etag string) *httptest.ResponseRecorder {
+		request := httptest.NewRequest(http.MethodGet, path, nil)
+		request.Header.Set("Authorization", "Bearer access-token")
+		if etag != "" {
+			request.Header.Set("If-None-Match", etag)
+		}
+		response := httptest.NewRecorder()
+		h.ServeHTTP(response, request)
+		return response
+	}
+	first := preview(`"preview-0-7"`)
+	etag := first.Header().Get("ETag")
+	if first.Code != http.StatusOK || first.Body.String() != "PNG" || etag != `"preview-1-7"` ||
+		first.Header().Get("Content-Type") != "image/png" ||
+		first.Header().Get("Cache-Control") != "private, no-cache" {
+		t.Fatalf(
+			"preview = %d %q, ETag %q, Content-Type %q, Cache-Control %q",
+			first.Code,
+			first.Body.String(),
+			etag,
+			first.Header().Get("Content-Type"),
+			first.Header().Get("Cache-Control"),
+		)
+	}
+	if again := preview("W/" + etag); again.Code != http.StatusNotModified || again.Body.Len() != 0 {
+		t.Fatalf("revalidation = %d %q", again.Code, again.Body.String())
+	}
+	media.empty = true
+	if empty := preview(""); empty.Code != http.StatusNoContent || empty.Body.Len() != 0 {
+		t.Fatalf("empty Board preview = %d %q", empty.Code, empty.Body.String())
 	}
 }
 
@@ -649,7 +675,7 @@ func TestWhiteboardSnapshotsAreCompressed(t *testing.T) {
 	h := f.handler()
 	h.BoardService = &boardHTTPStub{}
 	h = New(*h)
-	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/whiteboards/" + uuid.NewString()
+	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/artifacts/" + uuid.NewString() + "/whiteboard"
 	request := httptest.NewRequest(http.MethodGet, path, nil)
 	request.Header.Set("Authorization", "Bearer access-token")
 	request.Header.Set("Accept-Encoding", "gzip, br")
@@ -739,13 +765,13 @@ func TestWhiteboardAgentViewReadsWhereTheRequesterLooks(t *testing.T) {
 		`"view":{"x":100,"y":200,"width":1000,"height":600},"selectionIds":["` + note.String() + `"]}`
 	if response := call(
 		http.MethodPut,
-		"/whiteboards/"+board.String()+"/presence",
+		"/artifacts/"+board.String()+"/whiteboard/presence",
 		heartbeat,
 		"",
 	); response.Code != 200 {
 		t.Fatalf("presence = %d: %s", response.Code, response.Body.String())
 	}
-	path := "/runs/" + f.runID.String() + "/whiteboards/" + board.String() + "/view"
+	path := "/runs/" + f.runID.String() + "/agent-artifacts/" + board.String() + "/whiteboard/view"
 	if response := call(http.MethodPost, path, `{}`, ""); response.Code != http.StatusUnauthorized {
 		t.Fatalf("view without a Run proof = %d, want 401", response.Code)
 	}
@@ -838,13 +864,13 @@ func TestWhiteboardComposeLandsWhereTheRequesterLooks(t *testing.T) {
 	heartbeat := `{"sessionId":"` + uuid.NewString() + `","zoom":1,"view":{"x":0,"y":0,"width":1200,"height":800}}`
 	if response := call(
 		http.MethodPut,
-		"/whiteboards/"+board.String()+"/presence",
+		"/artifacts/"+board.String()+"/whiteboard/presence",
 		heartbeat,
 		"",
 	); response.Code != 200 {
 		t.Fatalf("presence = %d: %s", response.Code, response.Body.String())
 	}
-	path := "/runs/" + f.runID.String() + "/whiteboards/" + board.String() + "/compose"
+	path := "/runs/" + f.runID.String() + "/agent-artifacts/" + board.String() + "/whiteboard/compose"
 	body := `{"requestKey":"` + uuid.NewString() + `","preview":true,` +
 		`"ops":[{"type":"notes","items":[{"key":"n1","text":"Idea"}]}]}`
 	response := call(http.MethodPost, path, body, wikiAgentRunToken)
@@ -862,7 +888,7 @@ func TestWhiteboardComposeLandsWhereTheRequesterLooks(t *testing.T) {
 	if got.Preview == nil || visuals.calls != 1 {
 		t.Fatalf("preview = %+v after %d renders; want an image of the placed work", got.Preview, visuals.calls)
 	}
-	response = call(http.MethodPut, "/whiteboards/"+board.String()+"/presence", heartbeat, "")
+	response = call(http.MethodPut, "/artifacts/"+board.String()+"/whiteboard/presence", heartbeat, "")
 	var presence struct {
 		Sessions []realtime.CanvasSession `json:"sessions"`
 	}
@@ -889,65 +915,5 @@ func TestWhiteboardComposeLandsWhereTheRequesterLooks(t *testing.T) {
 		wikiAgentRunToken,
 	); response.Code != 422 {
 		t.Fatalf("compose without ops = %d, want 422", response.Code)
-	}
-}
-
-type boardChannelHTTPStub struct {
-	conversation.BoardChannelService
-	joined []uuid.UUID
-}
-
-func (s *boardChannelHTTPStub) Channel(
-	_ context.Context,
-	_ auth.UserPrincipal,
-	_ uuid.UUID,
-) (conversation.BoardChannel, error) {
-	return conversation.BoardChannel{}, conversation.ErrDiscussionNotFound
-}
-
-func (s *boardChannelHTTPStub) Join(
-	_ context.Context,
-	_ auth.UserPrincipal,
-	board uuid.UUID,
-) (conversation.BoardChannel, error) {
-	s.joined = append(s.joined, board)
-	chat := uuid.New()
-	return conversation.BoardChannel{
-		BoardID: board, ConversationID: &chat, Joined: true, People: []conversation.BoardChannelPerson{},
-	}, nil
-}
-
-// Opening a Board's chat joins it and answers in camelCase; reading the chat
-// of a Board the member cannot read is not found.
-func TestWhiteboardChannelRoutes(t *testing.T) {
-	t.Parallel()
-	f := newWikiAgentFixture("direct")
-	h := f.handler()
-	stub := &boardChannelHTTPStub{}
-	h.BoardService = &boardHTTPStub{}
-	h.BoardChannelService = stub
-	h = New(*h)
-	board := uuid.New()
-	path := "/api/v1/companies/" + f.principal.CompanyID.String() + "/whiteboards/" + board.String() + "/channel"
-	call := func(method string) *httptest.ResponseRecorder {
-		request := httptest.NewRequest(method, path, nil)
-		request.Header.Set("Authorization", "Bearer access-token")
-		response := httptest.NewRecorder()
-		h.ServeHTTP(response, request)
-		return response
-	}
-	if response := call(http.MethodPost); response.Code != http.StatusOK ||
-		!strings.Contains(response.Body.String(), `"conversationId"`) ||
-		!strings.Contains(response.Body.String(), `"peopleTruncated":false`) || len(stub.joined) != 1 ||
-		stub.joined[0] != board {
-		t.Fatalf(
-			"opening the Board's chat: %d %s (joined %v)",
-			response.Code,
-			response.Body.String(),
-			stub.joined,
-		)
-	}
-	if response := call(http.MethodGet); response.Code != http.StatusNotFound {
-		t.Fatalf("reading an unreadable Board's chat: %d %s", response.Code, response.Body.String())
 	}
 }

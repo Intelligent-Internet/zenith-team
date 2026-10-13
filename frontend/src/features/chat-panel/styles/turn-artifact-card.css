@@ -31,6 +31,9 @@
 .turn-artifact-card[data-artifact-type="app"] {
   --artifact-card-tint: #418575;
 }
+.turn-artifact-card[data-artifact-type="whiteboard"] {
+  --artifact-card-tint: #3d7fa8;
+}
 .turn-artifact-card:hover {
   border-color: color-mix(
     in srgb,

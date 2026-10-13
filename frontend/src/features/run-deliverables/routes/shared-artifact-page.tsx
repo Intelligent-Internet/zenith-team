@@ -42,6 +42,10 @@ const OutputDocumentWorkspace = lazy(
   () => import("@/features/project-canvas/documents/output-document-workspace"),
 );
 
+const BoardArtifact = lazy(
+  () => import("@/features/whiteboards/board-artifact"),
+);
+
 export function SharedArtifactPage() {
   const { companyId = "", artifactId = "" } = useParams();
   return <SharedArtifactPageContent key={`${companyId}/${artifactId}`} />;
@@ -51,12 +55,11 @@ function SharedArtifactPageContent() {
   const { companyId = "", artifactId = "" } = useParams();
   const navigate = useNavigate();
   const { hash, state } = useLocation();
-  const canvasReturnTo =
+  const returnsToCanvas =
     typeof state?.canvasReturnTo === "string" &&
     state.canvasReturnTo.startsWith("/") &&
-    !state.canvasReturnTo.startsWith("//")
-      ? state.canvasReturnTo
-      : "/app";
+    !state.canvasReturnTo.startsWith("//");
+  const canvasReturnTo = returnsToCanvas ? state.canvasReturnTo : "/app";
   const shareButtonRef = useRef<HTMLButtonElement>(null);
   const studioButtonRef = useRef<HTMLButtonElement>(null);
   const [sharingOpen, setSharingOpen] = useState(hash === "#access");
@@ -231,6 +234,49 @@ function SharedArtifactPageContent() {
     );
   }
 
+  const sharingControls = (
+    <ArtifactSharingControls
+      triggerRef={shareButtonRef}
+      companyId={companyId}
+      artifactId={artifactId}
+      access={access}
+      refreshing={artifact.isFetching}
+      url={detail.url}
+      title={output.title}
+      open={sharingOpen}
+      onOpenChange={(open) => {
+        setSharingOpen(open);
+        if (!open && hash === "#access")
+          navigate(
+            { hash: "", search: searchParams.toString() },
+            { replace: true },
+          );
+      }}
+    />
+  );
+  // A Whiteboard has no files: its full view is the live Board.
+  if (output.type === "whiteboard")
+    return (
+      <main className="artifact-share-page artifact-share-page--whiteboard">
+        <Suspense
+          fallback={
+            <div className="artifact-share-state" role="status">
+              Opening whiteboard…
+            </div>
+          }
+        >
+          <BoardArtifact
+            companyId={companyId}
+            artifactId={artifactId}
+            title={output.title}
+            layout="page"
+            onBack={() => navigate(canvasReturnTo)}
+            backLabel={returnsToCanvas ? "Back" : "Back to workspace"}
+          />
+        </Suspense>
+        {sharingControls}
+      </main>
+    );
   const selectedOrdinal = searchParams.get("item");
   const selected =
     output.items.find((item) => String(item.ordinal) === selectedOrdinal) ??
@@ -262,26 +308,6 @@ function SharedArtifactPageContent() {
     );
   const documentLocation = outputDocumentLocation(output);
   const reviewVersion = searchParams.get("versionId");
-  const sharingControls = (
-    <ArtifactSharingControls
-      triggerRef={shareButtonRef}
-      companyId={companyId}
-      artifactId={artifactId}
-      access={access}
-      refreshing={artifact.isFetching}
-      url={detail.url}
-      title={output.title}
-      open={sharingOpen}
-      onOpenChange={(open) => {
-        setSharingOpen(open);
-        if (!open && hash === "#access")
-          navigate(
-            { hash: "", search: searchParams.toString() },
-            { replace: true },
-          );
-      }}
-    />
-  );
   const download = async () => {
     if (!selected) return;
     setMessage("");

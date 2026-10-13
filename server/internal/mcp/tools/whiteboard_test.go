@@ -163,7 +163,7 @@ func TestWhiteboardReadShowsTheCompactViewAndItsImage(t *testing.T) {
 	t.Parallel()
 	board := &whiteboardBoard{}
 	service := whiteboardChannelServer(t, board.route(t))
-	reading, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a", Image: true})
+	reading, err := service.Read(t.Context(), ArtifactInspectInput{ArtifactID: "board-a", Image: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,10 +176,16 @@ func TestWhiteboardReadShowsTheCompactViewAndItsImage(t *testing.T) {
 	if view := board.views[0]; view["image"] != true || view["area"] != nil {
 		t.Fatalf("view request = %+v; want the default area with an image", view)
 	}
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a", Area: "nearby"}); err == nil {
+	if _, err := service.Read(
+		t.Context(),
+		ArtifactInspectInput{ArtifactID: "board-a", Area: "nearby"},
+	); err == nil {
 		t.Fatal("an unknown area was accepted")
 	}
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a", VisualOffset: 4}); err == nil {
+	if _, err := service.Read(
+		t.Context(),
+		ArtifactInspectInput{ArtifactID: "board-a", VisualOffset: 4},
+	); err == nil {
 		t.Fatal("an image page continued without the whole Board and its sequence")
 	}
 }
@@ -197,10 +203,10 @@ func TestWhiteboardEditNamesObjectsByRefAndFillsRevisions(t *testing.T) {
 			`"contentRevision":1,"textRevision":1,"lifecycleRevision":1,"properties":{}}],"edges":[],"removed":[]}`
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a"}); err != nil {
+	if _, err := service.Read(t.Context(), ArtifactInspectInput{ArtifactID: "board-a"}); err != nil {
 		t.Fatal(err)
 	}
-	summary, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	summary, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{
 			"type":     "geometry",
 			"id":       "a3f9c2e1",
@@ -229,15 +235,15 @@ func TestWhiteboardEditNamesObjectsByRefAndFillsRevisions(t *testing.T) {
 		t.Fatalf("delete_edge = %+v; want the connector's revision", get(4))
 	}
 	for _, want := range []string{"Saved, sequence 13.", `n1=5e6f7a8b sticky "New idea"`, `Changed: a3f9c2e1 sticky "Hello"`} {
-		if !strings.Contains(summary, want) {
+		if !strings.Contains(summary.Text, want) {
 			t.Fatalf("summary lacks %q:\n%s", want, summary)
 		}
 	}
-	if strings.Contains(summary, whiteboardNewID) {
+	if strings.Contains(summary.Text, whiteboardNewID) {
 		t.Fatalf("summary spells out full IDs: %s", summary)
 	}
 	// The edit's own result is what this Run saw last.
-	if _, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	if _, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{
 			"type":     "geometry",
 			"id":       "a3f9c2e1",
@@ -263,10 +269,10 @@ func TestWhiteboardEditChangesOnlyTheFieldsItNames(t *testing.T) {
 		return http.StatusOK, `{"sequence":13,"ids":{},"items":[],"edges":[],"removed":[]}`
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a"}); err != nil {
+	if _, err := service.Read(t.Context(), ArtifactInspectInput{ArtifactID: "board-a"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	if _, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{"type": "content", "id": "a3f9c2e1", "title": "Orders", "properties": map[string]any{"fill": nil}},
 		{"type": "geometry", "id": "a3f9c2e1", "x": 300},
 	}}); err != nil {
@@ -293,7 +299,7 @@ func TestWhiteboardEditChangesOnlyTheFieldsItNames(t *testing.T) {
 		`there is no field "color"`:  {"type": "text", "id": "a3f9c2e1", "color": "pink"},
 		`geometry must be an object`: {"type": "geometry", "id": "a3f9c2e1", "geometry": "300,0"},
 	} {
-		input := WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{command}}
+		input := ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{command}}
 		_, err := service.Edit(t.Context(), input)
 		if err == nil || !strings.Contains(err.Error(), "commands[0]") || !strings.Contains(err.Error(), want) {
 			t.Errorf("%+v: error = %v; want %q", command, err, want)
@@ -312,13 +318,13 @@ func TestWhiteboardEditRefusesUnreadOverwritesButResolvesReferences(t *testing.T
 		return http.StatusOK, `{"sequence":2,"ids":{},"items":[],"edges":[],"removed":[]}`
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	_, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	_, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{"type": "delete_item", "id": "deadbeef"},
 	}})
 	if err == nil || !strings.Contains(err.Error(), "read deadbeef before changing") || len(board.batches) != 0 {
 		t.Fatalf("unread delete = %v, batches = %d; want it refused locally", err, len(board.batches))
 	}
-	if _, err = service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	if _, err = service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{"type": "create_edge", "draftId": "e1", "sourceRef": "c0ffee00", "targetRef": whiteboardNoteID},
 	}}); err != nil {
 		t.Fatal(err)
@@ -350,7 +356,7 @@ func TestWhiteboardEditFinishesUnknownOutcomesByKey(t *testing.T) {
 		}
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	edit := WhiteboardEditInput{BoardID: "board-a", Commands: []map[string]any{
+	edit := ArtifactEditInput{ArtifactID: "board-a", Commands: []map[string]any{
 		{"type": "create_item", "draftId": "n1", "itemType": "sticky"},
 	}}
 	_, err := service.Edit(t.Context(), edit)
@@ -358,8 +364,8 @@ func TestWhiteboardEditFinishesUnknownOutcomesByKey(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "requestKey="+key) {
 		t.Fatalf("unknown outcome = %v; want the key to finish it with", err)
 	}
-	summary, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a", RequestKey: key})
-	if err != nil || !strings.Contains(summary, "Already saved earlier") {
+	summary, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", RequestKey: key})
+	if err != nil || !strings.Contains(summary.Text, "Already saved earlier") {
 		t.Fatalf("finishing by key = %q, %v", summary, err)
 	}
 	first, _ := json.Marshal(board.batches[0])
@@ -371,12 +377,12 @@ func TestWhiteboardEditFinishesUnknownOutcomesByKey(t *testing.T) {
 		strings.Contains(err.Error(), "requestKey=") {
 		t.Fatalf("a conflict = %v; want guidance to read again, not to retry", err)
 	}
-	if _, err := service.Edit(t.Context(), WhiteboardEditInput{BoardID: "board-a"}); err == nil {
+	if _, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a"}); err == nil {
 		t.Fatal("an edit without commands or a pending key was sent")
 	}
 }
 
-// whiteboard_draw sends intent, not coordinates: keys stay keys, refs become
+// artifact_edit ops send intent, not coordinates: keys stay keys, refs become
 // IDs, arranged objects carry the revisions this Run read, and the answer
 // says where the work landed and names every new object by ref.
 func TestWhiteboardDrawSendsIntentAndNamesWhatItPlaced(t *testing.T) {
@@ -394,18 +400,18 @@ func TestWhiteboardDrawSendsIntentAndNamesWhatItPlaced(t *testing.T) {
 			`"mimeType":"image/png","data":"UE5H"}}`
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a"}); err != nil {
+	if _, err := service.Read(t.Context(), ArtifactInspectInput{ArtifactID: "board-a"}); err != nil {
 		t.Fatal(err)
 	}
-	draw := WhiteboardDrawInput{
-		BoardID: "board-a", Near: "c0ffee00", Preview: true,
+	draw := ArtifactEditInput{
+		ArtifactID: "board-a", Near: "c0ffee00", Preview: true,
 		Ops: []WhiteboardDrawOp{
 			{Type: "notes", Items: []WhiteboardDrawNote{{Key: "n1", Text: "Idea"}}},
 			{Type: "connect", From: "n1", To: "a3f9c2e1"},
 			{Type: "arrange", Refs: []string{"a3f9c2e1", "c0ffee00"}, Align: "top"},
 		},
 	}
-	_, err := service.Draw(t.Context(), draw)
+	_, err := service.Edit(t.Context(), draw)
 	key, _ := board.draws[0]["requestKey"].(string)
 	if err == nil || !strings.Contains(err.Error(), "requestKey="+key) {
 		t.Fatalf("unknown outcome = %v; want the key to finish it with", err)
@@ -425,7 +431,7 @@ func TestWhiteboardDrawSendsIntentAndNamesWhatItPlaced(t *testing.T) {
 		revisions[1].(map[string]any)["revision"] != float64(1) {
 		t.Fatalf("revisions = %+v; want the geometry revisions read", revisions)
 	}
-	reading, err := service.Draw(t.Context(), WhiteboardDrawInput{BoardID: "board-a", RequestKey: key})
+	reading, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", RequestKey: key})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +448,7 @@ func TestWhiteboardDrawSendsIntentAndNamesWhatItPlaced(t *testing.T) {
 	if len(reading.Images) != 1 || string(reading.Images[0].Data) != "PNG" {
 		t.Fatalf("images = %+v; want the preview", reading.Images)
 	}
-	if _, err := service.Draw(t.Context(), WhiteboardDrawInput{BoardID: "board-a", Ops: []WhiteboardDrawOp{
+	if _, err := service.Edit(t.Context(), ArtifactEditInput{ArtifactID: "board-a", Ops: []WhiteboardDrawOp{
 		{Type: "arrange", Refs: []string{"77de0a12", "a3f9c2e1"}, Align: "left"},
 	}}); err == nil || !strings.Contains(err.Error(), "read 77de0a12 before arranging") || len(board.draws) != 2 {
 		t.Fatalf("arranging an unread object = %v; want it refused before sending", err)
@@ -457,12 +463,12 @@ func TestWhiteboardDrawSendsEachArrangedRevisionOnce(t *testing.T) {
 		return http.StatusOK, `{"mutation":{"sequence":21,"ids":{},"items":[],"edges":[],"removed":[]},"bounds":null}`
 	}}
 	service := whiteboardChannelServer(t, board.route(t))
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{BoardID: "board-a"}); err != nil {
+	if _, err := service.Read(t.Context(), ArtifactInspectInput{ArtifactID: "board-a"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Draw(
+	if _, err := service.Edit(
 		t.Context(),
-		WhiteboardDrawInput{BoardID: "board-a", Near: "c0ffee00", Ops: []WhiteboardDrawOp{
+		ArtifactEditInput{ArtifactID: "board-a", Near: "c0ffee00", Ops: []WhiteboardDrawOp{
 			{Type: "arrange", Refs: []string{"a3f9c2e1", "c0ffee00"}, Align: "left"},
 			{Type: "arrange", Refs: []string{"c0ffee00", "a3f9c2e1"}, Distribute: "vertical"},
 		}},
@@ -595,20 +601,5 @@ func TestWhiteboardEditMirrorsTheOperationsContract(t *testing.T) {
 		if schema == "BoardGeometry" && !slices.Equal(slices.Sorted(slices.Values(tagged)), want) {
 			t.Errorf("whiteboardGeometry fields = %v; the contract has %v", tagged, want)
 		}
-	}
-}
-
-// In a Board chat the tools work on the chat's Board without naming it.
-func TestWhiteboardToolsDefaultToTheBoardChatsBoard(t *testing.T) {
-	t.Parallel()
-	board := &whiteboardBoard{}
-	service := whiteboardChannelServer(t, board.route(t))
-	service.run.WhiteboardID = "6f9619ff-8b86-4011-b42d-00c04fc964ff"
-	if _, err := service.Read(t.Context(), WhiteboardReadInput{}); err != nil {
-		t.Fatal(err)
-	}
-	if len(board.paths) != 1 ||
-		!strings.HasSuffix(board.paths[0], "/whiteboards/"+service.run.WhiteboardID+"/view") {
-		t.Fatalf("paths = %v; want the Board chat's Board", board.paths)
 	}
 }

@@ -93,7 +93,7 @@ func TestBoardAgentProjectionShowsWhatTheRequesterSees(t *testing.T) {
 		Revision: 7,
 	}
 	view := boardAgentProjection(boardAgentProjectionInput{
-		board:   Board{Title: "Sprint Q4", Purpose: "Plan the quarter", Sequence: 812},
+		board:   Board{Title: "Sprint Q4", Sequence: 812},
 		canEdit: true,
 		agent:   agent,
 		items:   []BoardItem{far, ink, shape, note, frame},
@@ -107,7 +107,6 @@ func TestBoardAgentProjectionShowsWhatTheRequesterSees(t *testing.T) {
 	})
 	for _, want := range []string{
 		`Board "Sprint Q4", you can edit, sequence 812.`,
-		"Purpose: Plan the quarter",
 		"Tuấn is looking at 1180,-420 1600x900",
 		"Tuấn selected: a3f9c2e1",
 		`f7c1d2e0 frame 1200,-400 900x600 "Ideas"`,

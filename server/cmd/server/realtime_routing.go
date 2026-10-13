@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"slices"
-	"sync"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -46,64 +43,18 @@ import (
 // forgetting a line drops frames where defaulting one would broadcast them.
 // whiteboardHintRouting decides who hears about a Board commit. viewers names
 // the people with a Board open (presence sessions); without it every hint
-// reaches the whole audience at once.
+// reaches the whole audience.
 type whiteboardHintRouting struct {
 	viewers interface {
 		Sessions(context.Context, string) ([]realtime.CanvasSession, error)
 	}
-	// libraryDelay gathers the rest of the audience's hints; it defaults to
-	// three seconds.
-	libraryDelay time.Duration
 	// runs takes an ended Run's Agent sessions off every Board it was on.
 	runs interface {
 		RemoveRun(context.Context, uuid.UUID) error
 	}
 }
 
-// whiteboardLibraryHints defers the hints of people who only see a Board in
-// their library: one hint per Board per delay, carrying its latest sequence,
-// delivered off the request path.
-type whiteboardLibraryHints struct {
-	mu      sync.Mutex
-	pending map[uuid.UUID]events.Event
-	delay   time.Duration
-	send    func(events.Event)
-}
-
-func (h *whiteboardLibraryHints) add(board uuid.UUID, event events.Event) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	_, waiting := h.pending[board]
-	h.pending[board] = event
-	if waiting {
-		return
-	}
-	time.AfterFunc(h.delay, func() {
-		h.mu.Lock()
-		latest := h.pending[board]
-		delete(h.pending, board)
-		h.mu.Unlock()
-		h.send(latest)
-	})
-}
-
 func registerRealtimeRouting(bus *events.Bus, b realtime.Broadcaster, hints whiteboardHintRouting) error {
-	if hints.libraryDelay == 0 {
-		hints.libraryDelay = 3 * time.Second
-	}
-	library := &whiteboardLibraryHints{
-		pending: map[uuid.UUID]events.Event{},
-		delay:   hints.libraryDelay,
-		send: func(e events.Event) {
-			change, err := events.PayloadOf[canvas.BoardChanged](e)
-			if err == nil {
-				err = toCompanyUsers(context.Background(), b, e, change.RecipientUserIDs)
-			}
-			if err != nil {
-				slog.Warn("Whiteboard library hint failed", "error", err)
-			}
-		},
-	}
 	// toCompany is the whole handler for a fact the whole company may see.
 	// The envelope already names the company, so there is no routing
 	// decision and nothing to read off the payload.
@@ -276,34 +227,28 @@ func registerRealtimeRouting(bus *events.Bus, b realtime.Broadcaster, hints whit
 			if err != nil {
 				return err
 			}
-			// Who may reach the Board changed: everyone concerned hears now.
-			if change.Access || hints.viewers == nil {
+			// A new title also names the Whiteboard in chats and Artifact
+			// lists, so every reader hears of it.
+			if hints.viewers == nil || e.Name == canvas.EventBoardRenamed {
 				return toCompanyUsers(ctx, b, e, change.RecipientUserIDs)
 			}
 			sessions, err := hints.viewers.Sessions(ctx, e.CompanyID.String()+":whiteboard:"+change.BoardID.String())
 			if err != nil {
 				return toCompanyUsers(ctx, b, e, change.RecipientUserIDs)
 			}
+			// Only someone with the Board open reads its scene; the rest of
+			// its audience has nothing to refresh.
 			open := make(map[string]bool, len(sessions))
 			for _, session := range sessions {
 				open[session.UserID] = true
 			}
-			var now, later []uuid.UUID
+			var viewers []uuid.UUID
 			for _, user := range change.RecipientUserIDs {
 				if open[user.String()] {
-					now = append(now, user)
-				} else {
-					later = append(later, user)
+					viewers = append(viewers, user)
 				}
 			}
-			if len(later) > 0 {
-				deferred := e
-				libraryChange := change
-				libraryChange.RecipientUserIDs = later
-				deferred.Payload = libraryChange
-				library.add(change.BoardID, deferred)
-			}
-			return toCompanyUsers(ctx, b, e, now)
+			return toCompanyUsers(ctx, b, e, viewers)
 		}),
 		bus.Subscribe(wiki.TopicWiki, func(ctx context.Context, e events.Event) error {
 			if e.Name != wiki.EventRunReadsChanged {

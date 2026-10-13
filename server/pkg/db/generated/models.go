@@ -226,34 +226,11 @@ type AuthSession struct {
 }
 
 type Board struct {
-	ID            uuid.UUID          `json:"id"`
-	CompanyID     uuid.UUID          `json:"company_id"`
-	Title         string             `json:"title"`
-	Purpose       string             `json:"purpose"`
-	Visibility    string             `json:"visibility"`
-	CompanyAccess string             `json:"company_access"`
-	PublicToken   uuid.NullUUID      `json:"public_token"`
-	HeadSeq       int64              `json:"head_seq"`
-	Revision      int64              `json:"revision"`
-	CreatedBy     uuid.UUID          `json:"created_by"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt    pgtype.Timestamptz `json:"archived_at"`
-}
-
-type BoardAccess struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	BoardID   uuid.UUID `json:"board_id"`
-	UserID    uuid.UUID `json:"user_id"`
-	Access    string    `json:"access"`
-}
-
-type BoardAgentAccess struct {
+	ID        uuid.UUID          `json:"id"`
 	CompanyID uuid.UUID          `json:"company_id"`
-	BoardID   uuid.UUID          `json:"board_id"`
-	AgentID   uuid.UUID          `json:"agent_id"`
-	Access    string             `json:"access"`
+	HeadSeq   int64              `json:"head_seq"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type BoardChange struct {
@@ -262,15 +239,6 @@ type BoardChange struct {
 	Seq       int64              `json:"seq"`
 	Changes   []byte             `json:"changes"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
-}
-
-type BoardCreateReceipt struct {
-	CompanyID   uuid.UUID          `json:"company_id"`
-	ActorUserID uuid.UUID          `json:"actor_user_id"`
-	RequestKey  uuid.UUID          `json:"request_key"`
-	BoardID     uuid.UUID          `json:"board_id"`
-	RequestHash []byte             `json:"request_hash"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type BoardEdge struct {
@@ -298,13 +266,6 @@ type BoardEdge struct {
 	AnchorY          pgtype.Float8      `json:"anchor_y"`
 	SourceLabel      string             `json:"source_label"`
 	TargetLabel      string             `json:"target_label"`
-}
-
-type BoardFavorite struct {
-	CompanyID uuid.UUID          `json:"company_id"`
-	BoardID   uuid.UUID          `json:"board_id"`
-	UserID    uuid.UUID          `json:"user_id"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type BoardFile struct {
@@ -345,14 +306,6 @@ type BoardItem struct {
 	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
 	LifecycleRevision int64              `json:"lifecycle_revision"`
 	AttachmentID      uuid.NullUUID      `json:"attachment_id"`
-}
-
-type BoardMemberAccess struct {
-	CompanyID uuid.UUID          `json:"company_id"`
-	BoardID   uuid.UUID          `json:"board_id"`
-	UserID    uuid.UUID          `json:"user_id"`
-	Access    string             `json:"access"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type BoardNote struct {
@@ -1141,7 +1094,6 @@ type Conversation struct {
 	ChannelContextRevision     int64              `json:"channel_context_revision"`
 	ProjectID                  uuid.NullUUID      `json:"project_id"`
 	DocumentThreadID           uuid.NullUUID      `json:"document_thread_id"`
-	BoardID                    uuid.NullUUID      `json:"board_id"`
 }
 
 type ConversationAgent struct {

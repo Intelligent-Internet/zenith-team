@@ -15,6 +15,7 @@ import type {
 
 export function ChatComposerToolbar({
   onSelectArtifact,
+  onCreateWhiteboard,
   attachmentsEnabled = true,
   currentRun,
   disabled = false,
@@ -32,6 +33,7 @@ export function ChatComposerToolbar({
   queueLimit,
 }: {
   onSelectArtifact?: () => void;
+  onCreateWhiteboard?: () => void;
   attachmentsEnabled?: boolean;
   currentRun: ConversationCurrentRunView | null;
   disabled?: boolean;
@@ -57,6 +59,7 @@ export function ChatComposerToolbar({
           <ChatPromptAttachmentButton
             disabled={disabled}
             onSelectArtifact={onSelectArtifact}
+            onCreateWhiteboard={onCreateWhiteboard}
           />
         ) : null}
         {onMention ? (
@@ -131,15 +134,18 @@ export function ChatComposerToolbar({
 function ChatPromptAttachmentButton({
   disabled,
   onSelectArtifact,
+  onCreateWhiteboard,
 }: {
   disabled?: boolean;
   onSelectArtifact?: () => void;
+  onCreateWhiteboard?: () => void;
 }) {
   const attachments = usePromptInputAttachments();
   return (
     <ChatAddMenu
       disabled={disabled}
       onSelectArtifact={onSelectArtifact}
+      onCreateWhiteboard={onCreateWhiteboard}
       onUpload={() => {
         if (attachments.fileInputRef.current)
           attachments.fileInputRef.current.value = "";

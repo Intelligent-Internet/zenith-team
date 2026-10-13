@@ -518,6 +518,5 @@ no private object or content. JSON reads are private, no-store.
 | `whiteboard_request_key_reused` | 422 | The request key was already used for a different request. Send a new change with a new key. |
 | `whiteboard_conflict` | 409 | The affected revision changed. Reconcile before retrying. |
 | `whiteboard_limit` | 422 | A Board content, note, command or batch size limit was exceeded. Pending work is not saved. |
-| `whiteboard_archived` | 409 | The Board is archived: it rejects edits and any sharing change that widens access. |
 | `whiteboard_locked` | 409 | The object is locked, so a move or resize was rejected. Unlock it first. |
 | `whiteboard_presence_full` | 409 | The Board has as many present sessions as it can show. Presence is skipped; editing is unaffected. |

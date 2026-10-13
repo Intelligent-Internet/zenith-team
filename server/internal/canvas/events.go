@@ -14,6 +14,7 @@ import (
 const (
 	TopicBoard           = "whiteboard"
 	EventBoardChanged    = "whiteboard.changed"
+	EventBoardRenamed    = "whiteboard.renamed"
 	Topic                = "canvas"
 	EventChanged         = "canvas.changed"
 	EventDocumentChanged = "canvas.document_changed"
@@ -79,10 +80,6 @@ type BoardChanged struct {
 	RecipientUserIDs []uuid.UUID `json:"-"`
 	BoardID          uuid.UUID   `json:"boardId"`
 	Sequence         int64       `json:"sequence"`
-	// Access marks a change of who reaches the Board (sharing, visibility, a
-	// claim or a revoked grant). It reaches the audience before and after the
-	// change at once; content hints go to those with the Board open.
-	Access bool `json:"access,omitempty"`
 }
 
 // boardAudienceOf is the audience stampBoardAudience gave a change event.
@@ -101,11 +98,7 @@ func stampBoardAudience(ctx context.Context, q *generated.Queries, event *events
 	}
 	change.RecipientUserIDs, err = q.ListBoardAudience(
 		ctx,
-		generated.ListBoardAudienceParams{
-			CompanyID:  event.CompanyID,
-			BoardID:    change.BoardID,
-			ActorRoles: auth.RolesWith(auth.PermissionWhiteboardsRead),
-		},
+		generated.ListBoardAudienceParams{CompanyID: event.CompanyID, OutputID: change.BoardID},
 	)
 	event.Payload = change
 	return err

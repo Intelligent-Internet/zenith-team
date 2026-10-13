@@ -14,7 +14,6 @@ export function ChatMentionSuggestions({
   onActiveIndexChange,
   onSelect,
   textareaRef,
-  compact = false,
 }: {
   activeIndex: number;
   listId: string;
@@ -22,8 +21,6 @@ export function ChatMentionSuggestions({
   onActiveIndexChange: (index: number) => void;
   onSelect: (member: ChatMentionMember) => void;
   textareaRef: RefObject<HTMLElement | null>;
-  // A short heading, no kind labels and no keyboard help (a Board's chat).
-  compact?: boolean;
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({
@@ -71,7 +68,7 @@ export function ChatMentionSuggestions({
     <div className="chat-mention-suggestions" ref={popupRef} style={position}>
       <div className="chat-mention-suggestions__heading">
         <AtSign size={15} aria-hidden />
-        <span>{compact ? "Mention" : "Mention someone"}</span>
+        <span>Mention someone</span>
       </div>
       <div
         aria-label="Members"
@@ -102,16 +99,14 @@ export function ChatMentionSuggestions({
                 {member.description}
               </span>
             </span>
-            {compact && !member.unavailable ? null : (
-              <span className="chat-mention-suggestions__kind">
-                {member.unavailable ??
-                  (member.broadcastScope
-                    ? "Channel"
-                    : member.kind === "agent"
-                      ? "Agent"
-                      : "Member")}
-              </span>
-            )}
+            <span className="chat-mention-suggestions__kind">
+              {member.unavailable ??
+                (member.broadcastScope
+                  ? "Channel"
+                  : member.kind === "agent"
+                    ? "Agent"
+                    : "Member")}
+            </span>
           </div>
         ))}
       </div>
@@ -120,20 +115,18 @@ export function ChatMentionSuggestions({
           No matching members
         </p>
       ) : null}
-      {compact ? null : (
-        <div className="chat-mention-suggestions__help" aria-hidden>
-          <span>
-            <kbd>↑</kbd>
-            <kbd>↓</kbd> to navigate
-          </span>
-          <span>
-            <kbd>↵</kbd> to select
-          </span>
-          <span>
-            <kbd>esc</kbd> to close
-          </span>
-        </div>
-      )}
+      <div className="chat-mention-suggestions__help" aria-hidden>
+        <span>
+          <kbd>↑</kbd>
+          <kbd>↓</kbd> to navigate
+        </span>
+        <span>
+          <kbd>↵</kbd> to select
+        </span>
+        <span>
+          <kbd>esc</kbd> to close
+        </span>
+      </div>
     </div>,
     document.body,
   );

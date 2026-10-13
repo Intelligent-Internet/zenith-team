@@ -2,11 +2,9 @@ package canvas
 
 import (
 	"context"
-	"errors"
 	"slices"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/events"
@@ -66,134 +64,85 @@ func boardRun(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, i
 	return locked.AgentID, nil
 }
 
+// boardRecord is a Board with the title of the Whiteboard Artifact it is.
+type boardRecord struct {
+	generated.Board
+	Title string
+}
+
+// boardScopeLock authorizes a Board call against its Whiteboard Artifact:
+// reading needs any access to the Artifact, editing an edit grant or
+// ownership, sharing ownership or a manage grant. A Run acts with its
+// authorizing member's access. A write takes the Company/member lifecycle
+// locks, holds the Run, then the Artifact's row against a sharing change, then
+// the Board; a read takes none.
 func boardScopeLock(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
 	scope BoardScope,
 	write bool,
-) (generated.Board, BoardViewer, error) {
+) (boardRecord, BoardViewer, error) {
 	viewer := BoardViewer{Actor: protocol.ActorRef{ID: p.UserID, Kind: protocol.ActorKindUser}}
-	permission := auth.PermissionWhiteboardsRead
+	var err error
 	if write {
-		permission = auth.PermissionWhiteboardsEdit
+		err = boardAuthorize(ctx, q, p)
+	} else {
+		err = boardAuthorizeRead(ctx, q, p)
 	}
-	authorize := boardAuthorizeRead
-	if write {
-		authorize = boardAuthorize
-	}
-	if err := authorize(ctx, q, p, permission); err != nil {
-		return generated.Board{}, viewer, err
+	if err != nil {
+		return boardRecord{}, viewer, err
 	}
 	if scope.RunID != uuid.Nil {
 		var agent uuid.UUID
 		if write {
-			var err error
-			if agent, err = boardRun(ctx, q, p, scope.RunID); err != nil {
-				return generated.Board{}, viewer, err
-			}
+			agent, err = boardRun(ctx, q, p, scope.RunID)
 		} else {
-			var err error
-			if agent, err = boardRunReader(ctx, q, p, scope.RunID); err != nil {
-				return generated.Board{}, viewer, err
-			}
+			agent, err = boardRunReader(ctx, q, p, scope.RunID)
+		}
+		if err != nil {
+			return boardRecord{}, viewer, err
 		}
 		viewer.Actor.ID, viewer.Actor.Kind, viewer.RunID = agent, protocol.ActorKindAgent, &scope.RunID
 	}
-	var b generated.Board
-	var err error
+	var level int32
 	if write {
-		b, err = q.LockBoard(ctx, generated.LockBoardParams{CompanyID: p.CompanyID, ID: scope.BoardID})
+		level, err = auth.OutputAccessInTx(ctx, q, p, scope.BoardID)
 	} else {
-		b, err = q.ReadBoard(ctx, generated.ReadBoardParams{CompanyID: p.CompanyID, ID: scope.BoardID})
+		level, err = q.GetOutputAccessForManage(
+			ctx,
+			generated.GetOutputAccessForManageParams{
+				CompanyID:   p.CompanyID,
+				OutputID:    scope.BoardID,
+				ActorUserID: p.UserID,
+			},
+		)
+	}
+	if err != nil {
+		return boardRecord{}, viewer, err
+	}
+	if level == 0 {
+		return boardRecord{}, viewer, ErrBoardNotFound
+	}
+	var b boardRecord
+	if write {
+		var row generated.LockBoardRow
+		row, err = q.LockBoard(ctx, generated.LockBoardParams{CompanyID: p.CompanyID, ID: scope.BoardID})
+		b = boardRecord{Board: row.Board, Title: row.Title}
+	} else {
+		var row generated.ReadBoardRow
+		row, err = q.ReadBoard(ctx, generated.ReadBoardParams{CompanyID: p.CompanyID, ID: scope.BoardID})
+		b = boardRecord{Board: row.Board, Title: row.Title}
 	}
 	if err != nil {
 		return b, viewer, boardError(err)
 	}
-	access, err := q.GetBoardMemberAccess(
-		ctx,
-		generated.GetBoardMemberAccessParams{CompanyID: p.CompanyID, BoardID: scope.BoardID, UserID: p.UserID},
-	)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return b, viewer, ErrBoardNotFound
-	}
-	if err != nil {
-		return b, viewer, err
-	}
-	viewer.CanEdit = p.Can(auth.PermissionWhiteboardsEdit) && access != "read" && !b.ArchivedAt.Valid
-	viewer.CanShare = scope.RunID == uuid.Nil && access == "manage" && p.Can(auth.PermissionWhiteboardsEdit)
-	// The viewer is complete here, so a sharing change on an archived Board
-	// can still narrow access.
-	if write && b.ArchivedAt.Valid {
-		return b, viewer, ErrBoardArchived
-	}
+	viewer.CanEdit = level >= 2
+	viewer.CanShare = scope.RunID == uuid.Nil && level >= 3
 	if write && !viewer.CanEdit {
 		return b, viewer, ErrBoardForbidden
 	}
-	if viewer.RunID != nil {
-		access, err := q.GetBoardAgentAccess(
-			ctx,
-			generated.GetBoardAgentAccessParams{
-				CompanyID: p.CompanyID,
-				BoardID:   scope.BoardID,
-				AgentID:   viewer.Actor.ID,
-			},
-		)
-		if errors.Is(err, pgx.ErrNoRows) || (err == nil && write && access != "edit") {
-			return b, viewer, ErrBoardForbidden
-		}
-		if err != nil {
-			return b, viewer, err
-		}
-		viewer.CanEdit = viewer.CanEdit && access == "edit"
-	}
 	return b, viewer, nil
-}
-
-func (s *DefaultBoardService) ListForRun(
-	ctx context.Context,
-	p auth.UserPrincipal,
-	id uuid.UUID,
-	offset int32,
-) (BoardList, error) {
-	result := BoardList{Boards: []Board{}}
-	if offset < 0 {
-		return result, ErrBoardInvalid
-	}
-	err := s.store.WithinTx(ctx, boardRead, func(q *generated.Queries) error {
-		if err := boardAuthorizeRead(ctx, q, p, auth.PermissionWhiteboardsRead); err != nil {
-			return err
-		}
-		agent, err := boardRunReader(ctx, q, p, id)
-		if err != nil {
-			return err
-		}
-		rows, err := q.ListBoardsForAgent(
-			ctx,
-			generated.ListBoardsForAgentParams{
-				CompanyID:   p.CompanyID,
-				ActorUserID: p.UserID,
-				AgentID:     agent,
-				RowOffset:   offset,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		result.HasMore = len(rows) > boardListPage
-		if result.HasMore {
-			rows = rows[:boardListPage]
-		}
-		for _, row := range rows {
-			b := boardDTO(row.Board, p)
-			b.CanEdit = b.CanEdit && row.Access == "edit" && row.MemberAccess != "read"
-			b.CanShare = false
-			b.CanManage = false
-			result.Boards = append(result.Boards, b)
-		}
-		return nil
-	})
-	return result, boardError(err)
 }
 
 func boardActor(user uuid.UUID, agent uuid.NullUUID, name string) protocol.ActorRef {

@@ -229,11 +229,6 @@ const PublicArtifactPage = lazy(() =>
     (module) => ({ default: module.PublicArtifactPage }),
   ),
 );
-const PublicWhiteboardPage = lazy(() =>
-  import("@/features/whiteboards/public-whiteboard-page").then((module) => ({
-    default: module.PublicWhiteboardPage,
-  })),
-);
 const SharedArtifactPage = lazy(() =>
   import("@/features/run-deliverables/routes/shared-artifact-page").then(
     (module) => ({
@@ -244,11 +239,6 @@ const SharedArtifactPage = lazy(() =>
 const WorkflowsPage = lazy(() =>
   import("@/features/workflows/routes/workflows-page").then((module) => ({
     default: module.WorkflowsPage,
-  })),
-);
-const WhiteboardPage = lazy(() =>
-  import("@/features/whiteboards/whiteboards-page").then((module) => ({
-    default: module.WhiteboardsPage,
   })),
 );
 const SettingsHubPage = lazy(() =>
@@ -603,8 +593,9 @@ function RootRoute({
 
 function AppRoutes() {
   const location = useLocation();
-  const isPublicShareRoute =
-    /^\/share\/(?:artifacts|whiteboards)\/[^/]+\/?$/.test(location.pathname);
+  const isPublicArtifactRoute = /^\/share\/artifacts\/[^/]+\/?$/.test(
+    location.pathname,
+  );
   const isDesktopRuntime = shouldUseDesktopHashRouter();
   const storedSession = useSessionSnapshot();
   const devSessionOverride = getDevSessionOverride(location.search);
@@ -670,11 +661,11 @@ function AppRoutes() {
     return () => window.removeEventListener("online", retryOnConnection);
   }, [sessionRefreshFailed]);
 
-  if (isValidatingSession && !isPublicShareRoute) {
+  if (isValidatingSession && !isPublicArtifactRoute) {
     return <RouteFallback />;
   }
 
-  if (sessionRefreshFailed && !isPublicShareRoute) {
+  if (sessionRefreshFailed && !isPublicArtifactRoute) {
     return (
       <main className="grid min-h-dvh place-items-center bg-background px-6 text-foreground">
         <section
@@ -717,7 +708,7 @@ function AppRoutes() {
 
   return (
     <Suspense fallback={<RouteFallback />}>
-      {(!isPublicShareRoute || publicArtifactWorkspaceAvailable) &&
+      {(!isPublicArtifactRoute || publicArtifactWorkspaceAvailable) &&
       session.status === "authenticated" &&
       session.company?.id ? (
         <>
@@ -814,10 +805,6 @@ function AppRoutes() {
             )
           }
         >
-          <Route
-            path="/share/whiteboards/:token"
-            element={<PublicWhiteboardPage />}
-          />
           <Route
             path="/share/artifacts/:token"
             element={<PublicArtifactPage />}
@@ -922,12 +909,6 @@ function AppRoutes() {
             path="resources/*"
             element={<LegacyResourcesRouteRedirect />}
           />
-          <Route
-            path="whiteboard"
-            element={<Navigate to="/whiteboards" replace />}
-          />
-          <Route path="whiteboards" element={<WhiteboardPage />} />
-          <Route path="whiteboards/:boardId" element={<WhiteboardPage />} />
           <Route path="workflows" element={<WorkflowsPage />} />
           <Route path="workflows/:workflowKey" element={<WorkflowsPage />} />
           <Route path="*" element={<NotFoundPage />} />

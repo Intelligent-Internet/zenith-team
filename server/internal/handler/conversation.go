@@ -77,6 +77,12 @@ type ConversationService interface {
 		conversation.MessageTarget,
 		conversation.SendInput,
 	) (conversation.SendResult, error)
+	CreateWhiteboard(
+		context.Context,
+		auth.UserPrincipal,
+		conversation.MessageTarget,
+		string,
+	) (conversation.CreatedWhiteboard, error)
 	FetchRunQueue(context.Context, auth.UserPrincipal, uuid.UUID) (conversation.RunQueueProjection, error)
 	ReorderRunQueue(
 		context.Context,
@@ -225,6 +231,9 @@ func (h *Handler) registerConversationRoutes(group *gin.RouterGroup) {
 	messages.POST("/conversations/:conversationId/messages", h.sendConversationMessage)
 	messages.GET("/tasks/:taskId/messages", h.listTaskMessages)
 	messages.POST("/tasks/:taskId/messages", h.sendTaskMessage)
+	if h.DeliverableService != nil {
+		messages.POST("/conversations/:conversationId/whiteboards", h.createChatWhiteboard)
+	}
 
 	if h.CompanyService != nil {
 		conversations := group.Group(
@@ -405,6 +414,42 @@ func (h *Handler) sendConversationMessage(c *gin.Context) {
 
 func (h *Handler) sendTaskMessage(c *gin.Context) {
 	h.sendMessage(c, conversation.TargetTask, "taskId")
+}
+
+type createChatWhiteboardRequest struct {
+	Title string `json:"title" binding:"required"`
+}
+
+// createChatWhiteboard makes a Whiteboard in an Agent or Task chat and answers
+// with it as the chat's Artifacts list it, so the panel opens it at once.
+func (h *Handler) createChatWhiteboard(c *gin.Context) {
+	principal, target, ok := conversationMessageIdentity(c, conversation.TargetConversation, "conversationId")
+	if !ok {
+		return
+	}
+	request, err := bindRequest[createChatWhiteboardRequest](c, 4<<10)
+	if err != nil {
+		writeRequestError(c, err)
+		return
+	}
+	created, err := h.ConversationService.CreateWhiteboard(c.Request.Context(), principal, target, request.Title)
+	if err != nil {
+		writeConversationError(c, err)
+		return
+	}
+	principal.CompanyID = created.CompanyID
+	items, err := h.DeliverableService.ResolveArtifacts(
+		c.Request.Context(), principal, []uuid.UUID{created.ArtifactID},
+	)
+	if err != nil {
+		writeDeliverableError(c, err)
+		return
+	}
+	if len(items) != 1 {
+		writeDeliverableError(c, execution.ErrDeliverableNotFound)
+		return
+	}
+	c.JSON(http.StatusCreated, items[0])
 }
 
 func (h *Handler) updateConversationState(c *gin.Context) {

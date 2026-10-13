@@ -394,6 +394,7 @@ schemas:
         format: uuid
       title:
         type: string
+        description: The conversation's name as the chat list shows it to the caller, a channel's title or a direct message's other participants; `Private conversation` when the caller is not in it.
       grantedAt:
         $ref: ./_common.yaml#/schemas/Timestamp
   DiscussionArtifact:

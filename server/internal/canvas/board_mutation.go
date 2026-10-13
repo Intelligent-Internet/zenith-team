@@ -257,7 +257,7 @@ func boardApplyBatch(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	input BoardBatch,
 	viewer BoardViewer,
 ) (BoardMutation, error) {
@@ -278,7 +278,7 @@ func boardReceiptReplay(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	key uuid.UUID,
 	hash []byte,
 	viewer BoardViewer,
@@ -312,7 +312,7 @@ func boardApplyCommands(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	input BoardBatch,
 	hash []byte,
 	viewer BoardViewer,
@@ -387,7 +387,7 @@ func boardReplayBatch(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	receipt generated.GetBoardReceiptRow,
 ) (BoardMutation, error) {
 	result := BoardMutation{

@@ -192,9 +192,6 @@ func boardAgentProjection(in boardAgentProjectionInput) BoardAgentView {
 		access,
 		in.board.Sequence,
 	)
-	if purpose := strings.TrimSpace(in.board.Purpose); purpose != "" {
-		fmt.Fprintf(&text, "Purpose: %s\n", boardAgentClip(purpose, 300))
-	}
 	person := in.focus.Name
 	if person == "" {
 		person = "The person you work for"

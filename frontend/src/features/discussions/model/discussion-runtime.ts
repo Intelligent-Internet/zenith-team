@@ -178,6 +178,8 @@ export class DiscussionRuntime {
       } else if (
         event.type === "artifact.access_changed" ||
         event.type === "artifact.changed" ||
+        // A Whiteboard card shows its new title.
+        event.type === "whiteboard.renamed" ||
         event.type === "conversation.discussion_huddle_changed" ||
         event.type === "project.access_changed" ||
         (event.type === "message.updated" && id && this.state(id))
@@ -1398,6 +1400,35 @@ export class DiscussionRuntime {
       handle?.reset();
       this.emit();
     }
+  }
+
+  /**
+   * Makes a Whiteboard in this chat: the server creates the Whiteboard
+   * Artifact and shares it here with a message, which lands like any other.
+   * A retry with the same `requestKey` returns the same message.
+   */
+  async sendWhiteboard(id: string, title: string, requestKey: string) {
+    if (this.stopped || !this.state(id)?.capabilities.send)
+      throw new Error("You can't send messages in this conversation.");
+    const receipt = await this.performWrite(id, () =>
+      store.dispatch(
+        discussionsApi.endpoints.sendDiscussionMessage.initiate({
+          ...this.scope(id),
+          body: {
+            requestKey,
+            threadRootId: null,
+            body: { version: 1, markdown: "", references: [] },
+            whiteboard: { title },
+          },
+        }),
+      ),
+    );
+    if (!receipt || this.stopped) return undefined;
+    this.patchMessage(id, receipt);
+    this.updateActivity(id, receipt);
+    this.clearAnchor(id);
+    void this.jumpLatest(id).then(() => this.schedule());
+    return receipt;
   }
 }
 

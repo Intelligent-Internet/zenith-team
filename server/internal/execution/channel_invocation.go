@@ -110,6 +110,23 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 	if err != nil {
 		return err
 	}
+	// The Whiteboards of the chat, as its caller may open them, so the Run
+	// knows which ones it can work on.
+	whiteboards, err := q.ListRunChannelWhiteboards(ctx, db.ListRunChannelWhiteboardsParams{
+		CompanyID:      invocation.CompanyID,
+		ConversationID: invocation.ChannelID,
+		ActorUserID:    invocation.CallerUserID,
+	})
+	if err != nil {
+		return fmt.Errorf("freeze channel Whiteboards: %w", err)
+	}
+	briefs := make([]runWhiteboardBrief, 0, len(whiteboards))
+	for _, board := range whiteboards {
+		briefs = append(briefs, runWhiteboardBrief{ID: board.ID.String(), Title: board.Title})
+	}
+	if err := freezeChatWhiteboards(document, briefs); err != nil {
+		return err
+	}
 	snapshot := runConversationSnapshot{SchemaVersion: 1, Kind: "channel_agent", ConversationID: in.ConversationID.String(), ThroughSeq: head.HeadSeq, Truncated: len(rows) == 64, Items: []runConversationSnapshotItem{}}
 	size := 0
 	messageIDs := []uuid.UUID{invocation.TriggerMessageID}
@@ -219,6 +236,28 @@ func validateChannelRunStart(ctx context.Context, q *db.Queries, run db.Run) err
 	if head.ChannelContextRevision != doc.ChannelInvocation.ContextRevision {
 		return ErrChannelInvocationDenied
 	}
+	return nil
+}
+
+// runWhiteboardBrief names a Whiteboard Artifact in a Run's context.
+type runWhiteboardBrief struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+}
+
+// freezeChatWhiteboards names the Whiteboards of the chat a Run answers under
+// `chatWhiteboards`, or removes the key when there are none, so a caller can
+// never supply its own.
+func freezeChatWhiteboards(document map[string]json.RawMessage, briefs []runWhiteboardBrief) error {
+	delete(document, "chatWhiteboards")
+	if len(briefs) == 0 {
+		return nil
+	}
+	encoded, err := json.Marshal(briefs)
+	if err != nil {
+		return err
+	}
+	document["chatWhiteboards"] = encoded
 	return nil
 }
 

@@ -276,11 +276,7 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		row(http.MethodGet, company+"/tasks"),
 		row(http.MethodGet, company+"/tasks/*/dependencies"),
 	}
-	// A Board chat's Run reaches only its own Board.
-	boards := ownRun + "/whiteboards/*"
-	if board := doc.ExecutionProfile.Whiteboard; board != nil {
-		boards = ownRun + "/whiteboards/" + board.ID
-	}
+	boards := ownRun + "/agent-artifacts/*/whiteboard"
 	routes := map[string][]runCLIOperation{
 		"ask_human":                        {row(http.MethodPost, company+"/questions")},
 		"attest_milestones":                {row(http.MethodPost, company+"/milestone-attestations")},
@@ -312,26 +308,24 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		// the Artifact on the server's Run-proven agent-artifacts routes with
 		// its own session and the proof, and writes a fetched file into the
 		// Run's workspace (readRunArtifact). No server route has these paths.
-		"artifact_inspect": {{Method: http.MethodPost, Pattern: runArtifactInspectPath(run), Local: true}},
-		"artifact_fetch":   {{Method: http.MethodPost, Pattern: runArtifactFetchPath(run), Local: true}},
-		"social_read":      {social(http.MethodGet, conversation+"/social")},
-		"social_publish":   {social(http.MethodPost, conversation+"/social/posts")},
-		"whiteboard_list":  {row(http.MethodGet, ownRun+"/whiteboards")},
-		"whiteboard_read": {
+		// A Whiteboard is an Artifact: artifact_inspect reads it on its
+		// Run routes and artifact_edit changes it.
+		"artifact_inspect": {
+			{Method: http.MethodPost, Pattern: runArtifactInspectPath(run), Local: true},
 			row(http.MethodPost, boards+"/view"),
 			row(http.MethodPost, boards+"/context"),
 		},
-		"whiteboard_draw": {
+		"artifact_fetch": {{Method: http.MethodPost, Pattern: runArtifactFetchPath(run), Local: true}},
+		"artifact_edit": {
 			row(http.MethodPost, boards+"/compose"),
-			row(http.MethodPost, boards+"/view"),
-		},
-		"whiteboard_edit": {
 			row(http.MethodPost, boards+"/operations"),
 			row(http.MethodPost, boards+"/view"),
 		},
-		"wiki_search": {row(http.MethodGet, ownRun+"/agent-wiki/search")},
-		"wiki_read":   {row(http.MethodGet, ownRun+"/agent-wiki/pages/*")},
-		"wiki_write":  {row(http.MethodPost, ownRun+"/agent-wiki/pages")},
+		"social_read":    {social(http.MethodGet, conversation+"/social")},
+		"social_publish": {social(http.MethodPost, conversation+"/social/posts")},
+		"wiki_search":    {row(http.MethodGet, ownRun+"/agent-wiki/search")},
+		"wiki_read":      {row(http.MethodGet, ownRun+"/agent-wiki/pages/*")},
+		"wiki_write":     {row(http.MethodPost, ownRun+"/agent-wiki/pages")},
 	}
 	var commands []runCLICommand
 	for _, tool := range boardlyMCPToolsForRun(doc) {

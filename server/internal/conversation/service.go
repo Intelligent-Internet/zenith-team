@@ -68,6 +68,7 @@ type ConversationService interface { //nolint:revive // AGENTS.md mandates <Doma
 		TranscriptListOptions,
 	) (TranscriptPage, error)
 	Send(context.Context, auth.UserPrincipal, MessageTarget, SendInput) (SendResult, error)
+	CreateWhiteboard(context.Context, auth.UserPrincipal, MessageTarget, string) (CreatedWhiteboard, error)
 	FetchMessageContext(
 		context.Context,
 		auth.UserPrincipal,

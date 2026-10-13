@@ -232,11 +232,6 @@ func TestDeleteCompanyCleansDependentRecords(t *testing.T) {
 			seed:   seedDeletionWhiteboardFile,
 			tables: []string{"boards", "board_files", "board_items", "attachments"},
 		},
-		{
-			name:   "whiteboard chats",
-			seed:   seedDeletionWhiteboardChat,
-			tables: []string{"boards", "channel_invocations"},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -259,7 +254,6 @@ func TestDeleteCompanyCleansDependentRecords(t *testing.T) {
 			test.seed(t, ctx, pool, dbtest.Fixture{
 				CompanyA: fixture.CompanyB, ProjectA: fixture.ProjectB, UserA: fixture.UserB,
 				AgentA: fixture.AgentB, ConversationA: fixture.ConversationB, RunA: fixture.RunB,
-				RuntimeA: fixture.RuntimeB,
 			})
 			principal := auth.UserPrincipal{
 				UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner,
@@ -301,8 +295,11 @@ func TestDeleteCompanyCleansDependentRecords(t *testing.T) {
 func seedDeletionWhiteboardFile(t *testing.T, ctx context.Context, pool *pgxpool.Pool, f dbtest.Fixture) {
 	t.Helper()
 	dbtest.MustExec(t, ctx, pool, `
-		WITH board AS (
-			INSERT INTO boards (company_id, title, created_by) VALUES ($1, 'Plan', $2) RETURNING id
+		WITH whiteboard AS (
+			INSERT INTO outputs (company_id, title, summary, presentation_fingerprint, type, owner_user_id, actor_type, actor_user_id)
+			VALUES ($1, 'Plan', '', '', 'whiteboard', $2, 'user', $2) RETURNING id
+		), board AS (
+			INSERT INTO boards (company_id, id) SELECT $1, id FROM whiteboard RETURNING id
 		), file AS (
 			INSERT INTO attachments (company_id, uploaded_by_user_id, request_key, filename, content_type, size_bytes, status)
 			VALUES ($1, $2, gen_random_uuid(), 'brief.pdf', 'application/pdf', 10, 'ready') RETURNING id
@@ -313,21 +310,6 @@ func seedDeletionWhiteboardFile(t *testing.T, ctx context.Context, pool *pgxpool
 		INSERT INTO board_items (company_id, board_id, type, x, y, width, height, properties, created_by, updated_by)
 		SELECT $1, board_id, 'file', 0, 0, 280, 88, jsonb_build_object('attachmentId', attachment_id), $2, $2
 		FROM reference`, f.CompanyA, f.UserA)
-}
-
-// A Board's chat with a tagged Run: the Board, its channel, the Agent's chat
-// and the Run all go with the Company.
-func seedDeletionWhiteboardChat(t *testing.T, ctx context.Context, pool *pgxpool.Pool, f dbtest.Fixture) {
-	t.Helper()
-	var board uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO boards (company_id, title, created_by) VALUES ($1, 'Plan', $2) RETURNING id`,
-		f.CompanyA, f.UserA).
-		Scan(&board); err != nil {
-		t.Fatal(err)
-	}
-	channel := dbtest.SeedBoardChannel(t, ctx, pool, f.CompanyA, board, f.UserA, []uuid.UUID{f.AgentA})
-	run := dbtest.SeedTaggedRun(t, ctx, pool, f.CompanyA, channel, f.AgentA, f.RuntimeA, f.UserA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status = 'completed' WHERE id = $1`, run)
 }
 
 func seedDeletionSkills(t *testing.T, ctx context.Context, pool *pgxpool.Pool, f dbtest.Fixture) {

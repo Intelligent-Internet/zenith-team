@@ -108,6 +108,10 @@ function DiscussionChat({
     "about",
   );
   const [searchOpen, setSearchOpen] = useState(false);
+  const [whiteboardBusy, setWhiteboardBusy] = useState(false);
+  // One attempt keeps its key until it is confirmed, so a retry after a lost
+  // response returns the Whiteboard already made instead of making another.
+  const whiteboardRequest = useRef<{ id: string; key: string }>(undefined);
   const [tab, setTab] = useState<"all" | "pinned" | "artifacts">("all");
   const [rootId, setRootId] = useState<string>();
   const [focusMessageId, setFocusMessageId] = useState<string>();
@@ -134,6 +138,13 @@ function DiscussionChat({
     Boolean(state?.capabilities.readHistory) &&
     !detail.isError;
   const conversation = ready ? data?.conversation : undefined;
+  // An open preview, such as a Whiteboard being edited, stays mounted while
+  // the conversation's access is checked again after a membership change.
+  const wasReady = useRef(false);
+  if (ready) wasReady.current = true;
+  const previewAvailable =
+    ready ||
+    (wasReady.current && status?.phase === "checking" && !detail.isError);
   const canLeave =
     conversation?.type === "channel" &&
     !conversation.isGeneral &&
@@ -186,6 +197,42 @@ function DiscussionChat({
     channelAgents.selected ? undefined : rootId,
   );
   const canSend = ready && Boolean(state?.capabilities.send);
+  // A Whiteboard is made in a DM, group DM or channel, never in a Huddle chat.
+  const canAddWhiteboard =
+    canSend &&
+    (conversation?.type === "human_direct" || conversation?.type === "channel");
+  // A Whiteboard is made at once and opens beside the chat; its title is
+  // changed later from the Board's header.
+  async function createWhiteboard() {
+    if (whiteboardBusy) return;
+    if (whiteboardRequest.current?.id !== id)
+      whiteboardRequest.current = { id, key: crypto.randomUUID() };
+    setWhiteboardBusy(true);
+    setError("");
+    try {
+      const receipt = await runtime.sendWhiteboard(
+        id,
+        "Untitled whiteboard",
+        whiteboardRequest.current.key,
+      );
+      if (!runtime.active) return;
+      // This chat's access changed meanwhile; the same request is safe to
+      // send again.
+      if (!receipt) {
+        setError("The whiteboard could not be confirmed. Try again.");
+        return;
+      }
+      whiteboardRequest.current = undefined;
+      const board = receipt.message.artifacts.find(
+        (artifact) => artifact.type === "whiteboard",
+      );
+      if (board) preview.openArtifact(board.id);
+    } catch (cause) {
+      if (runtime.active) setError(discussionError(cause));
+    } finally {
+      setWhiteboardBusy(false);
+    }
+  }
   const pins = useDiscussionPins(id, ready);
   const openThread = useCallback(
     (root: string) => {
@@ -532,6 +579,9 @@ function DiscussionChat({
             <DiscussionArtifacts
               companyId={runtime.session.companyId}
               conversationId={id}
+              onCreateWhiteboard={
+                canAddWhiteboard ? () => void createWhiteboard() : undefined
+              }
             />
           ) : ready && data && tab === "pinned" ? (
             <DiscussionPins
@@ -558,6 +608,9 @@ function DiscussionChat({
           {tab === "all" ? (
             <DiscussionComposer
               key={id}
+              onCreateWhiteboard={
+                canAddWhiteboard ? () => void createWhiteboard() : undefined
+              }
               conversationType={conversation?.type}
               channelName={conversation?.title}
               conversationId={id}
@@ -606,7 +659,7 @@ function DiscussionChat({
             />
           ) : null}
         </div>
-        {ready && preview.isOpen ? (
+        {previewAvailable && preview.isOpen ? (
           <DiscussionPreviewPanel
             companyId={runtime.session.companyId}
             conversationId={id}

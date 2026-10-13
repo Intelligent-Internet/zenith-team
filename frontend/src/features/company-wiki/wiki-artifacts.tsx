@@ -15,6 +15,7 @@ import {
   File,
   FileText,
   Image,
+  LayoutDashboard,
   LockKeyhole,
   Monitor,
   RefreshCw,
@@ -160,6 +161,7 @@ const typeIcons: Record<ArtifactType, IconComponent> = {
   media: Image,
   text: FileText,
   file: File,
+  whiteboard: LayoutDashboard,
 };
 
 const statusLabels: Record<DeliverableStatus, string> = {

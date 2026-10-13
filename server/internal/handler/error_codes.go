@@ -28,7 +28,6 @@ var errorCodeRegistry = map[string]int{
 	"whiteboard_invalid":            422,
 	"whiteboard_conflict":           409,
 	"whiteboard_limit":              422,
-	"whiteboard_archived":           409,
 	"whiteboard_locked":             409,
 	"whiteboard_item_not_found":     404,
 	"whiteboard_request_key_reused": 422,

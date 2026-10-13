@@ -1183,10 +1183,6 @@ func (d *Daemon) boardlyMcpConfig(
 	if snapshotDir != "" {
 		env["BOARDLY_SKILL_SNAPSHOT_DIR"] = snapshotDir
 	}
-	// A Board chat's tools default to its Board.
-	if board := decodeRunContext(run, slog.Default()).ExecutionProfile.Whiteboard; board != nil {
-		env["BOARDLY_MCP_WHITEBOARD_ID"] = board.ID
-	}
 	if planRoot != "" {
 		env["BOARDLY_MCP_PLAN_ROOT"] = planRoot
 	}

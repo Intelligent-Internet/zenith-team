@@ -77,6 +77,7 @@ type ChatComposerProps = {
   mentionMembers?: readonly ChatMentionMember[];
   modelControls?: ReactNode;
   context?: ReactNode;
+  onCreateWhiteboard?: () => void;
   onDraftMessageChange: (message: string) => void;
   onFocus?: () => void;
   onSendMessage: (message: PromptInputMessage) => Promise<void>;
@@ -109,6 +110,7 @@ export function ChatComposer({
   mentionMembers,
   modelControls,
   context,
+  onCreateWhiteboard,
   onDraftMessageChange,
   onFocus,
   onSendMessage,
@@ -648,6 +650,7 @@ export function ChatComposer({
           onSelectArtifact={
             artifactContext ? () => setArtifactPickerOpen(true) : undefined
           }
+          onCreateWhiteboard={onCreateWhiteboard}
           attachmentsEnabled={attachmentsEnabled && !readOnly}
           modelControls={modelControls}
           emojiAction={

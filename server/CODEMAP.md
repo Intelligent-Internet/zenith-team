@@ -15,34 +15,46 @@ provider instance a daemon registered in a company), provider = claude | codex.
 The execution layer follows the reference architecture; where this map names a
 convention without a local rationale, that is the provenance.
 
-## Company Whiteboards
+## Whiteboards
 
-`internal/canvas/board*.go` owns Company Boards independently of Project Canvas.
-`BoardService` owns the library, favorites, revisions, atomic scene commands,
+A Whiteboard is an Artifact (`outputs.type = 'whiteboard'`) that a member makes
+in a chat: `canvas.CreateWhiteboardInTx` (`board_create.go`) inserts the Output
+and its Board under one ID inside the discussion send that shares it into the
+chat (`DiscussionService.Send` with `whiteboard`), or, in an Agent or Task chat
+that has no message to carry it, inside `ConversationService.CreateWhiteboard`
+(`conversation/whiteboard.go`). `BoardService.Rename` retitles it and tells
+every reader (`whiteboard.renamed`). Its title, owner, grants,
+chat sharing and public link are the Artifact's (`execution/artifact_sharing.go`),
+and `output_access` is the one access rule: read at level 1, edit at 2, share
+at 3. `internal/canvas/board*.go` owns the live scene: atomic scene commands,
 fixed-schema note CRDTs, lazy payload hydration, bounded JSON/Markdown context
-and retention (`board_retention.go`). `boards.sql`, `board_files.sql` and
-migration 107 define this Company scope. `board_access.go` owns the live
-Run/Task-generation fence (Run writes hold the Task and Run in share mode);
-`board_sharing.go` owns revision-checked Private/Company/Public visibility,
-person/Agent grants, the manager's claim of a Board no active member manages,
-and `RevokeBoardGrantsInTx`, which membership removal calls beside the Project
-grant revocation. `board_access`
-resolves member rights; `board_public.go` verifies revocable anonymous read-only
-links. `BoardScope` supplements the canonical member principal. Member and
-Run-proven collaboration routes reuse the same handlers and mutation services.
-The MCP `whiteboard_*` tools in `internal/mcp/tools/whiteboard.go` act through
-these routes; `internal/mcp/whiteboard_tools.go` registers them and returns
-one text reading beside native images.
+and retention (`board_retention.go`), in `boards.sql`, `board_files.sql` and
+migrations 107 to 109. `board_access.go` authorizes every call against the
+Artifact (`boardScopeLock`; a write also locks the Output's row against a
+sharing change) and owns the live Run/Task-generation fence (Run writes hold
+the Task and Run in share mode). A Run acts with its authorizing member's
+access. `board_public.go` reads a Board through its Artifact's unrevoked public
+token. `BoardScope` supplements the canonical member principal. Member routes
+hang off `/artifacts/:artifactId/whiteboard`, Run-proven ones off
+`/runs/:runId/agent-artifacts/:artifactId/whiteboard`, and both reuse the same
+handlers and mutation services. Agents reach a Whiteboard through the Artifact
+tools (`internal/mcp/artifact_tools.go`): `artifact_inspect` reads it when the
+Artifact is a whiteboard and `artifact_edit` changes it, both through
+`internal/mcp/tools/whiteboard.go` on the Run routes, answering with one text
+reading beside native images. Every Run of a chat freezes the chat's
+Whiteboards its authorizer can open (`chatWhiteboards`): a tag those shared
+into its channel, an Agent or Task chat Run those made in it
+(`execution/run_context.go`). The Run's prompt names them.
 
 Agents work where their person looks. `board_agent_view.go` is the compact
-reading behind `whiteboard_read` (`POST …/runs/:runId/whiteboards/:boardId/view`):
+reading behind `artifact_inspect` (`POST …/agent-artifacts/:artifactId/whiteboard/view`):
 by default the area the Run's authorizer is looking at (`BoardFocus`, which the
 handler reads from presence), one line per object with a short ref (the shortest
 unique ID prefix of eight or more hex digits), nearby strokes grouped as one
 drawing, within 16 KiB. boardly-mcp keeps each Run's read set of refs and
-revisions, so `whiteboard_edit` takes refs and fills revisions itself and
-refuses to overwrite what the turn has not read. `whiteboard_draw`
-(`POST …/compose`) adds content by intent: `board_compose.go` validates and
+revisions, so `artifact_edit` commands take refs and fill revisions themselves
+and refuse to overwrite what the turn has not read. `artifact_edit` ops
+(`POST …/compose`) add content by intent: `board_compose.go` validates and
 compiles it, `board_layout.go` measures text at the editor's metrics with the
 bundled font and lays out grids and left-to-right layered diagrams,
 `board_sketch.go` turns SVG path data into pen strokes,
@@ -54,21 +66,14 @@ free space) and the batch applies through `boardApplyCommands` under a receipt
 that hashes the intent. Diagram notation lives in `board_shape.go` (shape kinds and compartments),
 `board_connector.go` (connector line, markers, routes and presets) and
 `board_diagram.go` (the route and outline geometry the previews and layouts
-share). A Board's chat (`conversation/board_channel.go`,
-`board_channels.sql`, migration 108's `conversations.board_id`) is one channel
-per Board that the Board's readers share: they join on opening it or being
-mentioned, `cmd/server/board_channel_sync.go` removes them after a Board access
-change commits, and its Agents are the Agents invited to the Board. A tag there
-runs in the channel's Agent chat, which names the Board, so the Run freezes the
-Board in its execution profile and the daemon narrows its tools and Run channel
-rows to that Board.
+share).
 
 `BoardMediaService` (`board_file.go`, `board_visual.go`) owns the files a Board
 references and the images rendered for Agents. A file is an ordinary attachment:
 `POST /files` registers the member's own unshared upload or a file they can read
 on another Board, validating images and storing a bounded preview attachment.
 Image and file items place exactly one registered file. Image decoding shares one weighted memory budget and concurrent attaches of
-one upload validate it once. `whiteboard_read`
+one upload validate it once. Reading a Whiteboard
 automatically requests visual context: `board_visual.go` starts with an overview
 of the whole Board, groups nearby content, separates distant groups and tiles
 large regions under a region plan hash; it hydrates only the requested
@@ -89,12 +94,10 @@ back to a snapshot after a gap. Retention (`board_retention.go`) works in batche
 that skip locked rows, purges tombstones and receipts after 30 days and releases
 files no item places after 30 days. Writes serialize on the
 Board row lock behind Company/member locks that fence revocation; reads run in a
-lock-free `REPEATABLE READ READ ONLY` snapshot. `whiteboards.read/create/edit` bound the resource access granted to
-active members; `whiteboards.manage` controls archive/recovery. The post-commit
-`whiteboard.changed` event carries only the Board ID and committed sequence.
-`cmd/server/realtime_routing.go` sends it at once to readers with the Board open
-and debounces it per Board for the rest of the audience; access changes reach
-everyone at once. Presence (`realtime/canvas_presence.go`, one Redis script per
+lock-free `REPEATABLE READ READ ONLY` snapshot. The post-commit
+`whiteboard.changed` event carries only the Board ID and committed sequence;
+`cmd/server/realtime_routing.go` sends it to the Artifact's readers who have the
+Board open. Access changes travel as the Artifact's own `artifact.access_changed`. Presence (`realtime/canvas_presence.go`, one Redis script per
 room, capped per room and per person) travels on the `EphemeralRelay` to readers
 who currently have the Board open. A browser session reports the Board area
 it shows and whether its window has focus, and a person's last view outlives
@@ -484,8 +487,7 @@ schema and payload cleanup.
   invite more people or Agents into group DMs. Expanded groups leave canonical creation
   lookup and keep independent history; pair identities remain immutable. `general_channel.go` owns the default
   Company-wide General; Company creation and joins grant human membership in
-  the same transaction, while Agents require explicit addition. `board_channel.go`
-  owns each Board's chat, whose people and Agents follow the Board's access. ConversationService owns creation and
+  the same transaction, while Agents require explicit addition. ConversationService owns creation and
   membership; DiscussionService owns shared message text, bounded history/recovery,
   state and personal pin/hide. `discussion_collaboration*.go` adds single-level
   threads, author edits, permission-checked tombstones, shared message pins,
@@ -1146,9 +1148,7 @@ are load-bearing.
   — `daemonws.RegisterListeners`, the discussion dispatcher
   (`discussion_realtime.go`), `registerTaskReadiness` (`task_readiness.go`:
   a member's Agent setup or computer changed, so their open Tasks go out
-  again Company-wide as `task.updated`), `registerBoardChannelSync`
-  (`board_channel_sync.go`: a Board's access changed, so its chat follows),
-  then `registerRealtimeRouting`, then
+  again Company-wide as `task.updated`), then `registerRealtimeRouting`, then
   `activity.RegisterListeners` last because the bus delivers whole-stream
   consumers after every topic's own. `cmd/server/realtime_routing.go` is the
   one list of what reaches a browser; a routing fact stays off the wire by

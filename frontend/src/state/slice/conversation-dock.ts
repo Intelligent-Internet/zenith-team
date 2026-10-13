@@ -771,7 +771,8 @@ function normalizeArtifactReference(
 ): ConversationArtifactReference | null {
   if (!isRecord(value) || Array.isArray(value)) return null;
   const artifactId = canonicalUuid(value.artifactId);
-  const runId = canonicalUuid(value.runId);
+  // A Whiteboard, or an Artifact kept after its Run, has no Run.
+  const runId = value.runId === null ? null : canonicalUuid(value.runId);
   const title =
     typeof value.title === "string" ? value.title.slice(0, 2_048) : "";
   if (
@@ -781,7 +782,8 @@ function normalizeArtifactReference(
     (value.type !== "app" &&
       value.type !== "media" &&
       value.type !== "text" &&
-      value.type !== "file")
+      value.type !== "file" &&
+      value.type !== "whiteboard")
   ) {
     return null;
   }

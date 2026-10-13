@@ -28,57 +28,43 @@ func (h *Handler) registerWhiteboardRoutes(api *gin.RouterGroup) {
 	if h.BoardService == nil || h.AuthService == nil || h.CompanyService == nil {
 		return
 	}
+	// A Whiteboard is an Artifact: its scene hangs off the Artifact, and the
+	// Artifact's access decides every call in the service.
 	routes := api.Group(
-		"/companies/:companyId/whiteboards",
+		"/companies/:companyId/artifacts/:artifactId/whiteboard",
 		middleware.RequireUserAuth(h.AuthService),
 		middleware.RequireCompanyMember(h.CompanyService),
 		middleware.RequireHumanActor(),
-		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionWhiteboardsRead),
 	)
-	edit := middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionWhiteboardsEdit)
-	create := middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionWhiteboardsCreate)
-	manage := middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionWhiteboardsManage)
-	routes.GET("", h.listWhiteboards)
-	routes.POST("", create, h.createWhiteboard)
-	routes.GET("/:boardId", h.getWhiteboard)
-	routes.PATCH("/:boardId", edit, h.updateWhiteboard)
-	routes.PUT("/:boardId/favorite", h.favoriteWhiteboard)
-	routes.POST("/:boardId/claim", manage, h.claimWhiteboard)
-	routes.POST("/:boardId/operations", edit, h.mutateWhiteboard)
-	routes.POST("/:boardId/hydrate", h.hydrateWhiteboard)
-	routes.POST("/:boardId/text", edit, h.syncWhiteboardText)
-	routes.POST("/:boardId/context", h.whiteboardContext)
-	routes.PUT("/:boardId/presence", h.whiteboardPresence)
-	routes.GET("/:boardId/access", h.whiteboardAccess)
-	routes.PUT("/:boardId/access", edit, h.setWhiteboardAccess)
-	routes.PUT("/:boardId/visibility", edit, h.setWhiteboardVisibility)
-	if h.BoardChannelService != nil {
-		routes.GET("/:boardId/channel", h.whiteboardChannel)
-		routes.POST("/:boardId/channel", h.joinWhiteboardChannel)
-	}
-	public := api.Group("/public/whiteboards/:token")
+	routes.GET("", h.getWhiteboard)
+	routes.POST("/operations", h.mutateWhiteboard)
+	routes.POST("/hydrate", h.hydrateWhiteboard)
+	routes.POST("/text", h.syncWhiteboardText)
+	routes.PUT("/title", h.renameWhiteboard)
+	routes.PUT("/presence", h.whiteboardPresence)
+	public := api.Group("/public/artifacts/:token/whiteboard")
 	// Anonymous reads never wait on the pool longer than a page load would;
 	// file streams are left unbounded so large downloads finish.
 	bounded := middleware.RequestTimeout(10 * time.Second)
 	public.GET("", bounded, h.publicWhiteboard)
 	public.POST("/hydrate", bounded, h.hydratePublicWhiteboard)
 	agent := api.Group(
-		"/companies/:companyId/runs/:runId/whiteboards",
+		"/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/whiteboard",
 		middleware.RequireUserAuth(h.AuthService),
 		middleware.RequireCompanyMember(h.CompanyService),
 	)
-	// A Run reaches exactly the calls its channel offers: list, read (its
-	// compact view, and context for whole-Board images), compose and edit.
-	// Its presence follows those calls.
-	agent.GET("", h.listWhiteboardsForRun)
-	agent.POST("/:boardId/view", h.whiteboardAgentView)
-	agent.POST("/:boardId/operations", edit, h.mutateWhiteboard)
-	agent.POST("/:boardId/compose", edit, h.composeWhiteboard)
-	agent.POST("/:boardId/context", h.whiteboardContext)
+	// A Run reaches exactly the calls its channel offers: read (its compact
+	// view, and context for whole-Board images), compose and edit. Its
+	// presence follows those calls.
+	agent.POST("/view", h.whiteboardAgentView)
+	agent.POST("/operations", h.mutateWhiteboard)
+	agent.POST("/compose", h.composeWhiteboard)
+	agent.POST("/context", h.whiteboardContext)
 	if h.BoardMediaService != nil {
 		public.GET("/files/:attachmentId", h.downloadPublicWhiteboardFile)
-		routes.GET("/:boardId/files/:attachmentId", h.downloadWhiteboardFile)
-		routes.POST("/:boardId/files", edit, h.attachWhiteboardFile)
+		routes.GET("/files/:attachmentId", h.downloadWhiteboardFile)
+		routes.POST("/files", h.attachWhiteboardFile)
+		routes.GET("/preview", h.whiteboardPreview)
 	}
 }
 
@@ -102,7 +88,7 @@ func (h *Handler) whiteboardPath(c *gin.Context, allowed ...string) (auth.UserPr
 	if !ok {
 		return p, canvas.BoardScope{}, false
 	}
-	id, err := util.ParseGoUUID(c.Param("boardId"))
+	id, err := util.ParseGoUUID(c.Param("artifactId"))
 	if err != nil {
 		writeWhiteboardError(c, canvas.ErrBoardNotFound)
 		return p, canvas.BoardScope{}, false
@@ -129,64 +115,6 @@ func whiteboardID(c *gin.Context, key string) (uuid.UUID, bool) {
 		return uuid.Nil, false
 	}
 	return id, true
-}
-
-func (h *Handler) listWhiteboards(c *gin.Context) {
-	p, ok := taskPrincipal(c)
-	if !ok {
-		return
-	}
-	values, ok := whiteboardQuery(c, "search", "archived", "favorites", "unowned", "limit", "offset")
-	if !ok {
-		return
-	}
-	in := canvas.BoardListInput{Search: values.Get("search"), Limit: 40}
-	for key, dst := range map[string]*bool{"archived": &in.Archived, "favorites": &in.Favorites, "unowned": &in.Unowned} {
-		if raw := values.Get(key); raw != "" {
-			if raw != "true" && raw != "false" {
-				writeWhiteboardError(c, canvas.ErrBoardInvalid)
-				return
-			}
-			*dst = raw == "true"
-		}
-	}
-	for key, dst := range map[string]*int32{"limit": &in.Limit, "offset": &in.Offset} {
-		if raw := values.Get(key); raw != "" {
-			value, err := strconv.ParseInt(raw, 10, 32)
-			if err != nil || value < 0 {
-				writeWhiteboardError(c, canvas.ErrBoardInvalid)
-				return
-			}
-			*dst = int32(value)
-		}
-	}
-	result, err := h.BoardService.List(c.Request.Context(), p, in)
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) createWhiteboard(c *gin.Context) {
-	p, ok := taskPrincipal(c)
-	if !ok {
-		return
-	}
-	if _, ok = whiteboardQuery(c); !ok {
-		return
-	}
-	input, err := bindRequest[canvas.CreateBoardInput](c, 16<<10)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	result, err := h.BoardService.Create(c.Request.Context(), p, input)
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
 }
 
 func (h *Handler) getWhiteboard(c *gin.Context) {
@@ -241,59 +169,6 @@ func gzipWhiteboardResponse(c *gin.Context) func() {
 	c.Header("Content-Encoding", "gzip")
 	c.Writer = &gzipWhiteboardWriter{ResponseWriter: c.Writer, zw: zw}
 	return func() { _ = zw.Close() }
-}
-
-func (h *Handler) favoriteWhiteboard(c *gin.Context) {
-	p, id, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	input, err := bindRequest[wikiFavoriteRequest](c, 1024)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	if err = h.BoardService.Favorite(c.Request.Context(), p, id.BoardID, *input.Favorite.ptr()); err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
-}
-
-func (h *Handler) updateWhiteboard(c *gin.Context) {
-	p, id, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	input, err := bindRequest[canvas.UpdateBoardInput](c, 16<<10)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	result, err := h.BoardService.Update(c.Request.Context(), p, id.BoardID, input)
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) claimWhiteboard(c *gin.Context) {
-	p, id, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	input, err := bindRequest[canvas.BoardClaimInput](c, 1024)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	result, err := h.BoardService.Claim(c.Request.Context(), p, id.BoardID, input.ExpectedRevision)
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
 }
 
 func (h *Handler) mutateWhiteboard(c *gin.Context) {
@@ -353,6 +228,24 @@ func (h *Handler) syncWhiteboardText(c *gin.Context) {
 		return
 	}
 	result, err := h.BoardService.Text(c.Request.Context(), p, id, input)
+	if err != nil {
+		writeWhiteboardError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) renameWhiteboard(c *gin.Context) {
+	p, id, ok := h.whiteboardPath(c)
+	if !ok {
+		return
+	}
+	input, err := bindRequest[canvas.BoardTitleInput](c, 4<<10)
+	if err != nil {
+		writeRequestError(c, err)
+		return
+	}
+	result, err := h.BoardService.Rename(c.Request.Context(), p, id, input.Title)
 	if err != nil {
 		writeWhiteboardError(c, err)
 		return
@@ -590,6 +483,45 @@ func (h *Handler) downloadWhiteboardFile(c *gin.Context) {
 		return
 	}
 	streamAttachmentDownloadWithPolicy(c, result, "private, no-cache")
+}
+
+// whiteboardPreview is a small image of the whole Board for its Artifact's
+// card. Its ETag names the Board sequence it shows, so an unchanged Board
+// answers 304 without drawing again; a Board with nothing on it answers 204.
+func (h *Handler) whiteboardPreview(c *gin.Context) {
+	p, id, ok := h.whiteboardPath(c)
+	if !ok {
+		return
+	}
+	result, err := h.BoardMediaService.Preview(c.Request.Context(), p, id, whiteboardKnownPreview(c))
+	if err != nil {
+		writeWhiteboardError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "private, no-cache")
+	c.Header("ETag", `"`+whiteboardPreviewTag+strconv.FormatInt(result.Sequence, 10)+`"`)
+	switch {
+	case result.NotModified:
+		c.Status(http.StatusNotModified)
+	case result.Image == nil:
+		c.Status(http.StatusNoContent)
+	default:
+		c.Data(http.StatusOK, result.Image.MIMEType, result.Image.Data)
+	}
+}
+
+// whiteboardPreviewTag versions preview ETags, so a change in how Boards are
+// drawn replaces images browsers already hold.
+const whiteboardPreviewTag = "preview-1-"
+
+func whiteboardKnownPreview(c *gin.Context) int64 {
+	tag := strings.Trim(strings.TrimPrefix(strings.TrimSpace(c.GetHeader("If-None-Match")), "W/"), `"`)
+	digits, ok := strings.CutPrefix(tag, whiteboardPreviewTag)
+	sequence, err := strconv.ParseInt(digits, 10, 64)
+	if !ok || err != nil || sequence < 0 {
+		return -1
+	}
+	return sequence
 }
 
 type boardPresenceRequest struct {
@@ -887,7 +819,6 @@ var whiteboardErrorMappings = []errorMapping{
 		"whiteboard_conflict",
 	},
 	{canvas.ErrBoardLimit, 422, "This Whiteboard operation exceeds the supported size", "whiteboard_limit"},
-	{canvas.ErrBoardArchived, 409, "This Whiteboard is archived", "whiteboard_archived"},
 	{
 		canvas.ErrBoardLocked,
 		409,
@@ -921,86 +852,6 @@ func writeWhiteboardError(c *gin.Context, err error) {
 		return
 	}
 	writeMappedError(c, err, whiteboardErrorMappings, internalErrorFallback)
-}
-
-func (h *Handler) whiteboardAccess(c *gin.Context) {
-	p, scope, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	result, err := h.BoardService.Access(c.Request.Context(), p, scope.BoardID)
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	if h.OAuthWebAppOrigin != "" {
-		result.URL = strings.TrimRight(
-			h.OAuthWebAppOrigin,
-			"/",
-		) + "/whiteboards/" + scope.BoardID.String() + "?companyId=" + p.CompanyID.String()
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) setWhiteboardAccess(c *gin.Context) {
-	p, scope, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	input, err := bindRequest[canvas.BoardAccessInput](c, 4096)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	if err = h.BoardService.SetAccess(c.Request.Context(), p, scope.BoardID, input); err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
-}
-
-func (h *Handler) listWhiteboardsForRun(c *gin.Context) {
-	p, run, ok := h.contentRunPrincipal(c)
-	if !ok {
-		return
-	}
-	values, ok := whiteboardQuery(c, "offset")
-	if !ok {
-		return
-	}
-	offset := int64(0)
-	if raw := values.Get("offset"); raw != "" {
-		var err error
-		offset, err = strconv.ParseInt(raw, 10, 32)
-		if err != nil || offset < 0 {
-			writeWhiteboardError(c, canvas.ErrBoardInvalid)
-			return
-		}
-	}
-	result, err := h.BoardService.ListForRun(c.Request.Context(), p, run, int32(offset))
-	if err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.Header("Cache-Control", "private, no-store")
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) setWhiteboardVisibility(c *gin.Context) {
-	p, scope, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	input, err := bindRequest[canvas.BoardVisibilityInput](c, 4096)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	if err = h.BoardService.SetVisibility(c.Request.Context(), p, scope.BoardID, input); err != nil {
-		writeWhiteboardError(c, err)
-		return
-	}
-	c.Status(http.StatusNoContent)
 }
 
 func publicWhiteboardToken(c *gin.Context, allowed ...string) (uuid.UUID, bool) {
@@ -1082,36 +933,6 @@ func (h *Handler) attachWhiteboardFile(c *gin.Context) {
 	result, err := h.BoardMediaService.AttachFile(c.Request.Context(), p, scope.BoardID, input)
 	if err != nil {
 		writeWhiteboardError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-// whiteboardChannel reads the Board's chat and the people who can read the
-// Board, without joining it.
-func (h *Handler) whiteboardChannel(c *gin.Context) {
-	p, id, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	result, err := h.BoardChannelService.Channel(c.Request.Context(), p, id.BoardID)
-	if err != nil {
-		writeDiscussionError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-// joinWhiteboardChannel opens the Board's chat for its reader, starting it the
-// first time.
-func (h *Handler) joinWhiteboardChannel(c *gin.Context) {
-	p, id, ok := h.whiteboardPath(c)
-	if !ok {
-		return
-	}
-	result, err := h.BoardChannelService.Join(c.Request.Context(), p, id.BoardID)
-	if err != nil {
-		writeDiscussionError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, result)

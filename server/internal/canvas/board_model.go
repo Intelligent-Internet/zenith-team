@@ -17,7 +17,6 @@ var (
 	ErrBoardInvalid   = errors.New("invalid whiteboard operation")
 	ErrBoardConflict  = errors.New("whiteboard revision conflict")
 	ErrBoardLimit     = errors.New("whiteboard limit reached")
-	ErrBoardArchived  = errors.New("whiteboard is archived")
 	ErrBoardLocked    = errors.New("whiteboard object is locked")
 	// ErrBoardItemNotFound is a command naming an item or connector the Board
 	// no longer has; the Board itself is still there.
@@ -65,9 +64,7 @@ const (
 	boardChangeFeed       = 1000             // change records always retained per Board
 	boardChangeFeedCap    = 20000            // change records retained under continuous typing
 	boardChangeFeedWindow = 10 * time.Minute // recent commits a reconnecting client catches up on
-	boardListPage         = 100              // Boards per Agent list page
 	boardMaxTitle         = 200              // runes in a Board title
-	boardMaxPurpose       = 2000             // runes in a Board purpose
 	boardMaxContextItems  = 500              // items one context or image read may select
 )
 
@@ -77,33 +74,6 @@ type BoardScope struct {
 	BoardID uuid.UUID
 	RunID   uuid.UUID
 }
-type BoardAccessInput struct {
-	ExpectedRevision int64             `json:"expectedRevision" binding:"required,min=1"`
-	Actor            protocol.ActorRef `json:"actor"            binding:"required"`
-	Access           string            `json:"access"           binding:"required,oneof=read edit manage none"`
-}
-type BoardGrant struct {
-	Actor  protocol.ActorRef `json:"actor"`
-	Access string            `json:"access"`
-}
-type BoardAccess struct {
-	URL           string            `json:"url"`
-	Owner         protocol.ActorRef `json:"owner"`
-	Permission    string            `json:"permission"`
-	Visibility    string            `json:"visibility"`
-	CompanyAccess string            `json:"companyAccess"`
-	PublicToken   *uuid.UUID        `json:"publicToken"`
-	Revision      int64             `json:"revision"`
-	Grants        []BoardGrant      `json:"grants"`
-}
-type BoardClaimInput struct {
-	ExpectedRevision int64 `json:"expectedRevision" binding:"required,min=1"`
-}
-type BoardVisibilityInput struct {
-	ExpectedRevision int64  `json:"expectedRevision" binding:"required,min=1"`
-	Visibility       string `json:"visibility"       binding:"required,oneof=private company public"`
-	CompanyAccess    string `json:"companyAccess"    binding:"required,oneof=read edit"`
-}
 type BoardViewer struct {
 	CanShare         bool              `json:"-"`
 	RecipientUserIDs []uuid.UUID       `json:"-"`
@@ -111,47 +81,17 @@ type BoardViewer struct {
 	RunID            *uuid.UUID        `json:"runId"`
 	CanEdit          bool              `json:"-"`
 }
+
+// Board is a Whiteboard Artifact's scene head as its caller sees it.
 type Board struct {
-	Visibility string     `json:"visibility"`
-	CanShare   bool       `json:"canShare"`
-	ID         uuid.UUID  `json:"id"`
-	CompanyID  uuid.UUID  `json:"companyId"`
-	Title      string     `json:"title"`
-	Purpose    string     `json:"purpose"`
-	Sequence   int64      `json:"sequence"`
-	Revision   int64      `json:"revision"`
-	CreatedBy  uuid.UUID  `json:"createdBy"`
-	CreatedAt  time.Time  `json:"createdAt"`
-	UpdatedAt  time.Time  `json:"updatedAt"`
-	ArchivedAt *time.Time `json:"archivedAt"`
-	Favorite   bool       `json:"favorite"`
-	CanEdit    bool       `json:"canEdit"`
-	CanManage  bool       `json:"canManage"`
-}
-type BoardListInput struct {
-	Search    string
-	Archived  bool
-	Favorites bool
-	// Unowned lists, for Company Whiteboard managers, the Boards no active
-	// member manages, so one of them can claim it.
-	Unowned bool
-	Limit   int32
-	Offset  int32
-}
-type BoardList struct {
-	Boards  []Board `json:"boards"`
-	HasMore bool    `json:"hasMore"`
-}
-type CreateBoardInput struct {
-	RequestKey uuid.UUID `json:"requestKey" binding:"required"`
-	Title      string    `json:"title"      binding:"required,max=200"`
-	Purpose    string    `json:"purpose"    binding:"max=2000"`
-}
-type UpdateBoardInput struct {
-	ExpectedRevision int64   `json:"expectedRevision"   binding:"required,min=1"`
-	Title            *string `json:"title,omitempty"    binding:"omitempty,max=200"`
-	Purpose          *string `json:"purpose,omitempty"  binding:"omitempty,max=2000"`
-	Archived         *bool   `json:"archived,omitempty"`
+	ID        uuid.UUID `json:"id"`
+	CompanyID uuid.UUID `json:"companyId"`
+	Title     string    `json:"title"`
+	Sequence  int64     `json:"sequence"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CanEdit   bool      `json:"canEdit"`
+	CanShare  bool      `json:"canShare"`
 }
 type BoardGeometry struct {
 	X             float64    `json:"x"`
@@ -299,6 +239,12 @@ type BoardMutation struct {
 	// Replayed answers a request key that was already committed.
 	Replayed bool `json:"replayed"`
 }
+
+// BoardTitleInput retitles a Whiteboard Artifact.
+type BoardTitleInput struct {
+	Title string `json:"title" binding:"required"`
+}
+
 type BoardTextInput struct {
 	LifecycleRevision int64     `json:"lifecycleRevision"     binding:"required,min=1"`
 	RequestKey        uuid.UUID `json:"requestKey"            binding:"required"`

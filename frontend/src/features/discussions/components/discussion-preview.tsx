@@ -37,6 +37,9 @@ export function DiscussionPreviewProvider({ children }: PropsWithChildren) {
     null,
   );
   const triggerRef = useRef<HTMLElement | null>(null);
+  // An attachment opened over an artifact waits until that artifact closes:
+  // a Whiteboard may hold the navigation until its changes are saved.
+  const queuedAttachment = useRef<AttachmentPreviewFile | null>(null);
   const artifactId = params.get("artifactId");
 
   const setArtifactId = useCallback(
@@ -63,6 +66,7 @@ export function DiscussionPreviewProvider({ children }: PropsWithChildren) {
   };
 
   const close = useCallback(() => {
+    queuedAttachment.current = null;
     setAttachment(null);
     setArtifactId();
     requestAnimationFrame(() => {
@@ -73,6 +77,10 @@ export function DiscussionPreviewProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (artifactId) setAttachment(null);
+    else if (queuedAttachment.current) {
+      setAttachment(queuedAttachment.current);
+      queuedAttachment.current = null;
+    }
   }, [artifactId]);
 
   return (
@@ -84,13 +92,15 @@ export function DiscussionPreviewProvider({ children }: PropsWithChildren) {
         isOpen: Boolean(artifactId || attachment),
         openArtifact: (id) => {
           rememberTrigger();
+          queuedAttachment.current = null;
           setAttachment(null);
           setArtifactId(id);
         },
         openAttachment: (file) => {
           rememberTrigger();
           setArtifactId();
-          setAttachment(file);
+          if (artifactId) queuedAttachment.current = file;
+          else setAttachment(file);
         },
         close,
       }}

@@ -1055,11 +1055,7 @@ func mcpToolDrivers(
 		}
 	}
 	pageID := uuid.NewString()
-	// A Board chat's tools name no Board: they work on the chat's own.
 	board := pageID
-	if run.WhiteboardID != "" {
-		board = ""
-	}
 	return map[string]func(context.Context) error{
 		"ask_human": func(ctx context.Context) error {
 			_, err := tools.NewQuestionService(api, run.CompanyID).AskHuman(ctx, tools.AskHumanInput{
@@ -1190,32 +1186,20 @@ func mcpToolDrivers(
 			_, err := social.PublishSocial(ctx, tools.PublishSocialInput{QuestionID: uuid.NewString()})
 			return err
 		},
-
-		"whiteboard_list": func(ctx context.Context) error {
-			_, err := whiteboards.List(ctx, tools.WhiteboardListInput{Offset: 100})
-			return err
-		},
-		"whiteboard_read": func(ctx context.Context) error {
-			_, err := whiteboards.Read(
-				ctx,
-				tools.WhiteboardReadInput{BoardID: board, Area: "all", Image: true},
-			)
-			return err
-		},
-		"whiteboard_draw": func(ctx context.Context) error {
-			_, err := whiteboards.Draw(ctx, tools.WhiteboardDrawInput{
-				BoardID: board,
+		"artifact_edit": func(ctx context.Context) error {
+			_, err := whiteboards.Edit(ctx, tools.ArtifactEditInput{
+				ArtifactID: board,
 				Ops: []tools.WhiteboardDrawOp{
 					{Type: "notes", Items: []tools.WhiteboardDrawNote{{Text: "Idea"}}},
 				},
 			})
-			return err
-		},
-		"whiteboard_edit": func(ctx context.Context) error {
-			_, err := whiteboards.Edit(
+			if err != nil {
+				return err
+			}
+			_, err = whiteboards.Edit(
 				ctx,
-				tools.WhiteboardEditInput{
-					BoardID: board,
+				tools.ArtifactEditInput{
+					ArtifactID: board,
 					Commands: []map[string]any{
 						{"type": "create_item", "draftId": "note", "itemType": "sticky"},
 					},
@@ -1317,12 +1301,6 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 		"member direct chat": {doc: RunContext{}},
 		"channel invocation": {doc: RunContext{ChannelInvocation: &RunChannelInvocation{ID: uuid.NewString()}}},
 		"company research":   {doc: RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
-		"Board chat tag": {doc: RunContext{
-			ExecutionProfile: RunExecutionProfileContext{
-				Whiteboard: &RunWhiteboardContext{ID: uuid.NewString(), Title: "Plan"},
-			},
-			ChannelInvocation: &RunChannelInvocation{ID: uuid.NewString()},
-		}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			run := channelTestRun(t, shape.task)
@@ -1351,13 +1329,9 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			whiteboard := ""
-			if shape.doc.ExecutionProfile.Whiteboard != nil {
-				whiteboard = shape.doc.ExecutionProfile.Whiteboard.ID
-			}
 			drivers := mcpToolDrivers(t, apiclient.NewRunChannel(control), tools.RunContext{
 				CompanyID: run.CompanyID, ConversationID: run.ConversationID, TaskID: run.TaskID,
-				RunID: run.ID.String(), AgentID: run.AgentID, WhiteboardID: whiteboard,
+				RunID: run.ID.String(), AgentID: run.AgentID,
 			}, planRoot)
 			// present_output is the local row: boardly-mcp sends it over the
 			// same channel and the daemon completes it with its presenter.
@@ -1384,10 +1358,34 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 			if err != nil {
 				t.Fatalf("artifact channel service: %v", err)
 			}
+			// A Whiteboard reads through artifact_inspect on its Run routes.
+			whiteboards, err := tools.NewWhiteboardToolService(
+				apiclient.NewRunChannel(control),
+				tools.RunContext{
+					CompanyID:      run.CompanyID,
+					ConversationID: run.ConversationID,
+					TaskID:         run.TaskID,
+					RunID:          run.ID.String(),
+					AgentID:        run.AgentID,
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
 			drivers["artifact_inspect"] = func(ctx context.Context) error {
-				_, err := artifacts.InspectArtifact(
+				if _, err := artifacts.InspectArtifact(
 					ctx,
 					tools.ArtifactInspectInput{ArtifactID: testChannelArtifact},
+				); err != nil {
+					return err
+				}
+				_, err := whiteboards.Read(
+					ctx,
+					tools.ArtifactInspectInput{
+						ArtifactID: testChannelArtifact,
+						Area:       "all",
+						Image:      true,
+					},
 				)
 				return err
 			}
@@ -1433,10 +1431,13 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 				mu.Unlock()
 				if tool == "artifact_inspect" || tool == "artifact_fetch" {
 					// The daemon completes the call: the server sees only
-					// its own Run-proven reads, never the channel path.
+					// its own Run-proven reads, never the channel path, and
+					// a Whiteboard's reading.
 					for _, call := range calls {
 						if call != http.MethodGet+" "+artifactRoute &&
-							call != http.MethodGet+" "+artifactRoute+"/items/0/download" {
+							call != http.MethodGet+" "+artifactRoute+"/items/0/download" &&
+							call != http.MethodPost+" "+artifactRoute+"/whiteboard/view" &&
+							call != http.MethodPost+" "+artifactRoute+"/whiteboard/context" {
 							t.Fatalf("%s reached the server as %s", tool, call)
 						}
 					}

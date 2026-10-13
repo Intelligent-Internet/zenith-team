@@ -65,27 +65,15 @@ func TestOwnerOnlyPermissionsArePinned(t *testing.T) {
 // A member discusses and installs plugins and connects apps on their own
 // computers (owner decision, 2026-09-29); every Company-wide management
 // permission, reviewing apps' changed tools included, stays above them.
-func TestMemberHoldsDiscussionOwnComputerAndWhiteboardPermissions(t *testing.T) {
+func TestMemberHoldsOnlyDiscussionAndOwnComputerPermissions(t *testing.T) {
 	t.Parallel()
 
 	got := PermissionsOf(CompanyRoleMember)
 	if got == nil {
 		t.Fatal("PermissionsOf(member) = nil, want a non-nil permission list")
 	}
-	if !slices.Equal(
-		got,
-		[]Permission{
-			PermissionConversationsDiscuss,
-			PermissionPluginsManage,
-			PermissionWhiteboardsCreate,
-			PermissionWhiteboardsEdit,
-			PermissionWhiteboardsRead,
-		},
-	) {
-		t.Errorf(
-			"PermissionsOf(member) = %v, want discussion, own-computer plugin, and collaborative Whiteboard permissions",
-			got,
-		)
+	if !slices.Equal(got, []Permission{PermissionConversationsDiscuss, PermissionPluginsManage}) {
+		t.Errorf("PermissionsOf(member) = %v, want discussion and own-computer plugin permissions", got)
 	}
 	if CompanyRoleMember.Can(PermissionConnectorsManage) {
 		t.Error("member holds connectors.manage, which reviews apps for the whole Company")

@@ -22,11 +22,6 @@ SELECT EXISTS(
     JOIN users u ON u.id=v.caller_user_id AND u.disabled_at IS NULL AND u.deleted_at IS NULL
     JOIN agents a ON a.id=v.agent_id AND a.archived_at IS NULL
     WHERE v.id=$2::uuid AND v.status<>'cancelled'
-      -- A tag in a Board's chat holds while its caller can read the Board and
-      -- the Agent is still invited to it, before membership catches up.
-      AND (c.board_id IS NULL OR (
-          EXISTS(SELECT 1 FROM board_access ba WHERE ba.company_id=c.company_id AND ba.board_id=c.board_id AND ba.user_id=v.caller_user_id)
-          AND EXISTS(SELECT 1 FROM board_agent_access bg WHERE bg.company_id=c.company_id AND bg.board_id=c.board_id AND bg.agent_id=v.agent_id)))
 )::boolean
 `
 
@@ -65,7 +60,7 @@ SELECT a.company_id,'channel_agent',$1::uuid,a.id,a.created_by_user_id,a.name
 FROM agents a WHERE a.id=$2::uuid AND a.company_id=$3::uuid
   AND a.archived_at IS NULL AND a.created_by_user_id IS NOT NULL
 ON CONFLICT(channel_id,agent_id) WHERE kind='channel_agent' DO UPDATE SET title=EXCLUDED.title
-RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id
+RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
 `
 
 type EnsureChannelAgentConversationParams struct {
@@ -99,7 +94,6 @@ func (q *Queries) EnsureChannelAgentConversation(ctx context.Context, arg Ensure
 		&i.ChannelContextRevision,
 		&i.ProjectID,
 		&i.DocumentThreadID,
-		&i.BoardID,
 	)
 	return i, err
 }
@@ -645,7 +639,7 @@ func (q *Queries) ListChannelContext(ctx context.Context, arg ListChannelContext
 }
 
 const listChannelInvocationConversations = `-- name: ListChannelInvocationConversations :many
-SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id, board_id FROM conversations WHERE channel_id=$1 ORDER BY id FOR NO KEY UPDATE
+SELECT id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id FROM conversations WHERE channel_id=$1 ORDER BY id FOR NO KEY UPDATE
 `
 
 func (q *Queries) ListChannelInvocationConversations(ctx context.Context, channelID uuid.NullUUID) ([]Conversation, error) {
@@ -679,7 +673,6 @@ func (q *Queries) ListChannelInvocationConversations(ctx context.Context, channe
 			&i.ChannelContextRevision,
 			&i.ProjectID,
 			&i.DocumentThreadID,
-			&i.BoardID,
 		); err != nil {
 			return nil, err
 		}

@@ -2,13 +2,7 @@ import type { ReactNode } from "react";
 import * as Popover from "@radix-ui/react-popover";
 
 export type BoardSaveState =
-  | "idle"
-  | "saving"
-  | "recovering"
-  | "attention"
-  | "offline"
-  | "read-only"
-  | "archived";
+  "idle" | "saving" | "recovering" | "attention" | "offline" | "read-only";
 
 const statusLabels: Record<BoardSaveState, string> = {
   idle: "",
@@ -17,7 +11,6 @@ const statusLabels: Record<BoardSaveState, string> = {
   attention: "Changes need attention",
   offline: "Offline · unsaved",
   "read-only": "Read-only",
-  archived: "Archived · read-only",
 };
 const feedbackLabels = {
   saving: "Saving…",

@@ -174,3 +174,92 @@ func (q *Queries) ListRunChannelArtifacts(ctx context.Context, arg ListRunChanne
 	}
 	return items, nil
 }
+
+const listRunChannelWhiteboards = `-- name: ListRunChannelWhiteboards :many
+SELECT output.id, output.title
+FROM outputs output
+JOIN output_conversation_grants shared ON shared.company_id=output.company_id AND shared.output_id=output.id
+ AND shared.conversation_id=$1::uuid
+JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+ AND access.user_id=$2::uuid
+WHERE output.company_id=$3::uuid AND output.type='whiteboard'
+ORDER BY output.created_at DESC, output.id DESC
+LIMIT 20
+`
+
+type ListRunChannelWhiteboardsParams struct {
+	ConversationID uuid.UUID `json:"conversation_id"`
+	ActorUserID    uuid.UUID `json:"actor_user_id"`
+	CompanyID      uuid.UUID `json:"company_id"`
+}
+
+type ListRunChannelWhiteboardsRow struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+}
+
+// The Whiteboards shared into the chat that tagged a Run and its caller, the
+// Run's Authorizer, may open, newest first: the Run's prompt names them.
+func (q *Queries) ListRunChannelWhiteboards(ctx context.Context, arg ListRunChannelWhiteboardsParams) ([]ListRunChannelWhiteboardsRow, error) {
+	rows, err := q.db.Query(ctx, listRunChannelWhiteboards, arg.ConversationID, arg.ActorUserID, arg.CompanyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRunChannelWhiteboardsRow{}
+	for rows.Next() {
+		var i ListRunChannelWhiteboardsRow
+		if err := rows.Scan(&i.ID, &i.Title); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRunConversationWhiteboards = `-- name: ListRunConversationWhiteboards :many
+SELECT output.id, output.title
+FROM outputs output
+JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+ AND access.user_id=$1::uuid
+WHERE output.company_id=$2::uuid
+  AND output.conversation_id=$3::uuid AND output.type='whiteboard'
+ORDER BY output.created_at DESC, output.id DESC
+LIMIT 20
+`
+
+type ListRunConversationWhiteboardsParams struct {
+	ActorUserID    uuid.UUID `json:"actor_user_id"`
+	CompanyID      uuid.UUID `json:"company_id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+type ListRunConversationWhiteboardsRow struct {
+	ID    uuid.UUID `json:"id"`
+	Title string    `json:"title"`
+}
+
+// The Whiteboards made in the Agent or Task chat a Run answers that the Run's
+// Authorizer may open, newest first: the Run's prompt names them.
+func (q *Queries) ListRunConversationWhiteboards(ctx context.Context, arg ListRunConversationWhiteboardsParams) ([]ListRunConversationWhiteboardsRow, error) {
+	rows, err := q.db.Query(ctx, listRunConversationWhiteboards, arg.ActorUserID, arg.CompanyID, arg.ConversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRunConversationWhiteboardsRow{}
+	for rows.Next() {
+		var i ListRunConversationWhiteboardsRow
+		if err := rows.Scan(&i.ID, &i.Title); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

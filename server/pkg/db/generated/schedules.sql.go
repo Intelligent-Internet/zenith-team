@@ -769,7 +769,7 @@ WITH request_lock AS MATERIALIZED (
         $7::text
     FROM authorized
     CROSS JOIN identities
-    RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+    RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 ), inserted_schedule AS (
     INSERT INTO schedules (
         id, company_id, conversation_id, creator_user_id, request_key, agent_id,

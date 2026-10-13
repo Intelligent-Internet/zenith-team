@@ -138,18 +138,11 @@ func discussionInt(value pgtype.Int8) *int64 {
 	return &value.Int64
 }
 
-// discussionOpen reports a chat that takes new messages: not archived, a
-// direct message whose peer is still here, and a Board's chat whose Board is
-// not archived.
-func discussionOpen(row generated.ListDiscussionAccessRow) bool {
-	if row.Kind == "human_direct" {
-		return row.PeerActive
-	}
-	return !row.ArchivedAt.Valid && !row.BoardArchivedAt.Valid
-}
-
 func discussionCapabilities(row generated.ListDiscussionAccessRow) DiscussionCapabilities {
-	open := discussionOpen(row)
+	open := !row.ArchivedAt.Valid
+	if row.Kind == "human_direct" {
+		open = row.PeerActive
+	}
 	write := row.ContentAccess && open && auth.CompanyRole(row.CompanyRole).Can(auth.PermissionConversationsDiscuss)
 	return DiscussionCapabilities{
 		Threads:     row.ContentAccess,
@@ -223,7 +216,6 @@ func discussionSummary(row generated.ListDiscussionAccessRow, userID uuid.UUID) 
 		HeadSeq:      row.HeadSeq,
 		MemberCount:  row.MemberCount,
 		AgentCount:   row.AgentCount,
-		BoardID:      util.NullUUIDPtr(row.BoardID),
 		Capabilities: discussionCapabilities(row),
 		UserState:    discussionUserState(row),
 	}

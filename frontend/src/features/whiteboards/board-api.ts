@@ -8,7 +8,6 @@ import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service
 import { subscribeToRefetchSignals } from "@/shared/realtime/refetch-signals";
 
 type Schema = components["schemas"];
-export type Board = Schema["Board"];
 export type BoardItem = Schema["BoardItem"];
 export type BoardEdge = Schema["BoardEdge"];
 export type BoardCommand = Schema["BoardCommand"];
@@ -17,12 +16,12 @@ export type BoardSnapshot = Schema["BoardSnapshot"];
 export type BoardHydratedItem = Schema["BoardHydratedItem"];
 export type BoardFile = Schema["BoardFile"];
 export type BoardScope = { companyId: string; boardId: string };
-export const boardsPath = (companyId: string) =>
-  `/companies/${encodeURIComponent(companyId)}/whiteboards`;
+// A Whiteboard is an Artifact: its Board lives under the Artifact's id, and a
+// public Artifact link reads it read-only.
 export const boardPath = ({ companyId, boardId }: BoardScope) =>
-  `${boardsPath(companyId)}/${encodeURIComponent(boardId)}`;
+  `/companies/${encodeURIComponent(companyId)}/artifacts/${encodeURIComponent(boardId)}/whiteboard`;
 export const publicBoardPath = (token: string) =>
-  `/public/whiteboards/${encodeURIComponent(token)}`;
+  `/public/artifacts/${encodeURIComponent(token)}/whiteboard`;
 export const boardFilePath = (
   base: string,
   attachmentId: string,
@@ -34,6 +33,27 @@ export const boardScopeKey = (scope: BoardScope) =>
 const listeners = new Set<(scope: BoardScope, sequence: number) => void>();
 export function notifyBoardChange(scope: BoardScope, sequence: number) {
   listeners.forEach((listener) => listener(scope, sequence));
+}
+// Calls back when a Board changes: a commit from this window, or a
+// collaborator's while this member has it open.
+export function onBoardChange(scope: BoardScope, changed: () => void) {
+  const local = (other: BoardScope) => {
+    if (boardScopeKey(other) === boardScopeKey(scope)) changed();
+  };
+  listeners.add(local);
+  const events = boardlyRealtimeClient.onEvent((event) => {
+    if (
+      event.companyId === scope.companyId &&
+      event.type === "whiteboard.changed" &&
+      "boardId" in event.payload &&
+      event.payload.boardId === scope.boardId
+    )
+      changed();
+  });
+  return () => {
+    listeners.delete(local);
+    events();
+  };
 }
 function reconcile<T extends { id: string }>(
   current: T[],
@@ -65,79 +85,6 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
           "This file could not be added to the Whiteboard.",
         ),
     }),
-    whiteboardAccess: builder.query<Schema["BoardAccess"], BoardScope>({
-      queryFn: (scope) =>
-        executeBoardlyQuery(
-          () =>
-            apiClient.get<Schema["BoardAccess"]>(`${boardPath(scope)}/access`),
-          "Sharing could not be loaded.",
-        ),
-      providesTags: (_result, _error, scope) => [
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:access` },
-      ],
-      keepUnusedDataFor: 0,
-    }),
-    whiteboardChannel: builder.query<Schema["BoardChannel"], BoardScope>({
-      queryFn: (scope) =>
-        executeBoardlyQuery(
-          () =>
-            apiClient.get<Schema["BoardChannel"]>(
-              `${boardPath(scope)}/channel`,
-            ),
-          "The Board's chat could not be loaded.",
-        ),
-      providesTags: (_result, _error, scope) => [
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:channel` },
-      ],
-      keepUnusedDataFor: 0,
-    }),
-    joinWhiteboardChannel: builder.mutation<Schema["BoardChannel"], BoardScope>(
-      {
-        queryFn: (scope) =>
-          executeBoardlyQuery(
-            () =>
-              apiClient.post<Schema["BoardChannel"]>(
-                `${boardPath(scope)}/channel`,
-              ),
-            "The Board's chat could not be opened.",
-          ),
-        invalidatesTags: (_result, _error, scope) => [
-          { type: "Whiteboard", id: `${boardScopeKey(scope)}:channel` },
-        ],
-      },
-    ),
-    setWhiteboardAccess: builder.mutation<
-      void,
-      BoardScope & { input: Schema["BoardAccessInput"] }
-    >({
-      queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
-          () => apiClient.put<void>(`${boardPath(scope)}/access`, input),
-          "Access could not be updated.",
-        ),
-      invalidatesTags: (_result, _error, scope) => [
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:access` },
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:channel` },
-        { type: "Whiteboard", id: boardScopeKey(scope) },
-        { type: "Whiteboard", id: scope.companyId },
-      ],
-    }),
-    setWhiteboardVisibility: builder.mutation<
-      void,
-      BoardScope & { input: Schema["BoardVisibilityInput"] }
-    >({
-      queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
-          () => apiClient.put<void>(`${boardPath(scope)}/visibility`, input),
-          "General access could not be updated.",
-        ),
-      invalidatesTags: (_result, _error, scope) => [
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:access` },
-        { type: "Whiteboard", id: `${boardScopeKey(scope)}:channel` },
-        { type: "Whiteboard", id: boardScopeKey(scope) },
-        { type: "Whiteboard", id: scope.companyId },
-      ],
-    }),
     publicWhiteboard: builder.query<BoardSnapshot, string>({
       queryFn: (token) =>
         executeBoardlyQuery(
@@ -145,90 +92,6 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
           "This Whiteboard link is unavailable.",
         ),
       keepUnusedDataFor: 0,
-    }),
-    listWhiteboards: builder.query<
-      Schema["BoardList"],
-      {
-        companyId: string;
-        search?: string;
-        archived?: boolean;
-        favorites?: boolean;
-        /** Boards no active member manages; Company Whiteboard managers only. */
-        unowned?: boolean;
-        offset?: number;
-      }
-    >({
-      queryFn: ({ companyId, ...params }) =>
-        executeBoardlyQuery(
-          () =>
-            apiClient.get<Schema["BoardList"]>(boardsPath(companyId), {
-              params: {
-                ...params,
-                search: params.search || undefined,
-                limit: 100,
-              },
-            }),
-          "Whiteboards could not be loaded.",
-        ),
-      providesTags: (_result, _error, args) => [
-        { type: "Whiteboard", id: args.companyId },
-      ],
-    }),
-    createWhiteboard: builder.mutation<
-      Board,
-      { companyId: string; input: Schema["CreateBoardInput"] }
-    >({
-      queryFn: ({ companyId, input }) =>
-        executeBoardlyQuery(
-          () => apiClient.post<Board>(boardsPath(companyId), input),
-          "The Whiteboard could not be created.",
-        ),
-      invalidatesTags: (_result, _error, args) => [
-        { type: "Whiteboard", id: args.companyId },
-      ],
-    }),
-    updateWhiteboard: builder.mutation<
-      Board,
-      BoardScope & { input: Schema["UpdateBoardInput"] }
-    >({
-      queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
-          () => apiClient.patch<Board>(boardPath(scope), input),
-          "The Whiteboard could not be updated.",
-        ),
-      invalidatesTags: (_result, _error, args) => [
-        { type: "Whiteboard", id: args.companyId },
-        { type: "Whiteboard", id: boardScopeKey(args) },
-      ],
-    }),
-    claimWhiteboard: builder.mutation<
-      Board,
-      BoardScope & { input: Schema["BoardClaimInput"] }
-    >({
-      queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
-          () => apiClient.post<Board>(`${boardPath(scope)}/claim`, input),
-          "The Whiteboard could not be claimed.",
-        ),
-      invalidatesTags: (_result, _error, args) => [
-        { type: "Whiteboard", id: args.companyId },
-        { type: "Whiteboard", id: boardScopeKey(args) },
-        { type: "Whiteboard", id: `${boardScopeKey(args)}:access` },
-        { type: "Whiteboard", id: `${boardScopeKey(args)}:channel` },
-      ],
-    }),
-    favoriteWhiteboard: builder.mutation<
-      unknown,
-      BoardScope & { favorite: boolean }
-    >({
-      queryFn: ({ favorite, ...scope }) =>
-        executeBoardlyQuery(
-          () => apiClient.put(`${boardPath(scope)}/favorite`, { favorite }),
-          "The favorite could not be saved.",
-        ),
-      invalidatesTags: (_result, _error, args) => [
-        { type: "Whiteboard", id: args.companyId },
-      ],
     }),
     getWhiteboard: builder.query<BoardSnapshot, BoardScope>({
       queryFn: (
@@ -369,6 +232,38 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
         }
       },
     }),
+    // Retitles the Whiteboard Artifact. The open Board shows the new title at
+    // once; chats and Artifact lists refresh from whiteboard.renamed.
+    renameWhiteboard: builder.mutation<
+      Schema["Board"],
+      BoardScope & { title: Schema["BoardTitleInput"]["title"] }
+    >({
+      invalidatesTags: [{ type: "Artifact" }],
+      queryFn: ({ title, ...scope }) =>
+        executeBoardlyQuery(
+          () =>
+            apiClient.put<Schema["Board"]>(`${boardPath(scope)}/title`, {
+              title,
+            }),
+          "The whiteboard could not be renamed.",
+        ),
+      async onQueryStarted({ title, ...scope }, { dispatch, queryFulfilled }) {
+        const shown = dispatch(
+          whiteboardApi.util.updateQueryData(
+            "getWhiteboard",
+            scope,
+            (draft) => {
+              draft.board.title = title.trim();
+            },
+          ),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          shown.undo();
+        }
+      },
+    }),
     whiteboardCommands: builder.mutation<
       Schema["BoardMutation"],
       BoardScope & { input: BoardBatch }
@@ -395,11 +290,8 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
 });
 export const {
   useAttachWhiteboardFileMutation,
-  useListWhiteboardsQuery,
-  useCreateWhiteboardMutation,
-  useUpdateWhiteboardMutation,
-  useClaimWhiteboardMutation,
-  useFavoriteWhiteboardMutation,
+  usePublicWhiteboardQuery,
   useGetWhiteboardQuery,
+  useRenameWhiteboardMutation,
   useWhiteboardCommandsMutation,
 } = whiteboardApi;

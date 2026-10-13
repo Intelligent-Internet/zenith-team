@@ -382,7 +382,7 @@ WITH statement_clock AS MATERIALIZED (
     FROM eligible_company
     CROSS JOIN identities
     CROSS JOIN statement_clock
-    RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id, conversations.board_id
+    RETURNING conversations.id, conversations.company_id, conversations.kind, conversations.task_id, conversations.schedule_id, conversations.agent_id, conversations.created_by_user_id, conversations.title, conversations.request_key, conversations.pinned_at, conversations.archived_at, conversations.created_at, conversations.updated_at, conversations.version, conversations.head_seq, conversations.is_general, conversations.channel_id, conversations.channel_execution_generation, conversations.channel_context_revision, conversations.project_id, conversations.document_thread_id
 ), inserted_task AS (
     INSERT INTO tasks (
         id, company_id, project_id, milestone_type,

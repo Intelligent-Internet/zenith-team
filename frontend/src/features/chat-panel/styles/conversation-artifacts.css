@@ -116,6 +116,30 @@
   cursor: default;
   opacity: 0.45;
 }
+.artifacts-new-button {
+  display: inline-flex;
+  margin-left: auto;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--workspace-divider, #e3e2dc);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--workspace-native-text, #30352f);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.artifacts-new-button + .artifacts-panel__refresh {
+  margin-left: 0;
+}
+.artifacts-new-button:hover,
+.artifacts-new-button:focus-visible,
+.artifacts-new-button[data-state="open"] {
+  background: var(--workspace-hover-bg, #efeee8);
+}
 .artifacts-toggle[aria-expanded="true"] {
   background: var(--workspace-selected-bg, #efeee8);
   color: var(--workspace-native-text, #30352f);
@@ -356,7 +380,8 @@
 }
 .artifact-row__app,
 .artifact-row__media,
-.artifact-row__files {
+.artifact-row__files,
+.artifact-row__whiteboard {
   display: flex;
   min-width: 0;
   min-height: 94px;
@@ -406,6 +431,36 @@
   color: var(--workspace-native-info);
   font-size: 12px;
   font-weight: 600;
+}
+.artifact-row__whiteboard {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* Dot grid, like the Board's canvas. */
+  background:
+    radial-gradient(
+        circle,
+        var(--workspace-divider, #dedbd2) 1px,
+        transparent 1.5px
+      )
+      0 0 / 14px 14px,
+    var(--workspace-content-bg, #fff);
+  color: var(--workspace-native-text-muted, #697168);
+  font-size: 12px;
+  font-weight: 600;
+  /* The Board's image is framed 16:9, so the card keeps that shape while it
+     loads. */
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+}
+.artifact-row__whiteboard img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.artifact-row__whiteboard[data-preview] {
+  background: #fff;
 }
 .artifact-row__media {
   min-height: 0;

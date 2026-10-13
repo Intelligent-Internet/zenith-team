@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
@@ -461,57 +460,5 @@ func TestRevokedColleaguesQueuedTaskMessageDoesNotBlockTheAssignee(t *testing.T)
 	if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM conversation_items WHERE id = $1)`,
 		orphaned.QueueItem.MessageID).Scan(&written); err != nil || written {
 		t.Fatalf("stale colleague's Message written = %v, %v; want not written", written, err)
-	}
-}
-
-// Board grants go with the membership like Project grants (ADR 0017): a
-// rejoined member reaches only what is shared with them again.
-func TestMembershipRemovalDeletesBoardGrants(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := db.MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
-	fixture := dbtest.SeedFixture(t, ctx, pool)
-	store, _ := db.NewStore(pool)
-	bus, _ := events.NewBus(events.BusOptions{})
-	companies, err := NewCompanyService(ServiceOptions{Store: store, Bus: bus})
-	if err != nil {
-		t.Fatal(err)
-	}
-	boards := canvas.NewBoardService(store, bus)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
-		fixture.CompanyA, fixture.UserB)
-	owner := auth.UserPrincipal{CompanyID: fixture.CompanyA, UserID: fixture.UserA, Role: auth.CompanyRoleOwner}
-	member := auth.UserPrincipal{CompanyID: fixture.CompanyA, UserID: fixture.UserB, Role: auth.CompanyRoleMember}
-	board, err := boards.Create(ctx, owner, canvas.CreateBoardInput{RequestKey: uuid.New(), Title: "Plans"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = boards.SetAccess(ctx, owner, board.ID, canvas.BoardAccessInput{
-		ExpectedRevision: board.Revision,
-		Actor:            protocol.ActorRef{ID: member.UserID, Kind: protocol.ActorKindUser},
-		Access:           "manage",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	var version int64
-	if err = pool.QueryRow(ctx, `SELECT version FROM company_members WHERE company_id=$1 AND user_id=$2`,
-		fixture.CompanyA, member.UserID).Scan(&version); err != nil {
-		t.Fatal(err)
-	}
-	if err = companies.RemoveMember(ctx, owner, MembershipMutation{UserID: member.UserID, ExpectedRevision: version}); err != nil {
-		t.Fatal(err)
-	}
-	var grants int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM board_member_access WHERE company_id=$1 AND user_id=$2`,
-		fixture.CompanyA, member.UserID).Scan(&grants); err != nil || grants != 0 {
-		t.Fatalf("Board grants left after removal = %d, %v", grants, err)
-	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_members SET status='active', reactivated_at=clock_timestamp(), version=version+1
-		WHERE company_id=$1 AND user_id=$2`, fixture.CompanyA, member.UserID)
-	if _, err = boards.Snapshot(ctx, member, canvas.BoardScope{BoardID: board.ID}, 0); !errors.Is(err, canvas.ErrBoardNotFound) {
-		t.Fatalf("rejoined member reads the private Board: %v", err)
 	}
 }

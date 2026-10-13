@@ -71,7 +71,7 @@ func transportHint(action string) bool {
 		"connector.policy_changed",
 		"conversation.channel_agents_changed", "conversation.discussion_resync",
 		"wiki.run_reads_changed", "schedule.changed", "calendar.changed",
-		"canvas.changed", "canvas.document_changed", "whiteboard.changed":
+		"canvas.changed", "canvas.document_changed", "whiteboard.changed", "whiteboard.renamed":
 		return true
 	default:
 		return false

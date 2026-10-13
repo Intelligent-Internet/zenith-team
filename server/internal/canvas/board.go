@@ -1,16 +1,12 @@
 package canvas
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -24,11 +20,6 @@ import (
 )
 
 type BoardService interface {
-	List(context.Context, auth.UserPrincipal, BoardListInput) (BoardList, error)
-	Create(context.Context, auth.UserPrincipal, CreateBoardInput) (Board, error)
-	Update(context.Context, auth.UserPrincipal, uuid.UUID, UpdateBoardInput) (Board, error)
-	Claim(context.Context, auth.UserPrincipal, uuid.UUID, int64) (Board, error)
-	Favorite(context.Context, auth.UserPrincipal, uuid.UUID, bool) error
 	Snapshot(context.Context, auth.UserPrincipal, BoardScope, int64) (BoardSnapshot, error)
 	Hydrate(context.Context, auth.UserPrincipal, BoardScope, BoardHydrateInput) (BoardHydration, error)
 	Mutate(context.Context, auth.UserPrincipal, BoardScope, BoardBatch) (BoardMutation, error)
@@ -48,13 +39,10 @@ type BoardService interface {
 		BoardComposeInput,
 		BoardFocus,
 	) (BoardComposeResult, error)
+	Rename(context.Context, auth.UserPrincipal, BoardScope, string) (Board, error)
 	Viewer(context.Context, auth.UserPrincipal, BoardScope) (BoardViewer, error)
-	Access(context.Context, auth.UserPrincipal, uuid.UUID) (BoardAccess, error)
-	SetAccess(context.Context, auth.UserPrincipal, uuid.UUID, BoardAccessInput) error
-	SetVisibility(context.Context, auth.UserPrincipal, uuid.UUID, BoardVisibilityInput) error
 	PublicSnapshot(context.Context, uuid.UUID) (BoardSnapshot, error)
 	PublicHydrate(context.Context, uuid.UUID, BoardHydrateInput) (BoardHydration, error)
-	ListForRun(context.Context, auth.UserPrincipal, uuid.UUID, int32) (BoardList, error)
 	Sweep(context.Context, time.Time) (BoardSweep, error)
 }
 
@@ -118,7 +106,7 @@ func (c *boardViewerCache) put(key boardViewerKey, viewer BoardViewer, now time.
 
 // Company/member lifecycle locks protect every write. Cached principal roles
 // never override the membership locked in this transaction.
-func boardAuthorize(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, permission auth.Permission) error {
+func boardAuthorize(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) error {
 	if _, err := q.LockCompanyForMembershipRead(ctx, p.CompanyID); err != nil {
 		return boardError(err)
 	}
@@ -132,32 +120,17 @@ func boardAuthorize(ctx context.Context, q *generated.Queries, p auth.UserPrinci
 	if member.Status != "active" {
 		return ErrBoardNotFound
 	}
-	if !auth.CompanyRole(member.Role).Can(permission) {
-		return ErrBoardForbidden
-	}
 	return nil
 }
 
-// boardAuthorizeRead checks active membership and the Company permission in
-// the read's snapshot. Reads take no lifecycle locks, so they never queue
-// behind or block a writer.
-func boardAuthorizeRead(
-	ctx context.Context,
-	q *generated.Queries,
-	p auth.UserPrincipal,
-	permission auth.Permission,
-) error {
-	member, err := q.GetActiveCompanyMembership(
+// boardAuthorizeRead checks active membership in the read's snapshot. Reads
+// take no lifecycle locks, so they never queue behind or block a writer.
+func boardAuthorizeRead(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) error {
+	_, err := q.GetActiveCompanyMembership(
 		ctx,
 		generated.GetActiveCompanyMembershipParams{CompanyID: p.CompanyID, UserID: p.UserID},
 	)
-	if err != nil {
-		return boardError(err)
-	}
-	if !auth.CompanyRole(member.Role).Can(permission) {
-		return ErrBoardForbidden
-	}
-	return nil
+	return boardError(err)
 }
 
 // boardRead is the transaction every Board read runs in: one consistent
@@ -170,7 +143,7 @@ func boardLock(
 	p auth.UserPrincipal,
 	id uuid.UUID,
 	write bool,
-) (generated.Board, error) {
+) (boardRecord, error) {
 	b, _, err := boardScopeLock(ctx, q, p, BoardScope{BoardID: id}, write)
 	return b, err
 }
@@ -191,26 +164,17 @@ func boardError(err error) error {
 	return err
 }
 
-func boardDTO(row generated.Board, p auth.UserPrincipal) Board {
-	b := Board{
-		Visibility: row.Visibility,
-		CanShare:   row.CreatedBy == p.UserID && p.Can(auth.PermissionWhiteboardsEdit),
-		ID:         row.ID,
-		CompanyID:  row.CompanyID,
-		Title:      row.Title,
-		Purpose:    row.Purpose,
-		Sequence:   row.HeadSeq,
-		Revision:   row.Revision,
-		CreatedBy:  row.CreatedBy,
-		CreatedAt:  row.CreatedAt.Time,
-		UpdatedAt:  row.UpdatedAt.Time,
-		CanEdit:    p.Can(auth.PermissionWhiteboardsEdit) && !row.ArchivedAt.Valid,
-		CanManage:  p.Can(auth.PermissionWhiteboardsManage),
+func boardDTO(row boardRecord, viewer BoardViewer) Board {
+	return Board{
+		ID:        row.ID,
+		CompanyID: row.CompanyID,
+		Title:     row.Title,
+		Sequence:  row.HeadSeq,
+		CreatedAt: row.CreatedAt.Time,
+		UpdatedAt: row.UpdatedAt.Time,
+		CanEdit:   viewer.CanEdit,
+		CanShare:  viewer.CanShare,
 	}
-	if row.ArchivedAt.Valid {
-		b.ArchivedAt = &row.ArchivedAt.Time
-	}
-	return b
 }
 
 func boardHash(input any) ([]byte, error) {
@@ -220,261 +184,6 @@ func boardHash(input any) ([]byte, error) {
 	}
 	sum := sha256.Sum256(raw)
 	return sum[:], nil
-}
-
-func (s *DefaultBoardService) List(ctx context.Context, p auth.UserPrincipal, input BoardListInput) (BoardList, error) {
-	result := BoardList{Boards: []Board{}}
-	if input.Limit == 0 {
-		input.Limit = 50
-	}
-	if input.Limit < 1 || input.Limit > 100 || input.Offset < 0 || len(input.Search) > 200 {
-		return result, ErrBoardInvalid
-	}
-	if input.Unowned {
-		return s.listUnowned(ctx, p, input)
-	}
-	err := s.store.WithinTx(ctx, boardRead, func(q *generated.Queries) error {
-		if err := boardAuthorizeRead(ctx, q, p, auth.PermissionWhiteboardsRead); err != nil {
-			return err
-		}
-		search := strings.TrimSpace(input.Search)
-		rows, err := q.ListBoards(
-			ctx,
-			generated.ListBoardsParams{
-				CompanyID:   p.CompanyID,
-				ActorUserID: p.UserID,
-				Search:      boardLikePattern(search),
-				NoteQuery:   boardNoteQuery(search),
-				Archived:    input.Archived,
-				Favorites:   input.Favorites,
-				RowLimit:    input.Limit + 1,
-				RowOffset:   input.Offset,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		result.HasMore = len(rows) > int(input.Limit)
-		if result.HasMore {
-			rows = rows[:input.Limit]
-		}
-		for _, row := range rows {
-			b := boardDTO(
-				generated.Board{
-					ID:         row.ID,
-					CompanyID:  row.CompanyID,
-					Title:      row.Title,
-					Purpose:    row.Purpose,
-					HeadSeq:    row.HeadSeq,
-					Revision:   row.Revision,
-					CreatedBy:  row.CreatedBy,
-					CreatedAt:  row.CreatedAt,
-					UpdatedAt:  row.UpdatedAt,
-					ArchivedAt: row.ArchivedAt,
-					Visibility: row.Visibility,
-				},
-				p,
-			)
-			b.Favorite = row.Favorite
-			b.CanEdit = b.CanEdit && row.Access != "read"
-			b.CanShare = p.Can(auth.PermissionWhiteboardsEdit) && row.Access == "manage"
-			b.CanManage = b.CanManage && b.CanShare
-			result.Boards = append(result.Boards, b)
-		}
-		return nil
-	})
-	return result, boardError(err)
-}
-
-func (s *DefaultBoardService) Create(ctx context.Context, p auth.UserPrincipal, input CreateBoardInput) (Board, error) {
-	input.Title = strings.TrimSpace(input.Title)
-	input.Purpose = strings.TrimSpace(input.Purpose)
-	if input.RequestKey == uuid.Nil || input.Title == "" || utf8.RuneCountInString(input.Title) > boardMaxTitle ||
-		utf8.RuneCountInString(input.Purpose) > boardMaxPurpose {
-		return Board{}, ErrBoardInvalid
-	}
-	hash, err := boardHash(input)
-	if err != nil {
-		return Board{}, err
-	}
-	var result Board
-	var pending events.Event
-	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) (txErr error) {
-		defer func() {
-			if txErr == nil {
-				pending = boardChangeEvent(p, result.ID, result.Sequence)
-				txErr = stampBoardAudience(ctx, q, &pending)
-			}
-		}()
-		// Serializes only Board creation; scene edits lock their own Board.
-		if _, err := q.LockCompanyForMembershipMutation(ctx, p.CompanyID); err != nil {
-			return boardError(err)
-		}
-		if err := boardAuthorize(ctx, q, p, auth.PermissionWhiteboardsCreate); err != nil {
-			return err
-		}
-		receipt, err := q.GetBoardCreateReceipt(
-			ctx,
-			generated.GetBoardCreateReceiptParams{
-				CompanyID:   p.CompanyID,
-				ActorUserID: p.UserID,
-				RequestKey:  input.RequestKey,
-			},
-		)
-		if err == nil {
-			if !bytes.Equal(hash, receipt.RequestHash) {
-				return ErrBoardRequestKeyReused
-			}
-			row, err := q.ReadBoard(
-				ctx,
-				generated.ReadBoardParams{CompanyID: p.CompanyID, ID: receipt.BoardID},
-			)
-			result = boardDTO(row, p)
-			return err
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return err
-		}
-		row, err := q.CreateBoard(
-			ctx,
-			generated.CreateBoardParams{
-				CompanyID: p.CompanyID,
-				Title:     input.Title,
-				Purpose:   input.Purpose,
-				CreatedBy: p.UserID,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		result = boardDTO(row, p)
-		return q.InsertBoardCreateReceipt(
-			ctx,
-			generated.InsertBoardCreateReceiptParams{
-				CompanyID:   p.CompanyID,
-				ActorUserID: p.UserID,
-				RequestKey:  input.RequestKey,
-				BoardID:     row.ID,
-				RequestHash: hash,
-			},
-		)
-	})
-	if err == nil {
-		s.publishEvent(ctx, pending)
-	}
-	return result, boardError(err)
-}
-
-func (s *DefaultBoardService) Update(
-	ctx context.Context,
-	p auth.UserPrincipal,
-	id uuid.UUID,
-	input UpdateBoardInput,
-) (Board, error) {
-	if input.ExpectedRevision < 1 {
-		return Board{}, ErrBoardInvalid
-	}
-	var result Board
-	var pending events.Event
-	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) (txErr error) {
-		defer func() {
-			if txErr == nil {
-				pending = boardChangeEvent(p, id, result.Sequence)
-				txErr = stampBoardAudience(ctx, q, &pending)
-			}
-		}()
-		permission := auth.PermissionWhiteboardsEdit
-		if input.Archived != nil {
-			permission = auth.PermissionWhiteboardsManage
-		}
-		if err := boardAuthorize(ctx, q, p, permission); err != nil {
-			return err
-		}
-		row, err := q.LockBoard(ctx, generated.LockBoardParams{CompanyID: p.CompanyID, ID: id})
-		if err != nil {
-			return err
-		}
-		access, err := q.GetBoardMemberAccess(
-			ctx,
-			generated.GetBoardMemberAccessParams{CompanyID: p.CompanyID, BoardID: id, UserID: p.UserID},
-		)
-		if err != nil {
-			return err
-		}
-		if access != "manage" {
-			return ErrBoardForbidden
-		}
-		if row.Revision != input.ExpectedRevision {
-			return ErrBoardConflict
-		}
-		// An archived Board's details stay as they were unless it is recovered
-		// in the same request.
-		if row.ArchivedAt.Valid && (input.Archived == nil || *input.Archived) &&
-			(input.Title != nil || input.Purpose != nil) {
-			return ErrBoardArchived
-		}
-		if input.Title != nil {
-			row.Title = strings.TrimSpace(*input.Title)
-		}
-		if input.Purpose != nil {
-			row.Purpose = strings.TrimSpace(*input.Purpose)
-		}
-		if row.Title == "" || utf8.RuneCountInString(row.Title) > boardMaxTitle ||
-			utf8.RuneCountInString(row.Purpose) > boardMaxPurpose {
-			return ErrBoardInvalid
-		}
-		if input.Archived != nil {
-			row.ArchivedAt = pgtype.Timestamptz{}
-			if *input.Archived {
-				row.ArchivedAt = pgtype.Timestamptz{Time: time.Now().UTC(), Valid: true}
-			}
-		}
-		row, err = q.UpdateBoard(
-			ctx,
-			generated.UpdateBoardParams{
-				CompanyID:  p.CompanyID,
-				ID:         id,
-				Title:      row.Title,
-				Purpose:    row.Purpose,
-				ArchivedAt: row.ArchivedAt,
-				Revision:   input.ExpectedRevision,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		seq, err := boardAdvance(ctx, q, p, id, boardChanges{})
-		if err != nil {
-			return err
-		}
-		row.HeadSeq = seq
-		result = boardDTO(row, p)
-		result.CanShare = true
-		return nil
-	})
-	if err == nil {
-		s.publishEvent(ctx, pending)
-	}
-	return result, boardError(err)
-}
-
-func (s *DefaultBoardService) Favorite(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, favorite bool) error {
-	return boardError(s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		// A favorite is a per-member write, so it holds the membership lock.
-		if err := boardAuthorize(ctx, q, p, auth.PermissionWhiteboardsRead); err != nil {
-			return err
-		}
-		if _, err := boardLock(ctx, q, p, id, false); err != nil {
-			return err
-		}
-		if favorite {
-			return q.SetBoardFavorite(
-				ctx,
-				generated.SetBoardFavoriteParams{CompanyID: p.CompanyID, BoardID: id, UserID: p.UserID},
-			)
-		}
-		return q.DeleteBoardFavorite(ctx, generated.DeleteBoardFavoriteParams{BoardID: id, UserID: p.UserID})
-	}))
 }
 
 func (s *DefaultBoardService) Viewer(ctx context.Context, p auth.UserPrincipal, scope BoardScope) (BoardViewer, error) {
@@ -512,11 +221,7 @@ func boardViewerDetails(
 		var err error
 		audience, err = q.ListBoardAudience(
 			ctx,
-			generated.ListBoardAudienceParams{
-				CompanyID:  p.CompanyID,
-				BoardID:    scope.BoardID,
-				ActorRoles: auth.RolesWith(auth.PermissionWhiteboardsRead),
-			},
+			generated.ListBoardAudienceParams{CompanyID: p.CompanyID, OutputID: scope.BoardID},
 		)
 		if err != nil {
 			return viewer, err
@@ -612,50 +317,4 @@ func boardAdvance(
 			Cutoff:    pgtype.Timestamptz{Time: time.Now().Add(-boardChangeFeedWindow), Valid: true},
 		},
 	)
-}
-
-// listUnowned shows Company Whiteboard managers the Boards they may claim.
-func (s *DefaultBoardService) listUnowned(ctx context.Context, p auth.UserPrincipal, input BoardListInput) (BoardList, error) {
-	result := BoardList{Boards: []Board{}}
-	err := s.store.WithinTx(ctx, boardRead, func(q *generated.Queries) error {
-		if err := boardAuthorizeRead(ctx, q, p, auth.PermissionWhiteboardsManage); err != nil {
-			return err
-		}
-		rows, err := q.ListUnownedBoards(
-			ctx,
-			generated.ListUnownedBoardsParams{CompanyID: p.CompanyID, RowLimit: input.Limit + 1, RowOffset: input.Offset},
-		)
-		if err != nil {
-			return err
-		}
-		result.HasMore = len(rows) > int(input.Limit)
-		if result.HasMore {
-			rows = rows[:input.Limit]
-		}
-		for _, row := range rows {
-			b := boardDTO(row, p)
-			b.CanEdit, b.CanShare = false, false
-			result.Boards = append(result.Boards, b)
-		}
-		return nil
-	})
-	return result, boardError(err)
-}
-
-// boardLikePattern makes a search match its characters literally in ILIKE.
-func boardLikePattern(search string) string {
-	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(search)
-}
-
-// boardNoteQuery turns a search into a full-text query over note words: every
-// word must appear, the last as a prefix while it is still being typed.
-// Characters other than letters and digits only separate words.
-func boardNoteQuery(search string) string {
-	words := strings.FieldsFunc(strings.ToLower(search), func(r rune) bool {
-		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && !unicode.Is(unicode.Mn, r)
-	})
-	for i, word := range words {
-		words[i] = word + ":*"
-	}
-	return strings.Join(words, " & ")
 }

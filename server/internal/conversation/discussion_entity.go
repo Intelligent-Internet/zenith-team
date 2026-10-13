@@ -124,25 +124,23 @@ type DiscussionPeer struct {
 }
 
 type DiscussionSummary struct {
-	IsGeneral             bool            `json:"isGeneral"`
-	ID                    uuid.UUID       `json:"id"`
-	CompanyID             uuid.UUID       `json:"companyId"`
-	Type                  DiscussionType  `json:"type"`
-	Title                 string          `json:"title"`
-	Topic                 *string         `json:"topic"`
-	ArchivedAt            *time.Time      `json:"archivedAt"`
-	CreatedAt             time.Time       `json:"createdAt"`
-	UpdatedAt             time.Time       `json:"updatedAt"`
-	ConversationRevision  int64           `json:"conversationRevision"`
-	ConfigurationRevision *int64          `json:"configurationRevision"`
-	HeadSeq               int64           `json:"headSeq"`
-	MemberCount           int64           `json:"memberCount"`
-	AgentCount            int64           `json:"agentCount"`
-	Peer                  *DiscussionPeer `json:"peer,omitempty"`
-	// BoardID names the Board whose chat this is; nil for any other chat.
-	BoardID      *uuid.UUID             `json:"boardId"`
-	Capabilities DiscussionCapabilities `json:"capabilities"`
-	UserState    *DiscussionUserState   `json:"userState"`
+	IsGeneral             bool                   `json:"isGeneral"`
+	ID                    uuid.UUID              `json:"id"`
+	CompanyID             uuid.UUID              `json:"companyId"`
+	Type                  DiscussionType         `json:"type"`
+	Title                 string                 `json:"title"`
+	Topic                 *string                `json:"topic"`
+	ArchivedAt            *time.Time             `json:"archivedAt"`
+	CreatedAt             time.Time              `json:"createdAt"`
+	UpdatedAt             time.Time              `json:"updatedAt"`
+	ConversationRevision  int64                  `json:"conversationRevision"`
+	ConfigurationRevision *int64                 `json:"configurationRevision"`
+	HeadSeq               int64                  `json:"headSeq"`
+	MemberCount           int64                  `json:"memberCount"`
+	AgentCount            int64                  `json:"agentCount"`
+	Peer                  *DiscussionPeer        `json:"peer,omitempty"`
+	Capabilities          DiscussionCapabilities `json:"capabilities"`
+	UserState             *DiscussionUserState   `json:"userState"`
 }
 
 type DiscussionState struct {
@@ -263,6 +261,14 @@ type DiscussionSendInput struct {
 	Body          DiscussionBody
 	AttachmentIDs []uuid.UUID
 	ThreadRootID  *uuid.UUID
+	// Whiteboard makes a new Whiteboard Artifact the sender owns and shares
+	// it into the chat with the message.
+	Whiteboard *DiscussionWhiteboard
+}
+
+// DiscussionWhiteboard names the Whiteboard a message makes.
+type DiscussionWhiteboard struct {
+	Title string `json:"title"`
 }
 type DiscussionPageOptions struct {
 	Limit  int

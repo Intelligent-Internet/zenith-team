@@ -28,6 +28,12 @@
   overflow: hidden;
   background: var(--workspace-panel-bg);
 }
+.artifact-share-page--whiteboard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--workspace-content-bg);
+}
 .artifact-document-share-tools {
   display: flex;
   align-items: center;

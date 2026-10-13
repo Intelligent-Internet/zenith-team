@@ -10,8 +10,7 @@ SELECT c.*, ch.topic, ch.configuration_revision, ch.create_fingerprint,
     s.version AS state_revision, s.pinned_at AS state_pinned_at,
     s.hidden_at, s.hidden_through_seq, COALESCE(s.notification_level,'all')::text AS notification_level,
     (m.user_id IS NOT NULL)::boolean AS content_access,
-    (c.kind='channel' AND c.board_id IS NULL AND cm.role=ANY(sqlc.arg(manage_roles)::text[]))::boolean AS management_access,
-    board.archived_at AS board_archived_at,
+    (c.kind='channel' AND cm.role=ANY(sqlc.arg(manage_roles)::text[]))::boolean AS management_access,
     (SELECT count(*) FROM conversation_members members WHERE members.conversation_id=c.id AND members.status='active')::bigint AS member_count,
     (SELECT count(*) FROM conversation_agents agents WHERE agents.conversation_id=c.id AND agents.status='active')::bigint AS agent_count,
     CASE WHEN pair.participant_ids IS NOT NULL THEN COALESCE((
@@ -45,18 +44,9 @@ LEFT JOIN conversation_channels ch ON ch.conversation_id=c.id
 LEFT JOIN conversation_human_directs pair ON pair.conversation_id=c.id
 LEFT JOIN users peer ON peer.id=CASE WHEN pair.user_low_id=cm.user_id THEN pair.user_high_id ELSE pair.user_low_id END
 LEFT JOIN company_members peer_member ON peer_member.company_id=c.company_id AND peer_member.user_id=peer.id
--- A Board's channel is read by its joined people while they can still read
--- the Board, so access lost on the Board is lost here before membership
--- catches up.
 LEFT JOIN conversation_members m ON m.conversation_id=c.id AND m.user_id=cm.user_id AND m.status='active'
-    AND (c.board_id IS NULL OR EXISTS(SELECT 1 FROM board_access ba
-        WHERE ba.company_id=c.company_id AND ba.board_id=c.board_id AND ba.user_id=cm.user_id))
 LEFT JOIN conversation_user_states s ON s.conversation_id=c.id AND s.user_id=cm.user_id AND s.grant_generation=m.generation
-LEFT JOIN boards board ON board.company_id=c.company_id AND board.id=c.board_id
 WHERE c.company_id=sqlc.arg(company_id)::uuid AND (c.kind IN ('human_direct','channel') OR (c.kind='huddle' AND cardinality(sqlc.arg(conversation_ids)::uuid[])>0))
-  -- Like a Huddle chat, a Board's channel lists only when asked for by ID: it
-  -- lives on its Board, not in Chat.
-  AND (c.board_id IS NULL OR cardinality(sqlc.arg(conversation_ids)::uuid[])>0)
   AND (cardinality(sqlc.arg(conversation_ids)::uuid[])=0 OR c.id=ANY(sqlc.arg(conversation_ids)::uuid[]))
   AND (sqlc.arg(type_filter)::text='' OR c.kind=sqlc.arg(type_filter)::text)
   AND (sqlc.arg(include_archived)::boolean OR c.archived_at IS NULL)
@@ -64,8 +54,7 @@ WHERE c.company_id=sqlc.arg(company_id)::uuid AND (c.kind IN ('human_direct','ch
   AND (sqlc.arg(name_query)::text='' OR strpos(lower(c.title),lower(sqlc.arg(name_query)::text))>0)
   AND ((NOT sqlc.arg(manage_view)::boolean AND
         (m.user_id IS NOT NULL))
-       OR (sqlc.arg(manage_view)::boolean AND c.kind='channel' AND c.board_id IS NULL
-           AND cm.role=ANY(sqlc.arg(manage_roles)::text[])))
+       OR (sqlc.arg(manage_view)::boolean AND c.kind='channel' AND cm.role=ANY(sqlc.arg(manage_roles)::text[])))
   AND (sqlc.arg(include_hidden)::boolean OR s.hidden_at IS NULL)
   AND (sqlc.narg(seek_time)::timestamptz IS NULL OR (c.updated_at,c.id)<(sqlc.narg(seek_time)::timestamptz,sqlc.narg(seek_id)::uuid))
 ORDER BY c.updated_at DESC,c.id DESC LIMIT sqlc.arg(page_limit)::int;
@@ -231,11 +220,10 @@ FROM page i LEFT JOIN users u ON u.id=i.author_id AND i.author_kind='user'
 ORDER BY i.seq ASC LIMIT sqlc.arg(page_limit)::int;
 
 -- name: ResetDiscussionUserState :exec
-INSERT INTO conversation_user_states(company_id,conversation_id,user_id,grant_generation,main_read_seq,notification_level)
-SELECT sqlc.arg(company_id)::uuid,sqlc.arg(conversation_id)::uuid,sqlc.arg(user_id)::uuid,sqlc.arg(grant_generation)::bigint,joined_seq,
-    COALESCE(sqlc.narg(notification_level)::text,'all') FROM conversation_members WHERE conversation_id=sqlc.arg(conversation_id)::uuid AND user_id=sqlc.arg(user_id)::uuid
+INSERT INTO conversation_user_states(company_id,conversation_id,user_id,grant_generation,main_read_seq)
+SELECT sqlc.arg(company_id)::uuid,sqlc.arg(conversation_id)::uuid,sqlc.arg(user_id)::uuid,sqlc.arg(grant_generation)::bigint,joined_seq FROM conversation_members WHERE conversation_id=sqlc.arg(conversation_id)::uuid AND user_id=sqlc.arg(user_id)::uuid
 ON CONFLICT(conversation_id,user_id) DO UPDATE SET grant_generation=EXCLUDED.grant_generation,
-    main_read_seq=EXCLUDED.main_read_seq,unread_count=0,manual_unread_seq=NULL,pinned_at=NULL,hidden_at=NULL,hidden_through_seq=0,notification_level=EXCLUDED.notification_level,version=conversation_user_states.version+1,updated_at=now();
+    main_read_seq=EXCLUDED.main_read_seq,unread_count=0,manual_unread_seq=NULL,pinned_at=NULL,hidden_at=NULL,hidden_through_seq=0,notification_level='all',version=conversation_user_states.version+1,updated_at=now();
 
 -- name: UpdateDiscussionUserState :one
 UPDATE conversation_user_states SET

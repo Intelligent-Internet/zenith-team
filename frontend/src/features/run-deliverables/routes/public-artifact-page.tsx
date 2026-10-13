@@ -1,11 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ArtifactFileContent } from "@/features/chat-panel/components/artifacts/artifact-file-preview";
 import type { components } from "@/shared/api/generated/api.generated";
 import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { desktopAppUrl } from "@/shared/lib/desktop-app-url";
 import { Button } from "@/shared/ui/button";
-import { ChevronDown, FileText, Monitor } from "@/shared/ui/icons";
+import {
+  ChevronDown,
+  FileText,
+  LayoutDashboard,
+  LockKeyhole,
+  Monitor,
+} from "@/shared/ui/icons";
 import { Logo } from "@/shared/ui/logo";
 import { ArtifactReader } from "../components/artifact-reader";
 import { ArtifactDownloadButton } from "../components/artifact-download-button";
@@ -15,6 +28,10 @@ import {
 } from "../api/artifact-sharing-api";
 import "@/features/chat-panel/styles/conversation-artifacts.css";
 import "../styles/public-artifact-page.css";
+
+const PublicWhiteboard = lazy(
+  () => import("@/features/whiteboards/public-board"),
+);
 
 export function PublicArtifactPage() {
   const { token = "" } = useParams();
@@ -75,6 +92,60 @@ function PublicArtifactContent({ token }: { token: string }) {
             ? "Loading artifact…"
             : "This link is unavailable or has been revoked."}
         </p>
+      </main>
+    );
+  }
+
+  // A Whiteboard has no files: the link shows the live Board, view only.
+  if (detail.type === "whiteboard") {
+    const board = (heading: boolean) => (
+      <Suspense
+        fallback={
+          <p className="public-artifact-state" role="status">
+            Opening whiteboard…
+          </p>
+        }
+      >
+        <PublicWhiteboard token={token} heading={heading} />
+      </Suspense>
+    );
+    if (isDesktop)
+      return (
+        <main className="artifact-share-page artifact-share-page--whiteboard">
+          {board(true)}
+        </main>
+      );
+    return (
+      <main className="public-artifact-page">
+        <header className="public-artifact-toolbar">
+          <Logo className="public-artifact-logo" />
+          <div className="public-artifact-file">
+            <LayoutDashboard size={16} aria-hidden />
+            <span title={detail.title}>{detail.title}</span>
+          </div>
+          <div className="public-artifact-actions">
+            <span className="public-artifact-view-only">
+              <LockKeyhole size={15} aria-hidden />
+              View only
+            </span>
+            <Button
+              variant="outline"
+              className="public-artifact-open-app"
+              asChild
+            >
+              <a href={desktopUrl} aria-label="Open in Zenith Team">
+                <Monitor size={16} aria-hidden />
+                Open in app
+              </a>
+            </Button>
+          </div>
+        </header>
+        <section
+          className="public-artifact-preview public-artifact-whiteboard"
+          aria-label="Whiteboard"
+        >
+          {board(false)}
+        </section>
       </main>
     );
   }

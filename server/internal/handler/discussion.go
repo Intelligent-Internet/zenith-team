@@ -47,11 +47,17 @@ type channelRevisionRequest struct {
 	ExpectedRevision optional[int64] `json:"expectedRevision" binding:"omitnil,required,revision"`
 }
 type sendDiscussionRequest struct {
-	RequestKey    string                      `json:"requestKey"    binding:"required,uuid"`
-	Body          conversation.DiscussionBody `json:"body"          binding:"required"`
-	AttachmentIDs []string                    `json:"attachmentIds" binding:"max=20,unique,dive,uuid"`
-	ArtifactIDs   []string                    `json:"artifactIds"   binding:"max=10,unique,dive,uuid"`
-	ThreadRootID  *string                     `json:"threadRootId"  binding:"omitnil,uuid"`
+	RequestKey    string                       `json:"requestKey"    binding:"required,uuid"`
+	Body          conversation.DiscussionBody  `json:"body"          binding:"required"`
+	AttachmentIDs []string                     `json:"attachmentIds" binding:"max=20,unique,dive,uuid"`
+	ArtifactIDs   []string                     `json:"artifactIds"   binding:"max=10,unique,dive,uuid"`
+	ThreadRootID  *string                      `json:"threadRootId"  binding:"omitnil,uuid"`
+	Whiteboard    *discussionWhiteboardRequest `json:"whiteboard"`
+}
+
+// discussionWhiteboardRequest makes a Whiteboard Artifact with the message.
+type discussionWhiteboardRequest struct {
+	Title string `json:"title" binding:"required,max=200"`
 }
 type queryDiscussionStatesRequest struct {
 	ConversationIDs []string `json:"conversationIds" binding:"required,min=1,max=50,unique,dive,uuid"`
@@ -467,6 +473,10 @@ func (h *Handler) sendDiscussionMessage(c *gin.Context) {
 	for index, raw := range body.AttachmentIDs {
 		attachmentIDs[index] = uuid.MustParse(raw)
 	}
+	var whiteboard *conversation.DiscussionWhiteboard
+	if body.Whiteboard != nil {
+		whiteboard = &conversation.DiscussionWhiteboard{Title: body.Whiteboard.Title}
+	}
 	result, err := h.DiscussionService.Send(
 		c.Request.Context(),
 		p,
@@ -477,6 +487,7 @@ func (h *Handler) sendDiscussionMessage(c *gin.Context) {
 			AttachmentIDs: attachmentIDs,
 			ArtifactIDs:   discussionUUIDs(body.ArtifactIDs),
 			ThreadRootID:  rootID,
+			Whiteboard:    whiteboard,
 		},
 	)
 	if err != nil {

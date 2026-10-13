@@ -2,8 +2,14 @@ package tools
 
 import "context"
 
+// ArtifactInspectInput names an Artifact; the other fields read a Whiteboard.
 type ArtifactInspectInput struct {
-	ArtifactID string `json:"artifactId" jsonschema:"Canonical immutable output ID from an attached artifact reference."`
+	ArtifactID       string   `json:"artifactId"                 jsonschema:"Canonical Artifact ID from an attached artifact reference or the chat."`
+	Area             string   `json:"area,omitempty"             jsonschema:"Whiteboard: view (default), what the person you work for is looking at, with a margin; all, the whole Board."`
+	ItemRefs         []string `json:"itemRefs,omitempty"         jsonschema:"Whiteboard: up to 100 refs to read in full, with who created and last changed them. Read objects before changing or deleting them."`
+	Image            bool     `json:"image,omitempty"            jsonschema:"Whiteboard: also look at the area. Needed for drawings, handwriting, images and layout; text needs none."`
+	VisualOffset     int      `json:"visualOffset,omitempty"     jsonschema:"Whiteboard, with area=all and image: the next page of whole-Board images, as the previous page said."`
+	ExpectedSequence *int64   `json:"expectedSequence,omitempty" jsonschema:"Whiteboard, with visualOffset: the sequence the first image page gave."`
 }
 type ArtifactFetchInput struct {
 	ArtifactID string `json:"artifactId"       jsonschema:"Canonical immutable output ID from an attached artifact reference."`

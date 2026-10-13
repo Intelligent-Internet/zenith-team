@@ -157,12 +157,6 @@ func TestBoardRequestKeyReuseIsRefused(t *testing.T) {
 	s, _, p, _ := boardFixture(t)
 	ctx := t.Context()
 	key := uuid.New()
-	if _, err := s.Create(ctx, p, CreateBoardInput{RequestKey: key, Title: "First"}); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := s.Create(ctx, p, CreateBoardInput{RequestKey: key, Title: "Second"}); !errors.Is(err, ErrBoardRequestKeyReused) {
-		t.Fatalf("create with a reused key = %v", err)
-	}
 	board := createTestBoard(t, s, p)
 	scope := BoardScope{BoardID: board.ID}
 	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: key, Commands: []BoardCommand{stickyCommand("a", "one")}})
@@ -237,48 +231,6 @@ func TestBoardNoteSizeLimitsReportTheLimit(t *testing.T) {
 		RequestKey: uuid.New(), ItemID: note, LifecycleRevision: 1, Update: make([]byte, boardMaxTextUpdate+1),
 	}); !errors.Is(err, ErrBoardLimit) {
 		t.Fatalf("oversized text update = %v, want ErrBoardLimit", err)
-	}
-}
-
-// Library search matches words in notes by prefix through the full-text index,
-// and treats LIKE wildcards in a title search as plain characters.
-func TestBoardLibrarySearchUsesWordsAndLiteralCharacters(t *testing.T) {
-	t.Parallel()
-	s, _, p, _ := boardFixture(t)
-	ctx := t.Context()
-	plain := createTestBoard(t, s, p)
-	if _, err := s.Mutate(ctx, p, BoardScope{BoardID: plain.ID}, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{
-		stickyCommand("a", "Kế hoạch tuyển dụng quý ba"),
-	}}); err != nil {
-		t.Fatal(err)
-	}
-	discount, err := s.Create(ctx, p, CreateBoardInput{RequestKey: uuid.New(), Title: "Giảm giá 100%"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	found := func(search string) []uuid.UUID {
-		t.Helper()
-		list, err := s.List(ctx, p, BoardListInput{Search: search})
-		if err != nil {
-			t.Fatal(err)
-		}
-		ids := []uuid.UUID{}
-		for _, board := range list.Boards {
-			ids = append(ids, board.ID)
-		}
-		return ids
-	}
-	if got := found("tuyển"); !slices.Equal(got, []uuid.UUID{plain.ID}) {
-		t.Fatalf("note word = %v, want %v", got, plain.ID)
-	}
-	if got := found("tuyể"); !slices.Equal(got, []uuid.UUID{plain.ID}) {
-		t.Fatalf("note word prefix = %v, want %v", got, plain.ID)
-	}
-	if got := found("100%"); !slices.Equal(got, []uuid.UUID{discount.ID}) {
-		t.Fatalf("title with %% = %v, want %v", got, discount.ID)
-	}
-	if got := found("_"); len(got) != 0 {
-		t.Fatalf("underscore matched %v; want nothing", got)
 	}
 }
 

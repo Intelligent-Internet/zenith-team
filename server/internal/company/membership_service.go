@@ -12,7 +12,6 @@ import (
 	"boardly.dev/boardly/server/internal/activity"
 	"boardly.dev/boardly/server/internal/agent"
 	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/execution"
@@ -276,11 +275,6 @@ func (s *DefaultCompanyService) revokeMember(
 		if err = revokeProjectGrantsInTx(ctx, q, &pending, projectGrantAuthor{
 			companyID: principal.CompanyID, actor: events.UserActor(principal.UserID.String()), recipient: principal.UserID,
 		}, input.UserID); err != nil {
-			return err
-		}
-		// Board grants go the same way; the Company lock held here orders the
-		// Board locks this takes before any Conversation lock below.
-		if err = canvas.RevokeBoardGrantsInTx(ctx, q, &pending, principal.CompanyID, input.UserID, principal.UserID); err != nil {
 			return err
 		}
 		if err = conversation.RevokeDiscussionMembersInTx(

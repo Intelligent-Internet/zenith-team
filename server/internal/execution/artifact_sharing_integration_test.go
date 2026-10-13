@@ -12,6 +12,7 @@ import (
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 func TestArtifactVisibilityRestrictedPreservesGrantsAndRevokesPublicLink(t *testing.T) {
@@ -270,5 +271,99 @@ func TestArtifactVisibilityRestrictedPreservesGrantsAndRevokesPublicLink(t *test
 		ErrDeliverableConflict,
 	) {
 		t.Fatalf("stale mutation = %v", err)
+	}
+}
+
+// A direct message has no title, so a member sees it named by its other
+// participant, as the chat list names it.
+func TestArtifactConversationGrantNamesDirectMessageByPeer(t *testing.T) {
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := db.MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	store, err := db.NewStore(pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bus, err := events.NewBus(events.BusOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := NewDeliverableService(DeliverableServiceOptions{Store: store, Bus: bus})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		f.CompanyA,
+		f.UserB,
+	)
+	var id, dm uuid.UUID
+	if err := pool.QueryRow(ctx, `INSERT INTO outputs(company_id,run_id,title,summary,presentation_fingerprint,owner_user_id, conversation_id, task_id, project_id, task_execution_generation, actor_agent_id) SELECT $1,$2,'Report','Summary','dm-title-test',$3, origin.conversation_id, origin.task_id, conversation.project_id, origin.task_execution_generation, origin.agent_id
+ FROM runs origin JOIN conversations conversation ON conversation.company_id=origin.company_id AND conversation.id=origin.conversation_id WHERE origin.company_id=$1 AND origin.id=$2 RETURNING id`, f.CompanyA, f.RunA, f.UserA).
+		Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
+		if err := tx.QueryRow(ctx, `INSERT INTO conversations(company_id,kind,created_by_user_id) VALUES($1,'human_direct',$2) RETURNING id`, f.CompanyA, f.UserA).
+			Scan(&dm); err != nil {
+			t.Fatal(err)
+		}
+		dbtest.MustExecTx(
+			t,
+			ctx,
+			tx,
+			`INSERT INTO conversation_human_directs(company_id,conversation_id,user_low_id,user_high_id) VALUES($1,$2,LEAST($3::uuid,$4::uuid),GREATEST($3::uuid,$4::uuid))`,
+			f.CompanyA,
+			dm,
+			f.UserA,
+			f.UserB,
+		)
+		dbtest.MustExecTx(
+			t,
+			ctx,
+			tx,
+			`INSERT INTO conversation_members(company_id,conversation_id,user_id,source_type) VALUES($1,$2,$3,'human_direct'),($1,$2,$4,'human_direct')`,
+			f.CompanyA,
+			dm,
+			f.UserA,
+			f.UserB,
+		)
+	})
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO output_conversation_grants(company_id,output_id,conversation_id,granted_by_user_id) VALUES($1,$2,$3,$4)`,
+		f.CompanyA,
+		id,
+		dm,
+		f.UserA,
+	)
+	for _, tc := range []struct {
+		user uuid.UUID
+		want string
+	}{{f.UserA, "Schema B"}, {f.UserB, "Schema A"}} {
+		access, err := service.getArtifactAccess(
+			ctx,
+			auth.UserPrincipal{CompanyID: f.CompanyA, UserID: tc.user, Role: auth.CompanyRoleMember},
+			id,
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(access.ConversationGrants) != 1 || access.ConversationGrants[0].Title != tc.want {
+			t.Fatalf(
+				"grants for %s = %+v, want the DM named %q",
+				tc.user,
+				access.ConversationGrants,
+				tc.want,
+			)
+		}
 	}
 }

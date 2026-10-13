@@ -12,7 +12,6 @@ import {
   BookOpen,
   Users,
   Chart2,
-  LayoutDashboard,
   type IconComponent,
 } from "@/shared/ui/icons";
 // Link, not NavLink: the rail decides what is current itself, and NavLink
@@ -28,14 +27,7 @@ import { workspaceSidebarPages } from "./workspace-sidebar-pages";
 
 type PrimaryDestination = {
   icon: IconComponent;
-  id:
-    | "chat"
-    | "projects"
-    | "agents"
-    | "wiki"
-    | "team"
-    | "analytics"
-    | "whiteboards";
+  id: "chat" | "projects" | "agents" | "wiki" | "team" | "analytics";
   label: string;
   to: string;
 };
@@ -45,12 +37,6 @@ const primaryDestinations: PrimaryDestination[] = [
   { icon: FolderOpen, id: "projects", label: "Projects", to: "/projects" },
   { icon: Bot, id: "agents", label: "Agents", to: "/agents" },
   { icon: BookOpen, id: "wiki", label: "Wiki", to: "/wiki" },
-  {
-    icon: LayoutDashboard,
-    id: "whiteboards",
-    label: "Whiteboards",
-    to: "/whiteboards",
-  },
   { icon: Users, id: "team", label: "Team", to: "/team" },
   { icon: Chart2, id: "analytics", label: "Analytics", to: "/analytics" },
 ];
@@ -73,8 +59,6 @@ function isPrimaryDestinationActive(
       isProjectFilesPath(pathname)
     );
 
-  if (destination.id === "whiteboards")
-    return pathname === "/whiteboards" || pathname.startsWith("/whiteboards/");
   if (destination.id === "analytics") return pathname === "/analytics";
   if (destination.id === "wiki")
     return pathname === "/wiki" || pathname.startsWith("/wiki/");
@@ -135,14 +119,7 @@ function PrimaryNavigationItems({
                     <span className="workspace-primary-nav-activity" />
                   ) : null}
                 </span>
-                <span
-                  className={cx(
-                    destination.id === "whiteboards" &&
-                      "workspace-primary-nav-label--compact",
-                  )}
-                >
-                  {destination.label}
-                </span>
+                <span>{destination.label}</span>
                 {destination.id === "wiki" && researching ? (
                   <span className="sr-only">, research in progress</span>
                 ) : null}

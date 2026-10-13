@@ -16,6 +16,7 @@ import (
 	"boardly.dev/boardly/server/internal/activity"
 	"boardly.dev/boardly/server/internal/attachment"
 	"boardly.dev/boardly/server/internal/auth"
+	"boardly.dev/boardly/server/internal/canvas"
 	"boardly.dev/boardly/server/internal/db"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/execution"
@@ -119,23 +120,11 @@ func (s *DefaultDiscussionService) Send(
 				}
 				return err
 			}
-			if len(input.AttachmentIDs) > 0 || input.ThreadRootID != nil || len(input.Body.References) > 0 {
+			if len(input.AttachmentIDs) > 0 || input.ThreadRootID != nil ||
+				len(input.Body.References) > 0 ||
+				input.Whiteboard != nil {
 				return ErrDiscussionInvalid
 			}
-		}
-
-		// A Board's chat takes in the readers of the Board it mentions; a
-		// chat's Board never changes, so it is read before any lock.
-		board, err := q.GetDiscussionBoard(
-			ctx,
-			generated.GetDiscussionBoardParams{CompanyID: p.CompanyID, ConversationID: id},
-		)
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return err
-		}
-		var mentioned []uuid.UUID
-		if board.Valid {
-			mentioned = boardChannelMentions(normalized.Input.Body)
 		}
 
 		// Lock possible recipients before the Conversation to preserve the
@@ -147,26 +136,12 @@ func (s *DefaultDiscussionService) Send(
 		if err != nil {
 			return err
 		}
-		lockedRecipients := make(map[uuid.UUID]bool, len(roster)+len(mentioned))
+		lockedRecipients := make(map[uuid.UUID]bool, len(roster))
 		for _, member := range roster {
 			if _, err := inbox.LockRecipientInTx(ctx, q, p.CompanyID, member.UserID); err != nil {
 				return err
 			}
 			lockedRecipients[member.UserID] = true
-		}
-		var joinable []uuid.UUID
-		for _, userID := range mentioned {
-			if lockedRecipients[userID] {
-				continue
-			}
-			active, err := inbox.LockRecipientInTx(ctx, q, p.CompanyID, userID)
-			if err != nil {
-				return err
-			}
-			lockedRecipients[userID] = true
-			if active {
-				joinable = append(joinable, userID)
-			}
 		}
 		if err := lockDiscussion(ctx, q, p, id); err != nil {
 			return err
@@ -242,7 +217,7 @@ func (s *DefaultDiscussionService) Send(
 				return ErrDiscussionRequestConflict
 			}
 		} else {
-			if !discussionOpen(access) {
+			if access.ArchivedAt.Valid || (access.Kind == "human_direct" && !access.PeerActive) {
 				return ErrDiscussionReadOnly
 			}
 			if !auth.CompanyRole(access.CompanyRole).Can(auth.PermissionConversationsDiscuss) {
@@ -306,11 +281,6 @@ func (s *DefaultDiscussionService) Send(
 					return err
 				}
 			}
-			if access.BoardID.Valid {
-				if err = joinBoardChannelMentionsInTx(ctx, q, access, joinable); err != nil {
-					return err
-				}
-			}
 			references, err := validateDiscussionReferences(
 				ctx,
 				q,
@@ -360,6 +330,22 @@ func (s *DefaultDiscussionService) Send(
 				}
 			}
 			artifactIDs := slices.Clone(input.ArtifactIDs)
+			if normalized.Input.Whiteboard != nil {
+				board, err := canvas.CreateWhiteboardInTx(
+					ctx,
+					q,
+					p,
+					id,
+					normalized.Input.Whiteboard.Title,
+				)
+				if errors.Is(err, canvas.ErrBoardInvalid) {
+					return ErrDiscussionInvalid
+				}
+				if err != nil {
+					return err
+				}
+				artifactIDs = append(artifactIDs, board)
+			}
 			slices.SortFunc(artifactIDs, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
 			for _, artifactID := range artifactIDs {
 				if err := execution.ShareArtifactInTx(ctx, q, p, artifactID, id); err != nil {
@@ -380,7 +366,7 @@ func (s *DefaultDiscussionService) Send(
 					return err
 				}
 			}
-			if len(input.ArtifactIDs) > 0 {
+			if len(artifactIDs) > 0 {
 				recipients, err := q.ListArtifactCompanyRecipients(ctx, p.CompanyID)
 				if err != nil {
 					return err

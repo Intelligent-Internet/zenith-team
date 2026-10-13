@@ -212,9 +212,10 @@ func TestMigrationsLimitProceduralObjectsToDiscussionConstraints(t *testing.T) {
 				(match[1] == "check_discussion_shape" || match[1] == "preserve_discussion_identity") {
 				continue
 			}
-			// A Board's channel only revises the existing shape and identity
-			// constraints; its down file restores the 000070 bodies.
-			if (name == "000108_whiteboard_collaboration.up.sql" || name == "000108_whiteboard_collaboration.down.sql") &&
+			// A Board's channel only revised the existing shape and identity
+			// constraints; 000113 restores the 000070 bodies.
+			if (name == "000108_whiteboard_collaboration.up.sql" || name == "000108_whiteboard_collaboration.down.sql" ||
+				name == "000113_whiteboard_artifacts.up.sql" || name == "000113_whiteboard_artifacts.down.sql") &&
 				(match[1] == "check_discussion_shape" || match[1] == "preserve_discussion_identity") {
 				continue
 			}

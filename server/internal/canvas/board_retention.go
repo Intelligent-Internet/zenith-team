@@ -59,12 +59,6 @@ func (s *DefaultBoardService) Sweep(ctx context.Context, now time.Time) (BoardSw
 		{&result.Receipts, func(q *generated.Queries) (int64, error) {
 			return q.PurgeBoardReceipts(ctx, generated.PurgeBoardReceiptsParams{Cutoff: receipts, BatchSize: boardSweepBatch})
 		}},
-		{&result.Receipts, func(q *generated.Queries) (int64, error) {
-			return q.PurgeBoardCreateReceipts(
-				ctx,
-				generated.PurgeBoardCreateReceiptsParams{Cutoff: receipts, BatchSize: boardSweepBatch},
-			)
-		}},
 	}
 	for _, step := range steps {
 		for {

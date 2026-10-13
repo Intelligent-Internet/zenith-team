@@ -235,17 +235,6 @@ func createDiscussionMentionInboxItems(
 		ids = append(ids, id)
 	}
 	sort.Slice(ids, func(i, j int) bool { return ids[i].String() < ids[j].String() })
-	if len(ids) == 0 {
-		return nil
-	}
-	// A Board's chat opens on its Board, never in Chat.
-	board, err := q.GetDiscussionBoard(
-		ctx,
-		generated.GetDiscussionBoardParams{CompanyID: p.CompanyID, ConversationID: conversationID},
-	)
-	if err != nil {
-		return err
-	}
 	discussionType := "channel"
 	if kind == "human_direct" {
 		discussionType = kind
@@ -256,14 +245,11 @@ func createDiscussionMentionInboxItems(
 		conversationID,
 		messageID,
 	)
-	if board.Valid {
-		deepLink = fmt.Sprintf(
-			"/whiteboards/%s?companyId=%s&conversationId=%s&messageId=%s",
-			board.UUID, p.CompanyID, conversationID, messageID,
-		)
-	}
 	if rootID != nil {
 		deepLink += "&threadRootId=" + rootID.String()
+	}
+	if len(ids) == 0 {
+		return nil
 	}
 	// The notice says who wrote, never what or in which channel: the stored
 	// row outlives a rename and a lost grant. The deep link opens the place.
@@ -277,13 +263,6 @@ func createDiscussionMentionInboxItems(
 	}
 	where := "a channel"
 	title, body := "New channel message", fmt.Sprintf("%s wrote in a channel.", sender.DisplayName)
-	if board.Valid {
-		where = "a whiteboard chat"
-		title, body = "New whiteboard chat message", fmt.Sprintf(
-			"%s wrote in a whiteboard chat.",
-			sender.DisplayName,
-		)
-	}
 	if kind == "human_direct" {
 		where = "a direct message"
 		title, body = "New direct message", fmt.Sprintf("%s sent you a direct message.", sender.DisplayName)

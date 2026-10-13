@@ -5,9 +5,11 @@ import { useDiscussionPreview } from "./discussion-preview";
 export function DiscussionArtifacts({
   companyId,
   conversationId,
+  onCreateWhiteboard,
 }: {
   companyId: string;
   conversationId: string;
+  onCreateWhiteboard?: () => void;
 }) {
   const artifacts = useConversationArtifacts({ companyId, conversationId });
   const preview = useDiscussionPreview();
@@ -21,6 +23,7 @@ export function DiscussionArtifacts({
         artifacts={artifacts}
         layout="page"
         onSelect={(artifact) => preview.openArtifact(artifact.artifactId)}
+        onCreateWhiteboard={onCreateWhiteboard}
       />
     </section>
   );

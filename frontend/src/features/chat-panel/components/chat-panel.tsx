@@ -86,6 +86,7 @@ import { useConversationArtifacts } from "@/features/chat-panel/hooks/use-conver
 import { useConversationArtifactsPanel } from "@/features/chat-panel/hooks/use-conversation-artifacts-panel";
 import { useConversationArtifactNavigation } from "@/features/chat-panel/hooks/use-conversation-artifact-navigation";
 import { useArtifactsResize } from "@/features/chat-panel/hooks/use-artifacts-resize";
+import { useCreateChatWhiteboardMutation } from "@/features/chat-panel/api/conversation-artifacts-api";
 import {
   artifactFeedbackReference,
   conversationArtifactReference,
@@ -719,17 +720,40 @@ export function ChatPanel({
     );
   };
   const openArtifact = useOpenArtifactSource(artifactContext?.companyId ?? "");
+  const showArtifact = (selection: ConversationArtifactReference) => {
+    setSelectedFile(null);
+    if (artifactNavigation.target) artifactNavigation.clear();
+    setStudioOpen(false);
+    artifactTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    artifactsPanel.select(selection);
+  };
   const selectArtifact = (selection: ConversationArtifactReference) => {
-    void openArtifact(selection.artifactId, () => {
-      setSelectedFile(null);
-      if (artifactNavigation.target) artifactNavigation.clear();
-      setStudioOpen(false);
-      artifactTriggerRef.current =
-        document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null;
-      artifactsPanel.select(selection);
-    });
+    void openArtifact(selection.artifactId, () => showArtifact(selection));
+  };
+  // A Whiteboard is one more Artifact of an Agent or Task chat: it is made at
+  // once, joins the chat's Artifacts and opens beside the chat.
+  const [createChatWhiteboard, whiteboardCreation] =
+    useCreateChatWhiteboardMutation();
+  const canCreateWhiteboard =
+    surface === "conversation" &&
+    !readOnly &&
+    Boolean(artifactContext) &&
+    (conversationTab?.kind === "direct" || conversationTab?.kind === "task");
+  const createWhiteboard = () => {
+    if (!artifactContext || whiteboardCreation.isLoading) return;
+    void createChatWhiteboard({
+      companyId: artifactContext.companyId,
+      conversationId: artifactContext.conversationId,
+      title: "Untitled whiteboard",
+    })
+      .unwrap()
+      .then((created) => showArtifact(conversationArtifactReference(created)))
+      .catch((error: { message?: string }) =>
+        toast.error(error.message ?? "The whiteboard could not be created."),
+      );
   };
   const backToArtifacts = () => {
     if (artifactNavigation.target) artifactNavigation.clear();
@@ -748,6 +772,8 @@ export function ChatPanel({
     event: ReactKeyboardEvent<HTMLDivElement>,
   ) => {
     if (event.key === "Escape") {
+      // A Whiteboard, menu or field inside already used this Escape.
+      if (event.defaultPrevented) return;
       event.preventDefault();
       if (studioOpen) {
         setStudioOpen(false);
@@ -1252,6 +1278,9 @@ export function ChatPanel({
               }
               disabled={readOnly || isComposerBlockedByDiscoveryChoice}
               readOnly={readOnly}
+              onCreateWhiteboard={
+                canCreateWhiteboard ? createWhiteboard : undefined
+              }
               sendBlocked={modelSettingsSaving}
               modelControls={
                 surface === "conversation" &&
@@ -1386,6 +1415,9 @@ export function ChatPanel({
                 }}
                 onClose={closeArtifacts}
                 onSelect={selectArtifact}
+                onCreateWhiteboard={
+                  canCreateWhiteboard ? createWhiteboard : undefined
+                }
               />
             </div>
             {selectedFile ? (

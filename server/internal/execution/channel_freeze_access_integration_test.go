@@ -307,3 +307,112 @@ func TestChannelArtifactReferencesFollowTheCallersAccess(t *testing.T) {
 		t.Fatalf("revoked share = %v", got)
 	}
 }
+
+// A tag freezes the Whiteboards shared into its chat that its caller can
+// open, so the Run knows their IDs; one shared elsewhere stays out.
+func TestChannelTagFreezesTheChatsWhiteboards(t *testing.T) {
+	h := newRunHarness(t)
+	ctx := t.Context()
+	f := h.fixture
+	runID := seedQueuedChannelTagRun(t, h)
+	run, err := h.queries.GetRun(ctx, runID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invocation, err := h.queries.GetChannelInvocation(
+		ctx,
+		db.GetChannelInvocationParams{InvocationID: run.InvocationID.UUID, CompanyID: f.CompanyA},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	whiteboard := func(title string, chat uuid.UUID) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		if err := h.pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,
+			owner_user_id,actor_type,actor_user_id,conversation_id) VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+			RETURNING id`, f.CompanyA, title, f.UserA, chat).
+			Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		dbtest.MustExec(
+			t,
+			ctx,
+			h.pool,
+			`INSERT INTO output_conversation_grants(company_id,output_id,conversation_id,granted_by_user_id)
+			VALUES($1,$2,$3,$4)`,
+			f.CompanyA,
+			id,
+			chat,
+			f.UserA,
+		)
+		return id
+	}
+	plan := whiteboard("Plan", invocation.ChannelID)
+	whiteboard("Elsewhere", f.ConversationA)
+	doc := map[string]json.RawMessage{}
+	if err := freezeChannelInvocation(
+		ctx,
+		h.queries,
+		RunTrigger{
+			CompanyID:      f.CompanyA,
+			ConversationID: run.ConversationID,
+			AgentID:        run.AgentID,
+			InvocationID:   run.InvocationID,
+		},
+		doc,
+	); err != nil {
+		t.Fatal(err)
+	}
+	var boards []runWhiteboardBrief
+	if err := json.Unmarshal(doc["chatWhiteboards"], &boards); err != nil {
+		t.Fatal(err)
+	}
+	if len(boards) != 1 || boards[0].ID != plan.String() || boards[0].Title != "Plan" {
+		t.Fatalf("frozen Whiteboards = %+v; want the chat's own", boards)
+	}
+}
+
+// An Agent or Task chat Run freezes the Whiteboards made in its chat that its
+// Authorizer can open, as a tag does its channel's; a forged list is dropped.
+func TestAgentChatRunFreezesTheChatsWhiteboards(t *testing.T) {
+	h := newRunHarness(t)
+	ctx := t.Context()
+	f := h.fixture
+	dbtest.MustExec(t, ctx, h.pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
+	whiteboard := func(title string, owner, chat uuid.UUID) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		if err := h.pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,
+			owner_user_id,actor_type,actor_user_id,conversation_id) VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+			RETURNING id`, f.CompanyA, title, owner, chat).
+			Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	plan := whiteboard("Plan", f.UserA, f.DirectConversationA)
+	whiteboard("Task board", f.UserA, f.ConversationA)
+	whiteboard("Not theirs", f.UserB, f.DirectConversationA)
+	freeze := func(conversationID, authorizer uuid.UUID) map[string]json.RawMessage {
+		t.Helper()
+		doc := map[string]json.RawMessage{"chatWhiteboards": json.RawMessage(`[{"id":"forged","title":"x"}]`)}
+		if err := freezeConversationWhiteboards(ctx, h.queries, RunTrigger{
+			CompanyID: f.CompanyA, ConversationID: conversationID, AuthorizedByUserID: authorizer,
+		}, doc); err != nil {
+			t.Fatal(err)
+		}
+		return doc
+	}
+	var boards []runWhiteboardBrief
+	if err := json.Unmarshal(freeze(f.DirectConversationA, f.UserA)["chatWhiteboards"], &boards); err != nil {
+		t.Fatal(err)
+	}
+	if len(boards) != 1 || boards[0].ID != plan.String() || boards[0].Title != "Plan" {
+		t.Fatalf("frozen Whiteboards = %+v; want the chat's own that its Authorizer opens", boards)
+	}
+	if doc := freeze(f.ConversationA, f.UserB); doc["chatWhiteboards"] != nil {
+		t.Fatalf("a forged list or an unreadable Whiteboard survived: %s", doc["chatWhiteboards"])
+	}
+}

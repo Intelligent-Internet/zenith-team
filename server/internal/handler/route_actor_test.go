@@ -608,16 +608,16 @@ var runWriteActivity = map[string]struct {
 	recordedBy string
 	noActivity string
 }{
-	"POST /api/v1/companies/:companyId/runs/:runId/whiteboards/:boardId/operations": {
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/whiteboard/operations": {
 		noActivity: "Board edits raise only a whiteboard change hint; board_operations records the acting Run",
 	},
-	"POST /api/v1/companies/:companyId/runs/:runId/whiteboards/:boardId/context": {
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/whiteboard/context": {
 		noActivity: "context reads Board content without writing Activity",
 	},
-	"POST /api/v1/companies/:companyId/runs/:runId/whiteboards/:boardId/compose": {
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/whiteboard/compose": {
 		noActivity: "composed content is a Board edit: it raises only a whiteboard change hint; board_operations records the acting Run",
 	},
-	"POST /api/v1/companies/:companyId/runs/:runId/whiteboards/:boardId/view": {
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/whiteboard/view": {
 		noActivity: "the Agent view reads Board content without writing Activity",
 	},
 	"POST /api/v1/companies/:companyId/tasks": {

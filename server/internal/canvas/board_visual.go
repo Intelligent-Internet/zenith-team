@@ -283,29 +283,111 @@ func (s *DefaultBoardMediaService) RectVisual(
 	if area.Width <= 0 || area.Height <= 0 || maxPixels < 64 || maxPixels > 1280 {
 		return BoardVisualRegion{}, ErrBoardInvalid
 	}
+	region, _, err := s.drawBoard(ctx, p, scope, &area, -1, maxPixels)
+	if err != nil {
+		return BoardVisualRegion{}, err
+	}
+	return *region, nil
+}
+
+// BoardPreview is a small image of a whole Board for its Artifact's card, at
+// the Board sequence it shows. NotModified means the client already holds
+// that sequence's image; Image is nil when the Board has nothing on it.
+type BoardPreview struct {
+	Sequence    int64
+	NotModified bool
+	Image       *BoardVisualRegion
+}
+
+// Preview draws all of a Board's content small, framed 16:9 like other
+// Artifact thumbnails. known is the sequence of the image a client holds; an
+// unchanged Board is not drawn again.
+func (s *DefaultBoardMediaService) Preview(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	scope BoardScope,
+	known int64,
+) (BoardPreview, error) {
+	image, sequence, err := s.drawBoard(ctx, p, scope, nil, known, boardPreviewPixels)
+	if err != nil {
+		return BoardPreview{}, err
+	}
+	return BoardPreview{Sequence: sequence, NotModified: sequence == known, Image: image}, nil
+}
+
+// boardPreviewArea frames content 16:9 around its center, at least as large
+// as a screenful of Board, so a lone note is not blown up to fill a card.
+func boardPreviewArea(content BoardVisualBounds) BoardVisualBounds {
+	w := math.Max(content.Width+2*boardPreviewMargin, boardPreviewMinWidth)
+	h := math.Max(content.Height+2*boardPreviewMargin, boardPreviewMinWidth*9/16)
+	w, h = math.Max(w, h*16/9), math.Max(h, w*9/16)
+	return BoardVisualBounds{
+		X:      content.X + content.Width/2 - w/2,
+		Y:      content.Y + content.Height/2 - h/2,
+		Width:  w,
+		Height: h,
+	}
+}
+
+const (
+	boardPreviewPixels   = 640
+	boardPreviewMargin   = 24.0
+	boardPreviewMinWidth = 640.0
+)
+
+// drawBoard renders area of the Board, or all of its content framed by
+// boardPreviewArea when area is nil, at most maxPixels on the longer side,
+// and returns the sequence it read. A Board at sequence known, or with no
+// content to frame, is not drawn and has a nil image.
+func (s *DefaultBoardMediaService) drawBoard(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	scope BoardScope,
+	area *BoardVisualBounds,
+	known int64,
+	maxPixels int,
+) (*BoardVisualRegion, int64, error) {
 	var scene boardScene
+	var sequence int64
+	draw := false
 	err := s.store.WithinTx(ctx, boardRead, func(q *generated.Queries) error {
 		board, _, err := boardScopeLock(ctx, q, p, scope, false)
 		if err != nil {
 			return err
 		}
+		sequence = board.HeadSeq
+		if sequence == known {
+			return nil
+		}
 		snapshot, err := boardSnapshotInTx(ctx, q, p, board, 0)
 		if err != nil {
 			return err
 		}
+		if area == nil {
+			if len(snapshot.Items) == 0 {
+				return nil
+			}
+			content := boardVisualItemBounds(snapshot.Items[0])
+			for _, item := range snapshot.Items[1:] {
+				content = boardVisualUnion(content, boardVisualItemBounds(item))
+			}
+			framed := boardPreviewArea(content)
+			area = &framed
+		}
+		draw = true
 		everyItem := make(map[uuid.UUID]BoardItem, len(snapshot.Items))
 		scene = boardScene{Edges: snapshot.Edges}
 		var ids []uuid.UUID
 		for _, item := range snapshot.Items {
 			everyItem[item.ID] = item
-			if boardVisualIntersects(boardVisualItemBounds(item), area) {
+			if boardVisualIntersects(boardVisualItemBounds(item), *area) {
 				scene.Items = append(scene.Items, boardSceneItem{BoardItem: item})
 				ids = append(ids, item.ID)
 			}
 		}
 		scene.Items = append(
 			scene.Items,
-			boardVisualConnectorEnds(scene, everyItem, []BoardVisualBounds{area})...)
+			boardVisualConnectorEnds(scene, everyItem, []BoardVisualBounds{*area})...)
 		size, err := q.BoardVisualHydrationBytes(
 			ctx,
 			generated.BoardVisualHydrationBytesParams{
@@ -322,15 +404,19 @@ func (s *DefaultBoardMediaService) RectVisual(
 		}
 		return boardSceneDetailsInTx(ctx, q, p, board.ID, ids, scene.Items)
 	})
-	if err != nil {
-		return BoardVisualRegion{}, boardError(err)
+	if err != nil || !draw {
+		return nil, sequence, boardError(err)
 	}
 	// Object downloads and rasterization happen after releasing the Board lock.
 	media, err := s.visualImages(ctx, p, scope, scene)
 	if err != nil {
-		return BoardVisualRegion{}, err
+		return nil, sequence, err
 	}
-	return renderBoardVisualAt(ctx, scene, media, area, float64(maxPixels))
+	region, err := renderBoardVisualAt(ctx, scene, media, *area, float64(maxPixels))
+	if err != nil {
+		return nil, sequence, err
+	}
+	return &region, sequence, nil
 }
 
 // visualImages decodes each placed image once, from its bounded preview.

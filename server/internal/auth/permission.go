@@ -42,10 +42,6 @@ const (
 	PermissionPluginsManage              Permission = "plugins.manage"
 	PermissionProjectsManage             Permission = "projects.manage"
 	PermissionWikiPublish                Permission = "wiki.publish"
-	PermissionWhiteboardsRead            Permission = "whiteboards.read"
-	PermissionWhiteboardsCreate          Permission = "whiteboards.create"
-	PermissionWhiteboardsEdit            Permission = "whiteboards.edit"
-	PermissionWhiteboardsManage          Permission = "whiteboards.manage"
 	PermissionCalendarManage             Permission = "calendar.manage"
 	PermissionSchedulesManage            Permission = "schedules.manage"
 	PermissionApprovalsResolve           Permission = "approvals.resolve"
@@ -93,10 +89,6 @@ var grants = []struct {
 	{PermissionPluginsManage, everyRole},
 	{PermissionProjectsManage, ownerAndAdmin},
 	{PermissionWikiPublish, ownerAndAdmin},
-	{PermissionWhiteboardsRead, everyRole},
-	{PermissionWhiteboardsCreate, everyRole},
-	{PermissionWhiteboardsEdit, everyRole},
-	{PermissionWhiteboardsManage, ownerAndAdmin},
 	{PermissionCalendarManage, ownerAndAdmin},
 	{PermissionSchedulesManage, ownerAndAdmin},
 	{PermissionApprovalsResolve, ownerAndAdmin},

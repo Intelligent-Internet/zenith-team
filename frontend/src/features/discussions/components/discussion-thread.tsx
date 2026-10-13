@@ -6,26 +6,18 @@ import { useDiscussionUpdates } from "./discussion-provider";
 import { DiscussionMessageRow } from "./discussion-message-row";
 import { DiscussionTimeline } from "./discussion-timeline";
 import { DiscussionComposer } from "./discussion-composer";
-import type { ChatMentionMember } from "@/features/chat-panel/model/chat-mentions";
 
 export function DiscussionThread({
   conversationId,
   rootId,
   detail,
   focusMessageId,
-  mentionMembers,
-  title,
   onClose,
 }: {
   conversationId: string;
   rootId: string;
   detail: DiscussionDetail;
   focusMessageId?: string;
-  // Who replies may mention, in place of the chat's members (a Board's chat
-  // offers everyone who can read the Board).
-  mentionMembers?: readonly ChatMentionMember[];
-  // The chat's name in the header, in place of its stored title.
-  title?: string;
   onClose: () => void;
 }) {
   const runtime = useDiscussionUpdates();
@@ -68,35 +60,33 @@ export function DiscussionThread({
       conversationId={conversationId}
       rootId={rootId}
       title="thread"
-      mentionMembers={
-        mentionMembers ?? [
-          ...detail.members
-            .filter((member) => member.active)
-            .map((member) => ({
-              id: member.userId,
-              name: member.displayName,
-              description: presence.currentData?.items.find(
-                (item) => item.userId === member.userId,
-              )?.online
-                ? "Online"
-                : presence.currentData?.items.some(
-                      (item) => item.userId === member.userId,
-                    )
-                  ? "Away"
-                  : "Status unavailable",
-              avatarSrc: member.avatarUrl,
-              kind: "human" as const,
-            })),
-          ...("agents" in detail
-            ? detail.agents.map((agent) => ({
-                id: agent.agentId,
-                name: agent.name,
-                description: "Agent",
-                kind: "agent" as const,
-              }))
-            : []),
-        ]
-      }
+      mentionMembers={[
+        ...detail.members
+          .filter((member) => member.active)
+          .map((member) => ({
+            id: member.userId,
+            name: member.displayName,
+            description: presence.currentData?.items.find(
+              (item) => item.userId === member.userId,
+            )?.online
+              ? "Online"
+              : presence.currentData?.items.some(
+                    (item) => item.userId === member.userId,
+                  )
+                ? "Away"
+                : "Status unavailable",
+            avatarSrc: member.avatarUrl,
+            kind: "human" as const,
+          })),
+        ...("agents" in detail
+          ? detail.agents.map((agent) => ({
+              id: agent.agentId,
+              name: agent.name,
+              description: "Agent",
+              kind: "agent" as const,
+            }))
+          : []),
+      ]}
       canSend={
         ready && Boolean(runtime.state(conversationId)?.capabilities.send)
       }
@@ -127,7 +117,7 @@ export function DiscussionThread({
       <header className="discussion-thread-header">
         <div className="discussion-thread-heading">
           <h3>Thread</h3>
-          <span>{title ?? detail.conversation.title}</span>
+          <span>{detail.conversation.title}</span>
         </div>
         <button
           className="discussion-icon-button"

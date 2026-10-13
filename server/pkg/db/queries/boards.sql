@@ -1,39 +1,30 @@
--- name: CreateBoard :one
-INSERT INTO boards(company_id,title,purpose,created_by) VALUES($1,$2,$3,$4) RETURNING *;
+-- A Whiteboard is an Artifact: its Output carries the title, owner and
+-- sharing, and the Board keeps the live scene under the Output's ID.
+-- name: CreateWhiteboardOutput :one
+INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id,conversation_id)
+VALUES(sqlc.arg(company_id),sqlc.arg(title),'','','whiteboard',sqlc.arg(actor_user_id),'user',sqlc.arg(actor_user_id),sqlc.arg(conversation_id))
+RETURNING id;
+-- name: CreateBoard :exec
+INSERT INTO boards(company_id,id) VALUES($1,$2);
+-- The title lives on the Whiteboard Artifact; the caller holds the Board.
+-- name: RenameWhiteboardOutput :exec
+UPDATE outputs SET title=sqlc.arg(title)::text
+WHERE company_id=sqlc.arg(company_id)::uuid AND id=sqlc.arg(id)::uuid AND type='whiteboard';
 -- name: LockBoard :one
-SELECT * FROM boards WHERE company_id=$1 AND id=$2 FOR UPDATE;
+SELECT sqlc.embed(b),o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+WHERE b.company_id=$1 AND b.id=$2 FOR UPDATE OF b;
 -- Reads run in REPEATABLE READ snapshots, so they never lock the Board row.
 -- name: ReadBoard :one
-SELECT * FROM boards WHERE company_id=$1 AND id=$2;
--- name: ListBoards :many
-SELECT b.*, access.access, EXISTS(SELECT 1 FROM board_favorites f WHERE f.board_id=b.id AND f.user_id=sqlc.arg(actor_user_id))::boolean AS favorite
-FROM boards b JOIN board_access access ON access.company_id=b.company_id AND access.board_id=b.id AND access.user_id=sqlc.arg(actor_user_id) WHERE b.company_id=sqlc.arg(company_id)
- AND ((b.archived_at IS NOT NULL)=sqlc.arg(archived)::boolean)
- AND (NOT sqlc.arg(favorites)::boolean OR EXISTS(SELECT 1 FROM board_favorites f WHERE f.board_id=b.id AND f.user_id=sqlc.arg(actor_user_id)))
- AND (sqlc.arg(search)::text='' OR b.title ILIKE '%'||sqlc.arg(search)||'%' ESCAPE '\' OR b.purpose ILIKE '%'||sqlc.arg(search)||'%' ESCAPE '\'
-  OR (sqlc.arg(note_query)::text<>'' AND b.id IN (SELECT n.board_id FROM board_notes n JOIN board_items i ON i.id=n.item_id
-   WHERE n.company_id=sqlc.arg(company_id) AND i.deleted_at IS NULL AND to_tsvector('simple',n.plain_text) @@ to_tsquery('simple',sqlc.arg(note_query)))))
-ORDER BY b.updated_at DESC,b.id LIMIT sqlc.arg(row_limit)::int OFFSET sqlc.arg(row_offset)::int;
--- name: UpdateBoard :one
-UPDATE boards SET title=$3,purpose=$4,archived_at=$5,revision=revision+1,updated_at=now() WHERE company_id=$1 AND id=$2 AND revision=$6 RETURNING *;
--- name: BoardFavorite :one
-SELECT EXISTS(SELECT 1 FROM board_favorites WHERE board_id=$1 AND user_id=$2)::boolean;
--- name: SetBoardFavorite :exec
-INSERT INTO board_favorites(company_id,board_id,user_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING;
--- name: DeleteBoardFavorite :exec
-DELETE FROM board_favorites WHERE board_id=$1 AND user_id=$2;
--- name: GetBoardCreateReceipt :one
-SELECT * FROM board_create_receipts WHERE company_id=$1 AND actor_user_id=$2 AND request_key=$3;
--- name: InsertBoardCreateReceipt :exec
-INSERT INTO board_create_receipts(company_id,actor_user_id,request_key,board_id,request_hash) VALUES($1,$2,$3,$4,$5);
+SELECT sqlc.embed(b),o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+WHERE b.company_id=$1 AND b.id=$2;
 -- name: GetBoardReceipt :one
 SELECT request_hash,seq,ids FROM board_operations WHERE board_id=$1 AND actor_user_id=$2 AND actor_run_id=$3 AND request_key=$4;
 -- name: InsertBoardReceipt :exec
 INSERT INTO board_operations(company_id,board_id,actor_user_id,actor_run_id,request_key,request_hash,seq,ids) VALUES($1,$2,$3,$4,$5,$6,$7,$8);
 -- name: GetBoardChange :one
 SELECT changes FROM board_changes WHERE board_id=$1 AND seq=$2;
--- Recent activity orders the library to the minute, so a burst of commits
--- updates only head_seq and stays a heap-only update.
+-- updated_at moves at most once a minute, so a burst of commits updates only
+-- head_seq and stays a heap-only update.
 -- name: AdvanceBoardHead :one
 UPDATE boards SET head_seq=head_seq+1,updated_at=CASE WHEN updated_at < now()-interval '1 minute' THEN now() ELSE updated_at END
 WHERE company_id=$1 AND id=$2 RETURNING head_seq;
@@ -113,68 +104,15 @@ LEFT JOIN agents ca ON ca.company_id=e.company_id AND ca.id=e.created_by_agent_i
 LEFT JOIN agents ua ON ua.company_id=e.company_id AND ua.id=e.updated_by_agent_id
 WHERE e.company_id=$1 AND e.board_id=$2 AND (sqlc.arg(include_deleted)::boolean OR e.deleted_at IS NULL) AND (cardinality(sqlc.arg(item_ids)::uuid[])=0 OR e.id=ANY(sqlc.arg(item_ids)::uuid[])) ORDER BY e.id;
 
--- name: GetBoardMemberAccess :one
-SELECT access FROM board_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3;
--- name: SetBoardMemberAccess :exec
-INSERT INTO board_member_access(company_id,board_id,user_id,access) VALUES($1,$2,$3,$4)
-ON CONFLICT (board_id,user_id) DO UPDATE SET access=excluded.access;
--- name: DeleteBoardMemberAccess :exec
-DELETE FROM board_member_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3;
--- The member's own grant on one Board, without the creator or Company arms.
--- name: GetBoardMemberGrant :one
-SELECT access FROM board_member_access WHERE company_id=$1 AND board_id=$2 AND user_id=$3;
--- Board grants go with the membership (ADR 0017): a rejoin restores none.
--- name: DeleteMemberBoardGrants :many
-DELETE FROM board_member_access WHERE company_id=$1 AND user_id=$2 RETURNING board_id;
--- A Board nobody active manages: its creator left and no active member holds
--- a manage grant. Company Whiteboard managers may claim it.
--- name: ListUnownedBoards :many
-SELECT b.* FROM boards b WHERE b.company_id=sqlc.arg(company_id)::uuid
- AND NOT EXISTS(SELECT 1 FROM board_access a WHERE a.company_id=b.company_id AND a.board_id=b.id AND a.access='manage')
-ORDER BY b.updated_at DESC,b.id LIMIT sqlc.arg(row_limit)::int OFFSET sqlc.arg(row_offset)::int;
--- name: ClaimUnownedBoard :one
-UPDATE boards SET revision=revision+1,updated_at=now()
-WHERE boards.company_id=sqlc.arg(company_id)::uuid AND boards.id=sqlc.arg(id)::uuid AND boards.revision=sqlc.arg(revision)::bigint
- AND NOT EXISTS(SELECT 1 FROM board_access a WHERE a.company_id=boards.company_id AND a.board_id=boards.id AND a.access='manage')
-RETURNING *;
--- name: SetBoardAgentAccess :exec
-INSERT INTO board_agent_access(company_id,board_id,agent_id,access)
-VALUES($1,$2,$3,$4) ON CONFLICT (board_id,agent_id) DO UPDATE SET access=excluded.access;
--- name: DeleteBoardAgentAccess :exec
-DELETE FROM board_agent_access WHERE company_id=$1 AND board_id=$2 AND agent_id=$3;
--- name: GetBoardAgentAccess :one
-SELECT access FROM board_agent_access WHERE company_id=$1 AND board_id=$2 AND agent_id=$3;
--- name: CountBoardAgentGrants :one
--- An archived Agent leaves the Board's chat, so it holds no place in it.
-SELECT count(*) FROM board_agent_access g
-JOIN agents a ON a.company_id=g.company_id AND a.id=g.agent_id AND a.archived_at IS NULL
-WHERE g.company_id=$1 AND g.board_id=$2;
--- name: ListBoardAccess :many
-SELECT g.user_id::uuid AS actor_id,'user'::text AS actor_type,coalesce(u.display_name,'Former member')::text AS name,g.access,u.avatar_url
-FROM board_member_access g LEFT JOIN users u ON u.id=g.user_id AND u.deleted_at IS NULL
-WHERE g.company_id=$1 AND g.board_id=$2
-UNION ALL
-SELECT g.agent_id::uuid,'agent'::text,a.name,g.access,NULL::text AS avatar_url FROM board_agent_access g
-JOIN agents a ON a.company_id=g.company_id AND a.id=g.agent_id
-WHERE g.company_id=$1 AND g.board_id=$2 ORDER BY name,actor_type,actor_id;
--- name: BoardOwnerProfile :one
-SELECT coalesce(u.display_name,'Former member')::text AS name,u.avatar_url FROM boards b LEFT JOIN users u ON u.id=b.created_by AND u.deleted_at IS NULL WHERE b.company_id=$1 AND b.id=$2;
--- name: ListBoardsForAgent :many
-SELECT sqlc.embed(b),g.access,access.access AS member_access FROM boards b
-JOIN board_agent_access g ON g.company_id=b.company_id AND g.board_id=b.id
-JOIN board_access access ON access.company_id=b.company_id AND access.board_id=b.id AND access.user_id=sqlc.arg(actor_user_id)
-WHERE b.company_id=sqlc.arg(company_id) AND g.agent_id=sqlc.arg(agent_id) AND b.archived_at IS NULL ORDER BY b.updated_at DESC,b.id LIMIT 101 OFFSET sqlc.arg(row_offset)::int;
+-- Everyone who can open the Whiteboard Artifact hears of its changes.
 -- name: ListBoardAudience :many
-SELECT access.user_id FROM board_access access JOIN company_members m ON m.company_id=access.company_id AND m.user_id=access.user_id
-WHERE access.company_id=$1 AND access.board_id=$2 AND m.role=ANY(sqlc.arg(actor_roles)::text[]) ORDER BY access.user_id;
--- name: AdvanceBoardAccessRevision :exec
-UPDATE boards SET revision=revision+1,updated_at=now() WHERE company_id=$1 AND id=$2;
--- name: SetBoardVisibility :exec
-UPDATE boards SET visibility=$3,company_access=$4,
-public_token=CASE WHEN visibility='public' AND $3='public' THEN public_token WHEN $3='public' THEN gen_random_uuid() ELSE NULL END,
-updated_at=now() WHERE company_id=$1 AND id=$2;
+SELECT user_id FROM output_access WHERE company_id=$1 AND output_id=$2 ORDER BY user_id;
+-- An unrevoked public Artifact link reads its Board.
 -- name: ReadPublicBoard :one
-SELECT b.* FROM boards b JOIN companies c ON c.id=b.company_id AND c.deleting_at IS NULL WHERE b.public_token=$1 AND b.visibility='public' AND b.archived_at IS NULL;
+SELECT sqlc.embed(b),o.title FROM boards b
+JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+JOIN companies c ON c.id=b.company_id AND c.deleting_at IS NULL
+WHERE o.public_token=sqlc.arg(token)::uuid AND o.visibility='public';
 -- One statement stamps the actual actor on every row a batch touched.
 -- name: StampBoardItemsAttribution :exec
 UPDATE board_items SET updated_by=sqlc.arg(updated_by)::uuid,updated_at=now(),

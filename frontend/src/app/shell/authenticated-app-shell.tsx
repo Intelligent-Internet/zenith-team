@@ -95,7 +95,6 @@ function WorkspaceShellContent() {
       ? JSON.stringify([session.userId, companyId])
       : undefined;
   const showTeam = Boolean(session.company?.id);
-  const isWhiteboardRoute = /^\/whiteboards\/[^/]+/.test(location.pathname);
   const isProjectCanvasRoute =
     /^\/projects\/[^/]+\/artifacts\/?$/.test(location.pathname) &&
     new URLSearchParams(location.search).get("view") !== "gallery";
@@ -179,9 +178,7 @@ function WorkspaceShellContent() {
                   aria-label={
                     isProjectCanvasRoute
                       ? "Zenith Team project canvas workspace"
-                      : isWhiteboardRoute
-                        ? "Zenith Team whiteboard workspace"
-                        : "Zenith Team company workspace"
+                      : "Zenith Team company workspace"
                   }
                 >
                   {showTeam && companyId ? (

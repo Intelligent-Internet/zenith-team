@@ -217,8 +217,7 @@ func TestBoardAttachFilesPreviewsAndPlacements(t *testing.T) {
 	) {
 		t.Fatalf("another member's upload = %v, want not found", err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE board_member_access SET access='read' WHERE board_id=$1 AND user_id=$2`,
-		board.ID, member.UserID)
+	grantTestBoardAccess(t, boards, owner, board.ID, member.UserID, "view")
 	readOnly := uploadBoardTestFile(t, files, member, "late.pdf", "application/pdf", []byte("%PDF late"))
 	if _, err := media.AttachFile(ctx, member, board.ID, BoardFileInput{AttachmentID: readOnly}); !errors.Is(
 		err,
@@ -364,18 +363,11 @@ func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
 	if _, err := placeBoardFile(t, boards, owner, board.ID, "image", photo); err != nil {
 		t.Fatal(err)
 	}
-	access, err := boards.Access(ctx, owner, board.ID)
-	if err != nil {
+	// The Whiteboard Artifact's public link reads its Board.
+	var token uuid.UUID
+	if err := pool.QueryRow(ctx, `UPDATE outputs SET visibility='public',public_token=gen_random_uuid()
+		WHERE id=$1 RETURNING public_token`, board.ID).Scan(&token); err != nil {
 		t.Fatal(err)
-	}
-	if err = boards.SetVisibility(ctx, owner, board.ID, BoardVisibilityInput{
-		ExpectedRevision: access.Revision, Visibility: "public", CompanyAccess: "read",
-	}); err != nil {
-		t.Fatal(err)
-	}
-	access, err = boards.Access(ctx, owner, board.ID)
-	if err != nil || access.PublicToken == nil {
-		t.Fatalf("public token = %+v, %v", access, err)
 	}
 	config := pool.Config()
 	config.MaxConns, config.MinConns = 1, 0
@@ -387,7 +379,7 @@ func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
 	singleMedia, _ := newMedia(single)
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	file, err := singleMedia.PublicFileDownload(bounded, *access.PublicToken, photo, false)
+	file, err := singleMedia.PublicFileDownload(bounded, token, photo, false)
 	if err != nil {
 		t.Fatalf("public download on a one-connection pool = %v", err)
 	}

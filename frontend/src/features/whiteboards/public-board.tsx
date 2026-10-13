@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router";
 import {
   Background,
   BackgroundVariant,
@@ -16,8 +15,8 @@ import {
   type WhiteboardFlowNode,
 } from "./board-node";
 import {
-  whiteboardApi,
   publicBoardPath,
+  usePublicWhiteboardQuery,
   type BoardHydratedItem,
 } from "./board-api";
 import { BoardHydration } from "./board-hydration";
@@ -26,18 +25,27 @@ import { boardHandles } from "./board-handles";
 import { isHollowShape } from "./board-shape";
 import "./whiteboards.css";
 const nodeTypes = { whiteboard: BoardNode };
-export function PublicWhiteboardPage() {
-  const { token = "" } = useParams();
+/**
+ * A Whiteboard Artifact read through its public link: view only, no sign-in.
+ * `heading` shows the Board title when the page around it has none.
+ */
+export default function PublicWhiteboard({
+  token,
+  heading = false,
+}: {
+  token: string;
+  heading?: boolean;
+}) {
   return (
     <ReactFlowProvider>
-      <PublicBoard token={token} />
+      <PublicBoard token={token} heading={heading} />
     </ReactFlowProvider>
   );
 }
-function PublicBoard({ token }: { token: string }) {
+function PublicBoard({ token, heading }: { token: string; heading: boolean }) {
   // Each poll reads the whole snapshot, so a hidden tab does not poll and a
   // visible one refreshes every few seconds; focus refreshes immediately.
-  const query = whiteboardApi.usePublicWhiteboardQuery(token, {
+  const query = usePublicWhiteboardQuery(token, {
     skip: !token,
     pollingInterval: 15000,
     skipPollingIfUnfocused: true,
@@ -122,15 +130,17 @@ function PublicBoard({ token }: { token: string }) {
         className="wb-editor wb-public-editor"
         aria-label={snapshot.board.title}
       >
-        <header className="wb-editor-header">
-          <div className="wb-board-heading">
-            <h1 title={snapshot.board.title}>{snapshot.board.title}</h1>
-          </div>
-          <span className="wb-public-access">
-            <LockKeyhole size={15} />
-            View only
-          </span>
-        </header>
+        {heading ? (
+          <header className="wb-editor-header">
+            <div className="wb-board-heading">
+              <h1 title={snapshot.board.title}>{snapshot.board.title}</h1>
+            </div>
+            <span className="wb-public-access">
+              <LockKeyhole size={15} />
+              View only
+            </span>
+          </header>
+        ) : null}
         <div className="wb-editor-body">
           <div className="wb-surface">
             <BoardEdgeMarkers />

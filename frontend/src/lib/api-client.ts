@@ -24,7 +24,6 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/invite/",
   "/join/",
   "/share/artifacts/",
-  "/share/whiteboards/",
   "/login",
   "/terms",
   "/privacy",

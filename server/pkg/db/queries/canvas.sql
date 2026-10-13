@@ -270,8 +270,10 @@ AND ((v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL) OR
 -- name: CountVersionComments :one
 SELECT count(*) FROM review_comments c JOIN review_threads t ON t.id=c.thread_id WHERE CASE WHEN sqlc.narg(page_id)::uuid IS NOT NULL THEN t.page_id=sqlc.narg(page_id)::uuid ELSE t.page_id IS NULL AND t.artifact_version_id=$1 END;
 
+-- A Whiteboard is live content in its chat, not a result a Project canvas
+-- places.
 -- name: LockCanvasOutput :one
-SELECT id FROM outputs WHERE company_id=$1 AND id=$2 FOR SHARE;
+SELECT id FROM outputs WHERE company_id=$1 AND id=$2 AND type<>'whiteboard' FOR SHARE;
 
 -- name: GetCanvasDraftSequence :one
 SELECT head_seq FROM wiki_canvas_drafts WHERE company_id=$1 AND page_id=$2;

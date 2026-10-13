@@ -17,7 +17,12 @@ import {
   Trash2,
 } from "@/shared/ui/icons";
 import { useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router";
+import {
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
 
 import { readSessionSnapshot } from "@/shared/session/session";
 import { ArtifactAppView } from "@/features/chat-panel/components/artifacts/artifact-app-view";
@@ -140,6 +145,15 @@ export function RunResultPage() {
       await query.refetch();
     }
   };
+
+  // A Run never presents a Whiteboard; one opens on its own Artifact page.
+  if (output?.type === "whiteboard")
+    return (
+      <Navigate
+        to={`/companies/${encodeURIComponent(companyId)}/artifacts/${encodeURIComponent(output.id)}`}
+        replace
+      />
+    );
 
   return (
     <main className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--workspace-content-bg)] text-[var(--workspace-native-text)] [scrollbar-gutter:stable]">

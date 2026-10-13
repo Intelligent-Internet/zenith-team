@@ -167,7 +167,7 @@ func (q *Queries) GetPublicBoardFile(ctx context.Context, arg GetPublicBoardFile
 
 const getReadableBoardFileSource = `-- name: GetReadableBoardFileSource :one
 SELECT f.company_id, f.board_id, f.attachment_id, f.preview_attachment_id, f.width, f.height, f.created_by, f.created_at FROM board_files f
-JOIN board_access access ON access.company_id=f.company_id AND access.board_id=f.board_id AND access.user_id=$1
+JOIN output_access access ON access.company_id=f.company_id AND access.output_id=f.board_id AND access.user_id=$1
 JOIN attachment_access readable ON readable.company_id=f.company_id AND readable.attachment_id=f.attachment_id
  AND readable.user_id=$1
 JOIN attachments a ON a.company_id=f.company_id AND a.id=f.attachment_id AND a.status='ready'
@@ -236,25 +236,6 @@ func (q *Queries) ListBoardVisualHydration(ctx context.Context, arg ListBoardVis
 		return nil, err
 	}
 	return items, nil
-}
-
-const purgeBoardCreateReceipts = `-- name: PurgeBoardCreateReceipts :execrows
-DELETE FROM board_create_receipts WHERE (company_id,actor_user_id,request_key) IN (
- SELECT company_id,actor_user_id,request_key FROM board_create_receipts
- WHERE created_at < $1::timestamptz LIMIT $2::integer FOR UPDATE SKIP LOCKED)
-`
-
-type PurgeBoardCreateReceiptsParams struct {
-	Cutoff    pgtype.Timestamptz `json:"cutoff"`
-	BatchSize int32              `json:"batch_size"`
-}
-
-func (q *Queries) PurgeBoardCreateReceipts(ctx context.Context, arg PurgeBoardCreateReceiptsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, purgeBoardCreateReceipts, arg.Cutoff, arg.BatchSize)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const purgeBoardEdgeTombstones = `-- name: PurgeBoardEdgeTombstones :execrows

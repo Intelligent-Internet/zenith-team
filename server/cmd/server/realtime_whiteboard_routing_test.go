@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"slices"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -43,10 +41,9 @@ func TestWhiteboardCommitHintRoutesOnlyToReaders(t *testing.T) {
 	}
 }
 
-// A content hint reaches the people with the Board open at once. Everyone else
-// in the audience only keeps a library fresh, so they get one deferred hint
-// carrying the latest sequence. An access change reaches everybody at once.
-func TestWhiteboardHintsReachViewersNowAndTheLibraryLater(t *testing.T) {
+// A content hint reaches only the people with the Board open: nobody else
+// reads its scene.
+func TestWhiteboardHintsReachOnlyViewers(t *testing.T) {
 	t.Parallel()
 	bus, err := events.NewBus(events.BusOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
@@ -54,7 +51,7 @@ func TestWhiteboardHintsReachViewersNowAndTheLibraryLater(t *testing.T) {
 	}
 	recorder := &recordingBroadcaster{}
 	presence := realtime.NewCanvasPresence(nil)
-	if err = registerRealtimeRouting(bus, recorder, whiteboardHintRouting{viewers: presence, libraryDelay: 20 * time.Millisecond}); err != nil {
+	if err = registerRealtimeRouting(bus, recorder, whiteboardHintRouting{viewers: presence}); err != nil {
 		t.Fatal(err)
 	}
 	company, board, viewer, reader := uuid.New(), uuid.New(), uuid.New(), uuid.New()
@@ -62,34 +59,12 @@ func TestWhiteboardHintsReachViewersNowAndTheLibraryLater(t *testing.T) {
 		realtime.CanvasSession{SessionID: "tab", UserID: viewer.String()}, false); err != nil {
 		t.Fatal(err)
 	}
-	to := func(user uuid.UUID) string { return "company_user/" + company.String() + "/" + user.String() }
+	to := "company_user/" + company.String() + "/" + viewer.String()
 	for seq := int64(1); seq <= 3; seq++ {
 		publish(t, bus, company, canvas.TopicBoard, canvas.EventBoardChanged,
 			canvas.BoardChanged{BoardID: board, Sequence: seq, RecipientUserIDs: []uuid.UUID{viewer, reader}})
 	}
-	sent, _ := recorder.recorded()
-	if !slices.Equal(sent, []string{to(viewer), to(viewer), to(viewer)}) {
-		t.Fatalf("immediate hints = %v; want the viewer only", sent)
-	}
-	deadline := time.Now().Add(2 * time.Second)
-	for len(sent) < 4 && time.Now().Before(deadline) {
-		time.Sleep(5 * time.Millisecond)
-		sent, _ = recorder.recorded()
-	}
-	sent, frames := recorder.recorded()
-	if len(sent) != 4 || sent[3] != to(reader) {
-		t.Fatalf("library hints = %v; want one for the reader", sent)
-	}
-	raw, err := json.Marshal(frames[3].Payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(raw), `"sequence":3`) {
-		t.Fatalf("library hint = %s; want the latest sequence", raw)
-	}
-	publish(t, bus, company, canvas.TopicBoard, canvas.EventBoardChanged,
-		canvas.BoardChanged{BoardID: board, Sequence: 4, Access: true, RecipientUserIDs: []uuid.UUID{viewer, reader}})
-	if sent, _ = recorder.recorded(); len(sent) != 6 || !slices.Contains(sent[4:], to(reader)) {
-		t.Fatalf("access hints = %v; want everyone at once", sent)
+	if sent, _ := recorder.recorded(); !slices.Equal(sent, []string{to, to, to}) {
+		t.Fatalf("hints = %v; want the viewer only", sent)
 	}
 }

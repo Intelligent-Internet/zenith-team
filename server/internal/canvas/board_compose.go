@@ -1292,7 +1292,7 @@ func boardComposeReplayBounds(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
-	b generated.Board,
+	b boardRecord,
 	replay BoardMutation,
 ) (*BoardVisualBounds, error) {
 	if len(replay.IDs) == 0 {

@@ -95,11 +95,10 @@ func newServer(
 	if len(optional) > 0 {
 		registerTaskResultTool(server, optional[0].taskResults, allowedTools)
 		registerOutputTool(server, optional[0].output, allowedTools)
-		registerArtifactTools(server, optional[0].artifacts, allowedTools)
+		registerArtifactTools(server, optional[0].artifacts, optional[0].whiteboards, allowedTools)
 		registerPageTools(server, optional[0].pages, allowedTools)
 		registerCalendarTools(server, optional[0].calendar, allowedTools)
 		registerWikiTools(server, optional[0].wiki, allowedTools)
-		registerWhiteboardTools(server, optional[0].whiteboards, allowedTools)
 		registerSocialTools(server, optional[0].social, allowedTools)
 		mailService = optional[0].mail
 		taskFailureService = optional[0].taskFailure

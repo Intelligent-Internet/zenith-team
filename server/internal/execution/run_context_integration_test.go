@@ -125,52 +125,6 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 		}
 	})
 
-	t.Run("a Board chat's tagged Runs know their Board", func(t *testing.T) {
-		var board uuid.UUID
-		if err := pool.QueryRow(ctx, `INSERT INTO boards (company_id, title, created_by) VALUES ($1, 'Roadmap', $2) RETURNING id`,
-			fixture.CompanyA, fixture.UserA).
-			Scan(&board); err != nil {
-			t.Fatal(err)
-		}
-		agentChat := func(channel uuid.UUID) uuid.UUID {
-			chat, err := queries.EnsureChannelAgentConversation(
-				ctx,
-				generated.EnsureChannelAgentConversationParams{
-					ChannelID: channel, AgentID: fixture.AgentA, CompanyID: fixture.CompanyA,
-				},
-			)
-			if err != nil {
-				t.Fatal(err)
-			}
-			return chat.ID
-		}
-		profile := func(conversation uuid.UUID) runExecutionProfile {
-			raw, err := runContextExecutionProfile(ctx, queries, RunTrigger{
-				CompanyID: fixture.CompanyA, ConversationID: conversation, Source: RunSourceMessage,
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			var decoded runExecutionProfile
-			if err := json.Unmarshal(raw, &decoded); err != nil {
-				t.Fatal(err)
-			}
-			return decoded
-		}
-		onBoard := agentChat(dbtest.SeedBoardChannel(t, ctx, pool, fixture.CompanyA, board, fixture.UserA,
-			[]uuid.UUID{fixture.AgentA}))
-		if w := profile(onBoard).Whiteboard; w == nil || w.ID != board.String() || w.Title != "Roadmap" {
-			t.Fatalf("a tag in the Board's chat works on %+v, want the Board", w)
-		}
-		elsewhere := agentChat(dbtest.SeedDiscussionChannel(t, ctx, pool, fixture.CompanyA, fixture.UserA,
-			[]uuid.UUID{fixture.AgentA}))
-		for name, chat := range map[string]uuid.UUID{"a channel's tag": elsewhere, "a direct chat": goldenConversationID(t)} {
-			if w := profile(chat).Whiteboard; w != nil {
-				t.Fatalf("%s works on Board %+v", name, w)
-			}
-		}
-	})
-
 	// The same id the golden document names, so the produced bytes can be
 	// compared to it exactly.
 	dbtest.MustExec(t, ctx, pool, `

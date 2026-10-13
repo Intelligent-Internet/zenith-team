@@ -41,12 +41,9 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
   onOpenThread,
   header,
   footer,
-  empty,
 }: {
   header?: ReactNode;
   footer?: ReactNode;
-  // In place of the default prompt while the chat has no messages.
-  empty?: ReactNode;
   conversationId: string;
   pages: DiscussionPage[];
   detail: DiscussionDetail;
@@ -174,9 +171,7 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
     await runtime.jumpLatest(conversationId, rootId);
   }
   if (!rows.length && !rootId)
-    return empty ? (
-      <div className="discussion-empty">{empty}</div>
-    ) : (
+    return (
       <div className="discussion-empty">
         <MessageSquareText size={30} aria-hidden="true" />
         <h3>Start the conversation</h3>

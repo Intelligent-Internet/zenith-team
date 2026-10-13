@@ -712,15 +712,6 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err := registerTaskReadiness(bus, queries); err != nil {
 		return fmt.Errorf("register Task readiness listeners: %w", err)
 	}
-	boardChannels, err := conversation.NewBoardChannelService(
-		conversation.BoardChannelServiceOptions{Store: databaseStore, Bus: bus},
-	)
-	if err != nil {
-		return fmt.Errorf("create Board chat service: %w", err)
-	}
-	if err := registerBoardChannelSync(bus, boardChannels); err != nil {
-		return fmt.Errorf("register Board chat sync: %w", err)
-	}
 	canvasPresence := realtime.NewCanvasPresence(redisClient)
 	if err := registerRealtimeRouting(bus, broadcaster, whiteboardHintRouting{viewers: canvasPresence, runs: canvasPresence}); err != nil {
 		return fmt.Errorf("register realtime routing: %w", err)
@@ -829,11 +820,10 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 			attachmentService,
 			canvas.WithDocumentAgentInvoker(conversation.InvokeDocumentAgentInTx),
 		),
-		BoardService:        boardService,
-		BoardMediaService:   canvas.NewBoardMediaService(databaseStore, attachmentService),
-		BoardChannelService: boardChannels,
-		EphemeralRelay:      ephemeralRelay,
-		PageService:         canvas.NewPageService(databaseStore, bus),
+		BoardService:      boardService,
+		BoardMediaService: canvas.NewBoardMediaService(databaseStore, attachmentService),
+		EphemeralRelay:    ephemeralRelay,
+		PageService:       canvas.NewPageService(databaseStore, bus),
 		PresentationService: canvas.NewPresentationService(
 			databaseStore,
 			bus,

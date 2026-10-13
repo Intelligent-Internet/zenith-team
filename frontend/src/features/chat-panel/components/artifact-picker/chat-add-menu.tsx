@@ -1,4 +1,9 @@
-import { PackageCheck, Paperclip, Plus } from "@/shared/ui/icons";
+import {
+  LayoutDashboard,
+  PackageCheck,
+  Paperclip,
+  Plus,
+} from "@/shared/ui/icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,11 +17,14 @@ export function ChatAddMenu({
   uploadDisabled,
   onUpload,
   onSelectArtifact,
+  onCreateWhiteboard,
 }: {
   disabled?: boolean;
   uploadDisabled?: boolean;
   onUpload: () => void;
   onSelectArtifact?: () => void;
+  /** Makes a Whiteboard in this chat, as the bar under its header does. */
+  onCreateWhiteboard?: () => void;
 }) {
   return (
     <DropdownMenu>
@@ -45,6 +53,12 @@ export function ChatAddMenu({
           <DropdownMenuItem onSelect={onSelectArtifact}>
             <PackageCheck size={17} />
             Select artifact
+          </DropdownMenuItem>
+        )}
+        {onCreateWhiteboard && (
+          <DropdownMenuItem onSelect={onCreateWhiteboard}>
+            <LayoutDashboard size={17} />
+            New whiteboard
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
