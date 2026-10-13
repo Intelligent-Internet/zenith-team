@@ -3459,7 +3459,7 @@ export interface paths {
          * @description Receive-only WebSocket upgrade. Authentication rides the upgrade by
          *     cookie or bearer header; the origin is checked at the socket boundary.
          *     The server routes frames through the authenticated company and eligible
-         *     company-user typed audiences. There is no initialization, ready,
+         *     company-user typed audiences. Company research progress is not a frame of its own: pages appear through the Wiki events and the server's Inbox item announces the end. There is no initialization, ready,
          *     subscription, or application ping frame.
          */
         get: operations["openClientWebSocket"];
@@ -7152,11 +7152,13 @@ export interface paths {
          *     send with `409 conversation_conflict` rather than storing words no run
          *     will ever read.
          *
-         *     **Company preparation reserves its exact conversation.** New sends to
-         *     a pending initial research/welcome conversation return
+         *     **Company preparation reserves its exact conversation until the
+         *     research starts.** New sends to the CEO conversation of a receipt whose
+         *     research Run has not been started return
          *     `409 conversation_initialization_pending`. Exact request replays still
-         *     return their original receipt. Other conversations remain available.
-         *     Existing queued prompts wait until the validated welcome completes.
+         *     return their original receipt. Once the research Run exists, a send
+         *     queues behind it like behind any other Run. Other conversations remain
+         *     available.
          *
          *     **A run needs the sender's binding.** A direct chat runs on the
          *     caller's own computer: an Agent the caller has not set up on one of
@@ -9322,23 +9324,25 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Resume the founder's initial business research */
+        /** Read the founder's company research progress */
         get: operations["getCompanyInitialization"];
         put?: never;
         /**
-         * Start research or advance saved research to the CEO welcome
+         * Start the company research
          * @description Requires agents.manage and a human actor. Company-serialized and
-         *     idempotent; repeating a request never duplicates a live Run or welcome.
+         *     idempotent; repeating a request never duplicates a live Run.
          *     The initial POST can reserve a durable receipt while waiting for models.
-         *     Enqueuing or retrying research requires a completed model discovery from
+         *     Starting or retrying research requires a completed model discovery from
          *     the founder's bound runtime advertising Luna. Uses no reasoning when
          *     offered, otherwise its lowest supported level. The CEO model is unchanged.
-         *     The server advances completed research into its final saved context and
-         *     one welcome Run, including while the client is closed. Repeating POST
-         *     may also advance the same receipt. Failed phases require an explicit
-         *     retry; the background worker never starts discovery or retries them.
-         *     Workspace access is independent of preparation. Only the exact
-         *     initialization conversation waits for the validated welcome to finish.
+         *     The research then runs in the background and writes linked Company Wiki
+         *     pages; nothing else needs a client. When the Run reaches its final state
+         *     the server completes the receipt and sends the founder an Inbox notice
+         *     that opens the Wiki. A failed Run stays failed until a POST with
+         *     `retry: true` starts a new one. The CEO conversation accepts sends
+         *     once the Run exists. A background reconciler only completes a receipt
+         *     whose final Run the terminal path could not reach; it never starts
+         *     discovery, a Run or a retry.
          */
         post: operations["advanceCompanyInitialization"];
         delete?: never;
@@ -10169,6 +10173,43 @@ export interface paths {
         get: operations["searchWikiForRun"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Wiki pages as the founder's company-research Run
+         * @description The only Wiki write an Agent has. Requires `X-Boardly-Run-Token`
+         *     proving a live, non-Schedule Run of this Company, sent by the Run's
+         *     authorizer, and an `Idempotency-Key` UUID. The server then re-proves in
+         *     the write transaction that the Run is `running`, that its frozen
+         *     execution profile source is `company_research`, that the authorizer is
+         *     an active member holding `wiki.publish`, and that the Agent's `wiki`
+         *     capability is on; any other Run is `403 wiki_agent_write_forbidden`.
+         *     Pages are authored by the authorizing member and published at once.
+         *
+         *     Pages are upserted by `key` among the pages this Run created: a new key
+         *     creates a page, a known key publishes a new revision, and an identical
+         *     replay reports `unchanged` and writes nothing. A Run never reaches a
+         *     page it did not create; a page a person archived is left alone and
+         *     reported in `warnings`. `[[key]]` and `[[key|label]]` in `markdown`
+         *     become links to the Run's page with that key, in this call or an
+         *     earlier one; a key with no page becomes plain text and a warning, and
+         *     the page is linked when a later call writes that key. At most 12 pages
+         *     per call and 40 for the whole company research, every attempt counted (`422 wiki_agent_write_limit`).
+         */
+        post: operations["writeWikiPagesForRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -14334,12 +14375,7 @@ export interface components {
             revision: components["schemas"]["Revision"];
             createdAt: components["schemas"]["Timestamp"];
             updatedAt: components["schemas"]["Timestamp"];
-            /**
-             * @description This member has an unfinished initial research or welcome receipt.
-             *     Preparation can continue while the member uses the workspace. The
-             *     initialization conversation accepts new sends after the server has
-             *     validated and recorded welcome completion; other chats stay available.
-             */
+            /** @description The founder's receipt exists but research has not been started (no research Run yet); the client must start it. It is false while research runs and after it ends. */
             initializationPending?: boolean;
             /**
              * @description When the Company gained its root Agent, or `null` before it has one.
@@ -19268,8 +19304,11 @@ export interface components {
          */
         RunTerminalConflict: components["schemas"]["RunTerminalHeadMismatchError"] | components["schemas"]["Error"];
         CompanyInitialization: {
-            /** @enum {string} */
-            phase: "not_started" | "research" | "greeting" | "ready";
+            /**
+             * @description not_started until the research Run exists, research while it works or after it failed, ready once it completed.
+             * @enum {string}
+             */
+            phase: "not_started" | "research" | "ready";
             /** @enum {string} */
             status: "idle" | "awaiting_model" | "queued" | "dispatched" | "running" | "waiting_local_directory" | "deferred" | "waiting_runtime" | "completed" | "failed";
             /** Format: uuid */
@@ -19277,6 +19316,13 @@ export interface components {
             /** Format: uuid */
             conversationId?: string;
             message?: string;
+            /** @description Wiki pages the research Run (including its automatic retries) has written so far. */
+            pagesWritten: number;
+            /**
+             * Format: uuid
+             * @description The research's `company-overview` hub page; omitted until it is written.
+             */
+            overviewPageId?: string;
         };
         AdvanceCompanyInitialization: {
             /** Format: uuid */
@@ -19539,6 +19585,13 @@ export interface components {
             createdByUserId: string;
             /** Format: uuid */
             lastAuthorUserId: string;
+            /**
+             * Format: uuid
+             * @description The Agent that wrote the current revision on behalf of lastAuthorUserId, such as the onboarding research Run's Agent.
+             */
+            lastAuthorAgentId: string | null;
+            /** @description That Agent's name, or null when no Agent wrote the current revision or the Agent no longer exists. */
+            lastAuthorAgentName: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -19636,6 +19689,11 @@ export interface components {
             collectionId: string | null;
             /** Format: uuid */
             authorUserId: string;
+            /**
+             * Format: uuid
+             * @description The Agent that wrote this revision on behalf of authorUserId.
+             */
+            authorAgentId: string | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -19733,6 +19791,36 @@ export interface components {
             items: components["schemas"]["WikiAgentSearchItem"][];
             /** @description Every active page that matched, not only those returned. */
             total: number;
+        };
+        WikiAgentWritePage: {
+            /** @description The Run's handle for the page and the target of `[[key]]` links. */
+            key: string;
+            title: string;
+            summary?: string;
+            markdown?: string;
+        };
+        WikiAgentWrite: {
+            /** @description New pages are filed in the Company collection (found case-insensitively or created); a page written before keeps its collection. */
+            pages: components["schemas"]["WikiAgentWritePage"][];
+        };
+        WikiAgentWriteItem: {
+            key: string;
+            /** Format: uuid */
+            pageId: string;
+            title: string;
+            /**
+             * Format: int64
+             * @description Content revision number of the page's current revision.
+             */
+            revision: number;
+            /** @enum {string} */
+            status: "created" | "updated" | "unchanged";
+        };
+        WikiAgentWriteResult: {
+            pages: components["schemas"]["WikiAgentWriteItem"][];
+            warnings: string[];
+            /** @description Pages this Run owns after the call. */
+            totalPages: number;
         };
         WikiAgentPage: {
             /** Format: uuid */
@@ -39605,7 +39693,7 @@ export interface operations {
              *     answer, an immediate-send `requestKey` has different payload, or
              *     the conversation changed under the write),
              *     `409 conversation_initialization_pending` (this exact conversation
-             *     is still preparing the company welcome),
+             *     is waiting for the company research to start),
              *     `409 agent_binding_required` (a direct chat with an Agent the
              *     caller has not set up on one of their computers),
              *     `409 run_queue_conflict` (a queued `requestKey` has different payload
@@ -44266,7 +44354,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Durable initialization phase and current Run status. */
+            /** @description Durable research phase, Run status and how many Wiki pages the research has written so far. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -45998,6 +46086,45 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    writeWikiPagesForRun: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WikiAgentWrite"];
+            };
+        };
+        responses: {
+            /** @description The pages saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiAgentWriteResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
             500: components["responses"]["InternalError"];
         };

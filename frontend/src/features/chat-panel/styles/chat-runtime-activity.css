@@ -121,6 +121,48 @@ details[open] > .chat-runtime-summary > .chat-runtime-chevron {
   flex-shrink: 0;
 }
 
+.chat-runtime-wiki-pages {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  margin: 2px 0 8px 20px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.chat-runtime-wiki-pages li {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chat-runtime-wiki-pages__link,
+.chat-runtime-wiki-pages__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-runtime-wiki-pages__link {
+  color: var(--workspace-native-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-runtime-wiki-pages__link:hover {
+  color: var(--workspace-native-text-muted);
+}
+
+.chat-runtime-wiki-pages__link:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--workspace-native-text-muted);
+  outline-offset: 3px;
+}
+
 .chat-runtime-detail__payload {
   max-height: 192px;
   margin: 0;

@@ -9,9 +9,23 @@ import (
 )
 
 type wikiAPIStub struct {
-	paths []string
-	body  string
-	err   error
+	paths  []string
+	keys   []string
+	posted []string
+	body   string
+	err    error
+}
+
+func (s *wikiAPIStub) PostRunJSON(_ context.Context, path, key string, source, destination any) error {
+	encoded, err := json.Marshal(source)
+	if err != nil {
+		return err
+	}
+	s.paths, s.keys, s.posted = append(s.paths, path), append(s.keys, key), append(s.posted, string(encoded))
+	if s.err != nil {
+		return s.err
+	}
+	return json.Unmarshal([]byte(s.body), destination)
 }
 
 func (s *wikiAPIStub) FetchRunJSON(_ context.Context, path string, destination any) error {
@@ -114,5 +128,62 @@ func TestWikiToolsWrapServerRefusals(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "wiki_agent_access_disabled") {
 			t.Errorf("%s error = %v, want the server refusal code", name, err)
 		}
+	}
+}
+
+func TestWikiWritePostsTheBatchToTheRunRouteWithAConvergingKey(t *testing.T) {
+	t.Parallel()
+	api := &wikiAPIStub{body: `{"pages":[{"key":"company-overview","pageId":"p1","title":"Company overview","revision":1,"status":"created"}],"warnings":["w"],"totalPages":1}`}
+	service := newTestWikiService(t, api)
+	input := WikiWriteInput{Pages: []WikiWritePage{
+		{Key: "company-overview", Title: "Company overview", Summary: "s", Markdown: "See [[products]]"},
+	}}
+	result, err := service.WriteWiki(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Pages) != 1 || result.Pages[0].Status != "created" || result.Pages[0].PageID != "p1" ||
+		result.TotalPages != 1 || len(result.Warnings) != 1 {
+		t.Fatalf("result = %+v", result)
+	}
+	if want := "/companies/company/runs/run/agent-wiki/pages"; api.paths[0] != want {
+		t.Fatalf("path = %q, want %q", api.paths[0], want)
+	}
+	want := `{"pages":[{"key":"company-overview","title":"Company overview","summary":"s","markdown":"See [[products]]"}]}`
+	if api.posted[0] != want {
+		t.Fatalf("body = %s, want %s", api.posted[0], want)
+	}
+
+	// A retry of the same batch carries the same key; a different batch does not.
+	if _, err = service.WriteWiki(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+	input.Pages[0].Markdown = "changed"
+	if _, err = service.WriteWiki(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+	if api.keys[0] != api.keys[1] || api.keys[0] == api.keys[2] || api.keys[0] == "" {
+		t.Fatalf("idempotency keys = %v", api.keys)
+	}
+}
+
+func TestWikiWriteForwardsTrimmedKeys(t *testing.T) {
+	t.Parallel()
+	api := &wikiAPIStub{body: `{"pages":[],"warnings":[],"totalPages":0}`}
+	service := newTestWikiService(t, api)
+	input := WikiWriteInput{Pages: []WikiWritePage{{Key: "  company-overview\n", Title: "T", Markdown: "m"}}}
+	if _, err := service.WriteWiki(context.Background(), input); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(api.posted[0], `"key":"company-overview"`) {
+		t.Fatalf("body = %s, want the trimmed key", api.posted[0])
+	}
+	if input.Pages[0].Key != "  company-overview\n" {
+		t.Fatal("the caller's input was modified")
+	}
+	// The trimmed and the untrimmed spelling of one key are one key.
+	dup := WikiWriteInput{Pages: []WikiWritePage{{Key: "k", Title: "T"}, {Key: " k ", Title: "U"}}}
+	if _, err := service.WriteWiki(context.Background(), dup); err == nil {
+		t.Fatal("duplicate after trimming accepted")
 	}
 }

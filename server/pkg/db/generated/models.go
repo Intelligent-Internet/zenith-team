@@ -923,8 +923,6 @@ type CompanyInitialization struct {
 	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
 	ConversationID  uuid.UUID          `json:"conversation_id"`
 	ResearchRunID   uuid.NullUUID      `json:"research_run_id"`
-	WelcomeRunID    uuid.NullUUID      `json:"welcome_run_id"`
-	ContextMarkdown string             `json:"context_markdown"`
 	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
@@ -2402,6 +2400,17 @@ type RunWikiRead struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type RunWikiWrite struct {
+	RunID          uuid.UUID          `json:"run_id"`
+	CompanyID      uuid.UUID          `json:"company_id"`
+	Key            string             `json:"key"`
+	PageID         uuid.UUID          `json:"page_id"`
+	SourceMarkdown string             `json:"source_markdown"`
+	LastRevisionID uuid.NullUUID      `json:"last_revision_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	LastDraftSeq   pgtype.Int8        `json:"last_draft_seq"`
+}
+
 type Runtime struct {
 	ID                      uuid.UUID          `json:"id"`
 	CompanyID               uuid.UUID          `json:"company_id"`
@@ -2835,16 +2844,17 @@ type WikiPage struct {
 }
 
 type WikiRevision struct {
-	ID           uuid.UUID          `json:"id"`
-	CompanyID    uuid.UUID          `json:"company_id"`
-	PageID       uuid.UUID          `json:"page_id"`
-	Number       int64              `json:"number"`
-	Title        string             `json:"title"`
-	Body         string             `json:"body"`
-	Summary      string             `json:"summary"`
-	CollectionID uuid.NullUUID      `json:"collection_id"`
-	AuthorUserID uuid.UUID          `json:"author_user_id"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	BlockContent []byte             `json:"block_content"`
-	PublishedAt  pgtype.Timestamptz `json:"published_at"`
+	ID            uuid.UUID          `json:"id"`
+	CompanyID     uuid.UUID          `json:"company_id"`
+	PageID        uuid.UUID          `json:"page_id"`
+	Number        int64              `json:"number"`
+	Title         string             `json:"title"`
+	Body          string             `json:"body"`
+	Summary       string             `json:"summary"`
+	CollectionID  uuid.NullUUID      `json:"collection_id"`
+	AuthorUserID  uuid.UUID          `json:"author_user_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	BlockContent  []byte             `json:"block_content"`
+	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+	AuthorAgentID uuid.NullUUID      `json:"author_agent_id"`
 }

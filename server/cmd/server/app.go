@@ -515,6 +515,10 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct Wiki agent read service: %w", err)
 	}
+	wikiAgentWriteService, err := wiki.NewAgentWriteService(databaseStore, bus)
+	if err != nil {
+		return fmt.Errorf("construct Wiki agent write service: %w", err)
+	}
 	companyPlanService, err := company.NewPlanService(databaseStore, bus, inboxPresenter)
 	if err != nil {
 		return fmt.Errorf("construct Work Plan service: %w", err)
@@ -845,6 +849,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		CanvasPresence:           canvasPresence,
 		WikiService:              wikiService,
 		WikiAgentReadService:     wikiAgentReadService,
+		WikiAgentWriteService:    wikiAgentWriteService,
 		CompanyPlanService:       companyPlanService,
 		ApprovalService:          approvalService,
 		QuestionService:          questionService,

@@ -70,7 +70,7 @@ func removeDisabledBoardlyTools(allowed map[string]struct{}, disabled []string) 
 		case "founder-input":
 			tools = []string{"ask_human"}
 		case "wiki":
-			tools = []string{"wiki_read", "wiki_search"}
+			tools = []string{"wiki_read", "wiki_search", "wiki_write"}
 		}
 		for _, tool := range tools {
 			delete(allowed, tool)

@@ -82,20 +82,26 @@ type PageEvent struct {
 	CurrentRevisionID *uuid.UUID `json:"currentRevisionId"`
 }
 
+// newPageEvent attributes the change to actor: the member for their own edit,
+// events.RunActor for a page an Agent's Run wrote on their behalf (D31).
+func newPageEvent(companyID uuid.UUID, actor events.Actor, name string, page PageResponse) events.Event {
+	return events.Event{
+		Name: name, EntityType: TopicWiki, CompanyID: companyID,
+		CreatedAt: time.Now().UTC(), Actor: actor,
+		Payload: PageEvent{ID: page.ID, Title: page.Title, Status: page.Status,
+			Revision: page.Revision, ContentRevision: page.ContentRevision,
+			CurrentRevisionID: page.CurrentRevisionID,
+		},
+	}
+}
+
 func (s *DefaultWikiService) publishPageEvent(
 	ctx context.Context,
 	principal auth.UserPrincipal,
 	name string,
 	page PageResponse,
 ) {
-	s.bus.Publish(ctx, TopicWiki, events.Event{
-		Name: name, EntityType: TopicWiki, CompanyID: principal.CompanyID,
-		CreatedAt: time.Now().UTC(), Actor: events.UserActor(principal.UserID.String()),
-		Payload: PageEvent{ID: page.ID, Title: page.Title, Status: page.Status,
-			Revision: page.Revision, ContentRevision: page.ContentRevision,
-			CurrentRevisionID: page.CurrentRevisionID,
-		},
-	})
+	s.bus.Publish(ctx, TopicWiki, newPageEvent(principal.CompanyID, events.UserActor(principal.UserID.String()), name, page))
 }
 
 type CollectionEvent struct {
@@ -104,15 +110,19 @@ type CollectionEvent struct {
 	Revision int64     `json:"revision"`
 }
 
+func newCollectionEvent(companyID uuid.UUID, actor events.Actor, name string, collection CollectionResponse) events.Event {
+	return events.Event{
+		Name: name, EntityType: TopicWiki, CompanyID: companyID,
+		CreatedAt: time.Now().UTC(), Actor: actor,
+		Payload: CollectionEvent{ID: collection.ID, Name: collection.Name, Revision: collection.Revision},
+	}
+}
+
 func (s *DefaultWikiService) publishCollectionEvent(
 	ctx context.Context,
 	principal auth.UserPrincipal,
 	name string,
 	collection CollectionResponse,
 ) {
-	s.bus.Publish(ctx, TopicWiki, events.Event{
-		Name: name, EntityType: TopicWiki, CompanyID: principal.CompanyID,
-		CreatedAt: time.Now().UTC(), Actor: events.UserActor(principal.UserID.String()),
-		Payload: CollectionEvent{ID: collection.ID, Name: collection.Name, Revision: collection.Revision},
-	})
+	s.bus.Publish(ctx, TopicWiki, newCollectionEvent(principal.CompanyID, events.UserActor(principal.UserID.String()), name, collection))
 }

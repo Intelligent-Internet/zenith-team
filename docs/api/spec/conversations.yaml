@@ -911,11 +911,13 @@ paths:
         send with `409 conversation_conflict` rather than storing words no run
         will ever read.
 
-        **Company preparation reserves its exact conversation.** New sends to
-        a pending initial research/welcome conversation return
+        **Company preparation reserves its exact conversation until the
+        research starts.** New sends to the CEO conversation of a receipt whose
+        research Run has not been started return
         `409 conversation_initialization_pending`. Exact request replays still
-        return their original receipt. Other conversations remain available.
-        Existing queued prompts wait until the validated welcome completes.
+        return their original receipt. Once the research Run exists, a send
+        queues behind it like behind any other Run. Other conversations remain
+        available.
 
         **A run needs the sender's binding.** A direct chat runs on the
         caller's own computer: an Agent the caller has not set up on one of
@@ -1006,7 +1008,7 @@ paths:
             answer, an immediate-send `requestKey` has different payload, or
             the conversation changed under the write),
             `409 conversation_initialization_pending` (this exact conversation
-            is still preparing the company welcome),
+            is waiting for the company research to start),
             `409 agent_binding_required` (a direct chat with an Agent the
             caller has not set up on one of their computers),
             `409 run_queue_conflict` (a queued `requestKey` has different payload

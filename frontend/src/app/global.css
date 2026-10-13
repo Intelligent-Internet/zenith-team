@@ -1044,6 +1044,7 @@
 }
 
 .workspace-primary-nav-icon {
+  position: relative;
   display: grid;
   width: 25px;
   height: 25px;
@@ -1053,6 +1054,32 @@
 .workspace-primary-nav-icon svg {
   width: 20px;
   height: 20px;
+}
+
+/* Background work on that destination, such as the onboarding research
+   writing the Wiki. */
+.workspace-primary-nav-activity {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--workspace-rail-bg, #fff);
+  border-radius: 999px;
+  background: var(--workspace-native-info, #2563eb);
+  animation: workspace-primary-nav-activity 1.6s ease-in-out infinite;
+}
+
+@keyframes workspace-primary-nav-activity {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-primary-nav-activity {
+    animation: none;
+  }
 }
 
 .workspace-shell-content {

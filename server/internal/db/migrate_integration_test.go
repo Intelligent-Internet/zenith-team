@@ -174,6 +174,7 @@ var expectedBusinessTables = []string{
 	"run_tokens",
 	"run_usage",
 	"run_wiki_reads",
+	"run_wiki_writes",
 	"runs",
 	"runtimes",
 	"schedule_firings",
@@ -249,6 +250,7 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"wiki_links":                    false,
 	"wiki_artifact_refs":            false,
 	"run_wiki_reads":                false,
+	"run_wiki_writes":               false,
 	"wiki_favorites":                false,
 	"huddle_ai_budget_reservations": true,
 	"huddle_ai_budgets":             true,
@@ -953,7 +955,8 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 				(table == "output_grants" || table == "output_conversation_grants" || table == "discussion_artifacts") ||
 				table == "run_connector_selections" ||
 				table == "run_connector_snapshots" ||
-				table == "run_wiki_reads"
+				table == "run_wiki_reads" ||
+				table == "run_wiki_writes"
 		},
 	)
 	assertBusinessTables(t, ctx, pool, remaining)

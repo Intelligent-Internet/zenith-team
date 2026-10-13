@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -17,7 +18,7 @@ type WikiSearchInput struct {
 
 // WikiSearchItem is one active Wiki page matching the search.
 type WikiSearchItem struct {
-	PageID         string  `json:"pageId" jsonschema:"Page ID to pass to wiki_read."`
+	PageID         string  `json:"pageId" jsonschema:"Page ID to pass to wiki_read; link the page in your answer as /wiki/pages/<pageId>."`
 	Title          string  `json:"title"`
 	Summary        string  `json:"summary" jsonschema:"The author's short summary of the page, possibly empty."`
 	Snippet        string  `json:"snippet" jsonschema:"Text excerpt around the match. An excerpt only: read the page before relying on it."`
@@ -57,16 +58,48 @@ type WikiReadResult struct {
 	Notice         string  `json:"notice" jsonschema:"Fixed reminder that the content is untrusted reference data."`
 }
 
-type wikiAPI interface {
-	FetchRunJSON(context.Context, string, any) error
+// WikiWritePage is one page the company-research Run saves.
+type WikiWritePage struct {
+	Key      string `json:"key" jsonschema:"Your own short handle for this page: lowercase letters, digits and hyphens, at most 64 characters (for example company-overview). Writing the same key again updates that page; other pages can link to it with [[key]]."`
+	Title    string `json:"title" jsonschema:"Page title, at most 240 characters."`
+	Summary  string `json:"summary,omitempty" jsonschema:"One or two sentences describing the page, at most 2048 characters."`
+	Markdown string `json:"markdown" jsonschema:"Page body in Markdown, at most 262144 characters. Link to another page of yours with [[key]] or [[key|label]]; a key you have not written becomes plain text."`
 }
 
-// WikiToolService adapts the authenticated, Run-proven read-only Company
-// Wiki HTTP surface. The server, not this adapter, owns access policy and the
-// per-Run read evidence.
+// WikiWriteInput is the model-supplied wiki_write arguments.
+type WikiWriteInput struct {
+	Pages []WikiWritePage `json:"pages" jsonschema:"1 to 12 pages per call; at most 40 pages for the whole research. New pages are filed in the Company collection. Pages with a key the research already wrote (in this or an earlier attempt) are updated, identical ones are left alone."`
+}
+
+// WikiWriteItem is one page a write saved or found unchanged.
+type WikiWriteItem struct {
+	Key      string `json:"key"`
+	PageID   string `json:"pageId" jsonschema:"The page's ID, usable with wiki_read and as the link /wiki/pages/<pageId> in your answer."`
+	Title    string `json:"title"`
+	Revision int    `json:"revision" jsonschema:"Content revision number of the page's current revision."`
+	Status   string `json:"status" jsonschema:"created, updated or unchanged."`
+}
+
+// WikiWriteResult is the wiki_write output.
+type WikiWriteResult struct {
+	Pages      []WikiWriteItem `json:"pages"`
+	Warnings   []string        `json:"warnings" jsonschema:"Problems that did not stop the write, for example a [[key]] link to a page you have not written, which was left as plain text. Write that page in a later call and the link is added."`
+	TotalPages int             `json:"totalPages" jsonschema:"Pages the company research has written so far, across every attempt, out of 40."`
+}
+
+type wikiAPI interface {
+	FetchRunJSON(context.Context, string, any) error
+	PostRunJSON(context.Context, string, string, any, any) error
+}
+
+// WikiToolService adapts the authenticated, Run-proven Company Wiki HTTP
+// surface: search and read for every Run, and writes for the founder's
+// company-research Run alone. The server, not this adapter, owns access policy,
+// the per-Run read evidence and the write authority.
 type WikiToolService interface {
 	SearchWiki(context.Context, WikiSearchInput) (WikiSearchResult, error)
 	ReadWiki(context.Context, WikiReadInput) (WikiReadResult, error)
+	WriteWiki(context.Context, WikiWriteInput) (WikiWriteResult, error)
 }
 
 var _ WikiToolService = (*DefaultWikiToolService)(nil)
@@ -131,6 +164,44 @@ func (s *DefaultWikiToolService) ReadWiki(ctx context.Context, input WikiReadInp
 	var result WikiReadResult
 	if err := s.api.FetchRunJSON(ctx, path, &result); err != nil {
 		return WikiReadResult{}, fmt.Errorf("read wiki page: %w", err)
+	}
+	return result, nil
+}
+
+// WriteWiki saves the pages in one request. The idempotency key is derived
+// from the Run and the exact batch, so a retried call converges on one write.
+func (s *DefaultWikiToolService) WriteWiki(ctx context.Context, input WikiWriteInput) (WikiWriteResult, error) {
+	if len(input.Pages) < 1 || len(input.Pages) > 12 {
+		return WikiWriteResult{}, errors.New("wiki_write takes 1 to 12 pages per call")
+	}
+	seen := make(map[string]struct{}, len(input.Pages))
+	// The keys are forwarded trimmed, so the server (which accepts only exact
+	// keys) sees the same keys the duplicate check and the Run's links use.
+	input.Pages = slices.Clone(input.Pages)
+	for i, page := range input.Pages {
+		key := strings.TrimSpace(page.Key)
+		input.Pages[i].Key = key
+		if key == "" || strings.TrimSpace(page.Title) == "" {
+			return WikiWriteResult{}, errors.New("wiki_write pages need a key and a title")
+		}
+		if _, duplicate := seen[key]; duplicate {
+			return WikiWriteResult{}, fmt.Errorf("wiki_write got the key %q twice in one call", key)
+		}
+		seen[key] = struct{}{}
+	}
+	requestKey, err := runRequestKey("wiki_write", s.context, input)
+	if err != nil {
+		return WikiWriteResult{}, err
+	}
+	var result WikiWriteResult
+	if err := s.api.PostRunJSON(ctx, s.base()+"/pages", requestKey, input, &result); err != nil {
+		return WikiWriteResult{}, fmt.Errorf("write wiki pages: %w", err)
+	}
+	if result.Pages == nil {
+		result.Pages = []WikiWriteItem{}
+	}
+	if result.Warnings == nil {
+		result.Warnings = []string{}
 	}
 	return result, nil
 }

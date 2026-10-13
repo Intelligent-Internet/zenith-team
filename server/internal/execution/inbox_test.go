@@ -366,3 +366,34 @@ func TestProjectAccessRevokedInboxInputNamesTheAgentAndTheWorkOnly(t *testing.T)
 		t.Fatalf("long notice not cut to the limits: title=%q body=%q", long.Title, long.Body)
 	}
 }
+
+func TestCompanyResearchInboxContentIsDedicated(t *testing.T) {
+	t.Parallel()
+	page := uuid.New()
+	target := runInboxTarget{agentName: "Andrew", conversationKind: "direct"}
+	itemType, title, body, link := companyResearchInboxContent("completed", target, companyResearchOutcome{research: true, pages: 1, overview: &page})
+	if itemType != inbox.TypeRunCompleted || title != "Your company wiki is ready" || !strings.Contains(body, "1 page ") || link != "/wiki/pages/"+page.String() {
+		t.Fatalf("completed = %s/%q/%q/%q", itemType, title, body, link)
+	}
+	_, _, body, link = companyResearchInboxContent("completed", target, companyResearchOutcome{research: true})
+	if link != "/wiki" || strings.Contains(body, "Reply") {
+		t.Fatalf("empty completed = %q/%q", body, link)
+	}
+	itemType, title, body, link = companyResearchInboxContent("failed", target, companyResearchOutcome{research: true})
+	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" || !strings.Contains(body, "retry") || link != "/wiki" {
+		t.Fatalf("failed = %s/%q/%q/%q", itemType, title, body, link)
+	}
+	// A cancelled research Run did not finish either: same copy, never "ready".
+	itemType, title, body, link = companyResearchInboxContent("cancelled", target, companyResearchOutcome{research: true})
+	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" || !strings.Contains(body, "retry") || link != "/wiki" {
+		t.Fatalf("cancelled = %s/%q/%q/%q", itemType, title, body, link)
+	}
+	// A failure to prepare the founder's computer reads as that, not as an
+	// error Zenith Team could not classify.
+	prepared := target
+	prepared.failureReason, prepared.failureText, prepared.provider = "agent_error.unknown", "run.preparation_failed.workspace", "codex"
+	_, _, body, _ = companyResearchInboxContent("failed", prepared, companyResearchOutcome{research: true})
+	if strings.Contains(body, "classify") || strings.Contains(body, "Details") || !strings.Contains(body, "workspace") {
+		t.Fatalf("preparation failure body = %q", body)
+	}
+}

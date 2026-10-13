@@ -43,6 +43,7 @@ SELECT p.id, p.company_id,
   COALESCE(r.body,'')::text AS body, COALESCE(r.number,0)::bigint AS content_revision,
   COALESCE(r.block_content,'{}'::jsonb)::jsonb AS block_content,
   COALESCE(r.author_user_id,p.created_by_user_id)::uuid AS last_author_user_id, COALESCE(r.created_at,p.created_at)::timestamptz AS revision_created_at,
+  r.author_agent_id AS last_author_agent_id, author_agent.name AS last_author_agent_name,
   EXISTS(SELECT 1 FROM wiki_favorites f WHERE f.company_id = p.company_id
     AND f.page_id = p.id AND f.user_id = sqlc.arg(actor_user_id)::uuid)::boolean AS favorite
 FROM company_wiki_pages p
@@ -50,6 +51,7 @@ LEFT JOIN wiki_canvas_drafts d ON d.company_id=p.company_id AND d.page_id=p.id
 LEFT JOIN wiki_collections display_collection ON display_collection.company_id=p.company_id
  AND display_collection.id=CASE WHEN p.current_revision_id IS NULL THEN d.collection_id ELSE p.collection_id END
 LEFT JOIN wiki_revisions r ON r.id = p.current_revision_id
+LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id AND author_agent.id = r.author_agent_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
 WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY(sqlc.arg(publisher_roles)::text[]))

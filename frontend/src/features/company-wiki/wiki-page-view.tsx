@@ -19,6 +19,7 @@ import { WikiDetailsPanel } from "./wiki-details-panel";
 import { WikiRestoreDialog, type WikiRestoreReview } from "./wiki-dialogs";
 import { WikiHistoryPanel } from "./wiki-history-panel";
 import { WikiContent } from "./wiki-content";
+import { wikiAuthorLabel } from "./wiki-author-label";
 import { WikiDocumentWorkspace } from "./wiki-document-workspace";
 
 type WikiPageViewProps = {
@@ -86,7 +87,12 @@ export function WikiPageView({
       {page.currentRevisionId ? (
         <>
           <span>
-            {page.lastAuthorUserId === userId ? "You" : "Team member"}
+            {wikiAuthorLabel({
+              agentId: page.lastAuthorAgentId,
+              agentName: page.lastAuthorAgentName,
+              authorUserId: page.lastAuthorUserId,
+              viewerUserId: userId,
+            })}
           </span>
           <span>{new Date(page.revisionCreatedAt).toLocaleString()}</span>
           <span className="zen-wiki__revision-badge">
@@ -216,6 +222,7 @@ export function WikiPageView({
         {historyOpen && (
           <WikiHistoryPanel
             companyId={companyId}
+            userId={userId}
             page={page}
             canRestore={canPublish && page.status === "active"}
             editing={dirty}

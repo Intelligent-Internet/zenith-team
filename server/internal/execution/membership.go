@@ -177,7 +177,11 @@ func FailRunForNoEligibleResolverInTx(
 	if !ok {
 		return &failed, inbox.CreateResult{}, nil
 	}
-	notice, err := createRunTerminalInboxItem(ctx, q, pending, failed, target)
+	research, err := settleCompanyResearchInTx(ctx, q, failed, false)
+	if err != nil {
+		return nil, inbox.CreateResult{}, err
+	}
+	notice, err := createRunTerminalInboxItem(ctx, q, pending, failed, target, research)
 	if err != nil {
 		return nil, inbox.CreateResult{}, err
 	}
@@ -197,6 +201,10 @@ func cancelRunCandidatesInTx(
 	candidates []generated.Run,
 	reason string,
 ) ([]generated.Run, error) {
+	researchTargets, err := lockResearchInboxTargets(ctx, q, candidates)
+	if err != nil {
+		return nil, err
+	}
 	var last uuid.UUID
 	for _, run := range candidates {
 		if run.ConversationID == last {
@@ -245,6 +253,12 @@ func cancelRunCandidatesInTx(
 			"conversation_id", run.ConversationID.String(),
 			"reason", reason,
 		)
+		// A cancelled research Run is final: complete the receipt and tell
+		// the founder it could not finish. The notice's realtime events ride
+		// pending; this shared pass has no push presenter.
+		if _, err := settleCancelledResearchInTx(ctx, q, pending, run, researchTargets); err != nil {
+			return nil, err
+		}
 		// recordRunChangeInTx staged the run.cancelled frame beside the
 		// Activity row; the pass adds no second one.
 		cancelled = append(cancelled, run)

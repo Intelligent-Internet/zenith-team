@@ -298,7 +298,7 @@ event envelope, and internal/onboarding — the ten-step Starter Journey, its
 onboarding intent. Agent setup and first-plan milestones remain
 `companies.agent_setup_completed_at` and `companies.first_plan_applied_at`.
 The Company domain's `company_initializations` receipt separately tracks the
-founder's bounded research and CEO welcome Runs; it is not a Starter Journey.
+founder's one bounded background research Run, which writes linked Company Wiki pages; it is not a Starter Journey.
 Also deleted with ADR 0014: runtime visibility and sharing
 (`runtimes.visibility`, its revision, the visibility route, dialog and
 indicator), hosting consent and `HostedRunPermitted`, `agents.runtime_id`

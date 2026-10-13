@@ -116,7 +116,15 @@ metadata. Editing saves the draft only; `PublishPage` compares both
 current links and emits `wiki.*` events after commit. History restores into the
 draft and requires explicit publication. New unpublished pages are visible only
 to publishers; ordinary member and Agent reads stay on published content. The browser invalidates
-its Wiki caches on those events. General Wiki Agent routes remain read-only: `AgentReadService`
+its Wiki caches on those events. The only Agent write is `AgentWriteService`
+(`wiki/agent_write.go`, `wiki_agent_write.sql`): the founder's `company_research`
+Run saves up to 12 pages a call and 40 for the whole company research through `POST
+/runs/{runId}/agent-wiki/pages`. The write transaction re-proves the Run
+(running, `runs.context.executionProfile.source`, authorizer, `wiki.publish`,
+the `wiki` switch) under the Company lock, upserts by key among the pages the
+Run created (`run_wiki_writes`), resolves `[[key]]` placeholders, publishes
+through the same internals as `PublishPage`, then rebuilds link edges once every
+page of the batch is published. Every other Agent Wiki route is read-only: `AgentReadService`
 (`wiki/agent_read.go`, `run_wiki_reads.sql`) serves the Run-proven search and
 read routes in `handler/wiki_agent.go` (outside `/wiki/`, checked against the
 Run token, the per-Agent `wiki` capability switch and the membership fence) and
@@ -1230,29 +1238,33 @@ or Task, and own separate CLI bridges per Runtime and Agent. New authenticated
 Tools must use the same scope for login, status, cancellation and execution.
 
 Company initialization lives in `internal/company/initialization.go`. The human
-founder starts an idempotent, platform-authored research Run on their own CEO
-binding using the runtime's advertised Luna model. A bounded Company reconciler
-advances its completed transcript into a durable sourced context and a separate welcome Run. The
-`company_initializations` receipt serializes retries, preserves the original
-company description, and tracks preparation independently of workspace access.
-The daemon seeds `assets/general/business_context.md` from the saved context
-before the welcome Run starts (never over an existing file), so the CEO's
-onboarding edits that draft and reviews it rather than building it from
-questions.
-`conversation.MaterializeInitializationRunInTx` owns conversation writes;
-pending preparation fences new sends and pauses queue promotion only in its
-exact Conversation. Validated welcome completion releases one preserved queued
-prompt atomically through `conversation.ResumeInitializationQueueInTx`.
-`execution` freezes the one-run model override and initial research fallback.
-The daemon uses phase-specific research/welcome policies instead of the normal
-CEO planning policy. Completed research remains in the Run transcript if the
-client closes; the reconciler resumes without repeating successful research.
-It rechecks current creator membership under the Company lock and the binding
-before starting a new Run. A proven completed welcome can close its receipt
-after the binding is removed; any queued prompt still passes its own execution
-authority check before promotion. The reconciler never invents an authenticated
-principal, and never starts discovery or retries
-a failed phase. Explicit POST remains the start and retry path.
+founder starts one idempotent, platform-authored research Run on their own CEO
+binding using the runtime's advertised Luna model, then continues into the app:
+the Run works in the background and writes linked Company Wiki pages through
+`wiki_write` (hub key `company-overview`). The `company_initializations` receipt
+serializes starts and retries and preserves the original company description.
+`Get` reports `phase` (`not_started|research|ready`), the Run status,
+`pagesWritten` (counted over every research attempt of the Company)
+and `overviewPageId`. `Company.initializationPending` is true only while the
+receipt exists and `research_run_id` is still NULL. The terminal hook lives in
+`execution/company_research.go`: in the same transaction as the Run's terminal
+write and its Inbox item, `settleCompanyResearchInTx` sets `completed_at` when
+the Run is the research lineage's final attempt (a failure that creates a retry
+child is not final), and the founder's `run_completed`/`run_failed` item gets
+dedicated copy and a `/wiki[/pages/<id>]` deep link. A retry (`retry: true`
+after a failure) starts a new Run, clears `completed_at` and archives the
+failure notice (`inbox.CloseEntityInTx`); the new Run owns the pages earlier
+attempts wrote (`run_wiki_writes` is scoped to the Company, which has one
+research), so it updates them rather than duplicating them.
+`conversation.MaterializeInitializationRunInTx` owns conversation writes. A new
+send to the receipt's CEO conversation is fenced (and its queue paused) only
+until the research starts; afterwards a message queues behind the research Run.
+A bounded Company reconciler is a recovery only: it completes a receipt whose
+final Run the terminal path could not reach, rechecks the creator's membership
+under the Company lock, and releases the preserved queue through
+`conversation.ResumeInitializationQueueInTx`; it never starts discovery, a Run
+or a retry. `execution` freezes the one-run model override. The daemon uses a research
+policy instead of the normal CEO planning policy (`daemon/company_initialization.go`).
 
 ### Calendar Task scheduling
 

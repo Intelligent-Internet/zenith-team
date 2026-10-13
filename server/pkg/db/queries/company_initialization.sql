@@ -2,16 +2,20 @@
 SELECT * FROM company_initializations WHERE company_id = $1;
 
 -- name: ListPendingCompanyInitializations :many
+-- Receipts whose research was started and not yet completed: the recovery set.
 SELECT company_id, created_by_user_id FROM company_initializations
-WHERE completed_at IS NULL AND (research_run_id IS NOT NULL OR welcome_run_id IS NOT NULL)
+WHERE completed_at IS NULL AND research_run_id IS NOT NULL
 AND company_id > sqlc.arg(after_company_id)::uuid
 ORDER BY company_id LIMIT sqlc.arg(row_limit)::int;
 
 -- name: IsConversationInitializationPending :one
+-- The Conversation is held only until the research starts; while the research
+-- Run works, messages queue behind it like behind any other Run.
 SELECT EXISTS (
  SELECT 1 FROM company_initializations
  WHERE company_id = sqlc.arg(company_id)::uuid
- AND conversation_id = sqlc.arg(conversation_id)::uuid AND completed_at IS NULL
+ AND conversation_id = sqlc.arg(conversation_id)::uuid
+ AND research_run_id IS NULL AND completed_at IS NULL
 )::boolean;
 
 -- name: GetInitializationTarget :one
@@ -28,14 +32,9 @@ AND c.created_by_user_id = sqlc.arg(actor_user_id)::uuid;
 INSERT INTO company_initializations (company_id, created_by_user_id, conversation_id, research_run_id)
 VALUES ($1, $2, $3, $4);
 
--- name: SaveInitializationContext :exec
-UPDATE company_initializations SET context_markdown = $2, updated_at = now() WHERE company_id = $1;
-
 -- name: SetInitializationResearchRun :exec
-UPDATE company_initializations SET research_run_id = $2, updated_at = now() WHERE company_id = $1;
-
--- name: SetInitializationWelcomeRun :exec
-UPDATE company_initializations SET welcome_run_id = $2, updated_at = now() WHERE company_id = $1;
+-- A new research Run starts a new attempt, so the earlier completion no longer holds.
+UPDATE company_initializations SET research_run_id = $2, completed_at = NULL, updated_at = now() WHERE company_id = $1;
 
 -- name: GetInitializationRun :one
 -- Follow automatic retries; a failed parent with a live child is still in progress.
@@ -50,6 +49,46 @@ FROM attempts a
 LEFT JOIN runtimes rt ON rt.id = a.runtime_id AND rt.removed_at IS NULL
 LEFT JOIN conversation_items i ON i.run_id = a.id AND i.item_key = a.final_answer_item_key AND i.type = 'agent_text'
 ORDER BY a.created_at DESC, a.id DESC LIMIT 1;
+
+-- name: CompleteCompanyInitializationForRun :one
+-- The terminal hook: the Run is the receipt's research Run or one of its
+-- automatic-retry descendants. Marks the receipt complete and returns it, or
+-- no row when the Run is not part of the research lineage.
+WITH RECURSIVE ancestry AS (
+ SELECT r.id, r.parent_run_id FROM runs r WHERE r.id = sqlc.arg(run_id)::uuid
+ UNION ALL
+ SELECT r.id, r.parent_run_id FROM runs r JOIN ancestry a ON r.id = a.parent_run_id
+)
+UPDATE company_initializations i
+SET completed_at = now(), updated_at = now()
+WHERE i.company_id = sqlc.arg(company_id)::uuid
+  AND i.research_run_id IN (SELECT id FROM ancestry)
+RETURNING i.research_run_id;
+
+-- name: IsInitializationResearchRun :one
+-- Whether the Run belongs to the receipt's current research lineage (the
+-- research Run or an automatic-retry descendant), so its terminal notice has
+-- dedicated copy.
+WITH RECURSIVE ancestry AS (
+ SELECT r.id, r.parent_run_id FROM runs r WHERE r.id = sqlc.arg(run_id)::uuid
+ UNION ALL
+ SELECT r.id, r.parent_run_id FROM runs r JOIN ancestry a ON r.id = a.parent_run_id
+)
+SELECT EXISTS (
+ SELECT 1 FROM company_initializations i
+ WHERE i.company_id = sqlc.arg(company_id)::uuid AND i.research_run_id IN (SELECT id FROM ancestry)
+)::boolean AS research;
+
+-- name: CountInitializationWikiWrites :one
+-- Pages the Company's onboarding research wrote, across every attempt.
+SELECT count(*)::int AS pages FROM run_wiki_writes w
+WHERE w.company_id = sqlc.arg(company_id)::uuid;
+
+-- name: GetInitializationOverviewPage :one
+-- The hub page the Company's onboarding research wrote under the given key.
+SELECT w.page_id FROM run_wiki_writes w
+WHERE w.company_id = sqlc.arg(company_id)::uuid AND w.key = sqlc.arg(key)::text
+ORDER BY w.created_at DESC LIMIT 1;
 
 -- name: CompleteCompanyInitialization :exec
 UPDATE company_initializations SET completed_at = COALESCE(completed_at, now()), updated_at = now() WHERE company_id = $1;

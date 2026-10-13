@@ -3,16 +3,24 @@ import type { ChatRuntimeActivity } from "@/shared/chat/types";
 
 export const WIKI_SEARCH_TOOL = "wiki_search";
 export const WIKI_READ_TOOL = "wiki_read";
+export const WIKI_WRITE_TOOL = "wiki_write";
 
 export function isWikiToolActivity(activity: ChatRuntimeActivity) {
   return (
     activity.toolName === WIKI_SEARCH_TOOL ||
-    activity.toolName === WIKI_READ_TOOL
+    activity.toolName === WIKI_READ_TOOL ||
+    activity.toolName === WIKI_WRITE_TOOL
   );
 }
 
 export type WikiSearchDetail = { query?: string; resultCount?: number };
 export type WikiReadDetail = { title?: string; revision?: number };
+/** One page a wiki_write call saved; `pageId` is absent when only the input is known. */
+export type WikiWrittenPage = {
+  pageId?: string;
+  status?: string;
+  title: string;
+};
 
 /** The query the Agent searched for and, once finished, how many pages matched. */
 export function wikiSearchDetail(
@@ -68,6 +76,92 @@ export function wikiReadDetail(activity: ChatRuntimeActivity): WikiReadDetail {
   };
 }
 
+/**
+ * The pages a wiki_write call saved, from its result. A failed call, or a
+ * result that saved nothing (every page skipped), lists no page. A stored
+ * result can be cut off, so a truncated result, or a call still running,
+ * falls back to the page titles in the input, which carry no page id and so
+ * cannot be linked.
+ */
+export function wikiWriteDetail(activity: ChatRuntimeActivity): {
+  pages: WikiWrittenPage[];
+} {
+  if (activity.error || activity.status === "failed") {
+    return { pages: [] };
+  }
+  const output = unwrapPayload(activity.output);
+  if (isRecord(output) && Array.isArray(output.pages)) {
+    return {
+      pages: output.pages.flatMap((item): WikiWrittenPage[] => {
+        if (!isRecord(item) || typeof item.title !== "string") {
+          return [];
+        }
+        const title = item.title.trim();
+        return title
+          ? [
+              {
+                pageId: wikiPageId(item.pageId),
+                status: wikiWriteStatus(item.status),
+                title,
+              },
+            ]
+          : [];
+      }),
+    };
+  }
+  if (activity.output) {
+    const text = outputText(activity.output);
+    // Truncated output: recover the complete page objects that precede the cut.
+    const pages = [...text.matchAll(wikiWrittenPagePattern)]
+      .map((match): WikiWrittenPage | undefined => {
+        const title = parseJSONString(match[2]);
+        return title
+          ? {
+              pageId: wikiPageId(match[1]),
+              status: wikiWriteStatus(match[3]),
+              title,
+            }
+          : undefined;
+      })
+      .filter((page) => page !== undefined);
+    if (pages.length > 0) {
+      return { pages };
+    }
+    // Anything but a cut-off JSON result (an error message, say) saved nothing.
+    if (!text.trimStart().startsWith("{")) {
+      return { pages: [] };
+    }
+  }
+  const input = unwrapPayload(activity.input);
+  if (!isRecord(input) || !Array.isArray(input.pages)) {
+    return { pages: [] };
+  }
+  return {
+    pages: input.pages.flatMap((item): WikiWrittenPage[] => {
+      const title =
+        isRecord(item) && typeof item.title === "string"
+          ? item.title.trim()
+          : "";
+      return title ? [{ title }] : [];
+    }),
+  };
+}
+
+// A saved page as the server serializes it: key, pageId, title, then the
+// optional revision and status.
+const wikiWrittenPagePattern =
+  /"pageId"\s*:\s*"([0-9a-fA-F-]{36})"\s*,\s*"title"\s*:\s*("(?:[^"\\]|\\.)*")(?:\s*,\s*"revision"\s*:\s*\d+)?(?:\s*,\s*"status"\s*:\s*"([^"]*)")?/g;
+
+function wikiPageId(value: unknown) {
+  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value)
+    ? value
+    : undefined;
+}
+
+function wikiWriteStatus(value: unknown) {
+  return typeof value === "string" ? value.trim() || undefined : undefined;
+}
+
 export function wikiSearchResultLabel(count: number | undefined) {
   if (count === undefined) {
     return undefined;
@@ -98,7 +192,21 @@ function unwrapPayload(value: string | undefined): unknown {
 
 function outputText(value: string) {
   const parsed = parseJSON(value);
-  return Array.isArray(parsed) ? textBlocks(parsed) : value;
+  if (Array.isArray(parsed)) {
+    return textBlocks(parsed);
+  }
+  if (isRecord(parsed) && Array.isArray(parsed.content)) {
+    return textBlocks(parsed.content);
+  }
+  if (parsed === undefined) {
+    // A stored copy cut off inside a content block: close its text string.
+    const cut = /"text"\s*:\s*("(?:[^"\\]|\\.)*)/.exec(value);
+    const text = cut ? parseJSON(`${cut[1]}"`) : undefined;
+    if (typeof text === "string") {
+      return text;
+    }
+  }
+  return value;
 }
 
 function textBlocks(blocks: unknown[]) {

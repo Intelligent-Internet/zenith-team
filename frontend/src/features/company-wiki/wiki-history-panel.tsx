@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
 import { X } from "@/shared/ui/icons";
 import {
   useListWikiRevisionsQuery,
@@ -6,9 +7,11 @@ import {
   type WikiPageDetail,
   type WikiRevision,
 } from "./wiki-api";
+import { wikiAuthorLabel } from "./wiki-author-label";
 
 export function WikiHistoryPanel({
   companyId,
+  userId,
   page,
   canRestore,
   editing,
@@ -16,6 +19,7 @@ export function WikiHistoryPanel({
   onClose,
 }: {
   companyId: string;
+  userId: string | undefined;
   page: WikiPageDetail;
   /** Publisher viewing an active page. */
   canRestore: boolean;
@@ -28,6 +32,7 @@ export function WikiHistoryPanel({
     { companyId, pageId: page.id, offset },
     { skip: !companyId },
   );
+  const roster = useListCompanyAgentsQuery(companyId, { skip: !companyId });
   const total = history.data?.total ?? 0;
 
   return (
@@ -56,7 +61,17 @@ export function WikiHistoryPanel({
       {history.data?.items.map((revision) => (
         <div className="zen-wiki__revision" key={revision.id}>
           <b>Revision {revision.number}</b>
-          <small>{new Date(revision.createdAt).toLocaleString()}</small>
+          <small>
+            {new Date(revision.createdAt).toLocaleString()} ·{" "}
+            {wikiAuthorLabel({
+              agentId: revision.authorAgentId,
+              agentName: roster.currentData?.items.find(
+                (agent) => agent.id === revision.authorAgentId,
+              )?.name,
+              authorUserId: revision.authorUserId,
+              viewerUserId: userId,
+            })}
+          </small>
           <p>{revision.title}</p>
           {revision.id === page.currentRevisionId ? (
             <span className="zen-wiki__revision-current">Current revision</span>

@@ -11,8 +11,9 @@ import (
 // separate from editable Agent instructions. planRoot is the absolute
 // Run-environment directory the draft and export live in; it is named so the
 // CEO never writes them into the working directory, whose contents are the
-// deliverable and would read dirty at review.
-func appendCEOCompanyPlanningPolicy(builder *strings.Builder, enabled bool, planRoot string) {
+// deliverable and would read dirty at review. wikiTools says the Run holds
+// wiki_search and wiki_read; the Wiki step is only taught when it does.
+func appendCEOCompanyPlanningPolicy(builder *strings.Builder, enabled bool, planRoot string, wikiTools bool) {
 	if !enabled {
 		return
 	}
@@ -33,7 +34,12 @@ Initial company onboarding:
 - Start from the initial company description supplied in this prompt. The prompt names the shared business context asset when one exists; if it does not, treat the asset as absent and do not run a shell command to search for it or other workspace memory. Do not search unrelated workspace files to guess business facts.
 - The prompt may carry a founder-declared company profile: the company's website and the milestones they attested. Every field present there is confirmed: never re-ask it, in any phrasing.
 - If the prompt includes saved initial business context, use its findings, sources and limitations as your starting point. Do not repeat completed research; ask only about material open questions or new information.
-- When the prompt names a shared business context asset and the founder has not confirmed it through the Context review in this conversation, that file is the current draft, usually saved from initialization research: do not research again or rebuild it from questions. Apply the founder's answers and corrections directly to it, preserving unaffected facts and explicit TBDs. Ask at most one further round, only about material points the file leaves TBD or open, then go to the Context review.
+- When the prompt names a shared business context asset and the founder has not confirmed it through the Context review in this conversation, that file is the current draft: do not research again or rebuild it from questions. Apply the founder's answers and corrections directly to it, preserving unaffected facts and explicit TBDs. Ask at most one further round, only about material points the file leaves TBD or open, then go to the Context review.
+`)
+	if wikiTools {
+		builder.WriteString(`- Before any web research, call wiki_search with "company overview" and wiki_read the best pages: the onboarding research Run saved its findings in the Company Wiki as linked pages (hub page key company-overview). They are observed research, not founder-confirmed facts: build on them instead of researching again, label them accordingly, and let the Context review confirm them. If the Wiki has nothing, continue below.`)
+	}
+	builder.WriteString(`
 - Research before asking. The founder gave you a description and, usually, a website and reference files; find out what you can yourself before spending their attention.
   - When the prompt names a website, fetch and read it with your web tools: what the company sells, to whom, at what price, how it positions itself, and what it says about its stage and reach.
   - When the prompt lists founder-provided reference documents, read every one of them before your first question. They are raw source material rather than confirmed company facts, and they are kept only for this Run: take from them what belongs in the shared business context now, because they will not be there next time.

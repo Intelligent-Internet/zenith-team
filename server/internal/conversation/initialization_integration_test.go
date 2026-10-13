@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func TestInitializationPendingFencesNewSendsPreservesReplayAndPausesQueue(t *testing.T) {
+func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
 	ctx := t.Context()
 	if err := db.MigrateUp(ctx, pool); err != nil {
@@ -43,8 +43,8 @@ func TestInitializationPendingFencesNewSendsPreservesReplayAndPausesQueue(t *tes
 	if err != nil || queued.Disposition != SendDispositionQueued {
 		t.Fatalf("queued = %+v/%v", queued, err)
 	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id,research_run_id) VALUES($1,$2,$3,$4)`,
-		f.CompanyA, f.UserA, f.DirectConversationA, *first.RunID)
+	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id) VALUES($1,$2,$3)`,
+		f.CompanyA, f.UserA, f.DirectConversationA)
 	for _, existing := range []SendInput{input, queuedInput} {
 		if _, err := s.Send(ctx, p, target, existing); err != nil {
 			t.Fatalf("exact replay rejected: %v", err)
@@ -91,9 +91,12 @@ func TestInitializationPendingFencesNewSendsPreservesReplayAndPausesQueue(t *tes
 	}); err != nil {
 		t.Fatalf("unrelated chat blocked: %v", err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_initializations SET completed_at=now() WHERE company_id=$1`, f.CompanyA)
-	if _, err := s.Send(ctx, p, target, SendInput{RequestKey: dbtest.NewUUID(t), Content: "Preparation is ready"}); err != nil {
-		t.Fatalf("completed preparation still blocks: %v", err)
+	// Once the research is started the chat is open again: a message queues
+	// behind the research Run like behind any other Run.
+	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='running' WHERE id=$1`, *first.RunID)
+	dbtest.MustExec(t, ctx, pool, `UPDATE company_initializations SET research_run_id=$2 WHERE company_id=$1`, f.CompanyA, *first.RunID)
+	if _, err := s.Send(ctx, p, target, SendInput{RequestKey: dbtest.NewUUID(t), Content: "Research is running"}); err != nil {
+		t.Fatalf("running research still blocks: %v", err)
 	}
 }
 

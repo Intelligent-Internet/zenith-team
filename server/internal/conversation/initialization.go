@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// MaterializeInitializationRunInTx starts a platform-authored turn without
+// MaterializeInitializationRunInTx starts the platform-authored company research turn without
 // inventing a user message. Company initialization owns the receipt and tx.
 func MaterializeInitializationRunInTx(ctx context.Context, q *generated.Queries, pending *[]events.Event, in execution.RunTrigger) (generated.Run, error) {
 	row, err := q.LockConversationForActiveUserMutation(ctx, generated.LockConversationForActiveUserMutationParams{ActorUserID: in.AuthorizedByUserID, CompanyID: in.CompanyID, ConversationID: in.ConversationID})
@@ -25,7 +25,7 @@ func MaterializeInitializationRunInTx(ctx context.Context, q *generated.Queries,
 	if row.Kind != "direct" || !row.AgentID.Valid || row.AgentID.UUID != in.AgentID || row.CreatedByUserID.UUID != in.AuthorizedByUserID {
 		return generated.Run{}, ErrConflict
 	}
-	if in.Source != execution.RunSourceCompanyResearch && in.Source != execution.RunSourceCompanyWelcome {
+	if in.Source != execution.RunSourceCompanyResearch {
 		return generated.Run{}, ErrInvalidInput
 	}
 	before, err := activity.ObserveInTx(ctx, q, Topic, in.ConversationID)

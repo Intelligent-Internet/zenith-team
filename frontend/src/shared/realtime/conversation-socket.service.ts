@@ -198,7 +198,7 @@ export function describeConversationSendFailure(
       code,
       detail,
       message:
-        "Your CEO is preparing this welcome. Send your draft when preparation finishes, or use another chat meanwhile.",
+        "Your CEO has not started researching your company yet. Send your draft in a moment, or use another chat meanwhile.",
       status,
     };
   }

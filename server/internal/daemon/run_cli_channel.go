@@ -331,6 +331,7 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		},
 		"wiki_search": {row(http.MethodGet, ownRun+"/agent-wiki/search")},
 		"wiki_read":   {row(http.MethodGet, ownRun+"/agent-wiki/pages/*")},
+		"wiki_write":  {row(http.MethodPost, ownRun+"/agent-wiki/pages")},
 	}
 	var commands []runCLICommand
 	for _, tool := range boardlyMCPToolsForRun(doc) {

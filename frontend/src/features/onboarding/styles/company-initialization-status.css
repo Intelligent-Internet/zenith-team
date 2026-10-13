@@ -28,24 +28,6 @@
   color: var(--workspace-text-muted);
   overflow-wrap: anywhere;
 }
-.company-initialization-status__stages {
-  display: flex;
-  gap: 16px;
-  margin: 5px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--workspace-text-muted);
-  font-size: 11px;
-}
-.company-initialization-status__stages li {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.company-initialization-status__stages li[aria-current="step"] {
-  color: var(--workspace-text);
-  font-weight: 600;
-}
 .company-initialization-status__actions {
   display: flex;
   flex: none;

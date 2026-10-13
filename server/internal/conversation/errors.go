@@ -7,7 +7,7 @@ var (
 	ErrUnauthenticated        = errors.New("user is not authenticated")
 	ErrInvalidInput           = errors.New("invalid Conversation input")
 	ErrConflict               = errors.New("Conversation mutation conflict")
-	ErrInitializationPending  = errors.New("Conversation is preparing the company welcome")
+	ErrInitializationPending  = errors.New("Conversation is waiting for the company research to start")
 	ErrRunQueueConflict       = errors.New("Conversation Run queue mutation conflict")
 	ErrRunQueueFull           = errors.New("Conversation Run queue is full")
 	ErrNotFound               = errors.New("Conversation not found")

@@ -343,6 +343,45 @@ paths:
         '404': { $ref: './_common.yaml#/responses/NotFound' }
         '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
         '500': { $ref: './_common.yaml#/responses/InternalError' }
+  agentWritePages:
+    post:
+      tags: [wiki]
+      operationId: writeWikiPagesForRun
+      summary: Save Wiki pages as the founder's company-research Run
+      description: |
+        The only Wiki write an Agent has. Requires `X-Boardly-Run-Token`
+        proving a live, non-Schedule Run of this Company, sent by the Run's
+        authorizer, and an `Idempotency-Key` UUID. The server then re-proves in
+        the write transaction that the Run is `running`, that its frozen
+        execution profile source is `company_research`, that the authorizer is
+        an active member holding `wiki.publish`, and that the Agent's `wiki`
+        capability is on; any other Run is `403 wiki_agent_write_forbidden`.
+        Pages are authored by the authorizing member and published at once.
+
+        Pages are upserted by `key` among the pages this Run created: a new key
+        creates a page, a known key publishes a new revision, and an identical
+        replay reports `unchanged` and writes nothing. A Run never reaches a
+        page it did not create; a page a person archived is left alone and
+        reported in `warnings`. `[[key]]` and `[[key|label]]` in `markdown`
+        become links to the Run's page with that key, in this call or an
+        earlier one; a key with no page becomes plain text and a warning, and
+        the page is linked when a later call writes that key. At most 12 pages
+        per call and 40 for the whole company research, every attempt counted (`422 wiki_agent_write_limit`).
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: './_common.yaml#/parameters/runId' }
+        - { $ref: '#/parameters/runToken' }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentWrite' } } } }
+      responses:
+        '200': { description: The pages saved, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentWriteResult' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
+        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
   agentPage:
     get:
       tags: [wiki]
@@ -423,7 +462,7 @@ schemas:
       total: { type: integer, format: int64 }
   WikiPage:
     type: object
-    required: [id, companyId, collectionId, slug, title, body, summary, status, revision, contentRevision, currentRevisionId, createdByUserId, lastAuthorUserId, createdAt, updatedAt, revisionCreatedAt, archivedAt, favorite]
+    required: [id, companyId, collectionId, slug, title, body, summary, status, revision, contentRevision, currentRevisionId, createdByUserId, lastAuthorUserId, lastAuthorAgentId, lastAuthorAgentName, createdAt, updatedAt, revisionCreatedAt, archivedAt, favorite]
     properties:
       id: { type: string, format: uuid }
       companyId: { type: string, format: uuid }
@@ -439,6 +478,8 @@ schemas:
       currentRevisionId: { type: [string, 'null'], format: uuid }
       createdByUserId: { type: string, format: uuid }
       lastAuthorUserId: { type: string, format: uuid }
+      lastAuthorAgentId: { type: [string, 'null'], format: uuid, description: "The Agent that wrote the current revision on behalf of lastAuthorUserId, such as the onboarding research Run's Agent." }
+      lastAuthorAgentName: { type: [string, 'null'], description: "That Agent's name, or null when no Agent wrote the current revision or the Agent no longer exists." }
       createdAt: { type: string, format: date-time }
       updatedAt: { type: string, format: date-time }
       revisionCreatedAt: { type: string, format: date-time }
@@ -505,7 +546,7 @@ schemas:
       expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
   WikiRevision:
     type: object
-    required: [id, pageId, number, title, body, summary, collectionId, authorUserId, createdAt]
+    required: [id, pageId, number, title, body, summary, collectionId, authorUserId, authorAgentId, createdAt]
     properties:
       id: { type: string, format: uuid }
       pageId: { type: string, format: uuid }
@@ -516,6 +557,7 @@ schemas:
       summary: { type: string }
       collectionId: { type: [string, 'null'], format: uuid }
       authorUserId: { type: string, format: uuid }
+      authorAgentId: { type: [string, 'null'], format: uuid, description: The Agent that wrote this revision on behalf of authorUserId. }
       createdAt: { type: string, format: date-time }
   WikiRevisionList:
     type: object
@@ -610,6 +652,35 @@ schemas:
       truncated: { type: boolean }
       nextOffset: { type: [integer, 'null'] }
       notice: { type: string, description: Fixed reminder that the content is untrusted data. }
+  WikiAgentWritePage:
+    type: object
+    required: [key, title]
+    properties:
+      key: { type: string, minLength: 1, maxLength: 64, pattern: '^[a-z0-9][a-z0-9-]{0,63}$', description: "The Run's handle for the page and the target of `[[key]]` links." }
+      title: { type: string, minLength: 1, maxLength: 240 }
+      summary: { type: string, maxLength: 2048 }
+      markdown: { type: string, maxLength: 262144 }
+  WikiAgentWrite:
+    type: object
+    required: [pages]
+    properties:
+      pages: { type: array, minItems: 1, maxItems: 12, items: { $ref: '#/schemas/WikiAgentWritePage' }, description: "New pages are filed in the Company collection (found case-insensitively or created); a page written before keeps its collection." }
+  WikiAgentWriteItem:
+    type: object
+    required: [key, pageId, title, revision, status]
+    properties:
+      key: { type: string }
+      pageId: { type: string, format: uuid }
+      title: { type: string }
+      revision: { type: integer, format: int64, description: Content revision number of the page's current revision. }
+      status: { type: string, enum: [created, updated, unchanged] }
+  WikiAgentWriteResult:
+    type: object
+    required: [pages, warnings, totalPages]
+    properties:
+      pages: { type: array, items: { $ref: '#/schemas/WikiAgentWriteItem' } }
+      warnings: { type: array, items: { type: string } }
+      totalPages: { type: integer, description: Pages this Run owns after the call. }
   RunWikiReadPage:
     type: object
     required: [status, currentRevision]

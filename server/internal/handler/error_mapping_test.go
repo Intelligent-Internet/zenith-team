@@ -1461,7 +1461,7 @@ func TestErrorMappersGolden(t *testing.T) {
 					"company preparation pending",
 					conversation.ErrInitializationPending,
 					http.StatusConflict,
-					"This conversation is preparing your company welcome. You can explore the workspace while it finishes.",
+					"This conversation is waiting for your company research to start. You can explore the workspace meanwhile.",
 					"conversation_initialization_pending",
 				},
 				{
@@ -2270,6 +2270,20 @@ func TestErrorMappersGolden(t *testing.T) {
 					http.StatusForbidden,
 					"Company Wiki reading is switched off for this Agent",
 					"wiki_agent_access_disabled",
+				},
+				{
+					"agent write forbidden",
+					wiki.ErrAgentWriteForbidden,
+					http.StatusForbidden,
+					"This Run may not write the Company Wiki",
+					"wiki_agent_write_forbidden",
+				},
+				{
+					"agent write limit",
+					wiki.ErrAgentWriteLimit,
+					http.StatusUnprocessableEntity,
+					"A Run can write at most 40 Wiki pages",
+					"wiki_agent_write_limit",
 				},
 				{
 					"cited Artifact unavailable",

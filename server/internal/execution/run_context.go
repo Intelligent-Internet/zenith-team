@@ -56,13 +56,12 @@ type runAgentBrief struct {
 // runCompanyBrief is the founder-supplied business identity every interactive
 // Run receives. It is context for the work, never execution authority.
 //
-// It carries founder-stated identity, attested milestones and the saved initial
-// research. The daemon prefers the authored workspace context when present. It mirrors daemon.RunCompanyContext field for field; the two
+// It carries founder-stated identity and attested milestones. The daemon prefers
+// the authored workspace context when present. It mirrors daemon.RunCompanyContext field for field; the two
 // types are deliberately separate (the daemon links no server package) and the
 // JSON tags are the contract between them.
 type runCompanyBrief struct {
 	Name               string   `json:"name"`
-	ResearchedContext  string   `json:"researchedContext,omitempty"`
 	BusinessContext    string   `json:"businessContext"`
 	WebsiteURL         string   `json:"websiteUrl,omitempty"`
 	AttestedMilestones []string `json:"attestedMilestones,omitempty"`
@@ -411,12 +410,7 @@ func runContextCompanyBrief(
 	for _, attestation := range attestations {
 		attested = append(attested, attestation.MilestoneType)
 	}
-	initialization, err := q.GetCompanyInitialization(ctx, companyID)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("load researched Company context: %w", err)
-	}
 	encoded, err := json.Marshal(runCompanyBrief{
-		ResearchedContext:  initialization.ContextMarkdown,
 		Name:               row.Name,
 		BusinessContext:    row.BusinessContext,
 		WebsiteURL:         row.WebsiteUrl.String,
@@ -487,7 +481,7 @@ func runContextExecutionProfile(
 func validRunEnqueueSource(source RunEnqueueSource) bool {
 	switch source {
 	case RunSourceMessage, RunSourceAssign, RunSourceExecution, RunSourcePromotion,
-		RunSourceHumanInput, RunSourceSchedule, RunSourceTaskReport, RunSourceCompanyResearch, RunSourceCompanyWelcome:
+		RunSourceHumanInput, RunSourceSchedule, RunSourceTaskReport, RunSourceCompanyResearch:
 		return true
 	default:
 		return false

@@ -563,6 +563,8 @@ var wikiErrorMappings = []errorMapping{
 	{wiki.ErrArtifactRefUnavailable, http.StatusUnprocessableEntity, "A cited Artifact is missing or you cannot open it", "wiki_artifact_ref_unavailable"},
 	{wiki.ErrArtifactRefLimit, http.StatusUnprocessableEntity, "A Wiki page can cite at most 50 Artifacts", "wiki_artifact_ref_limit"},
 	{wiki.ErrAgentAccessDisabled, http.StatusForbidden, "Company Wiki reading is switched off for this Agent", "wiki_agent_access_disabled"},
+	{wiki.ErrAgentWriteForbidden, http.StatusForbidden, "This Run may not write the Company Wiki", "wiki_agent_write_forbidden"},
+	{wiki.ErrAgentWriteLimit, http.StatusUnprocessableEntity, "A Run can write at most 40 Wiki pages", "wiki_agent_write_limit"},
 	{wiki.ErrRunNotFound, http.StatusNotFound, "Run not found", "run_not_found"},
 	{execution.ErrRunProofInvalid, http.StatusUnauthorized, "Run token is invalid", "run_token_invalid"},
 }

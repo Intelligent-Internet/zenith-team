@@ -1387,6 +1387,9 @@ func (d *Daemon) doRun(
 			)
 		}
 	}
+	if err := requireResearchWikiTools(doc); err != nil {
+		return RunResult{}, wrapRunPreparationError(runPreparationPhasePrepare, err)
+	}
 	agentMCPConfig := doc.Agent.McpConfig
 	if restrictedTools {
 		agentMCPConfig = nil
@@ -1501,12 +1504,6 @@ func (d *Daemon) doRun(
 		}
 	}
 
-	seededBusinessContext, err := seedInitialBusinessContext(doc, workDir)
-	if err != nil {
-		// The welcome still reads the saved research from its prompt, and the
-		// CEO writes the file once the founder confirms the context.
-		runLog.Warn("seed initial business context failed", "error", err)
-	}
 	companyContext, err := d.companyRunContext(prepareCtx, run, doc, workDir)
 	if err != nil {
 		return RunResult{}, wrapRunPreparationError(runPreparationPhaseWorkspace, err)
@@ -1718,9 +1715,6 @@ func (d *Daemon) doRun(
 		return RunResult{}, wrapRunPreparationError(runPreparationPhaseExecution, err)
 	}
 	generatedImagePresenter := d.newRunOutputPresenter(run, doc, token, workDir, launch)
-	if seededBusinessContext != "" && generatedImagePresenter != nil {
-		presentSeededBusinessContext(ctx, generatedImagePresenter, workDir, seededBusinessContext, runLog)
-	}
 	presentation := runStreamPresentation{workDir: workDir, presenter: generatedImagePresenter, launch: launch}
 	agentEnv := runAgentEnvironment(run, agentName, token, d.cfg.ServerBaseURL, d.cfg.HealthPort, slot)
 	if restrictedTools {

@@ -1,8 +1,11 @@
 package company
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 
 	provideragent "boardly.dev/boardly/server/pkg/agent"
 )
@@ -38,18 +41,23 @@ func TestInitializationModelUsesNewestAdvertisedLunaAndLowestReasoning(t *testin
 	}
 }
 
-func TestInitializationRejectsMissingOrUnboundedResearch(t *testing.T) {
+func TestInitializationJSONContract(t *testing.T) {
 	t.Parallel()
-	for _, content := range []string{"", "Sorry, I could not read your site.", "# Business context\nNo sources or unknowns", "## Business context\n## Sources\n## Open questions", "# Business context\n" + strings.Repeat("x", 65536) + "\n## Sources\n## Open questions"} {
-		if _, ok := initializationContext(content); ok {
-			t.Fatalf("accepted incomplete context %q", content)
-		}
+	raw, err := json.Marshal(Initialization{Phase: "research", Status: "running"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	const want = "# Business context\nFounder: a shop.\n## Sources\nWebsite unavailable.\n## Open questions\nPricing TBD."
-	for _, content := range []string{want, "Here is the context:\n\n```markdown\n" + want + "\n```\n"} {
-		got, ok := initializationContext(content)
-		if !ok || got != want {
-			t.Fatalf("initializationContext(%q) = %q/%v, want %q", content, got, ok, want)
+	if string(raw) != `{"phase":"research","status":"running","pagesWritten":0}` {
+		t.Fatalf("empty progress = %s, want pagesWritten always present and optional fields omitted", raw)
+	}
+	run, conversation, page := uuid.New(), uuid.New(), uuid.New()
+	raw, err = json.Marshal(Initialization{Phase: "ready", Status: "completed", RunID: &run, ConversationID: &conversation, PagesWritten: 6, OverviewPageID: &page})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"pagesWritten":6`, `"overviewPageId":"` + page.String() + `"`, `"runId"`, `"conversationId"`} {
+		if !strings.Contains(string(raw), want) {
+			t.Fatalf("%s lacks %s", raw, want)
 		}
 	}
 }

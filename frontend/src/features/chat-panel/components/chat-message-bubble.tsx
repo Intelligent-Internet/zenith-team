@@ -29,6 +29,7 @@ import {
   StructuredChatMessage,
   type DiscoveryOtherOptionSelection,
 } from "@/features/chat-panel/components/structured-chat-message";
+import { ChatWikiWrittenPages } from "@/features/chat-panel/components/chat-wiki-written-pages";
 import {
   ChatMarkdownLinkProvider,
   chatMarkdownLinkComponents,
@@ -45,9 +46,11 @@ import {
 import {
   WIKI_READ_TOOL,
   WIKI_SEARCH_TOOL,
+  WIKI_WRITE_TOOL,
   wikiReadDetail,
   wikiSearchDetail,
   wikiSearchResultLabel,
+  wikiWriteDetail,
 } from "@/features/chat-panel/model/wiki-tool-activity";
 import { plainCompanyPlanPayloadFromMessage } from "@/features/chat-panel/model/ceo-company-plan-message";
 import {
@@ -1266,6 +1269,7 @@ type RuntimeActivitySummaryKind =
   | "read_wiki_pages"
   | "researched_sources"
   | "searched_wiki"
+  | "wrote_wiki_pages"
   | "used_tools"
   | "validated_build";
 
@@ -1274,7 +1278,12 @@ function summarizeRuntimeActivities(activities: ChatRuntimeActivity[]) {
 
   for (const activity of activities) {
     const kind = runtimeActivitySummaryKind(activity);
-    countsByKind.set(kind, (countsByKind.get(kind) ?? 0) + 1);
+    // One wiki_write call saves several pages; count the pages, not the call.
+    const weight =
+      kind === "wrote_wiki_pages"
+        ? Math.max(1, wikiWriteDetail(activity).pages.length)
+        : 1;
+    countsByKind.set(kind, (countsByKind.get(kind) ?? 0) + weight);
   }
 
   const phrases = [...countsByKind].map(([kind, count]) =>
@@ -1331,6 +1340,9 @@ function runtimeActivitySummaryKind(
   if (activity.toolName === WIKI_READ_TOOL) {
     return "read_wiki_pages";
   }
+  if (activity.toolName === WIKI_WRITE_TOOL) {
+    return "wrote_wiki_pages";
+  }
   if (activity.toolName === "view_image") {
     return "inspected_images";
   }
@@ -1383,6 +1395,8 @@ function runtimeActivitySummaryPhrase(
       return count === 1 ? "read 1 wiki page" : `read ${count} wiki pages`;
     case "searched_wiki":
       return "searched the wiki";
+    case "wrote_wiki_pages":
+      return count === 1 ? "wrote 1 wiki page" : `wrote ${count} wiki pages`;
     case "used_tools":
       return count === 1 ? "used a tool" : "used tools";
   }
@@ -1411,6 +1425,10 @@ function ChatRuntimeActivityRow({
   const hasExpandableDetail = runtimeActivityHasExpandableDetail(activity);
   const needsAttention = runtimeActivityNeedsAttention(activity);
   const expandForIntervention = runtimeActivityBreaksGroup(activity);
+  const writtenPages =
+    activity.toolName === WIKI_WRITE_TOOL
+      ? wikiWriteDetail(activity).pages
+      : [];
   const [isOpen, setIsOpen] = useState(expandForIntervention);
   useEffect(() => {
     if (expandForIntervention) {
@@ -1435,43 +1453,53 @@ function ChatRuntimeActivityRow({
   }
 
   return (
-    <details
-      className="chat-runtime-activity"
-      open={isOpen}
-      onToggle={(event) => setIsOpen(event.currentTarget.open)}
-    >
-      <summary
-        className="chat-runtime-summary"
-        data-attention={needsAttention || undefined}
-        data-working={isWorking || undefined}
-        title={[label, primaryDetail].filter(Boolean).join(" · ")}
+    <>
+      <details
+        className="chat-runtime-activity"
+        open={isOpen}
+        onToggle={(event) => setIsOpen(event.currentTarget.open)}
       >
-        <RuntimeActivitySummary
-          activity={activity}
-          isWorking={isWorking}
-          label={label}
-          primaryDetail={primaryDetail}
-        />
-        <ChevronRight aria-hidden className="chat-runtime-chevron" size={14} />
-      </summary>
-      <div className="chat-runtime-activity__details">
-        {activity.input ? (
-          <RuntimeActivityDetailBlock label="Input" value={activity.input} />
-        ) : null}
-        {activity.output ? (
-          <RuntimeActivityDetailBlock label="Result" value={activity.output} />
-        ) : null}
-        {activity.error ? (
-          <RuntimeActivityDetailBlock label="Error" value={activity.error} />
-        ) : null}
-        {activity.exitCode !== undefined && activity.exitCode !== 0 ? (
-          <RuntimeActivityDetailBlock
-            label="Exit code"
-            value={String(activity.exitCode)}
+        <summary
+          className="chat-runtime-summary"
+          data-attention={needsAttention || undefined}
+          data-working={isWorking || undefined}
+          title={[label, primaryDetail].filter(Boolean).join(" · ")}
+        >
+          <RuntimeActivitySummary
+            activity={activity}
+            isWorking={isWorking}
+            label={label}
+            primaryDetail={primaryDetail}
           />
-        ) : null}
-      </div>
-    </details>
+          <ChevronRight
+            aria-hidden
+            className="chat-runtime-chevron"
+            size={14}
+          />
+        </summary>
+        <div className="chat-runtime-activity__details">
+          {activity.input ? (
+            <RuntimeActivityDetailBlock label="Input" value={activity.input} />
+          ) : null}
+          {activity.output ? (
+            <RuntimeActivityDetailBlock
+              label="Result"
+              value={activity.output}
+            />
+          ) : null}
+          {activity.error ? (
+            <RuntimeActivityDetailBlock label="Error" value={activity.error} />
+          ) : null}
+          {activity.exitCode !== undefined && activity.exitCode !== 0 ? (
+            <RuntimeActivityDetailBlock
+              label="Exit code"
+              value={String(activity.exitCode)}
+            />
+          ) : null}
+        </div>
+      </details>
+      <ChatWikiWrittenPages pages={writtenPages} />
+    </>
   );
 }
 
@@ -1562,6 +1590,11 @@ function runtimeActivityPrimaryDetail(
 
   if (activity.toolName === WIKI_READ_TOOL) {
     return wikiReadDetail(activity).title;
+  }
+
+  if (activity.toolName === WIKI_WRITE_TOOL) {
+    const { pages } = wikiWriteDetail(activity);
+    return pages.length === 1 ? pages[0].title : undefined;
   }
 
   if (activity.toolName === "web_search") {
@@ -1683,6 +1716,8 @@ function runtimeActivityDisplayLabel(
       return isInProgress ? "Searching the wiki" : "Searched the wiki";
     case "wiki_read":
       return isInProgress ? "Reading a wiki page" : "Read wiki page";
+    case "wiki_write":
+      return isInProgress ? "Writing wiki pages" : "Wrote wiki pages";
     case "web_visit":
       return isInProgress ? "Opening source" : "Reviewed source";
     case "view_image":
@@ -1897,6 +1932,8 @@ function runtimeActivitySummaryIconName(
       return "document-text";
     case "read_wiki_pages":
       return "book-open";
+    case "wrote_wiki_pages":
+      return "edit";
     case "researched_sources":
     case "searched_wiki":
       return "search";

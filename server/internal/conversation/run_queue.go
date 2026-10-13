@@ -430,7 +430,7 @@ func PromoteRunQueueInTx(
 		return QueuePromotion{}, fmt.Errorf("check Run queue initialization guard: %w", err)
 	}
 	// Terminal Run transactions must still commit. The initialization owner
-	// resumes this queue atomically when its validated welcome is complete.
+	// resumes this queue atomically if it completes a receipt itself.
 	if preparing {
 		return QueuePromotion{}, nil
 	}

@@ -1437,6 +1437,8 @@ paths:
     $ref: './wiki.yaml#/paths/runWikiReads'
   /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/search:
     $ref: './wiki.yaml#/paths/agentSearch'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages:
+    $ref: './wiki.yaml#/paths/agentWritePages'
   /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages/{pageId}:
     $ref: './wiki.yaml#/paths/agentPage'
   /api/v1/companies/{companyId}/human-conversations/{conversationId}/members:

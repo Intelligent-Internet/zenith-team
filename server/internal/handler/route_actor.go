@@ -82,6 +82,7 @@ var runActorRoutes = []string{
 	// (contentRunPrincipal).
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/search",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages/:pageId",
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-project",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-sources",
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages",

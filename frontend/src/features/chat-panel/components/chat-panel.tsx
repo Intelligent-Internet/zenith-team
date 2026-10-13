@@ -97,6 +97,10 @@ import { StudioModePanel } from "@/features/studio-mode/components/studio-mode-p
 import { readSessionSnapshot } from "@/app/session/session";
 import { useCan } from "@/shared/permissions";
 import { useCompanyInitialization } from "@/features/onboarding/company/components/company-initialization-provider";
+import { useCompanyResearch } from "@/features/onboarding/hooks/use-company-research";
+import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
+import { Link } from "react-router";
 
 const COMPANY_PLAN_REVISION_REQUEST_MESSAGE =
   "I want to modify the plan a bit. Please ask me what I want to change.";
@@ -161,6 +165,23 @@ export function ChatPanel({
     initialization?.state?.conversationId === conversationId &&
     initialization.conversationPending,
   );
+  // While the onboarding research runs in this chat, a message waits for it.
+  // Say so before the founder types, and offer a chat that answers now.
+  const research = useCompanyResearch(studioCompanyId ?? "");
+  const researchHoldsChat = Boolean(
+    research.active &&
+    conversationId &&
+    research.state?.conversationId === conversationId,
+  );
+  const researchAgentName =
+    useListCompanyAgentsQuery(studioCompanyId ?? "", {
+      skip: !researchHoldsChat || !studioCompanyId,
+    }).currentData?.items.find((agent) => agent.id === conversationTab?.agentId)
+      ?.name || "Your CEO";
+  const researchNewChatHref =
+    researchHoldsChat && conversationTab?.agentId
+      ? `${createChatWorkspaceHref({ kind: "direct", agentId: conversationTab.agentId })}&newSession=1`
+      : undefined;
   const dataSources = chatPanelDataSources(surface, conversationId);
   const structuredActionsEnabled =
     dataSources.structuredActionsEnabled && allowStructuredActions;
@@ -789,7 +810,7 @@ export function ChatPanel({
     async (message: PromptInputMessage) => {
       if (initializationBlocked) {
         throw new Error(
-          "This chat will be available when preparation finishes.",
+          "This chat will be available when the company research starts.",
         );
       }
       const messageText = message.text ?? "";
@@ -1136,6 +1157,41 @@ export function ChatPanel({
             </div>
           )}
 
+          {researchHoldsChat ? (
+            <div
+              aria-live="polite"
+              className={cx(
+                "workspace-chat-connection-notice workspace-chat-research-notice mt-3 flex shrink-0 items-start gap-2 rounded-2xl border px-3 py-2 text-xs leading-5",
+                isWideLayout
+                  ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
+                  : "mx-4",
+              )}
+              data-tone="checking"
+              role="status"
+            >
+              <span
+                aria-hidden="true"
+                className="workspace-chat-connection-notice__dot mt-[7px] size-1.5 shrink-0 animate-pulse rounded-full"
+              />
+              <span className="min-w-0 flex-1">
+                <strong className="block font-black leading-5">
+                  {researchAgentName} is researching your company
+                </strong>
+                <span className="block opacity-80">
+                  Messages you send here run when the research finishes.
+                </span>
+              </span>
+              {researchNewChatHref ? (
+                <Link
+                  className="shrink-0 self-center font-semibold underline underline-offset-2"
+                  to={researchNewChatHref}
+                >
+                  Start a new chat
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+
           {surface === "conversation" ? (
             <ChatRunQueue
               availability={runQueue.availability}
@@ -1166,8 +1222,8 @@ export function ChatPanel({
                 {initialization?.statusText}
               </p>
               <p className="m-0 mt-1 text-[13px] leading-5 text-[var(--workspace-native-text-muted)]">
-                You can message here once preparation finishes. Other chats and
-                tasks are available.
+                You can message here once the company research starts. Other
+                chats and tasks are available.
               </p>
             </div>
           ) : (

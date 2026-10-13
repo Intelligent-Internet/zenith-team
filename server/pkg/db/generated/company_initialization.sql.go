@@ -20,8 +20,49 @@ func (q *Queries) CompleteCompanyInitialization(ctx context.Context, companyID u
 	return err
 }
 
+const completeCompanyInitializationForRun = `-- name: CompleteCompanyInitializationForRun :one
+WITH RECURSIVE ancestry AS (
+ SELECT r.id, r.parent_run_id FROM runs r WHERE r.id = $2::uuid
+ UNION ALL
+ SELECT r.id, r.parent_run_id FROM runs r JOIN ancestry a ON r.id = a.parent_run_id
+)
+UPDATE company_initializations i
+SET completed_at = now(), updated_at = now()
+WHERE i.company_id = $1::uuid
+  AND i.research_run_id IN (SELECT id FROM ancestry)
+RETURNING i.research_run_id
+`
+
+type CompleteCompanyInitializationForRunParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	RunID     uuid.UUID `json:"run_id"`
+}
+
+// The terminal hook: the Run is the receipt's research Run or one of its
+// automatic-retry descendants. Marks the receipt complete and returns it, or
+// no row when the Run is not part of the research lineage.
+func (q *Queries) CompleteCompanyInitializationForRun(ctx context.Context, arg CompleteCompanyInitializationForRunParams) (uuid.NullUUID, error) {
+	row := q.db.QueryRow(ctx, completeCompanyInitializationForRun, arg.CompanyID, arg.RunID)
+	var research_run_id uuid.NullUUID
+	err := row.Scan(&research_run_id)
+	return research_run_id, err
+}
+
+const countInitializationWikiWrites = `-- name: CountInitializationWikiWrites :one
+SELECT count(*)::int AS pages FROM run_wiki_writes w
+WHERE w.company_id = $1::uuid
+`
+
+// Pages the Company's onboarding research wrote, across every attempt.
+func (q *Queries) CountInitializationWikiWrites(ctx context.Context, companyID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, countInitializationWikiWrites, companyID)
+	var pages int32
+	err := row.Scan(&pages)
+	return pages, err
+}
+
 const getCompanyInitialization = `-- name: GetCompanyInitialization :one
-SELECT company_id, created_by_user_id, conversation_id, research_run_id, welcome_run_id, context_markdown, completed_at, created_at, updated_at FROM company_initializations WHERE company_id = $1
+SELECT company_id, created_by_user_id, conversation_id, research_run_id, completed_at, created_at, updated_at FROM company_initializations WHERE company_id = $1
 `
 
 func (q *Queries) GetCompanyInitialization(ctx context.Context, companyID uuid.UUID) (CompanyInitialization, error) {
@@ -32,13 +73,30 @@ func (q *Queries) GetCompanyInitialization(ctx context.Context, companyID uuid.U
 		&i.CreatedByUserID,
 		&i.ConversationID,
 		&i.ResearchRunID,
-		&i.WelcomeRunID,
-		&i.ContextMarkdown,
 		&i.CompletedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getInitializationOverviewPage = `-- name: GetInitializationOverviewPage :one
+SELECT w.page_id FROM run_wiki_writes w
+WHERE w.company_id = $1::uuid AND w.key = $2::text
+ORDER BY w.created_at DESC LIMIT 1
+`
+
+type GetInitializationOverviewPageParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	Key       string    `json:"key"`
+}
+
+// The hub page the Company's onboarding research wrote under the given key.
+func (q *Queries) GetInitializationOverviewPage(ctx context.Context, arg GetInitializationOverviewPageParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getInitializationOverviewPage, arg.CompanyID, arg.Key)
+	var page_id uuid.UUID
+	err := row.Scan(&page_id)
+	return page_id, err
 }
 
 const getInitializationRun = `-- name: GetInitializationRun :one
@@ -131,7 +189,8 @@ const isConversationInitializationPending = `-- name: IsConversationInitializati
 SELECT EXISTS (
  SELECT 1 FROM company_initializations
  WHERE company_id = $1::uuid
- AND conversation_id = $2::uuid AND completed_at IS NULL
+ AND conversation_id = $2::uuid
+ AND research_run_id IS NULL AND completed_at IS NULL
 )::boolean
 `
 
@@ -140,6 +199,8 @@ type IsConversationInitializationPendingParams struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
 }
 
+// The Conversation is held only until the research starts; while the research
+// Run works, messages queue behind it like behind any other Run.
 func (q *Queries) IsConversationInitializationPending(ctx context.Context, arg IsConversationInitializationPendingParams) (bool, error) {
 	row := q.db.QueryRow(ctx, isConversationInitializationPending, arg.CompanyID, arg.ConversationID)
 	var column_1 bool
@@ -147,9 +208,36 @@ func (q *Queries) IsConversationInitializationPending(ctx context.Context, arg I
 	return column_1, err
 }
 
+const isInitializationResearchRun = `-- name: IsInitializationResearchRun :one
+WITH RECURSIVE ancestry AS (
+ SELECT r.id, r.parent_run_id FROM runs r WHERE r.id = $2::uuid
+ UNION ALL
+ SELECT r.id, r.parent_run_id FROM runs r JOIN ancestry a ON r.id = a.parent_run_id
+)
+SELECT EXISTS (
+ SELECT 1 FROM company_initializations i
+ WHERE i.company_id = $1::uuid AND i.research_run_id IN (SELECT id FROM ancestry)
+)::boolean AS research
+`
+
+type IsInitializationResearchRunParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	RunID     uuid.UUID `json:"run_id"`
+}
+
+// Whether the Run belongs to the receipt's current research lineage (the
+// research Run or an automatic-retry descendant), so its terminal notice has
+// dedicated copy.
+func (q *Queries) IsInitializationResearchRun(ctx context.Context, arg IsInitializationResearchRunParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isInitializationResearchRun, arg.CompanyID, arg.RunID)
+	var research bool
+	err := row.Scan(&research)
+	return research, err
+}
+
 const listPendingCompanyInitializations = `-- name: ListPendingCompanyInitializations :many
 SELECT company_id, created_by_user_id FROM company_initializations
-WHERE completed_at IS NULL AND (research_run_id IS NOT NULL OR welcome_run_id IS NOT NULL)
+WHERE completed_at IS NULL AND research_run_id IS NOT NULL
 AND company_id > $1::uuid
 ORDER BY company_id LIMIT $2::int
 `
@@ -164,6 +252,7 @@ type ListPendingCompanyInitializationsRow struct {
 	CreatedByUserID uuid.UUID `json:"created_by_user_id"`
 }
 
+// Receipts whose research was started and not yet completed: the recovery set.
 func (q *Queries) ListPendingCompanyInitializations(ctx context.Context, arg ListPendingCompanyInitializationsParams) ([]ListPendingCompanyInitializationsRow, error) {
 	rows, err := q.db.Query(ctx, listPendingCompanyInitializations, arg.AfterCompanyID, arg.RowLimit)
 	if err != nil {
@@ -184,22 +273,8 @@ func (q *Queries) ListPendingCompanyInitializations(ctx context.Context, arg Lis
 	return items, nil
 }
 
-const saveInitializationContext = `-- name: SaveInitializationContext :exec
-UPDATE company_initializations SET context_markdown = $2, updated_at = now() WHERE company_id = $1
-`
-
-type SaveInitializationContextParams struct {
-	CompanyID       uuid.UUID `json:"company_id"`
-	ContextMarkdown string    `json:"context_markdown"`
-}
-
-func (q *Queries) SaveInitializationContext(ctx context.Context, arg SaveInitializationContextParams) error {
-	_, err := q.db.Exec(ctx, saveInitializationContext, arg.CompanyID, arg.ContextMarkdown)
-	return err
-}
-
 const setInitializationResearchRun = `-- name: SetInitializationResearchRun :exec
-UPDATE company_initializations SET research_run_id = $2, updated_at = now() WHERE company_id = $1
+UPDATE company_initializations SET research_run_id = $2, completed_at = NULL, updated_at = now() WHERE company_id = $1
 `
 
 type SetInitializationResearchRunParams struct {
@@ -207,21 +282,8 @@ type SetInitializationResearchRunParams struct {
 	ResearchRunID uuid.NullUUID `json:"research_run_id"`
 }
 
+// A new research Run starts a new attempt, so the earlier completion no longer holds.
 func (q *Queries) SetInitializationResearchRun(ctx context.Context, arg SetInitializationResearchRunParams) error {
 	_, err := q.db.Exec(ctx, setInitializationResearchRun, arg.CompanyID, arg.ResearchRunID)
-	return err
-}
-
-const setInitializationWelcomeRun = `-- name: SetInitializationWelcomeRun :exec
-UPDATE company_initializations SET welcome_run_id = $2, updated_at = now() WHERE company_id = $1
-`
-
-type SetInitializationWelcomeRunParams struct {
-	CompanyID    uuid.UUID     `json:"company_id"`
-	WelcomeRunID uuid.NullUUID `json:"welcome_run_id"`
-}
-
-func (q *Queries) SetInitializationWelcomeRun(ctx context.Context, arg SetInitializationWelcomeRunParams) error {
-	_, err := q.db.Exec(ctx, setInitializationWelcomeRun, arg.CompanyID, arg.WelcomeRunID)
 	return err
 }

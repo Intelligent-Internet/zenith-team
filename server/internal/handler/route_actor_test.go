@@ -674,6 +674,9 @@ var runWriteActivity = map[string]struct {
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages/:pageId/presentations": {
 		noActivity: "Project page work raises only the canvas change hints, never Activity",
 	},
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages": {
+		noActivity: "a research Run's Wiki write raises only the Wiki page events; run_wiki_writes is its evidence",
+	},
 	"POST /api/v1/daemon/companies/:companyId/commerce/sites/:siteAlias/local-signing-keys": {
 		noActivity: "a signing key registration raises no event",
 	},

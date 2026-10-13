@@ -39,7 +39,7 @@ const screenCopy: Record<
   company: {
     title: "Let’s bring your idea to life.",
     intro:
-      "Tell us about your company. Andrew reads your site and anything you attach before he asks you a thing.",
+      "Tell us about your company. Andrew researches your site and anything you attach in the background, then writes it up in your Company Wiki.",
   },
   agent: {
     title: "Your idea is saved. Let’s connect Andrew.",
@@ -52,7 +52,7 @@ const screenCopy: Record<
   },
   initializing: {
     title: "Getting your team ready.",
-    intro: "A little context now. A better conversation next.",
+    intro: "Research runs in the background while you get started.",
   },
   team: {
     title: "A little team. A big beginning.",

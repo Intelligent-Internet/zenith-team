@@ -739,40 +739,24 @@ its layer order in both the editor and public viewer.
   team and archives unselected Agents through revision-guarded mutations before
   opening an initializing screen. A platform-authored research Run uses the
   bound runtime's advertised Luna model (no reasoning if offered, otherwise its
-  lowest supported level). It reads bounded website/reference/plugin sources,
-  returns a sourced business context, and saves it in PostgreSQL before a separate
-  CEO welcome Run uses the CEO's configured model and name. No user message is
-  injected. The durable receipt resumes after reload or sign-in; failed phases
-  require explicit retry and unavailable sources remain noted as limitations.
-  One onboarding-owned controller above the onboarding and workspace routes
-  observes that receipt. Initial start, model discovery and retries remain
-  explicit; the server worker advances completed research and the welcome.
-  **Open workspace** is available after the receipt is saved, refreshes server
-  session truth, and changes only navigation once Agent setup is complete.
-  `initializationPending` tracks preparation independently of workspace access.
-  A workspace status card shows stages, waiting and failure states, with explicit
-  **Try again** and **Open welcome** actions; completion never forces navigation.
-  Only the receipt's exact welcome conversation replaces its full or docked
-  composer with a compact preparation status until it is ready. Drafts are
-  retained, and other chats and Tasks remain available. The
-  pending flag is cleared only by refreshed server truth, including the brief
-  gap between a ready Run and the worker's completion commit; a stale send's
-  `conversation_initialization_pending` response preserves the draft and explains
-  when it can be sent.
-  Initializing shows the five latest tool calls from the Run's conversation
-  stream, with provider-supplied URLs or search queries and result status.
-  The centered CEO uses rendered five-second research/writing actions sampled
-  at the original 24 fps in 840 × 720 transparent video, chosen from actual Run/tool progress. Research starts its reading
-  loop even before a tool event; live copy distinguishes queued, dispatched,
-  running and provider progress without inventing tool calls. Live activity
-  expands/collapses below the fixed hero and shows three recent calls. Only the
-  current video loads (VP9 WebM, with HEVC-alpha MOV as a fallback). A one-time
-  decoded-pixel probe checks transparency; a sharp static poster remains if
-  neither source preserves alpha or playback is unavailable. Native video
-  playback replaces the JavaScript frame loop.
-  Playback stops offscreen, in a hidden tab or for reduced-motion preferences.
-  Activity reconnects through the shared transcript catch-up path; URLs omit
-  credentials, query strings and fragments, and raw tool output stays hidden.
+  lowest supported level). It reads bounded website/reference/plugin sources
+  and writes linked Company Wiki pages with `wiki_write`; no user message is
+  injected. One onboarding-owned controller above the onboarding and workspace
+  routes observes the receipt only until the Run exists: model discovery and the
+  start stay explicit (the initializing screen starts or resumes them once),
+  and the screen then enters the workspace itself. `initializationPending`
+  means the receipt exists and the research has not been started; until then
+  the CEO conversation shows a compact status in place of its composer (drafts
+  are kept) and the workspace status strip offers **Start research**. After the
+  start nothing needs a client. The same strip follows the research Run on
+  every page but the Wiki: running with the pages written so far, waiting for
+  the computer, ready with **Open overview**, or failed with **Retry** and
+  **Review setup**. The Wiki rail item shows an activity dot, the Wiki shows a
+  research banner (pages appear through its realtime events), the research
+  chat explains that a message waits for the research and offers a new chat,
+  and the founder gets an Inbox notice that opens the Wiki. A stale send's
+  `conversation_initialization_pending` response preserves the draft and
+  explains when it can be sent.
   Team draft edits survive reloads in the same browser session. User and Company profile editors also
   use their revision-guarded backend mutations and apply the authoritative response.
 - Owner cockpit hydration uses one Company `bootstrap` composite request when

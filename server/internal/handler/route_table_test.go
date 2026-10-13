@@ -136,6 +136,7 @@ func fullyWiredHandler() Handler {
 		GroupService:             &company.DefaultGroupService{},
 		WikiService:              &wiki.DefaultWikiService{},
 		WikiAgentReadService:     &wiki.DefaultAgentReadService{},
+		WikiAgentWriteService:    &wiki.DefaultAgentWriteService{},
 		CompanyResourceService:   &companyResourceServiceStub{},
 		AttachmentService:        &attachmentServiceStub{},
 		DeliverableService:       &execution.DefaultDeliverableService{},
@@ -1011,6 +1012,7 @@ var wantRouteTable = []string{
 	"GET /api/v1/companies/:companyId/runs/:runId/wiki-reads",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/search",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages/:pageId",
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages",
 
 	"DELETE /api/v1/companies/:companyId/resources/:resourceId",
 	"DELETE /api/v1/companies/:companyId",

@@ -325,7 +325,7 @@ SELECT
     companies.*,
     company_members.role AS member_role,
     EXISTS (SELECT 1 FROM company_initializations i WHERE i.company_id = companies.id
-      AND i.created_by_user_id = company_members.user_id AND i.completed_at IS NULL) AS initialization_pending
+      AND i.created_by_user_id = company_members.user_id AND i.research_run_id IS NULL) AS initialization_pending
 FROM companies
 JOIN company_members ON company_members.company_id = companies.id
 WHERE companies.id = sqlc.arg(company_id)::uuid
@@ -338,7 +338,7 @@ SELECT
     companies.*,
     company_members.role AS member_role,
     EXISTS (SELECT 1 FROM company_initializations i WHERE i.company_id = companies.id
-      AND i.created_by_user_id = company_members.user_id AND i.completed_at IS NULL) AS initialization_pending
+      AND i.created_by_user_id = company_members.user_id AND i.research_run_id IS NULL) AS initialization_pending
 FROM companies
 JOIN company_members ON company_members.company_id = companies.id
 WHERE company_members.user_id = sqlc.arg(user_id)::uuid

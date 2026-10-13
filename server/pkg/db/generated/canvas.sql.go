@@ -930,7 +930,7 @@ func (q *Queries) GetCanvasWikiPage(ctx context.Context, arg GetCanvasWikiPagePa
 }
 
 const getCanvasWikiRevision = `-- name: GetCanvasWikiRevision :one
-SELECT id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at FROM wiki_revisions WHERE company_id=$1 AND page_id=$2 AND id=$3
+SELECT id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id FROM wiki_revisions WHERE company_id=$1 AND page_id=$2 AND id=$3
 `
 
 type GetCanvasWikiRevisionParams struct {
@@ -955,6 +955,7 @@ func (q *Queries) GetCanvasWikiRevision(ctx context.Context, arg GetCanvasWikiRe
 		&i.CreatedAt,
 		&i.BlockContent,
 		&i.PublishedAt,
+		&i.AuthorAgentID,
 	)
 	return i, err
 }

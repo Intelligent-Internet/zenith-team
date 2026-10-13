@@ -27,6 +27,7 @@ import {
 import { WikiNewCollectionDialog, WikiNewPageDialog } from "./wiki-dialogs";
 import { WikiLibrary, type WikiFilter } from "./wiki-library";
 import { WikiPageView } from "./wiki-page-view";
+import { WikiResearchBanner } from "./wiki-research-banner";
 import { WikiSidebar } from "./wiki-sidebar";
 import "./wiki-page.css";
 
@@ -276,6 +277,11 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
         ) : null}
         {!sidebarOnly && (
           <section className="zen-wiki__main">
+            <WikiResearchBanner
+              companyId={companyId}
+              currentPageId={pageId}
+              onOpenPage={openPage}
+            />
             {!pageId && (
               <header className="zen-wiki__top">
                 <div

@@ -1232,34 +1232,50 @@ and the caller `admin` in one transaction and returns
 target must be an active member who is not already an owner; a disabled
 account is refused.
 
-## Initial business context
+## Company research
 
-`GET /companies/{companyId}/initialization` returns the founder's durable phase
-and current Run status. `POST` first reserves a receipt in `awaiting_model` so
-sign-in can resume even before model discovery completes; research start/retry names
-a completed `modelDiscoveryId` from the CEO's bound runtime, and the initial
-request also names that founder's CEO `conversationId`. Only advertised Luna is
+`GET /companies/{companyId}/initialization` returns the founder's research
+progress: `{phase, status, runId?, conversationId?, message?, pagesWritten,
+overviewPageId?}`. `phase` is `not_started` until the research Run exists,
+`research` while it works or after it failed, and `ready` once it completed;
+`status` keeps the Run vocabulary (`idle`, `awaiting_model`, `queued`,
+`running`, `waiting_runtime`, `completed`, `failed`, ...). `pagesWritten` counts
+the Company Wiki pages the research has saved over every attempt (automatic
+retries and the founder's retries), and `overviewPageId` is its
+`company-overview` hub page once written, so a client can show progress and
+link to the result.
+
+`POST` starts the research and does nothing else. It first reserves a receipt in
+`awaiting_model` so sign-in can resume even before model discovery completes;
+starting research names a completed `modelDiscoveryId` from the CEO's bound
+runtime, and the initial request also names that founder's CEO
+`conversationId` (`initialization_conflict` otherwise). Only advertised Luna is
 accepted. Reasoning is disabled where supported, otherwise the lowest known
 advertised level is used, or the runtime default when none is known. No saved
-Agent model is changed.
+Agent model is changed. Repeating the request reuses the existing Run; only a
+failed Run, after its automatic retries are exhausted, can be restarted, with
+`retry: true`, which starts a new research Run and archives the founder's
+failure notice about the previous one. The new Run updates the pages earlier
+attempts wrote instead of writing copies.
 
-A completed research Run must provide sourced business-context Markdown before
-the server saves it and enqueues the welcome; text before the `# Business context`
-heading and a wrapping code fence are dropped. Before the welcome starts, the
-daemon writes the saved context to `assets/general/business_context.md` in the
-CEO's workspace unless that file already exists, and shows it in the
-conversation, so initialization ends with the shared business context file. The founder's initial description is
-preserved. A bounded background reconciler advances existing receipts while the
-client is closed, rechecking the founder's current membership and checking the
-binding before starting a new Run.
-Repeating advance reuses active work; a terminal failed phase requires
-`retry: true`. The reconciler never starts discovery or retries a failed phase.
-Validated welcome completion clears the member-specific `initializationPending`
-Company projection even if the binding was removed after the welcome finished.
-Any queued prompt still needs its own execution authority to run.
-Opening the workspace does not clear that flag. Until it
-clears, only the exact initialization conversation refuses new sends with
-`conversation_initialization_pending`; its existing queued prompts are preserved
-and resume atomically after completion. Other chats remain available. Both endpoints
-require `agents.manage` and a human actor; another member cannot advance the
-founder's private conversation.
+The client calls POST once and then moves on: the Run works in the background
+and writes linked Wiki pages with `wiki_write` ([Agent writes](wiki.md#agent-writes)).
+When the Run reaches its final state the server, in the same transaction,
+sets the receipt's `completed_at` and writes the founder's Inbox notice. It is
+an ordinary `run_completed` or `run_failed` item with its own copy ("Your
+company wiki is ready" with the page count, or "Company research could not
+finish") and a deep link into the Wiki: `/wiki/pages/<overviewPageId>`, or
+`/wiki` when no overview page exists and for a failure. An automatic retry
+of a failed attempt notifies nothing; only the final attempt does.
+
+`Company.initializationPending` is true only while the founder's receipt exists
+and the research has not been started (no research Run yet); it is false while
+the research runs and after it ends. Until the research is started, only the
+founder's CEO conversation refuses new sends with
+`conversation_initialization_pending`; once the Run exists a message queues
+behind it. A bounded background reconciler is only a recovery: it completes a
+receipt whose research Run is final but whose terminal path could not (rechecking
+the founder's current membership), releases the conversation's preserved queue,
+and never starts discovery, a Run or a retry. Both endpoints require
+`agents.manage` and a human actor; another member cannot read or start the
+founder's research.

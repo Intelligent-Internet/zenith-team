@@ -27,7 +27,10 @@ import {
 import { NotificationKindLabel } from "@/features/notifications/components/notification-kind-label";
 import { useNoticeBody } from "@/features/notifications/hooks/use-notice-body";
 import { useListWorkspaceDirectConversationsQuery } from "@/shared/api/workspace-api";
-import { notificationConversationId } from "@/features/notifications/lib/notification-navigation";
+import {
+  isCompanyResearchWikiNotice,
+  notificationConversationId,
+} from "@/features/notifications/lib/notification-navigation";
 import {
   type InboxFilterKind,
   type InboxItem,
@@ -574,6 +577,7 @@ function notificationTargetLabel(item: InboxItem) {
   if (item.kind === "calendar_reminder" || item.kind === "calendar_update")
     return "Open calendar";
   if (notificationConversationId(item)) return "Open conversation";
+  if (isCompanyResearchWikiNotice(item)) return "Open Wiki";
   if (item.kind === "approval_request") return "Review approval";
   if (item.kind === "question_request") return "View question";
   if (item.kind === "invitation_renewal") return "Review invitation";

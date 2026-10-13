@@ -44,7 +44,6 @@ const (
 	// RunSourceTaskReport covers a user-confirmed summary batch sent to an Agent.
 	RunSourceTaskReport      RunEnqueueSource = "task_report"
 	RunSourceCompanyResearch RunEnqueueSource = "company_research"
-	RunSourceCompanyWelcome  RunEnqueueSource = "company_welcome"
 )
 
 // ErrRunAgentArchived signals that the enqueue refused to queue work because

@@ -156,7 +156,7 @@ write again with the new `revision`.
 | `task_result_application_required` | Required suggestions in the selected result set remain unapplied | Review and accept the required changes, or explicitly select a revised result set |
 | `conversation_model_settings_forbidden` | Only the Task assignee with execution permission may change its chat model | Ask the assignee to change this chat’s model |
 | `conversation_conflict` | Conversation mutation lost a race. **Also returned when a `agentId` is unknown, foreign, or archived** — the insert resolves the agent as a join and a no-row insert is indistinguishable from an id collision — **and when a send resolves no Agent to answer**, because every conversation item belongs to a run | Validate the agent against the agent list before deciding this was a race; check `agent` on the conversation read before offering a composer |
-| `conversation_initialization_pending` | This exact conversation is still preparing the Company's initial research and welcome; no new message or queued prompt was written | Show preparation progress and allow workspace navigation; exact send replays remain valid, and new sends become available after validated welcome completion |
+| `conversation_initialization_pending` | This exact conversation belongs to a receipt whose company research has not been started; no new message or queued prompt was written | Start the research (`POST /companies/{id}/initialization`); exact send replays remain valid, and new sends become available as soon as the research Run exists |
 | `company_resource_conflict` | | Re-read, re-apply |
 | `work_plan_conflict` | | Re-read, re-apply |
 | `inbox_item_revision_conflict` | | Re-read the item, re-apply |
@@ -171,7 +171,7 @@ write again with the new `revision`.
 | `company_create_conflict` | The globally unique company slug is taken | Choose a different slug |
 | `company_delete_conflict` | The Company changed after deletion was confirmed | Refresh Company settings and confirm again |
 | `company_profile_revision_conflict` | `expectedRevision` did not match; body carries `currentCompany` | Rebase on `currentCompany`, re-apply, write again |
-| `initialization_conflict` | Initialization cannot advance | Refresh initialization and retry |
+| `initialization_conflict` | The first company research request did not name the founder's CEO `conversationId` | Send the CEO conversation id with the first request |
 | `initialization_model_unavailable` | Luna was not advertised by this runtime | Refresh model discovery on the connected Codex runtime |
 | `proactive_mode_conflict` | `expectedRevision` did not match the current Proactive Mode setting | Re-read the setting, re-apply, write again |
 | `proactive_mode_conversation_required` | Proactive Mode cannot be enabled without the owner's active direct Conversation with the root CEO Agent | Open or restore that Conversation, then retry with the current revision |
@@ -375,7 +375,9 @@ live Run proof used when an agent raises either resource.
 | `wiki_collection_conflict` | 409 | Collection name is already used or its revision is stale. |
 | `wiki_artifact_ref_unavailable` | 422 | A newly added `[[artifact:…]]` citation names an Artifact or item that is missing or that the author cannot open. One code for all three, so a citation cannot probe what exists. Citations already in the page, or in a restored revision, are kept. |
 | `wiki_artifact_ref_limit` | 422 | The body cites more than 50 distinct Artifacts or items. |
-| `wiki_agent_access_disabled` | 403 | Company Wiki reading is switched off for the Run's Agent (its `wiki` capability group is disabled). Enabling the group in the Agent's capabilities restores access. |
+| `wiki_agent_access_disabled` | 403 | Company Wiki reading is switched off for the Run's Agent (its `wiki` capability group is disabled). Enabling the group in the Agent's capabilities restores access. The same code refuses a company-research Run's Wiki write when the group is off. |
+| `wiki_agent_write_forbidden` | 403 | The Run may not write the Company Wiki: only the founder's own `company_research` Run, while `running`, may. Any other Run, a finished Run, or a Run authorized by another member gets this code. |
+| `wiki_agent_write_limit` | 422 | The write would give the Run more than 40 Wiki pages. Rewriting a page it already owns is still allowed. |
 
 ## Projects
 

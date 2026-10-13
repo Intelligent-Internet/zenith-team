@@ -323,13 +323,11 @@ func TestRunCLIPolicyAdmitsTaskCreationForTheRunsMember(t *testing.T) {
 			t.Fatalf("%s Run lost its planning reads", name)
 		}
 	}
-	// Platform-authored onboarding Runs never create user work.
-	for _, source := range []string{runSourceCompanyResearch, runSourceCompanyWelcome} {
-		doc := RunContext{Agent: RunAgentContext{IsRoot: true}}
-		doc.ExecutionProfile.Source = source
-		if runCLIPolicyFor(runCLICommands(directRun, doc)).allows(create[0], create[1]) {
-			t.Fatalf("company initialization %s was offered task creation", source)
-		}
+	// The platform-authored onboarding research Run never creates user work.
+	research := RunContext{Agent: RunAgentContext{IsRoot: true}}
+	research.ExecutionProfile.Source = runSourceCompanyResearch
+	if runCLIPolicyFor(runCLICommands(directRun, research)).allows(create[0], create[1]) {
+		t.Fatal("company research was offered task creation")
 	}
 	// Without the planning reads a direct Run has no Project to name.
 	planningOff := RunContext{
@@ -1233,6 +1231,12 @@ func mcpToolDrivers(
 			_, err := wiki.ReadWiki(ctx, tools.WikiReadInput{PageID: pageID})
 			return err
 		},
+		"wiki_write": func(ctx context.Context) error {
+			_, err := wiki.WriteWiki(ctx, tools.WikiWriteInput{Pages: []tools.WikiWritePage{
+				{Key: "company-overview", Title: "Company overview", Markdown: "# Overview"},
+			}})
+			return err
+		},
 	}
 }
 
@@ -1312,6 +1316,7 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 		"CEO direct chat":    {doc: RunContext{Agent: RunAgentContext{IsRoot: true}}},
 		"member direct chat": {doc: RunContext{}},
 		"channel invocation": {doc: RunContext{ChannelInvocation: &RunChannelInvocation{ID: uuid.NewString()}}},
+		"company research":   {doc: RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
 		"Board chat tag": {doc: RunContext{
 			ExecutionProfile: RunExecutionProfileContext{
 				Whiteboard: &RunWhiteboardContext{ID: uuid.NewString(), Title: "Plan"},

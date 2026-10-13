@@ -1429,6 +1429,10 @@ func (s *DefaultRunService) CompleteRun(
 		if err := s.applyTaskTerminalEffectInTx(ctx, qtx, &pending, run); err != nil {
 			return err
 		}
+		research, err := settleCompanyResearchInTx(ctx, qtx, run, false)
+		if err != nil {
+			return err
+		}
 		target, ok := inboxTargets[run.ID]
 		if !ok {
 			return nil
@@ -1439,6 +1443,7 @@ func (s *DefaultRunService) CompleteRun(
 			&pending,
 			run,
 			target,
+			research,
 		)
 		return completeErr
 	})
@@ -1633,6 +1638,10 @@ func (s *DefaultRunService) FailRun(
 					return err
 				}
 			}
+			research, err := settleCompanyResearchInTx(ctx, qtx, run, retried != nil)
+			if err != nil {
+				return err
+			}
 			target, ok := inboxTargets[run.ID]
 			if !ok {
 				return nil
@@ -1643,6 +1652,7 @@ func (s *DefaultRunService) FailRun(
 				&txPending,
 				run,
 				target,
+				research,
 			)
 			return err
 		})
@@ -1743,8 +1753,13 @@ func (s *DefaultRunService) cancelQueuedRunAfterConnectorSnapshotFailure(
 		transitioned bool
 		pending      []events.Event
 		promoted     *db.Run
+		inboxResult  inbox.CreateResult
 	)
 	err = s.runInTx(ctx, func(qtx *db.Queries) error {
+		researchTargets, err := lockResearchInboxTargets(ctx, qtx, []db.Run{base})
+		if err != nil {
+			return err
+		}
 		if err := lockTerminalRunConversation(ctx, qtx, base); err != nil {
 			return err
 		}
@@ -1782,7 +1797,11 @@ func (s *DefaultRunService) cancelQueuedRunAfterConnectorSnapshotFailure(
 		if cancelErr != nil {
 			return cancelErr
 		}
-		return s.applyTaskTerminalEffectInTx(ctx, qtx, &pending, run)
+		if err := s.applyTaskTerminalEffectInTx(ctx, qtx, &pending, run); err != nil {
+			return err
+		}
+		inboxResult, cancelErr = settleCancelledResearchInTx(ctx, qtx, &pending, run, researchTargets)
+		return cancelErr
 	})
 	if err != nil {
 		return fmt.Errorf("cancel queued Run after Connector snapshot failure: %w", err)
@@ -1801,6 +1820,7 @@ func (s *DefaultRunService) cancelQueuedRunAfterConnectorSnapshotFailure(
 	s.revokeRunTokens(ctx, run.ID)
 
 	s.publishRunQueuePromotion(ctx, pending, promoted)
+	inbox.PresentCreated(s.InboxPresenter, inboxResult)
 	s.NotifyRunFinished(run)
 	return nil
 }
@@ -1834,6 +1854,7 @@ func (s *DefaultRunService) cancelRun(
 		transitioned bool
 		pending      []events.Event
 		promoted     *db.Run
+		inboxResult  inbox.CreateResult
 	)
 	err = s.runInTx(ctx, func(qtx *db.Queries) error {
 		if principal != nil {
@@ -1880,6 +1901,10 @@ func (s *DefaultRunService) cancelRun(
 			}
 		}
 
+		researchTargets, err := lockResearchInboxTargets(ctx, qtx, []db.Run{base})
+		if err != nil {
+			return err
+		}
 		if err := lockTerminalRunConversation(ctx, qtx, base); err != nil {
 			return err
 		}
@@ -1913,6 +1938,10 @@ func (s *DefaultRunService) cancelRun(
 		}
 		transitioned = true
 		promoted, cancelErr = s.promoteRunQueueInTx(ctx, qtx, &pending, run, "")
+		if cancelErr != nil {
+			return cancelErr
+		}
+		inboxResult, cancelErr = settleCancelledResearchInTx(ctx, qtx, &pending, run, researchTargets)
 		return cancelErr
 	})
 	if err != nil {
@@ -1932,6 +1961,7 @@ func (s *DefaultRunService) cancelRun(
 	s.revokeRunTokens(ctx, run.ID)
 
 	s.publishRunQueuePromotion(ctx, pending, promoted)
+	inbox.PresentCreated(s.InboxPresenter, inboxResult)
 	s.NotifyRunFinished(run)
 	return &run, nil
 }
@@ -2264,11 +2294,16 @@ func (s *DefaultRunService) transitionFailedRuns(
 					return err
 				}
 			}
+			_, retryPending := retries[run.ID]
+			research, err := settleCompanyResearchInTx(ctx, qtx, run, retryPending)
+			if err != nil {
+				return err
+			}
 			target, ok := inboxTargets[run.ID]
 			if !ok {
 				continue
 			}
-			result, err := createRunTerminalInboxItem(ctx, qtx, &pending, run, target)
+			result, err := createRunTerminalInboxItem(ctx, qtx, &pending, run, target, research)
 			if err != nil {
 				return err
 			}

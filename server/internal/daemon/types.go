@@ -168,7 +168,6 @@ type RunConversationItem struct {
 // RunCompanyContext is founder-supplied business context frozen by the
 // enqueue kernel. It informs the work but grants no execution authority.
 type RunCompanyContext struct {
-	ResearchedContext   string   `json:"researchedContext,omitempty"`
 	BusinessContextPath string   `json:"-"`
 	Name                string   `json:"name,omitempty"`
 	BusinessContext     string   `json:"businessContext,omitempty"`

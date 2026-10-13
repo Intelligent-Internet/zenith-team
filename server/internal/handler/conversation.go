@@ -717,7 +717,7 @@ var conversationErrorMappings = []errorMapping{
 	{
 		conversation.ErrInitializationPending,
 		http.StatusConflict,
-		"This conversation is preparing your company welcome. You can explore the workspace while it finishes.",
+		"This conversation is waiting for your company research to start. You can explore the workspace meanwhile.",
 		"conversation_initialization_pending",
 	},
 	// The kernel's binding refusal passes through the conversation service

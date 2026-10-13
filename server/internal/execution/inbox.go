@@ -120,7 +120,15 @@ func createRunTerminalInboxItem(
 	pending *[]events.Event,
 	run db.Run,
 	target runInboxTarget,
+	research companyResearchOutcome,
 ) (inbox.CreateResult, error) {
+	if research.research {
+		// A retried attempt is not the end; the final attempt notifies.
+		if research.retrying {
+			return inbox.CreateResult{}, nil
+		}
+		return createCompanyResearchInboxItem(ctx, queries, pending, run, target, research)
+	}
 	if run.Status == "completed" {
 		waits, err := queries.ListRunHumanInputWaits(ctx, db.ListRunHumanInputWaitsParams{
 			RecipientUserID: target.recipientUserID,

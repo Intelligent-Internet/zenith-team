@@ -1,102 +1,89 @@
 package daemon
 
 import (
-	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
-func TestInitializationPolicySeparatesResearchFromGreeting(t *testing.T) {
+// The research Run gets the initialization policy and exactly the Wiki tools;
+// the policy must name every tool the Run was granted, and no other Run gets it.
+func TestResearchRunGetsItsPolicyAndOnlyTheWikiTools(t *testing.T) {
 	t.Parallel()
-	for _, phase := range []string{"company_research", "company_welcome"} {
-		t.Run(phase, func(t *testing.T) {
-			t.Parallel()
-			var b strings.Builder
-			appendCompanyInitializationPolicy(&b, phase)
-			for _, want := range []string{"Do not create a Company Plan", "Do not send email", "untrusted"} {
-				if !strings.Contains(b.String(), want) {
-					t.Fatalf("policy missing %q", want)
-				}
-			}
-			if phase == "company_research" && !strings.Contains(b.String(), "final answer must be the business context Markdown") {
-				t.Fatal("research must return persistable context")
-			}
-			if phase == "company_welcome" && !strings.Contains(b.String(), "configured name") {
-				t.Fatal("welcome must honor renamed CEO")
-			}
-			if phase == "company_welcome" && !strings.Contains(b.String(), "business context is saved") {
-				t.Fatal("welcome must point the founder at the saved file")
-			}
-		})
+	research := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}, Agent: RunAgentContext{IsRoot: true}}
+	tools := boardlyMCPToolsForRun(research)
+	if want := []string{"wiki_read", "wiki_search", "wiki_write"}; !slices.Equal(tools, want) {
+		t.Fatalf("research platform tools = %v, want exactly %v", tools, want)
 	}
-}
-
-func TestInitializationCannotAskForInputOrCreatePlans(t *testing.T) {
-	t.Parallel()
-	for _, source := range []string{"company_research", "company_welcome"} {
-		doc := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: source}, Agent: RunAgentContext{IsRoot: true}}
-		if tools := boardlyMCPToolsForRun(doc); len(tools) != 0 {
-			t.Fatalf("%s platform tools = %v, want none during initialization", source, tools)
+	prompt := buildRunSystemPrompt(research, "/work/current", runMemoryContext{})
+	if !strings.Contains(prompt, "Company initialization policy") {
+		t.Fatal("research prompt lacks the initialization policy")
+	}
+	var policy strings.Builder
+	appendCompanyInitializationPolicy(&policy)
+	for _, tool := range tools {
+		if !strings.Contains(policy.String(), tool) {
+			t.Errorf("research policy never names its tool %s", tool)
 		}
 	}
+	if direct := buildRunSystemPrompt(RunContext{}, "/work/current", runMemoryContext{}); strings.Contains(direct, "Company initialization policy") {
+		t.Fatal("a direct Run received the initialization policy")
+	}
 }
 
-func TestSeedInitialBusinessContextWritesTheFileOnlyForTheWelcome(t *testing.T) {
+func TestOnlyTheResearchRunGetsWikiWrite(t *testing.T) {
 	t.Parallel()
-	welcome := RunContext{
-		ExecutionProfile: RunExecutionProfileContext{Source: "company_welcome"},
-		Company:          &RunCompanyContext{ResearchedContext: "# Business context\nA shop.\n"},
-	}
-	workDir := t.TempDir()
-	path, err := seedInitialBusinessContext(welcome, workDir)
-	if err != nil || path == "" || existingBusinessContextPath(workDir) != path {
-		t.Fatalf("seed = %q/%v, want the shared business context file", path, err)
-	}
-	if got, _ := os.ReadFile(path); string(got) != "# Business context\nA shop.\n" {
-		t.Fatalf("content = %q", got)
-	}
-
-	// A file the founder or the CEO already wrote is never replaced.
-	if err := os.WriteFile(path, []byte("edited"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if again, err := seedInitialBusinessContext(welcome, workDir); err != nil || again != "" {
-		t.Fatalf("second seed = %q/%v, want no write", again, err)
-	}
-	if got, _ := os.ReadFile(path); string(got) != "edited" {
-		t.Fatalf("existing file replaced with %q", got)
-	}
-
 	for name, doc := range map[string]RunContext{
-		"research":   {ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}, Company: welcome.Company},
-		"message":    {ExecutionProfile: RunExecutionProfileContext{Source: "message"}, Company: welcome.Company},
-		"no context": {ExecutionProfile: welcome.ExecutionProfile, Company: &RunCompanyContext{}},
+		"direct":   {},
+		"root":     {Agent: RunAgentContext{IsRoot: true}},
+		"task":     {ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}},
+		"human":    {ExecutionProfile: RunExecutionProfileContext{Source: "human_input"}},
+		"report":   {ExecutionProfile: RunExecutionProfileContext{Source: "task_report"}},
+		"schedule": {ExecutionProfile: RunExecutionProfileContext{Source: "schedule"}},
+		"channel":  {ChannelInvocation: &RunChannelInvocation{}},
 	} {
-		dir := t.TempDir()
-		if path, err := seedInitialBusinessContext(doc, dir); err != nil || path != "" || existingBusinessContextPath(dir) != "" {
-			t.Fatalf("%s seed = %q/%v, want nothing written", name, path, err)
+		if tools := boardlyMCPToolsForRun(doc); slices.Contains(tools, "wiki_write") {
+			t.Errorf("%s Run was given wiki_write: %v", name, tools)
+		}
+		if prompt := buildRunSystemPrompt(doc, "/work/current", runMemoryContext{}); strings.Contains(prompt, "wiki_write") {
+			t.Errorf("%s prompt mentions wiki_write", name)
 		}
 	}
 }
 
-func TestSeedInitialBusinessContextStaysInsideTheWorkspace(t *testing.T) {
+func TestResearchRunHonoursTheWikiSwitchAndFailsClearlyWithoutIt(t *testing.T) {
 	t.Parallel()
-	workDir, outside := t.TempDir(), t.TempDir()
-	if err := os.MkdirAll(filepath.Join(workDir, "assets"), 0o755); err != nil {
-		t.Fatal(err)
+	research := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}}
+	if err := requireResearchWikiTools(research); err != nil {
+		t.Fatalf("research with the Wiki on = %v", err)
 	}
-	if err := os.Symlink(outside, filepath.Join(workDir, "assets", "general")); err != nil {
-		t.Fatal(err)
+	research.Agent.Capabilities = RunCapabilitySettings{DisabledBuiltIns: []string{"wiki"}}
+	if tools := boardlyMCPToolsForRun(research); len(tools) != 0 {
+		t.Fatalf("research tools with the Wiki off = %v, want none", tools)
 	}
-	doc := RunContext{
-		ExecutionProfile: RunExecutionProfileContext{Source: "company_welcome"},
-		Company:          &RunCompanyContext{ResearchedContext: "# Business context"},
+	err := requireResearchWikiTools(research)
+	if err == nil || !strings.Contains(err.Error(), "Company Wiki") {
+		t.Fatalf("research with the Wiki off = %v, want a clear Company Wiki error", err)
 	}
-	if _, err := seedInitialBusinessContext(doc, workDir); err == nil {
-		t.Fatal("seed followed a symlink out of the workspace")
+	// Other Runs never need the Wiki.
+	if err := requireResearchWikiTools(RunContext{Agent: research.Agent}); err != nil {
+		t.Fatalf("direct Run with the Wiki off = %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(outside, "business_context.md")); !os.IsNotExist(err) {
-		t.Fatalf("file written outside the workspace: %v", err)
+}
+
+// A Run must never be told it cannot change the Wiki while it holds wiki_write,
+// nor be offered wiki_write by a hint written for read-only Runs.
+func TestWikiHintMatchesTheToolsTheRunHas(t *testing.T) {
+	t.Parallel()
+	research := buildRunSystemPrompt(
+		RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}},
+		"/work/current", runMemoryContext{},
+	)
+	if strings.Contains(research, "cannot create or change") {
+		t.Error("research prompt says it cannot change the Wiki while it holds wiki_write")
+	}
+	direct := buildRunSystemPrompt(RunContext{}, "/work/current", runMemoryContext{})
+	if !strings.Contains(direct, "cannot create or change") {
+		t.Error("a read-only Run is not told the Wiki is read-only")
 	}
 }

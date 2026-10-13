@@ -1,7 +1,8 @@
 // Package wiki owns Company Wiki pages, collections, immutable revisions and
 // the current link graph. PostgreSQL is its only authority. Agent access is
-// read-only (AgentReadService: search, read and the evidence trail of what a Run
-// read); Agents cannot write, and reviewed proposals are not part of this
+// AgentReadService (search, read and the evidence trail of what a Run read) for
+// every Run, and AgentWriteService for the one Run that proves it is the
+// founder's company-research Run; reviewed proposals are not part of this
 // package yet.
 package wiki
 
@@ -69,11 +70,15 @@ type PageResponse struct {
 	CurrentRevisionID *uuid.UUID      `json:"currentRevisionId"`
 	CreatedByUserID   uuid.UUID       `json:"createdByUserId"`
 	LastAuthorUserID  uuid.UUID       `json:"lastAuthorUserId"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	UpdatedAt         time.Time       `json:"updatedAt"`
-	RevisionCreatedAt time.Time       `json:"revisionCreatedAt"`
-	ArchivedAt        *time.Time      `json:"archivedAt"`
-	Favorite          bool            `json:"favorite"`
+	// LastAuthorAgentID and LastAuthorAgentName name the Agent that wrote the
+	// current revision on behalf of LastAuthorUserID, when an Agent did.
+	LastAuthorAgentID   *uuid.UUID `json:"lastAuthorAgentId"`
+	LastAuthorAgentName *string    `json:"lastAuthorAgentName"`
+	CreatedAt           time.Time  `json:"createdAt"`
+	UpdatedAt           time.Time  `json:"updatedAt"`
+	RevisionCreatedAt   time.Time  `json:"revisionCreatedAt"`
+	ArchivedAt          *time.Time `json:"archivedAt"`
+	Favorite            bool       `json:"favorite"`
 }
 
 type RevisionResponse struct {
@@ -86,7 +91,9 @@ type RevisionResponse struct {
 	Summary      string          `json:"summary"`
 	CollectionID *uuid.UUID      `json:"collectionId"`
 	AuthorUserID uuid.UUID       `json:"authorUserId"`
-	CreatedAt    time.Time       `json:"createdAt"`
+	// AuthorAgentID is the Agent that wrote the revision for AuthorUserID.
+	AuthorAgentID *uuid.UUID `json:"authorAgentId"`
+	CreatedAt     time.Time  `json:"createdAt"`
 }
 
 type RevisionList struct {
@@ -205,8 +212,13 @@ func pageResponse(row generated.GetWikiPageForMemberRow) PageResponse {
 		CurrentRevisionID: uuidPointer(row.CurrentRevisionID),
 		Content:           revisionContent(row.BlockContent, row.Body),
 		CreatedByUserID:   row.CreatedByUserID, LastAuthorUserID: row.LastAuthorUserID,
-		CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
+		LastAuthorAgentID: uuidPointer(row.LastAuthorAgentID),
+		CreatedAt:         row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
 		RevisionCreatedAt: row.RevisionCreatedAt.Time, Favorite: row.Favorite,
+	}
+	if row.LastAuthorAgentName.Valid {
+		name := row.LastAuthorAgentName.String
+		response.LastAuthorAgentName = &name
 	}
 	if row.ArchivedAt.Valid {
 		archived := row.ArchivedAt.Time
@@ -220,7 +232,7 @@ func revisionResponse(row generated.WikiRevision) RevisionResponse {
 		ID: row.ID, PageID: row.PageID, Number: row.Number, Title: row.Title,
 		Content: revisionContent(row.BlockContent, row.Body),
 		Body:    row.Body, Summary: row.Summary, CollectionID: uuidPointer(row.CollectionID),
-		AuthorUserID: row.AuthorUserID, CreatedAt: row.CreatedAt.Time,
+		AuthorUserID: row.AuthorUserID, AuthorAgentID: uuidPointer(row.AuthorAgentID), CreatedAt: row.CreatedAt.Time,
 	}
 }
 
@@ -600,26 +612,8 @@ func (s *DefaultWikiService) CreatePage(ctx context.Context, principal auth.User
 		if err := checkCollection(ctx, q, principal.CompanyID, input.CollectionID); err != nil {
 			return err
 		}
-		id, err := q.CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: principal.CompanyID, CollectionID: nullableUUID(input.CollectionID), Title: title, Summary: summary, CreatedByUserID: principal.UserID})
+		id, err := createDraftInTx(ctx, q, principal, title, summary, body, input.CollectionID)
 		if err != nil {
-			return mapWriteError(err)
-		}
-		root := BlocksFromMarkdown(body)
-		if err = AllocateBlockTreeInTx(ctx, q, principal.CompanyID, id, &root); err != nil {
-			return err
-		}
-		state, err := EncodeBlocks(root)
-		if err != nil {
-			return err
-		}
-		if _, err = q.CreateCanvasDraft(ctx, generated.CreateCanvasDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Markdown: body}); err != nil {
-			return err
-		}
-		content, err := json.Marshal(root)
-		if err != nil {
-			return err
-		}
-		if _, err = q.UpgradeWikiDraft(ctx, generated.UpgradeWikiDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Content: content}); err != nil {
 			return err
 		}
 		response, err = readPage(ctx, q, principal, id)
@@ -631,6 +625,40 @@ func (s *DefaultWikiService) CreatePage(ctx context.Context, principal auth.User
 	// Draft creation is not a Company publication event: ordinary readers cannot
 	// see its title or body until an explicit publish succeeds.
 	return response, nil
+}
+
+// createDraftInTx inserts a page and its first block draft. The caller holds
+// the Company publication lock and has normalized the text.
+func createDraftInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	principal auth.UserPrincipal,
+	title, summary, body string,
+	collectionID *uuid.UUID,
+) (uuid.UUID, error) {
+	id, err := q.CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: principal.CompanyID, CollectionID: nullableUUID(collectionID), Title: title, Summary: summary, CreatedByUserID: principal.UserID})
+	if err != nil {
+		return uuid.Nil, mapWriteError(err)
+	}
+	root := BlocksFromMarkdown(body)
+	if err = AllocateBlockTreeInTx(ctx, q, principal.CompanyID, id, &root); err != nil {
+		return uuid.Nil, err
+	}
+	state, err := EncodeBlocks(root)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if _, err = q.CreateCanvasDraft(ctx, generated.CreateCanvasDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Markdown: body}); err != nil {
+		return uuid.Nil, err
+	}
+	content, err := json.Marshal(root)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if _, err = q.UpgradeWikiDraft(ctx, generated.UpgradeWikiDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Content: content}); err != nil {
+		return uuid.Nil, err
+	}
+	return id, nil
 }
 
 func checkCollection(ctx context.Context, q *generated.Queries, companyID uuid.UUID, id *uuid.UUID) error {

@@ -375,145 +375,8 @@ func (s *DefaultWikiService) PublishPage(
 	var response PageResponse
 	created := false
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		page, err := lockEditableWiki(ctx, q, p, id)
-		if err != nil {
-			return err
-		}
-		if page.Version != input.ExpectedRevision {
-			return ErrPageConflict
-		}
-		draft, err := BlockDraftInTx(ctx, q, p.CompanyID, id)
-		if err != nil {
-			return err
-		}
-		if draft.HeadSeq != input.ExpectedSequence {
-			return ErrPageConflict
-		}
-		title, body, summary, err := normalizePageInput(draft.Title, draft.Markdown, draft.Summary)
-		if err != nil {
-			return err
-		}
-		var root BlockNode
-		if err = json.Unmarshal(draft.Content, &root); err != nil {
-			return err
-		}
-		if err = ValidateStandaloneBlocks(root); err != nil {
-			return err
-		}
-		redactBlockContent(&root)
-		body = strings.TrimRight(BlocksMarkdown(root), "\n")
-		publishedContent, err := json.Marshal(root)
-		if err != nil {
-			return err
-		}
-		if err = checkCollection(ctx, q, p.CompanyID, uuidPointer(draft.CollectionID)); err != nil {
-			return err
-		}
-		var carried []artifactRef
-		previous, err := q.GetWikiCurrentRevision(
-			ctx,
-			generated.GetWikiCurrentRevisionParams{CompanyID: p.CompanyID, PageID: id},
-		)
-		if errors.Is(err, pgx.ErrNoRows) {
-			created = true
-		} else if err != nil {
-			return err
-		} else {
-			carried = parseArtifactRefs(previous.Body)
-		}
-		if draft.RestoredRevisionID.Valid {
-			restored, err := q.GetWikiRevisionForMember(
-				ctx,
-				generated.GetWikiRevisionForMemberParams{
-					CompanyID:   p.CompanyID,
-					PageID:      id,
-					ActorUserID: p.UserID,
-					RevisionID:  draft.RestoredRevisionID.UUID,
-				},
-			)
-			if err != nil {
-				return err
-			}
-			carried = append(carried, parseArtifactRefs(restored.Body)...)
-		}
-		if err = replaceArtifactRefs(ctx, q, p, id, body, carried); err != nil {
-			return err
-		}
-		number, err := q.AllocateWikiRevisionNumber(
-			ctx,
-			generated.AllocateWikiRevisionNumberParams{CompanyID: p.CompanyID, ID: id},
-		)
-		if err != nil {
-			return err
-		}
-		revision, err := q.CreateWikiRevision(
-			ctx,
-			generated.CreateWikiRevisionParams{
-				CompanyID:    p.CompanyID,
-				PageID:       id,
-				Number:       number,
-				Title:        title,
-				Body:         body,
-				Summary:      summary,
-				CollectionID: draft.CollectionID,
-				AuthorUserID: p.UserID,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		if err = q.SetWikiRevisionBlocks(
-			ctx,
-			generated.SetWikiRevisionBlocksParams{
-				CompanyID:    p.CompanyID,
-				ID:           revision.ID,
-				BlockContent: publishedContent,
-				Body:         body,
-			},
-		); err != nil {
-			return err
-		}
-		if err = q.SetWikiRevisionPublished(
-			ctx,
-			generated.SetWikiRevisionPublishedParams{CompanyID: p.CompanyID, PageID: id, ID: revision.ID},
-		); err != nil {
-			return err
-		}
-		if _, err = q.SetWikiPageCurrentRevision(
-			ctx,
-			generated.SetWikiPageCurrentRevisionParams{
-				CompanyID:       p.CompanyID,
-				PageID:          id,
-				ExpectedVersion: input.ExpectedRevision,
-				Title:           title,
-				Summary:         summary,
-				CollectionID:    draft.CollectionID,
-				RevisionID:      revision.ID,
-			},
-		); err != nil {
-			return err
-		}
-		if err = q.RecordCanvasCheckpoint(
-			ctx,
-			generated.RecordCanvasCheckpointParams{
-				CompanyID:  p.CompanyID,
-				PageID:     id,
-				RevisionID: revision.ID,
-				ThroughSeq: draft.HeadSeq,
-			},
-		); err != nil {
-			return err
-		}
-		if err = q.ClearWikiDraftRestore(
-			ctx,
-			generated.ClearWikiDraftRestoreParams{CompanyID: p.CompanyID, PageID: id},
-		); err != nil {
-			return err
-		}
-		if err = replaceLinks(ctx, q, p.CompanyID, id, body); err != nil {
-			return err
-		}
-		response, err = readPage(ctx, q, p, id)
+		var err error
+		response, created, err = publishDraftInTx(ctx, q, p, id, input)
 		return err
 	})
 	if err != nil {
@@ -525,6 +388,92 @@ func (s *DefaultWikiService) PublishPage(
 	}
 	s.publishPageEvent(ctx, p, name, response)
 	return response, nil
+}
+
+// publishDraftInTx publishes the page's draft as its next revision and
+// rebuilds the links its body names. created reports the first publication.
+func publishDraftInTx(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, id uuid.UUID, input PublishPageInput) (response PageResponse, created bool, err error) {
+	page, err := lockEditableWiki(ctx, q, p, id)
+	if err != nil {
+		return response, false, err
+	}
+	if page.Version != input.ExpectedRevision {
+		return response, false, ErrPageConflict
+	}
+	draft, err := BlockDraftInTx(ctx, q, p.CompanyID, id)
+	if err != nil {
+		return response, false, err
+	}
+	if draft.HeadSeq != input.ExpectedSequence {
+		return response, false, ErrPageConflict
+	}
+	title, body, summary, err := normalizePageInput(draft.Title, draft.Markdown, draft.Summary)
+	if err != nil {
+		return response, created, err
+	}
+	var root BlockNode
+	if err = json.Unmarshal(draft.Content, &root); err != nil {
+		return response, created, err
+	}
+	if err = ValidateStandaloneBlocks(root); err != nil {
+		return response, created, err
+	}
+	redactBlockContent(&root)
+	body = strings.TrimRight(BlocksMarkdown(root), "\n")
+	publishedContent, err := json.Marshal(root)
+	if err != nil {
+		return response, created, err
+	}
+	if err = checkCollection(ctx, q, p.CompanyID, uuidPointer(draft.CollectionID)); err != nil {
+		return response, created, err
+	}
+	var carried []artifactRef
+	previous, err := q.GetWikiCurrentRevision(ctx, generated.GetWikiCurrentRevisionParams{CompanyID: p.CompanyID, PageID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		created = true
+	} else if err != nil {
+		return response, created, err
+	} else {
+		carried = parseArtifactRefs(previous.Body)
+	}
+	if draft.RestoredRevisionID.Valid {
+		restored, err := q.GetWikiRevisionForMember(ctx, generated.GetWikiRevisionForMemberParams{CompanyID: p.CompanyID, PageID: id, ActorUserID: p.UserID, RevisionID: draft.RestoredRevisionID.UUID})
+		if err != nil {
+			return response, created, err
+		}
+		carried = append(carried, parseArtifactRefs(restored.Body)...)
+	}
+	if err = replaceArtifactRefs(ctx, q, p, id, body, carried); err != nil {
+		return response, created, err
+	}
+	number, err := q.AllocateWikiRevisionNumber(ctx, generated.AllocateWikiRevisionNumberParams{CompanyID: p.CompanyID, ID: id})
+	if err != nil {
+		return response, created, err
+	}
+	revision, err := q.CreateWikiRevision(ctx, generated.CreateWikiRevisionParams{CompanyID: p.CompanyID, PageID: id, Number: number, Title: title, Body: body, Summary: summary, CollectionID: draft.CollectionID, AuthorUserID: p.UserID})
+	if err != nil {
+		return response, created, err
+	}
+	if err = q.SetWikiRevisionBlocks(ctx, generated.SetWikiRevisionBlocksParams{CompanyID: p.CompanyID, ID: revision.ID, BlockContent: publishedContent, Body: body}); err != nil {
+		return response, created, err
+	}
+	if err = q.SetWikiRevisionPublished(ctx, generated.SetWikiRevisionPublishedParams{CompanyID: p.CompanyID, PageID: id, ID: revision.ID}); err != nil {
+		return response, created, err
+	}
+	if _, err = q.SetWikiPageCurrentRevision(ctx, generated.SetWikiPageCurrentRevisionParams{CompanyID: p.CompanyID, PageID: id, ExpectedVersion: input.ExpectedRevision, Title: title, Summary: summary, CollectionID: draft.CollectionID, RevisionID: revision.ID}); err != nil {
+		return response, created, err
+	}
+	if err = q.RecordCanvasCheckpoint(ctx, generated.RecordCanvasCheckpointParams{CompanyID: p.CompanyID, PageID: id, RevisionID: revision.ID, ThroughSeq: draft.HeadSeq}); err != nil {
+		return response, created, err
+	}
+	if err = q.ClearWikiDraftRestore(ctx, generated.ClearWikiDraftRestoreParams{CompanyID: p.CompanyID, PageID: id}); err != nil {
+		return response, created, err
+	}
+	if err = replaceLinks(ctx, q, p.CompanyID, id, body); err != nil {
+		return response, created, err
+	}
+	response, err = readPage(ctx, q, p, id)
+	return response, created, err
 }
 
 func (s *DefaultWikiService) RestoreRevision(

@@ -25,6 +25,7 @@ import {
   useAdvanceCompanyInitializationMutation,
 } from "@/features/onboarding/api/initialization-api";
 import { initializationStatus } from "@/features/onboarding/model/initialization-status";
+import { lunaModelId } from "@/features/onboarding/model/research-model";
 import {
   boardlyApi,
   getBoardlyQueryErrorMessage,
@@ -84,6 +85,10 @@ function useInitializationController() {
   );
   const state = observing ? progress.currentData : undefined;
   const hasReceipt = Boolean(state?.conversationId);
+  // Once the research Run exists the server owns it: it works without a
+  // client, writes the Wiki, and notifies the founder. This controller only
+  // gets a receipt to that point, so it stops observing there.
+  const started = Boolean(state?.runId);
   const roster = useListCompanyAgentsQuery(companyId, {
     skip: !observing,
     pollingInterval: ready ? 0 : 5000,
@@ -97,37 +102,29 @@ function useInitializationController() {
     runtimes.currentData?.items.find(
       (item) => item.id === ceo?.binding?.runtime.id,
     ) ?? null;
-  const needsModel =
-    state?.phase === "not_started" ||
-    (state?.phase === "research" &&
-      (state.status === "failed" || state.status === "awaiting_model"));
+  const needsModel = state?.phase === "not_started";
   const [discoveryEnabled, setDiscoveryEnabled] = useState(false);
   const discovery = useRuntimeModelDiscovery({
     companyId,
     runtime: observing && needsModel && discoveryEnabled ? runtime : null,
     requireFreshRequest: true,
   });
-  const luna = discovery.models.find((model) =>
-    /^(?:luna|gpt-\d+(?:\.\d+)?-luna)$/.test(model.id),
-  );
+  const luna = discovery.models.find((model) => lunaModelId.test(model.id));
   const [advance, mutation] = useAdvanceCompanyInitializationMutation();
   const actionInFlight = useRef(false);
   const [requesting, setRequesting] = useState(false);
-  const [requestedResearch, setRequestedResearch] = useState<{
-    retry: boolean;
-  } | null>(null);
+  const [requestedResearch, setRequestedResearch] = useState(false);
   const [error, setError] = useState("");
   const completionObserved = useRef(false);
 
   useEffect(() => {
     if (!state?.conversationId || !session.userId) return;
-    setTracking(true);
-    const completed =
-      state.phase === "ready" && !session.company?.initializationPending;
+    setTracking(!started);
+    const completed = started && !session.company?.initializationPending;
     setReady(completed);
-    // A saved active receipt proves pending work. Only the refreshed Company
-    // projection can clear it: phase=ready may precede the worker's final commit.
-    if (state.phase !== "ready")
+    // A receipt without a research Run is pending work. Only the refreshed
+    // Company projection clears it, so a started Run may precede that commit.
+    if (!started)
       markSessionCompanyInitializationPending(companyId, session.userId);
     if (completed && !completionObserved.current) {
       completionObserved.current = true;
@@ -139,12 +136,12 @@ function useInitializationController() {
     dispatch,
     session.company?.initializationPending,
     session.userId,
-    state,
+    started,
+    state?.conversationId,
   ]);
 
   useEffect(() => {
-    if (state?.phase !== "ready" || !session.company?.initializationPending)
-      return;
+    if (!started || !session.company?.initializationPending) return;
     let cancelled = false;
     let refreshing = false;
     const refresh = async () => {
@@ -155,7 +152,7 @@ function useInitializationController() {
       } catch {
         if (!cancelled)
           setError(
-            "Your welcome is ready, but completion could not be confirmed. Check your connection and try again.",
+            "Your company research has started, but we could not confirm it. Check your connection and try again.",
           );
       } finally {
         refreshing = false;
@@ -167,7 +164,7 @@ function useInitializationController() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [session.company?.initializationPending, state?.phase]);
+  }, [session.company?.initializationPending, started]);
 
   const continuePreparation = useCallback(async () => {
     if (!observing || actionInFlight.current) return;
@@ -177,7 +174,7 @@ function useInitializationController() {
     setDismissed(false);
     try {
       let current = await progress.refetch().unwrap();
-      if (current.phase === "not_started") {
+      if (!current.conversationId) {
         // Reserve first so leaving this screen cannot lose the preparation.
         current = await advance({
           companyId,
@@ -185,16 +182,11 @@ function useInitializationController() {
           request: { retry: false },
         }).unwrap();
       }
-      if (
-        current.phase === "research" &&
-        (current.status === "awaiting_model" || current.status === "failed")
-      ) {
-        setRequestedResearch({ retry: current.status === "failed" });
+      if (current.phase === "not_started") {
+        setRequestedResearch(true);
         setDiscoveryEnabled(true);
         if (discoveryEnabled) discovery.refresh();
-      } else if (current.status === "failed") {
-        await advance({ companyId, request: { retry: true } }).unwrap();
-      } else if (current.phase === "ready") {
+      } else {
         await Promise.all([
           roster.refetch().unwrap(),
           refreshSessionSnapshot(),
@@ -216,8 +208,8 @@ function useInitializationController() {
     roster,
   ]);
 
-  // Only an explicit start/continue/retry authorizes model discovery and this
-  // POST. Research-to-welcome and completion are advanced by the server worker.
+  // Only an explicit start or continue authorizes model discovery and this
+  // POST. Everything after the Run is created is advanced by the server.
   useEffect(() => {
     if (
       !requestedResearch ||
@@ -229,13 +221,10 @@ function useInitializationController() {
     )
       return;
     actionInFlight.current = true;
-    setRequestedResearch(null);
+    setRequestedResearch(false);
     void advance({
       companyId,
-      request: {
-        retry: requestedResearch.retry,
-        modelDiscoveryId: discovery.requestId,
-      },
+      request: { retry: false, modelDiscoveryId: discovery.requestId },
     })
       .unwrap()
       .then(() => setDiscoveryEnabled(false))
@@ -273,12 +262,8 @@ function useInitializationController() {
       (needsModel && !roster.isLoading && roster.currentData && !ceo?.binding
         ? "Your CEO needs a Codex connection before continuing."
         : "") ||
-      (state?.status === "failed"
-        ? state.message || "Preparation could not finish. Try again."
-        : "");
-  const offline =
-    state?.status === "waiting_runtime" ||
-    Boolean(needsModel && runtime && runtime.status !== "online");
+      "";
+  const offline = Boolean(needsModel && runtime && runtime.status !== "online");
   const working =
     requesting ||
     mutation.isLoading ||
@@ -290,8 +275,8 @@ function useInitializationController() {
       ? "Waiting for your computer to reconnect"
       : working && needsModel
         ? `Getting ${ceoName} ready`
-        : state?.phase === "ready" && !ready
-          ? "Finishing your welcome"
+        : started
+          ? "Your company research is running"
           : initializationStatus(state, ceoName);
 
   return {
@@ -301,26 +286,21 @@ function useInitializationController() {
     ceoName,
     needsModel,
     hasReceipt,
-    completed: ready,
-    conversationPending:
-      hasReceipt &&
-      (state?.phase !== "ready" ||
-        Boolean(session.company?.initializationPending)),
+    started,
+    // The CEO's chat is held only until the research Run exists.
+    conversationPending: hasReceipt && !started,
     failure,
     offline,
     working,
-    waitingForStart:
-      state?.status === "awaiting_model" && !requestedResearch && !working,
+    waitingForStart: needsModel && hasReceipt && !requestedResearch && !working,
     statusText,
     continuePreparation,
     canContinue: Boolean(
-      failure ||
-      (ready && !ceo) ||
-      state?.phase === "not_started" ||
-      state?.status === "awaiting_model",
+      !started && (failure || state?.phase === "not_started"),
     ),
     showWorkspaceStatus:
       observing &&
+      !started &&
       (hasReceipt || Boolean(session.company?.initializationPending)) &&
       !dismissed,
     dismiss: () => setDismissed(true),

@@ -166,7 +166,7 @@ func (q *Queries) CreateWikiPage(ctx context.Context, arg CreateWikiPageParams) 
 const createWikiRevision = `-- name: CreateWikiRevision :one
 INSERT INTO wiki_revisions (company_id, page_id, number, title, body, summary,
   collection_id, author_user_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id
 `
 
 type CreateWikiRevisionParams struct {
@@ -205,6 +205,7 @@ func (q *Queries) CreateWikiRevision(ctx context.Context, arg CreateWikiRevision
 		&i.CreatedAt,
 		&i.BlockContent,
 		&i.PublishedAt,
+		&i.AuthorAgentID,
 	)
 	return i, err
 }
@@ -280,7 +281,7 @@ func (q *Queries) GetWikiCollectionForUpdate(ctx context.Context, arg GetWikiCol
 }
 
 const getWikiCurrentRevision = `-- name: GetWikiCurrentRevision :one
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
   AND p.current_revision_id = r.id
 WHERE p.company_id = $1::uuid AND p.id = $2::uuid
@@ -307,6 +308,7 @@ func (q *Queries) GetWikiCurrentRevision(ctx context.Context, arg GetWikiCurrent
 		&i.CreatedAt,
 		&i.BlockContent,
 		&i.PublishedAt,
+		&i.AuthorAgentID,
 	)
 	return i, err
 }
@@ -321,6 +323,7 @@ SELECT p.id, p.company_id,
   COALESCE(r.body,'')::text AS body, COALESCE(r.number,0)::bigint AS content_revision,
   COALESCE(r.block_content,'{}'::jsonb)::jsonb AS block_content,
   COALESCE(r.author_user_id,p.created_by_user_id)::uuid AS last_author_user_id, COALESCE(r.created_at,p.created_at)::timestamptz AS revision_created_at,
+  r.author_agent_id AS last_author_agent_id, author_agent.name AS last_author_agent_name,
   EXISTS(SELECT 1 FROM wiki_favorites f WHERE f.company_id = p.company_id
     AND f.page_id = p.id AND f.user_id = $1::uuid)::boolean AS favorite
 FROM company_wiki_pages p
@@ -328,6 +331,7 @@ LEFT JOIN wiki_canvas_drafts d ON d.company_id=p.company_id AND d.page_id=p.id
 LEFT JOIN wiki_collections display_collection ON display_collection.company_id=p.company_id
  AND display_collection.id=CASE WHEN p.current_revision_id IS NULL THEN d.collection_id ELSE p.collection_id END
 LEFT JOIN wiki_revisions r ON r.id = p.current_revision_id
+LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id AND author_agent.id = r.author_agent_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
 WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY($2::text[]))
@@ -342,25 +346,27 @@ type GetWikiPageForMemberParams struct {
 }
 
 type GetWikiPageForMemberRow struct {
-	ID                uuid.UUID          `json:"id"`
-	CompanyID         uuid.UUID          `json:"company_id"`
-	CollectionID      uuid.NullUUID      `json:"collection_id"`
-	Slug              string             `json:"slug"`
-	Title             string             `json:"title"`
-	Summary           string             `json:"summary"`
-	CurrentRevisionID uuid.NullUUID      `json:"current_revision_id"`
-	Status            string             `json:"status"`
-	Version           int64              `json:"version"`
-	CreatedByUserID   uuid.UUID          `json:"created_by_user_id"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt        pgtype.Timestamptz `json:"archived_at"`
-	Body              string             `json:"body"`
-	ContentRevision   int64              `json:"content_revision"`
-	BlockContent      []byte             `json:"block_content"`
-	LastAuthorUserID  uuid.UUID          `json:"last_author_user_id"`
-	RevisionCreatedAt pgtype.Timestamptz `json:"revision_created_at"`
-	Favorite          bool               `json:"favorite"`
+	ID                  uuid.UUID          `json:"id"`
+	CompanyID           uuid.UUID          `json:"company_id"`
+	CollectionID        uuid.NullUUID      `json:"collection_id"`
+	Slug                string             `json:"slug"`
+	Title               string             `json:"title"`
+	Summary             string             `json:"summary"`
+	CurrentRevisionID   uuid.NullUUID      `json:"current_revision_id"`
+	Status              string             `json:"status"`
+	Version             int64              `json:"version"`
+	CreatedByUserID     uuid.UUID          `json:"created_by_user_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt          pgtype.Timestamptz `json:"archived_at"`
+	Body                string             `json:"body"`
+	ContentRevision     int64              `json:"content_revision"`
+	BlockContent        []byte             `json:"block_content"`
+	LastAuthorUserID    uuid.UUID          `json:"last_author_user_id"`
+	RevisionCreatedAt   pgtype.Timestamptz `json:"revision_created_at"`
+	LastAuthorAgentID   uuid.NullUUID      `json:"last_author_agent_id"`
+	LastAuthorAgentName pgtype.Text        `json:"last_author_agent_name"`
+	Favorite            bool               `json:"favorite"`
 }
 
 func (q *Queries) GetWikiPageForMember(ctx context.Context, arg GetWikiPageForMemberParams) (GetWikiPageForMemberRow, error) {
@@ -390,6 +396,8 @@ func (q *Queries) GetWikiPageForMember(ctx context.Context, arg GetWikiPageForMe
 		&i.BlockContent,
 		&i.LastAuthorUserID,
 		&i.RevisionCreatedAt,
+		&i.LastAuthorAgentID,
+		&i.LastAuthorAgentName,
 		&i.Favorite,
 	)
 	return i, err
@@ -419,7 +427,7 @@ func (q *Queries) GetWikiPageForUpdate(ctx context.Context, arg GetWikiPageForUp
 }
 
 const getWikiRevisionForMember = `-- name: GetWikiRevisionForMember :one
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -455,6 +463,7 @@ func (q *Queries) GetWikiRevisionForMember(ctx context.Context, arg GetWikiRevis
 		&i.CreatedAt,
 		&i.BlockContent,
 		&i.PublishedAt,
+		&i.AuthorAgentID,
 	)
 	return i, err
 }
@@ -813,7 +822,7 @@ func (q *Queries) ListWikiPagesForMember(ctx context.Context, arg ListWikiPagesF
 }
 
 const listWikiRevisionsForMember = `-- name: ListWikiRevisionsForMember :many
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -858,6 +867,7 @@ func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRe
 			&i.CreatedAt,
 			&i.BlockContent,
 			&i.PublishedAt,
+			&i.AuthorAgentID,
 		); err != nil {
 			return nil, err
 		}

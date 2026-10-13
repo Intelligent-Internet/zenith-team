@@ -735,11 +735,13 @@ report is superseded, and the same Conversation history remains in scope.
 `done` and `cancelled` Tasks still refuse new messages.
 
 A user message may start a run, or join the queue behind one already in flight.
-During initial Company preparation, the exact research/welcome conversation
-refuses new sends with `409 conversation_initialization_pending`; no message or
-queue item is written. Exact request replays still return their original
-receipt. Existing queued prompts wait until the validated welcome completes,
-then the server resumes the queue atomically. Other conversations stay available.
+Until the founder's onboarding research has been started, the CEO conversation
+named by the receipt refuses new sends with
+`409 conversation_initialization_pending`; no message or queue item is written.
+Exact request replays still return their original receipt. Once the research
+Run exists the conversation is open: a message joins the queue behind that Run
+like behind any other, and the Run's terminal path promotes it. Other
+conversations stay available.
 
 **Branch on `disposition`** — the response is a union and the other fields
 depend on it.

@@ -168,9 +168,13 @@ func NewAgentReadService(store *db.Store, bus *events.Bus) (*DefaultAgentReadSer
 	return &DefaultAgentReadService{store: store, bus: bus}, nil
 }
 
-// snapshot is repeatable-read so the ranked page, its total and the evidence
-// row are one view of the Wiki.
-var snapshot = pgx.TxOptions{IsoLevel: pgx.RepeatableRead}
+// snapshot is READ COMMITTED on purpose. The ranked pages and their total come
+// from one statement, which sees one snapshot anyway. Under REPEATABLE READ
+// the evidence insert's foreign-key check on the Run row raised a
+// serialization failure (SQLSTATE 40001) whenever the live Run's row had been
+// updated since the transaction began, which a working Run's row always is: every
+// wiki_search and wiki_read of a live Run answered 500.
+var snapshot = pgx.TxOptions{}
 
 // admitRun proves the Run is in the Company, the member is active in it, and
 // the Run's Agent may read the Wiki.

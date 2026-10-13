@@ -42,6 +42,8 @@ export function resolveOnboardingScreen(
   stage: OnboardingStage,
 ): OnboardingScreen {
   if (stage.reviewingSetup && session.company?.id) return "agent";
+  // Pending only until research has been started; once it runs server-side the
+  // founder is never held here.
   if (session.company?.initializationPending) return "initializing";
   if (
     session.nextStep === "agent_setup" ||

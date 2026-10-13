@@ -488,7 +488,7 @@ SELECT
     companies.id, companies.name, companies.slug, companies.task_prefix, companies.next_task_number, companies.deleting_at, companies.created_at, companies.updated_at, companies.version, companies.business_context, companies.contact_email, companies.phone_country_iso2, companies.phone_number, companies.proactive_mode_enabled, companies.proactive_mode_version, companies.proactive_mode_enabled_by_user_id, companies.proactive_mode_conversation_id, companies.agent_setup_completed_at, companies.first_plan_applied_at, companies.website_url, companies.avatar_attachment_id,
     company_members.role AS member_role,
     EXISTS (SELECT 1 FROM company_initializations i WHERE i.company_id = companies.id
-      AND i.created_by_user_id = company_members.user_id AND i.completed_at IS NULL) AS initialization_pending
+      AND i.created_by_user_id = company_members.user_id AND i.research_run_id IS NULL) AS initialization_pending
 FROM companies
 JOIN company_members ON company_members.company_id = companies.id
 WHERE companies.id = $1::uuid
@@ -903,7 +903,7 @@ SELECT
     companies.id, companies.name, companies.slug, companies.task_prefix, companies.next_task_number, companies.deleting_at, companies.created_at, companies.updated_at, companies.version, companies.business_context, companies.contact_email, companies.phone_country_iso2, companies.phone_number, companies.proactive_mode_enabled, companies.proactive_mode_version, companies.proactive_mode_enabled_by_user_id, companies.proactive_mode_conversation_id, companies.agent_setup_completed_at, companies.first_plan_applied_at, companies.website_url, companies.avatar_attachment_id,
     company_members.role AS member_role,
     EXISTS (SELECT 1 FROM company_initializations i WHERE i.company_id = companies.id
-      AND i.created_by_user_id = company_members.user_id AND i.completed_at IS NULL) AS initialization_pending
+      AND i.created_by_user_id = company_members.user_id AND i.research_run_id IS NULL) AS initialization_pending
 FROM companies
 JOIN company_members ON company_members.company_id = companies.id
 WHERE company_members.user_id = $1::uuid

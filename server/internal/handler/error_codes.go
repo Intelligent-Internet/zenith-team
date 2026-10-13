@@ -298,6 +298,8 @@ var errorCodeRegistry = map[string]int{
 	"wiki_artifact_ref_unavailable": http.StatusUnprocessableEntity,
 	"wiki_artifact_ref_limit":       http.StatusUnprocessableEntity,
 	"wiki_agent_access_disabled":    http.StatusForbidden,
+	"wiki_agent_write_forbidden":    http.StatusForbidden,
+	"wiki_agent_write_limit":        http.StatusUnprocessableEntity,
 	"project_conflict":              http.StatusConflict,
 	"project_archived":              http.StatusConflict,
 	"project_open_tasks":            http.StatusConflict,

@@ -1404,6 +1404,36 @@ func TestCustomSkillsRemainReadableForCEOAndDisabledCoordination(t *testing.T) {
 	}
 }
 
+func TestCEOPlanningPolicyTeachesWikiOnlyWithWikiTools(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name         string
+		capabilities RunCapabilitySettings
+		want         bool
+	}{
+		{name: "wiki on", want: true},
+		{name: "wiki disabled", capabilities: RunCapabilitySettings{DisabledBuiltIns: []string{"wiki"}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			doc := RunContext{
+				Agent:            RunAgentContext{Name: "Andrew", IsRoot: true, Capabilities: test.capabilities},
+				ExecutionProfile: RunExecutionProfileContext{Source: "message"},
+			}
+			prompt := buildRunSystemPrompt(doc, "/work/current", runMemoryContext{})
+			if !strings.Contains(prompt, "CEO Company Planning Policy") {
+				t.Fatal("the CEO planning policy is missing")
+			}
+			if got := strings.Contains(prompt, "call wiki_search with \"company overview\""); got != test.want {
+				t.Fatalf("Wiki step present=%v, want %v", got, test.want)
+			}
+			if !test.want && strings.Contains(prompt, "wiki_search") {
+				t.Fatal("a Run without Wiki tools was told about wiki_search")
+			}
+		})
+	}
+}
+
 // A tag in a Board's chat works on that Board: only the Board tools, a
 // question to the person and the Wiki; a prompt naming the Board and the
 // channel's rules; Run channel rows that reach no other Board; and, like any

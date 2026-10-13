@@ -25,7 +25,7 @@ paths:
         Receive-only WebSocket upgrade. Authentication rides the upgrade by
         cookie or bearer header; the origin is checked at the socket boundary.
         The server routes frames through the authenticated company and eligible
-        company-user typed audiences. There is no initialization, ready,
+        company-user typed audiences. Company research progress is not a frame of its own: pages appear through the Wiki events and the server's Inbox item announces the end. There is no initialization, ready,
         subscription, or application ping frame.
       parameters:
         - name: company_id

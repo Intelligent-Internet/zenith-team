@@ -49,6 +49,9 @@ export function sanitizeNotificationPath(
     if (url.pathname === NOTIFICATIONS_ROUTE) {
       return `${url.pathname}${url.search}`;
     }
+    if (isCompanyResearchWikiPath(url, kind)) {
+      return `${url.pathname}${url.search}`;
+    }
     if (
       url.pathname !== "/calendar" &&
       url.pathname !== "/team" &&
@@ -68,6 +71,36 @@ export function sanitizeNotificationPath(
     return `${url.pathname}${url.search}`;
   } catch {
     return NOTIFICATIONS_ROUTE;
+  }
+}
+
+// The company research Run finishes into the Wiki, not a chat: its terminal
+// notices link to the Wiki home or to the overview page it wrote.
+const wikiPagePath = /^\/wiki(?:\/pages\/[0-9a-f-]{36})?$/i;
+
+export function isCompanyResearchWikiPath(
+  url: URL,
+  kind?: NotificationKind,
+): boolean {
+  return (
+    (kind === "run_completed" || kind === "run_failed") &&
+    wikiPagePath.test(url.pathname) &&
+    !url.search
+  );
+}
+
+// Whether a notice's own deep link is the Wiki target the research Run wrote.
+export function isCompanyResearchWikiNotice(
+  item: Pick<InboxItem, "deepLink" | "kind">,
+): boolean {
+  if (typeof item.deepLink !== "string") return false;
+  try {
+    return isCompanyResearchWikiPath(
+      new URL(item.deepLink, INTERNAL_ORIGIN),
+      item.kind,
+    );
+  } catch {
+    return false;
   }
 }
 

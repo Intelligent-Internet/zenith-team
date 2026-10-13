@@ -20,6 +20,7 @@ import {
 import { Link } from "react-router";
 
 import { cx } from "@/shared/lib/cx";
+import { useCompanyResearch } from "@/features/onboarding/hooks/use-company-research";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { selectCompanyConversationWorkspace, useAppSelector } from "@/state";
 import { WorkspaceSidebarLink } from "./workspace-page-sidebar";
@@ -101,6 +102,9 @@ function PrimaryNavigationItems({
   const chatHref = lastChatTarget
     ? createChatWorkspaceHref(lastChatTarget)
     : "/app";
+  // The onboarding research writes the Wiki in the background: its rail item
+  // says so on every page.
+  const researching = useCompanyResearch(session.company?.id ?? "").active;
 
   return (
     <>
@@ -119,10 +123,17 @@ function PrimaryNavigationItems({
             className: cx("workspace-primary-nav-item", active && "is-active"),
             "data-tour-id": `workspace-navigation-${destination.id}`,
             to: destination.id === "chat" ? chatHref : destination.to,
+            title:
+              destination.id === "wiki" && researching
+                ? "Your company research is writing the Wiki"
+                : undefined,
             children: (
               <>
                 <span className="workspace-primary-nav-icon" aria-hidden="true">
                   <destination.icon size={20} />
+                  {destination.id === "wiki" && researching ? (
+                    <span className="workspace-primary-nav-activity" />
+                  ) : null}
                 </span>
                 <span
                   className={cx(
@@ -132,6 +143,9 @@ function PrimaryNavigationItems({
                 >
                   {destination.label}
                 </span>
+                {destination.id === "wiki" && researching ? (
+                  <span className="sr-only">, research in progress</span>
+                ) : null}
               </>
             ),
           };

@@ -1430,10 +1430,10 @@ paths:
     get:
       tags: [companies]
       operationId: getCompanyInitialization
-      summary: Resume the founder's initial business research
+      summary: Read the founder's company research progress
       responses:
         '200':
-          description: Durable initialization phase and current Run status.
+          description: Durable research phase, Run status and how many Wiki pages the research has written so far.
           content:
             application/json:
               schema: { $ref: '#/schemas/CompanyInitialization' }
@@ -1441,20 +1441,22 @@ paths:
     post:
       tags: [companies]
       operationId: advanceCompanyInitialization
-      summary: Start research or advance saved research to the CEO welcome
+      summary: Start the company research
       description: |
         Requires agents.manage and a human actor. Company-serialized and
-        idempotent; repeating a request never duplicates a live Run or welcome.
+        idempotent; repeating a request never duplicates a live Run.
         The initial POST can reserve a durable receipt while waiting for models.
-        Enqueuing or retrying research requires a completed model discovery from
+        Starting or retrying research requires a completed model discovery from
         the founder's bound runtime advertising Luna. Uses no reasoning when
         offered, otherwise its lowest supported level. The CEO model is unchanged.
-        The server advances completed research into its final saved context and
-        one welcome Run, including while the client is closed. Repeating POST
-        may also advance the same receipt. Failed phases require an explicit
-        retry; the background worker never starts discovery or retries them.
-        Workspace access is independent of preparation. Only the exact
-        initialization conversation waits for the validated welcome to finish.
+        The research then runs in the background and writes linked Company Wiki
+        pages; nothing else needs a client. When the Run reaches its final state
+        the server completes the receipt and sends the founder an Inbox notice
+        that opens the Wiki. A failed Run stays failed until a POST with
+        `retry: true` starts a new one. The CEO conversation accepts sends
+        once the Run exists. A background reconciler only completes a receipt
+        whose final Run the terminal path could not reach; it never starts
+        discovery, a Run or a retry.
       requestBody:
         required: true
         content:
@@ -2066,13 +2068,24 @@ paths:
 schemas:
   CompanyInitialization:
     type: object
-    required: [phase, status]
+    required: [phase, status, pagesWritten]
     properties:
-      phase: { type: string, enum: [not_started, research, greeting, ready] }
+      phase:
+        type: string
+        enum: [not_started, research, ready]
+        description: not_started until the research Run exists, research while it works or after it failed, ready once it completed.
       status: { type: string, enum: [idle, awaiting_model, queued, dispatched, running, waiting_local_directory, deferred, waiting_runtime, completed, failed] }
       runId: { type: string, format: uuid }
       conversationId: { type: string, format: uuid }
       message: { type: string }
+      pagesWritten:
+        type: integer
+        minimum: 0
+        description: Wiki pages the research Run (including its automatic retries) has written so far.
+      overviewPageId:
+        type: string
+        format: uuid
+        description: The research's `company-overview` hub page; omitted until it is written.
   AdvanceCompanyInitialization:
     type: object
     additionalProperties: false
@@ -2202,11 +2215,7 @@ schemas:
       updatedAt: { $ref: './_common.yaml#/schemas/Timestamp' }
       initializationPending:
         type: boolean
-        description: |
-          This member has an unfinished initial research or welcome receipt.
-          Preparation can continue while the member uses the workspace. The
-          initialization conversation accepts new sends after the server has
-          validated and recorded welcome completion; other chats stay available.
+        description: The founder's receipt exists but research has not been started (no research Run yet); the client must start it. It is false while research runs and after it ends.
       agentSetupCompletedAt:
         oneOf:
           - $ref: './_common.yaml#/schemas/Timestamp'

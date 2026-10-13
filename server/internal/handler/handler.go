@@ -81,6 +81,7 @@ type Handler struct {
 	GroupService             company.GroupService
 	WikiService              wiki.WikiService
 	WikiAgentReadService     wiki.AgentReadService
+	WikiAgentWriteService    wiki.AgentWriteService
 	CompanyPlanService       CompanyPlanService
 	ApprovalService          ApprovalService
 	QuestionService          QuestionService

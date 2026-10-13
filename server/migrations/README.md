@@ -839,3 +839,34 @@ Main's migrations through 000108 are unchanged. Developer databases that ran
 the unshipped scheduler 000095/000097/000108 or Calendar 000096 have a different schema at the
 same number: preserve a backup and reconcile that local schema before startup;
 do not force its migration number or use it as a production upgrade baseline.
+
+## Run Wiki writes (000110)
+
+Adds `run_wiki_writes(run_id, key, page_id, source_markdown)`: the pages the
+founder's company-research Run published into the Company Wiki, by the Run's own
+key. `(run_id, key)` is the key, `page_id` is unique, and the Run and page edges
+cascade. A Run reaches only the pages it has a row for; `source_markdown` keeps
+its `[[key]]` placeholders so a later call can link a page that did not exist
+yet. Purely additive; the down file drops the table and the Run's ownership
+record, not the published pages.
+
+## Company initialization writes the Wiki (000111)
+
+Drops `company_initializations.context_markdown` and `welcome_run_id`: the
+research Run now saves linked Company Wiki pages instead of one Markdown answer,
+and the CEO welcome Run is gone. `completed_at` is now set by the Run terminal
+path when the research Run reaches its final state, and
+`Company.initializationPending` means the receipt exists but research has not
+been started. Deploy the server after draining older instances that still read
+the dropped columns. Rollback restores the columns empty; the saved research
+Markdown is not recoverable.
+
+## Research Wiki authorship (000112)
+
+Adds `wiki_revisions.author_agent_id`, the Agent that wrote a revision on
+behalf of `author_user_id` (an attribution column, so no foreign key), and
+`run_wiki_writes.last_draft_seq`, the page's draft sequence right after the
+research Run's last publish. A later draft sequence means a person edited the
+page, published or not, and the Run no longer replaces it. Purely additive and
+nullable: rows written before it have no Agent author and are checked by
+published revision alone. Rollback drops both columns.
