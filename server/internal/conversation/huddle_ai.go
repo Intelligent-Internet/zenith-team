@@ -341,6 +341,10 @@ func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrin
 		(in.Enabled && in.AgentID == uuid.Nil) || (!in.Enabled && (in.AgentID != uuid.Nil || in.AllowCompanyContext)) {
 		return HuddleAIStatus{}, ErrHuddleInvalid
 	}
+	// Removing an Agent stays possible so a call can always be cleaned up.
+	if in.Enabled && !s.options.Enabled {
+		return HuddleAIStatus{}, ErrHuddleAIDisabled
+	}
 	var result HuddleAIStatus
 	err := s.options.Store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		h, role, err := lockHuddleAIActor(ctx, q, p, id)

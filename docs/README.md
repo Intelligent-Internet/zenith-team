@@ -6,7 +6,8 @@ authoritative for behavior** — these documents record intent and convention,
 and when one drifts from the code, the code is right and the doc gets fixed.
 
 **New here?** [`quickstart.md`](quickstart.md) is the shortest path to a
-running local stack.
+running local stack; [`huddles-local.md`](huddles-local.md) adds calls and
+voice Agents.
 
 ## content/docs/ — the product documentation set
 

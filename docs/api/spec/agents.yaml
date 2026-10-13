@@ -997,9 +997,9 @@ schemas:
     type: object
     additionalProperties: false
     required: [enabled, voice, greet, participation]
-    description: Opt-in Huddle voice capability. Does not grant runtime tools or skills. Profile changes apply at the next invitation; disabling revokes current voice sessions.
+    description: Huddle voice capability, on unless turned off for the Agent; it only takes effect on servers that run voice Agents. Does not grant runtime tools or skills. Profile changes apply at the next invitation; disabling revokes current voice sessions.
     properties:
-      enabled: { type: boolean, default: false }
+      enabled: { type: boolean, default: true }
       voice: { type: string, enum: [aster, beacon, cinder, marin, stone, vesper], default: marin }
       greet:
         type: boolean

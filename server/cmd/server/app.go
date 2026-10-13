@@ -857,6 +857,8 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		HuddleBudgetService:      huddleBudgetService,
 		HuddleAIService:          huddleAIService,
 		HuddleAIWorkloadSecret:   cfg.LiveKit.AIWorkloadSecret,
+		HuddleCallsEnabled:       huddleMedia != nil,
+		HuddleVoiceAgentsEnabled: cfg.LiveKit.AIEnabled,
 		StudioProjectService:     conversation.NewStudioProjectService(databaseStore),
 		StudioEditorService:      studioEditorService,
 		MessageContextService:    conversationService,

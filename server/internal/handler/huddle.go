@@ -66,6 +66,7 @@ func (h *Handler) registerHuddleRoutes(api *gin.RouterGroup) {
 		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
 		h.leaveHuddle,
 	)
+	group.GET("/huddles/capabilities", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.getHuddleCapabilities)
 	group.GET("/huddles/invitations", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.listHuddleInvitations)
 	group.GET("/huddles/invitations/history", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.listHuddleInvitationHistory)
 	group.POST("/huddles/:huddleId/invitations", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.inviteHuddle)
@@ -89,6 +90,20 @@ func (h *Handler) listHuddleConnections(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+type huddleCapabilitiesResponse struct {
+	Calls       bool `json:"calls"`
+	VoiceAgents bool `json:"voiceAgents"`
+}
+
+// getHuddleCapabilities tells clients which optional Huddle features this
+// deployment runs, so they can hide what is off.
+func (h *Handler) getHuddleCapabilities(c *gin.Context) {
+	c.JSON(http.StatusOK, huddleCapabilitiesResponse{
+		Calls:       h.HuddleCallsEnabled,
+		VoiceAgents: h.HuddleCallsEnabled && h.HuddleVoiceAgentsEnabled,
+	})
 }
 
 func (h *Handler) listHuddleInvitations(c *gin.Context) {
@@ -223,6 +238,10 @@ func (h *Handler) joinHuddle(c *gin.Context) {
 		writeBoundaryError(c, boundaryErrorAuthenticationRequired)
 		return
 	}
+	if !h.HuddleCallsEnabled {
+		writeHuddleError(c, conversation.ErrHuddleNotConfigured)
+		return
+	}
 	huddleID, err := uuid.Parse(c.Param("huddleId"))
 	if err != nil {
 		writeHuddleError(c, conversation.ErrHuddleInvalid)
@@ -270,6 +289,11 @@ func (h *Handler) startHuddle(c *gin.Context) {
 	if !ok {
 		return
 	}
+	// Without LiveKit a Huddle would be created with no way to connect.
+	if !h.HuddleCallsEnabled {
+		writeHuddleError(c, conversation.ErrHuddleNotConfigured)
+		return
+	}
 	body, err := bindRequest[startHuddleRequest](c, maxDiscussionRequestBytes)
 	if err != nil {
 		writeRequestError(c, err)
@@ -299,6 +323,7 @@ var huddleErrorMappings = []errorMapping{
 	{conversation.ErrHuddleInvalid, http.StatusUnprocessableEntity, "request validation failed", "validation_failed"},
 	{conversation.ErrHuddleRequestConflict, http.StatusConflict, "Request key was already used for a different Huddle.", "huddle_request_conflict"},
 	{conversation.ErrHuddleUnavailable, http.StatusServiceUnavailable, "Huddle is temporarily unavailable. Try again.", "huddle_unavailable"},
+	{conversation.ErrHuddleNotConfigured, http.StatusServiceUnavailable, "Calls are not set up on this server.", "huddle_not_configured"},
 	{conversation.ErrHuddleAlreadyConnected, http.StatusConflict, "You are already in this Huddle in another window or on another device. Leave there, then join here.", "huddle_already_connected"},
 }
 

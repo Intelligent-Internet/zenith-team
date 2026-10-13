@@ -60,6 +60,19 @@ services:
         mcli alias set boardly http://silo:9000 boardly boardly-development-secret
         mcli mb --ignore-existing boardly/boardly-attachments
 
+  # Media server for Huddles (calls, screen sharing, voice Agents).
+  livekit:
+    image: livekit/livekit-server:v1.13.7
+    command: ["--config", "/etc/livekit.yaml", "--bind", "0.0.0.0", "--node-ip", "127.0.0.1"]
+    volumes:
+      - ./livekit.docker.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres-data:
   redis-data:

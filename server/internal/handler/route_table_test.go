@@ -918,6 +918,7 @@ var wantRouteTable = []string{
 	"POST /api/v1/companies/:companyId/huddles/:huddleId/connections",
 	"GET /api/v1/companies/:companyId/huddles/:huddleId/connections",
 	"DELETE /api/v1/companies/:companyId/huddles/:huddleId/connections/:connectionId",
+	"GET /api/v1/companies/:companyId/huddles/capabilities",
 	"GET /api/v1/companies/:companyId/huddles/invitations",
 	"GET /api/v1/companies/:companyId/huddles/:huddleId/ai",
 	"PUT /api/v1/companies/:companyId/huddles/:huddleId/ai",

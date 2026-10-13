@@ -2065,6 +2065,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/companies/{companyId}/huddles/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which optional Huddle features this deployment runs
+         * @description Deployment capability probe for a Company member. `calls` is false
+         *     when Huddles are off (`HUDDLES_ENABLED=false`) or LiveKit is not
+         *     configured. `voiceAgents` is
+         *     false when the server runs without voice Agents
+         *     (`HUDDLE_AI_ENABLED`); clients hide inviting Agents, Agent
+         *     Voice settings and the AI budget, and the server refuses invitations
+         *     with `403 huddle_ai_disabled`.
+         */
+        get: operations["getHuddleCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/huddles/invitations": {
         parameters: {
             query?: never;
@@ -13216,9 +13242,9 @@ export interface components {
             avatarKey: string | null;
             accentColor: string | null;
         };
-        /** @description Opt-in Huddle voice capability. Does not grant runtime tools or skills. Profile changes apply at the next invitation; disabling revokes current voice sessions. */
+        /** @description Huddle voice capability, on unless turned off for the Agent; it only takes effect on servers that run voice Agents. Does not grant runtime tools or skills. Profile changes apply at the next invitation; disabling revokes current voice sessions. */
         AgentVoiceSettings: {
-            /** @default false */
+            /** @default true */
             enabled: boolean;
             /**
              * @default marin
@@ -14036,6 +14062,16 @@ export interface components {
             huddle: components["schemas"]["Huddle"];
             connection: components["schemas"]["HuddleConnection"];
             media?: components["schemas"]["HuddleMediaToken"];
+        };
+        HuddleCapabilities: {
+            /**
+             * @description Calls run on this server: Huddles are on and LiveKit is configured. When false, starting
+             *     or joining a Huddle answers `503 huddle_not_configured` and clients
+             *     hide Huddles.
+             */
+            calls: boolean;
+            /** @description Voice Agents can be invited into calls. Always false without calls. */
+            voiceAgents: boolean;
         };
         /** @description Recipient REST lists add the current inviter name and the source discussion only while the recipient can read it. Realtime hints omit those presentation fields; an invitation alone grants no source access. */
         HuddleInvitation: {
@@ -26858,7 +26894,7 @@ export interface operations {
             };
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
-            /** @description `503 huddle_unavailable`. */
+            /** @description `503 huddle_unavailable`, or `503 huddle_not_configured` when LiveKit is not configured. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -26956,7 +26992,7 @@ export interface operations {
             };
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
-            /** @description `503 huddle_unavailable`. */
+            /** @description `503 huddle_unavailable`, or `503 huddle_not_configured` when LiveKit is not configured. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -27019,6 +27055,31 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    getHuddleCapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Huddle capabilities. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleCapabilities"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listPendingHuddleInvitations: {

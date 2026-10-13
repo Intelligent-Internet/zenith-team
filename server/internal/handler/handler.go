@@ -93,6 +93,12 @@ type Handler struct {
 	HuddleBudgetService      usage.HuddleBudgetService
 	HuddleAIService          conversation.HuddleAIService
 	HuddleAIWorkloadSecret   string
+	// HuddleCallsEnabled is true when LiveKit is configured. Without it there
+	// is no media, so calls cannot be started or joined and clients hide them.
+	HuddleCallsEnabled bool
+	// HuddleVoiceAgentsEnabled reports HUDDLE_AI_ENABLED to clients,
+	// which hide voice Agent features while it is off.
+	HuddleVoiceAgentsEnabled bool
 	LiveKitAPIKey            string
 	LiveKitAPISecret         string
 	StudioProjectService     conversation.StudioProjectService

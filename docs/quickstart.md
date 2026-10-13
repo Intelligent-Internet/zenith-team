@@ -72,6 +72,9 @@ make infra-down       # stop containers, keep your dev database + bucket
 make infra-reset      # stop and wipe all volumes (fresh start)
 ```
 
+For Huddles (calls, screen sharing) and voice Agents, add a local LiveKit and
+the voice worker: [`huddles-local.md`](huddles-local.md).
+
 ## The client app in `frontend/`
 
 `frontend/` is the **Zenith Team founder-cockpit** app and the tree client

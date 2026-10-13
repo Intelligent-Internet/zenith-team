@@ -467,7 +467,7 @@ func (q *Queries) GetHuddleAIUsageReceipt(ctx context.Context, arg GetHuddleAIUs
 
 const getHuddleVoiceAgent = `-- name: GetHuddleVoiceAgent :one
 SELECT id, company_id, name, title, instructions, reports_to_agent_id, model, thinking_level, max_concurrent_runs, settings, archived_at, created_at, updated_at, version, avatar_key, accent_color, created_by_user_id, disabled_plugin_ids, provider FROM agents WHERE company_id=$1 AND id=$2 AND archived_at IS NULL
-AND settings->'voice'->>'enabled'='true'
+AND COALESCE(settings->'voice'->>'enabled','true')='true'
 `
 
 type GetHuddleVoiceAgentParams struct {
@@ -475,6 +475,7 @@ type GetHuddleVoiceAgentParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
+// Voice is on unless an Agent was explicitly turned off (voice.FromSettings).
 func (q *Queries) GetHuddleVoiceAgent(ctx context.Context, arg GetHuddleVoiceAgentParams) (Agent, error) {
 	row := q.db.QueryRow(ctx, getHuddleVoiceAgent, arg.CompanyID, arg.ID)
 	var i Agent
@@ -653,7 +654,7 @@ func (q *Queries) HuddleContextGrantActive(ctx context.Context, arg HuddleContex
 
 const huddleVoiceAgentEnabled = `-- name: HuddleVoiceAgentEnabled :one
 SELECT EXISTS(SELECT 1 FROM agents WHERE company_id=$1 AND id=$2
-AND archived_at IS NULL AND settings->'voice'->>'enabled'='true') AS enabled
+AND archived_at IS NULL AND COALESCE(settings->'voice'->>'enabled','true')='true') AS enabled
 `
 
 type HuddleVoiceAgentEnabledParams struct {

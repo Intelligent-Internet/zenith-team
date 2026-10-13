@@ -306,21 +306,38 @@ func Load(lookup LookupEnv) (Config, error) {
 			return Config{}, errors.New("APP_STUDIO_RECEIPT_NAMESPACE must be a nonzero UUID")
 		}
 	}
-	aiEnabled, err := boolean(lookup, "BOARDLY_HUDDLE_AI_ENABLED", false)
+	// Huddle settings dropped their BOARDLY_ prefix; the old names still work.
+	huddleLookup := withLegacyNames(lookup, map[string]string{
+		"HUDDLE_AI_ENABLED":         "BOARDLY_HUDDLE_AI_ENABLED",
+		"HUDDLE_AI_WORKLOAD_SECRET": "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET",
+		"LIVEKIT_URL":               "BOARDLY_LIVEKIT_URL",
+		"LIVEKIT_API_KEY":           "BOARDLY_LIVEKIT_API_KEY",
+		"LIVEKIT_API_SECRET":        "BOARDLY_LIVEKIT_API_SECRET",
+	})
+	// HUDDLES_ENABLED=false turns Huddles off even where LiveKit is configured;
+	// it defaults on so deployments that already configure LiveKit keep calls.
+	huddlesEnabled, err := boolean(lookup, "HUDDLES_ENABLED", true)
 	if err != nil {
 		return Config{}, err
 	}
-	aiSecret := valueOrDefault(lookup, "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET", "")
+	if !huddlesEnabled {
+		huddleLookup = withoutHuddleSettings(huddleLookup)
+	}
+	aiEnabled, err := boolean(huddleLookup, "HUDDLE_AI_ENABLED", false)
+	if err != nil {
+		return Config{}, err
+	}
+	aiSecret := valueOrDefault(huddleLookup, "HUDDLE_AI_WORKLOAD_SECRET", "")
 	if aiEnabled && len(aiSecret) < 32 {
 		return Config{}, errors.New(
-			"BOARDLY_HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when AI is enabled",
+			"HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when AI is enabled",
 		)
 	}
 	liveKitConfig := LiveKitConfig{
 		AIEnabled: aiEnabled, AIWorkloadSecret: aiSecret,
-		URL:       valueOrDefault(lookup, "BOARDLY_LIVEKIT_URL", ""),
-		APIKey:    valueOrDefault(lookup, "BOARDLY_LIVEKIT_API_KEY", ""),
-		APISecret: valueOrDefault(lookup, "BOARDLY_LIVEKIT_API_SECRET", ""),
+		URL:       liveKitHTTPURL(valueOrDefault(huddleLookup, "LIVEKIT_URL", "")),
+		APIKey:    valueOrDefault(huddleLookup, "LIVEKIT_API_KEY", ""),
+		APISecret: valueOrDefault(huddleLookup, "LIVEKIT_API_SECRET", ""),
 	}
 	if aiEnabled && (liveKitConfig.URL == "" || liveKitConfig.APIKey == "" || liveKitConfig.APISecret == "") {
 		return Config{}, errors.New("LiveKit configuration is required when huddle AI is enabled")
@@ -756,6 +773,44 @@ func positiveInt(lookup LookupEnv, key string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%s must be a positive integer", key)
 	}
 	return value, nil
+}
+
+// withLegacyNames reads each renamed variable from its old name when the new
+// one is unset or blank.
+func withLegacyNames(lookup LookupEnv, legacy map[string]string) LookupEnv {
+	return func(key string) (string, bool) {
+		if value, ok := lookup(key); ok && strings.TrimSpace(value) != "" {
+			return value, ok
+		}
+		if old, renamed := legacy[key]; renamed {
+			return lookup(old)
+		}
+		return lookup(key)
+	}
+}
+
+// withoutHuddleSettings hides every Huddle setting, as if none were set.
+func withoutHuddleSettings(lookup LookupEnv) LookupEnv {
+	return func(key string) (string, bool) {
+		switch key {
+		case "HUDDLE_AI_ENABLED", "HUDDLE_AI_WORKLOAD_SECRET", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET":
+			return "", false
+		}
+		return lookup(key)
+	}
+}
+
+// liveKitHTTPURL accepts the ws(s):// form LiveKit SDKs use for LIVEKIT_URL,
+// so the API and the voice worker can share one value; the API calls the
+// room service over http(s).
+func liveKitHTTPURL(raw string) string {
+	switch {
+	case strings.HasPrefix(raw, "wss://"):
+		return "https://" + strings.TrimPrefix(raw, "wss://")
+	case strings.HasPrefix(raw, "ws://"):
+		return "http://" + strings.TrimPrefix(raw, "ws://")
+	}
+	return raw
 }
 
 func valueOrDefault(lookup LookupEnv, key, fallback string) string {

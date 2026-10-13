@@ -51,3 +51,6 @@ gcp-deployer-service-account.json
 
 # Downloaded npm skills are verified and embedded during build preparation.
 /server/internal/daemon/tool_releases/generated/
+
+# Personal overrides of docker/dev.env (see Makefile).
+docker/dev.local.env

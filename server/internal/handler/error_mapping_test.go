@@ -341,6 +341,13 @@ func TestErrorMappersGolden(t *testing.T) {
 					"huddle_ai_conflict",
 				},
 				{
+					"voice agents disabled",
+					conversation.ErrHuddleAIDisabled,
+					403,
+					"Voice Agents are turned off on this server.",
+					"huddle_ai_disabled",
+				},
+				{
 					"tool limit",
 					conversation.ErrHuddleToolLimit,
 					429,

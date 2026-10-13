@@ -25,10 +25,13 @@ func (s Settings) Valid() bool {
 	return s.Participation == "addressed" || s.Participation == "natural"
 }
 
+// FromSettings reads an Agent's voice configuration. Voice is on unless the
+// Agent was explicitly turned off, matching the voice-enabled queries; the
+// server flag still decides whether voice Agents run at all.
 func FromSettings(raw []byte) Settings {
 	stored := struct {
 		Voice Settings `json:"voice"`
-	}{Voice: Settings{Voice: "marin", Greet: true, Participation: "addressed"}}
+	}{Voice: Settings{Enabled: true, Voice: "marin", Greet: true, Participation: "addressed"}}
 	// Settings are trusted product state, written only after boundary validation.
 	_ = json.Unmarshal(raw, &stored)
 	return stored.Voice

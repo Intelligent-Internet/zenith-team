@@ -46,7 +46,7 @@ import {
 import "./huddles.css";
 import { huddleAgentStateLabels, useHeliaStatus } from "./huddle-ai-status";
 import { HuddleInviteAgents } from "./huddle-invite-agents";
-import { useSetHuddleAIMutation } from "./huddle-ai-api";
+import { useSetHuddleAIMutation, useVoiceAgentsEnabled } from "./huddle-ai-api";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import { HuddleAgentAvatar } from "./huddle-agent-avatar";
@@ -179,6 +179,7 @@ export function HuddleCallPanel({
     cameraDeviceId,
   });
   const [chatOpen, setChatOpen] = useState(true);
+  const voiceAgents = useVoiceAgentsEnabled(companyId);
   const [screenPickerOpen, setScreenPickerOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"chat" | "work">("chat");
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
@@ -1132,11 +1133,13 @@ export function HuddleCallPanel({
                     {inviteNotice}
                   </p>
                 )}
-                <HuddleInviteAgents
-                  companyId={companyId}
-                  huddleId={huddleId}
-                  search={inviteSearch}
-                />
+                {voiceAgents && (
+                  <HuddleInviteAgents
+                    companyId={companyId}
+                    huddleId={huddleId}
+                    search={inviteSearch}
+                  />
+                )}
               </div>
             )}
           </div>

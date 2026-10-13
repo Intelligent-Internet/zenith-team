@@ -805,6 +805,8 @@ paths:
     $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_connections'
   /api/v1/companies/{companyId}/huddles/{huddleId}/connections/{connectionId}:
     $ref: './conversations.yaml#/paths/companies_companyId_huddles_huddleId_connection'
+  /api/v1/companies/{companyId}/huddles/capabilities:
+    $ref: './conversations.yaml#/paths/companies_companyId_huddles_capabilities'
   /api/v1/companies/{companyId}/huddles/invitations:
     $ref: './conversations.yaml#/paths/companies_companyId_huddles_invitations'
   /api/v1/companies/{companyId}/huddles/invitations/history:

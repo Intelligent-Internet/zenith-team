@@ -22,8 +22,8 @@ webhook; other API routes are denied. Inspection is disabled so ngrok's local
 request inspector does not retain credentials or transcript bodies. The tunnel
 and local API must stay running; this is not a production API deployment.
 
-Configure `server/.env` with the Cloud project's `BOARDLY_LIVEKIT_URL`,
-`BOARDLY_LIVEKIT_API_KEY`, and `BOARDLY_LIVEKIT_API_SECRET`, then restart the API.
+Configure `server/.env` with the Cloud project's `LIVEKIT_URL`,
+`LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET`, then restart the API.
 In LiveKit Cloud → Settings → Webhooks, configure
 `https://<tunnel-host>/api/v1/internal/livekit/webhook` using the same signing API
 key as the Go API. A different signing key causes admission to fail.
@@ -32,7 +32,7 @@ The ignored, mode-0600 `voice-agent/.env.cloud` contains only:
 
 ```dotenv
 OPENAI_API_KEY=...
-BOARDLY_HUDDLE_AI_WORKLOAD_SECRET=... # must match the API
+HUDDLE_AI_WORKLOAD_SECRET=... # must match the API
 ZENITH_API_URL=https://<tunnel-host>
 ```
 
@@ -61,49 +61,23 @@ does not verify model access, signed participant admission, or tool calls.
 
 ## Start locally (alternative)
 
-Start the current Go API to apply its migrations, then configure it:
-
-```dotenv
-BOARDLY_LIVEKIT_URL=https://your-project.livekit.cloud
-BOARDLY_LIVEKIT_API_KEY=...
-BOARDLY_LIVEKIT_API_SECRET=...
-BOARDLY_HUDDLE_AI_ENABLED=true
-BOARDLY_HUDDLE_AI_WORKLOAD_SECRET=... # at least 32 random bytes; secret manager
-```
-
-Give the Python process these environment variables through your secret manager
-or shell environment. Do not commit an `.env` file:
-
-```dotenv
-LIVEKIT_URL=wss://your-project.livekit.cloud
-LIVEKIT_API_KEY=...
-LIVEKIT_API_SECRET=...
-OPENAI_API_KEY=... # project must have GPT-Live access
-ZENITH_API_URL=https://your-zenith-api.example
-BOARDLY_HUDDLE_AI_WORKLOAD_SECRET=... # same claim-only secret as Go
-```
+The whole stack runs on one machine with LiveKit in Docker; follow
+[`docs/huddles-local.md`](../docs/huddles-local.md). In short:
 
 ```sh
-cd voice-agent
-uv sync --frozen
-uv run python -m unittest -v
-cd ..
+echo "HUDDLES_ENABLED='true'" >> docker/dev.local.env   # once
+make infra-up                      # includes LiveKit; then `make server` and `make frontend`
+make voice-setup                   # creates voice-agent/.env; set OPENAI_API_KEY in it
+make voice-doctor                  # checks LiveKit, its keys, the API and the shared secret
 make voice-start
 ```
 
-For a same-machine media server, run this from the repository root:
-
-```sh
-livekit-server --dev --bind 127.0.0.1 --node-ip 127.0.0.1 --config docker/livekit.dev.yaml
-```
-
-Use `http://127.0.0.1:7880` for the Go LiveKit URL,
-`ws://127.0.0.1:7880` for the Python LiveKit URL, and
-`http://127.0.0.1:8788` for `ZENITH_API_URL`. Both processes must use the keys
-from that development config. Its webhook already targets the local API.
-`make voice-start` loads an ignored `voice-agent/.env` when present, otherwise
-it uses exported environment variables. Keep development keys
-and loopback media addresses out of staging and production.
+`voice-agent/.env.example` matches `docker/dev.env` and the local LiveKit
+configs, so only the OpenAI key needs filling in. To point the worker at another
+deployment, set `LIVEKIT_URL`/`LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`,
+`ZENITH_API_URL` and the API's `HUDDLE_AI_WORKLOAD_SECRET` instead
+(through your secret manager or shell; do not commit them). Keep development
+keys and loopback media addresses out of staging and production.
 
 ### Local worker ownership
 
@@ -145,9 +119,10 @@ Production `agent.py start` retains its existing orchestration/drain behavior;
 the local commands intentionally do not manage production workers.
 
 Choose an existing Agent, or create one from **Agents**.
-Choose its runtime and manager as for Susan, Eli or Lyra. In **Agent → Voice**,
-turn on **Enable Voice** and save. Voice defaults off, including for existing
-Agents. Shared Instructions supply the persona; the Voice tab sets the speaking
+Choose its runtime and manager as for Susan, Eli or Lyra. When the server runs
+voice Agents (`HUDDLE_AI_ENABLED=true`), Voice is on for every Agent, including
+existing ones, unless it was turned off in **Agent → Voice**; with the flag off,
+the Voice tab and Invite Agent are hidden. Shared Instructions supply the persona; the Voice tab sets the speaking
 voice and participation style. Agents greet once after joining; this is not a
 preference, and reconnects do not replay it. Enabling Voice allows these instructions
 to be used in calls visible to other participants. Read-only Company context is

@@ -34,6 +34,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/shared/ui/dropdown-menu";
+import { useVoiceAgentsEnabled } from "@/features/huddles/huddle-ai-api";
 import "@/features/agents/styles/agents.css";
 
 export function AgentsPage() {
@@ -61,14 +62,17 @@ function CompanyAgents({ companyId }: { companyId: string }) {
   const agents =
     query.currentData?.items.filter((agent) => !agent.archivedAt) ?? [];
   const selected = agents.find((agent) => agent.id === agentId);
-  const tabs = [
-    "overview",
-    "work",
-    "instructions",
-    "capabilities",
-    "voice",
-    "settings",
-  ] as const;
+  const voiceAgents = useVoiceAgentsEnabled(companyId);
+  const tabs = (
+    [
+      "overview",
+      "work",
+      "instructions",
+      "capabilities",
+      "voice",
+      "settings",
+    ] as const
+  ).filter((tab) => tab !== "voice" || voiceAgents);
   const tab = tabs.find((tab) => tab === params.get("tab")) ?? "overview";
   useEffect(() => {
     tabsRef.current

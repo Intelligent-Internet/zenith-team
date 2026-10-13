@@ -1,3 +1,4 @@
+import { skipToken } from "@reduxjs/toolkit/query";
 import { apiClient } from "@/lib/api-client";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
@@ -9,6 +10,21 @@ const path = ({ companyId, huddleId }: Scope) =>
   `/companies/${encodeURIComponent(companyId)}/huddles/${encodeURIComponent(huddleId)}/ai`;
 const api = boardlyApi.injectEndpoints({
   endpoints: (builder) => ({
+    // Fixed for the life of a server process, so it is fetched once.
+    getHuddleCapabilities: builder.query<
+      components["schemas"]["HuddleCapabilities"],
+      string
+    >({
+      keepUnusedDataFor: 3600,
+      queryFn: (companyId) =>
+        executeBoardlyQuery(
+          () =>
+            apiClient.get<components["schemas"]["HuddleCapabilities"]>(
+              `/companies/${encodeURIComponent(companyId)}/huddles/capabilities`,
+            ),
+          "Huddle capabilities are unavailable.",
+        ),
+    }),
     getHuddleHistory: builder.infiniteQuery<
       components["schemas"]["DiscussionPage"],
       { companyId: string; conversationId: string; userId: string },
@@ -151,6 +167,7 @@ const api = boardlyApi.injectEndpoints({
   }),
 });
 export const {
+  useGetHuddleCapabilitiesQuery,
   useGetHuddleHistoryInfiniteQuery,
   useGetHuddleChatQuery,
   useSendHuddleChatMutation,
@@ -161,3 +178,21 @@ export const {
   useGetHuddleBudgetQuery,
   useSetHuddleBudgetMutation,
 } = api;
+
+// useVoiceAgentsEnabled is false until the server confirms voice Agents run,
+// so their controls never flash on a server without them.
+export function useVoiceAgentsEnabled(companyId: string | undefined) {
+  return (
+    useGetHuddleCapabilitiesQuery(companyId ?? skipToken).currentData
+      ?.voiceAgents === true
+  );
+}
+
+// useHuddleCallsEnabled is false until the server confirms LiveKit is
+// configured; without it a Huddle could never connect.
+export function useHuddleCallsEnabled(companyId: string | undefined) {
+  return (
+    useGetHuddleCapabilitiesQuery(companyId ?? skipToken).currentData?.calls ===
+    true
+  );
+}

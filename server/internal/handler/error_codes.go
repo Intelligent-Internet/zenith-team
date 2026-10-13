@@ -68,6 +68,8 @@ var errorCodeRegistry = map[string]int{
 	"huddle_not_found":                      404,
 	"huddle_budget_forbidden":               403,
 	"huddle_ai_conflict":                    409,
+	"huddle_ai_disabled":                    403,
+	"huddle_not_configured":                 503,
 	"huddle_tool_limit":                     429,
 	"huddle_proposal_conflict":              409,
 	"huddle_proposal_limit":                 429,

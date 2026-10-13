@@ -1,0 +1,18 @@
+# LiveKit for local development in Docker (started by `make infra-up` while Huddles are on). Mirrors
+# livekit.dev.yaml for the native binary; only the webhook host differs, since
+# the API runs on the host. Development keys only — never reuse them elsewhere.
+port: 7880
+rtc:
+  tcp_port: 7881
+  # One UDP port keeps the Docker mapping small; ICE advertises 127.0.0.1, so
+  # only clients on this machine (browser, desktop app, voice worker) can join.
+  udp_port: 7882
+  use_external_ip: false
+
+keys:
+  devkey: development-only-livekit-api-secret
+
+webhook:
+  api_key: devkey
+  urls:
+    - http://host.docker.internal:8788/api/v1/internal/livekit/webhook

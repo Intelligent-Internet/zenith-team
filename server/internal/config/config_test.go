@@ -67,6 +67,63 @@ func TestLoadAppliesSafeSingleNodeDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadReadsHuddleSettingsByNewAndLegacyNames(t *testing.T) {
+	t.Parallel()
+
+	secret := "development-only-huddle-ai-workload-secret"
+	cfg, err := Load(configuredLookup(map[string]string{
+		"APP_DATABASE_URL":          "postgres://boardly:boardly@localhost/boardly",
+		"HUDDLE_AI_ENABLED":         "true",
+		"HUDDLE_AI_WORKLOAD_SECRET": secret,
+		"LIVEKIT_URL":               "wss://example.livekit.cloud",
+		"LIVEKIT_API_KEY":           "key",
+		"LIVEKIT_API_SECRET":        "livekit-secret",
+	}))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	want := LiveKitConfig{AIEnabled: true, AIWorkloadSecret: secret, URL: "https://example.livekit.cloud", APIKey: "key", APISecret: "livekit-secret"}
+	if cfg.LiveKit != want {
+		t.Fatalf("LiveKit = %+v, want %+v", cfg.LiveKit, want)
+	}
+
+	legacy, err := Load(configuredLookup(map[string]string{
+		"APP_DATABASE_URL":                  "postgres://boardly:boardly@localhost/boardly",
+		"BOARDLY_HUDDLE_AI_ENABLED":         "true",
+		"BOARDLY_HUDDLE_AI_WORKLOAD_SECRET": secret,
+		"BOARDLY_LIVEKIT_URL":               "http://127.0.0.1:7880",
+		"BOARDLY_LIVEKIT_API_KEY":           "devkey",
+		"BOARDLY_LIVEKIT_API_SECRET":        "legacy-secret",
+		"LIVEKIT_API_SECRET":                "new-secret",
+	}))
+	if err != nil {
+		t.Fatalf("Load() legacy error = %v", err)
+	}
+	want = LiveKitConfig{AIEnabled: true, AIWorkloadSecret: secret, URL: "http://127.0.0.1:7880", APIKey: "devkey", APISecret: "new-secret"}
+	if legacy.LiveKit != want {
+		t.Fatalf("legacy LiveKit = %+v, want %+v (new names win)", legacy.LiveKit, want)
+	}
+}
+
+func TestLoadTurnsHuddlesOffWithTheFlag(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := Load(configuredLookup(map[string]string{
+		"APP_DATABASE_URL":   "postgres://boardly:boardly@localhost/boardly",
+		"HUDDLES_ENABLED":    "false",
+		"HUDDLE_AI_ENABLED":  "true",
+		"LIVEKIT_URL":        "http://127.0.0.1:7880",
+		"LIVEKIT_API_KEY":    "devkey",
+		"LIVEKIT_API_SECRET": "secret",
+	}))
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.LiveKit != (LiveKitConfig{}) {
+		t.Fatalf("LiveKit = %+v, want none while Huddles are off", cfg.LiveKit)
+	}
+}
+
 func TestLoadParsesDaemonIDRequired(t *testing.T) {
 	t.Parallel()
 

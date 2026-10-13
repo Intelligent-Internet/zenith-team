@@ -55,6 +55,7 @@ import { DiscussionAvatar } from "./discussion-identity";
 import { discussionError } from "../model/discussion-runtime";
 import type { DiscussionSelection } from "../model/use-discussion-navigation";
 import { Tooltip } from "@/shared/ui/tooltip";
+import { useHuddleCallsEnabled } from "@/features/huddles/huddle-ai-api";
 
 export function DiscussionPane({
   selection,
@@ -160,6 +161,7 @@ function DiscussionChat({
       });
   }, [ready, state, selection.type, scope, preference, runtime]);
   const artifactsVisible = tab === "artifacts";
+  const huddleCalls = useHuddleCallsEnabled(runtime.session.companyId);
   const panelId = useId();
   useEffect(() => {
     if (!ready || tab !== "all") return;
@@ -409,30 +411,32 @@ function DiscussionChat({
                   ) : null}
                 </button>
               </Tooltip>
-              <Tooltip label="Start Huddle" disabled={!ready}>
-                <button
-                  className="discussion-icon-button"
-                  disabled={!ready}
-                  aria-label="Start Huddle"
-                  onClick={() => {
-                    // The lobby creates the Huddle when Start is pressed, so
-                    // nobody rings while the caller is still choosing devices.
-                    const popup = prepareHuddleWindow();
-                    void openHuddleStartWindow(
-                      selection.conversationId,
-                      popup,
-                    ).then((opened) => {
-                      if (!opened) {
-                        setError(
-                          "Your browser blocked the Huddle window. Allow popups for Zenith and try again.",
-                        );
-                      }
-                    });
-                  }}
-                >
-                  <Headphones size={17} aria-hidden="true" />
-                </button>
-              </Tooltip>
+              {huddleCalls && (
+                <Tooltip label="Start Huddle" disabled={!ready}>
+                  <button
+                    className="discussion-icon-button"
+                    disabled={!ready}
+                    aria-label="Start Huddle"
+                    onClick={() => {
+                      // The lobby creates the Huddle when Start is pressed, so
+                      // nobody rings while the caller is still choosing devices.
+                      const popup = prepareHuddleWindow();
+                      void openHuddleStartWindow(
+                        selection.conversationId,
+                        popup,
+                      ).then((opened) => {
+                        if (!opened) {
+                          setError(
+                            "Your browser blocked the Huddle window. Allow popups for Zenith and try again.",
+                          );
+                        }
+                      });
+                    }}
+                  >
+                    <Headphones size={17} aria-hidden="true" />
+                  </button>
+                </Tooltip>
+              )}
               <DiscussionOptionsMenu
                 isChannel={selection.type === "channel"}
                 pinned={Boolean(state?.userState?.pinnedAt)}

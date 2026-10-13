@@ -17,4 +17,6 @@ var (
 	ErrHuddleRequestConflict  = errors.New("huddle request key conflict")
 	ErrHuddleUnavailable      = errors.New("huddle unavailable")
 	ErrHuddleAlreadyConnected = errors.New("huddle already connected")
+	ErrHuddleAIDisabled       = errors.New("huddle voice agents disabled")
+	ErrHuddleNotConfigured    = errors.New("huddle media not configured")
 )

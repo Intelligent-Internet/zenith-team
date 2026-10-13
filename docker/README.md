@@ -40,12 +40,12 @@ The simplest way to run the API against this stack is `make server`, which
 loads these values from [`dev.env`](./dev.env) and applies migrations at
 startup. `make server-local` uses `server/.env`; set `STORAGE_DRIVER=local`
 
-For local Huddle testing, run LiveKit with the webhook-enabled config so
-participant joins grant the Huddle chat permission:
-
-```bash
-livekit-server --config docker/livekit.dev.yaml
-```
+Huddles are off by default. With `HUDDLES_ENABLED='true'` in
+`docker/dev.local.env` (your git-ignored overrides of `dev.env`), `make infra-up`
+also starts LiveKit, the media server for Huddles (or run a native
+`livekit-server --config docker/livekit.dev.yaml` instead).
+Both send the webhook that lets participant joins grant the Huddle chat
+permission. Calls and voice Agents end to end: [`../docs/huddles-local.md`](../docs/huddles-local.md).
 to use this Silo service with native PostgreSQL. This preset requires
 `APP_ENVIRONMENT=local` and supplies the bucket, region, endpoint, development
 credentials, and path-style requests shown below. Explicit `STORAGE_S3_*`

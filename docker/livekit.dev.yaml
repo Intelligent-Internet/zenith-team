@@ -1,8 +1,10 @@
-# Local development configuration for `livekit-server --config docker/livekit.dev.yaml`.
+# Local development configuration for a native
+# `livekit-server --config docker/livekit.dev.yaml`. `make infra-up` runs the
+# Docker equivalent, livekit.docker.yaml. Development keys only.
 port: 7880
 
 keys:
-  devkey: secret
+  devkey: development-only-livekit-api-secret
 
 webhook:
   api_key: devkey

@@ -462,6 +462,8 @@ no private object or content. JSON reads are private, no-store.
 | 404 | `huddle_not_found` | Huddle source Conversation was not found or is not accessible. |
 | 403 | `huddle_budget_forbidden` | Huddle budget access is not allowed. |
 | 409 | `huddle_ai_conflict` | Huddle AI settings changed. Reload and retry. |
+| 403 | `huddle_ai_disabled` | Voice Agents are turned off on this server. |
+| 503 | `huddle_not_configured` | Calls are not set up on this server (LiveKit is not configured). |
 | 429 | `huddle_tool_limit` | Voice lookup limit reached. Try again later. |
 | 409 | `huddle_proposal_conflict` | Work proposal changed or is no longer editable. Reload and retry. |
 | 429 | `huddle_proposal_limit` | This call has reached its work proposal limit. |

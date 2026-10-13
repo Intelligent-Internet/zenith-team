@@ -82,13 +82,14 @@ failures=0,retry_at=now(),updated_at=now()
 FROM huddles h JOIN conversations c ON c.id=h.chat_conversation_id
 WHERE s.company_id=$1 AND s.huddle_id=$2 AND h.id=s.huddle_id RETURNING s.*;
 
+-- Voice is on unless an Agent was explicitly turned off (voice.FromSettings).
 -- name: GetHuddleVoiceAgent :one
 SELECT * FROM agents WHERE company_id=$1 AND id=$2 AND archived_at IS NULL
-AND settings->'voice'->>'enabled'='true';
+AND COALESCE(settings->'voice'->>'enabled','true')='true';
 
 -- name: HuddleVoiceAgentEnabled :one
 SELECT EXISTS(SELECT 1 FROM agents WHERE company_id=$1 AND id=$2
-AND archived_at IS NULL AND settings->'voice'->>'enabled'='true') AS enabled;
+AND archived_at IS NULL AND COALESCE(settings->'voice'->>'enabled','true')='true') AS enabled;
 
 -- The person who switched Company context on is the voice assistant's
 -- Authorizer (D31). The grant holds only while they are an active member and

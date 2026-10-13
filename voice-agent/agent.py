@@ -100,7 +100,11 @@ class Control:
             + "/api/v1/internal/huddle-ai/"
             + attempt
         )
-        self.token = os.environ["BOARDLY_HUDDLE_AI_WORKLOAD_SECRET"]
+        # BOARDLY_HUDDLE_AI_WORKLOAD_SECRET is the old name; deployments may still use it.
+        self.token = (
+            os.environ.get("HUDDLE_AI_WORKLOAD_SECRET")
+            or os.environ["BOARDLY_HUDDLE_AI_WORKLOAD_SECRET"]
+        )
         self.http = httpx.AsyncClient(timeout=4, follow_redirects=False)
 
     async def call(self, path, body=None):

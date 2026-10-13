@@ -203,5 +203,38 @@ func huddleHTTPHandler(principal auth.UserPrincipal, service conversation.Huddle
 		HumanConversationService: &conversation.DefaultConversationService{},
 		DiscussionService:        &conversation.DefaultDiscussionService{},
 		HuddleService:            service,
+		HuddleCallsEnabled:       true,
 	})
+}
+
+func TestHuddleCallsNeedLiveKit(t *testing.T) {
+	t.Parallel()
+	principal := auth.UserPrincipal{UserID: uuid.New(), CompanyID: uuid.New(), Role: auth.CompanyRoleMember}
+	service := huddleHTTPStub{
+		start: func(auth.UserPrincipal, uuid.UUID, conversation.StartHuddleRequest) (conversation.StartHuddleResult, error) {
+			t.Fatal("Start() reached without LiveKit")
+			return conversation.StartHuddleResult{}, nil
+		},
+		join: func(auth.UserPrincipal, uuid.UUID, conversation.JoinHuddleRequest) (conversation.JoinHuddleResult, error) {
+			t.Fatal("Join() reached without LiveKit")
+			return conversation.JoinHuddleResult{}, nil
+		},
+	}
+	handler := huddleHTTPHandler(principal, service)
+	handler.HuddleCallsEnabled = false
+	base := "/api/v1/companies/" + principal.CompanyID.String()
+	body := []byte(`{"requestKey":"` + uuid.NewString() + `"}`)
+	for _, path := range []string{
+		base + "/conversations/" + uuid.NewString() + "/huddles",
+		base + "/huddles/" + uuid.NewString() + "/connections",
+	} {
+		response := serveBearerJSON(handler, http.MethodPost, path, body)
+		if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), `"huddle_not_configured"`) {
+			t.Fatalf("%s response = %d %s", path, response.Code, response.Body)
+		}
+	}
+	response := serveBearerJSON(handler, http.MethodGet, base+"/huddles/capabilities", nil)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"calls":false`) {
+		t.Fatalf("capabilities response = %d %s", response.Code, response.Body)
+	}
 }

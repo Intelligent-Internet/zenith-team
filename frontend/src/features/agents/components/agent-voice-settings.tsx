@@ -14,8 +14,9 @@ import {
 import { Switch } from "@/shared/ui/switch";
 import "../styles/agent-voice.css";
 
+// Matches the server: voice is on unless turned off for this Agent.
 const defaults: NonNullable<AgentDto["voice"]> = {
-  enabled: false,
+  enabled: true,
   voice: "marin",
   greet: true,
   participation: "addressed",

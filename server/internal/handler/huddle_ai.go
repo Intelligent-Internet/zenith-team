@@ -199,6 +199,7 @@ var huddleAIErrorMappings = []errorMapping{
 	{conversation.ErrHuddleProposalLimit, http.StatusTooManyRequests, "This call has reached its work proposal limit.", "huddle_proposal_limit"},
 	{conversation.ErrHuddleToolLimit, http.StatusTooManyRequests, "Voice lookup limit reached. Try again later.", "huddle_tool_limit"},
 	{conversation.ErrHuddleAIConflict, http.StatusConflict, "Huddle AI settings changed. Reload and retry.", "huddle_ai_conflict"},
+	{conversation.ErrHuddleAIDisabled, http.StatusForbidden, "Voice Agents are turned off on this server.", "huddle_ai_disabled"},
 }
 
 func writeHuddleAIError(c *gin.Context, err error) {

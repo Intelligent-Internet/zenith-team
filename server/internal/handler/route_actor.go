@@ -289,6 +289,7 @@ var personActorRoutes = []string{
 	"DELETE /api/v1/companies/:companyId/huddles/:huddleId/connections/:connectionId",
 	"POST /api/v1/companies/:companyId/huddles/:huddleId/invitations",
 	"POST /api/v1/companies/:companyId/huddles/:huddleId/invitations/:invitationId/respond",
+	"GET /api/v1/companies/:companyId/huddles/capabilities",
 	"GET /api/v1/companies/:companyId/huddles/invitations",
 	"GET /api/v1/companies/:companyId/huddles/invitations/history",
 	"GET /api/v1/companies/:companyId/human-conversations",

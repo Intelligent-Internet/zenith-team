@@ -15,6 +15,11 @@ COMPOSE := docker compose -f docker/compose.yml
 
 # Dev-only server credentials for the optional Docker infrastructure stack.
 DEV_ENV := docker/dev.env
+# Your own overrides of docker/dev.env, ignored by git; `make server` loads
+# it after dev.env. For example HUDDLES_ENABLED='true' turns local Huddles on.
+DEV_LOCAL_ENV := docker/dev.local.env
+# Huddles need LiveKit, so infra-up starts it only when they are on.
+HUDDLES_ENABLED := $(shell set -a; . ./$(DEV_ENV); [ ! -f $(DEV_LOCAL_ENV) ] || . ./$(DEV_LOCAL_ENV); echo "$$HUDDLES_ENABLED")
 DEV_BIN_DIR := $(CURDIR)/.dev/bin
 
 # Pinned Go lint/format toolchain, installed repo-locally into .tools/bin so it
@@ -30,9 +35,11 @@ BOARDLY_WEB_API_URL ?= http://127.0.0.1:8788
 help:
 	@echo "Local development (run each in its own terminal):"
 	@echo "  make server-local Run the Go API with services configured in server/.env (:8788)"
-	@echo "  make infra-up    Start PostgreSQL 17 + Redis + Silo (docker/compose.yml)"
-	@echo "  make server      Run the Go API against the Docker infrastructure stack"
+	@echo "  make infra-up    Start PostgreSQL 17 + Redis + Silo (+ LiveKit when HUDDLES_ENABLED='true')"
+	@echo "  make server      Run the Go API with docker/dev.env, then your docker/dev.local.env overrides"
 	@echo "  make frontend    Run the client app in frontend/ (own workspace)"
+	@echo "  make livekit-up | livekit-down | livekit-logs  Manage just the LiveKit media server (Huddles)"
+	@echo "  make voice-setup Create voice-agent/.env for the local stack    make voice-doctor  Check it before a call"
 	@echo "  make voice-start Run the local voice worker in this terminal (no background process)"
 	@echo "  make voice-status | voice-stop  Inspect or gracefully stop this checkout's voice worker"
 	@echo "  make boardly-mcp-dev  Build boardly-mcp into .dev/bin for daemon injection"
@@ -65,7 +72,8 @@ help:
 
 # Go API from source against `make infra-up`, including Redis and Silo.
 server:
-	set -a && source ./$(DEV_ENV) && set +a && cd server && go run ./cmd/server
+	set -a && source ./$(DEV_ENV) && { [ ! -f $(DEV_LOCAL_ENV) ] || source ./$(DEV_LOCAL_ENV); } && set +a && \
+	cd server && go run ./cmd/server
 
 # Go API from source with dependencies configured in server/.env. PostgreSQL,
 # Redis, and S3-compatible object storage (Silo locally) must all be reachable;
@@ -320,7 +328,7 @@ build:
 	cd frontend && pnpm build
 
 infra-up:
-	$(COMPOSE) up -d --wait --remove-orphans postgres redis silo
+	$(COMPOSE) up -d --wait --remove-orphans postgres redis silo $(if $(filter true,$(HUDDLES_ENABLED)),livekit,)
 	$(COMPOSE) run --rm silo-init
 
 infra-down:
@@ -329,7 +337,26 @@ infra-down:
 infra-reset:
 	$(COMPOSE) down --volumes --remove-orphans
 
-.PHONY: voice-start voice-status voice-stop voice-gate
+.PHONY: livekit-up livekit-down livekit-logs
+# LiveKit starts with `make infra-up`; these manage it on its own.
+livekit-up:
+	$(COMPOSE) up -d livekit
+
+livekit-down:
+	$(COMPOSE) stop livekit
+
+livekit-logs:
+	$(COMPOSE) logs -f livekit
+
+.PHONY: voice-setup voice-doctor voice-start voice-status voice-stop voice-gate
+voice-setup:
+	@cd voice-agent && if [ -f .env ]; then echo "voice-agent/.env already exists; leaving it unchanged."; \
+	else (umask 077 && cp .env.example .env) && echo "Created voice-agent/.env. Set OPENAI_API_KEY in it, then run make voice-doctor."; fi
+	@cd voice-agent && uv sync --frozen
+
+voice-doctor:
+	@cd voice-agent && uv run --frozen python doctor.py
+
 voice-start:
 	@cd voice-agent && if [ -f .env ]; then exec uv run --frozen --env-file .env python agent.py dev; else exec uv run --frozen python agent.py dev; fi
 
