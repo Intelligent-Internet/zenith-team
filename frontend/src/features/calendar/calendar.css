@@ -729,23 +729,64 @@
   right: 49px;
 }
 .calendar-editor .personal-form {
-  gap: 10px;
+  gap: 12px;
 }
-.calendar-editor .personal-form > .personal-tabs {
+.calendar-editor .personal-form .personal-tabs {
   margin-right: 66px;
+  align-self: flex-start;
+  padding: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--workspace-hover-bg);
 }
 .calendar-editor .personal-form .personal-tabs button {
-  min-height: 27px;
+  min-height: 30px;
   font-size: 12px;
 }
 .calendar-editor .personal-tabs button[aria-pressed="true"] {
   color: var(--workspace-native-accent);
-  background: var(--workspace-accent-soft);
-  box-shadow: var(--calendar-control-shadow);
+  background: var(--workspace-panel-bg);
+  box-shadow: none;
 }
 .calendar-editor .personal-form .personal-title-input {
-  font-size: 19px !important;
+  font-size: 20px !important;
+  font-weight: 500;
   line-height: 1.4;
+  padding: 8px 2px 12px !important;
+  border: 0;
+  border-width: 0 0 1px !important;
+  border-bottom: 1px solid var(--workspace-divider);
+  border-radius: 0 !important;
+  background: transparent;
+}
+.calendar-editor .personal-form .personal-title-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--workspace-native-accent);
+}
+.calendar-event-dialog.calendar-editor {
+  box-shadow:
+    0 12px 36px rgb(0 0 0 / 12%),
+    0 2px 6px rgb(0 0 0 / 5%);
+}
+.calendar-event-dialog.calendar-editor
+  :is(
+    .personal-tabs,
+    .personal-button,
+    .personal-icon-button,
+    .calendar-picker-trigger,
+    .calendar-guests-toggle,
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea
+  ),
+.calendar-event-dialog.calendar-editor
+  :is(
+    .personal-button,
+    .personal-icon-button,
+    .calendar-picker-trigger,
+    .calendar-guests-toggle
+  ):hover:not(:disabled) {
+  box-shadow: none;
 }
 .calendar-editor .calendar-picker-trigger {
   min-height: 36px;
@@ -789,29 +830,48 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: space-between;
+  padding-left: 44px;
 }
-.calendar-schedule-meta .calendar-timezone-summary {
-  margin-right: auto;
-}
-.calendar-schedule-meta .calendar-text-button {
-  display: inline-flex;
+.calendar-schedule-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 96px;
   align-items: center;
-  gap: 4px;
-  padding: 0;
-  font-size: 10px;
+  gap: 8px;
 }
-.calendar-end-date {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.calendar-schedule-row:not(:has(.calendar-time-trigger)) {
+  grid-template-columns: 36px minmax(0, 1fr);
 }
-.calendar-end-date .calendar-picker-trigger {
-  width: auto;
+.calendar-schedule-label {
+  font-size: 11px;
+  color: var(--workspace-native-text-muted);
+}
+.calendar-schedule-row .calendar-picker-trigger {
+  width: 100%;
+  min-width: 0;
 }
 .calendar-editor .calendar-field-label,
 .calendar-editor .calendar-timezone-summary {
   font-size: 10px;
+}
+.calendar-timezone-input {
+  position: relative;
+  display: block;
+}
+.calendar-timezone-input > input {
+  width: 100%;
+}
+.calendar-timezone-input > input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}
+.calendar-timezone-input > svg {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--workspace-native-text-muted);
+  pointer-events: none;
 }
 .calendar-editor .calendar-sharing {
   gap: 6px;
@@ -868,9 +928,10 @@
   background: var(--workspace-divider);
 }
 .calendar-editor .calendar-guests-toggle {
-  font-size: 11px;
+  font-size: 12px;
   gap: 5px;
-  padding: 6px 8px;
+  min-height: 34px;
+  padding: 6px 10px;
   border: 1px solid var(--workspace-border);
   border-radius: 7px;
 }
@@ -890,14 +951,18 @@
 .calendar-editor .personal-dialog-actions {
   bottom: -18px;
   margin-top: 0;
-  padding-top: 13px;
+  padding-top: 14px;
+  gap: 8px;
 }
 .calendar-editor .personal-button {
   font-size: 12px;
+  min-height: 34px;
+}
+.calendar-editor .personal-dialog-actions .personal-button--primary {
+  min-width: 72px;
 }
 .calendar-guests-panel,
-.calendar-more-fields,
-.calendar-end-date {
+.calendar-more-fields {
   animation: calendar-fields-enter 140ms ease;
 }
 @keyframes calendar-composer-enter {
@@ -943,8 +1008,7 @@
   .calendar-editor,
   .calendar-detail-dialog,
   .calendar-guests-panel,
-  .calendar-more-fields,
-  .calendar-end-date {
+  .calendar-more-fields {
     animation: none;
   }
 }

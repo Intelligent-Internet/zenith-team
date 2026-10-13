@@ -147,7 +147,7 @@ export function ConversationArtifactsPanel({
               ref={searchInput}
               type="search"
               aria-label="Search artifacts"
-              placeholder="Search artifacts…"
+              placeholder="Search by title, description, or file name"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={(event) => {
@@ -173,17 +173,20 @@ export function ConversationArtifactsPanel({
               </button>
             ) : null}
           </div>
-          <p className="artifacts-search-summary" role="status">
-            {artifacts.isLoading
-              ? "Loading artifacts…"
-              : artifacts.error
-                ? "Search is unavailable until artifacts reload."
-                : searchingEarlier
-                  ? "Searching older artifacts…"
-                  : hasSearch
-                    ? `${items.length} ${items.length === 1 ? "result" : "results"}`
-                    : "Search by title, description, or file name"}
-          </p>
+          {artifacts.isLoading ||
+          artifacts.error ||
+          searchingEarlier ||
+          hasSearch ? (
+            <p className="artifacts-search-summary" role="status">
+              {artifacts.isLoading
+                ? "Loading artifacts…"
+                : artifacts.error
+                  ? "Search is unavailable until artifacts reload."
+                  : searchingEarlier
+                    ? "Searching older artifacts…"
+                    : `${items.length} ${items.length === 1 ? "result" : "results"}`}
+            </p>
+          ) : null}
         </div>
       ) : null}
       <div className="artifacts-panel__body">

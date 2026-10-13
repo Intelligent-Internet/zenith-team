@@ -336,7 +336,14 @@ export function CalendarPage() {
             >
               <ChevronRight size={18} />
             </button>
-            <h2>{periodLabel(date, view, days)}</h2>
+            <div className="calendar-period-heading">
+              <h2>{periodLabel(date, view, days)}</h2>
+              <span className="calendar-timezone-label">
+                {Intl.DateTimeFormat()
+                  .resolvedOptions()
+                  .timeZone.replaceAll("_", " ")}
+              </span>
+            </div>
           </div>
           <div className="personal-tabs" aria-label="Calendar view">
             {(["Month", "Week", "Day", "Agenda"] as const).map((item) => (
@@ -349,6 +356,15 @@ export function CalendarPage() {
               </button>
             ))}
           </div>
+          <label className="calendar-search">
+            <Search size={17} />
+            <input
+              aria-label="Search this calendar period"
+              placeholder="Search this period"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
           <button
             ref={createButton}
             className="personal-button personal-button--primary calendar-create"
@@ -362,23 +378,7 @@ export function CalendarPage() {
             <Plus size={16} />
             Create
           </button>
-          <label className="calendar-search">
-            <Search size={17} />
-            <input
-              aria-label="Search this calendar period"
-              placeholder="Search this period"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
         </header>
-        <div className="calendar-context">
-          <span>
-            {Intl.DateTimeFormat()
-              .resolvedOptions()
-              .timeZone.replaceAll("_", " ")}
-          </span>
-        </div>
         {taskQuery.isError ? (
           <p className="personal-empty" role="alert">
             {getBoardlyQueryErrorMessage(taskQuery.error)}{" "}

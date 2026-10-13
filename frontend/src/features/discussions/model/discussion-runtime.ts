@@ -498,11 +498,16 @@ export class DiscussionRuntime {
   draft(id: string, rootId?: string) {
     return this.drafts.get(this.streamKey(id, rootId)) ?? emptyDiscussionDraft;
   }
-  setDraft(id: string, draft: DiscussionDraft, rootId?: string) {
+  setDraft(
+    id: string,
+    draft: DiscussionDraft,
+    rootId?: string,
+    options?: { references: "replace" },
+  ) {
     if (this.stopped || this.leases.get(id)?.phase === "revoked") return;
     const key = this.streamKey(id, rootId);
     const previous = this.draft(id, rootId);
-    if (previous.text !== draft.text) {
+    if (previous.text !== draft.text && options?.references !== "replace") {
       draft = {
         ...draft,
         references: remapDiscussionReferences(

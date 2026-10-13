@@ -2,7 +2,6 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
-  ArrowRight,
   Bell,
   CalendarDays,
   Check,
@@ -166,7 +165,6 @@ export function EventEditor({
       ? { title: draft.title, description: draft.description }
       : {}),
   }));
-  const [endDateOpen, setEndDateOpen] = useState(false);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -465,9 +463,8 @@ export function EventEditor({
             />
           </label>
           <section className="calendar-when" aria-label="Date and time">
-            <div
-              className={`calendar-compact-schedule ${input.allDay ? "is-all-day" : ""}`}
-            >
+            <div className="calendar-schedule-row">
+              <span className="calendar-schedule-label">Starts</span>
               <CalendarDatePicker
                 label="Start date"
                 value={input.startLocal.slice(0, 10)}
@@ -480,25 +477,24 @@ export function EventEditor({
                   onChange={chooseStartTime}
                 />
               )}
-              <ArrowRight
-                size={14}
-                className="calendar-schedule-arrow"
-                aria-hidden="true"
+            </div>
+            <div className="calendar-schedule-row">
+              <span className="calendar-schedule-label">Ends</span>
+              <CalendarDatePicker
+                label={input.allDay ? "Last day" : "End date"}
+                value={endDate.slice(0, 10)}
+                min={input.startLocal.slice(0, 10)}
+                onChange={chooseEndDate}
               />
-              {input.allDay ? (
-                <CalendarDatePicker
-                  label="Last day"
-                  value={endDate.slice(0, 10)}
-                  min={input.startLocal.slice(0, 10)}
-                  onChange={chooseEndDate}
-                />
-              ) : (
+              {!input.allDay && (
                 <CalendarTimePicker
                   label="End time"
                   value={input.endLocal.slice(11, 16)}
                   onChange={chooseEndTime}
                 />
               )}
+            </div>
+            <div className="calendar-schedule-meta">
               <label className="calendar-all-day-toggle">
                 <input
                   type="checkbox"
@@ -507,42 +503,13 @@ export function EventEditor({
                 />
                 All day
               </label>
-            </div>
-            {!input.allDay && (
-              <div className="calendar-schedule-meta">
-                {input.timeZone !==
-                  Intl.DateTimeFormat().resolvedOptions().timeZone && (
-                  <span className="calendar-timezone-summary">
-                    {input.timeZone}
-                  </span>
-                )}
-                <button
-                  className="calendar-text-button"
-                  type="button"
-                  aria-expanded={
-                    endDateOpen ||
-                    endDate.slice(0, 10) !== input.startLocal.slice(0, 10)
-                  }
-                  onClick={() => setEndDateOpen((value) => !value)}
-                >
-                  End date
-                  <ChevronDown size={13} />
-                </button>
-              </div>
-            )}
-            {!input.allDay &&
-              (endDateOpen ||
-                endDate.slice(0, 10) !== input.startLocal.slice(0, 10)) && (
-                <div className="calendar-end-date">
-                  <span className="calendar-field-label">Ends on</span>
-                  <CalendarDatePicker
-                    label="End date"
-                    value={endDate.slice(0, 10)}
-                    min={input.startLocal.slice(0, 10)}
-                    onChange={chooseEndDate}
-                  />
-                </div>
+              {input.timeZone !==
+                Intl.DateTimeFormat().resolvedOptions().timeZone && (
+                <span className="calendar-timezone-summary">
+                  {input.timeZone}
+                </span>
               )}
+            </div>
           </section>
           {catalog.currentData ? (
             <EventSharingFields
@@ -616,12 +583,15 @@ export function EventEditor({
             <div className="calendar-more-fields">
               <label>
                 Time zone
-                <input
-                  required
-                  value={input.timeZone}
-                  onChange={(e) => patch({ timeZone: e.target.value })}
-                  list="calendar-timezones"
-                />
+                <span className="calendar-timezone-input">
+                  <input
+                    required
+                    value={input.timeZone}
+                    onChange={(e) => patch({ timeZone: e.target.value })}
+                    list="calendar-timezones"
+                  />
+                  <ChevronDown size={16} aria-hidden="true" />
+                </span>
                 <datalist id="calendar-timezones">
                   {Array.from(
                     new Set([

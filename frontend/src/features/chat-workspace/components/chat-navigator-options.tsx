@@ -1,10 +1,12 @@
+import { useState } from "react";
+import { Tooltip } from "@/shared/ui/tooltip";
 import {
   Archive,
   Bot,
   Ellipsis,
   EyeOff,
   Hash,
-  MessageSquare,
+  MessagesSquare,
   Plus,
   Settings,
 } from "@/shared/ui/icons";
@@ -37,18 +39,20 @@ export function ChatNavigatorOptions({
   onBrowseChange: (browse: ChatNavigatorBrowseState) => void;
   onCreateGroup?: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          aria-label="Chat options"
-          className="workspace-chat-navigator__icon-button"
-          title="Chat options"
-          type="button"
-        >
-          <Ellipsis size={18} aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+      <Tooltip label="Chat options" disabled={menuOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label="Chat options"
+            className="workspace-chat-navigator__icon-button"
+            type="button"
+          >
+            <Ellipsis size={18} aria-hidden />
+          </button>
+        </DropdownMenuTrigger>
+      </Tooltip>
       <DropdownMenuContent
         align="end"
         className="conversation-pin-menu workspace-chat-navigator__menu"
@@ -64,7 +68,7 @@ export function ChatNavigatorOptions({
             className="conversation-pin-menu__item"
             value="recent"
           >
-            <MessageSquare size={16} aria-hidden /> All chats
+            <MessagesSquare size={16} aria-hidden /> All chats
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             className="conversation-pin-menu__item"

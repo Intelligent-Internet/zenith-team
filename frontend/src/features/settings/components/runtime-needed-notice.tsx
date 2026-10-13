@@ -9,6 +9,8 @@ import {
 } from "@/app/desktop/desktop-environment.service";
 import { useRuntimeSetupRefresh } from "@/features/settings/model/use-runtime-setup-refresh";
 import type { AgentProvider } from "@/shared/api/types";
+import { Button } from "@/shared/ui/button";
+import { Monitor, RefreshCw } from "@/shared/ui/icons";
 
 const PROVIDER_LABEL: Record<AgentProvider, string> = {
   claude: "Claude Code",
@@ -61,50 +63,72 @@ export function RuntimeNeededNotice({
   }, [desktop]);
 
   const tool = provider ? PROVIDER_LABEL[provider] : "an agent provider";
-  if (!desktop) {
-    return (
-      <aside className="agent-onboarding-notice">
-        <p>No computer of yours can run this yet.</p>
-        <span>
-          Install Zenith Team for desktop, or run <code>zen daemon</code> on the
-          computer that should do the work, then refresh this page.
-        </span>
-      </aside>
-    );
-  }
-
   const refreshTarget = status.daemonId ?? "local-daemon";
+  const checking = isPending(refreshTarget);
+  const canSelectComputer =
+    desktop && status.state === "stopped" && onSelectComputer;
+
   return (
-    <aside className="agent-onboarding-notice">
-      <p>No computer of yours can run this yet.</p>
-      <span>
-        {status.state === "stopped"
-          ? onSelectComputer
-            ? "Select this computer to start its agent service and check your installed providers."
-            : "Start the agent service in Settings to connect this computer."
-          : status.state === "running"
-            ? `This computer is connected, but ${tool} was not found on it. Install ${tool} and sign in, then check again.`
-            : `Start Zenith Team on this computer, install ${tool} and sign in, then check again.`}
-      </span>
-      {status.state === "stopped" && onSelectComputer ? (
-        <button
-          className="agent-onboarding-notice__action"
-          onClick={onSelectComputer}
-          type="button"
-        >
-          Select computer
-        </button>
-      ) : null}
-      {refreshRuntimeId ? (
-        <button
-          className="agent-onboarding-notice__action"
-          disabled={isPending(refreshTarget)}
-          onClick={() => void refresh(refreshTarget, refreshRuntimeId)}
-          type="button"
-        >
-          {isPending(refreshTarget) ? "Checking…" : "Check again"}
-        </button>
-      ) : null}
+    <aside className="flex min-w-0 flex-wrap items-start gap-3 rounded-xl border border-[var(--workspace-divider)] bg-[var(--workspace-panel-raised-bg)] p-4">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--workspace-accent-soft)] text-[var(--workspace-native-accent)]">
+        <Monitor size={18} aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1 basis-48">
+        <div className="text-sm font-semibold leading-5 text-[var(--workspace-native-text)]">
+          {desktop && status.state === "running"
+            ? `Set up ${provider ? tool : "an agent provider"}`
+            : "Connect a computer"}
+        </div>
+        <div className="mt-1 max-w-prose text-[13px] leading-5 text-[var(--workspace-native-text-muted)]">
+          {!desktop ? (
+            <>
+              Open Zenith Team on the computer you want to use, or run{" "}
+              <code>zen daemon</code>, then refresh this page.
+            </>
+          ) : status.state === "stopped" ? (
+            onSelectComputer ? (
+              "Choose a computer to run your agent. We’ll check which providers are ready."
+            ) : (
+              "Start the agent service in Settings to connect this computer."
+            )
+          ) : status.state === "running" ? (
+            `This computer is connected. Install ${tool} and sign in, then check again.`
+          ) : (
+            `Open Zenith Team on this computer, then install ${tool} and sign in.`
+          )}
+        </div>
+        {canSelectComputer || (desktop && refreshRuntimeId) ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {canSelectComputer ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onSelectComputer}
+                type="button"
+              >
+                Select computer
+              </Button>
+            ) : null}
+            {desktop && refreshRuntimeId ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={checking}
+                aria-busy={checking}
+                onClick={() => void refresh(refreshTarget, refreshRuntimeId)}
+                type="button"
+              >
+                <RefreshCw
+                  size={14}
+                  aria-hidden="true"
+                  className={checking ? "animate-spin" : undefined}
+                />
+                {checking ? "Checking…" : "Check again"}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </aside>
   );
 }

@@ -51,11 +51,28 @@
 }
 .calendar-mini-heading > div {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
-.calendar-mini-heading .personal-icon-button {
-  width: 28px;
+.calendar-page .calendar-mini-heading .personal-icon-button {
+  width: 30px;
   height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--workspace-native-text-muted);
+  background: var(--workspace-hover-bg);
+  box-shadow: none;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+.calendar-page
+  .calendar-mini-heading
+  .personal-icon-button:hover:not(:disabled) {
+  color: var(--workspace-native-text);
+  background: var(--workspace-selected-bg);
+  box-shadow: none;
 }
 .calendar-mini-weekdays,
 .calendar-mini-days {
@@ -156,35 +173,38 @@
   grid-row: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 24px 24px 16px;
+  gap: 16px;
+  padding: 18px 20px;
   flex-wrap: wrap;
 }
 .calendar-toolbar > .personal-tabs {
-  order: -1;
-  margin-right: auto;
+  padding: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--workspace-hover-bg);
 }
 .calendar-toolbar .personal-tabs button {
-  min-height: var(--workspace-control-size);
+  min-height: 28px;
   padding: 4px 10px;
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
 .calendar-toolbar .personal-tabs button[aria-pressed="true"] {
   color: var(--workspace-native-accent);
-  background: var(--workspace-accent-soft);
-  box-shadow: var(--calendar-surface-shadow);
+  background: var(--workspace-panel-bg);
+  box-shadow: none;
 }
 .calendar-date-navigation {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  margin-right: auto;
 }
 .calendar-date-navigation h2 {
-  font-size: 14px;
-  font-weight: 550;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: -0.2px;
-  margin: 0 0 0 8px;
+  margin: 0;
   white-space: nowrap;
 }
 .calendar-date-navigation > .personal-button {
@@ -201,35 +221,41 @@
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
-.calendar-context {
-  position: relative;
-  z-index: 1;
-  grid-column: 1 / -1;
-  grid-row: 2;
+.calendar-period-heading {
   display: flex;
-  align-items: center;
-  padding: 0 20px 14px;
-  gap: 14px;
-  color: var(--workspace-text-muted);
-  font-size: 10px;
-  background: var(--workspace-panel);
-  box-shadow: var(--calendar-divider-shadow);
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 8px;
 }
-.calendar-date-navigation .personal-icon-button,
-.calendar-mini-heading .personal-icon-button {
+.calendar-timezone-label {
+  color: var(--workspace-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+.calendar-page
+  .calendar-toolbar
+  :is(.personal-button, .personal-icon-button, .personal-tabs),
+.calendar-page
+  .calendar-toolbar
+  :is(.personal-button, .personal-icon-button):hover:not(:disabled) {
+  box-shadow: none;
+}
+.calendar-page .calendar-toolbar :is(.personal-button, .personal-icon-button) {
+  height: 34px;
+  min-height: 34px;
+}
+.calendar-date-navigation .personal-icon-button {
   background: var(--workspace-panel);
   box-shadow: var(--calendar-control-shadow);
 }
-.calendar-date-navigation .personal-icon-button:hover,
-.calendar-mini-heading .personal-icon-button:hover {
+.calendar-date-navigation .personal-icon-button:hover {
   background: var(--workspace-panel-raised-bg);
 }
 .calendar-search {
   display: flex;
-  flex: 0 1 220px;
-  margin-left: auto;
-  min-width: 180px;
-  min-height: var(--workspace-control-size);
+  flex: 0 1 190px;
+  min-width: 150px;
+  height: 34px;
   padding: 0 12px;
   gap: 8px;
   align-items: center;
@@ -237,7 +263,7 @@
   border-radius: var(--workspace-radius-control);
   color: var(--workspace-text-muted);
   background: var(--workspace-panel-bg);
-  box-shadow: var(--calendar-surface-shadow);
+  box-shadow: none;
   transition: border-color 140ms ease;
 }
 .calendar-search:focus-within {
@@ -252,7 +278,7 @@
   padding: 0;
   min-width: 0;
   width: 100%;
-  font-size: var(--workspace-text-body);
+  font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-body);
   color: var(--workspace-text);
   outline: none;
@@ -661,7 +687,7 @@
     gap: 8px;
   }
   .calendar-date-navigation h2 {
-    font-size: 12px;
+    font-size: 14px;
   }
 }
 @media (min-width: 761px) and (max-width: 1200px) {
@@ -702,7 +728,6 @@
 }
 @media (max-width: 520px) {
   .calendar-date-navigation {
-    order: 2;
     width: 100%;
   }
   .calendar-search {

@@ -38,14 +38,16 @@
   padding: 0;
   border: 0;
   border-radius: 10px;
-  background: var(--workspace-panel-bg);
-  box-shadow: var(--calendar-control-shadow);
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-text) 4%,
+    var(--workspace-panel-bg)
+  );
   color: var(--workspace-text-muted);
   cursor: pointer;
   transition:
     background 160ms ease,
-    color 160ms ease,
-    box-shadow 160ms ease;
+    color 160ms ease;
 }
 .calendar-utility-trigger::before {
   content: "";
@@ -59,9 +61,12 @@
 }
 .calendar-utility-trigger:hover,
 .calendar-utility-trigger[aria-selected="true"] {
-  background: var(--workspace-accent-soft);
+  background: color-mix(
+    in srgb,
+    var(--workspace-native-text) 8%,
+    var(--workspace-panel-bg)
+  );
   color: var(--workspace-native-accent);
-  box-shadow: var(--calendar-surface-shadow);
 }
 .calendar-utility-trigger[aria-selected="true"]::before {
   opacity: 1;

@@ -54,7 +54,6 @@ export function OnboardingIntroduction({
         ) : (
           <div className="onboarding-introduction__choices">
             <button
-              autoFocus
               type="button"
               className="onboarding-introduction__choice"
               onClick={onCreateCompany}

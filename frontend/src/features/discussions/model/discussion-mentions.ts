@@ -90,7 +90,10 @@ export function discussionMentionHighlightPlugin(
           result.push({
             type: "element",
             tagName: "mark",
-            properties: { className: ["discussion-mention"] },
+            properties: {
+              className: ["discussion-mention"],
+              dataMentionStart: range.start,
+            },
             children: [{ type: "text", value: node.value.slice(from, to) }],
           });
           cursor = to;

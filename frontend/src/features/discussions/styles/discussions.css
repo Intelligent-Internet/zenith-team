@@ -175,6 +175,21 @@
   color: var(--workspace-native-text-faint);
   opacity: 1;
 }
+.discussion-button--danger:not(:disabled) {
+  background: var(--workspace-native-danger);
+  border-color: transparent;
+  color: #fff;
+}
+.discussion-button--danger:is(:hover, :focus-visible):not(:disabled) {
+  background: color-mix(in srgb, var(--workspace-native-danger) 85%, #000);
+}
+.discussion-delete-message[role="menuitem"],
+.discussion-delete-message[role="menuitem"]:focus {
+  color: var(--workspace-native-danger);
+}
+.discussion-delete-message[role="menuitem"] svg {
+  color: inherit;
+}
 .discussion-muted,
 .discussion-eyebrow {
   color: var(--discussion-muted, #98aabd);
@@ -315,7 +330,7 @@
 .discussion-message-avatar .discussion-avatar {
   width: 36px;
   height: 36px;
-  border-radius: var(--workspace-radius-panel, 8px);
+  border-radius: 8px;
   font-size: 16px;
 }
 .discussion-message-avatar [data-slot="avatar-image"] {
@@ -455,6 +470,9 @@
 .discussion-markdown p {
   margin: 0 0 2px;
   white-space: pre-wrap;
+}
+.discussion-markdown > p:last-child {
+  margin-bottom: 0;
 }
 .discussion-markdown a {
   text-decoration: underline;
@@ -1248,7 +1266,7 @@ html[data-boardly-workspace-theme] .discussion-composer textarea:focus {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 .discussion-reaction {
   display: inline-flex;

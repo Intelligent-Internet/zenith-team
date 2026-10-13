@@ -1169,6 +1169,7 @@ export function ChatWorkspacePage({
         return {
           ...profile,
           name: person.actor.name,
+          title: `Company ${roleLabel(person.role).toLowerCase()}`,
           avatarSrc: person.actor.avatarUrl,
           email: person.email,
           archived: person.accountDisabled,

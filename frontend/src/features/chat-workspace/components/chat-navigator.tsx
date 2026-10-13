@@ -450,15 +450,16 @@ export function ChatNavigator({
             onBrowseChange={onBrowseChange}
           />
         )}
-        <button
-          aria-label="New chat"
-          className="workspace-chat-navigator__icon-button"
-          title="New chat"
-          type="button"
-          onClick={onNewDirectMessage}
-        >
-          <PencilLine aria-hidden="true" size={18} />
-        </button>
+        <Tooltip label="New chat">
+          <button
+            aria-label="New chat"
+            className="workspace-chat-navigator__icon-button"
+            type="button"
+            onClick={onNewDirectMessage}
+          >
+            <PencilLine aria-hidden="true" size={18} />
+          </button>
+        </Tooltip>
       </header>
 
       <div className="workspace-chat-navigator__content">
@@ -939,6 +940,7 @@ function NavigatorRow({
   return (
     <div
       data-active={active || undefined}
+      data-channel={isChannel || undefined}
       data-kind={item.target.kind}
       onPointerEnter={
         hasAgentAvatar
@@ -1035,9 +1037,9 @@ function NavigatorRow({
                 item.target.kind === "discussion" &&
                 item.target.discussionType === "channel" ? (
                   item.iconName === "hash" ? (
-                    <Hash size={17} aria-hidden />
+                    <Hash size={16} aria-hidden />
                   ) : (
-                    <LockKeyhole size={17} aria-hidden />
+                    <LockKeyhole size={16} aria-hidden />
                   )
                 ) : undefined
               }

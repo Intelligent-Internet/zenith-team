@@ -347,7 +347,10 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
           </form>
         ) : (
           <>
-            <DiscussionMessageBody body={message.body} />
+            <DiscussionMessageBody
+              body={message.body}
+              members={detail.members}
+            />
             <ChatLinkPreviews text={message.body?.markdown ?? ""} />
             <DiscussionAttachments files={message.attachments} />
             {message.attachmentsWithheld ? (
@@ -537,6 +540,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
               ) : null}
               {deletable ? (
                 <DropdownMenuItem
+                  className="discussion-delete-message"
                   disabled={busy}
                   onSelect={() => {
                     setDeleting(message.revision);

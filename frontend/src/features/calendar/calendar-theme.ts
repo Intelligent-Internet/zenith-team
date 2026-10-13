@@ -46,8 +46,8 @@ export function useCalendarTheme(): CSSProperties {
       "--ring": accent,
       "--calendar-pane-shadow":
         colorMode === "dark"
-          ? "0 0 4px rgb(0 0 0 / 22.4%), 0 0 24px rgb(0 0 0 / 25.6%)"
-          : "0 0 4px rgb(25 30 36 / 8%), 0 0 24px rgb(25 30 36 / 9.6%)",
+          ? "0 0 6px rgb(0 0 0 / 10%)"
+          : "0 0 6px rgb(25 30 36 / 3%)",
       "--calendar-divider-shadow":
         colorMode === "dark"
           ? "0 1px 3px rgb(0 0 0 / 24%), 0 4px 8px -2px rgb(0 0 0 / 20.8%)"

@@ -71,3 +71,23 @@
     min-height: 44px;
   }
 }
+
+/* Reserve the same leading icon column for every chat option. Selection
+   indicators sit at the trailing edge, beside submenu arrows. */
+.workspace-chat-navigator__menu .conversation-pin-menu__item {
+  position: relative;
+  gap: 10px;
+  padding: 8px 32px 8px 10px;
+}
+.workspace-chat-navigator__menu
+  :is(
+    [data-slot="dropdown-menu-radio-item"],
+    [data-slot="dropdown-menu-checkbox-item"]
+  )
+  > span:first-child {
+  left: auto;
+  right: 10px;
+}
+.workspace-chat-navigator__menu [data-slot="dropdown-menu-sub-trigger"] {
+  padding-right: 10px;
+}

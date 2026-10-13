@@ -43,7 +43,9 @@ export function ChatNavigatorBrowseControls({
           placeholder={
             selectedAgent
               ? "Search this agent’s chats…"
-              : "Find a conversation…"
+              : browse.view === "agents"
+                ? "Find an agent…"
+                : "Find a conversation…"
           }
           type="search"
           value={browse.query}
@@ -61,21 +63,23 @@ export function ChatNavigatorBrowseControls({
           </button>
         ) : null}
       </label>
-      {browse.view === "agents" || browse.view === "archived" ? (
+      {!selectedAgent &&
+      (browse.view === "agents" || browse.view === "archived") ? (
         <div className="workspace-chat-navigator__view-scope">
           <button
             className="workspace-chat-navigator__all-agents"
+            aria-label="Back to all chats"
+            title="Back to all chats"
             onClick={() =>
               onChange({ view: "recent", agentId: null, query: "" })
             }
             type="button"
           >
             <ArrowLeft size={14} aria-hidden />
-            All chats
           </button>
-          <span>
+          <strong>
             {browse.view === "archived" ? "Archived chats" : "By agent"}
-          </span>
+          </strong>
         </div>
       ) : null}
       {includeHidden ? (
@@ -145,15 +149,18 @@ export function ChatNavigatorAgents({
               <FoldAvatar
                 agentId={agent.id}
                 motion="still"
-                size={22}
+                size={28}
                 paused={avatarMotionPaused}
               />
               <span className="workspace-chat-navigator__agent-copy">
                 <strong>{agent.name}</strong>
-                {agent.archived ? <span>Archived</span> : null}
+                <span>{agent.archived ? "Archived" : agent.title}</span>
               </span>
-              <span className="workspace-chat-navigator__agent-count">
-                {count} {count === 1 ? "chat" : "chats"}
+              <span
+                className="workspace-chat-navigator__agent-count"
+                aria-label={`${count} ${count === 1 ? "chat" : "chats"}`}
+              >
+                {count}
               </span>
               <ChevronRight size={13} aria-hidden />
             </button>

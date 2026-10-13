@@ -9,6 +9,9 @@ import Brand1 from "@/assets/brands/gmail.svg?react";
 import Brand2 from "@/assets/brands/google.svg?react";
 import Brand3 from "@/assets/brands/google-calendar.svg?react";
 import googleDriveUrl from "@/assets/brands/google-drive.svg?url";
+import googleCalendarOfficialUrl from "@/assets/brands/google-calendar-official.svg?url";
+import googleMapsOfficialUrl from "@/assets/brands/google-maps-official.svg?url";
+import googleContactsOfficialUrl from "@/assets/brands/google-contacts-official.png";
 import Brand5 from "@/assets/brands/google-map.svg?react";
 import Brand6 from "@/assets/brands/linkedIn.svg?react";
 import linuxUrl from "@/assets/brands/linux.svg?url";
@@ -145,6 +148,9 @@ const brandIcons = {
 
 // These large, multicolor marks keep their original artwork outside the JS bundle.
 const brandImages = {
+  "google-calendar-official": googleCalendarOfficialUrl,
+  "google-maps-official": googleMapsOfficialUrl,
+  "google-contacts-official": googleContactsOfficialUrl,
   "google-drive": googleDriveUrl,
   linux: linuxUrl,
 } as const;

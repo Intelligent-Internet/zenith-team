@@ -1,12 +1,21 @@
 import { useId, useRef, useState } from "react";
 import { CalendarDays, Map, UserRound, X } from "@/shared/ui/icons";
+import { Icon } from "@/shared/ui/icon";
 import { Tooltip } from "@/shared/ui/tooltip";
 import mapPreview from "./utility-map-preview.svg";
 
 const utilities = [
-  { id: "calendar", label: "Google Calendar", Icon: CalendarDays },
-  { id: "maps", label: "Google Maps", Icon: Map },
-  { id: "contacts", label: "Contacts", Icon: UserRound },
+  {
+    id: "calendar",
+    label: "Google Calendar",
+    icon: "google-calendar-official",
+  },
+  { id: "maps", label: "Google Maps", icon: "google-maps-official" },
+  {
+    id: "contacts",
+    label: "Google Contacts",
+    icon: "google-contacts-official",
+  },
 ] as const;
 type Utility = (typeof utilities)[number];
 
@@ -85,7 +94,7 @@ export function CalendarUtilities() {
                 tabs.current[next]?.focus({ preventScroll: true });
               }}
             >
-              <utility.Icon size={21} aria-hidden="true" />
+              <Icon name={utility.icon} size={24} aria-hidden="true" />
             </button>
           </Tooltip>
         ))}

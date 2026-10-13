@@ -1,9 +1,14 @@
+import {
+  useDiscussionRichEditor,
+  DiscussionRichFormatting,
+  DiscussionRichEmoji,
+} from "./discussion-rich-editor";
 import { ChatAddMenu } from "@/features/chat-panel/components/artifact-picker/chat-add-menu";
 import { ArtifactPickerDialog } from "@/features/chat-panel/components/artifact-picker/artifact-picker-dialog";
 import { ArtifactDraftCards } from "@/features/chat-panel/components/artifact-picker/artifact-draft-cards";
 import { useChannelAgents } from "./channel-agents";
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import {
   AtSign,
   ArrowUp,
@@ -17,17 +22,11 @@ import {
   Video,
   X,
 } from "@/shared/ui/icons";
-import { ChatComposerFormatting } from "@/features/chat-panel/components/chat-composer-formatting";
-import { ChatComposerEmoji } from "@/features/chat-panel/components/chat-composer-emoji";
-import { useChatMentions } from "@/features/chat-panel/hooks/use-chat-mentions";
-import { ChatMentionHighlights } from "@/features/chat-panel/components/chat-mention-highlights";
 import {
   discussionAgentHint,
-  discussionMentionRanges,
   discussionTaggedAgentNames,
 } from "../model/discussion-mentions";
 import type { DiscussionSummary } from "../api/discussions-api";
-import { ChatMentionSuggestions } from "@/features/chat-panel/components/chat-mention-suggestions";
 import type { ChatMentionMember } from "@/features/chat-panel/model/chat-mentions";
 import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
@@ -79,7 +78,6 @@ export function DiscussionComposer({
   const unboundAgent = (agentId: string) =>
     roster?.find((agent) => agent.id === agentId && agent.binding === null);
   const draft = runtime.draft(conversationId, rootId);
-  const mentionRanges = discussionMentionRanges(draft.references);
   // A tag in a channel or a chat between people starts a Run with the
   // tagger's access, and everyone in the chat reads its answer. The line
   // says so; it never blocks sending.
@@ -95,9 +93,7 @@ export function DiscussionComposer({
         )
       : undefined;
   const pending = runtime.pending(conversationId, rootId);
-  const textarea = useRef<HTMLTextAreaElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const composing = useRef(false);
   const [artifactPickerOpen, setArtifactPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -168,116 +164,55 @@ export function DiscussionComposer({
         references: draft.references,
       }),
     ).length > 65_536;
-  const change = (text: string) =>
-    runtime.setDraft(
-      conversationId,
-      {
-        ...runtime.draft(conversationId, rootId),
-        text,
-      },
-      rootId,
-    );
-  const mentions = useChatMentions({
-    disabled: !canSend,
-    members: [
-      ...mentionMembers.filter(
-        (member) =>
-          member.kind !== "agent" && member.id !== runtime.session.userId,
-      ),
-      ...channelAgents.agents.flatMap((agent): ChatMentionMember[] => {
-        const member = {
-          id: agent.agentId,
-          name: agent.name,
-          description: compact ? "Agent" : `Managed by ${agent.managerName}`,
-          kind: "agent" as const,
-        };
-        if (agent.canInvoke) return [member];
-        // With the composer open, the one thing that still keeps a tag
-        // from running is the viewer's own setup of the Agent.
-        return canSend && unboundAgent(agent.agentId)
-          ? [
-              {
-                ...member,
-                description: "Set it up on your computer to tag it",
-                unavailable: "Not set up",
-              },
-            ]
-          : [];
-      }),
-      ...(isChannel
+  const members: ChatMentionMember[] = [
+    ...mentionMembers.filter(
+      (member) =>
+        member.kind !== "agent" && member.id !== runtime.session.userId,
+    ),
+    ...channelAgents.agents.flatMap((agent): ChatMentionMember[] => {
+      const member = {
+        id: agent.agentId,
+        name: agent.name,
+        description: compact ? "Agent" : `Managed by ${agent.managerName}`,
+        kind: "agent" as const,
+      };
+      if (agent.canInvoke) return [member];
+      // With the composer open, the one thing that still keeps a tag
+      // from running is the viewer's own setup of the Agent.
+      return canSend && unboundAgent(agent.agentId)
         ? [
             {
-              id: "everyone",
-              name: "everyone",
-              description: "All channel members",
-              kind: "human" as const,
-              broadcastScope: "everyone" as const,
+              ...member,
+              description: "Set it up on your computer to tag it",
+              unavailable: "Not set up",
             },
-            // A Board's chat offers @everyone alone.
-            ...(compact
-              ? []
-              : [
-                  {
-                    id: "here",
-                    name: "here",
-                    description: "Online channel members",
-                    kind: "human" as const,
-                    broadcastScope: "here" as const,
-                  },
-                ]),
           ]
-        : []),
-    ],
-    onDraftChange: change,
-    textareaRef: textarea,
-    onUnavailableSelect: (member) => {
-      const agent = unboundAgent(member.id);
-      if (agent) openBindDialog(agent, { onBound: channelAgents.refresh });
-    },
-    onMentionInserted: (member, range) => {
-      const current = runtime.draft(conversationId, rootId);
-      runtime.setDraft(
-        conversationId,
-        {
-          ...current,
-          references: [
-            ...current.references.filter(
-              (reference) =>
-                reference.end <= range.start || reference.start >= range.end,
-            ),
-            {
-              ...range,
-              ...(member.broadcastScope
-                ? { type: "broadcast" as const, scope: member.broadcastScope }
-                : member.kind === "agent"
-                  ? { type: "agent" as const, agentId: member.id }
-                  : { type: "user" as const, userId: member.id }),
-            },
-          ].sort((a, b) => a.start - b.start),
-        },
-        rootId,
-      );
-    },
-  });
-  const selection = (range: { start: number; end: number }) =>
-    runtime.setDraft(
-      conversationId,
-      {
-        ...runtime.draft(conversationId, rootId),
-        ...range,
-      },
-      rootId,
-    );
-  useLayoutEffect(() => {
-    const element = textarea.current;
-    if (!element) return;
-    element.style.height = "auto";
-    element.style.height = `${Math.min(180, Math.max(68, element.scrollHeight))}px`;
-  }, [draft.text]);
-  useLayoutEffect(() => {
-    const current = runtime.draft(conversationId, rootId);
-    textarea.current?.setSelectionRange(current.start, current.end);
-  }, [conversationId, rootId, runtime]);
+        : [];
+    }),
+    ...(isChannel
+      ? [
+          {
+            id: "everyone",
+            name: "everyone",
+            description: "All channel members",
+            kind: "human" as const,
+            broadcastScope: "everyone" as const,
+          },
+          // A Board's chat offers @everyone alone.
+          ...(compact
+            ? []
+            : [
+                {
+                  id: "here",
+                  name: "here",
+                  description: "Online channel members",
+                  kind: "human" as const,
+                  broadcastScope: "here" as const,
+                },
+              ]),
+        ]
+      : []),
+  ];
   const ready =
     canSend &&
     !runtime.isMutating(conversationId) &&
@@ -288,6 +223,39 @@ export function DiscussionComposer({
     !uploading &&
     failedUploads.length === 0 &&
     !tooLarge;
+  const rich = useDiscussionRichEditor({
+    sessionKey: `${conversationId}:${rootId ?? "root"}`,
+    draft: { text: draft.text, references: draft.references },
+    disabled: !canSend,
+    label: `Message ${title}`,
+    placeholder: canSend
+      ? rootId
+        ? "Reply…"
+        : (placeholder ?? `Message ${title}`)
+      : "This conversation is read-only",
+    describedBy:
+      [
+        agentHint ? agentHintId : "",
+        tooLarge ? `discussion-message-limit-${rootId ?? "root"}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ") || undefined,
+    members,
+    onChange: (body) =>
+      runtime.setDraft(
+        conversationId,
+        { ...runtime.draft(conversationId, rootId), ...body },
+        rootId,
+        { references: "replace" },
+      ),
+    onSend: () => {
+      if (ready) void runtime.send(conversationId, false, rootId);
+    },
+    onUnavailableSelect: (member) => {
+      const agent = unboundAgent(member.id);
+      if (agent) openBindDialog(agent, { onBound: channelAgents.refresh });
+    },
+  });
   return (
     <div className="discussion-compose-area">
       {artifactPickerOpen && (
@@ -296,7 +264,7 @@ export function DiscussionComposer({
           selected={draft.artifacts}
           onClose={() => {
             setArtifactPickerOpen(false);
-            requestAnimationFrame(() => textarea.current?.focus());
+            requestAnimationFrame(() => rich.focus());
           }}
           onAttach={(artifacts) => {
             runtime.setDraft(
@@ -305,7 +273,7 @@ export function DiscussionComposer({
               rootId,
             );
             setArtifactPickerOpen(false);
-            requestAnimationFrame(() => textarea.current?.focus());
+            requestAnimationFrame(() => rich.focus());
           }}
         />
       )}
@@ -349,17 +317,12 @@ export function DiscussionComposer({
         className="discussion-composer"
         onSubmit={(event) => {
           event.preventDefault();
-          if (ready && !composing.current)
+          if (ready && !rich.editor?.view.composing)
             void runtime.send(conversationId, false, rootId);
         }}
       >
         {compact ? null : (
-          <ChatComposerFormatting
-            disabled={!canSend}
-            onDraftChange={change}
-            onSelectionChange={selection}
-            textareaRef={textarea}
-          />
+          <DiscussionRichFormatting editor={rich.editor} disabled={!canSend} />
         )}
         <ArtifactDraftCards
           artifacts={draft.artifacts}
@@ -435,85 +398,7 @@ export function DiscussionComposer({
             ))}
           </div>
         ) : null}
-        <div className="discussion-composer-editor">
-          {mentionRanges.length > 0 && (
-            <ChatMentionHighlights
-              ranges={mentionRanges}
-              textareaRef={textarea}
-              value={draft.text}
-            />
-          )}
-          <textarea
-            data-mentions-highlighted={mentionRanges.length > 0}
-            ref={textarea}
-            aria-label={`Message ${title}`}
-            aria-describedby={
-              [
-                agentHint ? agentHintId : "",
-                tooLarge ? `discussion-message-limit-${rootId ?? "root"}` : "",
-              ]
-                .filter(Boolean)
-                .join(" ") || undefined
-            }
-            placeholder={
-              canSend
-                ? rootId
-                  ? "Reply…"
-                  : (placeholder ?? `Message ${title}`)
-                : "This conversation is read-only"
-            }
-            disabled={!canSend}
-            value={draft.text}
-            aria-controls={mentions.isOpen ? mentions.listId : undefined}
-            aria-activedescendant={mentions.activeOptionId}
-            onChange={(event) => {
-              runtime.setDraft(
-                conversationId,
-                {
-                  ...runtime.draft(conversationId, rootId),
-                  text: event.target.value,
-                  start: event.target.selectionStart,
-                  end: event.target.selectionEnd,
-                },
-                rootId,
-              );
-              mentions.syncSelection(event.currentTarget);
-            }}
-            onSelect={(event) => {
-              const el = event.currentTarget;
-              const current = runtime.draft(conversationId, rootId);
-              if (
-                current.start !== el.selectionStart ||
-                current.end !== el.selectionEnd
-              )
-                selection({ start: el.selectionStart, end: el.selectionEnd });
-            }}
-            onKeyUp={(event) => mentions.syncSelection(event.currentTarget)}
-            onCompositionStart={() => {
-              composing.current = true;
-              mentions.onCompositionStart();
-            }}
-            onCompositionEnd={() => {
-              composing.current = false;
-              mentions.onCompositionEnd(textarea.current!);
-            }}
-            onKeyDown={(event) => {
-              mentions.onKeyDown(event);
-              if (event.defaultPrevented) return;
-              if (
-                event.defaultPrevented ||
-                event.nativeEvent.isComposing ||
-                composing.current ||
-                event.keyCode === 229
-              )
-                return;
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                if (ready) void runtime.send(conversationId, false, rootId);
-              }
-            }}
-          />
-        </div>
+        <div className="discussion-composer-editor">{rich.input}</div>
         {uploadProgress && (
           <div className="discussion-upload-status" role="status">
             {uploadProgress}
@@ -559,12 +444,7 @@ export function DiscussionComposer({
               onSelectArtifact={() => setArtifactPickerOpen(true)}
             />
             {compact ? null : (
-              <ChatComposerEmoji
-                textareaRef={textarea}
-                onDraftChange={change}
-                onSelectionChange={selection}
-                disabled={!canSend}
-              />
+              <DiscussionRichEmoji editor={rich.editor} disabled={!canSend} />
             )}
             {compact ? null : (
               <button
@@ -573,7 +453,7 @@ export function DiscussionComposer({
                 aria-label="Mention someone"
                 title="Mention someone"
                 disabled={!canSend}
-                onClick={mentions.insertTrigger}
+                onClick={rich.insertMention}
               >
                 <AtSign size={17} />
               </button>
@@ -634,17 +514,7 @@ export function DiscussionComposer({
           </button>
         </div>
       </form>
-      {mentions.isOpen ? (
-        <ChatMentionSuggestions
-          activeIndex={mentions.activeIndex}
-          listId={mentions.listId}
-          members={mentions.matches}
-          onActiveIndexChange={mentions.setActiveIndex}
-          onSelect={mentions.selectMember}
-          textareaRef={textarea}
-          compact={compact}
-        />
-      ) : null}
+      {rich.suggestions}
       {bindDialog}
       {tooLarge ? (
         <p

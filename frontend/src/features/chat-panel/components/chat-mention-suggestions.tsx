@@ -21,7 +21,7 @@ export function ChatMentionSuggestions({
   members: readonly ChatMentionMember[];
   onActiveIndexChange: (index: number) => void;
   onSelect: (member: ChatMentionMember) => void;
-  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  textareaRef: RefObject<HTMLElement | null>;
   // A short heading, no kind labels and no keyboard help (a Board's chat).
   compact?: boolean;
 }) {

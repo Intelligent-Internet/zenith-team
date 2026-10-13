@@ -45,34 +45,30 @@ export function ChatFileViewer({
     }
   };
   return (
-    <FileViewerShell title={file.title} onClose={onClose}>
+    <FileViewerShell
+      title={file.title}
+      onClose={onClose}
+      actions={
+        <button
+          className="artifacts-icon-button"
+          type="button"
+          aria-label={
+            busy ? `Downloading ${file.filename}` : `Download ${file.filename}`
+          }
+          title={busy ? "Downloading…" : "Download"}
+          aria-busy={busy}
+          disabled={busy}
+          onClick={() => void save()}
+        >
+          {busy ? (
+            <LoaderCircle aria-hidden size={18} className="artifact-spinner" />
+          ) : (
+            <Download aria-hidden size={18} />
+          )}
+        </button>
+      }
+    >
       <div className="artifact-file-view">
-        <div className="artifact-file-toolbar">
-          <span
-            className="min-w-0 flex-1 truncate px-3 text-sm"
-            title={file.filename}
-          >
-            {file.filename}
-          </span>
-          <button
-            className="artifact-action-button"
-            type="button"
-            aria-label={`Download ${file.filename}`}
-            disabled={busy}
-            onClick={() => void save()}
-          >
-            {busy ? (
-              <LoaderCircle
-                aria-hidden
-                size={17}
-                className="artifact-spinner"
-              />
-            ) : (
-              <Download aria-hidden size={17} />
-            )}
-            Download
-          </button>
-        </div>
         <div className="artifact-file-preview-pane" tabIndex={0}>
           <ArtifactFileContent file={file} loadFile={loadFile} />
         </div>

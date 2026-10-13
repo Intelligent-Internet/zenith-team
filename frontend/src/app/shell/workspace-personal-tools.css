@@ -242,6 +242,9 @@ html[data-boardly-workspace-theme] .workspace-account-trigger:focus-visible {
 .personal-menu-sign-out {
   color: var(--workspace-native-text-muted);
 }
+.personal-menu-sign-out > span {
+  color: var(--workspace-native-danger);
+}
 .workspace-company-section-heading {
   display: flex;
   align-items: center;
