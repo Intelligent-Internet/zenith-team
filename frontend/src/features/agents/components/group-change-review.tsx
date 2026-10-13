@@ -239,7 +239,7 @@ export function GroupChangeReview({
         </span>
         <DialogTitle>{review.title}</DialogTitle>
         {preview?.projectsHidden ? (
-          <div className="group-review__summary">
+          <div className="flex col-[2] m-[4px_0_0] text-workspace-muted text-[length:13px]">
             <AccessChip
               icon={EyeOff}
               label="Some projects hidden"
@@ -247,7 +247,9 @@ export function GroupChangeReview({
             />
           </div>
         ) : nothing ? (
-          <p className="group-review__summary">No access changes</p>
+          <p className="flex col-[2] m-[4px_0_0] text-workspace-muted text-[length:13px]">
+            No access changes
+          </p>
         ) : null}
       </DialogHeader>
       <div className="group-review__body">
@@ -256,13 +258,19 @@ export function GroupChangeReview({
           <LoadFailed message={phase.message} onRetry={reload} />
         ) : null}
         {phase.kind === "stale" ? (
-          <p className="group-review__warning" role="alert">
+          <p
+            className="group-review__warning flex items-start gap-[8px] m-0 p-[10px_12px] [border:1px_solid_color-mix(in_srgb,_var(--workspace-native-approval)_40%,_transparent)] rounded-[10px] [background:color-mix(_in_srgb,_var(--workspace-native-approval)_10%,_transparent_)] text-workspace-text text-[length:12.5px] leading-[1.45]"
+            role="alert"
+          >
             <AlertCircle size={16} aria-hidden="true" />
             {review.staleCopy}
           </p>
         ) : null}
         {rows.length > 0 ? (
-          <ul className="group-review__people" aria-label="People">
+          <ul
+            className="relative flex max-h-[min(50dvh,_360px)] flex-col m-0 p-0 [list-style:none] overflow-y-auto overscroll-contain"
+            aria-label="People"
+          >
             {rows.map(({ row, who, change }) => {
               const where = titles(row.projectIds);
               const sign = CHANGE_SIGNS[change];
@@ -279,15 +287,17 @@ export function GroupChangeReview({
                   <TaskMemberAvatar
                     member={{ name: who.name, avatarUrl: who.avatarUrl }}
                   />
-                  <span className="group-review__name">
-                    <span className="group-review__name-text">{who.name}</span>
+                  <span className="group-review__name flex min-w-0 items-baseline gap-[6px] text-workspace-text font-[550]">
+                    <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                      {who.name}
+                    </span>
                     {who.isSelf ? <small>you</small> : null}
                   </span>
                   <span className="group-review__sign">
                     <sign.Icon size={13} aria-hidden="true" />
                     <span className="sr-only">{sign.label}</span>
                   </span>
-                  <span className="group-review__where">
+                  <span className="group-review__where flex min-w-0 items-center gap-[6px] overflow-hidden text-workspace-text [container-type:inline-size]">
                     <Folder size={13} aria-hidden="true" />
                     <span className="group-review__project">
                       {where ? firstAndMoreText(where) : null}
@@ -318,7 +328,7 @@ export function GroupChangeReview({
           </ul>
         ) : null}
         {opened ? (
-          <div className="group-review__opened" role="note">
+          <div className="flex flex-wrap items-center gap-[6px]" role="note">
             <AccessChip
               icon={Eye}
               label={`Opens for you: ${

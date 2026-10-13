@@ -219,7 +219,10 @@ export function HuddleAlertController({
 
   if (!current && !error) return null;
   return (
-    <aside className="huddle-incoming-call" aria-live="assertive">
+    <aside
+      className="huddle-incoming-call fixed z-[100] top-[20px] right-[20px] w-[min(440px,_calc(100vw_-_40px))] overflow-hidden [border:1px_solid_var(--border)] rounded-[18px] [background:var(--background)] [box-shadow:0_18px_60px_rgb(0_0_0_/_24%)]"
+      aria-live="assertive"
+    >
       {current && (
         <HuddleInvitationCard
           invitation={current}
@@ -235,7 +238,10 @@ export function HuddleAlertController({
         />
       )}
       {error && (
-        <p role="alert" className="huddle-incoming-error">
+        <p
+          role="alert"
+          className="m-0 p-[10px_20px_16px] text-[var(--destructive)] text-[length:13px]"
+        >
           {error}
         </p>
       )}

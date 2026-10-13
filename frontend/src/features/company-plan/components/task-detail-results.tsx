@@ -70,7 +70,7 @@ export function TaskDetailResults({
     ].some((value) => value.toLocaleLowerCase().includes(searchText)),
   );
   return (
-    <div className="task-detail-results">
+    <div className="task-detail-results grid gap-[14px]">
       {!latestOnly ? (
         <input
           type="search"
@@ -166,7 +166,7 @@ function ResultGroup({
       </div>
       {result.artifact.summary ? <p>{result.artifact.summary}</p> : null}
       <DeliveryFreshness output={result.artifact} />
-      <div className="task-detail-files">
+      <div className="grid gap-[10px]">
         {result.artifact.type === "app" ||
         result.artifact.type === "whiteboard" ? (
           <button
@@ -181,7 +181,7 @@ function ResultGroup({
                 <LayoutDashboard size={20} />
               )}
             </span>
-            <span className="task-detail-file-name">
+            <span className="flex-1 min-w-0">
               <strong>
                 {result.artifact.type === "app"
                   ? "Open app"
@@ -219,7 +219,7 @@ function ResultGroup({
                 <FileText aria-hidden size={20} />
               )}
             </span>
-            <span className="task-detail-file-name">
+            <span className="flex-1 min-w-0">
               <strong>{file.displayName}</strong>
               <small>
                 {file.role === "primary"

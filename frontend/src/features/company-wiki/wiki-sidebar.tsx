@@ -115,7 +115,9 @@ export function WikiSidebar({
         <FileText size={14} />
         <span>{item.title}</span>
         {!item.published && (
-          <small className="zen-wiki__draft-label">Draft</small>
+          <small className="ml-[8px] text-[length:10px] font-[400] text-[var(--wk-muted)] whitespace-nowrap">
+            Draft
+          </small>
         )}
       </button>
     );
@@ -137,7 +139,7 @@ export function WikiSidebar({
           </button>
         )}
       </div>
-      <label className="zen-wiki__search">
+      <label className="zen-wiki__search flex items-center gap-[8px] [border:1px_solid_var(--wk-border)] rounded-[8px] p-[7px_9px] m-[0_4px_15px] text-[var(--wk-muted)]">
         <Search size={16} />
         <input
           aria-label="Search wiki"
@@ -153,7 +155,9 @@ export function WikiSidebar({
         onClick={() => onShowFilter("active")}
       >
         <LayoutGrid size={17} /> All pages
-        <span className="zen-wiki__nav-count">{pages.length}</span>
+        <span className="ml-auto text-[var(--wk-muted)] text-[length:11px]">
+          {pages.length}
+        </span>
       </button>
       <button
         className="zen-wiki__sidebar-link"
@@ -161,7 +165,7 @@ export function WikiSidebar({
         onClick={() => onShowFilter("favorites")}
       >
         <Star size={17} /> Favorites
-        <span className="zen-wiki__nav-count">
+        <span className="ml-auto text-[var(--wk-muted)] text-[length:11px]">
           {pages.filter((item) => item.favorite).length}
         </span>
       </button>
@@ -171,9 +175,11 @@ export function WikiSidebar({
         onClick={() => onShowFilter("archived")}
       >
         <Archive size={17} /> Archived
-        <span className="zen-wiki__nav-count">{archivedTotal}</span>
+        <span className="ml-auto text-[var(--wk-muted)] text-[length:11px]">
+          {archivedTotal}
+        </span>
       </button>
-      <div className="zen-wiki__sidebar-section zen-wiki__sidebar-section--action">
+      <div className="zen-wiki__sidebar-section zen-wiki__sidebar-section--action flex items-center justify-between">
         <span>Collections</span>
         {canPublish && (
           <button
@@ -187,16 +193,18 @@ export function WikiSidebar({
         )}
       </div>
       {collectionsError && (
-        <p className="zen-wiki__error" role="alert">
+        <p className="text-workspace-danger p-[0_10px]" role="alert">
           Collections could not be loaded.{" "}
           <button className="zen-wiki__retry" onClick={onRetryCollections}>
             Retry
           </button>
         </p>
       )}
-      {pagesLoading && <p className="zen-wiki__muted">Loading pages…</p>}
+      {pagesLoading && (
+        <p className="text-[var(--wk-muted)] p-[0_10px]">Loading pages…</p>
+      )}
       {pagesError && (
-        <p className="zen-wiki__error" role="alert">
+        <p className="text-workspace-danger p-[0_10px]" role="alert">
           Pages could not be loaded.{" "}
           <button className="zen-wiki__retry" onClick={onRetryPages}>
             Retry
@@ -231,7 +239,7 @@ export function WikiSidebar({
                 >
                   <ChevronRight
                     size={13}
-                    className={expanded ? "zen-wiki__chevron-expanded" : ""}
+                    className={expanded ? "[transform:rotate(90deg)]" : ""}
                   />
                 </button>
               ) : (
@@ -262,9 +270,7 @@ export function WikiSidebar({
               )}
             </div>
             {expanded && (
-              <div className="zen-wiki__tree-pages">
-                {children.map(pageLink)}
-              </div>
+              <div className="pl-[18px]">{children.map(pageLink)}</div>
             )}
           </div>
         );
@@ -278,12 +284,14 @@ export function WikiSidebar({
         >
           Unfiled
         </div>
-        <div className="zen-wiki__tree-pages">
+        <div className="pl-[18px]">
           {pages.filter((item) => !item.collectionId).map(pageLink)}
         </div>
       </div>
       {pagesTruncated && (
-        <p className="zen-wiki__muted">Search to find more pages.</p>
+        <p className="text-[var(--wk-muted)] p-[0_10px]">
+          Search to find more pages.
+        </p>
       )}
     </aside>
   );

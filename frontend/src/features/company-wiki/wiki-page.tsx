@@ -276,7 +276,7 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
           sidebar
         ) : null}
         {!sidebarOnly && (
-          <section className="zen-wiki__main">
+          <section className="flex min-w-0 min-h-0 flex-col relative [background:var(--wk-panel)]">
             <WikiResearchBanner
               companyId={companyId}
               currentPageId={pageId}
@@ -285,7 +285,7 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
             {!pageId && (
               <header className="zen-wiki__top">
                 <div
-                  className="zen-wiki__brand"
+                  className="zen-wiki__brand flex items-center gap-[12px] text-[var(--wk-text)]"
                   data-tour-id="wiki-overview-heading"
                 >
                   <div>
@@ -353,7 +353,10 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
                   onOpenPage={openPage}
                 />
               ) : page.isError ? (
-                <p className="zen-wiki__loading" role="alert">
+                <p
+                  className="p-[40px] text-center text-[var(--wk-muted)]"
+                  role="alert"
+                >
                   {pageNotFound ? (
                     "This page does not exist or is no longer available."
                   ) : (
@@ -369,13 +372,16 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
                   )}
                 </p>
               ) : (
-                <p className="zen-wiki__loading" role="status">
+                <p
+                  className="p-[40px] text-center text-[var(--wk-muted)]"
+                  role="status"
+                >
                   Loading page…
                 </p>
               )
             ) : (
-              <div className="zen-wiki__overview">
-                <div className="zen-wiki__overview-heading">
+              <div className="zen-wiki__overview flex-1 min-h-0 overflow-auto p-[24px_var(--workspace-page-inset)_48px]">
+                <div className="zen-wiki__overview-heading flex items-center justify-between mb-[24px]">
                   <div>
                     <h1>
                       {view === "graph"
@@ -389,7 +395,7 @@ export function WikiPage({ sidebarOnly = false }: { sidebarOnly?: boolean }) {
                     </p>
                   </div>
                   {view === "graph" && (
-                    <span className="zen-wiki__overview-aside">
+                    <span className="text-[var(--wk-muted)] text-workspace-caption">
                       Links come from page content
                     </span>
                   )}

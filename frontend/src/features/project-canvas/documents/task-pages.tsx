@@ -11,7 +11,10 @@ export function TaskPages({
 }: CanvasScope & { taskId: string }) {
   const query = useProjectPagesQuery({ companyId, projectId, taskId });
   return (
-    <section className="task-working-pages" aria-label="Pages">
+    <section
+      className="task-working-pages m-[20px_0] text-[var(--workspace-native-text,_inherit)] text-[length:13px]"
+      aria-label="Pages"
+    >
       <h3>Pages</h3>
       <p>
         Pages this Task created or updated. Submitted snapshots appear with its

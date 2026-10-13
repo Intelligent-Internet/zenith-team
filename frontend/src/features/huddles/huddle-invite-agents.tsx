@@ -76,8 +76,13 @@ export function HuddleInviteAgents({
   }
 
   return (
-    <section className="huddle-invite-agents" aria-label="Voice Agents">
-      <strong className="huddle-invite-group-title">Voice Agents</strong>
+    <section
+      className="huddle-invite-agents [border-top:1px_solid_var(--border)] mt-[12px]"
+      aria-label="Voice Agents"
+    >
+      <strong className="block m-[14px_0_6px] text-[var(--muted-foreground)] text-[length:12px] font-[600]">
+        Voice Agents
+      </strong>
       <div className="huddle-invite-list">
         {agents.isLoading ? (
           <p role="status">Loading Agents…</p>
@@ -128,7 +133,10 @@ export function HuddleInviteAgents({
         )}
       </div>
       {sharerLeft && (
-        <div className="huddle-invite-context" role="status">
+        <div
+          className="huddle-invite-context grid gap-[8px] mt-[10px] p-[10px_12px] [border:1px_solid_var(--border)] rounded-[10px] [background:var(--muted)] text-[length:12px] leading-[1.5]"
+          role="status"
+        >
           <p>Company context is off: the person who shared it left the call.</p>
           {canShareContext && currentAgentId && (
             <button
@@ -146,18 +154,18 @@ export function HuddleInviteAgents({
         </div>
       )}
       {occupied && !sharerLeft && (
-        <p className="huddle-invite-hint">
+        <p className="text-[var(--muted-foreground)] text-[length:12px] leading-[1.5]">
           One Voice Agent at a time. Remove the current Agent to invite another.
         </p>
       )}
       {status?.canModerate && !canShareContext && (
-        <p className="huddle-invite-hint huddle-invite-context-note">
+        <p className="text-[var(--muted-foreground)] text-[length:12px] leading-[1.5] huddle-invite-context-note flex items-start gap-[6px]">
           <Info size={14} aria-hidden />
           Only someone in this call can share Company context.
         </p>
       )}
       {status && !status.canModerate && (
-        <p className="huddle-invite-hint">
+        <p className="text-[var(--muted-foreground)] text-[length:12px] leading-[1.5]">
           Only the call starter or an admin can invite an Agent.
         </p>
       )}
@@ -183,7 +191,7 @@ export function HuddleInviteAgents({
       </div>
       <Dialog open={budgetOpen} onOpenChange={setBudgetOpen}>
         <DialogContent
-          className="huddle-dialog huddle-ai-dialog"
+          className="huddle-dialog max-h-[calc(100dvh_-_48px)] overflow-y-auto"
           aria-describedby={undefined}
         >
           <DialogHeader>

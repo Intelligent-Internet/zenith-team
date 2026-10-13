@@ -24,6 +24,14 @@ Panels use native HTML and workspace CSS tokens through `ContentPanel`. Menus
 use their Radix portals; floating chat and modal overlays use React portals.
 The retired liquid glass packages, filters and geometry observers are removed.
 
+Tailwind is the default for component layout, spacing, typography and states.
+Workspace utilities in `src/app/global.css` resolve to the existing theme
+variables, so Light/Dark palettes and accessibility preferences remain shared.
+Authored CSS is reserved for theme/base definitions and integrations such as
+native controls, generated editor/markdown content and complex motion. Follow
+the [styling conventions](AGENTS.md#styling-tailwind-by-default) when migrating
+existing selectors; preserve their cascade and exact responsive boundaries.
+
 ## Implementation Notes
 
 ### Production bundles

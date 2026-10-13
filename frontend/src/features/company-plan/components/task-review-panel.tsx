@@ -370,7 +370,7 @@ export function TaskReviewPanel({
 
   return (
     <ContentPanel
-      className="task-review-panel-frame pointer-events-none fixed bottom-4 left-4 right-4 top-16 z-[72] overflow-hidden rounded-3xl transition-[bottom,left,right,top,width,height] duration-300 ease-out sm:bottom-6 sm:left-6 sm:right-6 sm:top-20 xl:left-[max(32px,calc((100vw-1440px)/2))] xl:right-[max(32px,calc((100vw-1440px)/2))]"
+      className="[border:1px_solid_var(--workspace-divider)]! [background:var(--workspace-overlay-bg)]! [box-shadow:var(--workspace-overlay-shadow)]! pointer-events-none fixed bottom-4 left-4 right-4 top-16 z-[72] overflow-hidden rounded-3xl transition-[bottom,left,right,top,width,height] duration-300 ease-out sm:bottom-6 sm:left-6 sm:right-6 sm:top-20 xl:left-[max(32px,calc((100vw-1440px)/2))] xl:right-[max(32px,calc((100vw-1440px)/2))]"
       contentRef={setDialogElement}
       contentClassName="task-review-panel pointer-events-auto h-full w-full flex-col overflow-hidden rounded-3xl text-white"
       role="dialog"
@@ -378,7 +378,7 @@ export function TaskReviewPanel({
       aria-modal="true"
       tabIndex={-1}
     >
-      <header className="task-review-panel__header relative flex min-h-[104px] w-full shrink-0 flex-wrap items-start gap-3 px-5 pt-5 sm:px-7">
+      <header className="gap-y-[12px] pb-[20px] relative flex min-h-[104px] w-full shrink-0 flex-wrap items-start gap-3 px-5 pt-5 sm:px-7">
         <span
           className="grid size-[48px] shrink-0 place-items-center overflow-hidden rounded-xl bg-white"
           aria-hidden="true"
@@ -445,7 +445,7 @@ export function TaskReviewPanel({
         </button>
         <span
           aria-hidden="true"
-          className="task-review-panel__divider pointer-events-none absolute bottom-0 left-4 right-4 h-px bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,#FFF_50%,rgba(255,255,255,0)_100%)]"
+          className="[background:var(--workspace-divider)] pointer-events-none absolute bottom-0 left-4 right-4 h-px bg-[linear-gradient(90deg,rgba(255,255,255,0)_0%,#FFF_50%,rgba(255,255,255,0)_100%)]"
         />
       </header>
 

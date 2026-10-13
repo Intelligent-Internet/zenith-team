@@ -151,8 +151,11 @@ export default function ProjectLibrary({
   });
   if (pageId)
     return (
-      <div className="po-page-frame">
-        <div className="pc-review-floating-actions" ref={setActionContainer} />
+      <div className="po-page-frame relative flex flex-1 min-w-0 min-h-0 overflow-hidden">
+        <div
+          className="pc-review-floating-actions absolute inset-0 z-[70] pointer-events-none"
+          ref={setActionContainer}
+        />
         <div className="po-document po-page-workspace">
           <PageDocument
             key={pageId}
@@ -167,7 +170,7 @@ export default function ProjectLibrary({
   const label = kind === "pages" ? "Pages" : "Results";
   return (
     <section
-      className={`po-document po-library ${kind === "pages" ? "po-pages-library" : ""}`}
+      className={`po-document po-library ${kind === "pages" ? "po-pages-library w-full" : ""}`}
       aria-label={`Project ${label}`}
     >
       <header className="po-library-heading">
@@ -200,7 +203,13 @@ export default function ProjectLibrary({
           </button>
         )}
       </header>
-      <div className={kind === "pages" ? "po-pages-toolbar" : undefined}>
+      <div
+        className={
+          kind === "pages"
+            ? "po-pages-toolbar flex items-center justify-between gap-[20px] mb-[12px]"
+            : undefined
+        }
+      >
         <label className="po-library-search">
           <Icon name="search" className="size-4" />
           <input
@@ -229,7 +238,7 @@ export default function ProjectLibrary({
       {creating && board?.canEditDocuments && (
         <form
           id="project-page-create"
-          className="po-pages-create"
+          className="po-pages-create m-[0_0_24px] p-[20px] [border:1px_solid_var(--pc-line)] rounded-workspace-panel"
           onKeyDown={(event) => {
             if (event.key === "Escape" && !creatingPage.isLoading) {
               event.preventDefault();
@@ -270,7 +279,7 @@ export default function ProjectLibrary({
               </select>
             </label>
           </fieldset>
-          <p className="po-pages-template-description">
+          <p className="m-[12px_0_16px] text-[var(--pc-muted)] text-[length:12px]">
             {documentTemplates[template].description}
           </p>
           {error && (
@@ -334,7 +343,7 @@ export default function ProjectLibrary({
             </div>
           )}
           {kind === "pages" && (
-            <p className="po-pages-count">
+            <p className="m-[16px_12px_0] text-[var(--pc-soft)] text-[length:12px]">
               {rows.length} {rows.length === 1 ? "page" : "pages"}
               {search ? " found" : ""}
             </p>

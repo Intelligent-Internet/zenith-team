@@ -67,13 +67,6 @@ html[data-boardly-workspace-theme] .discussion-rich-input:focus-visible,
   margin: 4px 0;
   padding-left: 10px;
 }
-.discussion-rich-formatting {
-  display: flex;
-  gap: 4px;
-  padding: 4px 12px 0;
-  min-height: 40px;
-  align-items: center;
-}
 .discussion-rich-formatting button {
   display: grid;
   place-items: center;
@@ -94,13 +87,6 @@ html[data-boardly-workspace-theme] .discussion-rich-input:focus-visible,
 .discussion-rich-formatting button:disabled {
   opacity: 0.5;
   cursor: default;
-}
-.discussion-rich-link {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 8px 14px;
-  font-size: 13px;
 }
 .discussion-rich-link input {
   flex: 1;

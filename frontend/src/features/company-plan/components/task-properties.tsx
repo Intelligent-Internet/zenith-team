@@ -118,7 +118,7 @@ export function TaskProperties({
   const priority = (
     <Property icon={<SignalHigh />} label="Priority">
       <TaskPriorityIcon priority={task.priority} />
-      <span className="task-execution-label">{task.priority}</span>
+      <span className="capitalize">{task.priority}</span>
     </Property>
   );
   return (

@@ -38,7 +38,7 @@ export function StudioSpaces() {
           </p>
         </header>
 
-        <figure className="studio-spaces-overview" data-reveal>
+        <figure className="studio-spaces-overview m-0" data-reveal>
           <img
             src={`${studioAssets}/workspace-overview.webp`}
             alt="An open studio with separate spaces for research, making, and review"

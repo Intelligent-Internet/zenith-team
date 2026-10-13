@@ -1,7 +1,6 @@
 import * as HoverCard from "@radix-ui/react-hover-card";
 import { useId, useState, type ReactElement, type ReactNode } from "react";
 import { cn } from "./core/cn";
-import "./tooltip.css";
 
 export function Tooltip({
   children,
@@ -60,7 +59,10 @@ export function Tooltip({
         <HoverCard.Content
           id={id}
           role="tooltip"
-          className={cn("workspace-tooltip", contentClassName)}
+          className={cn(
+            contentClassName,
+            "workspace-tooltip z-[150] max-w-[min(280px,calc(100vw_-_24px))] wrap-break-word rounded-[7px] [border:1px_solid_var(--workspace-divider)] [background:var(--workspace-overlay-bg)] p-[6px_10px] text-workspace-text [box-shadow:var(--workspace-overlay-shadow)] font-workspace-body text-[12px] leading-[18px] select-none",
+          )}
           side={side}
           sideOffset={8}
           collisionPadding={12}

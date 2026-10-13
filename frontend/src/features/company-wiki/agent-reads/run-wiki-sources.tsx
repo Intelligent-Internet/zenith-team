@@ -79,12 +79,14 @@ export function RunWikiSources({
       className="zen-wiki-sources"
       aria-labelledby={`wiki-sources-${runId}`}
     >
-      <header className="zen-wiki-sources__head">
+      <header className="zen-wiki-sources__head flex items-center justify-between gap-[8px]">
         <h2 id={`wiki-sources-${runId}`}>
           <BookOpen size={17} aria-hidden /> Wiki sources
         </h2>
         {sources.length > 0 ? (
-          <span className="zen-wiki-sources__count">{sources.length}</span>
+          <span className="min-w-[22px] rounded-[999px] p-[0_7px] [background:var(--wk-soft)] text-[var(--wk-muted)] text-[length:12px] font-[600] text-center">
+            {sources.length}
+          </span>
         ) : null}
       </header>
       {reads.isError && !items ? (
@@ -96,7 +98,7 @@ export function RunWikiSources({
         </p>
       ) : !items ? (
         <div
-          className="zen-wiki-sources__skeleton"
+          className="zen-wiki-sources__skeleton grid gap-[8px]"
           role="status"
           aria-label="Loading Wiki sources"
         >
@@ -194,12 +196,15 @@ function SourceRow({
         aria-label={`Source ${index}: ${title}, version ${read.revisionNumber}. Open preview`}
         onClick={onOpen}
       >
-        <span className="zen-wiki-sources__num" aria-hidden>
+        <span
+          className="grid flex-none w-[24px] h-[24px] place-items-center rounded-[50%] [background:var(--wk-soft)] text-[var(--wk-accent)] text-[length:12px] font-[650]"
+          aria-hidden
+        >
           {index}
         </span>
-        <span className="zen-wiki-sources__body">
+        <span className="zen-wiki-sources__body grid min-w-0 flex-1 gap-[4px]">
           <strong>{title}</strong>
-          <span className="zen-wiki-sources__chips">
+          <span className="flex flex-wrap items-center gap-[4px_6px] text-[var(--wk-muted)] text-[length:11px]">
             <span className="zen-wiki-sources__chip">
               v{read.revisionNumber}
             </span>

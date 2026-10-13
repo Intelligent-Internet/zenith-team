@@ -379,7 +379,7 @@ export function WorkflowsPage() {
   } else {
     const featured = workflows.filter((item) => item.featured);
     content = (
-      <div className="workflows-sections">
+      <div className="grid gap-[32px]">
         {featured.length ? (
           <WorkflowSection title="Featured">
             <WorkflowFeaturedGrid workflows={featured} onOpen={openWorkflow} />
@@ -422,7 +422,11 @@ export function WorkflowsPage() {
       description="Ready-to-run templates. Fill in a short form and an Agent does the work."
       toolbar={
         <div className="workflows-toolbar">
-          <div className="workflows-tabs" role="tablist" aria-label="Workflows">
+          <div
+            className="workflows-tabs inline-flex flex-none gap-[2px] p-[3px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-control-bg)]"
+            role="tablist"
+            aria-label="Workflows"
+          >
             {tabs.map((item) => (
               <button
                 key={item.id}
@@ -438,7 +442,7 @@ export function WorkflowsPage() {
               >
                 {item.label}
                 {item.id === "pinned" && pinnedWorkflows.length ? (
-                  <span className="workflows-tabs__count">
+                  <span className="inline-grid min-w-[18px] h-[18px] place-items-center p-[0_5px] rounded-[9px] [background:var(--workspace-accent-soft)] text-workspace-accent text-workspace-micro font-[600] leading-[18px]">
                     {pinnedWorkflows.length}
                   </span>
                 ) : null}
@@ -465,7 +469,7 @@ export function WorkflowsPage() {
     >
       <div
         ref={panelRef}
-        className="workflows-panel"
+        className="[container:workflows_/_inline-size] min-w-0"
         role="tabpanel"
         id="workflows-tabpanel"
         aria-labelledby={`workflows-tab-${tab}`}
@@ -507,9 +511,9 @@ function WorkflowResults({
     .filter(Boolean)
     .join(" ");
   return (
-    <div className="workflows-results">
+    <div className="grid gap-[14px]">
       {filtering ? (
-        <div className="workflows-results__bar">
+        <div className="workflows-results__bar flex items-center justify-between gap-[12px] min-w-0">
           <p role="status">
             {results.length} {results.length === 1 ? noun : `${noun}s`}
             {scope ? ` ${scope}` : ""}
@@ -564,35 +568,41 @@ function WorkflowsNotice({
       data-tone={tone}
       role={tone === "error" ? "alert" : undefined}
     >
-      {icon ? <span className="workflows-notice__icon">{icon}</span> : null}
+      {icon ? (
+        <span className="grid w-[44px] h-[44px] place-items-center rounded-[10px] [background:var(--workspace-accent-soft)] text-workspace-accent">
+          {icon}
+        </span>
+      ) : null}
       <h2>{title}</h2>
       <p>{description}</p>
-      {action ? <div className="workflows-notice__action">{action}</div> : null}
+      {action ? (
+        <div className="workflows-notice__action mt-[10px]">{action}</div>
+      ) : null}
     </section>
   );
 }
 
 function WorkflowsSkeleton() {
   return (
-    <div className="workflows-skeleton" aria-busy="true">
+    <div className="grid gap-[14px]" aria-busy="true">
       <span className="sr-only" role="status">
         Loading workflows
       </span>
-      <span className="animate-pulse workflow-skeleton workflow-skeleton--heading" />
+      <span className="animate-pulse workflow-skeleton w-[160px] h-[20px] mt-[10px]" />
       <div className="workflows-featured-grid" aria-hidden="true">
         {[0, 1, 2].map((index) => (
           <span
             key={index}
-            className="animate-pulse workflow-skeleton workflow-skeleton--featured"
+            className="animate-pulse workflow-skeleton h-[176px]"
           />
         ))}
       </div>
-      <span className="animate-pulse workflow-skeleton workflow-skeleton--heading" />
+      <span className="animate-pulse workflow-skeleton w-[160px] h-[20px] mt-[10px]" />
       <div className="workflows-grid" aria-hidden="true">
         {[0, 1, 2, 3].map((index) => (
           <span
             key={index}
-            className="animate-pulse workflow-skeleton workflow-skeleton--card"
+            className="animate-pulse workflow-skeleton h-[88px]"
           />
         ))}
       </div>

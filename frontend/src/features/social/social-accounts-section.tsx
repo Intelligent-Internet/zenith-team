@@ -137,7 +137,10 @@ export function SocialAccountsSection({
         <h2 id="social-accounts-heading">Social accounts</h2>
       </header>
       {queryError ? (
-        <div className="social-load-state" role="alert">
+        <div
+          className="social-load-state flex items-center gap-[12px] m-[16px_0_0] text-workspace-muted text-workspace-label"
+          role="alert"
+        >
           <p>{getBoardlyQueryErrorMessage(queryError)}</p>
           <button
             className="plugins-text-button"
@@ -152,7 +155,10 @@ export function SocialAccountsSection({
         </div>
       ) : null}
       {loading ? (
-        <p className="social-load-state" role="status">
+        <p
+          className="social-load-state flex items-center gap-[12px] m-[16px_0_0] text-workspace-muted text-workspace-label"
+          role="status"
+        >
           Loading social accounts…
         </p>
       ) : (
@@ -173,7 +179,10 @@ export function SocialAccountsSection({
         </ul>
       )}
       {error && !selected && (
-        <p role="alert" className="personal-error">
+        <p
+          role="alert"
+          className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+        >
           {error}
         </p>
       )}
@@ -201,7 +210,10 @@ export function SocialAccountsSection({
             </p>
           )}
           {error && (
-            <p role="alert" className="personal-error">
+            <p
+              role="alert"
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            >
               {error}
             </p>
           )}
@@ -249,14 +261,18 @@ function SocialPlatformRow({
         : "Not available";
 
   return (
-    <li className="social-platform-group">
+    <li className="min-w-0 [align-self:start]">
       <div className="plugins-row social-platform-row">
         <SocialPlatformMark platform={platform.id} />
-        <div className="plugins-row__copy">
-          <h3 className="social-platform-name">{platform.name}</h3>
-          <span className="plugins-row__description">{description}</span>
+        <div className="flex min-w-0 flex-1 flex-col gap-[2px]">
+          <h3 className="m-0 text-workspace-text text-workspace-body font-[600] leading-workspace-body">
+            {platform.name}
+          </h3>
+          <span className="overflow-hidden text-workspace-muted text-workspace-label leading-workspace-label text-ellipsis whitespace-nowrap">
+            {description}
+          </span>
         </div>
-        <div className="plugins-row__actions">
+        <div className="relative z-[1] flex min-w-[56px] flex-none flex-col items-center">
           {platform.available && (
             <button
               type="button"
@@ -273,7 +289,7 @@ function SocialPlatformRow({
       </div>
       {accounts.length > 0 && (
         <ul
-          className="social-platform-accounts"
+          className="grid gap-[4px] m-[0_12px_8px_54px] [border-top:1px_solid_var(--workspace-divider)] p-[4px_0_0] [list-style:none]"
           aria-label={`${platform.name} accounts`}
         >
           {accounts.map((account) => (
@@ -310,8 +326,11 @@ function SocialAccountRow({
     : "";
 
   return (
-    <li className="social-platform-account">
-      <Avatar className="social-account-avatar" aria-hidden="true">
+    <li className="social-platform-account flex min-w-0 min-h-[52px] items-center gap-[10px] p-[6px_0]">
+      <Avatar
+        className="social-account-avatar w-[28px] h-[28px] text-workspace-caption font-[500]"
+        aria-hidden="true"
+      >
         <AvatarImage
           src={attachmentUrl(account.avatarUrl)}
           alt=""
@@ -319,7 +338,7 @@ function SocialAccountRow({
         />
         <AvatarFallback>{personInitials(account.displayName)}</AvatarFallback>
       </Avatar>
-      <div className="social-account-detail">
+      <div className="flex-1 min-w-0">
         <p className="social-account-name" title={account.displayName}>
           {account.displayName}
         </p>

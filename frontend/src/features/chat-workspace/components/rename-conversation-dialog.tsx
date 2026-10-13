@@ -169,7 +169,7 @@ export function RenameConversationDialog({
               Give this chat a title you can find again.
             </DialogDescription>
           </header>
-          <div className="conversation-rename-dialog__field">
+          <div className="conversation-rename-dialog__field grid gap-[8px] text-[length:13px]">
             <label htmlFor={inputId}>Conversation title</label>
             <input
               id={inputId}
@@ -194,7 +194,10 @@ export function RenameConversationDialog({
             </p>
           </div>
           {conflict ? (
-            <div className="conversation-rename-dialog__conflict" role="status">
+            <div
+              className="conversation-rename-dialog__conflict [border:1px_solid_var(--workspace-divider)] rounded-[8px] p-[12px] [background:var(--workspace-control-bg)] text-[length:13px] leading-[1.5] wrap-anywhere"
+              role="status"
+            >
               <p>This conversation changed elsewhere. Your draft is kept.</p>
               {latestTitle !== null ? (
                 <p>
@@ -216,7 +219,7 @@ export function RenameConversationDialog({
           {error ? (
             <p
               id={`${inputId}-error`}
-              className="conversation-rename-dialog__error"
+              className="m-0 text-[var(--workspace-native-danger,_#c2415d)] text-[length:13px] leading-[1.5]"
               role="alert"
             >
               {error}

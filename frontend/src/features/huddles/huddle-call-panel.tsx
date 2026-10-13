@@ -679,7 +679,10 @@ export function HuddleCallPanel({
         </div>
         <h3>{reconnecting ? "Reconnecting…" : "Getting everyone together"}</h3>
         <p>Connecting your audio and loading the room…</p>
-        <span className="huddle-tile-joining-dots" aria-hidden>
+        <span
+          className="huddle-tile-joining-dots inline-flex gap-[3px]"
+          aria-hidden
+        >
           <i />
           <i />
           <i />
@@ -696,7 +699,7 @@ export function HuddleCallPanel({
         className="huddle-spotlight"
         data-screen={!pinnedTile && Boolean(spotlightScreen)}
       >
-        <div className="huddle-spotlight-main">
+        <div className="huddle-spotlight-main flex flex-1 min-w-0">
           {pinnedTile
             ? renderTile(pinnedTile, false)
             : spotlightScreen && renderScreen(spotlightScreen, false)}
@@ -734,8 +737,8 @@ export function HuddleCallPanel({
       data-focus={Boolean(focusedScreen)}
       aria-label="Huddle call"
     >
-      <header className="huddle-stage-header">
-        <div className="huddle-title">
+      <header className="flex items-center justify-between gap-[16px] col-[1_/_-1] row-[1] p-[0_6px]">
+        <div className="huddle-title flex items-center gap-[10px] min-w-0">
           <span
             className="huddle-live-dot"
             data-state={error ? "error" : connected ? "live" : "connecting"}
@@ -743,12 +746,15 @@ export function HuddleCallPanel({
           />
           <h2>Huddle</h2>
           {elapsed !== null && (
-            <span className="huddle-elapsed" aria-label="Call duration">
+            <span
+              className="p-[3px_8px] rounded-[6px] [background:var(--control)] text-[var(--muted-foreground)] text-[length:12px] [font-variant-numeric:tabular-nums]"
+              aria-label="Call duration"
+            >
               {formatElapsed(elapsed)}
             </span>
           )}
         </div>
-        <div className="huddle-header-meta">
+        <div className="flex items-center gap-[10px]">
           {endingSoon && secondsLeft !== null && (
             <span className="huddle-deadline">
               <Clock3 size={14} />
@@ -766,7 +772,7 @@ export function HuddleCallPanel({
             </span>
           )}
           <span className="huddle-presence" aria-label={`${liveCount} in call`}>
-            <span className="huddle-avatar-stack" aria-hidden>
+            <span className="huddle-avatar-stack flex" aria-hidden>
               {stackMembers.slice(0, 3).map((tile) => (
                 <span key={tile.key} data-tone={huddleTone(tile.identity)}>
                   {huddleInitials(tile.name)}
@@ -784,7 +790,7 @@ export function HuddleCallPanel({
         data-reconnecting={reconnecting}
       >
         {(error || audioBlocked || disconnected) && (
-          <div className="huddle-banners">
+          <div className="absolute top-[14px] left-[50%] z-[5] flex flex-col items-center gap-[8px] w-[max-content] max-w-[calc(100%_-_32px)] [transform:translateX(-50%)]">
             {disconnected && (
               <div className="huddle-call-error" role="alert">
                 You disconnected from this call
@@ -821,7 +827,10 @@ export function HuddleCallPanel({
         )}
         {stage}
         {pageCount > 1 && (
-          <nav className="huddle-pagination" aria-label="Participant pages">
+          <nav
+            className="huddle-pagination flex shrink-0 justify-center items-center gap-[16px] p-[8px_12px] text-[length:12px]"
+            aria-label="Participant pages"
+          >
             <button
               type="button"
               disabled={page === 0}
@@ -847,7 +856,10 @@ export function HuddleCallPanel({
             Voice Agent.
           </p>
         )}
-        <div className="huddle-toasts" aria-live="polite">
+        <div
+          className="absolute top-[16px] left-[16px] z-[6] flex flex-col gap-[8px] pointer-events-none"
+          aria-live="polite"
+        >
           {toasts.map((toast) => (
             <div key={toast.id} className="huddle-toast" data-tone={toast.tone}>
               {toast.text}
@@ -862,7 +874,7 @@ export function HuddleCallPanel({
         hidden={!chatOpen || Boolean(focusedScreen)}
         aria-label="Huddle messages and work proposals"
       >
-        <header className="huddle-chat-header">
+        <header className="huddle-chat-header flex items-center gap-[10px] min-h-[56px] p-[0_14px_0_18px] [border-bottom:1px_solid_var(--border)]">
           <button
             type="button"
             className="huddle-sidebar-choice"
@@ -903,7 +915,7 @@ export function HuddleCallPanel({
               }}
             />
           ) : (
-            <p className="huddle-chat-pending">
+            <p className="p-[20px] text-[var(--muted-foreground)] text-[length:12px]">
               Work proposals are connecting…
             </p>
           )}
@@ -916,7 +928,9 @@ export function HuddleCallPanel({
               conversationId={chatConversationId}
             />
           ) : (
-            <p className="huddle-chat-pending">Chat is connecting…</p>
+            <p className="p-[20px] text-[var(--muted-foreground)] text-[length:12px]">
+              Chat is connecting…
+            </p>
           )}
         </div>
       </aside>
@@ -932,7 +946,10 @@ export function HuddleCallPanel({
               <MicOff size={15} /> You’re muted — click to talk
             </button>
           ) : heliaHearsYou ? (
-            <p className="huddle-helia-hint" role="status">
+            <p
+              className="huddle-helia-hint inline-flex items-center gap-[8px] text-[var(--muted-foreground)] text-[length:12px]"
+              role="status"
+            >
               <span className="huddle-helia-mark" aria-hidden>
                 <HuddleAgentAvatar size={24} profile={voiceProfile} />
               </span>
@@ -942,13 +959,19 @@ export function HuddleCallPanel({
               </span>
             </p>
           ) : (
-            <p className="huddle-mic-hint" role="status">
+            <p
+              className="text-[var(--muted-foreground)] text-[length:12px]"
+              role="status"
+            >
               {muted ? "Your microphone is off" : "Your microphone is on"}
             </p>
           )}
         </div>
         <div className="huddle-control-dock">
-          <div className="huddle-split" data-danger={muted}>
+          <div
+            className="inline-flex items-center gap-[2px] pr-[4px] rounded-[999px] [background:var(--control)]"
+            data-danger={muted}
+          >
             <button
               ref={micButtonRef}
               type="button"
@@ -983,7 +1006,7 @@ export function HuddleCallPanel({
               }}
             />
           </div>
-          <div className="huddle-split">
+          <div className="inline-flex items-center gap-[2px] pr-[4px] rounded-[999px] [background:var(--control)]">
             <button
               type="button"
               className="huddle-control"
@@ -1046,7 +1069,7 @@ export function HuddleCallPanel({
           >
             <MessageSquareText size={20} />
           </button>
-          <div className="huddle-invite-wrap">
+          <div className="relative">
             <button
               type="button"
               className="huddle-control"
@@ -1065,7 +1088,7 @@ export function HuddleCallPanel({
             </button>
             {inviteOpen && companyId && huddleId && (
               <div
-                className="huddle-invite-popover"
+                className="huddle-invite-popover absolute z-[40] bottom-[calc(100%_+_14px)] left-[50%] w-[min(320px,_calc(100vw_-_30px))] max-h-[min(520px,_calc(100dvh_-_160px))] [transform:translateX(-50%)] overflow-auto p-[14px] [border:1px_solid_var(--border)] rounded-[16px] [background:var(--background)] [box-shadow:0_16px_48px_rgb(0_0_0_/_24%)] text-[var(--foreground)]"
                 role="dialog"
                 aria-label="Invite members to Huddle"
               >
@@ -1085,7 +1108,9 @@ export function HuddleCallPanel({
                   value={inviteSearch}
                   onChange={(event) => setInviteSearch(event.target.value)}
                 />
-                <strong className="huddle-invite-group-title">People</strong>
+                <strong className="block m-[14px_0_6px] text-[var(--muted-foreground)] text-[length:12px] font-[600]">
+                  People
+                </strong>
                 <div className="huddle-invite-list">
                   {inviteCandidates.slice(0, 8).map((person) => (
                     <button
@@ -1143,7 +1168,10 @@ export function HuddleCallPanel({
               </div>
             )}
           </div>
-          <span className="huddle-dock-divider" aria-hidden />
+          <span
+            className="w-[1px] h-[28px] m-[0_2px] [background:var(--border)]"
+            aria-hidden
+          />
           <button
             type="button"
             onClick={() => void handleLeave()}

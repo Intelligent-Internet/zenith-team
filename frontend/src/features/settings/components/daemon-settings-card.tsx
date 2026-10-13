@@ -251,7 +251,7 @@ export function DaemonSettingsCard() {
           <Icon name="power-circle" />
         </span>
         <div className="support-settings-row__copy">
-          <div className="support-settings-row__title">
+          <div className="flex flex-wrap items-center gap-[8px_12px] text-workspace-body leading-workspace-body font-[600]">
             Agent service
             <span
               className="support-daemon__status"
@@ -466,9 +466,9 @@ export function DaemonSettingsCard() {
         </p>
       ) : null}
       {logsOpen ? (
-        <div className="support-daemon__logs" id={logsId}>
+        <div className="support-daemon__logs mt-[16px]" id={logsId}>
           <div className="daemon-card__log-toolbar">
-            <label className="daemon-card__log-level">
+            <label className="daemon-card__log-level inline-flex items-center gap-[6px] text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.56))] text-workspace-body leading-workspace-body">
               <span>Level</span>
               <select
                 value={logLevel}

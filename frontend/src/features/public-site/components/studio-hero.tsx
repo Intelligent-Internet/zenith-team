@@ -47,7 +47,7 @@ export function StudioHero({ onGetStarted }: { onGetStarted: () => void }) {
             aria-hidden="true"
           />
           <div
-            className="studio-team"
+            className="absolute inset-0 z-[3] pointer-events-none"
             role="group"
             aria-label="Meet your specialist agents"
           >

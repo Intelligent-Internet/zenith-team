@@ -146,7 +146,7 @@ export function ArtifactMediaPlayer({
               onClick={() => void togglePlayback()}
             >
               {!ready || buffering ? (
-                <span className="artifact-player__loading">
+                <span className="grid place-items-center w-[48px] h-[48px] rounded-[50%] [background:rgb(20_24_28_/_40%)] [backdrop-filter:blur(12px)]">
                   <LoaderCircle
                     className="artifact-spinner"
                     size={24}
@@ -157,10 +157,13 @@ export function ArtifactMediaPlayer({
             </button>
           ) : (
             <div className="artifact-player__audio-heading">
-              <div className="artifact-player__artwork" aria-hidden>
+              <div
+                className="grid place-items-center shrink-0 w-[72px] h-[72px] rounded-[12px] text-[var(--text-secondary)] [background:var(--state-hover-bg)]"
+                aria-hidden
+              >
                 <Music2 size={36} />
               </div>
-              <div className="artifact-player__audio-info">
+              <div className="artifact-player__audio-info min-w-0">
                 <span>Audio</span>
                 <h2>{title}</h2>
                 {filename !== title ? <p>{filename}</p> : null}
@@ -227,7 +230,7 @@ export function ArtifactMediaPlayer({
               }}
             />
           </div>
-          <div className="artifact-player__speed">
+          <div className="artifact-player__speed relative">
             <select
               aria-label="Playback speed"
               title="Playback speed"
@@ -260,7 +263,10 @@ export function ArtifactMediaPlayer({
             </button>
           ) : null}
           {message ? (
-            <p className="artifact-player__message" role="alert">
+            <p
+              className="col-[1_/_-1] m-0 p-[4px] text-[var(--media-ink)] text-[length:12px]"
+              role="alert"
+            >
               {message}
             </p>
           ) : null}

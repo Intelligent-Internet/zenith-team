@@ -20,10 +20,16 @@ export function WorkflowSection({
   const headingId = useId();
   return (
     <section className="workflows-section" aria-labelledby={headingId}>
-      <header className="workflows-section__header">
-        <h2 className="workflows-section__title" id={headingId}>
+      <header className="flex items-center justify-between gap-[12px] mb-[12px]">
+        <h2
+          className="flex items-center gap-[8px] min-w-0 m-0 text-workspace-text text-[length:16px] font-[600] leading-[22px]"
+          id={headingId}
+        >
           {icon ? (
-            <span className="workflows-section__icon" aria-hidden="true">
+            <span
+              className="inline-grid place-items-center text-workspace-accent"
+              aria-hidden="true"
+            >
               <Icon name={icon} size={16} />
             </span>
           ) : null}
@@ -42,7 +48,9 @@ export function WorkflowSection({
           >
             See all
             {seeAllCount ? (
-              <span className="workflows-section__count">{seeAllCount}</span>
+              <span className="text-workspace-muted font-[500]">
+                {seeAllCount}
+              </span>
             ) : null}
             <ChevronRight aria-hidden size={14} />
           </button>

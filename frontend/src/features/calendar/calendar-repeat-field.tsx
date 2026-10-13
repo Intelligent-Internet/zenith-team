@@ -38,7 +38,11 @@ export function CalendarRepeatField({
     input.recurrenceMonthlyMode === "day_of_week";
   return (
     <div className="calendar-schedule-field">
-      <Repeat2 size={17} className="calendar-field-icon" aria-hidden="true" />
+      <Repeat2
+        size={17}
+        className="text-[var(--workspace-text-muted)]"
+        aria-hidden="true"
+      />
       <CalendarOptionPicker
         label="Repeat"
         value={custom ? "custom-current" : input.recurrence}
@@ -197,7 +201,7 @@ function CustomRepeatDialog({
           />
         </div>
         {frequency === "weekly" && (
-          <fieldset className="calendar-repeat-section">
+          <fieldset className="calendar-repeat-section min-w-0 [border:0] p-0 m-0">
             <legend>Repeat on</legend>
             <div className="calendar-repeat-weekdays">
               {repeatWeekdays.map((day) => (
@@ -237,7 +241,7 @@ function CustomRepeatDialog({
             />
           </div>
         )}
-        <fieldset className="calendar-repeat-section calendar-repeat-end">
+        <fieldset className="calendar-repeat-section min-w-0 [border:0] p-0 m-0 grid gap-[14px]">
           <legend>Ends</legend>
           <label className="calendar-repeat-end-choice">
             <input
@@ -296,7 +300,10 @@ function CustomRepeatDialog({
           </div>
         </fieldset>
         {error && (
-          <p className="personal-error" role="alert">
+          <p
+            className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            role="alert"
+          >
             {error}
           </p>
         )}

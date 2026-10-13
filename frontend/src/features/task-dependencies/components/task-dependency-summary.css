@@ -16,15 +16,6 @@
   background: var(--workspace-hover-bg);
   outline: none;
 }
-.task-dependency-summary-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
 .task-dependency-summary-status {
   flex-shrink: 0;
   border-radius: 5px;
@@ -40,17 +31,6 @@
 .task-dependency-summary-status[data-tone="blocking"] {
   background: var(--workspace-approval-soft);
   color: var(--workspace-native-approval);
-}
-.task-dependency-summary-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  margin: 8px 0 0;
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  font-weight: 500;
 }
 .task-dependency-summary-assignee {
   display: block;

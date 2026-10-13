@@ -27,12 +27,14 @@ export function HuddleWorkProposals({
   ...scope
 }: Scope & { proposals: Proposal[] }) {
   return (
-    <section className="huddle-work-proposals" aria-label="Work proposals">
+    <section
+      className="huddle-work-proposals grid [align-content:start] gap-[14px] min-h-0 p-[16px] overflow-y-auto text-[length:12px] leading-[1.6]"
+      aria-label="Work proposals"
+    >
       <p className="huddle-proposals-disclosure">
         Review drafts and follow submitted work. Leaving the call does not
-        cancel it.
-        {" "}With shared context enabled, the Agent can announce results or review
-        requests when the conversation is quiet.
+        cancel it. With shared context enabled, the Agent can announce results
+        or review requests when the conversation is quiet.
       </p>
       {scope.stale && (
         <p role="alert">

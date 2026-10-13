@@ -1450,7 +1450,7 @@ function MemberWorkPage({
         ) : visibleTasks.length === 0 ? (
           <MemberWorkState label="No visible Tasks match this view." />
         ) : (
-          <div className="member-work-rows">
+          <div className="min-h-0 overflow-y-auto p-[8px]">
             {visibleTasks.map((task) => {
               const appearance = {
                 ...taskStatusAppearance[task.status],
@@ -1796,7 +1796,7 @@ function WorkWorkspace({
       />
       {completionNotice}
       <div
-        className="work-view-panel"
+        className="flex-1 min-h-0 min-w-0 overflow-hidden"
         role="region"
         id={`company-work-${workView}-panel`}
         aria-label={`${workViewLabels[workView]} view`}
@@ -1846,7 +1846,7 @@ function WorkToolbar({
           />
         </label>
         <div
-          className="work-toolbar__filters"
+          className="flex min-w-0 flex-wrap items-center gap-[8px]"
           role="group"
           aria-label="Task view and filters"
         >
@@ -1854,7 +1854,11 @@ function WorkToolbar({
           <label className="work-select">
             <span className="sr-only">Assignee</span>
             <span className="work-select__control">
-              <Funnel className="work-select__icon" aria-hidden size={14} />
+              <Funnel
+                className="absolute top-[50%] left-[9px] [transform:translateY(-50%)] pointer-events-none text-workspace-muted"
+                aria-hidden
+                size={14}
+              />
               <select
                 aria-label="Filter tasks by assignee"
                 value={assigneeFilter}
@@ -1872,7 +1876,7 @@ function WorkToolbar({
               </select>
               <ChevronDown
                 aria-hidden="true"
-                className="work-select__chevron"
+                className="absolute top-[50%] [inset-inline-end:12px] [transform:translateY(-50%)] pointer-events-none text-workspace-muted"
                 size={16}
               />
             </span>
@@ -1881,7 +1885,11 @@ function WorkToolbar({
             <label className="work-select">
               <span className="sr-only">Group by</span>
               <span className="work-select__control">
-                <Layers className="work-select__icon" aria-hidden size={14} />
+                <Layers
+                  className="absolute top-[50%] left-[9px] [transform:translateY(-50%)] pointer-events-none text-workspace-muted"
+                  aria-hidden
+                  size={14}
+                />
                 <select
                   aria-label="Group board tasks by"
                   value={groupBy}
@@ -1895,7 +1903,7 @@ function WorkToolbar({
                 </select>
                 <ChevronDown
                   aria-hidden="true"
-                  className="work-select__chevron"
+                  className="absolute top-[50%] [inset-inline-end:12px] [transform:translateY(-50%)] pointer-events-none text-workspace-muted"
                   size={16}
                 />
               </span>

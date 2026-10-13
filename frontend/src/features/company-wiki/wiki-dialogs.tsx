@@ -61,11 +61,17 @@ export function RestorePreview({
 }) {
   return (
     <section className="zen-wiki__restore-panel">
-      <span className="zen-wiki__restore-label">{label}</span>
+      <span className="block p-[9px_14px] [border-bottom:1px_solid_var(--wk-border)] [background:var(--wk-soft)] text-[var(--wk-muted)] text-[length:12px] font-[600]">
+        {label}
+      </span>
       <div className="zen-wiki__restore-document">
         <span className="zen-wiki__eyebrow">{collection}</span>
         <h3>{title}</h3>
-        {summary && <p className="zen-wiki__restore-summary">{summary}</p>}
+        {summary && (
+          <p className="m-[0_0_16px] text-[var(--wk-muted)] text-[length:13px]">
+            {summary}
+          </p>
+        )}
         <div className="zen-wiki__prose">
           {body.trim() ? (
             <WikiContent
@@ -75,7 +81,7 @@ export function RestorePreview({
               content={content}
             />
           ) : (
-            <p className="zen-wiki__empty">This page is empty.</p>
+            <p className="text-[var(--wk-muted)]">This page is empty.</p>
           )}
         </div>
       </div>
@@ -137,8 +143,10 @@ export function WikiDialog({
           if (alert || busy) event.preventDefault();
         }}
       >
-        <div className="zen-wiki-dialog__head">
-          <DialogTitle className="zen-wiki-dialog__title">{title}</DialogTitle>
+        <div className="flex items-center justify-between gap-[12px]">
+          <DialogTitle className="m-0 text-workspace-title leading-workspace-title font-[600]">
+            {title}
+          </DialogTitle>
           <DialogClose
             className="zen-wiki-dialog__close"
             aria-label="Close"
@@ -148,7 +156,7 @@ export function WikiDialog({
           </DialogClose>
         </div>
         {description && (
-          <DialogDescription className="zen-wiki-dialog__description">
+          <DialogDescription className="m-0 text-[var(--wk-muted)]">
             {description}
           </DialogDescription>
         )}
@@ -225,7 +233,10 @@ export function WikiRestoreDialog({
       onClose={onClose}
     >
       {stale && (
-        <p className="zen-wiki__restore-stale" role="alert">
+        <p
+          className="zen-wiki__restore-stale m-0 rounded-[8px] p-[9px_12px] [background:var(--workspace-approval-soft)] text-[var(--workspace-native-approval)]"
+          role="alert"
+        >
           This page changed while you were reviewing.{" "}
           <button
             onClick={() => {
@@ -267,7 +278,7 @@ export function WikiRestoreDialog({
           content={revision.content}
         />
       </div>
-      <div className="zen-wiki-dialog__actions">
+      <div className="flex justify-end gap-[8px]">
         <button
           ref={cancelRef}
           className="zen-wiki__button"
@@ -354,7 +365,7 @@ export function WikiNewPageDialog({
             ))}
           </select>
         </label>
-        <div className="zen-wiki-dialog__actions">
+        <div className="flex justify-end gap-[8px]">
           <button
             className="zen-wiki__button zen-wiki__primary"
             disabled={!title.trim() || createState.isLoading}
@@ -410,7 +421,7 @@ export function WikiNewCollectionDialog({
             maxLength={120}
           />
         </label>
-        <div className="zen-wiki-dialog__actions">
+        <div className="flex justify-end gap-[8px]">
           <button
             className="zen-wiki__button zen-wiki__primary"
             disabled={!name.trim() || createState.isLoading}
@@ -461,10 +472,10 @@ export function WikiLinkPickerDialog({
           />
         </label>
       </div>
-      <div className="zen-wiki-dialog__choices">
+      <div className="zen-wiki-dialog__choices grid gap-[2px] min-h-0">
         {choices.isLoading && <p role="status">Loading pages…</p>}
         {choices.isError && (
-          <p className="zen-wiki__error" role="alert">
+          <p className="text-workspace-danger p-[0_10px]" role="alert">
             Pages could not be loaded.{" "}
             <button
               className="zen-wiki__retry"
@@ -484,10 +495,14 @@ export function WikiLinkPickerDialog({
           </button>
         ))}
         {choices.data && items.length === 0 && (
-          <p className="zen-wiki__muted">No matching pages.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            No matching pages.
+          </p>
         )}
         {(choices.data?.total ?? 0) > WIKI_PAGE_LIMIT && (
-          <p className="zen-wiki__muted">Search by title to find more pages.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            Search by title to find more pages.
+          </p>
         )}
       </div>
     </WikiDialog>

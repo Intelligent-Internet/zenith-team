@@ -127,7 +127,7 @@ function CompanyTeam({ companyId }: { companyId: string }) {
         <div className="team-roster-heading">
           <div
             ref={tabsRef}
-            className="team-view-tabs"
+            className="inline-flex gap-[2px] max-w-full p-[3px] overflow-x-auto rounded-[10px] [background:var(--workspace-control-bg)] [scrollbar-width:none]"
             role="tablist"
             aria-label="Team view"
           >
@@ -199,20 +199,21 @@ function CompanyTeam({ companyId }: { companyId: string }) {
                 </p>
               ) : (
                 <table
-                  className="team-member-table"
+                  className="team-member-table w-full [table-layout:fixed] border-collapse text-left text-workspace-caption leading-workspace-caption"
                   role="table"
                   aria-label="Team members"
                 >
                   <colgroup>
                     <col />
-                    <col className="team-member-table__role" />
-                    <col className="team-member-table__status" />
-                    {showActions && (
-                      <col className="team-member-table__actions" />
-                    )}
+                    <col className="w-[24%]" />
+                    <col className="w-[18%]" />
+                    {showActions && <col className="w-[64px]" />}
                   </colgroup>
                   <thead role="rowgroup">
-                    <tr className="collection-list__header" role="row">
+                    <tr
+                      className="min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
+                      role="row"
+                    >
                       <th scope="col">Member</th>
                       <th scope="col">Company role</th>
                       <th scope="col">Status</th>
@@ -251,7 +252,7 @@ function CompanyTeam({ companyId }: { companyId: string }) {
                     : `You are ${roleLabelSentence(permissions.role)} of ${companyName}. Leaving keeps your account and the team’s work history.`}
                 </p>
               </div>
-              <div className="team-leave-section__control">
+              <div className="flex flex-wrap flex-none items-center gap-[8px]">
                 <Button
                   variant="ghost"
                   size="sm"

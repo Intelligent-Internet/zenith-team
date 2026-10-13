@@ -166,7 +166,10 @@ export function AssetGroupDetailPage() {
       <AssetsWorkspaceShell
         breadcrumb={
           groupId.startsWith("projects/") ? (
-            <nav aria-label="Breadcrumb" className="project-files-breadcrumb">
+            <nav
+              aria-label="Breadcrumb"
+              className="project-files-breadcrumb flex min-w-0 items-center gap-[8px] text-[length:13px]"
+            >
               <Link to="/projects">Projects</Link>
               <span aria-hidden="true">/</span>
               <Link
@@ -340,11 +343,11 @@ function AssetCollection({
   viewMode: WorkspaceAssetViewMode;
 }) {
   return (
-    <div className="assets-page-scroll">
+    <div className="h-full min-w-0 overflow-y-auto [scrollbar-width:thin]">
       <div className={viewMode === "list" ? "collection-list" : undefined}>
         {viewMode === "list" ? (
           <div
-            className="assets-file-list-heading collection-list__header"
+            className="assets-file-list-heading min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
             aria-hidden="true"
           >
             <span>Name</span>
@@ -486,7 +489,7 @@ function AssetListItem({
       </span>
       <span className="assets-file-list-primary">
         <span
-          className="collection-list__primary block truncate"
+          className="text-workspace-text text-workspace-body leading-workspace-body font-[600] block truncate"
           title={item.filename}
         >
           {item.filename}
@@ -521,7 +524,7 @@ function DetailState({
   title: string;
 }) {
   return (
-    <div className="assets-page-state grid place-items-center rounded-lg border border-[var(--workspace-divider)] bg-[var(--workspace-panel-bg)] text-center">
+    <div className="h-auto min-h-[220px] grid place-items-center rounded-lg border border-[var(--workspace-divider)] bg-[var(--workspace-panel-bg)] text-center">
       <div className="max-w-lg px-6">
         <Icon name={icon} className="mx-auto size-12 text-white/35" />
         <h2 className="m-0 mt-4 text-lg font-bold text-white">{title}</h2>

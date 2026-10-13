@@ -63,13 +63,16 @@ export function WikiSourcePreviewDialog({
       onClose={onClose}
     >
       {archived ? (
-        <p className="zen-wiki__restore-stale" role="status">
+        <p
+          className="zen-wiki__restore-stale m-0 rounded-[8px] p-[9px_12px] [background:var(--workspace-approval-soft)] text-[var(--workspace-native-approval)]"
+          role="status"
+        >
           This page is archived, so Agents can no longer find or read it. You
           can restore it from the Wiki.
         </p>
       ) : null}
       {failed ? (
-        <p className="zen-wiki__error" role="alert">
+        <p className="text-workspace-danger p-[0_10px]" role="alert">
           The page could not be loaded.{" "}
           <button
             type="button"
@@ -83,11 +86,14 @@ export function WikiSourcePreviewDialog({
           </button>
         </p>
       ) : loading ? (
-        <p className="zen-wiki__loading" role="status">
+        <p
+          className="p-[40px] text-center text-[var(--wk-muted)]"
+          role="status"
+        >
           Loading the version the Agent read…
         </p>
       ) : !version || !current ? (
-        <p className="zen-wiki__muted" role="status">
+        <p className="text-[var(--wk-muted)] p-[0_10px]" role="status">
           Revision {revisionNumber} of this page is no longer available.
         </p>
       ) : (
@@ -123,11 +129,11 @@ export function WikiSourcePreviewDialog({
         </div>
       )}
       {!changed && current && version && !archived ? (
-        <p className="zen-wiki__muted">
+        <p className="text-[var(--wk-muted)] p-[0_10px]">
           This is still the current version of the page.
         </p>
       ) : null}
-      <div className="zen-wiki-dialog__actions">
+      <div className="flex justify-end gap-[8px]">
         <button type="button" className="zen-wiki__button" onClick={onClose}>
           Close
         </button>

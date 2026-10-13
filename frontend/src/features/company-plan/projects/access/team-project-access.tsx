@@ -91,10 +91,14 @@ export function TeamProjectAccess({
   }
   if (!readable.currentData || managedLoading) return <AccessLoading />;
   if (!selected) {
-    return <p className="project-access-empty-state">No projects yet</p>;
+    return (
+      <p className="m-0 p-[28px_0] text-workspace-muted text-center">
+        No projects yet
+      </p>
+    );
   }
   return (
-    <div className="team-project-access">
+    <div className="team-project-access flex flex-col gap-[16px]">
       {managesProjects ? (
         <ProjectAccessReport companyId={companyId} onOpen={onSelectProject} />
       ) : null}
@@ -137,7 +141,7 @@ function ProjectPicker({
         file={project.files?.logo}
         title={project.title}
       />
-      <span className="team-project-picker__text">
+      <span className="team-project-picker__text flex min-w-0 flex-1 flex-col gap-[1px]">
         <strong>{project.title}</strong>
         <ProjectNote joined={joined} project={project} />
       </span>
@@ -159,7 +163,7 @@ function ProjectPicker({
             file={selected.files?.logo}
             title={selected.title}
           />
-          <span className="team-project-picker__text">
+          <span className="team-project-picker__text flex min-w-0 flex-1 flex-col gap-[1px]">
             <strong>{selected.title}</strong>
             {/* The Join button beside the picker carries the lock. */}
             <ProjectNote joined project={selected} />

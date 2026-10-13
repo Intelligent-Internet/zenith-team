@@ -72,14 +72,6 @@
   mask-image: linear-gradient(180deg, transparent, #000 120px);
 }
 
-.auth-showcase-copy {
-  position: absolute;
-  top: clamp(106px, 13vh, 156px);
-  right: 28px;
-  left: clamp(28px, calc(4vw - 16px), 60px);
-  color: var(--auth-art-accent);
-}
-
 .auth-showcase-copy h2 {
   margin: 0;
   font-family: var(--font-serif);

@@ -181,12 +181,12 @@ export function RuntimeCapabilitiesPanel({
       aria-label={`${agentName ? "Inherited " : "Runtime "}${section}`}
     >
       {agentName ? (
-        <div className="capability-assigned">
+        <div className="capability-assigned mb-[36px]">
           <h2>Assigned to agent</h2>
           <p>
             Additional {isMcp ? "MCP connections" : "skills"} for {agentName}.
           </p>
-          <div className="capability-empty">
+          <div className="capability-empty flex flex-col items-center gap-[12px] min-h-[150px] justify-center p-[24px] text-center [border:1px_dashed_var(--workspace-divider)] rounded-[8px] text-workspace-muted text-workspace-body leading-workspace-body">
             <Icon size={24} />
             <strong>Agent-specific {isMcp ? "MCP" : "skills"}</strong>
             <span>
@@ -266,7 +266,7 @@ export function RuntimeCapabilitiesPanel({
         </p>
       ) : null}
       {displayed.length ? (
-        <div className="capability-list">
+        <div className="capability-list [border:1px_solid_var(--workspace-divider)] rounded-[8px] overflow-hidden">
           {displayed.map((item) => (
             <article key={item.id} data-enabled={item.enabled}>
               <AppAvatar {...item.avatar} size={40} />
@@ -293,7 +293,7 @@ export function RuntimeCapabilitiesPanel({
           ))}
         </div>
       ) : !query.isLoading && !query.isError && matchesRuntime ? (
-        <div className="capability-empty">
+        <div className="capability-empty flex flex-col items-center gap-[12px] min-h-[150px] justify-center p-[24px] text-center [border:1px_dashed_var(--workspace-divider)] rounded-[8px] text-workspace-muted text-workspace-body leading-workspace-body">
           <Icon size={24} />
           <strong>
             {search
@@ -313,7 +313,7 @@ export function RuntimeCapabilitiesPanel({
           that grant ever narrows. */}
       {!agentName && canManagePlugins ? (
         <Link
-          className="capability-runtime-link"
+          className="inline-flex items-center gap-[6px] text-workspace-accent mt-[18px] text-workspace-body leading-workspace-body"
           to={`/settings/plugins?${pluginsParams}`}
         >
           Manage plugins and connections
@@ -321,7 +321,7 @@ export function RuntimeCapabilitiesPanel({
       ) : null}
       {agentName ? (
         <Link
-          className="capability-runtime-link"
+          className="inline-flex items-center gap-[6px] text-workspace-accent mt-[18px] text-workspace-body leading-workspace-body"
           to={`/settings/agents/${runtime.id}?tab=${section}`}
         >
           <Server size={14} /> Open runtime {section}

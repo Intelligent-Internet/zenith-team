@@ -37,12 +37,6 @@
   line-height: 1.5;
 }
 
-.conversation-rename-dialog__field {
-  display: grid;
-  gap: 8px;
-  font-size: 13px;
-}
-
 .conversation-rename-dialog__field input {
   min-height: 42px;
   width: 100%;
@@ -67,16 +61,6 @@
   font-size: 12px;
 }
 
-.conversation-rename-dialog__conflict {
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  padding: 12px;
-  background: var(--workspace-control-bg);
-  font-size: 13px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
 .conversation-rename-dialog__conflict p {
   margin: 0;
 }
@@ -89,13 +73,6 @@
   margin-top: 8px;
   color: var(--workspace-native-accent);
   text-decoration: underline;
-}
-
-.conversation-rename-dialog__error {
-  margin: 0;
-  color: var(--workspace-native-danger, #c2415d);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .conversation-rename-dialog footer {

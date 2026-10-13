@@ -268,11 +268,11 @@ const GraphNode = memo(function GraphNode({
             </span>
           </Handle>
         ))}
-      <div className="studio-graph-node__header">
-        <span className="studio-graph-node__kind-icon">
+      <div className="absolute z-[2] right-0 bottom-[calc(100%_+_8px)] left-0 flex h-[26px] items-center gap-[8px] [background:transparent]">
+        <span className="inline-flex shrink-0 text-workspace-text">
           <Icon size={17} aria-hidden />
         </span>
-        <div className="studio-graph-node__identity">
+        <div className="studio-graph-node__identity flex min-w-0 flex-1 items-center gap-[8px]">
           <strong title={graphNode.label}>
             {structural ? graphNode.label || outputLabel : outputLabel}
           </strong>
@@ -304,7 +304,10 @@ const GraphNode = memo(function GraphNode({
           <span className="studio-graph-node__label">{customLabel}</span>
         ) : null}
         {generating ? (
-          <div className="studio-graph-node__generating" role="status">
+          <div
+            className="absolute inset-0 grid overflow-hidden place-items-center isolate rounded-[inherit] [background:var(--workspace-control-bg)] text-workspace-text text-[length:12px] font-[500] tracking-[0.015em]"
+            role="status"
+          >
             <span className="studio-graph-node__sheen" aria-hidden />
             <span>Generating…</span>
           </div>
@@ -374,7 +377,7 @@ const GraphNode = memo(function GraphNode({
       !generating &&
       !hasContent &&
       graphNode.raw.status !== "success" ? (
-        <div className="studio-graph-node__actions nodrag nopan">
+        <div className="studio-graph-node__actions flex shrink-0 items-center justify-end gap-[8px] p-[0_12px_12px] nodrag nopan">
           <StudioGenerateButton
             node={graphNode}
             pending={data.generationPending}
@@ -476,7 +479,10 @@ function StudioGraphControls() {
       >
         <ZoomOut size={16} aria-hidden />
       </ControlButton>
-      <span className="studio-graph__zoom-value" aria-live="polite">
+      <span
+        className="min-w-[46px] text-workspace-muted text-[length:11px] [font-variant-numeric:tabular-nums] text-center"
+        aria-live="polite"
+      >
         {zoomLabel}
       </span>
       <ControlButton
@@ -1446,7 +1452,7 @@ export function StudioGraph({
       </ReactFlow>
       {contextNode ? (
         <div
-          className="studio-graph__context"
+          className="studio-graph__context absolute z-[10] w-[208px] flex flex-col items-stretch gap-[3px] p-[6px] [border:1px_solid_var(--workspace-divider)] rounded-workspace-overlay [background:var(--workspace-panel-bg)] [box-shadow:0_8px_20px_rgb(45_51_55_/_14%)] text-[length:12px]"
           role="menu"
           aria-label={`Actions for ${contextNode.label}`}
           style={{ left: contextPosition.x, top: contextPosition.y }}

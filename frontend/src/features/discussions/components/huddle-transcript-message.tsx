@@ -35,7 +35,9 @@ export function HuddleTranscriptMessage({
           aria-hidden="true"
         />
       </summary>
-      <div className="huddle-transcript-content">{text}</div>
+      <div className="p-[14px] [border-top:1px_solid_var(--border)] max-h-[440px] overflow-auto whitespace-pre-wrap wrap-anywhere text-[length:13px] leading-[1.65] [user-select:text]">
+        {text}
+      </div>
     </details>
   );
 }

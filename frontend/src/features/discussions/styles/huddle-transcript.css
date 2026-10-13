@@ -44,14 +44,3 @@
 .huddle-transcript[open] .huddle-transcript-chevron {
   transform: rotate(180deg);
 }
-.huddle-transcript-content {
-  padding: 14px;
-  border-top: 1px solid var(--border);
-  max-height: 440px;
-  overflow: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-  line-height: 1.65;
-  user-select: text;
-}

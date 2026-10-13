@@ -257,21 +257,19 @@ export function WikiArtifactChip({
       <HoverCard.Trigger asChild>{chip}</HoverCard.Trigger>
       <HoverCard.Portal>
         <HoverCard.Content
-          className="zen-wiki-artifact-card"
+          className="zen-wiki-artifact-card z-[230] grid gap-[4px] w-[min(300px,_calc(100vw_-_24px))] p-[10px_12px] [border:1px_solid_var(--workspace-divider)] rounded-[9px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:var(--workspace-overlay-shadow)] font-workspace-body text-[length:12.5px] leading-[1.45]"
           side="bottom"
           align="start"
           sideOffset={6}
           collisionPadding={12}
         >
-          <span className="zen-wiki-artifact-card__eyebrow">
+          <span className="flex items-center gap-[5px] text-workspace-muted text-[length:11px]">
             <Icon size={14} /> Artifact
             {status && <> · {statusLabels[status]}</>}
           </span>
           <strong>{artifact.title}</strong>
           {item && (
-            <span className="zen-wiki-artifact-card__item">
-              {item.displayName}
-            </span>
+            <span className="text-workspace-muted">{item.displayName}</span>
           )}
           {artifact.summary && <p>{artifact.summary}</p>}
           <time dateTime={artifact.createdAt}>

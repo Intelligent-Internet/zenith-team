@@ -107,8 +107,11 @@ export function HuddleScreenPicker({
           </DialogDescription>
         </DialogHeader>
         {blocked ? (
-          <div className="huddle-screen-permission" role="alert">
-            <span className="huddle-screen-permission-icon">
+          <div
+            className="huddle-screen-permission grid [justify-items:center] gap-[10px] p-[28px_16px_8px] text-center"
+            role="alert"
+          >
+            <span className="grid place-items-center w-[56px] h-[56px] mb-[4px] rounded-[18px] [background:var(--accent)] text-[var(--accent-foreground)]">
               <MonitorDown size={26} aria-hidden="true" />
             </span>
             <strong>Allow screen recording</strong>
@@ -128,7 +131,7 @@ export function HuddleScreenPicker({
         ) : (
           <>
             <div
-              className="huddle-screen-picker-tabs"
+              className="huddle-screen-picker-tabs grid grid-cols-[repeat(2,_minmax(0,_1fr))] gap-[2px] w-[min(320px,_100%)] p-[3px] rounded-[999px] [background:var(--control)]"
               role="tablist"
               aria-label="What to share"
             >
@@ -151,7 +154,10 @@ export function HuddleScreenPicker({
                 </button>
               ))}
             </div>
-            <div className="huddle-screen-picker-grid" role="listbox">
+            <div
+              className="huddle-screen-picker-grid grid grid-cols-[repeat(auto-fill,_minmax(196px,_1fr))] [align-content:start] gap-[10px] h-[min(380px,_50dvh)] overflow-y-auto m-[0_-4px] p-[4px]"
+              role="listbox"
+            >
               {loading &&
                 [0, 1, 2].map((index) => (
                   <span
@@ -184,7 +190,7 @@ export function HuddleScreenPicker({
                       <Monitor size={28} aria-hidden="true" />
                     )}
                   </span>
-                  <span className="huddle-screen-picker-name">
+                  <span className="huddle-screen-picker-name flex items-center gap-[6px] min-w-0 p-[0_2px] text-[length:12px] font-[600]">
                     {source.appIcon && <img src={source.appIcon} alt="" />}
                     <span title={source.name}>{source.name}</span>
                   </span>
@@ -192,7 +198,7 @@ export function HuddleScreenPicker({
               ))}
             </div>
             {error && (
-              <p role="alert" className="huddle-screen-picker-error">
+              <p role="alert" className="text-[var(--destructive)]">
                 {error}
               </p>
             )}
@@ -200,7 +206,7 @@ export function HuddleScreenPicker({
         )}
         <DialogFooter>
           {audioSupported && !blocked && (
-            <label className="huddle-screen-picker-audio">
+            <label className="inline-flex items-center gap-[8px] mr-auto text-[length:12px] font-[600]">
               <input
                 type="checkbox"
                 checked={shareAudio}

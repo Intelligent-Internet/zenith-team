@@ -379,12 +379,12 @@ export function WikiLinkSuggestions({
         >
           <div className="wk-link-suggestions__heading">
             {opened ? (
-              <span className="wk-link-suggestions__trail">
+              <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
                 {opened.artifact.title}
               </span>
             ) : (
               <div
-                className="wk-link-suggestions__scopes"
+                className="wk-link-suggestions__scopes flex gap-[2px]"
                 role="tablist"
                 aria-label="Show"
               >

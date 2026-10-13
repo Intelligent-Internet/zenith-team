@@ -62,10 +62,10 @@ export function CustomSkillRemoveButton({
           hasUnsavedChanges ? "Save or discard edits first" : "Remove skill"
         }
       >
-        <span className="skill-detail-remove">
+        <span className="skill-detail-remove inline-flex">
           <button
             type="button"
-            className="workspace-action-button workspace-action-button--icon"
+            className="workspace-action-button w-[var(--workspace-control-size,_32px)] p-0"
             aria-label="Remove skill"
             disabled={blocked}
             onClick={() => {
@@ -110,7 +110,7 @@ export function CustomSkillRemoveButton({
             </button>
             <button
               type="button"
-              className="custom-skill-button custom-skill-button--danger"
+              className="custom-skill-button [background:var(--workspace-native-danger)] text-[var(--workspace-danger-foreground)]"
               disabled={blocked}
               onClick={() => void removeSkill()}
             >

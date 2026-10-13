@@ -102,11 +102,6 @@
   transform-origin: top right;
   animation: huddle-ai-pop 0.2s var(--ease-out);
 }
-.huddle-ai-panel-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 .huddle-ai-panel-head > div {
   display: grid;
   min-width: 0;
@@ -149,18 +144,6 @@
   filter: none;
   background: var(--control);
   color: var(--foreground);
-}
-.huddle-ai-lead {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  line-height: 1.6;
-}
-.huddle-ai-facts {
-  display: grid;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 12px;
-  background: var(--control);
 }
 .huddle-ai-facts li {
   display: flex;
@@ -237,15 +220,6 @@
   color: var(--muted-foreground);
   font-size: 12px;
 }
-.huddle-ai-callout {
-  display: grid;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--warning) 12%, transparent);
-  font-size: 12px;
-  line-height: 1.6;
-}
 .huddle-ai-callout button {
   display: inline-flex;
   align-items: center;
@@ -253,11 +227,6 @@
   justify-self: start;
   color: var(--warning);
   font-weight: 600;
-}
-.huddle-ai-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 .huddle-ai-primary,
 .huddle-ai-secondary {
@@ -284,23 +253,9 @@
   filter: none;
   background: var(--control);
 }
-.huddle-ai-note {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  line-height: 1.6;
-}
-.huddle-ai-context-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
 .huddle-ai-context-note svg {
   flex-shrink: 0;
   margin-top: 2px;
-}
-.huddle-ai-error {
-  color: var(--danger-soft, var(--destructive));
-  font-size: 12px;
 }
 .huddle-ai-footer {
   display: flex;
@@ -330,15 +285,6 @@
 }
 
 /* ─── Budget dialog (app theme, rendered in a portal) ──────────────── */
-.huddle-ai-dialog {
-  max-height: calc(100dvh - 48px);
-  overflow-y: auto;
-}
-.huddle-ai-budget {
-  display: grid;
-  gap: 10px;
-  font-size: 13px;
-}
 .huddle-ai-budget-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -371,10 +317,6 @@
   margin-top: 12px;
   font-weight: 600;
 }
-.huddle-ai-budget-row {
-  display: flex;
-  gap: 8px;
-}
 .huddle-ai-budget input {
   flex: 1;
   min-width: 0;
@@ -389,14 +331,6 @@
   font-size: 12px;
   line-height: 1.5;
 }
-.huddle-ai-budget-note {
-  margin-top: 10px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  line-height: 1.6;
-}
 
 @keyframes huddle-ai-pop {
   from {
@@ -408,12 +342,6 @@
   50% {
     opacity: 0.4;
   }
-}
-.huddle-ai-agent-picker {
-  display: grid;
-  gap: 8px;
-  margin: 16px 0;
-  font-size: 13px;
 }
 .huddle-ai-agent-picker select {
   width: 100%;
@@ -435,15 +363,6 @@
   .huddle-ai-pill > span[role="status"] {
     display: none;
   }
-}
-.huddle-ai-tool-activity {
-  display: grid;
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-  overflow-wrap: anywhere;
 }
 
 .huddle-ai-tool-activity ul {

@@ -185,7 +185,7 @@ export function MailboxInbox({
     >
       <div className="mailbox-inbox__layout">
         <section aria-label="Mailbox messages" className="mailbox-inbox__list">
-          <div className="mailbox-inbox__list-header">
+          <div className="flex shrink-0 items-center justify-between gap-[12px] p-[14px_16px] [border-bottom:1px_solid_var(--workspace-divider)]">
             <div className="min-w-0">
               <p className="m-0 truncate text-sm font-bold text-[var(--workspace-native-text)]">
                 Inbox
@@ -343,7 +343,7 @@ function MailboxMessageList({
       {messages.map((message, index) => (
         <li key={message.id}>
           {index > 0 ? (
-            <div className="mailbox-inbox__message-divider" />
+            <div className="h-[1px] m-[0_12px] [background:var(--workspace-divider)]" />
           ) : null}
           <button
             aria-current={selectedMessageId === message.id ? "true" : undefined}

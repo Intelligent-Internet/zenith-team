@@ -21,7 +21,7 @@ export function ProjectApprovals({
     conversations.has(approval.conversationId),
   );
   return (
-    <section className="project-collection-section">
+    <section className="project-collection-section min-h-0 overflow-auto p-[16px_var(--project-content-gutter)]">
       <div className="project-section-heading">
         <div>
           <h3>Approvals</h3>
@@ -54,7 +54,7 @@ export function ProjectApprovals({
           No {status} approvals for this project.
         </div>
       ) : null}
-      <div className="project-approval-list">
+      <div className="grid grid-cols-[repeat(auto-fit,_minmax(min(100%,_360px),_1fr))] gap-[16px]">
         {approvals.map((approval) => (
           <ConversationApprovalCard key={approval.id} approval={approval} />
         ))}

@@ -47,7 +47,8 @@ shared session depend on a feature screen.
 
 ## Large feature organization
 
-`features/project-canvas/` groups related implementation and colocated CSS:
+`features/project-canvas/` groups related implementation and its editor/canvas
+CSS exceptions:
 
 - `api/`: canvas endpoints, scope paths, and synchronization signals.
 - `canvas/`: spatial canvas, layout workers, library, and result cards.

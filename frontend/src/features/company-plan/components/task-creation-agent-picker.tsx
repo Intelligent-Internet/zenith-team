@@ -82,7 +82,7 @@ export function TaskCreationAgentPicker({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="task-create-agent-menu"
+          className="task-create-agent-menu z-[230] w-[min(340px,_calc(100vw_-_40px))] p-[8px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:0_12px_40px_rgb(0_0_0_/_16%)] font-workspace-body"
           align="start"
           sideOffset={7}
           collisionPadding={12}

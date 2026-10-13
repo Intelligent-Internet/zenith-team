@@ -43,7 +43,10 @@ export default function OutputReviewWorkspace({
   );
   if (review.isError)
     return (
-      <div className="pc-output-workspace-state" role="alert">
+      <div
+        className="grid [place-content:center] gap-[12px] h-full p-[32px] text-workspace-muted"
+        role="alert"
+      >
         <p>This artifact is unavailable or your access has changed.</p>
         <button onClick={() => void review.refetch()}>Retry</button>
         <button onClick={onClose}>Back to workspace</button>
@@ -51,7 +54,10 @@ export default function OutputReviewWorkspace({
     );
   if (!review.currentData)
     return (
-      <div className="pc-output-workspace-state" role="status">
+      <div
+        className="grid [place-content:center] gap-[12px] h-full p-[32px] text-workspace-muted"
+        role="status"
+      >
         Opening canvas…
       </div>
     );

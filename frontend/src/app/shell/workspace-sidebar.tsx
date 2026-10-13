@@ -270,7 +270,10 @@ export function WorkspaceSidebarLink({
           ) : (
             <Suspense
               fallback={
-                <p className="workspace-sidebar-popup__loading" role="status">
+                <p
+                  className="p-[20px] text-workspace-muted text-workspace-body"
+                  role="status"
+                >
                   Loading {page.label.toLowerCase()}…
                 </p>
               }

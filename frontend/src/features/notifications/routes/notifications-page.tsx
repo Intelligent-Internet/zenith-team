@@ -321,7 +321,7 @@ export function NotificationsPage() {
               </p>
               <select
                 aria-label="Kind"
-                className="workspace-inbox-kind-select"
+                className="min-h-[28px] p-[2px_8px] [border:1px_solid_var(--workspace-divider-strong)] rounded-[6px] [background:var(--workspace-input-bg)] text-workspace-text text-workspace-caption leading-workspace-caption font-[500]"
                 value={kind ?? ""}
                 onChange={(event) => changeKind(parseKind(event.target.value))}
               >
@@ -394,7 +394,7 @@ export function NotificationsPage() {
           >
             {selectedItem ? (
               <>
-                <div className="workspace-inbox-detail-meta">
+                <div className="flex items-center gap-[14px] text-workspace-caption leading-workspace-caption text-workspace-muted">
                   <NotificationKindLabel kind={selectedItem.kind} />
                   <time dateTime={selectedItem.createdAt}>
                     {formatNotificationDate(selectedItem.createdAt)}
@@ -402,7 +402,7 @@ export function NotificationsPage() {
                 </div>
                 <h2>{selectedItem.title}</h2>
                 <p>{noticeBody(selectedItem)}</p>
-                <div className="workspace-inbox-detail-actions">
+                <div className="flex flex-wrap gap-[8px] m-[26px_0]">
                   <button
                     className="dashboard-button dashboard-button-primary"
                     disabled={!isOnline}
@@ -427,14 +427,14 @@ export function NotificationsPage() {
                 </div>
                 {selectedConversationTitle &&
                 !selectedItem.title.includes(selectedConversationTitle) ? (
-                  <div className="workspace-inbox-context">
+                  <div className="workspace-inbox-context mt-[26px] pt-[20px] [border-top:1px_solid_var(--workspace-divider)]">
                     <h3>Current conversation title</h3>
                     <p>{selectedConversationTitle}</p>
                   </div>
                 ) : null}
               </>
             ) : (
-              <div className="workspace-inbox-detail-empty">
+              <div className="grid [place-content:center] [justify-items:center] h-full text-center text-workspace-muted">
                 <Inbox size={28} />
                 <h2>Notification details</h2>
                 <p>Select an update to view its details here.</p>
@@ -539,7 +539,10 @@ function NotificationHistoryState({
   return (
     <ul className="m-0 list-none p-0">
       {[...groups.values()].map((group) => (
-        <li key={group[0].id} className="workspace-inbox-group">
+        <li
+          key={group[0].id}
+          className="workspace-inbox-group [list-style:none] [border-bottom:1px_solid_var(--workspace-divider)]"
+        >
           <ul>{renderRow(group[0])}</ul>
           {group.length > 1 ? (
             <details

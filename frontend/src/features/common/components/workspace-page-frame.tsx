@@ -47,7 +47,7 @@ export function WorkspacePageFrame({
       ) : null}
       <header className="workspace-page-frame__header">
         <div
-          className="workspace-page-frame__heading"
+          className="flex min-w-0 items-center gap-[12px]"
           data-tour-id={tourId ? `${tourId}-heading` : undefined}
         >
           <div className="min-w-0">
@@ -68,7 +68,7 @@ export function WorkspacePageFrame({
       </header>
       <div className={cx("workspace-page-frame__content", contentClassName)}>
         {toolbar ? (
-          <div className="workspace-page-frame__toolbar">{toolbar}</div>
+          <div className="min-w-0 flex-none mb-[24px]">{toolbar}</div>
         ) : null}
         {children}
       </div>

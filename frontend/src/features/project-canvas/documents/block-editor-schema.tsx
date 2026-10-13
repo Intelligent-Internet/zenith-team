@@ -392,7 +392,10 @@ function MermaidView({ node, editor }: NodeViewProps) {
         </p>
       )}
       {view !== "source" && (
-        <div contentEditable={false} className="pc-diagram-preview">
+        <div
+          contentEditable={false}
+          className="pc-diagram-preview grid place-items-center min-h-[100px] p-[24px] overflow-auto text-[var(--pc-ink)]"
+        >
           <div dangerouslySetInnerHTML={{ __html: svg }} />
         </div>
       )}
@@ -564,7 +567,7 @@ function ReferenceView(props: NodeViewProps) {
   const scope = useContext(BlockScope);
   if (!scope || !("projectId" in scope))
     return (
-      <NodeViewWrapper className="pc-block-empty">
+      <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         This reference requires a Project.
       </NodeViewWrapper>
     );
@@ -781,13 +784,20 @@ function ProjectReferenceView({
         </BlockSettings>
       )}
       {loading ? (
-        <p role="status" className="pc-block-empty">
+        <p
+          role="status"
+          className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center"
+        >
           Checking source access…
         </p>
       ) : unavailable ? (
-        <p className="pc-block-empty">Source unavailable or access changed.</p>
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
+          Source unavailable or access changed.
+        </p>
       ) : !versionId ? (
-        <p className="pc-block-empty">Choose a source in Reference options.</p>
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
+          Choose a source in Reference options.
+        </p>
       ) : (
         <>
           <div className="pc-reference-heading">
@@ -812,7 +822,7 @@ function ProjectReferenceView({
             artifact.latestVersionId !== versionId &&
             !follows &&
             !readsLivePage && (
-              <small className="pc-source-warning">
+              <small className="block m-[12px_0] text-[var(--pc-accent)] text-[length:11px]">
                 A newer source version is available. This selection stays
                 pinned.
               </small>
@@ -912,7 +922,7 @@ function MediaView({ node, editor, updateAttributes }: NodeViewProps) {
         </BlockSettings>
       )}
       {!safe && (
-        <p className="pc-block-empty">
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
           Add a media URL to display this resource.
         </p>
       )}
@@ -967,7 +977,7 @@ function OutlineView({ editor, node }: NodeViewProps) {
   }, [editor]);
   return (
     <NodeViewWrapper
-      className="pc-block-outline"
+      className="pc-block-outline flex flex-col [align-items:start] m-[20px_0] p-[10px_18px] [border-left:2px_solid_var(--pc-line)]"
       data-block-id={node.attrs.blockId}
       contentEditable={false}
     >

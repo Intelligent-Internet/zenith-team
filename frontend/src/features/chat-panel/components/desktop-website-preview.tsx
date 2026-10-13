@@ -113,7 +113,7 @@ export function DesktopWebsitePreview({
   const currentUrl = state?.url ?? url;
   return (
     <div className="desktop-website-preview">
-      <div className="desktop-website-preview__address-bar">
+      <div className="desktop-website-preview__address-bar flex min-h-[42px] shrink-0 items-center gap-[7px] [border-bottom:1px_solid_var(--workspace-divider,_#dedbd2)] p-[5px_10px] text-[var(--workspace-native-text-muted,_#697168)]">
         <NavigationButton
           label="Go back"
           disabled={!state?.canGoBack}

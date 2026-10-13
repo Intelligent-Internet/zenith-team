@@ -269,13 +269,6 @@ html[data-boardly-workspace-theme]
   font-weight: 500;
   color: var(--workspace-native-text);
 }
-.dashboard-empty {
-  display: grid;
-  justify-items: center;
-  padding: 50px 20px;
-  color: var(--workspace-native-text-muted);
-  text-align: center;
-}
 .dashboard-empty h2 {
   margin-top: 12px;
   font-size: var(--workspace-text-title);
@@ -319,14 +312,6 @@ html[data-boardly-workspace-theme]
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.team-member-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
 .team-member-table th {
   height: 38px;
   padding: 10px var(--collection-cell-inset);
@@ -340,22 +325,9 @@ html[data-boardly-workspace-theme]
   padding: 14px var(--collection-cell-inset);
   vertical-align: middle;
 }
-.team-member-table__role {
-  width: 24%;
-}
-.team-member-table__status {
-  width: 18%;
-}
-.team-member-table__actions {
-  width: 64px;
-}
 .team-member-table .team-member-actions-cell {
   padding-inline: 8px var(--collection-cell-inset);
   text-align: right;
-}
-.team-person-copy {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 .team-person-identity strong {
   display: block;
@@ -478,12 +450,6 @@ html[data-boardly-workspace-theme]
 .agent-directory-facts svg {
   flex-shrink: 0;
 }
-
-.agents-directory-count {
-  font-size: var(--workspace-text-caption);
-  white-space: nowrap;
-  margin-left: 4px;
-}
 .agents-directory-work-link {
   display: inline-flex;
   align-items: center;
@@ -578,12 +544,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   font-size: 14px;
   line-height: 22px;
   font-weight: 500;
-}
-.agents-directory-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
 }
 .agents-directory-identity > div > small {
   margin-top: 3px;
@@ -845,12 +805,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 }
 .agent-usage-summary {
   margin-top: 24px;
-}
-.agent-profile-name {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
 }
 .agent-overview-stats {
   display: flex;
@@ -1214,9 +1168,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 .profile-delete-dialog.bind-agent-dialog[data-slot="dialog-content"] {
   z-index: 241;
 }
-.bind-agent-dialog__choices {
-  margin-top: 20px;
-}
 .bind-agent-dialog__hint {
   margin: 20px 0 0;
   font-size: var(--workspace-text-caption);
@@ -1228,19 +1179,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 }
 /* What a computer that is not ready means for the runs: kept neutral, since
    choosing it is allowed and nothing has gone wrong yet. */
-.bind-agent-dialog__note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 10px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
 .bind-agent-dialog__note > svg {
   flex: none;
   margin-top: 1px;
@@ -1335,13 +1273,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 .agent-settings-help-tooltip {
   max-width: 280px;
 }
-.agent-settings-context-runtime {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
-}
 .agent-settings-context-runtime > img {
   flex: none;
   width: 24px;
@@ -1406,14 +1337,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 .agent-settings-model-input:disabled {
   cursor: not-allowed;
   opacity: 0.55;
-}
-.agent-concurrency-summary {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: var(--workspace-text-body);
-  color: var(--workspace-native-text-muted);
 }
 .agent-concurrency-summary strong {
   font-size: var(--workspace-text-body);
@@ -1531,12 +1454,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   line-height: var(--workspace-leading-caption);
   color: var(--workspace-native-text-muted);
 }
-.agent-instructions-editor {
-  overflow: hidden;
-  border: 1px solid var(--workspace-divider);
-  border-radius: var(--workspace-radius-panel);
-  background: var(--workspace-panel-bg);
-}
 .agent-instructions-toolbar {
   display: flex;
   align-items: center;
@@ -1593,10 +1510,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
 }
-.agent-guidance-icon {
-  color: var(--workspace-native-accent);
-  margin-bottom: 18px;
-}
 
 .agent-history-list,
 .agent-responsible-work {
@@ -1648,12 +1561,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
   color: var(--workspace-native-text-muted);
-}
-.agent-work-task-id {
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  white-space: nowrap;
 }
 .agent-run-status {
   display: inline-flex;
@@ -1785,13 +1692,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   font-size: 13px;
   line-height: 1.5;
 }
-.team-leave-section__control {
-  display: flex;
-  flex-wrap: wrap;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-}
 .team-leave-section strong {
   font-size: var(--workspace-text-body);
   font-weight: 600;
@@ -1818,38 +1718,11 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
    The Settings and Capabilities tabs disable their template controls
    themselves, so the viewer's own setup and refresh there stay usable
    (ADR 0014). */
-.agent-readonly-scope {
-  display: contents;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  min-width: 0;
-}
-
-.agent-readonly-note {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 12px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 16px;
-}
 
 .agent-profile-tabs {
   position: sticky;
   top: 0;
   z-index: 5;
-}
-
-.agent-artifact-task-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
 }
 .agent-artifact-task-picker .agent-runtime-select {
   width: 100%;
@@ -1861,16 +1734,6 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
 
 /* Team views: Members, or one Project's access (team-page.tsx). A small
    segmented control, the current view raised. */
-.team-view-tabs {
-  display: inline-flex;
-  gap: 2px;
-  max-width: 100%;
-  padding: 3px;
-  overflow-x: auto;
-  border-radius: 10px;
-  background: var(--workspace-control-bg);
-  scrollbar-width: none;
-}
 .team-view-tab {
   display: inline-flex;
   align-items: center;

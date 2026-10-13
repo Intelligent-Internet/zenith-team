@@ -276,7 +276,7 @@ export function StudioConnectionPanel({
       aria-busy={busy}
     >
       <header>
-        <h2 className="studio-mode-panel__loading-title">
+        <h2 className="flex items-center gap-[7px] m-0 text-workspace-text [font-family:var(--font-heading)] text-[length:15px] font-[600] leading-[20px]">
           <Studio size={16} aria-hidden />
           Studio Mode
         </h2>
@@ -288,7 +288,7 @@ export function StudioConnectionPanel({
       </header>
       <div className="studio-mode-panel__status-body">
         <StudioStatusArt />
-        <div className="studio-mode-panel__status-copy">
+        <div className="studio-mode-panel__status-copy grid [justify-items:center] w-[min(100%,_360px)] gap-[12px] text-center">
           <div
             className="studio-mode-panel__status-icon"
             data-state={busy ? "loading" : failed ? "error" : "ready"}
@@ -306,7 +306,7 @@ export function StudioConnectionPanel({
           <h3>{copy.title}</h3>
           {copy.description ? <p>{copy.description}</p> : null}
           {runtimeId && copy.action ? (
-            <div className="studio-mode-panel__status-actions">
+            <div className="studio-mode-panel__status-actions mt-[8px]">
               <button
                 type="button"
                 className="studio-mode-panel__status-primary"

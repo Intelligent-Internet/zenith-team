@@ -4,7 +4,7 @@ export function ChatThinkingIndicator({ agentId }: { agentId?: string }) {
   return (
     <div
       aria-label="Agent is thinking"
-      className="chat-runtime-thinking"
+      className="flex items-center gap-[8px] min-h-[32px] p-[2px_0] text-workspace-text text-[length:var(--workspace-text-body,_13px)] font-[500] leading-[20px]"
       role="status"
     >
       {agentId ? (

@@ -55,7 +55,7 @@ export function ProjectAccessReport({
   if (report.isError || items.length === 0) return null;
   return (
     <section aria-label="No access to their work">
-      <ul className="access-report__list">
+      <ul className="flex flex-col m-0 p-0 [list-style:none]">
         {items.flatMap((entry) =>
           entry.people.map((person) => {
             const actor = actorById.get(person.userId);
@@ -68,7 +68,10 @@ export function ProjectAccessReport({
                 <TaskMemberAvatar
                   member={{ name, avatarUrl: actor?.avatarUrl ?? null }}
                 />
-                <strong className="access-report__name" title={name}>
+                <strong
+                  className="min-w-0 flex-1 overflow-hidden text-workspace-text font-[600] text-ellipsis whitespace-nowrap"
+                  title={name}
+                >
                   {name}
                 </strong>
                 <span className="project-access-chips">
@@ -84,7 +87,7 @@ export function ProjectAccessReport({
                     );
                   })}
                 </span>
-                <span className="access-report__project">
+                <span className="flex min-w-0 max-w-[40%] [flex:0_1_auto]">
                   <AccessChip
                     icon={EyeOff}
                     label={`No access to ${entry.title}`}

@@ -142,11 +142,11 @@ export function StudioWorkboard() {
     >
       <StudioArt
         name="work-plants-left"
-        className="studio-work-plant studio-work-plant--left"
+        className="studio-work-plant left-0 [mask-image:linear-gradient(to_top,_black_70%,_transparent),_linear-gradient(to_right,_black_73%,_transparent)] [mask-composite:intersect]"
       />
       <StudioArt
         name="work-plants-right"
-        className="studio-work-plant studio-work-plant--right"
+        className="studio-work-plant right-0 [mask-image:linear-gradient(to_top,_black_70%,_transparent),_linear-gradient(to_left,_black_73%,_transparent)] [mask-composite:intersect]"
       />
       <div className="studio-container">
         <div className="studio-section-heading" data-reveal>
@@ -233,7 +233,7 @@ export function StudioWorkboard() {
                         {title}
                         <span>{columnTasks.length}</span>
                       </h3>
-                      <div className="studio-board-cards">
+                      <div className="grid gap-[8px] [align-content:start]">
                         {columnTasks.map((task) => (
                           <article
                             className={`studio-task-card ${task.id === "website" ? "studio-task-card--website" : ""}`}
@@ -248,7 +248,7 @@ export function StudioWorkboard() {
                               <small>{task.date}</small>
                             </div>
                             {task.id === "website" && (
-                              <div className="studio-task-preview">
+                              <div className="mt-[9px] rounded-[5px] overflow-hidden">
                                 <CoffeePreview compact />
                               </div>
                             )}
@@ -282,7 +282,10 @@ export function StudioWorkboard() {
             <p className="studio-board-hint">
               Swipe to explore your team’s work <ArrowRight size={12} />
             </p>
-            <span className="studio-sr-only" role="status">
+            <span
+              className="absolute w-[1px] h-[1px] p-0 m-[-1px] overflow-hidden [clip:rect(0,_0,_0,_0)] whitespace-nowrap [border:0]"
+              role="status"
+            >
               {delivered
                 ? "The website task has moved from In progress to In review."
                 : "The website task is in progress."}

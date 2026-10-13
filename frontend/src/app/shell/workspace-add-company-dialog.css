@@ -1,8 +1,3 @@
-.workspace-add-company-choices {
-  display: grid;
-  gap: 10px;
-}
-
 .workspace-add-company-choice {
   display: flex;
   align-items: center;

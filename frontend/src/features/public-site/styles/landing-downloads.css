@@ -1,10 +1,3 @@
-.landing-download-primary {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
 .landing-download-button {
   display: inline-flex;
   min-height: 50px;
@@ -43,14 +36,6 @@
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
-}
-
-.landing-download-alternative {
-  color: #a85438;
-  font-size: 12px;
-  font-weight: 500;
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .landing-download-channel {
@@ -102,12 +87,6 @@ a.landing-download-option:hover {
   border: 1px solid #e5ded4;
   border-radius: 10px;
   background: #fffdf8;
-}
-
-.landing-download-option-title {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.5;
 }
 
 .landing-download-option-subtitle {
@@ -163,32 +142,6 @@ a.landing-download-option:hover {
   transform: rotate(180deg);
 }
 
-.landing-download-menu-panel {
-  position: absolute;
-  z-index: 80;
-  top: calc(100% + 10px);
-  left: 50%;
-  width: min(290px, calc(100vw - 40px));
-  transform: translateX(-50%);
-  border: 1px solid #e5ded4;
-  border-radius: 13px;
-  background: #faf8f4;
-  padding: 8px;
-  color: #342b26;
-  font-family: inherit;
-  box-shadow: 0 16px 40px rgb(52 43 38 / 13%);
-}
-
-.landing-download-menu-label {
-  margin: 0;
-  padding: 7px 10px;
-  color: #6b6056;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
 .landing-download-menu-item {
   display: flex;
   align-items: center;
@@ -207,31 +160,8 @@ a.landing-download-menu-item:hover {
   background: #efe9df;
 }
 
-.landing-download-menu-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.landing-download-menu-description {
-  display: block;
-  color: #6b6056;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
 .landing-download-menu-item-unavailable {
   color: #6b6056;
-}
-
-.landing-download-menu-help {
-  margin: 7px 10px 5px;
-  border-top: 1px solid #e5ded4;
-  padding-top: 11px;
-  color: #6b6056;
-  font-size: 10px;
-  line-height: 1.6;
 }
 
 @media (max-width: 760px) {

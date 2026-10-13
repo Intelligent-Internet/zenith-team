@@ -221,17 +221,6 @@
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
-.calendar-period-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: 8px;
-}
-.calendar-timezone-label {
-  color: var(--workspace-text-muted);
-  font-size: 11px;
-  line-height: 16px;
-}
 .calendar-page
   .calendar-toolbar
   :is(.personal-button, .personal-icon-button, .personal-tabs),
@@ -323,15 +312,6 @@
   color: var(--workspace-text-muted);
   pointer-events: none;
   animation: calendar-loading-enter 400ms 250ms both;
-}
-.calendar-weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  color: var(--workspace-text-muted);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 14px 0;
 }
 .calendar-weekdays span {
   padding-left: 14px;
@@ -464,19 +444,6 @@
   opacity: 0.6;
   text-decoration: line-through;
 }
-.calendar-more {
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 10px;
-  color: var(--workspace-text-muted);
-  padding: 2px 7px;
-  cursor: pointer;
-}
-.calendar-colors {
-  display: flex;
-  gap: 9px;
-}
 .calendar-colors button {
   display: grid;
   place-items: center;
@@ -495,12 +462,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.calendar-time-view {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1;
 }
 .calendar-time-head,
 .calendar-all-day {
@@ -577,14 +538,6 @@
   grid-template-columns: 54px minmax(0, 1fr);
   min-height: 0;
   overscroll-behavior: contain;
-}
-.calendar-hour-labels {
-  display: grid;
-  grid-template-rows: repeat(24, 60px);
-  color: var(--workspace-text-muted);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 .calendar-hour-labels span {
   padding-top: 3px;

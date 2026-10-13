@@ -67,21 +67,21 @@ export function CustomSkills({
     <section
       ref={skillsSection}
       id="capabilities-skills"
-      className="agent-capabilities-section custom-skills"
+      className="agent-capabilities-section [scroll-margin-top:calc(_var(--capabilities-tabs-height,_47px)_+_var(--capabilities-navigation-height,_46px)_+_16px_)] custom-skills"
       aria-labelledby="custom-skills-title"
       tabIndex={-1}
     >
       <header>
         <h2 id="custom-skills-title">
           Custom skills
-          <span className="agent-capabilities-badge">
+          <span className="text-workspace-muted text-workspace-caption font-[400] [letter-spacing:0]">
             {query.data ? skills.length : ""}
           </span>
         </h2>
         {editable && (
           <button
             ref={addSkillButton}
-            className="custom-skill-button custom-skill-button--secondary custom-skills-add"
+            className="custom-skill-button custom-skill-button--secondary h-[32px]"
             type="button"
             onClick={() => setImporting(true)}
           >
@@ -105,7 +105,7 @@ export function CustomSkills({
           onRetry={() => void query.refetch()}
         />
       ) : shown.length === 0 ? (
-        <div className="custom-skills-empty">
+        <div className="custom-skills-empty flex items-center gap-[16px] p-[24px_12px] [border-block:1px_solid_var(--workspace-divider)] text-workspace-muted">
           <BookOpen size={24} aria-hidden />
           <div>
             <strong>
@@ -130,7 +130,7 @@ export function CustomSkills({
             <span>Source</span>
             <span>Allow for agent</span>
           </div>
-          <ul className="agent-capabilities-grid custom-skills-list">
+          <ul className="flex flex-col m-0 p-0 [list-style:none]">
             {shown.map((skill) => (
               <li
                 key={skill.id}

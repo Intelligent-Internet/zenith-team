@@ -51,13 +51,6 @@
   border-color: transparent;
   flex-shrink: 0;
 }
-.personal-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgb(0 0 0 / 0.3);
-  backdrop-filter: blur(3px);
-}
 .personal-dialog {
   position: fixed;
   left: 50%;
@@ -151,12 +144,6 @@
 }
 .personal-dialog-actions .personal-button--danger {
   margin-right: auto;
-}
-.personal-error {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--workspace-native-danger);
-  padding: 10px 0;
 }
 .personal-tabs {
   display: inline-flex;

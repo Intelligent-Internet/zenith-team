@@ -236,17 +236,6 @@
   border-color: color-mix(in srgb, var(--pc-accent) 35%, var(--pc-line));
   background: var(--pc-raised);
 }
-.pc-result-symbol {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 40px;
-  height: 46px;
-  border: 1px solid var(--pc-line);
-  border-radius: 8px;
-  background: var(--pc-raised);
-  color: var(--pc-accent);
-}
 .pc-result-copy {
   flex: 1;
   min-width: 0;
@@ -263,10 +252,6 @@
   color: var(--pc-muted);
   font-size: 11px;
   line-height: 1.5;
-}
-.pc-result-arrow {
-  flex: none;
-  color: var(--pc-soft);
 }
 .pc-results-gallery {
   display: grid;
@@ -351,38 +336,6 @@
   max-width: none;
   padding: 18px 0;
 }
-.pc-source-warning {
-  display: block;
-  margin: 12px 0;
-  color: var(--pc-accent);
-  font-size: 11px;
-}
-.pc-block-empty {
-  padding: 22px 16px;
-  border: 1px dashed var(--pc-line);
-  border-radius: 10px;
-  color: var(--pc-muted);
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: center;
-}
-.pc-block-comparison-label {
-  color: var(--pc-muted);
-  font-size: 11px;
-  line-height: 1.4;
-  margin: 0 0 8px;
-}
-
-.pc-block-details {
-  width: min(420px, 100%);
-  margin: 24px auto;
-  padding: 20px;
-  background: var(--pc-paper);
-  border: 1px solid var(--pc-line);
-  border-radius: 10px;
-  color: var(--pc-ink);
-  font-size: 13px;
-}
 .pc-block-details header {
   display: flex;
   justify-content: space-between;
@@ -409,20 +362,9 @@
   color: var(--pc-muted);
   line-height: 1.5;
 }
-.pc-source-detail {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  border-top: 1px solid var(--pc-line);
-  padding: 12px 0;
-}
 .pc-source-detail > span {
   flex: 1;
   min-width: 100%;
-}
-.pc-promotion-form {
-  padding: 24px;
-  line-height: 1.6;
 }
 .pc-promotion-form label {
   display: flex;
@@ -494,14 +436,6 @@
   background: var(--pc-paper);
   min-width: 0;
 }
-.pc-diagram-preview {
-  display: grid;
-  place-items: center;
-  min-height: 100px;
-  padding: 24px;
-  overflow: auto;
-  color: var(--pc-ink);
-}
 .pc-diagram-preview svg {
   max-width: 100%;
   max-height: 550px;
@@ -564,14 +498,6 @@
 .pc-block-toggle-content {
   padding: 8px 0;
 }
-.pc-block-outline {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  margin: 20px 0;
-  padding: 10px 18px;
-  border-left: 2px solid var(--pc-line);
-}
 .pc-block-outline button {
   min-height: 28px;
   padding: 4px 0;
@@ -593,13 +519,6 @@
 }
 
 /* Authored view presets retain the same records, actions and reading order. */
-.pc-view-select {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--pc-muted);
-  font-size: 11px;
-}
 .pc-work-gallery .pc-work-rows {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(270px, 100%), 1fr));

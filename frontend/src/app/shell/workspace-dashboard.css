@@ -171,13 +171,6 @@
   flex-wrap: wrap;
   gap: 10px;
 }
-.work-toolbar__filters {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
 .work-view-selector {
   display: inline-flex;
   align-items: center;
@@ -311,15 +304,6 @@
   line-height: var(--workspace-leading-body);
   font-weight: 600;
 }
-.status-board__task-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  color: var(--workspace-native-text-muted);
-}
 .boardly-workspace-theme[data-boardly-theme] .status-board__participants {
   padding-bottom: 12px;
 }
@@ -334,14 +318,6 @@
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
   color: var(--workspace-native-text-muted);
-}
-.new-chat-session {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: var(--workspace-chat-bg);
-  color: var(--workspace-native-text);
 }
 .new-chat-session > header {
   display: flex;
@@ -410,12 +386,6 @@
   color: var(--workspace-native-text-muted);
   margin: 0 0 6px;
 }
-.new-chat-session-starters {
-  display: grid;
-  gap: 9px;
-  margin-top: 23px;
-  width: min(430px, 100%);
-}
 .new-chat-session-starters button {
   display: flex;
   align-items: center;
@@ -476,13 +446,6 @@
 }
 .new-chat-session-composer > div:focus-within {
   border-color: var(--workspace-native-text-muted);
-}
-.new-chat-session-model-controls {
-  display: flex;
-  justify-content: flex-end;
-  min-height: 32px;
-  margin-top: 8px;
-  padding-right: 40px;
 }
 .new-chat-session-send {
   display: grid;
@@ -616,9 +579,6 @@
 .status-board__task-footer[data-running] {
   color: var(--workspace-native-info);
 }
-.task-execution-label {
-  text-transform: capitalize;
-}
 .task-status-icon,
 .task-priority-icon {
   flex-shrink: 0;
@@ -713,14 +673,6 @@
   .work-toolbar
   .work-select__control {
   position: relative;
-}
-.work-select__icon {
-  position: absolute;
-  top: 50%;
-  left: 9px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--workspace-native-text-muted);
 }
 .boardly-workspace-theme[data-boardly-theme] .work-toolbar .work-select select {
   padding-left: 30px;

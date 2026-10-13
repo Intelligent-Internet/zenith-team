@@ -53,16 +53,6 @@
   min-width: 0;
 }
 
-.support-settings-row__title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  font-weight: 600;
-}
-
 .support-settings-row__copy p,
 .support-settings-update-summary p,
 .support-settings-automatic p {
@@ -76,16 +66,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.support-settings-channel {
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: 1.5;
-  font-weight: 400;
 }
 
 .support-settings-button {
@@ -200,13 +180,6 @@
   overflow-wrap: anywhere;
 }
 
-.support-settings-diagnostic-files {
-  margin-top: 16px;
-  padding: 16px;
-  border-radius: var(--workspace-radius-control);
-  background: var(--workspace-control-bg);
-}
-
 .support-daemon__status {
   display: inline-flex;
   align-items: center;
@@ -305,10 +278,6 @@
   margin: 0;
   color: var(--workspace-native-text-muted);
   overflow-wrap: anywhere;
-}
-
-.support-daemon__logs {
-  margin-top: 16px;
 }
 
 .support-daemon__logs .daemon-card__log-toolbar + .daemon-card__log-toolbar {

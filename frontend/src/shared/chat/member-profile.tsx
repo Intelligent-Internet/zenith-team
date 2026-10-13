@@ -305,21 +305,21 @@ function ConnectedMemberProfileTrigger({
               triggerRef.current?.focus({ preventScroll: true });
           }}
         >
-          <div className="member-profile-card__identity">
+          <div className="member-profile-card__identity flex items-start gap-[14px]">
             <MemberAvatar profile={profile} />
             <div>
-              <Dialog.Title className="member-profile-card__name">
+              <Dialog.Title className="flex items-center gap-[8px] m-0 wrap-anywhere text-[length:17px] font-[700] leading-[1.4]">
                 <span>{profile.name}</span>
                 {actions.renderPresence?.(profile)}
               </Dialog.Title>
-              <Dialog.Description className="member-profile-card__title">
+              <Dialog.Description className="m-[4px_0_0] wrap-anywhere text-workspace-muted text-[length:13px] leading-[1.5]">
                 {profile.title ||
                   (profile.kind === "agent" ? "Agent" : "Company member")}
               </Dialog.Description>
               <MemberStatus profile={profile} />
             </div>
           </div>
-          <div className="member-profile-card__actions">
+          <div className="flex gap-[8px] mt-[18px]">
             {canMessage ? <MessageButton onClick={messageMember} /> : null}
             <button
               className="member-profile-button"
@@ -391,7 +391,7 @@ export function MemberProfilePanel({
     onMessage(profile);
   };
   const header = (
-    <header className="member-profile-panel__header">
+    <header className="member-profile-panel__header flex min-h-[var(--workspace-conversation-header-height,_64px)] shrink-0 items-center justify-between gap-[16px] [border-bottom:1px_solid_var(--workspace-divider)] p-[9px_var(--workspace-thread-inset,_16px)]">
       {isModal ? (
         <Dialog.Title>Profile</Dialog.Title>
       ) : (
@@ -409,15 +409,15 @@ export function MemberProfilePanel({
     </header>
   );
   const body = (
-    <div className="member-profile-panel__body">
+    <div className="member-profile-panel__body min-h-0 flex-1 overflow-y-auto overscroll-contain p-[24px]">
       <MemberAvatar profile={profile} />
-      <div className="member-profile-panel__identity">
+      <div className="member-profile-panel__identity m-[20px_0_0]">
         <h3>{profile.name}</h3>
         {profile.title ? <p>{profile.title}</p> : null}
         <MemberStatus profile={profile} />
       </div>
       {(canMessage && !profile.isCurrentUser) || onViewProfile ? (
-        <div className="member-profile-panel__actions">
+        <div className="member-profile-panel__actions flex gap-[8px] mt-[16px]">
           {canMessage && !profile.isCurrentUser ? (
             <MessageButton onClick={messageMember} />
           ) : null}
@@ -435,7 +435,7 @@ export function MemberProfilePanel({
           ) : null}
         </div>
       ) : null}
-      <dl className="member-profile-panel__details">
+      <dl className="member-profile-panel__details grid gap-[22px] m-[16px_0_0] [border-top:1px_solid_var(--workspace-divider)] pt-[16px]">
         <div>
           <dt>Member type</dt>
           <dd>{profile.kind === "agent" ? "Agent" : "Person"}</dd>
@@ -481,7 +481,7 @@ export function MemberProfilePanel({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="member-profile-backdrop" />
+        <Dialog.Overlay className="fixed z-[240] inset-0 [background:rgb(22_16_28_/_36%)]" />
         <Dialog.Content
           className="boardly-workspace-theme member-profile-panel member-profile-panel--modal"
           onOpenAutoFocus={(event) => {
@@ -495,7 +495,7 @@ export function MemberProfilePanel({
           onEscapeKeyDown={(event) => event.stopPropagation()}
         >
           {header}
-          <Dialog.Description className="member-profile-sr-only">
+          <Dialog.Description className="absolute w-[1px] h-[1px] overflow-hidden [clip:rect(0,_0,_0,_0)] whitespace-nowrap">
             Profile details for {profile.name}.
           </Dialog.Description>
           {body}

@@ -45,9 +45,12 @@ export function WorkflowCard({
         <span className="workflow-card__icon" aria-hidden="true">
           <Icon name={workflow.icon} size={20} />
         </span>
-        <span className="workflow-card__copy">
-          <span className="workflow-card__heading">
-            <span className="workflow-card__title" id={titleId}>
+        <span className="grid gap-[4px] min-w-0">
+          <span className="flex flex-wrap items-center gap-[4px_8px] min-w-0">
+            <span
+              className="min-w-0 text-workspace-body font-[600] leading-workspace-body wrap-anywhere"
+              id={titleId}
+            >
               {workflow.name}
             </span>
             {workflow.recurring ? (
@@ -78,7 +81,10 @@ export function WorkflowCard({
 
 export function WorkflowRecurringBadge({ id }: { id?: string }) {
   return (
-    <span className="workflow-recurring-badge" id={id}>
+    <span
+      className="inline-flex flex-none items-center gap-[4px] p-[1px_7px] [border:1px_solid_var(--workspace-divider)] rounded-[999px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-micro font-[600] leading-[16px] whitespace-nowrap"
+      id={id}
+    >
       <Repeat2 aria-hidden size={12} />
       Recurring
     </span>

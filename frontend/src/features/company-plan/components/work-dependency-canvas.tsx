@@ -305,7 +305,7 @@ export function WorkDependencyCanvas({
   return (
     <section
       aria-label="Task dependency canvas"
-      className="work-dependency-canvas"
+      className="work-dependency-canvas flex h-full min-h-[360px] min-w-0 flex-col text-[var(--workspace-native-text,_#2d2631)]"
     >
       <div
         className="work-dependency-canvas__toolbar"
@@ -349,7 +349,7 @@ export function WorkDependencyCanvas({
         <button type="button" onClick={() => void flow?.fitView(fitOptions)}>
           <Maximize aria-hidden="true" size={14} /> Fit all
         </button>
-        <span className="work-dependency-canvas__toolbar-spacer" />
+        <span className="flex-1" />
         <button
           aria-label="Zoom out"
           title="Zoom out"
@@ -385,18 +385,24 @@ export function WorkDependencyCanvas({
         </button>
       </div>
       {model.hasCycle ? (
-        <p className="work-dependency-canvas__notice" role="status">
+        <p
+          className="work-dependency-canvas__notice flex flex-none items-center gap-[7px] m-[0_0_10px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-body leading-workspace-body"
+          role="status"
+        >
           <AlertCircle aria-hidden="true" size={15} />
           Some tasks depend on each other in a loop. Review the marked tasks to
           resolve the cycle.
         </p>
       ) : edges.length === 0 ? (
-        <p className="work-dependency-canvas__notice">
+        <p className="work-dependency-canvas__notice flex flex-none items-center gap-[7px] m-[0_0_10px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-body leading-workspace-body">
           No dependency links are shown in this view. Open a task to check its
           prerequisites and next action.
         </p>
       ) : null}
-      <div className="work-dependency-canvas__surface" ref={surfaceRef}>
+      <div
+        className="work-dependency-canvas__surface min-h-[260px] min-w-0 flex-1 overflow-hidden [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[12px] [background:var(--workspace-control-bg,_#f5f2f7)]"
+        ref={surfaceRef}
+      >
         <ReactFlow<DependencyNode, Edge>
           aria-label="Dependencies from prerequisite tasks on the left to dependent tasks on the right"
           nodes={nodes}
@@ -451,7 +457,7 @@ export function WorkDependencyCanvas({
           ) : null}
         </ReactFlow>
       </div>
-      <footer className="work-dependency-canvas__legend">
+      <footer className="work-dependency-canvas__legend flex flex-none flex-wrap gap-[6px_16px] p-[10px_2px_0] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption">
         <span>Arrows point to tasks that depend on the earlier task.</span>
         <span>
           <i className="work-dependency-canvas__line" data-resolved="true" />{" "}
@@ -537,10 +543,10 @@ export function TaskCanvasCard({
         if (event.currentTarget.matches(":focus-visible")) onFocusTask(item.id);
       }}
     >
-      <span className="work-dependency-canvas__task-top">
+      <span className="work-dependency-canvas__task-top flex min-h-[16px] items-center gap-[6px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption">
         <span>{item.label}</span>
         {contextLabel ? (
-          <span className="work-dependency-canvas__context">
+          <span className="rounded-[4px] p-[0_4px] [background:var(--workspace-hover-bg,_#ece6f1)] whitespace-nowrap">
             {contextLabel}
           </span>
         ) : null}
@@ -549,7 +555,7 @@ export function TaskCanvasCard({
         ) : null}
       </span>
       <strong>{item.title}</strong>
-      <span className="work-dependency-canvas__assignee">
+      <span className="work-dependency-canvas__assignee flex min-h-[32px] min-w-0 items-center gap-[7px]">
         {/* Who does the work: the Agent, or the assignee themself. Lanes
             are keyed on it (ADR 0014). */}
         {item.task?.executedBy.kind === "agent" ? (
@@ -557,7 +563,7 @@ export function TaskCanvasCard({
         ) : item.task?.executedBy.avatarUrl ? (
           <img alt="" src={item.task.executedBy.avatarUrl} />
         ) : null}
-        <span className="work-dependency-canvas__assignee-copy">
+        <span className="work-dependency-canvas__assignee-copy grid min-w-0 gap-[1px] text-workspace-caption leading-workspace-caption">
           <span>{item.task?.executedBy.name ?? "Details unavailable"}</span>
           <span>
             {agent?.title ?? (item.task ? "Company" : "Related task")}
@@ -569,14 +575,14 @@ export function TaskCanvasCard({
         data-status={item.status}
       >
         <i aria-hidden="true" />
-        <span className="work-dependency-canvas__status-label">
+        <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
           {statusLabel}
         </span>
         {/* Whose task it is: the assignee, always a member. Only when an
             Agent does the work; otherwise the line above names them. */}
         {item.task?.executedBy.kind === "agent" ? (
           <span
-            className="work-dependency-canvas__owner"
+            className="work-dependency-canvas__owner inline-flex [flex:0_1_auto] items-center gap-[5px] max-w-[55%] min-w-0 ml-auto text-[var(--workspace-native-text-muted,_#706875)]"
             title={`Assigned to ${item.task.assignee.name}`}
           >
             <TaskMemberAvatar member={item.task.assignee} />

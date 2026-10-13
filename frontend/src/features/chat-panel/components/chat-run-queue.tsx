@@ -181,8 +181,8 @@ function SortableRunQueueItem({
     <li
       ref={setNodeRef}
       className={cx(
-        "chat-run-queue-item",
-        isDragging && "chat-run-queue-item--dragging",
+        "relative flex min-w-0 min-h-[36px] items-center gap-[8px] rounded-[8px] py-[4px]",
+        isDragging && "z-[1] [background:var(--queue-hover)]",
       )}
       style={{
         transform: CSS.Transform.toString(transform),
@@ -217,7 +217,7 @@ function SortableRunQueueItem({
       ) : null}
       {item.attachments.length > 1 ? (
         <span
-          className="chat-run-queue-attachment-count"
+          className="shrink-0 text-[var(--queue-muted)] text-[length:11px]"
           aria-label={
             item.attachments.length === 2
               ? "1 more attachment"
@@ -227,7 +227,10 @@ function SortableRunQueueItem({
           +{item.attachments.length - 1}
         </span>
       ) : null}
-      <p className="chat-run-queue-prompt" title={prompt}>
+      <p
+        className="min-w-0 flex-1 m-0 overflow-hidden text-ellipsis whitespace-nowrap"
+        title={prompt}
+      >
         {author ? <strong>{author}: </strong> : null}
         {prompt}
       </p>
@@ -282,7 +285,10 @@ function RunQueueAttachment({ attachment }: { attachment: AttachmentDto }) {
   }, [attachment.companyId, attachment.id, isImage]);
 
   return (
-    <span className="chat-run-queue-attachment" title={attachment.filename}>
+    <span
+      className="chat-run-queue-attachment flex shrink-0 items-center justify-center w-[24px] h-[24px] overflow-hidden [border:1px_solid_var(--queue-border)] rounded-[5px] [background:var(--workspace-chat-bg,_#191919)] text-[var(--queue-muted)]"
+      title={attachment.filename}
+    >
       {previewUrl ? (
         <img
           alt={attachment.filename}

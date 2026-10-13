@@ -329,7 +329,7 @@ function GroupForm({
     <>
       <form
         aria-describedby={formError ? errorId : undefined}
-        className="project-access-dialog__surface"
+        className="flex min-h-0 flex-1 flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           if (busy || invalid || loading || unchanged) return;
@@ -340,7 +340,7 @@ function GroupForm({
           <DialogTitle>{group ? "Edit group" : "New group"}</DialogTitle>
         </DialogHeader>
         <div className="project-access-dialog__body">
-          <div className="group-dialog__field">
+          <div className="flex flex-col gap-[6px]">
             <label className="sr-only" htmlFor={nameId}>
               Name
             </label>
@@ -357,12 +357,15 @@ function GroupForm({
               onChange={(event) => setName(event.currentTarget.value)}
             />
             {nameError ? (
-              <small className="group-dialog__error" role="alert">
+              <small
+                className="text-[var(--workspace-native-danger,_#ff8a7a)] text-[length:11.5px] leading-[1.35]"
+                role="alert"
+              >
                 {nameError}
               </small>
             ) : null}
           </div>
-          <div className="group-dialog__field">
+          <div className="flex flex-col gap-[6px]">
             <label className="sr-only" htmlFor={descriptionId}>
               Description
             </label>
@@ -376,13 +379,16 @@ function GroupForm({
               onChange={(event) => setDescription(event.currentTarget.value)}
             />
             {descriptionError ? (
-              <small className="group-dialog__error" role="alert">
+              <small
+                className="text-[var(--workspace-native-danger,_#ff8a7a)] text-[length:11.5px] leading-[1.35]"
+                role="alert"
+              >
                 {descriptionError}
               </small>
             ) : null}
           </div>
-          <section className="group-dialog__section" aria-label="People">
-            <div className="group-dialog__section-heading">
+          <section className="flex flex-col gap-[8px]" aria-label="People">
+            <div className="group-dialog__section-heading flex min-h-[30px] items-center justify-start gap-[8px]">
               <Users aria-hidden="true" size={15} />
               <Tooltip
                 contentClassName={ACCESS_TOOLTIP_CLASS}
@@ -400,7 +406,9 @@ function GroupForm({
                 </button>
               </Tooltip>
               {!loading && !adding && people.length === 0 ? (
-                <span className="group-dialog__note">Nobody yet</span>
+                <span className="m-0 text-workspace-muted text-[length:12px] leading-[1.4]">
+                  Nobody yet
+                </span>
               ) : null}
             </div>
             {adding ? (
@@ -463,7 +471,7 @@ function GroupForm({
             )}
           </section>
           {group && groupProjects.length > 0 ? (
-            <section className="group-dialog__section" aria-label="Projects">
+            <section className="flex flex-col gap-[8px]" aria-label="Projects">
               <ul className="group-dialog__projects">
                 {groupProjects.map((entry) => {
                   const project = names.project(entry.projectId);
@@ -543,7 +551,7 @@ function PeoplePicker({
     `${member.actor.name} ${member.email}`.toLocaleLowerCase().includes(needle),
   );
   return (
-    <div className="group-dialog__picker">
+    <div className="group-dialog__picker flex flex-col gap-[8px] p-[10px] rounded-[12px] [background:var(--workspace-control-bg)]">
       <label className="project-access-search">
         <Search size={14} aria-hidden="true" />
         <input
@@ -573,7 +581,7 @@ function PeoplePicker({
           </li>
         ))}
         {shown.length === 0 ? (
-          <li className="project-access-empty">
+          <li className="p-[22px_12px] text-workspace-muted text-[length:12px] text-center [list-style:none]">
             {candidates.length === 0 ? "Everyone's already in" : "No match"}
           </li>
         ) : null}

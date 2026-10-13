@@ -8,15 +8,6 @@
   max-width: 900px;
   margin-inline: auto;
 }
-.calendar-folio-week {
-  box-shadow: var(--calendar-surface-shadow);
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  border: 1px solid var(--workspace-divider);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 28px;
-}
 .calendar-folio-week button {
   display: flex;
   flex-direction: column;
@@ -190,23 +181,10 @@ button.calendar-folio-heading {
   border-bottom: 1px solid var(--workspace-divider-strong);
   pointer-events: none;
 }
-.calendar-folio-dot {
-  flex-shrink: 0;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--event-color);
-}
 .calendar-folio-start {
   flex: 0 0 84px;
   font-size: 16px;
   font-variant-numeric: tabular-nums;
-}
-.calendar-folio-entry-content {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-  flex: 1;
 }
 .calendar-folio-entry-content strong {
   display: flex;
@@ -234,9 +212,6 @@ button.calendar-folio-heading {
   font-size: 11px;
   color: var(--workspace-text-muted);
   font-variant-numeric: tabular-nums;
-}
-.calendar-folio-period {
-  margin-top: 28px;
 }
 .calendar-folio-period h3 {
   display: flex;
@@ -271,14 +246,6 @@ button.calendar-folio-heading {
 }
 .calendar-folio-entry.is-invited {
   border-left-style: dashed;
-}
-.calendar-folio-empty {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  padding: 60px 20px;
-  color: var(--workspace-text-muted);
-  font-size: 13px;
 }
 .calendar-folio-empty p {
   margin: 0;

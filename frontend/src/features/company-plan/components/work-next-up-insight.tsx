@@ -128,7 +128,7 @@ function TaskReadinessInsight({
             <CheckCircle2 aria-hidden="true" size={15} />
             {compact ? "Prerequisites" : "What needs to be completed first"}
             {item.dependencyDataLoaded && prerequisites.length > 0 ? (
-              <span className="work-next-up-insight__count">
+              <span className="ml-auto text-workspace-muted text-workspace-micro leading-workspace-micro font-[400] [font-variant-numeric:tabular-nums]">
                 {completedPrerequisites}/{prerequisites.length} done
               </span>
             ) : null}
@@ -144,7 +144,7 @@ function TaskReadinessInsight({
               items={prerequisites}
               label="prerequisites"
               renderItem={(relatedTask) => (
-                <div className="work-next-up-insight__relation">
+                <div className="overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-panel-raised-bg)]">
                   <RelatedTaskButton
                     relatedTask={relatedTask}
                     compact={compact}
@@ -171,7 +171,7 @@ function TaskReadinessInsight({
                 ? "Following tasks"
                 : "After this task is completed"}
             {item.dependents.length > 0 ? (
-              <span className="work-next-up-insight__count">
+              <span className="ml-auto text-workspace-muted text-workspace-micro leading-workspace-micro font-[400] [font-variant-numeric:tabular-nums]">
                 {item.dependents.length}
               </span>
             ) : null}
@@ -218,7 +218,7 @@ function DependentTask({
   );
 
   return (
-    <div className="work-next-up-insight__relation">
+    <div className="overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-panel-raised-bg)]">
       <RelatedTaskButton
         relatedTask={dependent}
         compact={compact}
@@ -308,9 +308,9 @@ function RelatedTaskButton({
       onClick={() => onSelectTask(relatedTask.id)}
     >
       <StatusIcon aria-hidden="true" size={16} />
-      <span className="work-next-up-insight__task-copy">
+      <span className="grid min-w-0 flex-1 gap-[4px]">
         {compact && relatedTask.task ? (
-          <span className="project-related-task-key">
+          <span className="text-workspace-micro text-workspace-muted">
             {labelTask(relatedTask.task)}
           </span>
         ) : null}

@@ -198,7 +198,7 @@ function BindAgentForm({
       ) : choices.length === 0 ? (
         <RuntimeNeededNotice companyId={companyId} provider={agent.provider} />
       ) : onlyComputer ? null : (
-        <fieldset className="agent-runtime-options bind-agent-dialog__choices">
+        <fieldset className="agent-runtime-options bind-agent-dialog__choices mt-[20px]">
           <legend className="sr-only">Your computers</legend>
           {choices.map((choice) => (
             <BindingChoice
@@ -224,7 +224,10 @@ function BindAgentForm({
       ) : null}
 
       {warning ? (
-        <p className="bind-agent-dialog__note" role="note">
+        <p
+          className="bind-agent-dialog__note flex items-start gap-[8px] m-[12px_0_0] p-[10px_12px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] [background:var(--workspace-control-bg)] text-workspace-text text-workspace-caption leading-workspace-caption"
+          role="note"
+        >
           <Icon name="info" size={16} />
           <span>{warning}</span>
         </p>

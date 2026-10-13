@@ -67,7 +67,7 @@ export function ChatAttachmentList({
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const imageTriggerRef = useRef<HTMLButtonElement>(null);
   return (
-    <div className="chat-attachments">
+    <div className="chat-attachments flex min-w-0 flex-col gap-[10px] mt-[8px]">
       {images.length > 0 ? (
         <div
           className="chat-attachments__gallery"
@@ -76,7 +76,7 @@ export function ChatAttachmentList({
           {images.map((file, index) => (
             <button
               aria-label={`View ${file.name}`}
-              className="chat-attachments__image"
+              className="chat-attachments__image flex min-w-0 flex-col items-center justify-center overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[var(--workspace-radius-panel,_8px)] p-0 [background:var(--workspace-control-bg)] text-workspace-text cursor-pointer"
               key={file.id}
               type="button"
               onClick={(event) => {
@@ -171,7 +171,7 @@ export function ChatAttachmentItem({ file }: { file: ChatAttachment }) {
           ) : null}
         </div>
       ) : null}
-      <div className="chat-attachments__file">
+      <div className="flex items-center gap-[8px] pr-[10px]">
         <button
           aria-label={`Preview ${file.name}`}
           className="chat-attachments__file-open"
@@ -179,10 +179,10 @@ export function ChatAttachmentItem({ file }: { file: ChatAttachment }) {
           ref={triggerRef}
           type="button"
         >
-          <span className="chat-attachments__file-icon">
+          <span className="grid w-[36px] h-[40px] shrink-0 place-items-center rounded-[6px] [background:var(--workspace-accent-soft)] text-workspace-accent">
             <ChatAttachmentIcon file={file} />
           </span>
-          <span className="chat-attachments__file-copy">
+          <span className="chat-attachments__file-copy flex min-w-0 flex-col gap-[3px]">
             <strong>{file.name}</strong>
             <span>{detail}</span>
           </span>
@@ -339,9 +339,9 @@ export function ChatAttachmentViewer({
             </DialogClose>
           </div>
         </header>
-        <div className="chat-file-viewer__body">
+        <div className="chat-file-viewer__body min-h-[180px] max-h-[calc(100dvh_-_140px)] overflow-auto">
           {kind === "file" ? (
-            <div className="chat-file-viewer__empty">
+            <div className="chat-file-viewer__empty flex min-h-[180px] flex-col items-center justify-center gap-[10px] p-[24px] text-workspace-muted text-[length:13px]">
               <ChatAttachmentIcon file={file} size={36} />
               <p>Preview isn’t available for this format.</p>
               <p>Download the file to open it.</p>
@@ -354,7 +354,9 @@ export function ChatAttachmentViewer({
           ) : kind === "spreadsheet" ? (
             <Suspense
               fallback={
-                <p className="chat-file-viewer__notice">Loading spreadsheet…</p>
+                <p className="p-[10px_24px] [background:var(--workspace-control-bg)] text-[length:12px]">
+                  Loading spreadsheet…
+                </p>
               }
             >
               <ChatSpreadsheetPreview
@@ -380,7 +382,10 @@ export function ChatAttachmentViewer({
           ) : kind === "audio" ? (
             <audio controls preload="metadata" src={attachmentUrl(file.url)} />
           ) : preview?.error ? (
-            <div className="chat-file-viewer__empty" role="alert">
+            <div
+              className="chat-file-viewer__empty flex min-h-[180px] flex-col items-center justify-center gap-[10px] p-[24px] text-workspace-muted text-[length:13px]"
+              role="alert"
+            >
               <p>{preview.error}</p>
               <button
                 onClick={() => setAttempt((value) => value + 1)}
@@ -390,14 +395,20 @@ export function ChatAttachmentViewer({
               </button>
             </div>
           ) : !preview ? (
-            <div className="chat-file-viewer__empty" role="status">
+            <div
+              className="chat-file-viewer__empty flex min-h-[180px] flex-col items-center justify-center gap-[10px] p-[24px] text-workspace-muted text-[length:13px]"
+              role="status"
+            >
               <LoaderCircle className="animate-spin" />
               Loading preview…
             </div>
           ) : kind === "pdf" ? (
             <Suspense
               fallback={
-                <div className="chat-file-viewer__empty" role="status">
+                <div
+                  className="chat-file-viewer__empty flex min-h-[180px] flex-col items-center justify-center gap-[10px] p-[24px] text-workspace-muted text-[length:13px]"
+                  role="status"
+                >
                   Loading PDF viewer…
                 </div>
               }
@@ -407,7 +418,7 @@ export function ChatAttachmentViewer({
           ) : (
             <>
               {preview.truncated ? (
-                <p className="chat-file-viewer__notice">
+                <p className="p-[10px_24px] [background:var(--workspace-control-bg)] text-[length:12px]">
                   Showing the first 1 MB. Download the file for the full
                   content.
                 </p>

@@ -95,21 +95,24 @@ export function AnalyticsAgentHeatmap({
     );
   if (!data || results.some((result) => !result.data))
     return (
-      <div className="analytics-heatmap-loading" role="status">
+      <div
+        className="grid place-items-center h-[350px] text-[var(--analytics-muted)]"
+        role="status"
+      >
         Loading activity…
       </div>
     );
   if (!agents.length || !dates.length)
     return <p>No Agent activity in this window.</p>;
   return (
-    <div className="analytics-agent-heatmap">
-      <div className="analytics-heatmap-caption">
+    <div className="analytics-agent-heatmap mt-[18px]">
+      <div className="text-[var(--analytics-muted)] text-workspace-caption mb-[16px]">
         {agents.length < (data.rows?.length ?? 0) ? "Top 5 · " : ""}
         {period} {partLabel(query.metric).toLowerCase()}
       </div>
       <div className="analytics-heatmap-scroll">
         <div
-          className="analytics-heatmap-grid"
+          className="min-w-[max(720px,_calc(var(--heatmap-columns)_*_12px_+_340px))]"
           ref={gridRef}
           style={{ "--heatmap-columns": dates.length } as CSSProperties}
           onMouseLeave={() => setHovered(null)}
@@ -143,7 +146,10 @@ export function AnalyticsAgentHeatmap({
             return (
               <div className="analytics-heatmap-row" key={id}>
                 <Tooltip label={detail}>
-                  <span className="analytics-heatmap-name" tabIndex={0}>
+                  <span
+                    className="text-workspace-body font-[550] leading-[1.4] overflow-hidden [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]"
+                    tabIndex={0}
+                  >
                     {row.key?.label}
                   </span>
                 </Tooltip>
@@ -217,13 +223,16 @@ export function AnalyticsAgentHeatmap({
                   })}
                 </div>
                 <strong
-                  className="analytics-heatmap-total"
+                  className="text-right text-[length:17px] font-[600] tracking-[-0.025em] wrap-anywhere"
                   title={metricLabel(row, query.metric)}
                 >
                   {metricLabel(row, query.metric)}
                 </strong>
                 <Tooltip label={detail}>
-                  <span className="analytics-heatmap-completed" tabIndex={0}>
+                  <span
+                    className="analytics-heatmap-completed flex items-center justify-end gap-[8px] text-workspace-body whitespace-nowrap"
+                    tabIndex={0}
+                  >
                     <svg viewBox="0 0 32 32" aria-hidden="true">
                       <circle
                         cx="16"
@@ -260,7 +269,7 @@ export function AnalyticsAgentHeatmap({
             : ""}
         </span>
         <div
-          className="analytics-heatmap-scale"
+          className="analytics-heatmap-scale flex items-center gap-[3px] ml-auto"
           aria-label={`Color scale: 0 to ${formatMetricAmount(maximum, query.metric)} ${partLabel(query.metric)} per period, shared by all Agents`}
         >
           <span>0</span>

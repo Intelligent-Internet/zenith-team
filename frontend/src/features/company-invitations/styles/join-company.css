@@ -15,20 +15,6 @@
   box-shadow: var(--workspace-overlay-shadow);
 }
 
-.company-join-form {
-  display: grid;
-  gap: 12px;
-  text-align: left;
-}
-
-.company-join-form__field {
-  display: grid;
-  gap: 8px;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
-}
-
 .company-join-form__field input {
   width: 100%;
   min-width: 0;
@@ -66,14 +52,6 @@
 
 .company-join-form__error {
   color: var(--destructive);
-}
-
-.company-join-form__actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 12px;
 }
 
 .company-join-form__actions button {

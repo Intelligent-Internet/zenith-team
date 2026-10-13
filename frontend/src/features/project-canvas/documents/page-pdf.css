@@ -31,17 +31,6 @@
   border: 1px solid var(--pc-line);
   border-radius: 6px;
 }
-.pc-pdf-preview {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 28px;
-  background: var(--pc-raised);
-}
-.pc-pdf-error {
-  padding: 12px 24px;
-  color: var(--workspace-native-danger);
-}
 .pc-pdf-report {
   --workspace-font-body: Arial, sans-serif;
   --workspace-native-text: #20242b;

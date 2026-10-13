@@ -144,21 +144,6 @@
   > .company-activity-log__row:is(:hover, :focus-visible) {
   background: var(--workspace-selected-bg);
 }
-.company-activity-log__icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex: none;
-  place-items: center;
-  border-radius: 6px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-}
-.company-activity-log__identity-text {
-  display: block;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .company-activity-log__actor,
 .company-activity-log__time {
   min-width: 0;
@@ -180,12 +165,6 @@
 }
 .company-activity-log__entry[open] > summary > .company-activity-log__chevron {
   transform: rotate(90deg);
-}
-.company-activity-details {
-  padding: 0 var(--activity-inset) 20px
-    calc(var(--activity-inset) + var(--activity-identity-inset));
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
 }
 .company-activity-details__changes {
   display: grid;
@@ -252,13 +231,6 @@
   background: var(--workspace-danger-soft);
   color: var(--workspace-native-danger);
 }
-.company-activity-details__access {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 0;
-  list-style: none;
-}
 .company-activity-details__access > li {
   display: flex;
   min-width: 0;
@@ -275,35 +247,9 @@
 .company-activity-details__access > li[data-change="removed"] > svg {
   color: var(--workspace-native-danger);
 }
-.company-activity-details__permissions {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-}
-.company-activity-details__permission {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-  overflow-wrap: anywhere;
-}
 .company-activity-details__permission > svg {
   flex: none;
   color: var(--workspace-native-text-muted);
-}
-.company-activity-details__access-line {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 0 0 12px;
-  color: var(--workspace-native-text);
 }
 .company-activity-details__access-line > svg {
   flex: none;

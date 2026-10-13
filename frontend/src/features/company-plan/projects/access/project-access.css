@@ -11,24 +11,6 @@
 
 /* The Project picker on the left (and Join beside it for a manager who
    has not joined), Add on the right. */
-.project-access-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.project-access-toolbar__start {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-}
-
-.project-access-join {
-  flex: none;
-}
 
 .project-access-add {
   display: inline-flex;
@@ -196,11 +178,6 @@ html[data-boardly-workspace-theme]
 }
 
 /* A confirm's counts, under its question. */
-.project-access-confirm__counts {
-  display: flex;
-  grid-column: 2;
-  margin-top: 6px;
-}
 
 .project-access-confirm .profile-delete-dialog__footer {
   gap: 8px;
@@ -216,19 +193,6 @@ html[data-boardly-workspace-theme]
 
 /* A Project open to the whole Company: one line, and Limit for whoever
    may change it. */
-.project-access-everyone {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  padding: 8px 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 10px;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 1.4;
-}
 
 .project-access-everyone > svg {
   flex: none;
@@ -280,14 +244,6 @@ html[data-boardly-workspace-theme]
 }
 
 /* The list: Groups first, then people, hairlines between. */
-.project-access-list {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--workspace-divider);
-  list-style: none;
-}
 
 .project-access-row {
   display: grid;
@@ -301,30 +257,8 @@ html[data-boardly-workspace-theme]
   border-bottom: 1px solid var(--workspace-divider);
 }
 
-.project-access-row__who {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 12px;
-  grid-area: who;
-}
-
 .project-access-row__avatar {
   flex: none;
-}
-
-.project-access-row__copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.project-access-row__name {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
 }
 
 .project-access-row__name strong {
@@ -341,22 +275,6 @@ html[data-boardly-workspace-theme]
   flex: none;
   color: var(--workspace-native-text-muted);
   font-size: var(--workspace-text-caption, 12px);
-}
-
-.project-access-row__sub {
-  overflow: hidden;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption, 12px);
-  line-height: var(--workspace-leading-caption, 1.4);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-access-row__count {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* A Group's mark: a rounded square where a person has their avatar. */
@@ -391,21 +309,8 @@ html[data-boardly-workspace-theme]
   outline-offset: 2px;
 }
 
-.project-access-row__perms {
-  display: flex;
-  min-width: 0;
-  justify-content: flex-end;
-  grid-area: perms;
-}
-
 /* The "···" menu of a Group, or the self-grant cap's lock: the last
    column is always there, so every access label keeps one right edge. */
-.project-access-row__menu {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  grid-area: menu;
-}
 
 /* A change the server refused under the self-grant cap. */
 .project-access-row__refused {
@@ -415,14 +320,6 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-danger, #ff8a7a);
   font-size: 11.5px;
   line-height: 1.35;
-}
-
-.project-access-empty {
-  padding: 22px 12px;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  text-align: center;
-  list-style: none;
 }
 
 /* What someone can do, as one pill: the highest preset's icon and name,
@@ -468,13 +365,6 @@ button.project-access-perms:disabled {
   cursor: default;
 }
 
-.project-access-perms__content {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 5px;
-}
-
 .project-access-perms__icon {
   flex: none;
   color: var(--project-accent, var(--workspace-native-accent));
@@ -502,15 +392,6 @@ button.project-access-perms:disabled {
 }
 
 /* Part of it comes from a Group, or from everyone. */
-.project-access-perms__source {
-  flex: none;
-  color: var(--workspace-native-text-muted);
-}
-
-.project-access-perms__chevron {
-  flex: none;
-  color: var(--workspace-native-text-muted);
-}
 
 .project-access-perms__lock {
   display: inline-grid;
@@ -558,27 +439,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   outline: none;
 }
 
-.project-access-picker__body {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.project-access-picker__presets {
-  position: sticky;
-  z-index: 1;
-  top: 0;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  padding: 8px;
-  border-bottom: 1px solid var(--workspace-divider);
-  background: var(--workspace-overlay-bg);
-}
-
 .project-access-preset {
   display: flex;
   min-width: 0;
@@ -621,17 +481,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
 .project-access-preset:focus-visible {
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: -2px;
-}
-
-.project-access-picker__list {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 6px 6px;
-}
-
-.project-access-picker__group {
-  display: flex;
-  flex-direction: column;
 }
 
 /* Work, Decisions, Management: named for screen readers only. */
@@ -706,12 +555,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   opacity: 0.55;
 }
 
-.project-access-option__marker {
-  display: inline-grid;
-  place-items: center;
-  color: var(--workspace-native-text-muted);
-}
-
 .project-access-option__check {
   display: inline-grid;
   width: 18px;
@@ -737,14 +580,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   border-color: transparent;
   color: var(--workspace-native-text-muted);
   cursor: help;
-}
-
-.project-access-picker__footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid var(--workspace-divider);
 }
 
 .project-access-picker__remove {
@@ -779,14 +614,7 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   outline-offset: 1px;
 }
 
-.project-access-picker__save {
-  margin-left: auto;
-}
-
 /* A Group's menu: Delete group in red. */
-.project-access-menu__danger {
-  color: var(--workspace-native-danger, #e5484d);
-}
 
 .team-role-picker:disabled {
   cursor: default;
@@ -794,11 +622,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
 }
 
 /* Team › Project access: the report, then the panel. */
-.team-project-access {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
 
 .team-project-picker {
   display: inline-flex;
@@ -850,14 +673,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   object-fit: cover;
 }
 
-.team-project-picker__text {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 1px;
-}
-
 .team-project-picker__text strong {
   overflow: hidden;
   font-size: 13px;
@@ -902,13 +717,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   color: var(--workspace-native-accent);
 }
 
-.project-access-empty-state {
-  margin: 0;
-  padding: 28px 0;
-  color: var(--workspace-native-text-muted);
-  text-align: center;
-}
-
 /* Dialogs: Add, and the Group dialog and review (groups.css). */
 .project-access-dialog__overlay {
   z-index: 220;
@@ -931,13 +739,6 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
   background: var(--workspace-overlay-bg);
   box-shadow: var(--workspace-overlay-shadow);
   color: var(--workspace-native-text);
-}
-
-.project-access-dialog__surface {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
 }
 
 .project-access-dialog__header {

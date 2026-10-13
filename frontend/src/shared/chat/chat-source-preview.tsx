@@ -57,8 +57,11 @@ export function ChatSourceCode({
       >
         <code>
           {shown.map((line, index) => (
-            <span className="chat-source-code__line" key={index}>
-              <span className="chat-source-code__number" aria-hidden="true">
+            <span className="flex min-w-[max-content] pr-[20px]" key={index}>
+              <span
+                className="[flex:0_0_4ch] mr-[16px] pr-[12px] [border-right:1px_solid_var(--workspace-divider)] text-workspace-muted text-right [user-select:none]"
+                aria-hidden="true"
+              >
                 {index + 1}
               </span>
               <span>
@@ -77,7 +80,7 @@ export function ChatSourceCode({
         </code>
       </pre>
       {!compact && lines.length > shown.length ? (
-        <p className="chat-source-preview__status">
+        <p className="p-[12px_16px] text-[length:13px] text-workspace-muted">
           Showing the first 2,000 lines. Download the file for the full content.
         </p>
       ) : null}
@@ -154,7 +157,10 @@ export function ChatSourcePreview({
       {current?.text !== undefined ? (
         <ChatSourceCode text={current.text} file={file} compact />
       ) : (
-        <p className="chat-source-preview__status" role="status">
+        <p
+          className="p-[12px_16px] text-[length:13px] text-workspace-muted"
+          role="status"
+        >
           {tooLarge
             ? "Open to preview this file"
             : current?.error

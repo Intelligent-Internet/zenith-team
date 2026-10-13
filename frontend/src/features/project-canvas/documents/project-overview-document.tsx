@@ -82,10 +82,16 @@ export default function ProjectOverviewDocument({
       </div>
     );
   return (
-    <div className="po-overview-loading-boundary" aria-busy={loading}>
-      <div className="pc-review-floating-actions" ref={setActionContainer} />
+    <div
+      className="po-overview-loading-boundary relative flex flex-1 min-w-0 min-h-0 overflow-hidden"
+      aria-busy={loading}
+    >
+      <div
+        className="pc-review-floating-actions absolute inset-0 z-[70] pointer-events-none"
+        ref={setActionContainer}
+      />
       {loading && (
-        <div className="po-overview-loading-cover">
+        <div className="absolute inset-0 z-[1] flex [background:var(--workspace-content-bg)]">
           <PageDocumentLoading overview />
         </div>
       )}
@@ -202,12 +208,17 @@ export default function ProjectOverviewDocument({
             }
           />
         ) : (
-          <section className="po-project-intro" aria-label="Project overview">
+          <section
+            className="po-project-intro box-border max-w-[var(--po-page-width)] m-[0_auto] p-[20px_var(--po-page-gutter)_8px]"
+            aria-label="Project overview"
+          >
             <h1>{project.title}</h1>
             {project.description && (
-              <p className="po-project-description">{project.description}</p>
+              <p className="max-w-[68ch] m-[10px_0_0] text-[var(--pc-muted)] leading-[1.65] whitespace-pre-line wrap-anywhere">
+                {project.description}
+              </p>
             )}
-            <div className="po-overview-prompt">
+            <div className="po-overview-prompt flex items-center flex-wrap gap-[12px] mt-[20px] p-[14px_16px] [border:1px_solid_var(--pc-line)] rounded-[10px]">
               <Icon name="document-text" className="size-5" />
               <div>
                 <h2>

@@ -669,7 +669,7 @@ export function ArtifactReview({
             </button>
           )}
           {liveEditing && !companyWikiPageId && (
-            <details className="pc-document-menu pc-review-document-menu">
+            <details className="pc-document-menu pc-review-document-menu relative">
               <summary
                 className="pc-icon-button"
                 aria-label="Document options"
@@ -734,7 +734,7 @@ export function ArtifactReview({
         </div>
         <div className="pc-review-content" aria-busy={openingDraft}>
           {openingDraft && (
-            <div className="pc-review-loading-cover">
+            <div className="absolute inset-0 z-[80] overflow-hidden [background:var(--workspace-panel-bg)]">
               <PageDocumentLoading toolbar={false} />
             </div>
           )}
@@ -753,7 +753,7 @@ export function ArtifactReview({
               className={`pc-review-body ${liveEditing ? "is-editing" : ""} ${!commentsOpen && !(historyOpen && historyDocumentScope) ? "is-focused" : ""}`}
             >
               <div
-                className="pc-review-floating-actions"
+                className="pc-review-floating-actions absolute inset-0 z-[70] pointer-events-none"
                 ref={setEditButtonContainer}
               >
                 {!liveEditing &&
@@ -790,7 +790,7 @@ export function ArtifactReview({
                 {liveEditing ? (
                   <div
                     ref={viewer}
-                    className="pc-review-document pc-page-theme"
+                    className="pc-review-document flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden pc-page-theme"
                     data-page-theme={page.currentData?.theme}
                   >
                     {outputDocumentScope ? (
@@ -938,7 +938,7 @@ export function ArtifactReview({
                         </div>
                         <Suspense
                           fallback={
-                            <p className="pc-viewer-loading">
+                            <p className="pc-viewer-loading flex flex-col items-center justify-center gap-[14px] min-h-[260px] h-full p-[40px] text-center text-[var(--pc-muted)] text-[length:13px] leading-[1.7]">
                               Opening comparison…
                             </p>
                           }
@@ -1080,7 +1080,10 @@ export function ArtifactReview({
                             />
                           </Suspense>
                         ) : history.isError ? (
-                          <p className="pc-viewer-loading" role="alert">
+                          <p
+                            className="pc-viewer-loading flex flex-col items-center justify-center gap-[14px] min-h-[260px] h-full p-[40px] text-center text-[var(--pc-muted)] text-[length:13px] leading-[1.7]"
+                            role="alert"
+                          >
                             This version is unavailable or access has changed.
                           </p>
                         ) : (
@@ -1099,7 +1102,7 @@ export function ArtifactReview({
                               onCancel={cancelSelection}
                             />
                           )}
-                        <div className="pc-review-pins">
+                        <div className="pc-review-pins absolute inset-0 pointer-events-none">
                           {visibleThreads?.map((thread, index) => {
                             const point = readPoint(thread.anchor);
                             return point &&
@@ -1185,7 +1188,7 @@ export function ArtifactReview({
                 aria-label="History"
                 hidden={!historyOpen || !historyDocumentScope}
               >
-                <header className="pc-floating-comments-heading">
+                <header className="flex items-center justify-between gap-[12px] p-[12px] text-[var(--pc-muted)] text-[length:12px]">
                   <strong>Document history</strong>
                   <button
                     className="pc-icon-button"

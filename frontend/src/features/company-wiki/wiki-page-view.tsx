@@ -83,7 +83,7 @@ export function WikiPageView({
   }
 
   const meta = (
-    <div className="zen-wiki__meta">
+    <div className="zen-wiki__meta flex items-center flex-wrap gap-[8px] text-[var(--wk-muted)] text-workspace-caption m-[0_0_24px]">
       {page.currentRevisionId ? (
         <>
           <span>
@@ -95,7 +95,7 @@ export function WikiPageView({
             })}
           </span>
           <span>{new Date(page.revisionCreatedAt).toLocaleString()}</span>
-          <span className="zen-wiki__revision-badge">
+          <span className="[border:1px_solid_var(--wk-border)] rounded-[4px] p-[0_5px] [background:var(--wk-soft)] text-[length:10px]">
             Published · v{page.contentRevision}
           </span>
         </>
@@ -114,7 +114,9 @@ export function WikiPageView({
         <ChevronRight size={14} />
         <span>{collectionName(page.collectionId)}</span>
         <ChevronRight size={14} />
-        <span className="zen-wiki__breadcrumb-title">{page.title}</span>
+        <span className="min-w-0 [flex:0_1_auto] text-[var(--wk-text)] overflow-hidden text-ellipsis whitespace-nowrap">
+          {page.title}
+        </span>
         <div className="zen-wiki__page-actions">
           <button
             aria-label="Favorite"
@@ -178,9 +180,7 @@ export function WikiPageView({
               View published
             </button>
           )}
-          {editing && (
-            <span className="zen-wiki__draft-slot" ref={setDraftActions} />
-          )}
+          {editing && <span className="contents" ref={setDraftActions} />}
         </div>
       </div>
       <div className="zen-wiki__reader-grid">
@@ -203,7 +203,9 @@ export function WikiPageView({
               <h1>{page.title}</h1>
               {meta}
               {page.status === "archived" && (
-                <p className="zen-wiki__archived">Archived page</p>
+                <p className="inline-block rounded-[5px] [background:var(--workspace-approval-soft)] text-[var(--workspace-native-approval)] p-[4px_8px]">
+                  Archived page
+                </p>
               )}
               <div className="zen-wiki__prose" ref={setProse}>
                 <WikiContent
@@ -214,7 +216,7 @@ export function WikiPageView({
                 />
               </div>
               {!page.body.trim() && (
-                <p className="zen-wiki__empty">This page is empty.</p>
+                <p className="text-[var(--wk-muted)]">This page is empty.</p>
               )}
             </article>
           )}

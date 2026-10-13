@@ -43,7 +43,7 @@ export function HuddleProposalSubmitDialog(props: Props) {
         if (!open) props.onClose();
       }}
     >
-      <DialogContent className="huddle-dialog huddle-proposal-submit-dialog">
+      <DialogContent className="huddle-dialog huddle-proposal-submit-dialog max-w-[560px] max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Submit proposal</DialogTitle>
           <DialogDescription>
@@ -143,7 +143,7 @@ function SubmissionReview({
   return (
     <>
       <div className="huddle-proposal-review">
-        <div className="huddle-proposal-summary">
+        <div className="huddle-proposal-summary p-[16px] [border:1px_solid_var(--border)] rounded-[12px] [background:var(--frame)]">
           <p className="huddle-proposal-target">
             {review.proposal.projectTitle}
             {task ? ` · ${task.key}` : " · New Task"}

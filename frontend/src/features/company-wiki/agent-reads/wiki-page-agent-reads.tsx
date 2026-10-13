@@ -25,13 +25,13 @@ export function WikiPageAgentReads({
   }
   const total = reads.currentData?.total ?? items.length;
   return (
-    <div className="zen-wiki__detail-section zen-wiki-used-by">
+    <div className="[border-top:1px_solid_var(--wk-border)] p-[19px_0] zen-wiki-used-by">
       <div className="zen-wiki__detail-heading">
         <strong>Used by Agents</strong>
         <span>{total}</span>
       </div>
       <ul
-        className="zen-wiki-used-by__list"
+        className="grid m-0 p-0 [list-style:none]"
         aria-label="Runs that read this page"
       >
         {items.map((read) => (
@@ -51,7 +51,7 @@ export function WikiPageAgentReads({
         ))}
       </ul>
       {total > items.length ? (
-        <p className="zen-wiki__muted">
+        <p className="text-[var(--wk-muted)] p-[0_10px]">
           Showing the {items.length} most recent Runs.
         </p>
       ) : null}

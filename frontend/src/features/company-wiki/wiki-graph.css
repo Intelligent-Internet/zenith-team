@@ -1,42 +1,3 @@
-.wk-graph-layout {
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
-  min-width: 0;
-}
-.wk-graph-main {
-  background: var(--wk-panel);
-  border: 1px solid var(--wk-border);
-  border-radius: 12px;
-  box-shadow: 0 12px 38px
-    color-mix(in srgb, var(--workspace-native-text) 4%, transparent);
-  min-width: 0;
-  overflow: hidden;
-}
-.wk-graph-toolbar {
-  min-height: 58px;
-  padding: 10px 15px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--wk-border);
-}
-.wk-graph-count {
-  color: var(--wk-muted);
-  font-size: 11px;
-}
-.wk-graph-search {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--wk-muted);
-  border: 1px solid var(--wk-border);
-  border-radius: 7px;
-  padding: 6px 9px;
-  min-width: 150px;
-  max-width: 210px;
-}
 .wk-graph-search input {
   width: 100%;
   min-width: 0;
@@ -53,62 +14,6 @@
 }
 .wk-graph-stage.is-sparse {
   height: 390px;
-}
-.wk-graph-empty {
-  height: 100%;
-  align-content: center;
-}
-.wk-graph-hint {
-  position: absolute;
-  z-index: 5;
-  top: 13px;
-  left: 14px;
-  padding: 5px 8px;
-  border: 1px solid var(--wk-border);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--wk-panel) 86%, transparent);
-  color: var(--wk-muted);
-  font-size: 10px;
-  pointer-events: none;
-}
-.wk-graph-no-match {
-  position: absolute;
-  z-index: 5;
-  top: 50%;
-  left: 50%;
-  width: min(240px, 80%);
-  transform: translate(-50%, -50%);
-  padding: 12px;
-  border: 1px solid var(--wk-border);
-  border-radius: 8px;
-  background: var(--wk-panel);
-  color: var(--wk-muted);
-  text-align: center;
-  font-size: 11px;
-  box-shadow: var(--workspace-overlay-shadow);
-}
-.wk-graph-canvas {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-  touch-action: none;
-}
-.wk-graph-controls {
-  position: absolute;
-  z-index: 5;
-  left: 14px;
-  bottom: 14px;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--wk-border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--wk-panel);
-  box-shadow: 0 5px 15px
-    color-mix(in srgb, var(--workspace-native-text) 8%, transparent);
 }
 .wk-graph-controls button {
   width: 35px;

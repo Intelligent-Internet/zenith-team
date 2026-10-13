@@ -158,10 +158,15 @@ export function HuddleParticipantTile({
       )}
       {!joining && <PinButton name={label} pinned={pinned} onPin={onPin} />}
       <span className="huddle-tile-name" title={label}>
-        <span className="huddle-tile-identity">
-          <span className="huddle-tile-name-text">{tile.name}</span>
+        <span className="flex flex-col min-w-0 gap-[2px]">
+          <span className="min-w-0 overflow-hidden text-ellipsis">
+            {tile.name}
+          </span>
           {tile.agent && tile.agentStatus && (
-            <span className="huddle-tile-agent-status" role="status">
+            <span
+              className="text-[var(--muted-foreground)] text-[length:11px] font-[400]"
+              role="status"
+            >
               {removingAgent ? "Removing…" : tile.agentStatus}
             </span>
           )}
@@ -171,7 +176,7 @@ export function HuddleParticipantTile({
         {joining && !tile.agent && <em>Joining…</em>}
         <span className="huddle-tile-audio" aria-hidden>
           {joining ? (
-            <span className="huddle-tile-joining-dots">
+            <span className="huddle-tile-joining-dots inline-flex gap-[3px]">
               <i />
               <i />
               <i />
@@ -179,7 +184,7 @@ export function HuddleParticipantTile({
           ) : micMuted ? (
             <MicOff size={14} />
           ) : (
-            <span className="huddle-eq">
+            <span className="huddle-eq flex items-center gap-[2px] h-[12px]">
               <i />
               <i />
               <i />
@@ -188,7 +193,10 @@ export function HuddleParticipantTile({
         </span>
       </span>
       {agentError && (
-        <p className="huddle-tile-agent-error" role="alert">
+        <p
+          className="absolute top-[12px] left-[12px] right-[12px] z-[4] p-[8px_12px] rounded-[8px] [background:var(--overlay)] text-[var(--foreground)] text-[length:12px]"
+          role="alert"
+        >
           {agentError}
         </p>
       )}
@@ -200,7 +208,7 @@ export function HuddleParticipantTile({
       <ContextMenu.Trigger asChild>{portrait}</ContextMenu.Trigger>
       <ContextMenu.Portal>
         <ContextMenu.Content
-          className="huddle-agent-context-menu"
+          className="huddle-agent-context-menu z-[100] min-w-[160px] p-[6px] [border:1px_solid_var(--border)] rounded-[12px] [background:var(--background)] text-[var(--foreground)] [box-shadow:0_8px_32px_rgb(0_0_0_/_24%)] text-[length:13px]"
           aria-label={`${tile.name} options`}
         >
           <ContextMenu.Item
@@ -257,7 +265,7 @@ export function HuddleScreenTile({
     >
       <HuddleVideoSurface video={video} />
       {video.local && !compact && (
-        <div className="huddle-presenting">
+        <div className="huddle-presenting absolute inset-0 z-[2] flex flex-col items-center justify-center gap-[12px] [background:var(--overlay-strong)] [backdrop-filter:blur(6px)] text-center">
           <Monitor size={22} />
           <p>You are presenting to everyone</p>
           <button type="button" onClick={onStopSharing}>

@@ -149,7 +149,7 @@ export default function ChatPresentationPreview({
   const loading = !error && (!slideCount || rendering);
 
   return (
-    <div className="chat-presentation-preview">
+    <div className="chat-presentation-preview flex min-w-0 min-h-[280px] flex-1 flex-col text-workspace-text">
       <div className="chat-presentation-preview__toolbar">
         <button
           aria-label="Previous slide"
@@ -173,9 +173,12 @@ export default function ChatPresentationPreview({
           <ChevronRight aria-hidden size={18} />
         </button>
       </div>
-      <div className="chat-presentation-preview__viewport">
+      <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-[16px] [background:var(--workspace-control-bg)]">
         {error ? (
-          <div className="chat-presentation-preview__notice" role="alert">
+          <div
+            className="chat-presentation-preview__notice flex items-center justify-center gap-[8px] flex-wrap m-[16px_0] text-workspace-muted text-[length:13px] text-center"
+            role="alert"
+          >
             <p>{error}</p>
             <button
               type="button"
@@ -185,7 +188,10 @@ export default function ChatPresentationPreview({
             </button>
           </div>
         ) : loading ? (
-          <div className="chat-presentation-preview__notice" role="status">
+          <div
+            className="chat-presentation-preview__notice flex items-center justify-center gap-[8px] flex-wrap m-[16px_0] text-workspace-muted text-[length:13px] text-center"
+            role="status"
+          >
             <LoaderCircle aria-hidden className="animate-spin" size={18} />
             Loading presentation…
           </div>
@@ -214,7 +220,10 @@ export default function ChatPresentationPreview({
           }}
         />
         {incomplete && !error ? (
-          <p className="chat-presentation-preview__notice" role="status">
+          <p
+            className="chat-presentation-preview__notice flex items-center justify-center gap-[8px] flex-wrap m-[16px_0] text-workspace-muted text-[length:13px] text-center"
+            role="status"
+          >
             Some elements could not be displayed. Download for the complete
             slide.
           </p>

@@ -109,7 +109,7 @@ export function DocumentFormatToolbar({ editor }: { editor: Editor | null }) {
         <option value="h2">Heading 2</option>
         <option value="h3">Heading 3</option>
       </select>
-      <span className="pc-format-divider" />
+      <span className="[flex:0_0_1px] w-[1px] h-[20px] m-[0_8px] [background:var(--workspace-divider)]" />
       <ToolButton
         label="Bold"
         icon={Bold}
@@ -138,7 +138,7 @@ export function DocumentFormatToolbar({ editor }: { editor: Editor | null }) {
         disabled={disabled}
         onClick={run((e) => e.chain().focus().toggleStrike().run())}
       />
-      <span className="pc-format-divider" />
+      <span className="[flex:0_0_1px] w-[1px] h-[20px] m-[0_8px] [background:var(--workspace-divider)]" />
       <ToolButton
         label="Bulleted list"
         icon={List}
@@ -174,7 +174,7 @@ export function DocumentFormatToolbar({ editor }: { editor: Editor | null }) {
         disabled={disabled}
         onClick={run((e) => e.chain().focus().toggleCodeBlock().run())}
       />
-      <span className="pc-format-divider" />
+      <span className="[flex:0_0_1px] w-[1px] h-[20px] m-[0_8px] [background:var(--workspace-divider)]" />
       <ToolButton
         label="Insert table"
         icon={Table2}
@@ -199,7 +199,7 @@ export function DocumentFormatToolbar({ editor }: { editor: Editor | null }) {
         disabled={disabled || state?.code}
         onClick={run((e) => e.chain().focus().insertContent("[[a:").run())}
       />
-      <span className="pc-format-divider" />
+      <span className="[flex:0_0_1px] w-[1px] h-[20px] m-[0_8px] [background:var(--workspace-divider)]" />
       <ToolButton
         label="Undo"
         icon={Undo2}

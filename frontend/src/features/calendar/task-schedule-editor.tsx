@@ -33,7 +33,10 @@ export function TaskScheduleEditor({
   const target = templateId === task.id ? task : template.currentData;
   if (template.isError)
     return (
-      <p className="task-schedule-error" role="alert">
+      <p
+        className="text-workspace-danger text-[length:12px] leading-[1.5]"
+        role="alert"
+      >
         {getBoardlyQueryErrorMessage(template.error)}
       </p>
     );
@@ -99,11 +102,14 @@ function TaskScheduleForm({
           onChange={setValues}
         />
         {error ? (
-          <p className="task-schedule-error" role="alert">
+          <p
+            className="text-workspace-danger text-[length:12px] leading-[1.5]"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
-        <div className="task-schedule-actions">
+        <div className="task-schedule-actions flex justify-end gap-[8px] pt-[14px] mt-[14px] [border-top:1px_solid_var(--workspace-divider)]">
           <button
             className="personal-button personal-button--primary"
             type="submit"

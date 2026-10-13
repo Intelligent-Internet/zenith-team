@@ -127,7 +127,7 @@ export function HuddleChatPanel({
   return (
     <div className="huddle-chat" aria-label="Huddle chat">
       <div
-        className="huddle-messages"
+        className="flex-1 min-h-0 p-[8px_0_16px] overflow-y-auto overscroll-contain"
         ref={timeline}
         onScroll={(event) => {
           const list = event.currentTarget;
@@ -136,7 +136,10 @@ export function HuddleChatPanel({
         }}
       >
         {unavailable && (
-          <div className="huddle-chat-status" role="alert">
+          <div
+            className="huddle-chat-status flex items-center justify-between gap-[12px] p-[12px_16px] text-[var(--discussion-muted)] text-[length:var(--workspace-text-caption,_12px)]"
+            role="alert"
+          >
             <span>Couldn’t connect to chat.</span>
             <button
               type="button"
@@ -148,12 +151,15 @@ export function HuddleChatPanel({
           </div>
         )}
         {hasHistory && history.isError && (
-          <div className="huddle-chat-status" role="status">
+          <div
+            className="huddle-chat-status flex items-center justify-between gap-[12px] p-[12px_16px] text-[var(--discussion-muted)] text-[length:var(--workspace-text-caption,_12px)]"
+            role="status"
+          >
             Reconnecting to chat…
           </div>
         )}
         {hasHistory && !history.isError && messages.length === 0 && (
-          <div className="huddle-chat-empty">
+          <div className="huddle-chat-empty flex flex-col items-start justify-start h-full min-h-[160px] p-[20px] text-[var(--muted-foreground)] text-left">
             <MessageSquareText size={28} />
             <h3>Keep the conversation going</h3>
             <p>Share a thought, a link, or a quick note with everyone here.</p>
@@ -161,13 +167,13 @@ export function HuddleChatPanel({
         )}
         {(connecting || (!hasHistory && !history.isError)) && (
           <div
-            className="huddle-chat-loading"
+            className="p-[16px]"
             role="status"
             aria-label="Connecting to chat"
           >
             {[0, 1, 2].map((row) => (
               <div
-                className="huddle-chat-placeholder"
+                className="huddle-chat-placeholder flex gap-[12px] mb-[24px]"
                 aria-hidden="true"
                 key={row}
               >
@@ -202,7 +208,7 @@ export function HuddleChatPanel({
               key={message.id}
               aria-label={`${message.author.displayName}, ${new Date(message.createdAt).toLocaleString()}`}
             >
-              <div className="discussion-message-avatar">
+              <div className="discussion-message-avatar w-[36px] shrink-0">
                 {!compact && (
                   <DiscussionAvatar
                     name={message.author.displayName}
@@ -216,7 +222,7 @@ export function HuddleChatPanel({
                   />
                 )}
               </div>
-              <div className="discussion-message-main">
+              <div className="discussion-message-main min-w-0 flex-1 text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)]">
                 {!compact && (
                   <header>
                     <strong>{message.author.displayName}</strong>
@@ -243,7 +249,10 @@ export function HuddleChatPanel({
       </div>
       <div className="discussion-compose-area">
         {error && (
-          <p className="huddle-chat-status" role="alert">
+          <p
+            className="huddle-chat-status flex items-center justify-between gap-[12px] p-[12px_16px] text-[var(--discussion-muted)] text-[length:var(--workspace-text-caption,_12px)]"
+            role="alert"
+          >
             {error}
           </p>
         )}
@@ -284,7 +293,7 @@ export function HuddleChatPanel({
               }
             }}
           />
-          <div className="discussion-composer-tools">
+          <div className="discussion-composer-tools flex items-center gap-[8px] p-[4px_12px_8px]">
             <div>
               <ChatComposerEmoji
                 textareaRef={textarea}

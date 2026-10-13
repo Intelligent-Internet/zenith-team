@@ -4,13 +4,15 @@ import { Icon } from "@/shared/ui/icon";
 
 export function AgentPlanDialogAside({ plan }: { plan: AgentPlan }) {
   return (
-    <aside className="chat-company-plan-detail__aside">
-      <section className="chat-company-plan-detail__context">
-        <h3 className="chat-company-plan-detail__section-title">
+    <aside className="grid min-w-0 gap-[16px]">
+      <section className="min-w-0 p-[18px] [border:1px_solid_var(--plan-detail-border)] rounded-[12px] [background:var(--workspace-panel-raised-bg,_#1d2a36)]">
+        <h3 className="m-0 text-[var(--plan-detail-text)] text-workspace-label font-[700] leading-workspace-label">
           Agent Objective
         </h3>
-        <p className="chat-company-plan-detail__objective">{plan.objective}</p>
-        <div className="chat-company-plan-detail__agent">
+        <p className="m-[10px_0_0] text-[var(--plan-detail-text)] text-workspace-body leading-workspace-body whitespace-pre-wrap">
+          {plan.objective}
+        </p>
+        <div className="chat-company-plan-detail__agent flex items-center gap-[10px] mt-[16px] text-[var(--plan-detail-muted)] text-workspace-body leading-workspace-body">
           {plan.avatarSrc ? (
             <img src={plan.avatarSrc} alt="" />
           ) : plan.agentId ? (
@@ -23,11 +25,11 @@ export function AgentPlanDialogAside({ plan }: { plan: AgentPlan }) {
         </div>
       </section>
 
-      <section className="chat-company-plan-detail__context">
-        <h3 className="chat-company-plan-detail__section-title">
+      <section className="min-w-0 p-[18px] [border:1px_solid_var(--plan-detail-border)] rounded-[12px] [background:var(--workspace-panel-raised-bg,_#1d2a36)]">
+        <h3 className="m-0 text-[var(--plan-detail-text)] text-workspace-label font-[700] leading-workspace-label">
           Responsibilities
         </h3>
-        <ul className="chat-company-plan-detail__responsibilities">
+        <ul className="chat-company-plan-detail__responsibilities grid gap-[12px] m-[12px_0_0] p-0 [list-style:none]">
           {plan.responsibilities.map((responsibility) => (
             <li key={responsibility}>
               <Icon name="checkmark" className="size-4" />
@@ -37,7 +39,7 @@ export function AgentPlanDialogAside({ plan }: { plan: AgentPlan }) {
         </ul>
       </section>
 
-      <div className="chat-company-plan-detail__notice">
+      <div className="chat-company-plan-detail__notice grid grid-cols-[20px_minmax(0,_1fr)] [align-items:start] gap-[10px] p-[16px] rounded-[12px] [background:var(--workspace-info-soft,_#18343e)] text-[var(--workspace-native-info,_#67c7db)] text-workspace-label leading-workspace-label">
         <Icon name="rocket" className="size-5" />
         <div>
           <strong>This is the first proposed plan.</strong>

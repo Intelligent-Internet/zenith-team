@@ -168,7 +168,7 @@ export function InvitePeopleDialog({
             <InviteLinkPanel companyId={companyId} onBusyChange={setLinkBusy} />
           ) : !emailEnabled ? (
             <div className="company-invite-body">
-              <p className="company-invite-hint">
+              <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]">
                 Email invitations are unavailable. Use an invite link to add
                 teammates.
               </p>
@@ -189,14 +189,17 @@ export function InvitePeopleDialog({
               }}
             >
               <div className="company-invite-email-field">
-                <div className="company-invite-field-heading">
+                <div className="company-invite-field-heading flex justify-between items-baseline gap-[12px] mb-[8px]">
                   <label
                     className="company-invite-label"
                     htmlFor={`${id}-emails`}
                   >
                     Email addresses
                   </label>
-                  <span className="company-invite-count" aria-live="polite">
+                  <span
+                    className="text-workspace-muted text-[length:11px] whitespace-nowrap"
+                    aria-live="polite"
+                  >
                     {emails.length} / 20
                   </span>
                 </div>
@@ -219,14 +222,17 @@ export function InvitePeopleDialog({
                   aria-invalid={showValidation && Boolean(validation)}
                   aria-describedby={`${id}-hint${showValidation && validation ? ` ${id}-validation` : ""}`}
                 />
-                <p id={`${id}-hint`} className="company-invite-hint">
+                <p
+                  id={`${id}-hint`}
+                  className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]"
+                >
                   Separate addresses with commas or new lines. Duplicates are
                   counted once.
                 </p>
                 {showValidation && validation ? (
                   <p
                     id={`${id}-validation`}
-                    className="company-invite-error"
+                    className="m-[8px_0_0] text-workspace-danger text-[length:12px] leading-[1.5] wrap-anywhere"
                     role="alert"
                   >
                     {validation}
@@ -234,7 +240,10 @@ export function InvitePeopleDialog({
                 ) : null}
               </div>
               {error ? (
-                <p className="company-invite-error" role="alert">
+                <p
+                  className="m-[8px_0_0] text-workspace-danger text-[length:12px] leading-[1.5] wrap-anywhere"
+                  role="alert"
+                >
                   {error}
                 </p>
               ) : null}
@@ -264,7 +273,7 @@ export function InvitePeopleDialog({
                 </div>
               ) : null}
               {legacyInvitations.length ? (
-                <p className="company-invite-feedback">
+                <p className="m-0 p-[10px_12px] rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-text text-[length:12px] leading-[1.5]">
                   Existing invitations keep their original role. To invite these
                   people as Members, cancel their pending invitations in Team
                   and invite them again.

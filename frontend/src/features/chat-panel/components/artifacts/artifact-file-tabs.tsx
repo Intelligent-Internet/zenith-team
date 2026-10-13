@@ -83,7 +83,7 @@ export function ArtifactFileTabs({
   };
 
   return (
-    <div className="artifact-file-tabs">
+    <div className="artifact-file-tabs flex min-w-0 flex-1 items-center gap-[4px]">
       <div
         ref={listRef}
         aria-label="Artifact files"
@@ -123,7 +123,7 @@ export function ArtifactFileTabs({
           <DropdownMenuContent
             align="end"
             aria-label="All artifact files"
-            className="artifact-file-menu"
+            className="artifact-file-menu w-[min(360px,_calc(100vw_-_24px))]"
           >
             <DropdownMenuRadioGroup value={selectedId} onValueChange={onSelect}>
               {files.map((file) => (
@@ -147,12 +147,12 @@ export function ArtifactFileTabs({
 function FileName({ filename }: { filename: string }) {
   const extensionIndex = filename.lastIndexOf(".");
   return (
-    <span className="artifact-file-tab__name">
+    <span className="artifact-file-tab__name flex min-w-0 flex-1">
       <span>
         {extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename}
       </span>
       {extensionIndex > 0 ? (
-        <span className="artifact-file-tab__extension">
+        <span className="max-w-[50%] shrink-0">
           {filename.slice(extensionIndex)}
         </span>
       ) : null}

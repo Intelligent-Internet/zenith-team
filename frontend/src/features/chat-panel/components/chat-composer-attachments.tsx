@@ -28,7 +28,10 @@ export function ChatComposerAttachments({
   if (!attachments.files.length) return null;
   return (
     <>
-      <div aria-label="Attached files" className="chat-composer-attachments">
+      <div
+        aria-label="Attached files"
+        className="chat-composer-attachments relative z-[3] flex min-h-[84px] shrink-0 gap-[8px] m-[9px_12px_0] p-[2px_1px_5px] overflow-x-auto [scrollbar-width:thin]"
+      >
         {attachments.files.map((input) => {
           const file = attachmentFromInput(input, input.id);
           const transfer = attachments.transfers?.[input.id];
@@ -41,7 +44,7 @@ export function ChatComposerAttachments({
             >
               <button
                 aria-label={`Preview ${file.name}`}
-                className="chat-composer-attachment__preview"
+                className="chat-composer-attachment__preview grid w-[52px] h-[54px] shrink-0 place-items-center overflow-hidden [border:0] rounded-[var(--workspace-radius-control,_6px)] p-0 [background:var(--workspace-panel-bg,_#ffffff14)] text-[inherit] cursor-pointer"
                 onClick={(event) => {
                   previewTriggerRef.current = event.currentTarget;
                   setPreview(file);
@@ -54,7 +57,7 @@ export function ChatComposerAttachments({
                   <ChatAttachmentIcon file={file} size={25} />
                 )}
               </button>
-              <div className="chat-composer-attachment__copy">
+              <div className="chat-composer-attachment__copy flex min-w-0 flex-1 flex-col gap-[2px]">
                 <strong title={file.name}>{file.name}</strong>
                 <span>{formatAttachmentSize(file.sizeBytes)}</span>
                 <span
@@ -84,7 +87,7 @@ export function ChatComposerAttachments({
                   />
                 ) : null}
               </div>
-              <div className="chat-composer-attachment__actions">
+              <div className="chat-composer-attachment__actions flex self-stretch flex-col justify-between">
                 <button
                   aria-label={`Remove ${file.name}`}
                   disabled={attachments.busy}

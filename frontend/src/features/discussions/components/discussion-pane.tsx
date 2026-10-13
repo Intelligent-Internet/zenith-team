@@ -334,7 +334,10 @@ function DiscussionChat({
   )
     return (
       <div className="discussion-pane">
-        <div className="discussion-empty" role="status">
+        <div
+          className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+          role="status"
+        >
           <LockKeyhole size={30} />
           <h2>Conversation unavailable</h2>
           <p>You may no longer have access to this conversation.</p>
@@ -389,7 +392,7 @@ function DiscussionChat({
                 </span>
               ) : (
                 <span
-                  className="discussion-header-avatar"
+                  className="relative inline-flex shrink-0"
                   title={peerPresenceLabel}
                 >
                   <DiscussionAvatar
@@ -561,7 +564,10 @@ function DiscussionChat({
           </nav>
 
           {status?.phase === "error" || detail.isError ? (
-            <div className="discussion-empty" role="alert">
+            <div
+              className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+              role="alert"
+            >
               <MessageSquare size={28} />
               <h3>Couldn’t refresh this conversation</h3>
               <p>{status?.error ?? discussionError(detail.error)}</p>
@@ -601,7 +607,10 @@ function DiscussionChat({
               onOpenThread={openThread}
             />
           ) : (
-            <div className="discussion-empty" role="status">
+            <div
+              className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+              role="status"
+            >
               Checking conversation access…
             </div>
           )}

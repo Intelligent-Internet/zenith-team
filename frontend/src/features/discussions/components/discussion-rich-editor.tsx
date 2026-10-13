@@ -380,7 +380,7 @@ export function DiscussionRichFormatting({
   return (
     <>
       <div
-        className="discussion-rich-formatting"
+        className="discussion-rich-formatting flex gap-[4px] p-[4px_12px_0] min-h-[40px] items-center"
         role="group"
         aria-label="Message formatting"
       >
@@ -401,7 +401,7 @@ export function DiscussionRichFormatting({
       </div>
       {link !== null ? (
         <div
-          className="discussion-rich-link"
+          className="discussion-rich-link flex flex-wrap gap-[8px] p-[8px_14px] text-[length:13px]"
           role="group"
           aria-label="Edit link"
         >

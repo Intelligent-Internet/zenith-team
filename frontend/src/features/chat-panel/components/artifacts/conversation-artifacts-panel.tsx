@@ -117,7 +117,7 @@ export function ConversationArtifactsPanel({
         {!linkedArtifactLoading &&
         !linkedArtifactUnavailable &&
         artifacts.count > 0 ? (
-          <span className="artifacts-count">
+          <span className="text-[var(--workspace-native-text-muted,_#697168)] text-[length:13px] [font-variant-numeric:tabular-nums]">
             {artifacts.count}
             {artifacts.hasMore ? "+" : ""}
           </span>
@@ -145,7 +145,7 @@ export function ConversationArtifactsPanel({
         <button
           aria-label="Refresh artifacts"
           title="Refresh artifacts"
-          className="artifacts-icon-button artifacts-panel__refresh"
+          className="artifacts-icon-button artifacts-panel__refresh ml-auto"
           disabled={artifacts.isFetching}
           onClick={() => void artifacts.refresh()}
           type="button"
@@ -209,7 +209,10 @@ export function ConversationArtifactsPanel({
           artifacts.error ||
           searchingEarlier ||
           hasSearch ? (
-            <p className="artifacts-search-summary" role="status">
+            <p
+              className="min-h-[18px] m-[8px_0_0] text-workspace-muted text-[length:12px] leading-[18px]"
+              role="status"
+            >
               {artifacts.isLoading
                 ? "Loading artifacts…"
                 : artifacts.error
@@ -229,20 +232,23 @@ export function ConversationArtifactsPanel({
             Opening artifact…
           </ArtifactPanelState>
         ) : linkedArtifactUnavailable ? (
-          <div className="artifacts-notice" role="alert">
+          <div
+            className="p-[18px_8px] text-[var(--workspace-native-danger,_#b73b41)] text-[length:12px] leading-[1.5]"
+            role="alert"
+          >
             <p>
               This artifact could not be opened. It may be unavailable or you
               may no longer have access.
             </p>
             <button
-              className="artifact-text-button"
+              className="[border:0] p-0 [background:transparent] text-[inherit] cursor-pointer [text-decoration:underline] [text-underline-offset:3px]"
               onClick={onRetryLinkedArtifact}
               type="button"
             >
               Retry
             </button>
             <button
-              className="artifact-text-button"
+              className="[border:0] p-0 [background:transparent] text-[inherit] cursor-pointer [text-decoration:underline] [text-underline-offset:3px]"
               onClick={onShowAll}
               type="button"
             >
@@ -256,10 +262,13 @@ export function ConversationArtifactsPanel({
             Loading artifacts…
           </ArtifactPanelState>
         ) : artifacts.error ? (
-          <div className="artifacts-notice" role="alert">
+          <div
+            className="p-[18px_8px] text-[var(--workspace-native-danger,_#b73b41)] text-[length:12px] leading-[1.5]"
+            role="alert"
+          >
             <p>{artifacts.error}</p>
             <button
-              className="artifact-text-button"
+              className="[border:0] p-0 [background:transparent] text-[inherit] cursor-pointer [text-decoration:underline] [text-underline-offset:3px]"
               disabled={artifacts.isFetching}
               onClick={() => void artifacts.refresh()}
               type="button"
@@ -295,7 +304,7 @@ export function ConversationArtifactsPanel({
             </span>
             {!searchingEarlier ? (
               <button
-                className="artifact-text-button"
+                className="[border:0] p-0 [background:transparent] text-[inherit] cursor-pointer [text-decoration:underline] [text-underline-offset:3px]"
                 type="button"
                 onClick={clearSearch}
               >
@@ -342,7 +351,7 @@ export function ConversationArtifactsPanel({
         !hasSearch &&
         artifacts.hasMore ? (
           <button
-            className="artifacts-load-more"
+            className="w-full mt-[14px] [border:1px_solid_var(--workspace-divider,_#dedbd2)] rounded-[8px] p-[9px] [background:transparent] text-[inherit] cursor-pointer text-[length:12px]"
             disabled={artifacts.isFetching}
             onClick={() => void artifacts.loadMore()}
             type="button"
@@ -352,7 +361,7 @@ export function ConversationArtifactsPanel({
         ) : null}
         {reviewOnly && !linkedArtifactLoading && !linkedArtifactUnavailable ? (
           <button
-            className="artifacts-load-more"
+            className="w-full mt-[14px] [border:1px_solid_var(--workspace-divider,_#dedbd2)] rounded-[8px] p-[9px] [background:transparent] text-[inherit] cursor-pointer text-[length:12px]"
             onClick={onShowAll}
             type="button"
           >
@@ -419,7 +428,9 @@ function ArtifactRow({
             {formatDate(artifact.artifact.createdAt)}
           </time>
           {isLatest ? (
-            <span className="artifact-row__latest">Latest</span>
+            <span className="rounded-[4px] p-[1px_6px] [background:var(--workspace-accent-soft,_#e7eee8)] text-[var(--workspace-native-accent,_#17654f)] text-[length:11px] font-[600]">
+              Latest
+            </span>
           ) : null}
           {artifact.deliverable ? (
             <span
@@ -431,7 +442,11 @@ function ArtifactRow({
           ) : null}
         </span>
       </span>
-      <ChevronRight aria-hidden className="artifact-row__chevron" size={16} />
+      <ChevronRight
+        aria-hidden
+        className="self-center text-[var(--workspace-native-text-muted,_#697168)]"
+        size={16}
+      />
     </button>
   );
 }
@@ -456,11 +471,11 @@ function ArtifactRowPreview({
     const url = rawUrl ? artifactAppUrl(rawUrl) : null;
     return (
       <span className="artifact-row__app">
-        <span className="artifact-row__browser-bar">
+        <span className="artifact-row__browser-bar flex min-w-0 items-center gap-[4px] h-[25px] [border-bottom:1px_solid_rgb(40_75_110_/_12%)] p-[0_8px] text-workspace-info">
           <i /> <i /> <i />
           <b>{url ? new URL(url).host : "App preview"}</b>
         </span>
-        <span className="artifact-row__app-body">
+        <span className="flex flex-1 items-center justify-center gap-[8px] text-workspace-info text-[length:12px] font-[600]">
           <Globe2 aria-hidden size={24} />
           <span>{publicationLabel(artifact)}</span>
           {url ? <ArrowUpRight aria-hidden size={16} /> : null}

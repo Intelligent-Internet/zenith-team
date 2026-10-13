@@ -197,18 +197,18 @@ export function CreateGroupDialog({
                 aria-invalid={!validTopic}
               />
             </label>
-            <p className="discussion-help">
+            <p className="discussion-help flex items-start gap-[8px] leading-[1.6] text-[length:12px] text-[var(--discussion-muted)] m-0">
               <LockKeyhole size={16} /> This channel is private.
             </p>
             {initialPeerId ? (
-              <p className="discussion-help">
+              <p className="discussion-help flex items-start gap-[8px] leading-[1.6] text-[length:12px] text-[var(--discussion-muted)] m-0">
                 This starts a new channel. Your direct message history stays
                 private.
               </p>
             ) : null}
           </div>
         ) : (
-          <div className="discussion-picker">
+          <div className="discussion-picker flex flex-col gap-[12px] min-h-0 flex-1">
             <label className="discussion-search">
               <Search size={16} />
               <input
@@ -220,7 +220,10 @@ export function CreateGroupDialog({
                 onChange={(event) => setSearch(event.target.value)}
               />
             </label>
-            <div className="discussion-selected" aria-label="Selected members">
+            <div
+              className="discussion-selected flex flex-wrap gap-[6px] max-h-[80px] overflow-auto"
+              aria-label="Selected members"
+            >
               <span>You</span>
               {selected.map((key) => (
                 <button
@@ -303,7 +306,7 @@ export function CreateGroupDialog({
                               person.kind === "agent" ? person.id : undefined
                             }
                           />
-                          <span className="discussion-member-copy">
+                          <span className="discussion-member-copy flex flex-col gap-[2px] min-w-0">
                             <strong title={person.name}>{person.name}</strong>
                             <small title={person.description}>
                               {person.description}
@@ -323,7 +326,10 @@ export function CreateGroupDialog({
                 );
               })}
               {people.isLoading || agents.isLoading ? (
-                <p className="discussion-picker-status" role="status">
+                <p
+                  className="m-0 p-[24px_12px] text-[var(--discussion-muted)] text-center"
+                  role="status"
+                >
                   Loading members…
                 </p>
               ) : null}
@@ -332,14 +338,17 @@ export function CreateGroupDialog({
               !people.isError &&
               !agents.isError &&
               !visibleRecipients.length ? (
-                <p className="discussion-picker-status" role="status">
+                <p
+                  className="m-0 p-[24px_12px] text-[var(--discussion-muted)] text-center"
+                  role="status"
+                >
                   {query
                     ? "No matching members."
                     : "No members available to add."}
                 </p>
               ) : null}
             </div>
-            <div className="discussion-picker-summary">
+            <div className="discussion-picker-summary flex flex-col gap-[4px] text-[var(--discussion-muted)] text-[length:12px] leading-[1.5]">
               <p aria-live="polite" aria-atomic="true">
                 {humanCount} of 50 people · {agentCount} of 20 agents
               </p>
@@ -351,7 +360,7 @@ export function CreateGroupDialog({
             {error}
           </p>
         ) : null}
-        <footer className="discussion-dialog-footer">
+        <footer className="flex justify-between gap-[12px] [border-top:1px_solid_var(--discussion-border)] pt-[16px]">
           {step === 2 ? (
             <button
               className="discussion-button"

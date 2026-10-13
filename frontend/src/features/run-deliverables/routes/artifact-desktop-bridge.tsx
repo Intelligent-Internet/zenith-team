@@ -50,20 +50,22 @@ export function ArtifactDesktopBridge({
           className="artifact-bridge-card"
           aria-labelledby="artifact-open-title"
         >
-          <div className="artifact-bridge-icon">
+          <div className="grid place-items-center w-[64px] h-[64px] m-[0_auto_28px] rounded-[18px] [background:color-mix(in_srgb,_var(--accent-sky)_45%,_var(--surface-primary))]">
             <Monitor size={28} aria-hidden />
           </div>
-          <span className="artifact-eyebrow">SHARED WITH YOU</span>
+          <span className="block text-[length:10px] font-[650] tracking-[0.14em] text-[var(--text-secondary)]">
+            SHARED WITH YOU
+          </span>
           <h1 id="artifact-open-title">
             Your artifact is ready
             <br />
             to open.
           </h1>
-          <p className="artifact-bridge-description">
+          <p className="text-[var(--text-secondary)] text-[length:14px] leading-[1.7]">
             Continue in Zenith Team to view the files
             <br className="hidden sm:block" /> and pick up the conversation.
           </p>
-          <div className="artifact-bridge-actions">
+          <div className="artifact-bridge-actions grid gap-[10px] mt-[30px]">
             <Button variant="default" asChild>
               <a href={desktopUrl}>
                 Open Zenith Team <ArrowUpRight size={18} aria-hidden />
@@ -73,7 +75,7 @@ export function ArtifactDesktopBridge({
               Continue in browser
             </Button>
           </div>
-          <p className="artifact-bridge-hint">
+          <p className="m-[18px_0_28px] text-[var(--text-tertiary)] text-[length:11px]">
             If prompted, allow your browser to open the app.
           </p>
           <div className="artifact-bridge-privacy">
@@ -81,7 +83,7 @@ export function ArtifactDesktopBridge({
             <span>Private artifact. Only people with access can view it.</span>
           </div>
         </section>
-        <p className="artifact-bridge-download">
+        <p className="artifact-bridge-download mt-[24px] text-center text-[var(--text-secondary)] text-[length:12px]">
           New to Zenith Team?{" "}
           <button type="button" onClick={() => setShowDownloads(true)}>
             Get the desktop app <ArrowUpRight size={14} aria-hidden />

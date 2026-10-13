@@ -64,13 +64,6 @@
   line-height: var(--workspace-leading-title);
 }
 
-.chat-company-plan-detail__subtitle {
-  margin: 4px 0 0;
-  color: var(--plan-detail-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
 .chat-company-plan-detail__close {
   flex-shrink: 0;
   min-height: 40px;
@@ -106,21 +99,6 @@
   gap: 24px;
 }
 
-.chat-company-plan-detail__section-title {
-  margin: 0;
-  color: var(--plan-detail-text);
-  font-size: var(--workspace-text-label);
-  font-weight: 700;
-  line-height: var(--workspace-leading-label);
-}
-
-.chat-company-plan-detail__summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
 .chat-company-plan-detail__summary-card {
   display: flex;
   min-width: 0;
@@ -132,32 +110,12 @@
   background: var(--workspace-panel-raised-bg, #1d2a36);
 }
 
-.chat-company-plan-detail__summary-icon {
-  display: grid;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--workspace-accent-soft, #35404a);
-  color: var(--plan-detail-accent);
-}
-
 .chat-company-plan-detail__summary-label,
 .chat-company-plan-detail__summary-caption {
   display: block;
   color: var(--plan-detail-muted);
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
-}
-
-.chat-company-plan-detail__summary-value {
-  display: block;
-  margin: 3px 0;
-  color: var(--plan-detail-text);
-  font-size: 26px;
-  font-weight: 750;
-  line-height: 1.2;
 }
 
 .chat-company-plan-detail__tasks {
@@ -193,36 +151,6 @@
   line-height: var(--workspace-leading-label);
   white-space: pre-wrap;
 }
-.chat-company-plan-detail__aside {
-  display: grid;
-  min-width: 0;
-  gap: 16px;
-}
-
-.chat-company-plan-detail__context {
-  min-width: 0;
-  padding: 18px;
-  border: 1px solid var(--plan-detail-border);
-  border-radius: 12px;
-  background: var(--workspace-panel-raised-bg, #1d2a36);
-}
-
-.chat-company-plan-detail__objective {
-  margin: 10px 0 0;
-  color: var(--plan-detail-text);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  white-space: pre-wrap;
-}
-.chat-company-plan-detail__agent {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  color: var(--plan-detail-muted);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-}
 .chat-company-plan-detail__agent img {
   flex-shrink: 0;
   width: 32px;
@@ -233,13 +161,6 @@
 .chat-company-plan-detail__agent strong {
   color: var(--plan-detail-text);
   font-weight: 700;
-}
-.chat-company-plan-detail__responsibilities {
-  display: grid;
-  gap: 12px;
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
 }
 .chat-company-plan-detail__responsibilities li {
   display: grid;
@@ -253,19 +174,6 @@
 .chat-company-plan-detail__responsibilities svg {
   margin-top: 3px;
   color: var(--workspace-native-success, #9bd568);
-}
-
-.chat-company-plan-detail__notice {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--workspace-info-soft, #18343e);
-  color: var(--workspace-native-info, #67c7db);
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
 }
 
 .chat-company-plan-detail__notice strong {

@@ -126,7 +126,7 @@ export function WorkflowFormField({
       const chosen = Array.isArray(value) ? value : [];
       control = (
         <div
-          className="workflow-field__chips"
+          className="flex flex-wrap gap-[8px]"
           role="group"
           aria-labelledby={labelId}
           aria-describedby={describedBy}
@@ -206,11 +206,13 @@ export function WorkflowFormField({
     <>
       {field.label}
       {field.required ? (
-        <span className="workflow-field__required" aria-hidden="true">
+        <span className="text-workspace-danger" aria-hidden="true">
           *
         </span>
       ) : (
-        <span className="workflow-field__optional">Optional</span>
+        <span className="text-workspace-muted text-workspace-micro font-[500]">
+          Optional
+        </span>
       )}
     </>
   );
@@ -245,12 +247,15 @@ export function WorkflowFormField({
       {...dropProps}
     >
       {field.type === "multi_select" || field.type === "select" ? (
-        <span className="workflow-field__label" id={labelId}>
+        <span
+          className="flex flex-wrap items-baseline gap-[4px_6px] text-workspace-text text-workspace-label font-[600] leading-workspace-label"
+          id={labelId}
+        >
           {labelContent}
         </span>
       ) : (
         <label
-          className="workflow-field__label"
+          className="flex flex-wrap items-baseline gap-[4px_6px] text-workspace-text text-workspace-label font-[600] leading-workspace-label"
           id={labelId}
           htmlFor={controlId}
         >
@@ -317,10 +322,10 @@ function WorkflowFieldFiles({
     )?.focus();
   }, [uploads]);
   return (
-    <div className="workflow-field__files" ref={filesRef}>
+    <div className="grid gap-[8px] min-w-0" ref={filesRef}>
       {uploads.length ? (
         <ul
-          className="workflow-field__file-list"
+          className="grid gap-[6px] min-w-0 m-0 p-0 [list-style:none]"
           aria-label={`Files for ${label}`}
         >
           {uploads.map((upload, index) => (
@@ -338,7 +343,7 @@ function WorkflowFieldFiles({
                 size={18}
               />
               <span
-                className="workflow-field__file-name"
+                className="overflow-hidden font-[500] text-ellipsis whitespace-nowrap"
                 title={upload.filename}
               >
                 {upload.filename}
@@ -361,7 +366,7 @@ function WorkflowFieldFiles({
           ))}
         </ul>
       ) : null}
-      <div className="workflow-field__attach-row">
+      <div className="flex flex-wrap items-center gap-[6px_10px] min-w-0">
         <button
           type="button"
           className="workflow-field__attach"
@@ -370,7 +375,7 @@ function WorkflowFieldFiles({
           <Paperclip aria-hidden size={14} />
           Attach files
         </button>
-        <span className="workflow-field__attach-hint">
+        <span className="text-workspace-muted text-workspace-caption">
           Or drop them here. The Agent reads them as this Task's files.
         </span>
       </div>

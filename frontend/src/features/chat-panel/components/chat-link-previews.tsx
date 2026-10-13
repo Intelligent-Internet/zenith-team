@@ -12,7 +12,10 @@ export function ChatLinkPreviews({ text }: { text: string }) {
   const links = useMemo(() => messagePreviewLinks(text), [text]);
   if (!links.length) return null;
   return (
-    <div aria-label="Shared links" className="chat-link-previews">
+    <div
+      aria-label="Shared links"
+      className="chat-link-previews flex max-w-[560px] flex-col gap-[8px] mt-[9px]"
+    >
       {links.map((url) => (
         <ChatLinkCard key={url} url={url} />
       ))}
@@ -60,22 +63,24 @@ function ChatLinkCard({ url }: { url: string }) {
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <span className="chat-link-preview__icon">
+          <span className="grid w-[64px] h-[64px] shrink-0 place-items-center rounded-[6px] [background:var(--workspace-control-bg)] text-workspace-muted">
             <Globe aria-hidden="true" size={24} />
           </span>
         )}
-        <span className="chat-link-preview__copy">
-          <span className="chat-link-preview__domain">
+        <span className="chat-link-preview__copy flex min-w-0 flex-1 flex-col gap-[6px] wrap-anywhere">
+          <span className="flex items-center gap-[5px] text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] leading-[18px]">
             {domain}
             <ArrowUpRight aria-hidden="true" size={12} />
           </span>
           <strong>{preview.title || domain}</strong>
           {preview.description ? (
-            <span className="chat-link-preview__description">
+            <span className="[display:-webkit-box] overflow-hidden text-workspace-muted text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)] [-webkit-line-clamp:2] [-webkit-box-orient:vertical]">
               {preview.description}
             </span>
           ) : (
-            <span className="chat-link-preview__url">{url}</span>
+            <span className="overflow-hidden text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] text-ellipsis whitespace-nowrap">
+              {url}
+            </span>
           )}
         </span>
       </ChatMarkdownLink>

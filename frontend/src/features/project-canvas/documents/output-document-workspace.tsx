@@ -53,7 +53,10 @@ export default function OutputDocumentWorkspace({
   if (board.isError || (!board.isLoading && !artifact))
     return (
       fallback ?? (
-        <div className="pc-output-workspace-state" role="alert">
+        <div
+          className="grid [place-content:center] gap-[12px] h-full p-[32px] text-workspace-muted"
+          role="alert"
+        >
           <p>This document is unavailable or your access has changed.</p>
           <button onClick={() => void board.refetch()}>Retry</button>
           <button onClick={onClose}>Back to artifacts</button>
@@ -62,7 +65,10 @@ export default function OutputDocumentWorkspace({
     );
   if (!artifact || !board.data)
     return (
-      <div className="pc-output-workspace-state" role="status">
+      <div
+        className="grid [place-content:center] gap-[12px] h-full p-[32px] text-workspace-muted"
+        role="status"
+      >
         Opening document…
       </div>
     );

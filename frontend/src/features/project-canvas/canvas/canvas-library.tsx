@@ -93,7 +93,10 @@ export function CanvasLibrary({
       onClose={onClose}
       canClose={!busy}
     >
-      <div className="pc-add-tabs" role="tablist">
+      <div
+        className="pc-add-tabs grid grid-cols-[repeat(4,_1fr)] m-[22px_26px_0] gap-[6px] p-[4px] [border:1px_solid_var(--pc-line)] rounded-[8px] [background:var(--pc-paper)]"
+        role="tablist"
+      >
         {(["templates", "views", "removed"] as const).map((value) => (
           <button
             key={value}
@@ -109,7 +112,7 @@ export function CanvasLibrary({
           </button>
         ))}
       </div>
-      <div className="pc-add-form">
+      <div className="pc-add-form p-[22px_26px_24px] flex flex-col gap-[19px]">
         {error && <p role="alert">{error}</p>}
         {query.isLoading && <p>Loading library…</p>}
         {query.isError && (

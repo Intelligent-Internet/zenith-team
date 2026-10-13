@@ -22,7 +22,7 @@ export function PlanApplySkipped({
   return (
     <section
       aria-label="Changes not applied"
-      className="company-plan-approval__skipped"
+      className="company-plan-approval__skipped mt-[12px] p-[10px_12px] rounded-[8px] [background:var(--workspace-approval-soft)] text-[var(--workspace-native-approval)] text-workspace-caption leading-workspace-caption"
     >
       <p>Some changes were not applied:</p>
       <ul>

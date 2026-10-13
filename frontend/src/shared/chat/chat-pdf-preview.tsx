@@ -183,7 +183,10 @@ export default function ChatPdfPreview({
     <div className="chat-pdf-preview">
       <div className="chat-pdf-preview__page" ref={viewportRef}>
         {error ? (
-          <div className="chat-file-viewer__empty" role="alert">
+          <div
+            className="chat-file-viewer__empty flex min-h-[180px] flex-col items-center justify-center gap-[10px] p-[24px] text-workspace-muted text-[length:13px]"
+            role="alert"
+          >
             <p>{error}</p>
             <button
               onClick={() => setAttempt((value) => value + 1)}
@@ -193,7 +196,10 @@ export default function ChatPdfPreview({
             </button>
           </div>
         ) : !pdf || rendering ? (
-          <span className="chat-pdf-preview__loading" role="status">
+          <span
+            className="flex items-center justify-center gap-[8px] text-workspace-muted text-[length:12px]"
+            role="status"
+          >
             <LoaderCircle className="animate-spin" size={18} />
             Loading page…
           </span>

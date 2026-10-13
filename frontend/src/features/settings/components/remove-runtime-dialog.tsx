@@ -161,7 +161,7 @@ function RemoveRuntimeForm({
         <>
           <ul
             aria-label="Agents set up on this runtime"
-            className="runtime-dialog__blockers"
+            className="runtime-dialog__blockers grid max-h-[168px] gap-[6px] m-[16px_0_0] overflow-y-auto [border:1px_solid_var(--workspace-divider,_rgba(255,_255,_255,_0.1))] rounded-[12px] p-[10px_12px] [list-style:none]"
           >
             {blockers.map((binding) => {
               const agent = agentById.get(binding.agentId);
@@ -173,7 +173,7 @@ function RemoveRuntimeForm({
               );
             })}
           </ul>
-          <label className="runtime-dialog__field">
+          <label className="runtime-dialog__field grid gap-[8px] mt-[20px] text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.7))] text-workspace-body leading-workspace-body text-left">
             <span>What happens to the agents</span>
             <AgentRuntimeSelect
               aria-label="What happens to the agents"

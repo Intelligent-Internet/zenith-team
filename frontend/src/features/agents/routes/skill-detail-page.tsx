@@ -295,10 +295,10 @@ function SkillWorkspace({
       className="skill-detail-page"
       contentClassName="skill-detail-content"
       title={
-        <span className="skill-detail-title">
+        <span className="flex items-center flex-wrap gap-[12px]">
           <BookOpen size={20} aria-hidden />
           {skill.name}
-          <span className="skill-detail-state">
+          <span className="inline-flex items-center gap-[8px]">
             <Tooltip label={about ? "Back to file" : "Skill details"}>
               <button
                 type="button"
@@ -358,7 +358,7 @@ function SkillWorkspace({
         </span>
       }
       description={
-        <span className="skill-detail-summary">
+        <span className="flex items-center gap-[8px] text-[length:13px]">
           {skillSources[skill.sourceType].label}
           <span>·</span>
           {skill.fileCount} {skill.fileCount === 1 ? "file" : "files"}
@@ -403,7 +403,7 @@ function SkillWorkspace({
         onRestore={restore}
       />
       <section
-        className="skill-file-main"
+        className="flex flex-1 flex-col min-w-0 min-h-0"
         aria-label={about ? "Skill details" : path}
       >
         <header className="skill-file-toolbar">
@@ -416,7 +416,7 @@ function SkillWorkspace({
           </div>
           {!about && markdown && (file?.text || currentDraft) && !removed && (
             <div
-              className="skill-file-modes"
+              className="skill-file-modes flex gap-[2px] p-[3px] rounded-[6px] [background:var(--workspace-control-bg)]"
               role="group"
               aria-label="File view"
             >
@@ -454,12 +454,15 @@ function SkillWorkspace({
             )}
         </header>
         {conflict && (
-          <div className="skill-editor-notice" role="alert">
+          <div
+            className="flex items-center flex-wrap gap-[12px] p-[12px_20px] [background:var(--workspace-control-bg)] text-[length:13px]"
+            role="alert"
+          >
             This skill changed. Your edits are preserved.
             <SkillDraftCopyButton draftKey={key} />
             <button
               type="button"
-              className="custom-skill-text-button"
+              className="mt-[8px] text-workspace-accent font-[500] cursor-pointer"
               onClick={() => setConfirm("discard")}
             >
               Discard and reload
@@ -467,7 +470,7 @@ function SkillWorkspace({
           </div>
         )}
         {problem && (
-          <div className="skill-editor-problem">
+          <div className="p-[12px_20px_0]">
             <SkillError problem={problem} />
           </div>
         )}
@@ -515,7 +518,10 @@ function SkillWorkspace({
               }}
             />
           ) : !loaded ? (
-            <p role="status" className="skill-file-loading">
+            <p
+              role="status"
+              className="text-workspace-muted text-[length:13px]"
+            >
               Loading file…
             </p>
           ) : showEditor ? (
@@ -575,7 +581,7 @@ function SkillWorkspace({
             </button>
             <button
               type="button"
-              className="custom-skill-button custom-skill-button--danger"
+              className="custom-skill-button [background:var(--workspace-native-danger)] text-[var(--workspace-danger-foreground)]"
               onClick={() => {
                 if (confirm === "discard") discard();
                 else if (editable && path !== "SKILL.md") {
@@ -605,7 +611,7 @@ function SkillWorkspace({
 
 function SkillDetails({ skill }: { skill: AgentSkill }) {
   return (
-    <article className="skill-details">
+    <article className="skill-details max-w-[800px] text-[length:14px] leading-[1.7]">
       <h2>Description</h2>
       <p>{skill.description}</p>
       <dl>

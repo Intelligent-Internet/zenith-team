@@ -81,7 +81,7 @@ export function WorkspaceCompanySwitcher({
               onSwitch={() => setOpen(false)}
               onAdd={() => setAddCompanyOpen(true)}
             />
-            <DropdownMenu.Separator className="workspace-company-menu-separator" />
+            <DropdownMenu.Separator className="h-[1px] m-[8px_0] [background:var(--workspace-divider)]" />
             <DropdownMenu.Item
               className="workspace-company-settings"
               onSelect={() => navigate("/settings/profile")}

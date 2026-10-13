@@ -14,7 +14,7 @@ export const MarkdownView = memo(function MarkdownView({
       remarkRehypeOptions={{ allowDangerousHtml: false }}
       components={{
         img: ({ alt }) => (
-          <span className="pc-inline-note">
+          <span className="p-[8px_14px] text-[var(--pc-muted)] text-[length:11px]">
             {alt ? `Image: ${alt}` : "Embedded image"}
           </span>
         ),

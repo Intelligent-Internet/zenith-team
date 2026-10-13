@@ -53,11 +53,3 @@
 .app-avatar[data-size="72"] {
   --app-avatar-size: 72px;
 }
-
-.app-avatar__logo {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: calc(var(--app-avatar-size) * 0.1);
-}

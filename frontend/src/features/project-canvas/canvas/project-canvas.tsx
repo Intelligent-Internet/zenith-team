@@ -653,7 +653,9 @@ function CanvasWorkspace(scope: CanvasScope) {
       <header
         className={`pc-header ${canvasFullscreen.active ? presentationStyles.fullscreenHeader : ""}`}
       >
-        <h2 className="pc-results-title">Results</h2>
+        <h2 className="m-0 text-workspace-text text-[length:16px] font-[600]">
+          Results
+        </h2>
         <ResultsViewSwitch />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -895,7 +897,10 @@ function CanvasWorkspace(scope: CanvasScope) {
         </div>
       )}
       {mode === "plan" && query.isError && (
-        <div className="pc-view-notice" role="status">
+        <div
+          className="m-0 p-[8px_24px] text-[length:11px] text-[var(--pc-muted)] [background:var(--workspace-control-bg)]"
+          role="status"
+        >
           Artifacts couldn’t be refreshed. Your task plan is still available.{" "}
           <button
             className="pc-text-button"
@@ -906,12 +911,12 @@ function CanvasWorkspace(scope: CanvasScope) {
         </div>
       )}
       {query.isLoading && mode !== "plan" ? (
-        <div className="pc-state">
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
           <LoaderCircle size={26} className="pc-spin" />
           <h3>Opening your project space</h3>
         </div>
       ) : query.isError && !snapshot && mode !== "plan" ? (
-        <div className="pc-state">
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
           <Layers size={30} />
           <h3>We couldn’t open this canvas</h3>
           <button className="pc-button" onClick={() => void query.refetch()}>
@@ -920,7 +925,7 @@ function CanvasWorkspace(scope: CanvasScope) {
           </button>
         </div>
       ) : (
-        <div className="pc-body">
+        <div className="flex-1 min-h-0 flex overflow-hidden">
           {library && mode === "canvas" && (
             <aside className="pc-library">
               <header>
@@ -968,7 +973,7 @@ function CanvasWorkspace(scope: CanvasScope) {
                   ))}
                 </div>
               )}
-              <div className="pc-library-filters">
+              <div className="pc-library-filters grid grid-cols-[1fr_1fr] gap-[6px] p-[10px]">
                 <select
                   aria-label="Filter artifact type"
                   value={filters.type}
@@ -1042,7 +1047,13 @@ function CanvasWorkspace(scope: CanvasScope) {
             </aside>
           )}
           {(snapshot || mode === "plan") && mode !== "canvas" && (
-            <Suspense fallback={<div className="pc-state">Opening view…</div>}>
+            <Suspense
+              fallback={
+                <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
+                  Opening view…
+                </div>
+              }
+            >
               <CanvasViews
                 mode={mode}
                 scope={scope}
@@ -1071,7 +1082,7 @@ function CanvasWorkspace(scope: CanvasScope) {
           )}
           {mode === "canvas" && (
             <div
-              className="pc-surface"
+              className="pc-surface flex-1 min-w-0 min-h-0 relative isolate"
               ref={surface}
               onKeyDownCapture={(event) => {
                 if (
@@ -1234,7 +1245,7 @@ function CanvasWorkspace(scope: CanvasScope) {
                 />
               )}
               {!snapshot?.items.length && (
-                <div className="pc-empty">
+                <div className="pc-empty absolute inset-0 flex items-center justify-center flex-col pointer-events-none p-[92px_24px_75px]">
                   <div className="pc-empty-artifacts" aria-hidden>
                     <div>
                       <FileText size={24} />
@@ -1248,7 +1259,7 @@ function CanvasWorkspace(scope: CanvasScope) {
                       <span>Work comes together</span>
                     </div>
                   </div>
-                  <div className="pc-eyebrow">
+                  <div className="text-[var(--pc-soft)] text-[length:9px] font-[650] tracking-[1.5px]">
                     A SHARED PLACE FOR WHAT’S NEXT
                   </div>
                   <h3>Make room for your best work.</h3>
@@ -1536,7 +1547,7 @@ function CanvasWorkspace(scope: CanvasScope) {
                   >
                     <ChevronRight size={18} />
                   </button>
-                  <span className="pc-divider" />
+                  <span className="inline-block w-[1px] h-[20px] m-[0_5px] flex-none [background:var(--pc-line)]" />
                   <button
                     className="pc-icon-button"
                     aria-label="End presentation"
@@ -1562,7 +1573,7 @@ function CanvasWorkspace(scope: CanvasScope) {
                   >
                     <Undo2 size={17} />
                   </button>
-                  <span className="pc-divider" />
+                  <span className="inline-block w-[1px] h-[20px] m-[0_5px] flex-none [background:var(--pc-line)]" />
                   <ZoomControls />
                 </div>
               )}
@@ -1660,7 +1671,7 @@ function ArtifactLibrary({
   const start = Math.max(0, Math.floor(scrollTop / 84) - 4);
   return (
     <div
-      className="pc-library-scroll"
+      className="overflow-y-auto min-h-0 flex-1"
       onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
     >
       <div
@@ -1717,7 +1728,9 @@ function ArtifactLibrary({
         })}
       </div>
       {artifacts.length === 0 && (
-        <p className="pc-library-empty">No artifacts here yet.</p>
+        <p className="p-[24px_18px] text-[length:12px] text-[var(--pc-muted)]">
+          No artifacts here yet.
+        </p>
       )}
     </div>
   );
@@ -1736,7 +1749,7 @@ function ZoomControls() {
         <Minus size={17} />
       </button>
       <button
-        className="pc-zoom-value"
+        className="min-w-[48px] text-[length:11px] text-[var(--pc-muted)] [font-variant-numeric:tabular-nums]"
         title="Reset zoom"
         onClick={() => void flow.zoomTo(1, { duration: 180 })}
       >
@@ -1749,7 +1762,7 @@ function ZoomControls() {
       >
         <Plus size={17} />
       </button>
-      <span className="pc-divider" />
+      <span className="inline-block w-[1px] h-[20px] m-[0_5px] flex-none [background:var(--pc-line)]" />
       <button
         className="pc-icon-button"
         aria-label="Fit all artifacts"

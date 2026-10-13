@@ -72,7 +72,10 @@ export function NodeCommentsContent({
       <header>
         <div>
           <strong>
-            Discussion <span className="pc-count">v{version.number}</span>
+            Discussion{" "}
+            <span className="rounded-[4px] p-[1px_5px] [background:var(--workspace-control-bg)] text-[length:10px] [font-variant-numeric:tabular-nums]">
+              v{version.number}
+            </span>
           </strong>
           <span title={title}>{title}</span>
         </div>
@@ -91,7 +94,7 @@ export function NodeCommentsContent({
         version={version}
         onOpen={openThread}
       />
-      <footer className="pc-node-comments-footer">
+      <footer className="pc-node-comments-footer flex items-center justify-between gap-[12px] p-[13px_16px] [border-top:1px_solid_var(--pc-line)]">
         <span>Comments stay with this version</span>
         <button type="button" onClick={() => openThread("")}>
           Open artifact <ArrowUpRight size={15} />
@@ -124,19 +127,25 @@ function NodeThreadList({
       {threads && (
         <CommentFilters threads={threads} value={filter} onChange={setFilter} />
       )}
-      <div className="pc-node-thread-list">
+      <div className="pc-node-thread-list overflow-auto min-h-0 p-[6px] overscroll-contain">
         {query.isError ? (
-          <div className="pc-node-comments-state" role="alert">
+          <div
+            className="pc-node-comments-state p-[28px_20px] text-[var(--pc-muted)] grid [justify-items:center] gap-[8px] text-center"
+            role="alert"
+          >
             <p>Comments could not be loaded.</p>
             <button onClick={() => void query.refetch()}>Try again</button>
           </div>
         ) : !threads ? (
-          <div className="pc-node-comments-state" role="status">
+          <div
+            className="pc-node-comments-state p-[28px_20px] text-[var(--pc-muted)] grid [justify-items:center] gap-[8px] text-center"
+            role="status"
+          >
             <LoaderCircle size={22} className="pc-spin" />
             Loading comments…
           </div>
         ) : !filtered?.length ? (
-          <div className="pc-node-comments-state">
+          <div className="pc-node-comments-state p-[28px_20px] text-[var(--pc-muted)] grid [justify-items:center] gap-[8px] text-center">
             {filter === "resolved" ? (
               <Check size={24} />
             ) : (
@@ -165,7 +174,7 @@ function NodeThreadList({
                 className="pc-node-thread"
                 onClick={() => onOpen(thread.id)}
               >
-                <span className="pc-node-thread-heading">
+                <span className="pc-node-thread-heading flex items-center gap-[8px]">
                   <CommentAvatar name={first?.authorName ?? "?"} />
                   <strong>{first?.authorName ?? "Removed comment"}</strong>
                   {first && (

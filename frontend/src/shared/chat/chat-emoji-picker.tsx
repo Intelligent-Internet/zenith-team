@@ -102,7 +102,7 @@ export function ChatEmojiPicker({
         <Popover.Content
           align={align}
           aria-label={label}
-          className="chat-emoji-picker"
+          className="chat-emoji-picker z-[360] w-[min(352px,_calc(100vw_-_24px))] h-[min(_440px,_var(--radix-popover-content-available-height,_440px),_calc(100dvh_-_24px)_)] overflow-hidden [border:1px_solid_var(--workspace-divider-strong,_var(--input-border))] rounded-[10px] [background:var(--workspace-overlay-bg,_var(--popover))] text-[var(--workspace-native-text,_var(--popover-foreground))] [box-shadow:var(--workspace-overlay-shadow,_0_8px_28px_rgb(0_0_0_/_18%))] [outline:none]"
           collisionPadding={12}
           onCloseAutoFocus={onCloseAutoFocus}
           side="top"
@@ -110,7 +110,10 @@ export function ChatEmojiPicker({
         >
           <Suspense
             fallback={
-              <div className="chat-emoji-picker__loading" role="status">
+              <div
+                className="grid h-full place-items-center text-[var(--workspace-native-text-muted,_var(--text-secondary))] text-[length:13px]"
+                role="status"
+              >
                 Loading emoji…
               </div>
             }

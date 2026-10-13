@@ -30,12 +30,6 @@
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: 2px;
 }
-.pc-results-title {
-  margin: 0;
-  color: var(--workspace-native-text);
-  font-size: 16px;
-  font-weight: 600;
-}
 .pc-header:has(> .results-view-switch) {
   height: auto;
   min-height: 48px;

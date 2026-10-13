@@ -30,9 +30,9 @@ export function ProjectResultCard({
       : ""
     : version.excerpt;
   return (
-    <article className="po-result-card">
+    <article className="po-result-card flex flex-col min-w-0 [border:1px_solid_var(--pc-line)] rounded-[12px] [background:var(--pc-paper)] overflow-hidden">
       <button className="po-result-open" onClick={onOpen}>
-        <span className="po-result-kind">
+        <span className="flex items-center gap-[8px] text-[length:11px] text-[var(--pc-muted)]">
           <FormatIcon size={18} /> {page ? "Page" : label}
         </span>
         <h3>{artifact.title}</h3>
@@ -46,7 +46,7 @@ export function ProjectResultCard({
                 ? "Open this page to explore the work."
                 : "Open to view the result.")}
         </p>
-        <span className="po-result-state">
+        <span className="po-result-state flex items-center justify-between text-[length:11px] text-[var(--pc-muted)] mt-auto">
           {page ? <span>Working page</span> : <span>Saved Output</span>}
           <Icon name="arrow-up-right" className="size-4" />
         </span>

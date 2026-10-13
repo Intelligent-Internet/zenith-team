@@ -16,24 +16,12 @@
   margin-right: 32px;
   width: fit-content;
 }
-.task-run-time {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(80px, 0.6fr);
-  gap: 8px;
-  align-items: center;
-}
 .task-schedule-fields > .calendar-picker-trigger {
   width: fit-content;
   max-width: 100%;
 }
 .task-schedule-fields .calendar-picker-trigger {
   min-height: 34px;
-  font-size: 12px;
-}
-.task-schedule-input {
-  display: grid;
-  gap: 6px;
-  color: var(--workspace-native-text-muted);
   font-size: 12px;
 }
 .task-schedule-input input {
@@ -50,19 +38,6 @@
   color: var(--workspace-native-text-muted);
   font-size: 11px;
   line-height: 1.5;
-}
-.task-schedule-error {
-  color: var(--workspace-native-danger);
-  font-size: 12px;
-  line-height: 1.5;
-}
-.task-schedule-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 14px;
-  margin-top: 14px;
-  border-top: 1px solid var(--workspace-divider);
 }
 .task-schedule-actions > button:first-child {
   order: 1;
@@ -122,10 +97,6 @@
   opacity: 0.5;
   cursor: default;
 }
-.task-schedule-property {
-  flex-wrap: wrap;
-  gap: 4px;
-}
 .task-schedule-property small {
   color: var(--workspace-native-text-muted);
   font-size: 11px;
@@ -142,25 +113,8 @@
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
 }
-.task-schedule-create {
-  display: grid;
-  gap: 12px;
-  justify-items: start;
-}
 .task-schedule-create > .task-schedule-fields {
   width: min(100%, 360px);
-}
-.task-calendar-time {
-  display: block;
-  white-space: nowrap;
-  font-size: 12px;
-}
-.calendar-task-property {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  color: var(--workspace-text-muted);
 }
 .calendar-task-property > svg {
   flex-shrink: 0;

@@ -158,15 +158,17 @@ function TaskScene({
     return () => cancelAnimationFrame(frame);
   }, [nodes, flow]);
   return (
-    <div className="pc-task-canvas">
+    <div className="flex flex-1 flex-col min-w-0 min-h-0">
       <header className="pc-task-canvas-heading">
         <button className="pc-button" onClick={onBack}>
           <ChevronLeft size={16} />
           Project plan
         </button>
-        <span className="pc-task-canvas-separator">/</span>
+        <span className="text-[var(--pc-soft)]">/</span>
         <div>
-          <span className="pc-eyebrow">{label}</span>
+          <span className="text-[var(--pc-soft)] text-[length:9px] font-[650] tracking-[1.5px]">
+            {label}
+          </span>
           <h3>{title}</h3>
           <p>
             {artifacts.length}{" "}
@@ -182,7 +184,7 @@ function TaskScene({
         )}
       </header>
       <div
-        className="pc-graph-surface"
+        className="pc-graph-surface relative flex-1 min-h-0 overflow-hidden [background:var(--workspace-content-bg)]"
         onKeyDownCapture={(event) => {
           if (
             event.key !== "Enter" ||

@@ -2,18 +2,6 @@
   min-height: 0;
   min-width: 0;
 }
-.projects-page__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.projects-page__tabs {
-  display: flex;
-  gap: 4px;
-}
 .projects-page__tabs button {
   min-height: var(--workspace-control-size);
   padding: 6px 10px;
@@ -194,14 +182,6 @@ html[data-boardly-workspace-theme]
   outline: none;
   background: var(--workspace-selected-bg);
 }
-.projects-page__count {
-  display: block;
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  color: var(--workspace-native-text-muted);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
 .projects-page__progress-track {
   max-width: 120px;
   height: 3px;
@@ -288,11 +268,6 @@ html[data-boardly-workspace-theme]
 .project-editor input:disabled,
 .project-editor textarea:disabled {
   opacity: 0.55;
-}
-.project-editor__error {
-  margin: 0;
-  color: var(--workspace-native-danger);
-  font-size: 13px;
 }
 .project-editor small {
   color: var(--workspace-text-muted);
@@ -447,20 +422,12 @@ html[data-boardly-workspace-theme]
   align-items: flex-start;
   gap: 16px;
 }
-.project-editor__identity-fields {
-  flex: 1;
-  min-width: 0;
-}
 .project-editor__identity-fields .project-editor__field {
   gap: var(--project-name-field-gap);
   line-height: var(--project-name-label-height);
 }
 .project-editor__identity-fields input {
   height: var(--project-name-input-height);
-}
-.project-files-editor {
-  display: grid;
-  gap: 20px;
 }
 .project-editor__field-heading {
   font-size: 13px;
@@ -469,10 +436,6 @@ html[data-boardly-workspace-theme]
 .project-editor__field small,
 .project-editor__field-heading small {
   margin-left: 6px;
-}
-.project-files-editor__documents {
-  display: grid;
-  gap: 8px;
 }
 .project-file-row small,
 .project-document-drop small {
@@ -497,34 +460,6 @@ html[data-boardly-workspace-theme]
   height: var(--project-image-size);
   background: var(--workspace-control-bg);
   overflow: hidden;
-}
-.project-logo-picker {
-  display: grid;
-  flex: 0 0 var(--project-image-size);
-  gap: 4px;
-  width: var(--project-image-size);
-}
-.project-logo-picker__control {
-  position: relative;
-}
-.project-logo-upload__preview {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.project-logo-upload__progress {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  background: rgb(0 0 0 / 60%);
-  color: #fff;
-  font-size: 11px;
-  line-height: 14px;
-  pointer-events: none;
 }
 .project-logo-picker__remove {
   position: absolute;
@@ -639,11 +574,6 @@ html[data-boardly-workspace-theme]
   border-bottom: 1px solid var(--workspace-divider);
   font-size: 13px;
 }
-.project-file-row__name {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .project-file-row button {
   flex-shrink: 0;
   padding: 6px;
@@ -652,12 +582,6 @@ html[data-boardly-workspace-theme]
 
 .projects-page__icon .project-logo {
   margin: 0;
-}
-
-.project-discard-notice {
-  padding: 16px;
-  border-radius: 12px;
-  background: var(--workspace-approval-soft);
 }
 .project-discard-notice h3 {
   margin: 0 0 6px;
@@ -694,10 +618,6 @@ html[data-boardly-workspace-theme]
 .project-archive-notice h3 svg {
   flex: none;
   color: var(--workspace-native-danger);
-}
-.project-archive-notice__actions {
-  display: flex;
-  margin-left: auto;
 }
 .project-discard-notice .project-discard-notice__danger {
   border-color: var(--workspace-native-danger);

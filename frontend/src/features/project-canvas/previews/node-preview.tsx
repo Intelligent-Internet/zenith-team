@@ -151,7 +151,10 @@ export function NodePreview({
             decoding="async"
           />
         ) : (
-          <div className="pc-card-preview-label" role="status">
+          <div
+            className="h-full flex flex-col items-center justify-center gap-[12px] p-[24px] text-[var(--pc-muted)] text-[length:12px] text-center wrap-anywhere"
+            role="status"
+          >
             {thumbnail.isFetching ? (
               <LoaderCircle size={24} className="pc-spin" />
             ) : (
@@ -173,7 +176,10 @@ export function NodePreview({
         draggable={false}
       />
     ) : (
-      <div className="pc-card-preview-label" role="status">
+      <div
+        className="h-full flex flex-col items-center justify-center gap-[12px] p-[24px] text-[var(--pc-muted)] text-[length:12px] text-center wrap-anywhere"
+        role="status"
+      >
         {media.isFetching ? "Loading preview…" : "Open to preview this file"}
       </div>
     );
@@ -201,7 +207,10 @@ export function NodePreview({
         </div>
       );
     return (
-      <div className="pc-card-preview-label" role="status">
+      <div
+        className="h-full flex flex-col items-center justify-center gap-[12px] p-[24px] text-[var(--pc-muted)] text-[length:12px] text-center wrap-anywhere"
+        role="status"
+      >
         <span>{filename ?? "Media"}</span>
         <span>
           {!selected
@@ -262,7 +271,7 @@ export function NodePreview({
         }
       >
         {contentType === "text/plain" ? (
-          <pre className="pc-node-plain-text">
+          <pre className="m-0 whitespace-pre-wrap wrap-anywhere [font-family:var(--font-mono)] text-[length:11px] leading-[1.6] [user-select:text]">
             {body || "This document is empty."}
           </pre>
         ) : (
@@ -280,7 +289,10 @@ export function NodePreview({
       </div>
     );
   return (
-    <div className="pc-card-preview-label" role="status">
+    <div
+      className="h-full flex flex-col items-center justify-center gap-[12px] p-[24px] text-[var(--pc-muted)] text-[length:12px] text-center wrap-anywhere"
+      role="status"
+    >
       {loading && <LoaderCircle size={24} className="pc-spin" />}
       <span>
         {loading

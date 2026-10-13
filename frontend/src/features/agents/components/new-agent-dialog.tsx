@@ -274,15 +274,18 @@ export function NewAgentDialog({
             }
           }}
         >
-          <header className="new-agent-header">
-            <span className="new-agent-symbol" aria-hidden="true">
+          <header className="flex shrink-0 items-start gap-[14px] p-[22px_24px_18px] [border-bottom:1px_solid_var(--workspace-divider)]">
+            <span
+              className="grid shrink-0 place-items-center w-[44px] h-[44px] [border:1px_solid_var(--workspace-divider)] rounded-workspace-panel [background:var(--workspace-control-bg)] text-workspace-accent"
+              aria-hidden="true"
+            >
               <Bot size={22} />
             </span>
-            <div className="new-agent-heading">
+            <div className="flex-1 min-w-0">
               <DialogTitle className="new-agent-title">
                 {template ? `Duplicate ${template.name}` : "New agent"}
               </DialogTitle>
-              <DialogDescription className="new-agent-description">
+              <DialogDescription className="m-[5px_0_0] text-workspace-muted text-workspace-caption leading-workspace-caption">
                 {template
                   ? `Instructions, appearance and run settings are copied from ${template.name}. The copy starts with no work of its own.`
                   : "Give it a name, a role, a manager and a provider. You can set it up on your computer now or later."}
@@ -296,9 +299,9 @@ export function NewAgentDialog({
               <X size={18} />
             </DialogClose>
           </header>
-          <div className="new-agent-body">
+          <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overscroll-contain">
             <fieldset
-              className="new-agent-fields"
+              className="grid gap-[22px] min-w-0 m-0 p-[20px_24px_24px] [border:0]"
               disabled={mutation.isLoading}
             >
               {!draft ? (
@@ -324,7 +327,7 @@ export function NewAgentDialog({
                 <>
                   <section className="new-agent-identity">
                     <DraftAvatar draft={draft} />
-                    <div className="new-agent-identity-fields">
+                    <div className="grid flex-1 gap-[12px] min-w-0">
                       <label className="new-agent-field">
                         <span>Name</span>
                         <input
@@ -361,7 +364,7 @@ export function NewAgentDialog({
                   >
                     <h3 id={`${id}-look`}>Look</h3>
                     <div
-                      className="new-agent-looks"
+                      className="flex flex-wrap gap-[8px]"
                       role="radiogroup"
                       aria-label="Look"
                     >
@@ -380,7 +383,9 @@ export function NewAgentDialog({
                           )
                         }
                       >
-                        <span className="new-agent-look-auto">Auto</span>
+                        <span className="text-workspace-caption font-[600]">
+                          Auto
+                        </span>
                       </button>
                       {agentLookChoices.map((look) => (
                         <button
@@ -473,7 +478,7 @@ export function NewAgentDialog({
                     className="new-agent-section"
                     aria-labelledby={`${id}-runtime`}
                   >
-                    <div className="new-agent-section-heading">
+                    <div className="new-agent-section-heading flex items-center justify-between gap-[12px]">
                       <h3 id={`${id}-runtime`}>Set it up on your computer</h3>
                       <Link to="/settings/agents">
                         <Monitor size={14} />
@@ -725,7 +730,10 @@ function DraftAvatar({ draft }: { draft: AgentDraft }) {
   // previews the character in a neutral palette; the roster shows the real
   // pick once the agent is created.
   return (
-    <span aria-hidden="true" className="new-agent-preview">
+    <span
+      aria-hidden="true"
+      className="grid shrink-0 place-items-center w-[64px] h-[64px]"
+    >
       <FoldAvatar
         agentId={draft.name.trim() || "new-agent"}
         paletteIndex={foldPaletteIndexForKey(draft.avatarKey)}

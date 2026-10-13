@@ -19,15 +19,6 @@
   flex: 1;
   min-width: 0;
 }
-.company-initialization-status__title {
-  margin: 0;
-  font-weight: 600;
-}
-.company-initialization-status__description {
-  margin: 2px 0 0;
-  color: var(--workspace-text-muted);
-  overflow-wrap: anywhere;
-}
 .company-initialization-status__actions {
   display: flex;
   flex: none;

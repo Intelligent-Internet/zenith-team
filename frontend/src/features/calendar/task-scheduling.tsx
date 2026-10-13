@@ -46,7 +46,7 @@ export function TaskScheduling({
           </span>
           Run schedule
         </dt>
-        <dd className="task-schedule-property">
+        <dd className="task-schedule-property flex-wrap gap-[4px]">
           <Popover.Root open={editing} onOpenChange={setEditing}>
             <Popover.Trigger
               type="button"
@@ -74,7 +74,10 @@ export function TaskScheduling({
                     : "Runs on the assignee’s computer after they accept."}
                 </p>
                 {schedule.isError ? (
-                  <p className="task-schedule-error" role="alert">
+                  <p
+                    className="text-workspace-danger text-[length:12px] leading-[1.5]"
+                    role="alert"
+                  >
                     {getBoardlyQueryErrorMessage(schedule.error)}
                   </p>
                 ) : !task.scheduleId || schedule.currentData ? (

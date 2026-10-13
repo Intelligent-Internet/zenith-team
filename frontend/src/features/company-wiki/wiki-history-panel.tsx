@@ -45,7 +45,7 @@ export function WikiHistoryPanel({
       </div>
       {history.isLoading && <p>Loading history…</p>}
       {history.isError && (
-        <p className="zen-wiki__error" role="alert">
+        <p className="text-workspace-danger p-[0_10px]" role="alert">
           History could not be loaded.{" "}
           <button
             className="zen-wiki__retry"
@@ -56,10 +56,13 @@ export function WikiHistoryPanel({
         </p>
       )}
       {history.data?.items.length === 0 && (
-        <p className="zen-wiki__muted">No revisions yet.</p>
+        <p className="text-[var(--wk-muted)] p-[0_10px]">No revisions yet.</p>
       )}
       {history.data?.items.map((revision) => (
-        <div className="zen-wiki__revision" key={revision.id}>
+        <div
+          className="zen-wiki__revision [border-top:1px_solid_var(--wk-border)] p-[15px_0] grid gap-[3px]"
+          key={revision.id}
+        >
           <b>Revision {revision.number}</b>
           <small>
             {new Date(revision.createdAt).toLocaleString()} ·{" "}
@@ -74,7 +77,9 @@ export function WikiHistoryPanel({
           </small>
           <p>{revision.title}</p>
           {revision.id === page.currentRevisionId ? (
-            <span className="zen-wiki__revision-current">Current revision</span>
+            <span className="text-[var(--wk-muted)] text-[length:12px]">
+              Current revision
+            </span>
           ) : canRestore ? (
             <button
               disabled={editing}

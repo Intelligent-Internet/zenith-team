@@ -14,41 +14,9 @@
 .agent-mail-panel__draft[hidden] {
   display: none;
 }
-.agent-mail-panel__close {
-  margin-left: auto;
-}
-.agent-mail-panel__refresh-error {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--workspace-divider);
-  padding: 12px 16px;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
 .agent-mail-panel__refresh-error p {
   flex: 1;
   margin: 0;
-}
-.agent-mail-panel__state {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  color: var(--workspace-native-text-muted);
-  text-align: center;
-}
-.agent-mail-panel__picker {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--workspace-divider);
 }
 .agent-mail-panel__picker label {
   flex: 1;
@@ -65,63 +33,10 @@
   font: inherit;
   font-size: 13px;
 }
-.agent-mail-editor__summary {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--workspace-divider);
-  font-size: 12px;
-}
-.agent-mail-editor__from {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--workspace-native-text-muted);
-}
-.agent-mail-status {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 5px;
-  border-radius: 6px;
-  padding: 3px 7px;
-  background: var(--workspace-accent-soft);
-  color: var(--workspace-native-accent);
-  font-size: 11px;
-  font-weight: 600;
-}
-.agent-mail-editor__fields {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 18px 16px;
-}
-.agent-mail-delivery {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
 .agent-mail-delivery legend {
   padding-top: 14px;
   color: var(--workspace-native-text-muted);
   font-size: 12px;
-}
-.agent-mail-field {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 12px;
-  min-height: 46px;
-  border-bottom: 1px solid var(--workspace-divider);
-  font-size: 13px;
 }
 .agent-mail-field > span {
   flex: 0 0 50px;
@@ -144,12 +59,6 @@
 .agent-mail-field input::placeholder {
   color: var(--workspace-native-text-muted);
 }
-.agent-mail-body {
-  display: flex;
-  flex: 1;
-  min-height: 200px;
-  padding-top: 18px;
-}
 .agent-mail-body textarea {
   width: 100%;
   min-height: 200px;
@@ -166,11 +75,6 @@
 .agent-mail-panel :is(input, textarea):disabled {
   opacity: 1;
   -webkit-text-fill-color: currentColor;
-}
-.agent-mail-editor__footer {
-  flex-shrink: 0;
-  border-top: 1px solid var(--workspace-divider);
-  padding: 14px 16px;
 }
 .agent-mail-editor__actions {
   display: flex;
@@ -190,12 +94,6 @@
 }
 p.agent-mail-hint + .agent-mail-editor__actions {
   margin-top: 10px;
-}
-.agent-mail-notice {
-  margin: 0 0 10px;
-  color: var(--workspace-native-text);
-  font-size: 12px;
-  line-height: 1.5;
 }
 .agent-mail-button,
 .agent-mail-text-button {

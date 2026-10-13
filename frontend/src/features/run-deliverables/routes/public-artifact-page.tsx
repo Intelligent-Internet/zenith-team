@@ -85,7 +85,7 @@ function PublicArtifactContent({ token }: { token: string }) {
     }
     return (
       <main className="public-artifact-state">
-        <Logo className="public-artifact-logo" />
+        <Logo className="public-artifact-logo shrink-0" />
         <p>Shared artifact</p>
         <p role="status">
           {artifact.isLoading
@@ -118,7 +118,7 @@ function PublicArtifactContent({ token }: { token: string }) {
     return (
       <main className="public-artifact-page">
         <header className="public-artifact-toolbar">
-          <Logo className="public-artifact-logo" />
+          <Logo className="public-artifact-logo shrink-0" />
           <div className="public-artifact-file">
             <LayoutDashboard size={16} aria-hidden />
             <span title={detail.title}>{detail.title}</span>
@@ -182,7 +182,10 @@ function PublicArtifactContent({ token }: { token: string }) {
           onSelect={(item) => setSearchParams({ item })}
           notice={
             message ? (
-              <p className="artifact-share-notice" role="alert">
+              <p
+                className="mb-[20px] p-[12px_16px] [background:var(--state-hover-bg)] rounded-[10px] text-[length:13px]"
+                role="alert"
+              >
                 {message}
               </p>
             ) : null
@@ -212,11 +215,11 @@ function PublicArtifactContent({ token }: { token: string }) {
   return (
     <main className="public-artifact-page">
       <header className="public-artifact-toolbar">
-        <Logo className="public-artifact-logo" />
+        <Logo className="public-artifact-logo shrink-0" />
         <div className="public-artifact-file">
           <FileText size={16} aria-hidden />
           {detail.items.length > 1 && selected ? (
-            <div className="public-artifact-file-picker">
+            <div className="public-artifact-file-picker flex relative min-w-0">
               <select
                 aria-label="Artifact file"
                 value={selected.ordinal}
@@ -257,7 +260,10 @@ function PublicArtifactContent({ token }: { token: string }) {
         </div>
       </header>
       {message ? (
-        <p className="public-artifact-notice" role="alert">
+        <p
+          className="m-0 p-[12px_24px] [background:var(--state-hover-bg)] text-[length:13px] text-center"
+          role="alert"
+        >
           {message}
         </p>
       ) : null}

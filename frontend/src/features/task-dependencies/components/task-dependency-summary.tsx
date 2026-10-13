@@ -53,7 +53,7 @@ function DependencyGroup({
             type="button"
             onClick={() => onTaskSelect(item)}
           >
-            <div className="task-dependency-summary-heading">
+            <div className="flex items-center justify-between gap-[10px] text-workspace-muted text-workspace-caption leading-workspace-caption">
               <span>{item.taskLabel}</span>
               <span
                 className="task-dependency-summary-status"
@@ -72,7 +72,10 @@ function DependencyGroup({
                     : item.taskStatus.replaceAll("_", " ")}
               </span>
             </div>
-            <p className="task-dependency-summary-title" title={item.taskTitle}>
+            <p
+              className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden wrap-anywhere m-[8px_0_0] text-workspace-body leading-workspace-body font-[500]"
+              title={item.taskTitle}
+            >
               {item.taskTitle}
             </p>
             <span className="task-dependency-summary-assignee">

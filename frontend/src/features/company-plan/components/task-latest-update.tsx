@@ -48,7 +48,10 @@ export function TaskLatestUpdate({
 
   if (query.isError) {
     return (
-      <div className="task-detail-latest-update" role="status">
+      <div
+        className="task-detail-latest-update grid grid-cols-[auto_minmax(0,_1fr)_auto] [align-items:start] gap-[12px] mb-[26px] p-[14px_16px] rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-body leading-workspace-body"
+        role="status"
+      >
         <p className="task-detail-empty">
           Latest update could not be loaded.{" "}
           <button type="button" onClick={() => void query.refetch()}>
@@ -60,7 +63,10 @@ export function TaskLatestUpdate({
   }
   if (run === undefined) {
     return (
-      <div className="task-detail-latest-update" role="status">
+      <div
+        className="task-detail-latest-update grid grid-cols-[auto_minmax(0,_1fr)_auto] [align-items:start] gap-[12px] mb-[26px] p-[14px_16px] rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-body leading-workspace-body"
+        role="status"
+      >
         <p className="task-detail-empty">Loading latest update…</p>
       </div>
     );
@@ -88,13 +94,13 @@ export function TaskLatestUpdate({
 
   return (
     <section
-      className="task-detail-latest-update"
+      className="task-detail-latest-update grid grid-cols-[auto_minmax(0,_1fr)_auto] [align-items:start] gap-[12px] mb-[26px] p-[14px_16px] rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-body leading-workspace-body"
       aria-label="Latest update"
       data-run-status={run.status}
     >
       <FoldAvatar paused agentId={run.agentId} size={32} />
-      <div className="task-detail-update-content">
-        <div className="task-detail-update-heading">
+      <div className="task-detail-update-content min-w-0">
+        <div className="task-detail-update-heading flex flex-wrap items-baseline gap-[4px_20px]">
           <strong>{title}</strong>
           <time
             dateTime={run.updatedAt}
@@ -105,7 +111,10 @@ export function TaskLatestUpdate({
         </div>
         <p>{taskNote}</p>
         {run.status === "failed" ? (
-          <div className="task-detail-run-failure" role="alert">
+          <div
+            className="task-detail-run-failure grid gap-[4px] mt-[12px] p-[10px_12px] rounded-[6px] [background:var(--workspace-danger-soft)] text-workspace-muted wrap-anywhere"
+            role="alert"
+          >
             <strong>
               {runFailureMessageForViewer(
                 {
@@ -125,7 +134,10 @@ export function TaskLatestUpdate({
             ) : null}
           </div>
         ) : runCancellationCopy(run) ? (
-          <div className="task-detail-run-failure" role="status">
+          <div
+            className="task-detail-run-failure grid gap-[4px] mt-[12px] p-[10px_12px] rounded-[6px] [background:var(--workspace-danger-soft)] text-workspace-muted wrap-anywhere"
+            role="status"
+          >
             <strong>{runCancellationCopy(run)}</strong>
           </div>
         ) : null}

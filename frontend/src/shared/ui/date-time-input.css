@@ -1,7 +1,4 @@
-.workspace-date-time-input {
-  color-scheme: inherit;
-}
-
+/* Native date/time picker artwork cannot be styled on the input element. */
 .workspace-date-time-input::-webkit-calendar-picker-indicator {
   width: 16px;
   height: 16px;

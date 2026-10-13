@@ -247,19 +247,19 @@ export function ProjectAccessGroupRow({
 
   return (
     <li className="project-access-row" data-kind="group">
-      <div className="project-access-row__who">
+      <div className="flex min-w-0 items-center gap-[12px] [grid-area:who]">
         <span
           aria-hidden="true"
           className="team-person-avatar project-access-row__avatar project-access-group-mark"
         >
           <UsersRound size={17} />
         </span>
-        <div className="project-access-row__copy">
-          <span className="project-access-row__name">
+        <div className="flex min-w-0 flex-col gap-[2px]">
+          <span className="project-access-row__name flex min-w-0 items-center gap-[6px]">
             <strong title={grant.name}>{grant.name}</strong>
           </span>
           <span
-            className="project-access-row__sub project-access-row__count"
+            className="overflow-hidden text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] leading-[var(--workspace-leading-caption,_1.4)] text-ellipsis whitespace-nowrap inline-flex items-center gap-[4px] [font-variant-numeric:tabular-nums]"
             title={people}
           >
             <Users aria-hidden="true" size={12} />
@@ -268,7 +268,7 @@ export function ProjectAccessGroupRow({
           </span>
         </div>
       </div>
-      <div className="project-access-row__perms">
+      <div className="flex min-w-0 justify-end [grid-area:perms]">
         {changeable ? (
           <ProjectAccessPicker
             disabled={busy}
@@ -294,7 +294,7 @@ export function ProjectAccessGroupRow({
           />
         )}
       </div>
-      <div className="project-access-row__menu">
+      <div className="flex items-center justify-center [grid-area:menu]">
         {outranks ? <CapLock /> : null}
         {canManageGroups ? (
           <DropdownMenu>
@@ -315,7 +315,7 @@ export function ProjectAccessGroupRow({
                 Edit group
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="project-access-menu__danger"
+                className="text-[var(--workspace-native-danger,_#e5484d)]"
                 onSelect={onDelete}
               >
                 <Trash2 size={16} />

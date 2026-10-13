@@ -119,8 +119,8 @@ export function DocumentHistoryPanel({
     setError("");
   };
   return (
-    <section className="pc-document-history" aria-label="Document history">
-      <p className="pc-muted">
+    <section className="p-[12px] min-w-0" aria-label="Document history">
+      <p className="text-[var(--pc-muted)] text-[length:11px]">
         Changes save automatically. Times show when changes reached the server.
       </p>
       <div className="pc-history-filters">
@@ -221,7 +221,7 @@ export function DocumentHistoryPanel({
               ))}
             </details>
           ))}
-          <div className="pc-history-pagination">
+          <div className="flex justify-between gap-[12px] mt-[16px] text-[length:12px]">
             {cursor > 0 && (
               <button onClick={() => setCursor(0)}>Latest changes</button>
             )}
@@ -256,7 +256,7 @@ export function DocumentHistoryPanel({
             select saves, not an isolated copy of that person's edits.
           </DialogDescription>
           {selected?.suggestionReview && (
-            <div className="pc-muted">
+            <div className="text-[var(--pc-muted)] text-[length:11px]">
               <p>
                 {selected.suggestionReview.action === "apply"
                   ? "Accepted"
@@ -365,7 +365,7 @@ export function DocumentHistoryPanel({
             <p role="status">Loading saved content…</p>
           ) : applicationCapture ? (
             <div className="pc-history-preview is-comparing">
-              <p className="pc-muted">
+              <p className="text-[var(--pc-muted)] text-[length:11px]">
                 The exact before and after content retained with this review
                 decision. Sources you can no longer access are withheld.{" "}
                 <button className="underline" onClick={() => setCompare(0)}>

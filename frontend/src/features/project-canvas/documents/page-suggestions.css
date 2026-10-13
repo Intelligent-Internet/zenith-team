@@ -46,19 +46,8 @@
 .pc-review-notice {
   margin: 6px 0;
 }
-.pc-review-error {
-  padding: 8px 0;
-  color: var(--destructive);
-}
 .pc-review-error p {
   margin: 0 0 6px;
-}
-.pc-review-empty {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0;
-  color: var(--pc-muted, var(--muted-foreground));
 }
 .pc-inline-suggestion {
   position: relative;
@@ -69,18 +58,6 @@
 .pc-inline-review {
   margin: 8px 0 16px;
 }
-.pc-review-change-heading {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
-  color: var(--pc-muted, var(--muted-foreground));
-  font: 400 11px/1.5 var(--font-sans, sans-serif);
-}
-.pc-review-status {
-  margin-left: auto;
-}
 .pc-review-diff > section {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -90,9 +67,6 @@
   background: color-mix(in srgb, #ba4545 7%, transparent);
   text-decoration: line-through;
   text-decoration-color: #ba4545;
-}
-.pc-review-after {
-  background: color-mix(in srgb, #398454 8%, transparent);
 }
 .pc-suggestion-moved {
   outline: 1px dashed var(--border);
@@ -211,17 +185,6 @@
 .pc-version-picker:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-.pc-version-count {
-  position: absolute;
-  top: -6px;
-  right: -3px;
-  min-width: 16px;
-  padding: 1px 4px;
-  border-radius: 10px;
-  background: var(--foreground);
-  color: var(--background);
-  font: 600 10px/14px var(--font-sans, sans-serif);
 }
 .pc-version-menu {
   width: var(--flower-size);

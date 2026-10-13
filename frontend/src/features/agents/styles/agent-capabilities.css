@@ -6,12 +6,6 @@
 .agent-capabilities-main {
   padding: 24px 24px 32px;
 }
-.agent-capabilities-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
 .agent-capabilities-search {
   display: flex;
   align-items: center;
@@ -108,12 +102,6 @@
   top: 0;
   z-index: 5;
 }
-.agent-capabilities-section {
-  scroll-margin-top: calc(
-    var(--capabilities-tabs-height, 47px) +
-      var(--capabilities-navigation-height, 46px) + 16px
-  );
-}
 .agent-capabilities-section + .agent-capabilities-section {
   margin-top: 32px;
 }
@@ -130,12 +118,6 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-}
-.agent-capabilities-badge {
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  font-weight: 400;
-  letter-spacing: 0;
 }
 .agent-capabilities-section > header > a {
   display: flex;
@@ -182,10 +164,6 @@
 }
 .agent-capability-columns > :last-child {
   text-align: right;
-}
-.agent-capabilities-grid {
-  display: flex;
-  flex-direction: column;
 }
 .agent-capability-row,
 .managed-tool-card {
@@ -238,20 +216,6 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-}
-.agent-capability-always-on {
-  white-space: nowrap;
-  padding: 3px 8px;
-  border-radius: 12px;
-  background: var(--workspace-control-bg);
-  font-size: var(--workspace-text-caption);
-  color: var(--workspace-native-text-muted);
-}
-.agent-capabilities-help {
-  margin-top: 28px;
-  font-size: var(--workspace-text-caption);
-  color: var(--workspace-native-text-muted);
-  max-width: 640px;
 }
 .agent-capabilities-help summary {
   cursor: pointer;
@@ -366,16 +330,6 @@
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
 }
-.managed-tool-menu {
-  width: 250px;
-  max-width: calc(100vw - 24px);
-}
-.managed-tool-menu-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
 .managed-tool-menu-header [data-slot="dropdown-menu-label"] {
   min-width: 0;
   overflow: hidden;
@@ -402,14 +356,6 @@
   to {
     transform: rotate(360deg);
   }
-}
-.managed-tool-menu-note {
-  margin: 0;
-  padding: 4px 8px 8px;
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  color: var(--workspace-native-text-muted);
-  overflow-wrap: anywhere;
 }
 
 @media (max-width: 900px) {

@@ -99,7 +99,7 @@ export function CalendarUtilities() {
           </Tooltip>
         ))}
       </div>
-      <div className="calendar-utility-panel-shell">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {open && (
           <section
             id={`${id}-panel`}
@@ -108,7 +108,7 @@ export function CalendarUtilities() {
             tabIndex={0}
             aria-labelledby={`${id}-${selected.id}-tab`}
           >
-            <header className="calendar-utility-heading">
+            <header className="calendar-utility-heading flex items-center justify-between shrink-0 gap-[12px] min-h-[80px] p-[20px] [border-bottom:1px_solid_var(--workspace-divider)]">
               <h2>{selected.label}</h2>
               <button
                 type="button"
@@ -124,7 +124,7 @@ export function CalendarUtilities() {
                 <UtilityPreview utility={selected} />
                 <p className="calendar-utility-status">Coming soon</p>
               </div>
-              <div className="calendar-utility-shortcuts">
+              <div className="calendar-utility-shortcuts grid gap-[8px] pt-[22px] [border-top:1px_solid_var(--workspace-divider)]">
                 {utilities
                   .filter((utility) => utility.id !== selected.id)
                   .map((utility) => (
@@ -162,24 +162,24 @@ function UtilityPreview({ utility }: { utility: Utility }) {
       {utility.id === "maps" ? (
         <>
           <img src={mapPreview} alt="" />
-          <span className="calendar-utility-map-symbol">
+          <span className="grid place-items-center absolute w-[50px] h-[50px] rounded-[17px] text-workspace-accent [background:var(--workspace-panel-bg)] [box-shadow:var(--calendar-surface-shadow)] [transform:rotate(-6deg)]">
             <Map size={27} />
           </span>
         </>
       ) : utility.id === "calendar" ? (
-        <div className="calendar-utility-miniature">
-          <div className="calendar-utility-miniature-heading">
+        <div className="[box-shadow:var(--calendar-surface-shadow)] w-[206px] p-[12px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] [background:var(--workspace-panel-bg)]">
+          <div className="calendar-utility-miniature-heading flex items-center gap-[8px] text-workspace-accent mb-[10px]">
             <CalendarDays size={18} />
             <span />
           </div>
-          <div className="calendar-utility-miniature-grid">
+          <div className="calendar-utility-miniature-grid grid grid-cols-[repeat(7,_1fr)] gap-[3px] text-center text-[var(--workspace-text-muted)] text-[length:9px]">
             {Array.from({ length: 28 }, (_, index) => (
               <span key={index}>{index + 1}</span>
             ))}
           </div>
         </div>
       ) : (
-        <div className="calendar-utility-people">
+        <div className="calendar-utility-people grid gap-[9px] w-[206px]">
           {[0, 1, 2].map((index) => (
             <div key={index}>
               <span>

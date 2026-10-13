@@ -54,9 +54,12 @@ function FolioEntry({
           {continues ? "Ongoing" : timeLabel(event)}
         </time>
       ) : (
-        <span className="calendar-folio-dot" aria-hidden="true" />
+        <span
+          className="shrink-0 w-[7px] h-[7px] rounded-[50%] [background:var(--event-color)]"
+          aria-hidden="true"
+        />
       )}
-      <span className="calendar-folio-entry-content">
+      <span className="calendar-folio-entry-content grid gap-[5px] min-w-0 flex-1">
         <strong>
           {event.type === "reminder" &&
             (event.completed ? <Check size={14} /> : <Bell size={14} />)}
@@ -95,7 +98,10 @@ function FolioEmpty({
   onCreate: MouseEventHandler<HTMLButtonElement>;
 }) {
   return (
-    <div className="calendar-folio-empty" role={loading ? "status" : undefined}>
+    <div
+      className="calendar-folio-empty grid [justify-items:center] gap-[12px] p-[60px_20px] text-[var(--workspace-text-muted)] text-[length:13px]"
+      role={loading ? "status" : undefined}
+    >
       <p>
         {loading
           ? "Loading events…"
@@ -158,7 +164,10 @@ export function CalendarDayFolio({
   ];
   return (
     <div className="calendar-folio calendar-folio--day">
-      <nav className="calendar-folio-week" aria-label="Choose a day">
+      <nav
+        className="calendar-folio-week [box-shadow:var(--calendar-surface-shadow)] grid grid-cols-[repeat(7,_minmax(0,_1fr))] [border:1px_solid_var(--workspace-divider)] rounded-[12px] overflow-hidden mb-[28px]"
+        aria-label="Choose a day"
+      >
         {visibleDays(date, "Week").map((day) => (
           <button
             key={dateKey(day)}
@@ -205,7 +214,7 @@ export function CalendarDayFolio({
         if (!entries.length) return null;
         return (
           <section
-            className="calendar-folio-period"
+            className="calendar-folio-period mt-[28px]"
             key={group.title}
             aria-label={group.title}
           >

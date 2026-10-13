@@ -66,7 +66,7 @@ export function ArtifactRecipientPicker({
           <div ref={fieldRef} className="artifact-recipient-field">
             <div
               hidden={Boolean(recipient)}
-              className="artifact-recipient-input"
+              className="artifact-recipient-input flex-1 min-w-0"
             >
               <CommandInput
                 ref={inputRef}
@@ -93,7 +93,7 @@ export function ArtifactRecipientPicker({
             </div>
             {recipient ? (
               <>
-                <span className="artifact-recipient-chip">
+                <span className="artifact-recipient-chip inline-flex items-center gap-[6px] min-w-0 p-[3px_4px_3px_8px] rounded-[6px] [background:var(--state-hover-bg)] text-[length:13px] font-[500]">
                   {recipient.type === "conversation" ? (
                     <Users size={16} aria-hidden />
                   ) : null}
@@ -133,12 +133,18 @@ export function ArtifactRecipientPicker({
           >
             <CommandList aria-label="Matching recipients">
               {loading ? (
-                <p className="artifact-search-status" role="status">
+                <p
+                  className="artifact-search-status p-[12px] text-[var(--workspace-native-text-muted,_var(--text-secondary))] text-[length:12px]"
+                  role="status"
+                >
                   Finding people and conversations…
                 </p>
               ) : null}
               {failed ? (
-                <p className="artifact-search-status" role="alert">
+                <p
+                  className="artifact-search-status p-[12px] text-[var(--workspace-native-text-muted,_var(--text-secondary))] text-[length:12px]"
+                  role="alert"
+                >
                   Some recipients could not be loaded.{" "}
                   <button type="button" onClick={onRetry}>
                     Retry
@@ -169,7 +175,7 @@ export function ArtifactRecipientPicker({
                             personInitials(item.name)
                           )}
                         </span>
-                        <span className="artifact-recipient-name">
+                        <span className="artifact-recipient-name min-w-0">
                           <strong>{item.name}</strong>
                           <small>{item.description}</small>
                         </span>
@@ -179,7 +185,7 @@ export function ArtifactRecipientPicker({
                 ) : null;
               })}
               {!filtered.length && !loading && !failed ? (
-                <p className="artifact-search-status">
+                <p className="artifact-search-status p-[12px] text-[var(--workspace-native-text-muted,_var(--text-secondary))] text-[length:12px]">
                   No matching people or conversations to add.
                 </p>
               ) : null}

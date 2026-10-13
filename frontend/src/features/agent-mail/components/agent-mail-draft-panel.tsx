@@ -33,7 +33,7 @@ export function AgentMailDraftPanel({
         <Mail aria-hidden size={19} />
         <h2>Email draft{(group?.drafts.length ?? 0) > 1 ? "s" : ""}</h2>
         <button
-          className="artifacts-icon-button agent-mail-panel__close"
+          className="artifacts-icon-button agent-mail-panel__close ml-auto"
           type="button"
           onClick={onClose}
           aria-label="Close email draft panel"
@@ -43,7 +43,10 @@ export function AgentMailDraftPanel({
         </button>
       </header>
       {group && error ? (
-        <div className="agent-mail-panel__refresh-error" role="alert">
+        <div
+          className="agent-mail-panel__refresh-error flex shrink-0 items-center gap-[12px] [border-bottom:1px_solid_var(--workspace-divider)] p-[12px_16px] text-workspace-muted text-[length:12px] leading-[1.5]"
+          role="alert"
+        >
           <p>
             Email drafts could not be refreshed. Your unsaved changes are kept.
           </p>
@@ -62,12 +65,18 @@ export function AgentMailDraftPanel({
           onDirtyChange={onDirtyChange}
         />
       ) : loading ? (
-        <div className="agent-mail-panel__state" role="status">
+        <div
+          className="flex flex-1 flex-col items-center justify-center gap-[12px] p-[24px] text-workspace-muted text-center"
+          role="status"
+        >
           <LoaderCircle className="artifact-spinner" size={22} /> Loading email
           drafts…
         </div>
       ) : (
-        <div className="agent-mail-panel__state" role="alert">
+        <div
+          className="flex flex-1 flex-col items-center justify-center gap-[12px] p-[24px] text-workspace-muted text-center"
+          role="alert"
+        >
           <p>
             {error
               ? "Email drafts could not be loaded."
@@ -155,7 +164,7 @@ function DraftGroupReview({
   return (
     <>
       {group.drafts.length > 1 ? (
-        <div className="agent-mail-panel__picker">
+        <div className="agent-mail-panel__picker flex items-center gap-[8px] p-[12px_16px] [border-bottom:1px_solid_var(--workspace-divider)]">
           <label>
             <span className="sr-only">Email draft</span>
             <select

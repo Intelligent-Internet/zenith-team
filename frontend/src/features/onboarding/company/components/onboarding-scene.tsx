@@ -26,13 +26,13 @@ export function OnboardingScene({
         label="Say hello to your Zenith Team companion"
       />
       <span
-        className="onboarding-welcome__spark onboarding-welcome__spark--one"
+        className="absolute text-[color-mix(in_srgb,_#ee8b42_75%,_var(--workspace-native-text))] top-[42px] left-[16px] text-[length:28px]"
         aria-hidden="true"
       >
         ✦
       </span>
       <span
-        className="onboarding-welcome__spark onboarding-welcome__spark--two"
+        className="absolute text-[color-mix(in_srgb,_#ee8b42_75%,_var(--workspace-native-text))] right-[2px] bottom-[45px] text-[length:36px]"
         aria-hidden="true"
       >
         ✧

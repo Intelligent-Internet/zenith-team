@@ -95,7 +95,7 @@ export function StudioNodeModelPicker({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         container={container}
-        className="studio-node-model-menu nodrag nopan !rounded-2xl !p-1.5 !shadow-[0_12px_32px_rgba(24,32,40,0.12),0_2px_6px_rgba(24,32,40,0.04)]"
+        className="studio-node-model-menu w-[280px] max-w-[calc(100vw_-_32px)] max-h-[min(420px,_var(--radix-dropdown-menu-content-available-height))] [scrollbar-width:thin] nodrag nopan !rounded-2xl !p-1.5 !shadow-[0_12px_32px_rgba(24,32,40,0.12),0_2px_6px_rgba(24,32,40,0.04)]"
         aria-label={`Models for ${node.label}`}
         align="end"
         sideOffset={8}
@@ -121,7 +121,9 @@ export function StudioNodeModelPicker({
               <small>{studioDisplayName(model.provider)}</small>
             </span>
             {model.pro ? (
-              <span className="studio-node-model-menu__pro">Pro</span>
+              <span className="[border:1px_solid_var(--workspace-divider)] rounded-[4px] p-[1px_4px] text-workspace-muted text-[length:9px]">
+                Pro
+              </span>
             ) : null}
             {pending === model.id ? (
               <Loader2
@@ -135,12 +137,15 @@ export function StudioNodeModelPicker({
           </DropdownMenuItem>
         ))}
         {!models.length ? (
-          <p className="studio-node-model-menu__message">
+          <p className="p-[10px] text-workspace-muted text-[length:12px]">
             Models are unavailable.
           </p>
         ) : null}
         {failure ? (
-          <p className="studio-node-model-menu__message" role="alert">
+          <p
+            className="p-[10px] text-workspace-muted text-[length:12px]"
+            role="alert"
+          >
             {failure}
           </p>
         ) : null}

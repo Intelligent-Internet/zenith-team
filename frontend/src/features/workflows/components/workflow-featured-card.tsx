@@ -20,7 +20,7 @@ export function WorkflowFeaturedCard({
   const descriptionId = `${id}-description`;
   const badgeId = `${id}-badge`;
   return (
-    <li className="workflow-featured-card">
+    <li className="workflow-featured-card min-w-0">
       <button
         type="button"
         className="workflow-featured-card__open"
@@ -31,13 +31,16 @@ export function WorkflowFeaturedCard({
         }
         onClick={(event) => onOpen(workflow.key, event.currentTarget)}
       >
-        <span className="workflow-featured-card__top">
+        <span className="flex items-start justify-between gap-[8px] mb-[8px]">
           <span className="workflow-featured-card__icon" aria-hidden="true">
             <Icon name={workflow.icon} size={22} />
           </span>
           {workflow.recurring ? <WorkflowRecurringBadge id={badgeId} /> : null}
         </span>
-        <span className="workflow-featured-card__title" id={titleId}>
+        <span
+          className="text-workspace-chat font-[600] leading-[22px] tracking-[-0.01em] wrap-anywhere"
+          id={titleId}
+        >
           {workflow.name}
         </span>
         <span

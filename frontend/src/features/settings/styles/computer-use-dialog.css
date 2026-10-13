@@ -22,24 +22,6 @@
   padding: 28px;
 }
 
-.computer-use-dialog__header {
-  align-items: flex-start;
-  gap: 12px;
-  text-align: left;
-}
-
-.computer-use-dialog__icon {
-  display: grid;
-  width: 48px;
-  height: 48px;
-  margin-bottom: 8px;
-  place-items: center;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 14px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-accent);
-}
-
 .computer-use-dialog__header [data-slot="dialog-title"] {
   font-size: 22px;
   font-weight: 600;

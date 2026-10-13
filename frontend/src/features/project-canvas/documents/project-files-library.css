@@ -1,9 +1,3 @@
-.po-project-file-row {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--pc-line);
-}
-
 .po-project-file-row .po-library-row {
   flex: 1;
   min-width: 0;

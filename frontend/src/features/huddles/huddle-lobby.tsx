@@ -37,7 +37,7 @@ function DeviceSelect({
   return (
     <div className="huddle-lobby-field">
       <label htmlFor={id}>{label}</label>
-      <div className="huddle-lobby-select">
+      <div className="huddle-lobby-select relative flex items-center">
         <span className="huddle-lobby-select-icon" aria-hidden>
           {icon}
         </span>
@@ -139,7 +139,7 @@ export function HuddleLobby({
             <div className="huddle-preview-portrait" aria-hidden>
               <span className="huddle-tile-ring" />
               <span className="huddle-tile-ring" data-outer />
-              <span className="huddle-preview-avatar">
+              <span className="relative z-[1] grid place-items-center w-full h-full rounded-[50%] [background:#bee6ed] text-[var(--tone-ink)] text-[length:40px] font-[600] tracking-[-0.02em] [box-shadow:0_6px_18px_rgb(0_0_0_/_14%)] [transform:scale(calc(1_+_var(--level)_*_0.04))]">
                 {huddleInitials(displayName)}
               </span>
               <p>Camera is off</p>
@@ -148,7 +148,10 @@ export function HuddleLobby({
           <span className="huddle-preview-name">{displayName}</span>
           {microphone.testing && (
             <span className="huddle-preview-check" role="status">
-              <span className="huddle-eq" aria-hidden>
+              <span
+                className="huddle-eq flex items-center gap-[2px] h-[12px]"
+                aria-hidden
+              >
                 <i />
                 <i />
                 <i />
@@ -156,7 +159,7 @@ export function HuddleLobby({
               {speaking ? "Sounds good" : "Say something…"}
             </span>
           )}
-          <div className="huddle-preview-controls">
+          <div className="huddle-preview-controls absolute bottom-[16px] left-[50%] z-[4] flex gap-[12px] [transform:translateX(-50%)]">
             <button
               type="button"
               className="huddle-control"
@@ -202,7 +205,7 @@ export function HuddleLobby({
           </div>
         </div>
 
-        <div className="huddle-join-panel">
+        <div className="huddle-join-panel flex flex-col min-w-0">
           <h1>Ready to start?</h1>
 
           <DeviceSelect

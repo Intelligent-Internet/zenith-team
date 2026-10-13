@@ -290,7 +290,7 @@ function AddPeopleForm({
   return (
     <>
       <form
-        className="project-access-dialog__surface"
+        className="flex min-h-0 flex-1 flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           if (total === 0 || busy) return;
@@ -353,7 +353,7 @@ function AddPeopleForm({
                     </span>
                     <span className="project-access-person__text">
                       <strong>{group.name}</strong>
-                      <small className="project-access-row__count">
+                      <small className="inline-flex items-center gap-[4px] [font-variant-numeric:tabular-nums]">
                         <Users aria-hidden="true" size={12} />
                         <span aria-hidden="true">{group.memberCount}</span>
                         <span className="sr-only">
@@ -474,7 +474,7 @@ function AddPeopleForm({
               );
             })}
             {shown.length === 0 && shownGroups.length === 0 ? (
-              <li className="project-access-empty">
+              <li className="p-[22px_12px] text-workspace-muted text-[length:12px] text-center [list-style:none]">
                 {candidates.length === 0 && groups.length === 0
                   ? "Everyone has access"
                   : "No match"}

@@ -1,8 +1,3 @@
-.task-working-pages {
-  margin: 20px 0;
-  color: var(--workspace-native-text, inherit);
-  font-size: 13px;
-}
 .task-working-pages > h3 {
   font-size: 13px;
   font-weight: 600;

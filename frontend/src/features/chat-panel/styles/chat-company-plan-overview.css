@@ -1,12 +1,3 @@
-.company-plan-overview {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid var(--workspace-divider, #2b3945);
-  border-radius: 16px;
-  background: var(--workspace-panel-bg, #18242f);
-  color: var(--workspace-native-text, #f3f5f7);
-}
-
 .company-plan-overview__header {
   padding: 20px 22px 16px;
   border-bottom: 1px solid var(--workspace-divider, #2b3945);
@@ -71,11 +62,6 @@
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
   font-weight: 750;
-}
-
-.company-plan-overview__task-copy {
-  min-width: 0;
-  flex: 1;
 }
 
 .company-plan-overview__task-copy strong,

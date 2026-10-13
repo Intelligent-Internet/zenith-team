@@ -83,7 +83,7 @@ export function SkillFileTree({
   const matches = (node: Node): boolean =>
     node.path.toLowerCase().includes(term) || !!node.children?.some(matches);
   const renderNodes = (nodes: Node[], depth: number) => (
-    <ul className="skill-tree-list">
+    <ul className="m-0 p-0 [list-style:none]">
       {nodes.filter(matches).map((node) => {
         const open = !(term ? searchCollapsed : collapsed).has(node.path);
         const removed = deletePaths.includes(node.path);
@@ -127,16 +127,19 @@ export function SkillFileTree({
                 {node.children ? (
                   <ChevronRight
                     size={12}
-                    className={open ? "skill-tree-chevron--open" : ""}
+                    className={open ? "[transform:rotate(90deg)]" : ""}
                     aria-hidden
                   />
                 ) : (
-                  <span className="skill-tree-indent" />
+                  <span className="w-[12px] flex-none" />
                 )}
                 <NodeIcon size={16} aria-hidden />
                 <span className="skill-tree-name">{node.name}</span>
                 {modified && !removed && (
-                  <span className="skill-tree-modified" aria-hidden />
+                  <span
+                    className="w-[5px] h-[5px] ml-auto rounded-[50%] [background:var(--workspace-native-accent)] flex-none"
+                    aria-hidden
+                  />
                 )}
               </button>
               {removed && (
@@ -181,11 +184,16 @@ export function SkillFileTree({
           }}
         />
       </label>
-      <nav aria-label="Skill files" className="skill-files-tree">
+      <nav
+        aria-label="Skill files"
+        className="flex-1 min-h-0 overflow-auto p-[0_6px_16px] [scrollbar-width:thin]"
+      >
         {roots.some(matches) ? (
           renderNodes(roots, 0)
         ) : (
-          <p className="skill-tree-empty">No matching files</p>
+          <p className="m-[12px] text-workspace-muted text-[length:13px]">
+            No matching files
+          </p>
         )}
       </nav>
     </aside>

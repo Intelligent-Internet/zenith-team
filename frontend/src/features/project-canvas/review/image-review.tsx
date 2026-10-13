@@ -582,7 +582,10 @@ export function ImageReviewViewer({
         )}
       </div>
       {!ready && !failed && (
-        <p className="pc-image-loading" role="status">
+        <p
+          className="grid [place-content:center] h-full m-0 text-[var(--pc-muted)] text-[length:12px]"
+          role="status"
+        >
           Opening image…
         </p>
       )}
@@ -607,7 +610,7 @@ export function ImageReviewViewer({
         >
           100%
         </button>
-        <span className="pc-image-control-divider" />
+        <span className="w-[1px] h-[16px] m-[0_4px] [background:var(--pc-line)]" />
         <button
           type="button"
           disabled={!ready}
@@ -616,7 +619,10 @@ export function ImageReviewViewer({
         >
           <ZoomOut size={16} />
         </button>
-        <span ref={zoomLabel} className="pc-image-zoom">
+        <span
+          ref={zoomLabel}
+          className="min-w-[44px] text-center text-[length:11px] [font-variant-numeric:tabular-nums] text-[var(--pc-muted)]"
+        >
           {Math.round(zoom * 100)}%
         </span>
         <button

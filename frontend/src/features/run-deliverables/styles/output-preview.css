@@ -102,11 +102,6 @@
   outline: none;
   background: var(--workspace-hover-bg);
 }
-.chat-output-gallery__item {
-  flex: 0 0 220px;
-  min-width: 0;
-  margin: 0;
-}
 .chat-output-gallery__item .output-media {
   height: 220px;
   border-radius: 8px;

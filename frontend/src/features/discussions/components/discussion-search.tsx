@@ -107,7 +107,7 @@ export function DiscussionSearch({
           <summary>
             Filters{authorId || after || before || hasFile ? " · Active" : ""}
           </summary>
-          <div className="discussion-message-search-filters">
+          <div className="discussion-message-search-filters grid grid-cols-[minmax(0,_1fr)_minmax(0,_1fr)] gap-[12px] m-[14px_0]">
             <label>
               From
               <select
@@ -154,7 +154,10 @@ export function DiscussionSearch({
           </button>
         </details>
       </form>
-      <div className="discussion-message-search-results" aria-live="polite">
+      <div
+        className="discussion-message-search-results flex-1 min-h-0 overflow-y-auto p-[0_16px_16px]"
+        aria-live="polite"
+      >
         {result.isFetching ? (
           <p>Searching…</p>
         ) : result.isError ? (

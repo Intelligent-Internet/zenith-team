@@ -27,7 +27,7 @@ export function AnalyticsUsageMap(props: Props) {
   const active = rows[activeIndex];
   const share = total > 0 ? ((values[activeIndex] ?? 0) / total) * 100 : 0;
   return (
-    <div className="analytics-usage-map">
+    <div className="analytics-usage-map mt-[16px] min-w-0">
       {total > 0 ? (
         <UsageMosaic {...props} selectedIndex={activeIndex} values={values} />
       ) : (
@@ -35,12 +35,15 @@ export function AnalyticsUsageMap(props: Props) {
           No reported {partLabel(metric).toLowerCase()}
         </p>
       )}
-      <div className="analytics-map-caption">
+      <div className="flex justify-between flex-wrap gap-[8px] text-[var(--analytics-muted)] text-[length:12px] m-[10px_0_18px]">
         <span>Area = {partLabel(metric).toLowerCase()}</span>
         <span>Hover or select to explore</span>
       </div>
       {active ? (
-        <div className="analytics-map-inspector" aria-live="polite">
+        <div
+          className="analytics-map-inspector p-[18px_0_0] [border-top:1px_solid_var(--analytics-line)]"
+          aria-live="polite"
+        >
           <label>
             <span>Work</span>
             <AnalyticsSelect

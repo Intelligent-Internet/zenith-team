@@ -27,7 +27,7 @@ export function HuddleInvitationCard({
       data-invitation-id={invitation.id}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <span className="huddle-invitation-icon">
+        <span className="grid place-items-center shrink-0 w-[42px] h-[42px] mr-[4px] rounded-[15px] [background:#bee6ed] text-[#0f233f]">
           <Headphones size={20} />
         </span>
         <div className="min-w-0">
@@ -35,7 +35,7 @@ export function HuddleInvitationCard({
           <p className="mt-1 text-xs text-muted-foreground">{copy.body}</p>
         </div>
       </div>
-      <div className="huddle-invitation-actions">
+      <div className="flex shrink-0 items-center gap-[8px] ml-auto">
         {onEnableAlerts ? (
           <button
             type="button"

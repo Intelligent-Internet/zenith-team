@@ -60,10 +60,12 @@ export function TaskReportMessage({ items }: { items: TaskReportItem[] }) {
   return (
     <section
       aria-label="Task reports sent to CEO"
-      className="task-report-message"
+      className="task-report-message w-[fit-content] max-w-[min(560px,_85%)] min-w-0 ms-auto p-[4px_6px] [border:0] rounded-[16px] [background:var(--workspace-selected-bg)] text-workspace-text text-left"
     >
-      <p className="task-report-message__label">Sent to CEO</p>
-      <ul className="task-report-message__list">
+      <p className="m-[8px_10px_2px] text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] font-[400] leading-[var(--workspace-leading-caption,_18px)]">
+        Sent to CEO
+      </p>
+      <ul className="m-0 p-0 [list-style:none]">
         {items.map((item, index) => (
           <li
             key={`${item.taskId}:${index}`}
@@ -77,10 +79,14 @@ export function TaskReportMessage({ items }: { items: TaskReportItem[] }) {
                 >
                   <TaskReportHeading item={item} />
                 </DisclosureSummary>
-                <div className="task-report-message__result">
-                  <p className="task-report-message__summary">{item.summary}</p>
+                <div className="m-[0_10px_10px_38px] pt-[10px] [border-top:1px_solid_var(--workspace-divider)] text-[length:var(--workspace-text-body,_13px)] font-[400] leading-[var(--workspace-leading-body,_20px)]">
+                  <p className="m-0 wrap-anywhere whitespace-pre-wrap">
+                    {item.summary}
+                  </p>
                   {item.taskKey ? (
-                    <p className="task-report-message__key">{item.taskKey}</p>
+                    <p className="m-[8px_0_0] wrap-anywhere text-workspace-muted text-[length:var(--workspace-text-micro,_11px)] leading-[var(--workspace-leading-micro,_16px)]">
+                      {item.taskKey}
+                    </p>
                   ) : null}
                 </div>
               </details>
@@ -102,21 +108,21 @@ function TaskReportHeading({ item }: { item: TaskReportItem }) {
   const StatusIcon = item.outcome === "done" ? CircleCheck : CircleX;
 
   return (
-    <span className="task-report-message__heading">
+    <span className="flex min-w-0 items-start gap-[10px]">
       <StatusIcon
         aria-hidden="true"
         size={18}
         className="task-report-message__icon"
         data-outcome={item.outcome}
       />
-      <span className="task-report-message__copy">
+      <span className="grid min-w-0 gap-[4px]">
         <span
-          className="task-report-message__title"
+          className="wrap-anywhere text-[length:var(--workspace-text-chat,_14px)] font-[500] leading-[var(--workspace-leading-body,_20px)]"
           title={item.taskKey || undefined}
         >
           {item.title}
         </span>
-        <span className="task-report-message__meta">
+        <span className="task-report-message__meta flex flex-wrap items-baseline gap-[2px_6px] text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] font-[400] leading-[var(--workspace-leading-caption,_18px)]">
           <span>{item.outcome === "done" ? "Completed" : "Failed"}</span>
           {hasCompletedAt ? (
             <>

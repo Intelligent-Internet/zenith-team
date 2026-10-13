@@ -146,7 +146,10 @@ export function AccessLabel({
   const Icon = level ? PROJECT_ACCESS_LEVEL_ICONS[level.id] : null;
   const borrowed = borrowedFrom(own, inherited);
   return (
-    <span className="project-access-perms__content" aria-hidden="true">
+    <span
+      className="inline-flex min-w-0 items-center gap-[5px]"
+      aria-hidden="true"
+    >
       {Icon ? <Icon className="project-access-perms__icon" size={14} /> : null}
       <span
         className="project-access-perms__label"
@@ -158,9 +161,9 @@ export function AccessLabel({
         <span className="project-access-perms__more">+{extra}</span>
       ) : null}
       {borrowed === "group" ? (
-        <UsersRound className="project-access-perms__source" size={13} />
+        <UsersRound className="flex-none text-workspace-muted" size={13} />
       ) : borrowed === "everyone" ? (
-        <Building2 className="project-access-perms__source" size={13} />
+        <Building2 className="flex-none text-workspace-muted" size={13} />
       ) : null}
     </span>
   );

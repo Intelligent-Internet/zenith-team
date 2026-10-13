@@ -115,7 +115,7 @@ function AssetsGrid({
   scopes: WorkspaceAssetScope[];
 }) {
   return (
-    <div className="assets-page-scroll">
+    <div className="h-full min-w-0 overflow-y-auto [scrollbar-width:thin]">
       <div className="assets-overview-grid">
         {scopes.map((scope) => (
           <AssetGridCard
@@ -145,8 +145,10 @@ function AssetGridCard({
       to={`/assets/${encodeURIComponent(scope.scope)}`}
     >
       <WorkspaceCategoryArtwork />
-      <h2 className="assets-overview-grid-title">{scope.label}</h2>
-      <span className="assets-overview-grid-count">
+      <h2 className="m-[14px_16px_0] text-workspace-body leading-workspace-body font-[600]">
+        {scope.label}
+      </h2>
+      <span className="block m-[4px_16px_14px] text-workspace-caption leading-workspace-caption text-workspace-muted">
         {query.isLoading
           ? "…"
           : query.isError
@@ -168,10 +170,10 @@ function AssetsList({
   scopes: WorkspaceAssetScope[];
 }) {
   return (
-    <div className="assets-page-scroll">
-      <div className="assets-overview-list collection-list">
+    <div className="h-full min-w-0 overflow-y-auto [scrollbar-width:thin]">
+      <div className="grid collection-list">
         <div
-          className="assets-overview-list-heading collection-list__header"
+          className="flex items-center justify-between gap-[12px] p-[0_var(--collection-cell-inset)] min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
           aria-hidden="true"
         >
           <span>Workspace</span>
@@ -200,17 +202,20 @@ function AssetListCard({
   const value = query.currentData;
   return (
     <Link
-      className="assets-overview-list-card collection-list__row"
+      className="flex items-center gap-[12px] p-[14px_var(--collection-cell-inset)] collection-list__row"
       to={`/assets/${encodeURIComponent(scope.scope)}`}
     >
       <WorkspaceCategoryArtwork compact />
-      <div className="assets-overview-list-copy min-w-0 flex-1">
-        <h2 className="collection-list__primary truncate" title={scope.label}>
+      <div className="assets-overview-list-copy min-w-0 min-w-0 flex-1">
+        <h2
+          className="text-workspace-text text-workspace-body leading-workspace-body font-[600] truncate"
+          title={scope.label}
+        >
           {scope.label}
         </h2>
         <p className="collection-list__secondary">Company main workspace</p>
       </div>
-      <span className="assets-overview-list-count">
+      <span className="text-workspace-muted text-workspace-caption [font-variant-numeric:tabular-nums] whitespace-nowrap">
         {query.isLoading
           ? "…"
           : query.isError
@@ -273,7 +278,7 @@ function WorkspaceAssetsState({
   title: string;
 }) {
   return (
-    <div className="assets-page-state grid place-items-center rounded-3xl border border-dashed border-white/20 bg-white/[0.03] text-center">
+    <div className="h-auto min-h-[220px] grid place-items-center rounded-3xl border border-dashed border-white/20 bg-white/[0.03] text-center">
       <div className="max-w-lg px-6">
         <Icon name={icon} className="mx-auto size-12 text-white/35" />
         <h2 className="m-0 mt-4 text-lg font-bold text-white">{title}</h2>

@@ -2,15 +2,6 @@
   cursor: pointer;
 }
 
-.workspace-runner-menu {
-  width: min(380px, calc(100vw - 32px));
-  border: 1px solid var(--workspace-divider);
-  background: var(--workspace-overlay-bg);
-  color: var(--workspace-native-text);
-  font-family: var(--workspace-font-body);
-  box-shadow: var(--workspace-overlay-shadow);
-}
-
 .workspace-runner-menu__heading > strong {
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
@@ -22,12 +13,6 @@
   color: var(--workspace-native-text-muted);
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
-}
-
-.workspace-runner-menu__list {
-  margin: 12px 0;
-  padding: 0;
-  list-style: none;
 }
 
 .workspace-runner-menu__list li {

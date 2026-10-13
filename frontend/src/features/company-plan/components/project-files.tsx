@@ -110,8 +110,8 @@ function ProjectLogoPicker({
   }, [file]);
 
   return (
-    <div className="project-logo-picker">
-      <div className="project-logo-picker__control">
+    <div className="project-logo-picker grid [flex:0_0_var(--project-image-size)] gap-[4px] w-[var(--project-image-size)]">
+      <div className="relative">
         <label
           className="project-logo-upload"
           data-uploading={uploading || undefined}
@@ -121,7 +121,7 @@ function ProjectLogoPicker({
         >
           {file && previewUrl ? (
             <img
-              className="project-logo-upload__preview"
+              className="w-full h-full object-contain"
               src={previewUrl}
               alt=""
             />
@@ -136,7 +136,7 @@ function ProjectLogoPicker({
           )}
           {uploading ? (
             <span
-              className="project-logo-upload__progress"
+              className="absolute inset-0 flex flex-col items-center justify-center gap-[3px] [background:rgb(0_0_0_/_60%)] text-[#fff] text-[length:11px] leading-[14px] pointer-events-none"
               role="progressbar"
               aria-label="Uploading project image"
               aria-valuemin={0}
@@ -370,7 +370,7 @@ export function ProjectFilesEditor({
     return (
       <div className="project-file-row" key={row.localId}>
         <FileText size={18} />
-        <span className="project-file-row__name">
+        <span className="flex-1 min-w-0 wrap-anywhere">
           {row.name}
           <small>
             {formatAttachmentSize(row.size)} ·{" "}
@@ -407,7 +407,7 @@ export function ProjectFilesEditor({
     );
   }
   return (
-    <div className="project-files-editor">
+    <div className="grid gap-[20px]">
       <div className="project-editor__identity">
         <ProjectLogoPicker
           companyId={companyId}
@@ -424,7 +424,7 @@ export function ProjectFilesEditor({
         {identity}
       </div>
       {children}
-      <div className="project-files-editor__documents">
+      <div className="grid gap-[8px]">
         <span className="project-editor__field-heading">
           Documents <small>Optional</small>
         </span>

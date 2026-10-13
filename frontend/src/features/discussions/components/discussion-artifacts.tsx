@@ -16,7 +16,7 @@ export function DiscussionArtifacts({
   return (
     <section
       id={`discussion-artifacts-${conversationId}`}
-      className="discussion-artifacts-page"
+      className="[container:artifact-panel_/_inline-size] flex flex-1 flex-col min-w-0 min-h-0"
     >
       <ConversationArtifactsPanel
         companyId={companyId}

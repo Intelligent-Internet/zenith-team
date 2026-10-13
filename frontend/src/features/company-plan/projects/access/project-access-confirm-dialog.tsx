@@ -99,7 +99,7 @@ export function ProjectAccessConfirmDialog({
               <DialogTitle>{confirmation.title}</DialogTitle>
               {counts && showCounts ? (
                 <DialogDescription asChild>
-                  <div className="project-access-confirm__counts">
+                  <div className="flex col-[2] mt-[6px]">
                     <AccessCounts counts={counts} />
                   </div>
                 </DialogDescription>

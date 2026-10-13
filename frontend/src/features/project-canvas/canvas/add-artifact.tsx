@@ -166,7 +166,11 @@ export function AddArtifact({
       onClose={onClose}
       canClose={!busy}
     >
-      <div className="pc-add-tabs" role="tablist" aria-label="Artifact source">
+      <div
+        className="pc-add-tabs grid grid-cols-[repeat(4,_1fr)] m-[22px_26px_0] gap-[6px] p-[4px] [border:1px_solid_var(--pc-line)] rounded-[8px] [background:var(--pc-paper)]"
+        role="tablist"
+        aria-label="Artifact source"
+      >
         {(
           [
             { value: "document", label: "Create", Icon: FileText },
@@ -198,7 +202,10 @@ export function AddArtifact({
             </button>
           ))}
       </div>
-      <form className="pc-add-form" onSubmit={(event) => void submit(event)}>
+      <form
+        className="pc-add-form p-[22px_26px_24px] flex flex-col gap-[19px]"
+        onSubmit={(event) => void submit(event)}
+      >
         {tab === "upload" && canManageFiles && (
           <label className={`pc-upload-zone ${file ? "has-file" : ""}`}>
             <ArrowUp size={28} />

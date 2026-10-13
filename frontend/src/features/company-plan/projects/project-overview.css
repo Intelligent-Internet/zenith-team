@@ -95,16 +95,6 @@
   gap: 16px;
   padding: 16px var(--project-content-gutter);
 }
-.project-overview-intro {
-  grid-column: 1 / -1;
-  min-width: 0;
-}
-.project-overview-request-status {
-  grid-column: 1;
-  margin: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-}
 .project-overview-intro h2 {
   margin: 0 0 8px;
   font-size: var(--workspace-text-title);
@@ -151,12 +141,6 @@
 .project-metric > div {
   min-width: 0;
   flex: 1;
-}
-.project-metric-icon {
-  width: 22px;
-  height: 22px;
-  flex: none;
-  color: var(--workspace-native-text-muted);
 }
 .project-metric[data-metric="Completed"] > svg {
   color: var(--workspace-native-success);
@@ -448,9 +432,6 @@
 .project-workspace-page .project-progress-chart {
   height: 130px;
 }
-.project-milestones {
-  grid-column: 1 / -1;
-}
 .project-workspace-page .project-milestone-list {
   gap: 20px;
   padding-top: 8px;
@@ -673,12 +654,6 @@
     grid-row: 2 / 5;
   }
 }
-
-.project-settings-surface {
-  padding: 16px var(--project-content-gutter);
-  min-height: 0;
-  overflow-y: auto;
-}
 .project-settings-surface h2 {
   font-size: var(--workspace-text-page);
   line-height: var(--workspace-leading-page);
@@ -708,12 +683,6 @@
     grid-template-columns: 1fr;
     gap: 8px;
   }
-}
-
-.project-settings-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 .project-settings-actions .dashboard-button {
   display: inline-flex;

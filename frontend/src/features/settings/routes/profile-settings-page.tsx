@@ -91,13 +91,13 @@ function ActivityMetric({
   status,
 }: ActivityMetricProps) {
   return (
-    <div className="my-account-metric">
+    <div className="my-account-metric min-w-0">
       <dt>{label}</dt>
       <dd>
         {loading ? (
           <span
             aria-label={`Loading ${label}`}
-            className="my-account-metric__skeleton"
+            className="block w-[70%] h-[24px] mt-[4px] rounded-[4px] [background:var(--workspace-control-bg)]"
           />
         ) : (
           primary
@@ -412,10 +412,10 @@ export function ProfileSettingsPage() {
         aria-labelledby="account-profile-title"
       >
         <h2 id="account-profile-title">Profile</h2>
-        <div className="my-account-identity">
+        <div className="my-account-identity flex items-center gap-[14px] mb-[24px]">
           <AvatarImagePicker
             label="Change your avatar"
-            className="my-account-avatar"
+            className="my-account-avatar flex-none w-[48px] h-[48px] rounded-[50%]"
             file={avatarFile}
             disabled={profileFieldsDisabled}
             onSelect={(file) => {
@@ -432,7 +432,7 @@ export function ProfileSettingsPage() {
           </AvatarImagePicker>
           <div>
             <strong>{profileUser?.displayName ?? session.displayName}</strong>
-            <div className="my-account-email">
+            <div className="mt-[3px] text-workspace-muted text-[length:13px] wrap-anywhere">
               {profileUser?.email ?? session.email}
             </div>
           </div>
@@ -443,7 +443,7 @@ export function ProfileSettingsPage() {
           aria-busy={isSavingProfile || isLoadingProfile}
         >
           <div className="my-account-fields">
-            <div className="my-account-field">
+            <div className="my-account-field grid [align-content:start] min-w-0 gap-[8px]">
               <label htmlFor="profile-display-name">Full name</label>
               <input
                 autoComplete="name"
@@ -458,12 +458,12 @@ export function ProfileSettingsPage() {
                 }
               />
             </div>
-            <div className="my-account-field">
+            <div className="my-account-field grid [align-content:start] min-w-0 gap-[8px]">
               <label htmlFor="profile-phone-number">
                 Phone number <span>Optional</span>
               </label>
-              <div className="my-account-phone">
-                <div className="my-account-country">
+              <div className="grid grid-cols-[minmax(0,_0.9fr)_minmax(0,_1.1fr)] gap-[8px]">
+                <div className="my-account-country relative min-w-0">
                   <select
                     aria-label="Country calling code"
                     autoComplete="country"
@@ -497,7 +497,7 @@ export function ProfileSettingsPage() {
               </div>
             </div>
           </div>
-          <div className="my-account-field">
+          <div className="my-account-field grid [align-content:start] min-w-0 gap-[8px]">
             <label htmlFor="profile-biography">
               Bio <span>Private</span>
             </label>
@@ -510,13 +510,16 @@ export function ProfileSettingsPage() {
               value={formValues.biography}
               onChange={(event) => handleBiographyChange(event.target.value)}
             />
-            <p className="my-account-field__meta" id="profile-biography-limit">
+            <p
+              className="m-0 text-workspace-muted text-[length:12px] leading-[16px] text-right"
+              id="profile-biography-limit"
+            >
               {biographyLineCount}/12 lines
               <span className="sr-only"> · Up to 1,200 characters</span>
             </p>
           </div>
           <div className="my-account-form-footer">
-            <div className="my-account-form-status">
+            <div className="min-w-0">
               {profileError || profileFeedback || conflictUser ? (
                 <p
                   className={cx(
@@ -619,7 +622,7 @@ export function ProfileSettingsPage() {
             />
           </div>
           <section
-            className="my-account-activity"
+            className="my-account-activity pt-[18px] [border-top:1px_solid_var(--workspace-divider)]"
             aria-labelledby="activity-insight-title"
           >
             <header>
@@ -686,7 +689,7 @@ export function ProfileSettingsPage() {
         </section>
       ) : null}
       <section
-        className="my-account-section my-account-account"
+        className="my-account-section flex flex-wrap items-center justify-end gap-[16px]"
         aria-label="Account"
       >
         <div className="my-account-actions">

@@ -80,11 +80,11 @@ export function CompanyInvitationsSection({
   }
   return (
     <section
-      className="company-invitations-section"
+      className="company-invitations-section [container:company-invitations_/_inline-size] min-w-0 mt-[24px] [border:0] [border-radius:0] text-workspace-text overflow-hidden"
       aria-labelledby="company-invitations-title"
     >
       <header>
-        <div className="company-invitations-heading">
+        <div className="company-invitations-heading flex items-center gap-[8px]">
           <h2 id="company-invitations-title" ref={heading} tabIndex={-1}>
             {pendingInvitations.length > 0
               ? "Pending invitations"
@@ -99,7 +99,7 @@ export function CompanyInvitationsSection({
           ) : null}
         </div>
       </header>
-      <div className="company-invitations-content">
+      <div className="company-invitations-content grid gap-[12px] text-[length:13px] leading-[1.6]">
         {query.isLoading && <p role="status">Loading invitations…</p>}
         {query.isError && (
           <p role="alert">
@@ -245,8 +245,8 @@ function InvitationRow({
           : Clock3;
   return (
     <li>
-      <div className="invitation-row-copy">
-        <div className="invitation-row-title">
+      <div className="grid gap-[5px]">
+        <div className="invitation-row-title flex flex-wrap items-center gap-[8px]">
           <strong>{invitation.email}</strong>
           {invitation.role !== "member" ? (
             <RoleBadge role={invitation.role} />

@@ -462,7 +462,7 @@ export function ChatNavigator({
         </Tooltip>
       </header>
 
-      <div className="workspace-chat-navigator__content">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <ChatNavigatorBrowseControls
           browse={browse}
           onChange={onBrowseChange}
@@ -593,7 +593,7 @@ export function ChatNavigator({
                 keepVisible={Boolean(unpinnedTaskChats.length || runningCount)}
                 summary={
                   runningCount ? (
-                    <span className="workspace-chat-navigator__running-count">
+                    <span className="workspace-chat-navigator__running-count inline-flex shrink-0 items-center gap-[4px] text-workspace-muted whitespace-nowrap text-workspace-micro leading-workspace-micro">
                       <span aria-hidden="true" />
                       {runningCount} running
                     </span>
@@ -1024,7 +1024,7 @@ function NavigatorRow({
           onClick={handleOpen}
           onKeyDown={handleKeyDown}
         >
-          <span className="workspace-chat-navigator__avatar-slot">
+          <span className="relative grid w-[22px] shrink-0 place-items-center">
             <NavigatorAvatar
               agentId={agentId}
               avatarName={item.avatarName}
@@ -1056,8 +1056,8 @@ function NavigatorRow({
               </span>
             ) : null}
           </span>
-          <span className="workspace-chat-navigator__row-copy">
-            <span className="workspace-chat-navigator__row-text">
+          <span className="flex flex-1 min-w-0 items-center gap-[8px]">
+            <span className="flex-1 min-w-0">
               <span
                 className="workspace-chat-navigator__row-title"
                 data-channel={isChannel || undefined}
@@ -1066,7 +1066,7 @@ function NavigatorRow({
                 {item.title}
               </span>
               {identity ? (
-                <span className="workspace-chat-navigator__row-identity">
+                <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-workspace-muted text-workspace-caption leading-workspace-micro">
                   {identity}
                 </span>
               ) : null}
@@ -1187,7 +1187,11 @@ function NavigatorAvatar({
     );
   }
   if (icon) {
-    return <span className="workspace-chat-navigator__symbol">{icon}</span>;
+    return (
+      <span className="grid w-[20px] h-[22px] shrink-0 place-items-center text-workspace-muted">
+        {icon}
+      </span>
+    );
   }
 
   return (

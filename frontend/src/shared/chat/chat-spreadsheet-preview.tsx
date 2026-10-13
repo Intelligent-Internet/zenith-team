@@ -87,13 +87,19 @@ export default function ChatSpreadsheetPreview({
   }, [url, sizeBytes, format]);
   if (!result)
     return (
-      <p className="chat-spreadsheet__notice" role="status">
+      <p
+        className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted"
+        role="status"
+      >
         Loading spreadsheet…
       </p>
     );
   if (result.error)
     return (
-      <p className="chat-spreadsheet__notice" role="alert">
+      <p
+        className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted"
+        role="alert"
+      >
         {result.error}
       </p>
     );
@@ -101,7 +107,7 @@ export default function ChatSpreadsheetPreview({
   const sheet = sheets[active];
   if (!sheet)
     return (
-      <p className="chat-spreadsheet__notice">
+      <p className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted">
         This workbook has no visible sheets.
       </p>
     );
@@ -111,7 +117,11 @@ export default function ChatSpreadsheetPreview({
   );
   return (
     <div className="chat-spreadsheet">
-      <div className="chat-spreadsheet__tabs" role="group" aria-label="Sheets">
+      <div
+        className="chat-spreadsheet__tabs flex gap-[4px] overflow-auto p-[10px_16px] [border-bottom:1px_solid_var(--workspace-divider)]"
+        role="group"
+        aria-label="Sheets"
+      >
         {sheets.map((item, index) => (
           <button
             key={index}
@@ -123,19 +133,19 @@ export default function ChatSpreadsheetPreview({
           </button>
         ))}
       </div>
-      <p className="chat-spreadsheet__notice">
+      <p className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted">
         {sheet.rowCount.toLocaleString()} rows ·{" "}
         {sheet.columnCount.toLocaleString()} columns · Data preview; formulas
         use saved results.
       </p>
       {sheet.rowCount > 500 || sheet.columnCount > 50 ? (
-        <p className="chat-spreadsheet__notice">
+        <p className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted">
           Showing up to 500 rows and 50 columns. Download for the full workbook.
         </p>
       ) : null}
       {sheet.rows.length && sheet.columnCount ? (
         <div
-          className="chat-spreadsheet__scroll"
+          className="max-h-[60dvh] overflow-auto"
           tabIndex={0}
           aria-label={`${sheet.name} data`}
         >
@@ -169,7 +179,9 @@ export default function ChatSpreadsheetPreview({
           </table>
         </div>
       ) : (
-        <p className="chat-spreadsheet__notice">This sheet is empty.</p>
+        <p className="m-0 p-[10px_16px] text-[length:12px] text-workspace-muted">
+          This sheet is empty.
+        </p>
       )}
     </div>
   );

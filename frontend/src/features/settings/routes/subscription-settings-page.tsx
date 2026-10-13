@@ -5,7 +5,7 @@ import { SettingsCard } from "@/features/settings/components/settings-primitives
 export function SubscriptionSettingsPage() {
   return (
     <div className="subscription-settings-page">
-      <SettingsCard className="settings-availability">
+      <SettingsCard className="settings-availability p-[24px]">
         <h2>Subscription details are not available yet</h2>
         <p>
           Zenith Team does not show your current plan, renewal date, or billing

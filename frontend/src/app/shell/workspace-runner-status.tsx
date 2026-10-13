@@ -64,7 +64,7 @@ export function WorkspaceRunnerStatus({ companyId }: { companyId: string }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="workspace-runner-menu"
+        className="w-[min(380px,_calc(100vw_-_32px))] [border:1px_solid_var(--workspace-divider)] [background:var(--workspace-overlay-bg)] text-workspace-text font-workspace-body [box-shadow:var(--workspace-overlay-shadow)]"
         sideOffset={8}
       >
         <div className="workspace-runner-menu__heading">
@@ -85,7 +85,7 @@ export function WorkspaceRunnerStatus({ companyId }: { companyId: string }) {
           </p>
         </div>
         {runtimes?.length ? (
-          <ul className="workspace-runner-menu__list">
+          <ul className="workspace-runner-menu__list m-[12px_0] p-0 [list-style:none]">
             {runtimes.map((runtime) => (
               <li key={runtime.id}>
                 <div>

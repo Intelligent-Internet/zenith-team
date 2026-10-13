@@ -84,7 +84,10 @@ function OutputGallery({
       tabIndex={0}
     >
       {items.map((item) => (
-        <figure className="chat-output-gallery__item" key={item.id}>
+        <figure
+          className="chat-output-gallery__item [flex:0_0_220px] min-w-0 m-0"
+          key={item.id}
+        >
           <OutputMediaPreview
             companyId={companyId}
             runId={runId}

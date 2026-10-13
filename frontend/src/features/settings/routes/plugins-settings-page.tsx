@@ -818,7 +818,7 @@ export function PluginsSettingsPage() {
 
   if (!companyId) {
     return (
-      <div className="plugins-page">
+      <div className="plugins-page [container:plugins-page_/_inline-size] [scroll-margin-top:var(--workspace-page-gutter-block,_24px)] flex w-full min-w-0 flex-col pb-[24px] text-workspace-text">
         <PluginsHeader />
         <PluginState
           detail="Choose a Company before managing provider plugins."
@@ -883,7 +883,10 @@ export function PluginsSettingsPage() {
     sections.some((section) => section.key === "category:Productivity");
 
   return (
-    <div className="plugins-page" ref={catalogTopRef}>
+    <div
+      className="plugins-page [container:plugins-page_/_inline-size] [scroll-margin-top:var(--workspace-page-gutter-block,_24px)] flex w-full min-w-0 flex-col pb-[24px] text-workspace-text"
+      ref={catalogTopRef}
+    >
       <AgentSetupReturn />
       <PluginsHeader>
         <label className="plugins-computer">
@@ -941,9 +944,12 @@ export function PluginsSettingsPage() {
         </button>
       </PluginsHeader>
 
-      <div className="plugins-toolbar">
+      <div className="flex min-w-0 mt-[20px]">
         <label className="plugins-search">
-          <SearchIcon aria-hidden="true" className="plugins-search__icon" />
+          <SearchIcon
+            aria-hidden="true"
+            className="w-[18px] h-[18px] flex-none text-workspace-muted"
+          />
           <input
             aria-label="Search plugins"
             placeholder="Search plugins"
@@ -1017,7 +1023,7 @@ export function PluginsSettingsPage() {
       </div>
 
       {filter.kind !== "all" ? (
-        <div className="plugins-view-header">
+        <div className="plugins-view-header flex min-w-0 flex-col items-start gap-[6px] mt-[24px] [border-bottom:1px_solid_var(--workspace-divider)] pb-[12px]">
           <button
             className="plugins-back"
             type="button"
@@ -1029,7 +1035,7 @@ export function PluginsSettingsPage() {
           <h2 ref={viewTitleRef} tabIndex={-1}>
             {viewTitle}
             {viewCount !== undefined ? (
-              <span className="plugins-view-header__count">
+              <span className="text-workspace-muted text-workspace-label font-[400] leading-workspace-label">
                 {viewCount} {viewCount === 1 ? "plugin" : "plugins"}
               </span>
             ) : null}
@@ -1127,8 +1133,8 @@ export function PluginsSettingsPage() {
 // and at its right the computer the catalog is read from and refresh.
 function PluginsHeader({ children }: { children?: ReactNode }) {
   return (
-    <header className="plugins-header">
-      <div className="plugins-header__heading">
+    <header className="flex min-w-0 flex-wrap items-start justify-between gap-[12px_24px]">
+      <div className="plugins-header__heading min-w-0 [flex:1_1_240px]">
         <h1>{PLUGINS_TAB?.title ?? "Plugins"}</h1>
         {PLUGINS_TAB?.description ? <p>{PLUGINS_TAB.description}</p> : null}
       </div>
@@ -1192,7 +1198,10 @@ function PluginSection({
           onClick={() => onOpenView(view)}
         >
           {section.overflow.length > 0 ? (
-            <span aria-hidden="true" className="plugins-see-more__avatars">
+            <span
+              aria-hidden="true"
+              className="plugins-see-more__avatars inline-flex flex-none"
+            >
               {section.overflow.slice(0, 3).map((plugin) => (
                 <AppAvatar
                   key={plugin.id}
@@ -1241,7 +1250,7 @@ function PluginRow({
   return (
     <li className="plugins-row" data-pending={isPending || undefined}>
       <AppAvatar {...pluginAvatarProps(plugin, iconContext)} size={40} />
-      <span className="plugins-row__copy">
+      <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
         <Link
           {...link}
           aria-describedby={descriptionId}
@@ -1251,14 +1260,14 @@ function PluginRow({
           {plugin.name}
         </Link>
         <span
-          className="plugins-row__description"
+          className="overflow-hidden text-workspace-muted text-workspace-label leading-workspace-label text-ellipsis whitespace-nowrap"
           id={descriptionId}
           title={description}
         >
           {description}
         </span>
       </span>
-      <span className="plugins-row__actions">
+      <span className="relative z-[1] flex min-w-[56px] flex-none flex-col items-center">
         {progress ? (
           <PluginInstallProgressLabel name={plugin.name} progress={progress} />
         ) : plugin.action === "install" ? (
@@ -1358,7 +1367,7 @@ function InstalledStrip({
           <Settings aria-hidden="true" size={18} />
         </button>
       </header>
-      <ul className="plugins-strip">
+      <ul className="grid grid-cols-[repeat(auto-fill,_minmax(68px,_1fr))] [justify-items:start] gap-[8px_0] m-[14px_0_0_-4px] p-0 [list-style:none]">
         {shown.map((plugin) => {
           const statusLabel = PLUGIN_STATUS_LABELS[plugin.status];
           const label = statusLabel
@@ -1424,8 +1433,14 @@ function ReconnectCard({
   const hidden = count - shown.length;
 
   return (
-    <section aria-labelledby={titleId} className="plugins-reconnect-card">
-      <span aria-hidden="true" className="plugins-reconnect-card__avatars">
+    <section
+      aria-labelledby={titleId}
+      className="flex min-w-0 items-center gap-[12px] [border:1px_solid_var(--workspace-divider)] rounded-[12px] p-[8px_8px_8px_12px] [background:var(--workspace-panel-bg)]"
+    >
+      <span
+        aria-hidden="true"
+        className="plugins-reconnect-card__avatars inline-flex flex-none items-center"
+      >
         {shown.map((connector) => (
           <AppAvatar
             key={connector.id}
@@ -1435,10 +1450,15 @@ function ReconnectCard({
           />
         ))}
         {hidden > 0 ? (
-          <span className="plugins-reconnect-card__more">+{hidden}</span>
+          <span className="inline-grid min-w-[28px] h-[28px] place-items-center rounded-[999px] p-[0_6px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption font-[600] leading-[1]">
+            +{hidden}
+          </span>
         ) : null}
       </span>
-      <p className="plugins-reconnect-card__title" id={titleId}>
+      <p
+        className="min-w-0 flex-1 m-0 text-workspace-text text-workspace-body font-[500] leading-workspace-body wrap-anywhere"
+        id={titleId}
+      >
         {count === 1
           ? "1 app needs reconnecting"
           : `${count} apps need reconnecting`}
@@ -1462,11 +1482,11 @@ function ReconnectCard({
               (event.currentTarget as HTMLElement | null)?.focus();
             }}
           >
-            <div className="plugins-reconnect-popover__header">
+            <div className="plugins-reconnect-popover__header p-[12px_14px_6px]">
               <p id={listTitleId}>Reconnect apps</p>
               <p>Their tools changed</p>
             </div>
-            <ul className="plugins-reconnect-popover__list">
+            <ul className="plugins-reconnect-popover__list min-h-0 [flex:1_1_auto] m-0 overflow-y-auto p-[2px_6px_6px] [list-style:none]">
               {pendingReviews.map((connector) => {
                 const isPending = pendingConnectorId === connector.id;
                 return (
@@ -1476,7 +1496,7 @@ function ReconnectCard({
                       name={connector.name}
                       size={28}
                     />
-                    <span className="plugins-reconnect-popover__name">
+                    <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                       {connector.name}
                     </span>
                     <button
@@ -1499,7 +1519,7 @@ function ReconnectCard({
               })}
             </ul>
             {count > 1 ? (
-              <div className="plugins-reconnect-popover__footer">
+              <div className="[border-top:1px_solid_var(--workspace-divider)] p-[6px]">
                 <button
                   aria-disabled={busy || undefined}
                   className="plugins-reconnect-popover__all"
@@ -1528,12 +1548,17 @@ function PluginsSyncStatus({
   syncing: boolean;
 }) {
   const now = useMinuteClock();
-  if (syncing) return <span className="plugins-sync">Syncing…</span>;
+  if (syncing)
+    return (
+      <span className="flex-none text-workspace-faint text-workspace-caption leading-workspace-caption whitespace-nowrap">
+        Syncing…
+      </span>
+    );
   const synced = observedAt ? syncedAgo(observedAt, now) : undefined;
   if (!observedAt || !synced) return null;
   return (
     <span
-      className="plugins-sync"
+      className="flex-none text-workspace-faint text-workspace-caption leading-workspace-caption whitespace-nowrap"
       title={`Plugins synced ${new Date(observedAt).toLocaleString()}`}
     >
       Synced {synced}
@@ -1554,8 +1579,11 @@ function PluginNotice({
 }) {
   return (
     <div className="plugins-notice" data-tone={tone} role={role}>
-      <div className="plugins-notice__line">
-        <span aria-hidden="true" className="plugins-notice__dot" />
+      <div className="flex min-w-0 items-center gap-[10px]">
+        <span
+          aria-hidden="true"
+          className="w-[8px] h-[8px] flex-none rounded-[999px] [background:var(--plugins-notice-tone)]"
+        />
         <p className="plugins-notice__text">{children}</p>
         {action}
       </div>

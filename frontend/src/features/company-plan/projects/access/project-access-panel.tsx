@@ -239,8 +239,8 @@ export function ProjectAccessPanel({
       aria-label={`Access to ${project.title}`}
       className="project-access"
     >
-      <div className="project-access-toolbar">
-        <div className="project-access-toolbar__start">
+      <div className="flex items-center justify-between gap-[12px]">
+        <div className="flex min-w-0 flex-1 items-center gap-[8px]">
           {toolbarStart}
           {!access.reads && access.management ? (
             <JoinButton companyId={companyId} project={project} />
@@ -295,7 +295,10 @@ export function ProjectAccessPanel({
       ) : null}
       {!loaded && grants.isFetching ? <AccessLoading /> : null}
       {loaded ? (
-        <ul aria-label="Who has access" className="project-access-list">
+        <ul
+          aria-label="Who has access"
+          className="flex flex-col m-0 p-0 [border-top:1px_solid_var(--workspace-divider)] [list-style:none]"
+        >
           {groupGrants.map((grant) => {
             const group = groupById.get(grant.groupId);
             return (
@@ -340,7 +343,11 @@ export function ProjectAccessPanel({
               onSaved={saved}
             />
           ))}
-          {empty ? <li className="project-access-empty">Nobody yet</li> : null}
+          {empty ? (
+            <li className="p-[22px_12px] text-workspace-muted text-[length:12px] text-center [list-style:none]">
+              Nobody yet
+            </li>
+          ) : null}
         </ul>
       ) : null}
       <ProjectAccessConfirmDialog
@@ -382,7 +389,7 @@ function JoinButton({
   return (
     <button
       aria-label={`Join ${project.title}`}
-      className="dashboard-button project-access-join"
+      className="dashboard-button flex-none"
       disabled={state.isLoading}
       type="button"
       onClick={async () => {

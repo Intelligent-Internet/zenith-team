@@ -620,7 +620,7 @@ function LogoPair({ children, size }: { children: ReactNode; size: 56 | 60 }) {
     <div className="plugin-install-logos" data-size={size} aria-hidden="true">
       <span className="plugin-install-logos__brand">
         {/* The wordmark's own symbol, cropped from it. */}
-        <span className="plugin-install-logos__mark">
+        <span className="plugin-install-logos__mark block w-[25px] h-[30px] overflow-hidden">
           <Icon name="logo" />
         </span>
       </span>
@@ -666,13 +666,13 @@ function ConnectAppDialog({
         <LogoPair size={56}>
           <AppAvatar iconUrl={app.iconUrl} name={app.name} size={56} />
         </LogoPair>
-        <div className="plugin-connect-dialog__heading">
+        <div className="grid gap-[4px]">
           <DialogTitle>Connect {app.name}</DialogTitle>
           <DialogDescription>
             For the {target.plugin.name} plugin on {target.computer}
           </DialogDescription>
         </div>
-        <ul className="plugin-connect-dialog__facts">
+        <ul className="plugin-connect-dialog__facts grid gap-[14px] m-0 [border:1px_solid_var(--workspace-divider)] rounded-[16px] p-[16px] [list-style:none]">
           <li>
             <LockKeyhole aria-hidden="true" size={18} />
             <div>
@@ -752,7 +752,7 @@ function ConnectAppsDialog({
         className="plugin-install-dialog plugin-apps-dialog"
         overlayClassName="plugin-install-dialog__overlay"
       >
-        <header className="plugin-apps-dialog__header">
+        <header className="plugin-apps-dialog__header grid [justify-items:center] gap-[16px] p-[36px_24px_16px]">
           <LogoPair size={60}>
             <AppAvatar {...session.target.avatar} size={60} />
           </LogoPair>
@@ -762,11 +762,11 @@ function ConnectAppsDialog({
             do this later.
           </DialogDescription>
         </header>
-        <ul className="plugin-apps-dialog__apps">
+        <ul className="plugin-apps-dialog__apps m-0 p-[0_24px] [list-style:none]">
           {session.apps.map((app) => (
             <li key={app.id}>
               <AppAvatar iconUrl={app.iconUrl} name={app.name} size={40} />
-              <div className="plugin-apps-dialog__app">
+              <div className="plugin-apps-dialog__app grid min-w-0 flex-1">
                 <strong>{app.name}</strong>
                 <span>{app.description || "No description"}</span>
               </div>
@@ -803,7 +803,7 @@ function ConnectAppsDialog({
             </li>
           ))}
         </ul>
-        <footer className="plugin-apps-dialog__footer">
+        <footer className="flex h-[84px] items-center justify-end gap-[8px] mt-[8px] [border-top:1px_solid_var(--workspace-divider)] p-[0_24px] [background:var(--workspace-panel-raised-bg,_var(--workspace-panel-bg))]">
           <button
             className="plugin-install-dialog__secondary"
             type="button"
@@ -852,9 +852,12 @@ function InstallToast({
   onDismiss(): void;
 }) {
   return (
-    <div className="plugin-install-toast" role="status">
+    <div
+      className="grid w-[356px] max-w-[calc(100vw_-_32px)] grid-cols-[28px_minmax(0,_1fr)_20px] [align-items:start] gap-[12px] box-border [border:1px_solid_var(--workspace-divider)] rounded-[12px] p-[14px_12px_14px_14px] [background:var(--workspace-overlay-bg)] [box-shadow:var(--workspace-overlay-shadow)] text-workspace-text font-workspace-body"
+      role="status"
+    >
       <AppAvatar {...avatar} size={28} />
-      <div className="plugin-install-toast__body">
+      <div className="plugin-install-toast__body grid [justify-items:start] gap-[10px]">
         <p>{title}</p>
         {action ? (
           <button
@@ -943,7 +946,7 @@ export function PluginInstallProgressLabel({
     >
       <svg
         aria-hidden="true"
-        className="plugin-install-progress__ring"
+        className="plugin-install-progress__ring flex-none [fill:none] [stroke:currentcolor] [stroke-width:2]"
         height="16"
         viewBox="0 0 16 16"
         width="16"

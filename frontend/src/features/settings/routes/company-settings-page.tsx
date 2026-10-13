@@ -412,7 +412,7 @@ export function CompanySettingsPage() {
   };
 
   return (
-    <div className="settings-detail-page company-settings-page">
+    <div className="[container:settings-detail_/_inline-size] w-full min-w-0 text-workspace-text company-settings-page">
       <section
         className="settings-detail-section"
         aria-labelledby="company-profile-title"
@@ -512,8 +512,8 @@ export function CompanySettingsPage() {
             <legend>
               Phone number <span>Optional</span>
             </legend>
-            <div className="company-phone-controls">
-              <span className="settings-select-wrap company-country-select">
+            <div className="grid grid-cols-[112px_minmax(0,_1fr)] gap-[8px]">
+              <span className="settings-select-wrap flex relative min-w-0 items-center company-country-select">
                 <span className="company-country-code" aria-hidden="true">
                   {phoneCountry?.[2] ?? formValues.countryIso2}
                 </span>

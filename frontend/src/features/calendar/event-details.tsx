@@ -122,7 +122,7 @@ export function EventDetails({
           </p>
         )}
         {event.attendees.length > 0 && (
-          <div className="calendar-detail-guests">
+          <div className="calendar-detail-guests flex gap-[16px] items-start">
             <Users size={18} />
             <EventParticipants attendees={event.attendees} />
           </div>
@@ -152,7 +152,10 @@ export function EventDetails({
           </div>
         )}
         {event.responseStatus && (
-          <section className="calendar-rsvp" aria-label="Your response">
+          <section
+            className="calendar-rsvp grid gap-[12px] py-[16px] [border-top:1px_solid_var(--workspace-border)]"
+            aria-label="Your response"
+          >
             <strong>
               {event.responseStatus === "needs_action"
                 ? "Will you join?"
@@ -181,7 +184,10 @@ export function EventDetails({
           </section>
         )}
         {error && (
-          <p className="personal-error" role="alert">
+          <p
+            className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            role="alert"
+          >
             {error}
           </p>
         )}

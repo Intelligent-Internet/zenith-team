@@ -234,14 +234,6 @@ html[data-boardly-workspace-theme] .workspace-account-trigger:focus-visible {
   opacity: 0.5;
   cursor: default;
 }
-.personal-menu-separator {
-  height: 1px;
-  margin: 4px;
-  background: var(--workspace-divider);
-}
-.personal-menu-sign-out {
-  color: var(--workspace-native-text-muted);
-}
 .personal-menu-sign-out > span {
   color: var(--workspace-native-danger);
 }
@@ -276,11 +268,6 @@ html[data-boardly-workspace-theme] .workspace-account-trigger:focus-visible {
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
   outline: none;
-}
-.workspace-company-section-list {
-  max-height: 208px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 .workspace-company-section-status {
   margin: 0;
@@ -474,11 +461,6 @@ html[data-boardly-workspace-theme] .workspace-account-trigger:focus-visible {
 }
 .workspace-company-menu [data-current] {
   background: var(--workspace-accent-soft);
-}
-.workspace-company-menu-separator {
-  height: 1px;
-  margin: 8px 0;
-  background: var(--workspace-divider);
 }
 .workspace-company-menu .workspace-company-settings {
   min-height: 44px;

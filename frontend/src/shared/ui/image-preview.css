@@ -19,12 +19,6 @@
   padding: 16px;
 }
 
-.image-preview__canvas {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .image-preview__canvas img {
   display: block;
   max-width: none;
@@ -37,12 +31,4 @@
 .image-preview__stage:focus-visible {
   outline: 2px solid var(--workspace-native-accent, var(--primary));
   outline-offset: -2px;
-}
-
-.image-preview__message {
-  margin: auto;
-  padding: 16px;
-  color: var(--workspace-native-text-muted, var(--muted-foreground));
-  font-size: 13px;
-  text-align: center;
 }

@@ -126,7 +126,7 @@ export function DirectMembersInvite({ detail }: { detail: DiscussionDetail }) {
                 userId={person.kind === "human" ? person.id : undefined}
                 agentId={person.kind === "agent" ? person.id : undefined}
               />
-              <span className="discussion-member-copy">
+              <span className="discussion-member-copy flex flex-col gap-[2px] min-w-0">
                 <strong>{person.name}</strong>
                 <small>{person.kind === "agent" ? "Agent" : "Person"}</small>
               </span>

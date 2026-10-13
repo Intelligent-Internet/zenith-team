@@ -35,8 +35,11 @@ export function JoinCompanyForm({
   }
 
   return (
-    <form className="company-join-form" onSubmit={previewInvitation}>
-      <label className="company-join-form__field" htmlFor={`${id}-link`}>
+    <form className="grid gap-[12px] text-left" onSubmit={previewInvitation}>
+      <label
+        className="company-join-form__field grid gap-[8px] text-[var(--text-primary)] text-[length:13px] font-[500]"
+        htmlFor={`${id}-link`}
+      >
         Invite link
         <input
           id={`${id}-link`}
@@ -65,7 +68,7 @@ export function JoinCompanyForm({
           Need an invite? Ask a company owner or admin to send you a link.
         </p>
       )}
-      <div className="company-join-form__actions">
+      <div className="company-join-form__actions flex items-center justify-between gap-[16px] mt-[12px]">
         <button
           type="button"
           className="company-join-form__back"

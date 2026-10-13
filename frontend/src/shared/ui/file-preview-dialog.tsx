@@ -65,7 +65,7 @@ export function FilePreviewDialog({
       >
         {file ? (
           <div className="relative w-full">
-            <div className="file-preview-surface">
+            <div className="flex w-full h-[min(800px,_calc(100dvh_-_32px))] flex-col overflow-hidden [border:1px_solid_var(--border)] rounded-[var(--workspace-radius-overlay,_14px)] [background:var(--card)] text-[var(--foreground)] [box-shadow:var(--workspace-overlay-shadow,_0_16px_48px_#0003)]">
               <header className="file-preview-header">
                 <div className="min-w-0">
                   <DialogTitle

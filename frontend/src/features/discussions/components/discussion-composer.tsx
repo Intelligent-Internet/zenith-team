@@ -341,7 +341,7 @@ export function DiscussionComposer({
         />
         {draft.attachments.length ? (
           <div
-            className="discussion-draft-attachments"
+            className="flex gap-[8px] m-0 min-h-[72px] p-[6px_10px_4px] overflow-x-auto flex-nowrap"
             aria-label="Attached files"
           >
             {draft.attachments.map((file) => (
@@ -368,7 +368,7 @@ export function DiscussionComposer({
                     />
                   )}
                 </button>
-                <span className="discussion-draft-attachment-copy">
+                <span className="discussion-draft-attachment-copy flex min-w-0 flex-1 flex-col gap-[2px]">
                   <strong title={file.name}>{file.name}</strong>
                   <span>{formatFileSize(file.size)}</span>
                 </span>
@@ -436,7 +436,7 @@ export function DiscussionComposer({
             )}
           </div>
         )}
-        <div className="discussion-composer-tools">
+        <div className="discussion-composer-tools flex items-center gap-[8px] p-[4px_12px_8px]">
           <div>
             <ChatAddMenu
               disabled={!canSend || Boolean(pending)}
@@ -471,7 +471,7 @@ export function DiscussionComposer({
             </button>
             <input
               ref={fileInput}
-              className="discussion-file-input"
+              className="hidden"
               type="file"
               multiple
               onChange={async (event) => {

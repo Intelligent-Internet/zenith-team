@@ -511,7 +511,7 @@ export function FileViewer({
                 srcDoc={`<!doctype html><meta http-equiv="Content-Security-Policy" content="${csp}"><meta name="referrer" content="no-referrer">${content}`}
               />
             )}
-            <p className="pc-viewer-caption">
+            <p className="p-[8px_16px] text-[length:10px] text-center text-[var(--pc-muted)] [background:var(--pc-paper)] [border-top:1px_solid_var(--pc-line)] m-0 flex-none">
               Static design review · Scripts and external resources are disabled
             </p>
           </>
@@ -547,13 +547,21 @@ export function FileViewer({
             <img src={url} alt={filename} />
           </div>
         ) : type.startsWith("video/") ? (
-          <video controls src={url} className="pc-media-viewer" />
+          <video
+            controls
+            src={url}
+            className="max-w-full max-h-[calc(100%_-_60px)] m-auto"
+          />
         ) : type.startsWith("audio/") ? (
-          <audio controls src={url} className="pc-media-viewer" />
+          <audio
+            controls
+            src={url}
+            className="max-w-full max-h-[calc(100%_-_60px)] m-auto"
+          />
         ) : word || /markdown/.test(type) || /\.md$/i.test(filename) ? (
           <>
             {word && !renderShell && (
-              <p className="pc-viewer-caption">
+              <p className="p-[8px_16px] text-[length:10px] text-center text-[var(--pc-muted)] [background:var(--pc-paper)] [border-top:1px_solid_var(--pc-line)] m-0 flex-none">
                 Word reading view · Original formatting is preserved in the
                 download
               </p>
@@ -576,7 +584,10 @@ export function ViewerMessage({
   loading?: boolean;
 }) {
   return (
-    <div className="pc-viewer-loading" role="status">
+    <div
+      className="pc-viewer-loading flex flex-col items-center justify-center gap-[14px] min-h-[260px] h-full p-[40px] text-center text-[var(--pc-muted)] text-[length:13px] leading-[1.7]"
+      role="status"
+    >
       {loading && <LoaderCircle className="pc-spin" size={24} />}
       {children}
     </div>

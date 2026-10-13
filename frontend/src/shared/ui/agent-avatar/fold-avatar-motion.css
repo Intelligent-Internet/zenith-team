@@ -12,13 +12,6 @@
   transform: scale(1.16);
 }
 
-.fold-pose__filters {
-  position: absolute;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
 .fold-pose__reaction {
   transform-origin: 50% 70%;
 }

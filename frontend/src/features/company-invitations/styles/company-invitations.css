@@ -115,25 +115,6 @@
   outline: none;
   border-color: var(--company-invite-field-accent);
 }
-.company-invite-hint {
-  margin: 8px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 11px;
-  line-height: 1.6;
-}
-.company-invite-errors {
-  display: grid;
-  gap: 4px;
-  max-height: 128px;
-  overflow-y: auto;
-  margin: 10px 0 0;
-  padding-left: 16px;
-  color: var(--workspace-native-danger);
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  list-style: disc;
-}
 .company-invite-emails[aria-invalid="true"] {
   --company-invite-field-accent: var(--workspace-native-danger);
   border-color: var(--workspace-native-danger);
@@ -197,15 +178,6 @@
   font-size: 12px;
   line-height: 1.6;
 }
-.company-invite-feedback {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-  font-size: 12px;
-  line-height: 1.5;
-}
 .company-invite-actions {
   display: flex;
   justify-content: flex-end;
@@ -220,27 +192,8 @@
 .company-invite-primary:enabled:hover {
   background: var(--workspace-accent-hover);
 }
-.company-invite-secondary {
-  border-radius: 9px;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-}
-.company-invitations-section {
-  container: company-invitations / inline-size;
-  min-width: 0;
-  margin-top: 24px;
-  border: 0;
-  border-radius: 0;
-  color: var(--workspace-native-text);
-  overflow: hidden;
-}
 .company-invitations-section > header {
   padding-bottom: 12px;
-}
-.company-invitations-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 .company-invitations-section > header h2 {
   margin: 0;
@@ -258,12 +211,6 @@
   font-weight: 600;
   line-height: 18px;
   text-align: center;
-}
-.company-invitations-content {
-  display: grid;
-  gap: 12px;
-  font-size: 13px;
-  line-height: 1.6;
 }
 .company-invitations-content > p {
   margin: 0;
@@ -347,16 +294,6 @@
 }
 .company-invitations-history .invitation-list {
   margin-top: 10px;
-}
-.invitation-row-copy {
-  display: grid;
-  gap: 5px;
-}
-.invitation-row-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
 }
 .invitation-row-title strong {
   font-size: 14px;
@@ -627,31 +564,12 @@
 .company-invite-people .company-invite-body {
   gap: 18px;
 }
-.company-invite-field-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 8px;
-}
 .company-invite-field-heading .company-invite-label {
   margin-bottom: 0;
-}
-.company-invite-count {
-  color: var(--workspace-native-text-muted);
-  font-size: 11px;
-  white-space: nowrap;
 }
 .company-invite-people .company-invite-emails {
   min-height: 96px;
   padding: 10px 12px;
-}
-.company-invite-error {
-  margin: 8px 0 0;
-  color: var(--workspace-native-danger);
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
 }
 .company-invite-result-summary > p {
   margin: 0 0 8px;

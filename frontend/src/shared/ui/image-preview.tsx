@@ -132,12 +132,15 @@ function ImagePreviewContent({ src, alt }: { src: string; alt: string }) {
         aria-label={`${alt} preview. Use plus and minus to zoom, and 0 to fit.`}
       >
         {failed ? (
-          <p className="image-preview__message" role="status">
+          <p
+            className="m-auto p-[16px] text-[var(--workspace-native-text-muted,_var(--muted-foreground))] text-[length:13px] text-center"
+            role="status"
+          >
             This image could not be displayed. Download it to open it elsewhere.
           </p>
         ) : (
           <div
-            className="image-preview__canvas"
+            className="image-preview__canvas flex items-center justify-center"
             style={{
               width: Math.max(stageSize.width, naturalSize.width * scale),
               height: Math.max(stageSize.height, naturalSize.height * scale),

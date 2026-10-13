@@ -10,7 +10,7 @@ export function CoffeePreview({
 }) {
   return (
     <div
-      className={`studio-coffee ${compact ? "studio-coffee--compact" : ""} ${revised ? "is-revised" : ""}`}
+      className={`overflow-hidden rounded-[5px] [background:#fffaf1] text-[#3c443d] [border:1px_solid_#ecdfca] ${compact ? "studio-coffee--compact" : ""} ${revised ? "is-revised" : ""}`}
     >
       <div className="studio-coffee-nav">
         <span className="studio-coffee-wordmark">daybreak.</span>

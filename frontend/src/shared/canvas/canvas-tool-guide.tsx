@@ -85,7 +85,10 @@ export function CanvasToolGuide({
           }
         }}
       >
-        <span ref={trigger} className="canvas-tool-guide__trigger">
+        <span
+          ref={trigger}
+          className="canvas-tool-guide__trigger inline-flex shrink-0"
+        >
           <button
             type="button"
             aria-label={tool.label}
@@ -120,8 +123,8 @@ export function CanvasToolGuide({
           onPointerDownOutside={dismiss}
         >
           {preview}
-          <div className="canvas-tool-guide__copy">
-            <div className="canvas-tool-guide__heading">
+          <div className="canvas-tool-guide__copy p-[12px_10px_10px]">
+            <div className="canvas-tool-guide__heading flex items-center justify-between flex-wrap gap-[6px]">
               <strong>{tool.title ?? tool.label}</strong>
               {tool.shortcut && <kbd>{tool.shortcut}</kbd>}
             </div>

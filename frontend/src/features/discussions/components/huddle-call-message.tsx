@@ -15,7 +15,7 @@ export function HuddleCallMessage({
   const call = message.huddle;
   if (!call)
     return (
-      <p className="huddle-call-unavailable">
+      <p className="text-[var(--muted-foreground)] text-[length:13px]">
         Huddle history is no longer available.
       </p>
     );
@@ -28,8 +28,8 @@ export function HuddleCallMessage({
   const minutes = Math.floor(call.durationSeconds / 60);
   const duration = minutes > 0 ? `${minutes}m` : `${call.durationSeconds}s`;
   return (
-    <article className="huddle-call-card">
-      <span className="huddle-call-icon">
+    <article className="flex items-start gap-[12px] p-[12px_var(--workspace-chat-inset,_24px)] text-[var(--foreground)]">
+      <span className="grid place-items-center [flex:0_0_36px] h-[36px] rounded-[var(--workspace-radius-panel,_8px)] [background:var(--muted)] text-[var(--muted-foreground)]">
         <Headphones size={23} aria-hidden="true" />
       </span>
       <div className="huddle-call-copy">

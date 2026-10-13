@@ -135,13 +135,13 @@ function PublicBoard({ token, heading }: { token: string; heading: boolean }) {
             <div className="wb-board-heading">
               <h1 title={snapshot.board.title}>{snapshot.board.title}</h1>
             </div>
-            <span className="wb-public-access">
+            <span className="flex items-center gap-[6px] text-[var(--wb-muted)] text-[length:12px]">
               <LockKeyhole size={15} />
               View only
             </span>
           </header>
         ) : null}
-        <div className="wb-editor-body">
+        <div className="relative flex flex-1 min-h-0">
           <div className="wb-surface">
             <BoardEdgeMarkers />
             <ReactFlow

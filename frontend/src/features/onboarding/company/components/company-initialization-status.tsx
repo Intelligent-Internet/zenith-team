@@ -61,14 +61,10 @@ function ResearchNotStartedStatus() {
         }
       />
       <div className="company-initialization-status__body">
-        <p
-          className="company-initialization-status__title"
-          role="status"
-          aria-live="polite"
-        >
+        <p className="m-0 font-[600]" role="status" aria-live="polite">
           {statusText}
         </p>
-        <p className="company-initialization-status__description">
+        <p className="m-[2px_0_0] text-[var(--workspace-text-muted)] wrap-anywhere">
           {failure ||
             (offline
               ? "Reconnect your computer to continue. Your workspace is available."
@@ -163,11 +159,7 @@ function ResearchRunStatus() {
         <Check size={18} aria-hidden="true" />
       )}
       <div className="company-initialization-status__body">
-        <p
-          className="company-initialization-status__title"
-          role="status"
-          aria-live="polite"
-        >
+        <p className="m-0 font-[600]" role="status" aria-live="polite">
           {stage === "active"
             ? research.waiting
               ? `${ceoName} is waiting for your computer to reconnect`
@@ -176,7 +168,7 @@ function ResearchRunStatus() {
               ? "Company research didn’t finish"
               : "Your company wiki is ready"}
         </p>
-        <p className="company-initialization-status__description">
+        <p className="m-[2px_0_0] text-[var(--workspace-text-muted)] wrap-anywhere">
           {stage === "active"
             ? pages > 0
               ? `${written} written to your Wiki so far. You can keep working.`

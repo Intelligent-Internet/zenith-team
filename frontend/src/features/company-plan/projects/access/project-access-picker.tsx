@@ -230,7 +230,7 @@ export function ProjectAccessPicker({
           <AccessLabel inherited={inherited} own={own} />
           <ChevronDown
             aria-hidden="true"
-            className="project-access-perms__chevron"
+            className="flex-none text-workspace-muted"
             size={12}
           />
         </button>
@@ -306,7 +306,7 @@ function SavingPicker({
         visibility={visibility}
         onChange={setDraft}
       />
-      <div className="project-access-picker__footer">
+      <div className="flex items-center gap-[8px] p-[10px_12px] [border-top:1px_solid_var(--workspace-divider)]">
         {onRemove ? (
           <MaybeTooltip label={removeBlocked ?? null}>
             <button
@@ -326,7 +326,7 @@ function SavingPicker({
           </MaybeTooltip>
         ) : null}
         <button
-          className="dashboard-button dashboard-button-primary project-access-picker__save"
+          className="dashboard-button dashboard-button-primary ml-auto"
           disabled={busy || !changed}
           type="button"
           onClick={() => {
@@ -364,10 +364,10 @@ function PermissionChecklist({
 }) {
   const current = accessLevelFor(heldPermissions(draft, inherited));
   return (
-    <div className="project-access-picker__body">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
       <div
         aria-label="Presets"
-        className="project-access-picker__presets"
+        className="sticky z-[1] top-0 grid gap-[4px] grid-cols-[repeat(4,_minmax(0,_1fr))] p-[8px] [border-bottom:1px_solid_var(--workspace-divider)] [background:var(--workspace-overlay-bg)]"
         role="group"
       >
         {PROJECT_ACCESS_LEVELS.map((level) => {
@@ -396,12 +396,12 @@ function PermissionChecklist({
           );
         })}
       </div>
-      <div className="project-access-picker__list">
+      <div className="flex flex-col p-[4px_6px_6px]">
         {PROJECT_PERMISSION_GROUPS.map((group) => (
           <div
             key={group.label}
             aria-label={group.label}
-            className="project-access-picker__group"
+            className="project-access-picker__group flex flex-col"
             role="group"
           >
             {group.permissions.map((permission) => (
@@ -456,7 +456,7 @@ function PermissionOption({
       label={inheritedNote(from)}
       side="right"
     >
-      <span className="project-access-option__marker">
+      <span className="inline-grid place-items-center text-workspace-muted">
         {from.via === "everyone" ? (
           <Building2 aria-hidden="true" size={13} />
         ) : (
@@ -465,7 +465,10 @@ function PermissionOption({
       </span>
     </Tooltip>
   ) : (
-    <span aria-hidden="true" className="project-access-option__marker" />
+    <span
+      aria-hidden="true"
+      className="inline-grid place-items-center text-workspace-muted"
+    />
   );
   // Beyond the viewer: a lock where the check box would be.
   const check = capped ? (

@@ -1087,7 +1087,9 @@ function WorkflowAppConnectBody({
               spinning={stage !== "connect"}
             />
           ) : tools ? (
-            <p className="workflow-app-connect__stats">{tools}</p>
+            <p className="m-[6px_0_0] text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.64))] text-[length:12px] leading-[16px]">
+              {tools}
+            </p>
           ) : undefined
         }
         stage={stage}
@@ -1162,7 +1164,7 @@ function PanelFrame({
     <section
       ref={panelRef}
       aria-label={`${state === "ready" ? "Manage" : "Connect"} ${display.label}`}
-      className="workflow-app-connect"
+      className="workflow-app-connect [container:workflow-app-connect_/_inline-size] grid gap-[14px] mt-[16px] [border:1px_solid_var(--workspace-divider,_rgba(255,_255,_255,_0.12))] rounded-[12px] [background:var(--workspace-panel-bg,_rgba(255,_255,_255,_0.055))] p-[16px_20px_20px]"
       data-stage={stage}
       data-state={state}
       data-workflow-app-panel={app}
@@ -1175,8 +1177,11 @@ function PanelFrame({
     >
       {back}
       <div className="workflow-app-connect__main">
-        <div aria-hidden="true" className="workflow-app-connect__pair">
-          <span className="workflow-app-connect__workflow">
+        <div
+          aria-hidden="true"
+          className="flex flex-none items-center gap-[10px]"
+        >
+          <span className="grid w-[52px] h-[52px] flex-none place-items-center [border:1px_solid_var(--workspace-divider)] rounded-[12px] [background:var(--workspace-control-bg,_rgba(255,_255,_255,_0.06))] text-workspace-accent">
             {workflowIcon ? (
               <Icon name={workflowIcon} size={22} />
             ) : (
@@ -1201,11 +1206,14 @@ function PanelFrame({
             size={52}
           />
         </div>
-        <div className="workflow-app-connect__text">
+        <div className="workflow-app-connect__text grid gap-[2px] min-w-0">
           {/* A state change reads as its title and line together. */}
           <div aria-atomic="true" aria-live="polite">
             {title}
-            <p className="workflow-app-connect__line" role={lineRole}>
+            <p
+              className="m-0 text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.64))] text-workspace-caption leading-workspace-caption wrap-anywhere"
+              role={lineRole}
+            >
               {line}
             </p>
           </div>

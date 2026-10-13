@@ -3,6 +3,31 @@
 Follow the root [AGENTS.md](../AGENTS.md) and [README.md](README.md). These
 instructions apply to the web UI, Electron UI, previews and vendored components.
 
+## Styling: Tailwind by default
+
+- Write ordinary layout, spacing, typography, colors, and control states as
+  Tailwind classes in the owning component. Use `cx` for conditional classes
+  and `cva` for reusable variants; keep class names statically discoverable.
+- Use the workspace utilities defined by `@theme inline` in `src/app/global.css`
+  (for example `text-workspace-muted`, `text-workspace-body`,
+  `leading-workspace-body`, and `rounded-workspace-control`). They read the
+  existing runtime palette and accessibility preferences. Do not duplicate
+  theme colors in components or add another palette.
+- Keep authored CSS for theme variables, fonts/base rules, native control
+  internals, generated editor/markdown/library DOM, and complex animation or
+  selector relationships. Colocate those exceptions with their owner and
+  explain the reason. Do not introduce a stylesheet for routine component
+  layout or replace CSS declarations with a parallel collection of `@apply`
+  classes.
+- Preserve existing rendering when migrating: do not round pixel values,
+  replace inclusive media queries with different breakpoints, or change the
+  cascade. Existing theme/integration selectors and DOM hooks must remain
+  until their consumers are migrated together. Remove obsolete selectors and
+  imports when the owning component no longer needs them.
+- Verify default, selected/disabled, keyboard focus, responsive, and theme
+  states on the affected screens. Use lint, typecheck, build, and manual UI
+  checks as described below; do not add frontend tests.
+
 ## Iconsax is mandatory
 
 - Use **Iconsax** as the UI icon set; **Outline** is the default style. Authored

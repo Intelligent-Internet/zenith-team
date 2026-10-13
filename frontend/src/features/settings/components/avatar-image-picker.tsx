@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { Pencil } from "@/shared/ui/icons";
-import "@/features/settings/styles/avatar-image-picker.css";
+import { cn } from "@/shared/ui/core/cn";
 
 export function AvatarImagePicker({
   label,
@@ -55,13 +55,18 @@ export function AvatarImagePicker({
   }
 
   return (
-    <div className={`avatar-image-picker ${className}`}>
+    <div
+      className={cn(
+        "avatar-image-picker relative flex-none rounded-[6px]",
+        className,
+      )}
+    >
       {children(previewUrl)}
       {canEdit ? (
         <>
           <button
             type="button"
-            className="avatar-image-picker__edit"
+            className="absolute inset-0 grid place-items-center p-0 [border:0] rounded-[inherit] [background:rgb(0_0_0_/_48%)] text-[white] opacity-0 [.avatar-image-picker:hover_&:enabled]:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:enabled:opacity-100"
             aria-label={label}
             title={label}
             disabled={disabled}

@@ -69,7 +69,7 @@ export function AnalyticsWorkFlow({
     return <p>No reported {partLabel(metric).toLowerCase()} in this window.</p>;
   return (
     <div
-      className="analytics-work-flow"
+      className="analytics-work-flow mt-[20px]"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           setSelected(null);
@@ -79,7 +79,7 @@ export function AnalyticsWorkFlow({
     >
       <div className="analytics-flow-scroll">
         <div
-          className="analytics-flow-plot"
+          className="analytics-flow-plot relative min-w-[840px]"
           onMouseLeave={() => setHovered(null)}
         >
           <svg
@@ -102,7 +102,7 @@ export function AnalyticsWorkFlow({
               <path
                 key={`${link.source}/${link.target}`}
                 d={link.path}
-                className="analytics-flow-ribbon"
+                className="cursor-pointer [transition:opacity_220ms_ease]"
                 fill={`url(#${gradient})`}
                 stroke={mixColor(palette.canvas, palette.accent, 0.38)}
                 strokeWidth={0.5}
@@ -163,7 +163,7 @@ export function AnalyticsWorkFlow({
                       height={90}
                       pointerEvents="none"
                     >
-                      <div className="analytics-flow-root">
+                      <div className="analytics-flow-root flex h-full flex-col justify-center gap-[5px] text-right wrap-anywhere">
                         <strong>{valueLabel(node)}</strong>
                         <span>{partLabel(metric).toLowerCase()}</span>
                       </div>
@@ -176,7 +176,7 @@ export function AnalyticsWorkFlow({
                       height={68}
                       pointerEvents="none"
                     >
-                      <div className="analytics-flow-label">
+                      <div className="analytics-flow-label w-[fit-content] max-w-full p-[4px] rounded-[4px] [background:color-mix(in_srgb,_var(--analytics-panel)_94%,_transparent)]">
                         <span>{node.name}</span>
                         <div>
                           <strong>
@@ -195,7 +195,7 @@ export function AnalyticsWorkFlow({
           </svg>
           {active ? (
             <div
-              className="analytics-flow-tooltip"
+              className="analytics-flow-tooltip pointer-events-none absolute [transform:translateY(-100%)] grid gap-[5px] max-w-[270px] w-[max-content] p-[12px_15px] text-workspace-caption [border:1px_solid_var(--analytics-line)] rounded-[8px] [background:var(--workspace-overlay-bg)] [box-shadow:0_6px_22px_color-mix(in_srgb,_var(--analytics-text)_10%,_transparent)]"
               role="status"
               style={{
                 top: `max(90px, calc(${((active.y + active.height / 2) / flow.height) * 100}% - 14px))`,

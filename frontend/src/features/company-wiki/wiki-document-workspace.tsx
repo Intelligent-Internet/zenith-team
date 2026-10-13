@@ -286,7 +286,7 @@ function WikiDocumentEditor({
       {wikiLayout ? (
         actionsContainer &&
         createPortal(
-          <div className="wiki-draft-actions">
+          <div className="wiki-draft-actions flex items-center gap-[8px]">
             {pdfExport}
             <div ref={setStatusContainer} />
           </div>,
@@ -295,7 +295,7 @@ function WikiDocumentEditor({
       ) : (
         <>
           <div className="wiki-document-workspace__bar">
-            <span className="wiki-document-workspace__draft-label">
+            <span className="flex-none text-[var(--pc-ink)] font-[600]">
               Working draft
             </span>
             {pdfExport}
@@ -391,8 +391,8 @@ function WikiDocumentEditor({
         onEditor={setEditor}
         titleContent={
           wikiLayout ? (
-            <div className="wiki-draft-heading">
-              <div className="wiki-draft-heading__eyebrow">
+            <div className="grid gap-[8px]">
+              <div className="wiki-draft-heading__eyebrow flex items-center gap-[8px] text-[var(--pc-muted)] text-workspace-caption font-[650]">
                 <BookOpen size={15} />
                 <select
                   aria-label="Collection"
@@ -424,15 +424,17 @@ function WikiDocumentEditor({
                   }
                 />
               </div>
-              <div className="wiki-draft-heading__meta">
+              <div className="wiki-draft-heading__meta flex flex-wrap items-center gap-[8px] text-[var(--pc-muted)] text-workspace-caption">
                 {published?.currentRevisionId ? (
-                  <span className="wiki-draft-heading__badge">
+                  <span className="[border:1px_solid_var(--pc-line)] rounded-[4px] p-[0_5px] [background:var(--pc-raised)] text-[length:10px]">
                     Published · v{published.contentRevision}
                   </span>
                 ) : (
                   <span>Not published yet</span>
                 )}
-                <span className="wiki-draft-heading__editing">Editing</span>
+                <span className="text-[var(--pc-accent)] font-[600]">
+                  Editing
+                </span>
               </div>
               <input
                 className="wiki-draft-heading__summary"
@@ -482,7 +484,10 @@ function WikiDocumentEditor({
           onClose={() => setReview(null)}
         >
           {stale && (
-            <p className="zen-wiki__restore-stale" role="alert">
+            <p
+              className="zen-wiki__restore-stale m-0 rounded-[8px] p-[9px_12px] [background:var(--workspace-approval-soft)] text-[var(--workspace-native-approval)]"
+              role="alert"
+            >
               The draft or published page changed.{" "}
               <button
                 onClick={() =>
@@ -497,7 +502,7 @@ function WikiDocumentEditor({
           )}
           <div className="zen-wiki__restore-comparison">
             <section className="zen-wiki__restore-panel">
-              <span className="zen-wiki__restore-label">
+              <span className="block p-[9px_14px] [border-bottom:1px_solid_var(--wk-border)] [background:var(--wk-soft)] text-[var(--wk-muted)] text-[length:12px] font-[600]">
                 {review.published.currentRevisionId
                   ? `Published · revision ${review.published.contentRevision}`
                   : "Not published yet"}
@@ -515,7 +520,9 @@ function WikiDocumentEditor({
               )}
             </section>
             <section className="zen-wiki__restore-panel">
-              <span className="zen-wiki__restore-label">Draft to publish</span>
+              <span className="block p-[9px_14px] [border-bottom:1px_solid_var(--wk-border)] [background:var(--wk-soft)] text-[var(--wk-muted)] text-[length:12px] font-[600]">
+                Draft to publish
+              </span>
               <h3>{review.draft.title}</h3>
               {review.draft.summary && <p>{review.draft.summary}</p>}
               <WikiContent
@@ -526,7 +533,7 @@ function WikiDocumentEditor({
               />
             </section>
           </div>
-          <div className="zen-wiki-dialog__actions">
+          <div className="flex justify-end gap-[8px]">
             <button
               className="zen-wiki__button"
               onClick={() => setReview(null)}

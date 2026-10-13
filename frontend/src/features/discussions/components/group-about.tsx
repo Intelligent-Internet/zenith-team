@@ -119,7 +119,7 @@ export function GroupAboutDialog({
             }
             about={
               <>
-                <dl className="discussion-group-summary">
+                <dl className="discussion-group-summary grid gap-[24px] m-0">
                   <div>
                     <dt>Channel name</dt>
                     <dd>{detail.conversation.title}</dd>
@@ -218,7 +218,10 @@ export function GroupManagementPane({
   return (
     <div className="discussion-pane discussion-manage-pane">
       {!can("channels.manage") || query.isError ? (
-        <div className="discussion-empty" role="alert">
+        <div
+          className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+          role="alert"
+        >
           <LockKeyhole size={28} />
           <h2>Channel unavailable</h2>
           <p>
@@ -236,7 +239,10 @@ export function GroupManagementPane({
           ) : null}
         </div>
       ) : !data ? (
-        <div className="discussion-empty" role="status">
+        <div
+          className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+          role="status"
+        >
           Loading channel…
         </div>
       ) : (
@@ -269,9 +275,9 @@ export function GroupManagementPane({
               </button>
             )}
           </header>
-          <div className="discussion-manage-content">
+          <div className="p-[22px] overflow-auto flex flex-col gap-[20px] w-full max-w-[740px] m-[0_auto]">
             {!joined ? (
-              <p className="discussion-help">
+              <p className="discussion-help flex items-start gap-[8px] leading-[1.6] text-[length:12px] text-[var(--discussion-muted)] m-0">
                 You can manage this channel. Join it to read and send messages.
               </p>
             ) : null}
@@ -437,7 +443,7 @@ function GroupManagement({
                   src={person.actor.avatarUrl}
                   userId={person.actor.id}
                 />
-                <span className="discussion-member-copy">
+                <span className="discussion-member-copy flex flex-col gap-[2px] min-w-0">
                   <strong>{person.actor.name}</strong>
                 </span>
                 <Plus size={15} aria-hidden />
@@ -455,7 +461,7 @@ function GroupManagement({
                 }
               >
                 <DiscussionAvatar name={agent.name} agentId={agent.id} />
-                <span className="discussion-member-copy">
+                <span className="discussion-member-copy flex flex-col gap-[2px] min-w-0">
                   <strong>{agent.name}</strong>
                 </span>
                 <Plus size={15} aria-hidden />
@@ -829,7 +835,7 @@ function MemberActions({
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
-          className="discussion-member-menu"
+          className="discussion-member-menu z-[240] p-[4px] max-w-[calc(100vw_-_24px)] [border:1px_solid_var(--workspace-divider)] rounded-[var(--workspace-radius-panel,_8px)] [background:var(--workspace-overlay-bg)] [box-shadow:var(--workspace-overlay-shadow)] text-workspace-danger text-[length:13px]"
           align="end"
           sideOffset={4}
           collisionPadding={12}
@@ -894,9 +900,9 @@ function GroupDetailsTabs({
       ),
     });
   return (
-    <div className="discussion-group-details">
+    <div className="min-w-0">
       <div
-        className="discussion-group-tabs"
+        className="discussion-group-tabs flex gap-[24px] [border-bottom:1px_solid_var(--discussion-border)]"
         role="tablist"
         aria-label="Conversation details"
       >

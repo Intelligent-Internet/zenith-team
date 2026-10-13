@@ -73,12 +73,15 @@ export function DiscussionSystemMessage({
   }[system?.action ?? "channel_updated"];
   return (
     <div
-      className="discussion-system"
+      className="flex items-center justify-center gap-[9px] p-[10px_22px] text-[length:12px] text-[var(--discussion-muted)]"
       aria-label={text}
       title={new Date(message.createdAt).toLocaleString()}
     >
       {added && subjects.length > 0 ? (
-        <span className="discussion-system-avatars" aria-hidden="true">
+        <span
+          className="inline-flex shrink-0 items-center pl-[6px]"
+          aria-hidden="true"
+        >
           {subjects.slice(0, 3).map((subject) => (
             <span className="discussion-system-avatar" key={subject.key}>
               <DiscussionAvatar
@@ -96,7 +99,9 @@ export function DiscussionSystemMessage({
           ) : null}
         </span>
       ) : null}
-      <span className="discussion-system-copy">{text}</span>
+      <span className="min-w-0 wrap-anywhere text-center leading-[1.5]">
+        {text}
+      </span>
     </div>
   );
 }

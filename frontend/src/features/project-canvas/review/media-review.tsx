@@ -243,7 +243,7 @@ export function MediaReviewViewer({
               ))}
               <span className="pc-markup-divider" aria-hidden />
               <div
-                className="pc-markup-colors"
+                className="flex items-center gap-[1px] flex-none"
                 role="group"
                 aria-label="Annotation color"
               >
@@ -390,7 +390,7 @@ export function MediaReviewViewer({
             </Suspense>
           ) : (
             <div
-              className="pc-media-frame"
+              className="pc-media-frame relative m-[0_auto] shrink-0"
               style={{ width: frameWidth, height: frameHeight || undefined }}
             >
               <video

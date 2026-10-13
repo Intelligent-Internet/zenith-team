@@ -130,11 +130,6 @@
   margin: 0;
 }
 
-.onboarding-actions__meta {
-  color: var(--workspace-native-text-faint);
-  font-size: 12px;
-}
-
 /* Buttons: one size and shape; the variant only changes the fill. */
 .onboarding-button {
   display: inline-flex;
@@ -197,13 +192,6 @@
   font-weight: 500;
 }
 
-.workspace-onboarding__optional {
-  margin-left: 6px;
-  color: var(--workspace-native-text-faint);
-  font-size: 12px;
-  font-weight: 400;
-}
-
 .workspace-onboarding__field :is(input, textarea) {
   width: 100%;
   min-width: 0;
@@ -250,20 +238,6 @@
 
 .workspace-onboarding__submit:not(:disabled):hover {
   background: color-mix(in srgb, var(--workspace-native-accent) 88%, white);
-}
-
-.workspace-onboarding__error {
-  padding: 12px 14px;
-  border: 1px solid var(--workspace-native-danger);
-  border-radius: var(--workspace-radius-control);
-  background: color-mix(
-    in srgb,
-    var(--workspace-native-danger) 8%,
-    var(--workspace-panel-bg)
-  );
-  color: var(--workspace-native-danger);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 /* ---------------------------------------------------------------------------
@@ -315,11 +289,6 @@
   grid-column: 2;
   min-width: 0;
   margin-top: 28px;
-}
-
-.onboarding-introduction__choices {
-  display: grid;
-  gap: 12px;
 }
 
 .onboarding-introduction__choice {
@@ -417,23 +386,6 @@
   transform: rotate(-8deg);
 }
 
-.onboarding-welcome__spark {
-  position: absolute;
-  color: color-mix(in srgb, #ee8b42 75%, var(--workspace-native-text));
-}
-
-.onboarding-welcome__spark--one {
-  top: 42px;
-  left: 16px;
-  font-size: 28px;
-}
-
-.onboarding-welcome__spark--two {
-  right: 2px;
-  bottom: 45px;
-  font-size: 36px;
-}
-
 .onboarding-welcome__eyebrow {
   margin: 0 0 14px;
   color: var(--workspace-native-text-muted);
@@ -444,23 +396,6 @@
 
 .workspace-onboarding__form .workspace-onboarding__field textarea {
   min-height: 132px;
-}
-
-.onboarding-welcome__field-error {
-  margin: 8px 0 0;
-  color: var(--workspace-native-danger);
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.onboarding-connections {
-  display: grid;
-  gap: 20px;
-}
-
-.onboarding-connections__grid {
-  display: grid;
-  gap: 10px;
 }
 
 .onboarding-connection-card {
@@ -597,16 +532,6 @@
    Reference-file uploads and the step progress indicator.
    --------------------------------------------------------------------------- */
 
-.onboarding-uploads {
-  display: grid;
-  gap: 10px;
-}
-
-.onboarding-uploads__label {
-  font-size: 13px;
-  font-weight: 500;
-}
-
 .onboarding-uploads__dropzone {
   display: flex;
   align-items: center;
@@ -652,14 +577,6 @@
   font-weight: 600;
 }
 
-.onboarding-uploads__list {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .onboarding-uploads__item {
   position: relative;
   display: flex;
@@ -678,29 +595,8 @@
   color: var(--workspace-danger-text);
 }
 
-.onboarding-uploads__name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.onboarding-uploads__meta {
-  color: var(--workspace-native-text-faint);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
 /* The fill sits under the row rather than beside it, so a long filename never
    competes with the progress for width. */
-.onboarding-uploads__progress {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 2px;
-  width: var(--upload-progress, 0%);
-  background: var(--workspace-native-accent);
-  transition: width 220ms ease-out;
-}
 
 .onboarding-uploads__remove {
   display: inline-flex;
@@ -719,39 +615,9 @@
   color: var(--workspace-native-text);
 }
 
-.onboarding-welcome__notice {
-  margin: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-}
-
-.onboarding-progress {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-}
-
-.onboarding-progress__label {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  font-weight: 500;
-}
-
 .onboarding-progress__label > span {
   color: var(--workspace-native-text-faint);
   font-variant-numeric: tabular-nums;
-}
-
-.onboarding-progress__track {
-  display: flex;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
 }
 
 .onboarding-progress__step {

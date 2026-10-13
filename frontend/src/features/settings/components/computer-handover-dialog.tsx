@@ -104,8 +104,11 @@ function ComputerUseDialog({
         showCloseButton={false}
       >
         <div className="computer-use-dialog__body">
-          <DialogHeader className="computer-use-dialog__header">
-            <span className="computer-use-dialog__icon" aria-hidden="true">
+          <DialogHeader className="computer-use-dialog__header items-start gap-[12px] text-left">
+            <span
+              className="grid w-[48px] h-[48px] mb-[8px] place-items-center [border:1px_solid_var(--workspace-divider)] rounded-[14px] [background:var(--workspace-control-bg)] text-workspace-accent"
+              aria-hidden="true"
+            >
               <Monitor size={24} />
             </span>
             <DialogTitle>Let your agents work here</DialogTitle>

@@ -20,7 +20,7 @@ export function WorkflowBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
   if (!scope)
     return (
-      <NodeViewWrapper className="pc-block-empty">
+      <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         This Workflow requires a Project.
       </NodeViewWrapper>
     );
@@ -71,7 +71,7 @@ function ProjectWorkflowBlock({
       contentEditable={false}
     >
       {mode === "comparison" && (
-        <p className="pc-block-comparison-label">
+        <p className="text-[var(--pc-muted)] text-[length:11px] leading-[1.4] m-[0_0_8px]">
           Workflow · {node.attrs.display || "card"}
         </p>
       )}
@@ -113,7 +113,7 @@ function ProjectWorkflowBlock({
         </BlockSettings>
       )}
       {!key ? (
-        <p className="pc-block-empty">
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
           Choose a Workflow from Workflow options.
         </p>
       ) : query.isError && !captured ? (

@@ -152,8 +152,11 @@ export function AgentMailDraftEditor({
 
   return (
     <article className="agent-mail-editor" aria-label={draft.subject}>
-      <div className="agent-mail-editor__summary">
-        <span className="agent-mail-status" data-status={draft.status}>
+      <div className="flex shrink-0 items-center gap-[10px] p-[12px_16px] [border-bottom:1px_solid_var(--workspace-divider)] text-[length:12px]">
+        <span
+          className="inline-flex shrink-0 items-center gap-[5px] rounded-[6px] p-[3px_7px] [background:var(--workspace-accent-soft)] text-workspace-accent text-[length:11px] font-[600]"
+          data-status={draft.status}
+        >
           {draft.status === "sending" ? (
             <LoaderCircle className="artifact-spinner" size={13} />
           ) : null}
@@ -167,7 +170,7 @@ export function AgentMailDraftEditor({
           }
         </span>
         <span
-          className="agent-mail-editor__from"
+          className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-workspace-muted"
           title={`${draft.fromName} <${draft.fromAddress}>`}
         >
           From {draft.fromName} &lt;{draft.fromAddress}&gt;
@@ -188,13 +191,16 @@ export function AgentMailDraftEditor({
           </button>
         ) : null}
       </div>
-      <div className="agent-mail-editor__fields">
+      <div className="flex flex-1 flex-col min-h-0 overflow-y-auto overscroll-contain p-[0_18px_16px]">
         {deliveries.map((delivery, index) => (
-          <fieldset className="agent-mail-delivery" key={delivery.key}>
+          <fieldset
+            className="agent-mail-delivery min-w-0 m-0 p-0 [border:0]"
+            key={delivery.key}
+          >
             {deliveries.length > 1 ? (
               <legend>Delivery {index + 1}</legend>
             ) : null}
-            <label className="agent-mail-field">
+            <label className="agent-mail-field flex shrink-0 items-center gap-[12px] min-h-[46px] [border-bottom:1px_solid_var(--workspace-divider)] text-[length:13px]">
               <span>To</span>
               <input
                 aria-label={`To addresses${deliveries.length > 1 ? ` for delivery ${index + 1}` : ""}`}
@@ -206,7 +212,7 @@ export function AgentMailDraftEditor({
                 }
               />
             </label>
-            <label className="agent-mail-field">
+            <label className="agent-mail-field flex shrink-0 items-center gap-[12px] min-h-[46px] [border-bottom:1px_solid_var(--workspace-divider)] text-[length:13px]">
               <span>Cc</span>
               <input
                 aria-label={`CC addresses${deliveries.length > 1 ? ` for delivery ${index + 1}` : ""}`}
@@ -242,7 +248,7 @@ export function AgentMailDraftEditor({
           </button>
         ) : null}
         <label
-          className="agent-mail-field agent-mail-field--subject"
+          className="agent-mail-field flex shrink-0 items-center gap-[12px] min-h-[46px] [border-bottom:1px_solid_var(--workspace-divider)] text-[length:13px] agent-mail-field--subject"
           htmlFor={`${formId}-subject`}
         >
           <span>Subject</span>
@@ -257,7 +263,10 @@ export function AgentMailDraftEditor({
             }}
           />
         </label>
-        <label className="agent-mail-body" htmlFor={`${formId}-body`}>
+        <label
+          className="agent-mail-body flex flex-1 min-h-[200px] pt-[18px]"
+          htmlFor={`${formId}-body`}
+        >
           <span className="sr-only">Message</span>
           <textarea
             disabled={!editable || mutationPending}
@@ -271,14 +280,20 @@ export function AgentMailDraftEditor({
           />
         </label>
       </div>
-      <footer className="agent-mail-editor__footer">
+      <footer className="shrink-0 [border-top:1px_solid_var(--workspace-divider)] p-[14px_16px]">
         {validation ? (
-          <p className="agent-mail-notice" role="status">
+          <p
+            className="m-[0_0_10px] text-workspace-text text-[length:12px] leading-[1.5]"
+            role="status"
+          >
             {validation}
           </p>
         ) : null}
         {draft.status === "failed" && draft.failureReason ? (
-          <p className="agent-mail-notice" role="alert">
+          <p
+            className="m-[0_0_10px] text-workspace-text text-[length:12px] leading-[1.5]"
+            role="alert"
+          >
             {draft.failureReason}
           </p>
         ) : null}

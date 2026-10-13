@@ -7,16 +7,6 @@
 .huddle-sidebar-view[hidden] {
   display: none;
 }
-.huddle-work-proposals {
-  display: grid;
-  align-content: start;
-  gap: 14px;
-  min-height: 0;
-  padding: 16px;
-  overflow-y: auto;
-  font-size: 12px;
-  line-height: 1.6;
-}
 .huddle-proposals-disclosure,
 .huddle-proposal-target {
   color: var(--muted-foreground);
@@ -120,11 +110,6 @@
   border-bottom-color: var(--primary);
   color: var(--foreground);
 }
-.huddle-proposal-submit-dialog {
-  max-width: 560px;
-  max-height: 85dvh;
-  overflow-y: auto;
-}
 .huddle-proposal-review {
   display: grid;
   gap: 12px;
@@ -135,12 +120,6 @@
   font-size: 17px;
   line-height: 1.4;
   margin-top: 10px;
-}
-.huddle-proposal-summary {
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--frame);
 }
 .huddle-proposal-summary .huddle-proposal-target {
   margin-top: 0;

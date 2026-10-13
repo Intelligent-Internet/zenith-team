@@ -55,7 +55,10 @@ export function PageContributions({
     );
   if (feed.isLoading)
     return (
-      <p className="pc-review-empty" role="status">
+      <p
+        className="flex items-center gap-[8px] p-[16px_0] text-[var(--pc-muted,_var(--muted-foreground))]"
+        role="status"
+      >
         Loading suggestions…
       </p>
     );
@@ -218,8 +221,8 @@ function PageProposal({
                 {(suggestion.status === "needs_update" ||
                   suggestion.status === "already_reflected" ||
                   suggestion.competingChangeIds.length > 0) && (
-                  <div className="pc-review-change-heading">
-                    <span className="pc-review-status">
+                  <div className="flex items-center flex-wrap gap-[6px] mb-[4px] text-[var(--pc-muted,_var(--muted-foreground))] [font:400_11px/1.5_var(--font-sans,_sans-serif)]">
+                    <span className="ml-auto">
                       {suggestion.status === "needs_update"
                         ? "Needs revision"
                         : suggestion.status === "already_reflected"
@@ -246,7 +249,7 @@ function PageProposal({
                   )}
                   {suggestion.after && (
                     <section
-                      className="pc-review-after"
+                      className="[background:color-mix(in_srgb,_#398454_8%,_transparent)]"
                       aria-label="Suggested content"
                     >
                       <BlockDocument
@@ -380,7 +383,10 @@ function ReviewError({
   onRefresh: () => void;
 }) {
   return (
-    <div className="pc-review-error" role="alert">
+    <div
+      className="pc-review-error p-[8px_0] text-[var(--destructive)]"
+      role="alert"
+    >
       <p>{message}</p>
       <button disabled={disabled} onClick={onRetry}>
         Retry decision

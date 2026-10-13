@@ -92,7 +92,7 @@ function CompanyStudioPage() {
       <a className="studio-skip" href="#public-main">
         Skip to content
       </a>
-      <header className="studio-header" ref={header}>
+      <header className="absolute inset-[0_0_auto] z-[20]" ref={header}>
         <div className="studio-container studio-header-inner">
           <Link
             className="studio-wordmark"

@@ -211,7 +211,7 @@ export function AnalyticsBreakdownChart({
         )}
       </div>
       {metric === "cost" ? (
-        <p className="analytics-chart-note">
+        <p className="mb-0 text-[length:12px]">
           Known cost · Unpriced usage in Details
         </p>
       ) : null}

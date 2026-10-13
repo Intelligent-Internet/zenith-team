@@ -181,11 +181,11 @@ function CollectionDialog({
           </label>
         )}
         {error && (
-          <p className="zen-wiki__error" role="alert">
+          <p className="text-workspace-danger p-[0_10px]" role="alert">
             {error}
           </p>
         )}
-        <div className="zen-wiki-dialog__actions">
+        <div className="flex justify-end gap-[8px]">
           <button
             ref={cancelRef}
             type="button"

@@ -24,24 +24,6 @@
   border-bottom: 1px solid var(--workspace-divider);
 }
 
-.studio-settings__node-icon {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-}
-
-.studio-settings__heading-copy {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  gap: 3px;
-}
-
 .studio-settings__heading-copy > strong {
   color: var(--workspace-native-text);
   font-size: 14px;
@@ -61,23 +43,10 @@
   color: var(--workspace-native-text-muted);
 }
 
-.studio-settings__node-state {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: var(--workspace-native-text-muted);
-  font-size: 10px;
-  line-height: 14px;
-}
-
 .studio-settings__node-state > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-}
-
-.studio-settings__status {
-  color: var(--workspace-native-text);
 }
 
 .studio-mode-panel__inspector.studio-node-settings form {
@@ -127,13 +96,6 @@
   font-size: 11px;
   line-height: 16px;
   font-weight: 500;
-}
-
-.studio-settings__section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 }
 
 .studio-mode-panel__inspector.studio-node-settings
@@ -217,24 +179,10 @@
   background: var(--workspace-hover-bg);
 }
 
-.studio-settings__model-name {
-  flex: 1;
-}
-
 .studio-settings__model-name > strong {
   font-size: 12px;
   line-height: 18px;
   font-weight: 500;
-}
-
-.studio-settings__pro {
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: 9px;
-  line-height: 14px;
-  font-weight: 600;
 }
 
 .studio-mode-panel__inspector.studio-node-settings
@@ -296,10 +244,6 @@
   background: var(--workspace-hover-bg);
 }
 
-.studio-settings__option-copy {
-  min-width: 0;
-}
-
 .studio-settings__option-copy > strong {
   display: block;
   overflow: hidden;
@@ -320,13 +264,6 @@
   small {
   flex: none;
   font-size: 9px;
-}
-
-.studio-settings__empty {
-  padding: 14px 8px;
-  color: var(--workspace-native-text-muted);
-  font-size: 11px;
-  text-align: center;
 }
 
 .studio-settings__catalog-error {
@@ -421,15 +358,6 @@
   padding-top: 7px;
   padding-bottom: 7px;
   font-size: 11px;
-}
-
-.studio-settings__fixed-value {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--workspace-native-text-muted);
-  font-size: 10px;
-  font-weight: 400;
 }
 
 .studio-settings__advanced summary {
@@ -570,13 +498,6 @@
 
 .studio-settings__generate {
   grid-column: 1 / -1;
-}
-
-.studio-settings__recovery-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-top: 6px;
 }
 
 .studio-settings__version-controls {

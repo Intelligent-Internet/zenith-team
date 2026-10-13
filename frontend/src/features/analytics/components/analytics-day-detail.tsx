@@ -131,12 +131,15 @@ export function AnalyticsDayDetail({
       aria-label="Selected day"
       aria-busy={updating}
     >
-      <span className="analytics-day-update" role="status">
+      <span
+        className="block h-[20px] text-[var(--analytics-muted)] text-[length:12px]"
+        role="status"
+      >
         {updating
           ? `Loading ${requestedStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })}…`
           : ""}
       </span>
-      <header className="analytics-day-heading">
+      <header className="analytics-day-heading flex items-center gap-[14px]">
         <strong>{start.getDate()}</strong>
         <span>
           {start.toLocaleDateString(undefined, { weekday: "long" })}
@@ -163,7 +166,7 @@ export function AnalyticsDayDetail({
           </button>
         </p>
       ) : null}
-      <div className="analytics-day-count">
+      <div className="analytics-day-count flex items-baseline gap-[8px] m-[18px_0_6px]">
         <strong>{count(metrics?.runs?.total)}</strong>
         <span>{metrics?.runs?.total === "1" ? "Run" : "Runs"}</span>
       </div>
@@ -174,26 +177,32 @@ export function AnalyticsDayDetail({
           ariaLabel={`Hourly Runs on ${start.toLocaleDateString()}. ${hours.map((value, hour) => `${hour}:00 ${value}`).join(", ")}`}
         />
       ) : (
-        <div className="analytics-day-chart-loading" role="status">
+        <div
+          className="h-[108px] grid place-items-center text-[var(--analytics-muted)]"
+          role="status"
+        >
           Loading hourly activity…
         </div>
       )}
       {metrics ? (
-        <div className="analytics-day-outcomes">
+        <div className="mt-[12px] pt-[14px] [border-top:1px_solid_var(--analytics-line)]">
           <AnalyticsOutcomeBar metrics={metrics} />
-          <div className="analytics-day-outcome-labels">
+          <div className="flex flex-wrap gap-[4px_10px] mt-[8px] text-[var(--analytics-muted)] text-[length:12px]">
             <span>{count(metrics.runs?.completed)} completed</span>
             <span>{count(metrics.runs?.failed)} failed</span>
             <span>{count(metrics.runs?.cancelled)} cancelled</span>
           </div>
         </div>
       ) : null}
-      <div className="analytics-day-agents">
+      <div className="analytics-day-agents min-h-[177px] p-[15px_0]">
         <h3>Top Agents</h3>
         {detail?.agents.rows?.length ? (
           detail.agents.rows.map((row, index) => (
-            <div className="analytics-day-agent" key={row.key?.id ?? index}>
-              <span className="analytics-initial">
+            <div
+              className="analytics-day-agent flex items-center gap-[8px] p-[6px_0] text-workspace-caption"
+              key={row.key?.id ?? index}
+            >
+              <span className="grid place-items-center [flex:0_0_26px] h-[26px] rounded-[50%] [background:var(--analytics-accent-soft)] text-[var(--analytics-accent)] text-workspace-caption">
                 {(row.key?.label ?? "?").slice(0, 1)}
               </span>
               <span>
@@ -209,7 +218,7 @@ export function AnalyticsDayDetail({
           <p>{agents.isFetching ? "Loading Agents…" : "No Runs this day"}</p>
         )}
       </div>
-      <dl className="analytics-day-totals">
+      <dl className="analytics-day-totals grid grid-cols-[1fr_1fr] gap-[14px] m-0 pt-[13px] [border-top:1px_solid_var(--analytics-line)]">
         <div>
           <dt>Cost</dt>
           <dd>{cost(metrics?.cost, metrics?.runs?.withoutUsage)}</dd>

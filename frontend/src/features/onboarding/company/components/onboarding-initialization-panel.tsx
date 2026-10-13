@@ -51,10 +51,10 @@ export function OnboardingInitializationPanel({
 
   return (
     <div className="onboarding-initialization">
-      <div className="onboarding-initialization__heading">
+      <div className="onboarding-initialization__heading text-center">
         <h1>Starting your company research</h1>
         <p
-          className="onboarding-initialization__status"
+          className="m-[12px_0_0] text-[length:15px] leading-[1.5] text-[var(--workspace-text-muted)]"
           role="status"
           aria-live="polite"
           aria-atomic="true"
@@ -68,7 +68,7 @@ export function OnboardingInitializationPanel({
                 : statusText}
         </p>
       </div>
-      <ul className="onboarding-initialization__notes">
+      <ul className="grid gap-[8px] max-w-[440px] m-0 p-0 [list-style:none] text-[var(--workspace-text-muted)] text-[length:14px] leading-[1.5] text-center">
         <li>
           Zenith is researching your company in the background. You can keep
           working and we’ll notify you when it’s done.
@@ -82,13 +82,16 @@ export function OnboardingInitializationPanel({
         />
       ) : null}
       {failure ? (
-        <div className="onboarding-initialization__error" role="alert">
+        <div
+          className="onboarding-initialization__error flex items-start gap-[10px] max-w-[480px] text-[var(--workspace-text)]"
+          role="alert"
+        >
           <CircleAlert size={18} />
           <p>{failure}</p>
         </div>
       ) : null}
       {offline ? (
-        <p className="onboarding-initialization__note">
+        <p className="m-0 text-[var(--workspace-text-muted)] text-[length:12px] leading-[1.6] text-center">
           {initialization.waitingForStart
             ? "Open Codex on your connected computer, then choose Start research."
             : "Open Codex and keep Zenith Team running on your connected computer. We’ll continue automatically."}
@@ -128,12 +131,15 @@ export function OnboardingInitializationPanel({
         </button>
       </OnboardingActions>
       {!initialization.hasReceipt ? (
-        <p className="onboarding-initialization__note">
+        <p className="m-0 text-[var(--workspace-text-muted)] text-[length:12px] leading-[1.6] text-center">
           Your research must be saved before you enter the workspace.
         </p>
       ) : null}
       {workspaceEntryError ? (
-        <p className="onboarding-initialization__error" role="alert">
+        <p
+          className="onboarding-initialization__error flex items-start gap-[10px] max-w-[480px] text-[var(--workspace-text)]"
+          role="alert"
+        >
           {workspaceEntryError}
         </p>
       ) : null}

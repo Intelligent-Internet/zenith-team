@@ -44,8 +44,3 @@
   border: 0 !important;
   box-shadow: none !important;
 }
-.workspace-sidebar-popup__loading {
-  padding: 20px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-body);
-}

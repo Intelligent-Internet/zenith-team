@@ -16,7 +16,10 @@ export function ChatWikiWrittenPages({ pages }: { pages: WikiWrittenPage[] }) {
     return null;
   }
   return (
-    <ul aria-label="Saved wiki pages" className="chat-runtime-wiki-pages">
+    <ul
+      aria-label="Saved wiki pages"
+      className="chat-runtime-wiki-pages grid min-w-0 gap-[2px] m-[2px_0_8px_20px] p-0 [list-style:none] text-[length:12px] leading-[18px]"
+    >
       {pages.map((page, index) => {
         const status = page.status
           ? (STATUS_LABELS[page.status] ?? page.status)

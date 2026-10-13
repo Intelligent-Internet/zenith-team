@@ -1234,14 +1234,14 @@ export function ChatPanel({
             <ChatComposer
               context={
                 artifactsPanel.feedback && !readOnly ? (
-                  <div className="artifacts-feedback">
+                  <div className="artifacts-feedback flex items-center gap-[10px] flex-none box-border h-[60px] min-w-0 m-[0_12px] p-[10px_0] [border-bottom:1px_solid_var(--workspace-divider,_#dedbd2)] text-[var(--workspace-native-text,_#30352f)]">
                     <PencilLine size={18} aria-hidden />
-                    <div className="artifacts-feedback__text">
-                      <span className="artifacts-feedback__label">
+                    <div className="flex flex-1 flex-col gap-[2px] min-w-0">
+                      <span className="text-workspace-muted text-[length:11px] leading-[16px]">
                         Request changes
                       </span>
                       <span
-                        className="artifacts-feedback__title"
+                        className="overflow-hidden text-ellipsis whitespace-nowrap text-[length:13px] font-[500] leading-[20px]"
                         title={artifactsPanel.feedback.title}
                       >
                         {artifactsPanel.feedback.title}

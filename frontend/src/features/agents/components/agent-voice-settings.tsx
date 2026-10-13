@@ -91,7 +91,7 @@ export function AgentVoiceSettings({ agent }: { agent: AgentDto }) {
           <p>Choose how this Agent sounds and participates in Huddles.</p>
         </div>
       </header>
-      <div className="agent-voice-card">
+      <div className="min-w-0 [border:1px_solid_var(--workspace-divider)] rounded-workspace-panel [background:var(--workspace-panel-bg)]">
         <div className="agent-voice-toggle">
           <div>
             <label htmlFor={`${id}-enabled`}>Enable Voice</label>
@@ -108,7 +108,7 @@ export function AgentVoiceSettings({ agent }: { agent: AgentDto }) {
         </div>
         <fieldset className="agent-voice-fields" disabled={preferencesDisabled}>
           <legend className="sr-only">Voice preferences</legend>
-          <div className="agent-voice-field">
+          <div className="agent-voice-field grid min-w-0 gap-[8px]">
             <label htmlFor={`${id}-voice`}>Voice</label>
             <Select
               value={draft.voice}
@@ -141,7 +141,7 @@ export function AgentVoiceSettings({ agent }: { agent: AgentDto }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="agent-voice-field">
+          <div className="agent-voice-field grid min-w-0 gap-[8px]">
             <label htmlFor={`${id}-participation`}>When to speak</label>
             <Select
               value={draft.participation}
@@ -187,7 +187,7 @@ export function AgentVoiceSettings({ agent }: { agent: AgentDto }) {
                 ? "Changes saved."
                 : ""}
           </p>
-          <div className="agent-voice-save-actions">
+          <div className="flex flex-wrap gap-[8px] ml-auto">
             {(dirty || stale) && (
               <Button
                 type="button"

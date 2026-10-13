@@ -217,7 +217,7 @@ export function FoldAvatarClay({
         <g className="fold-avatar__reaction">
           <g className="fold-avatar__character">
             <g className="fold-avatar__feet" filter={recolor}>
-              <g className="fold-avatar__foot fold-avatar__foot--left">
+              <g className="fold-avatar__foot [transform-origin:90px_196px]">
                 <ClayPart part="ankle" x={79} y={187} width={23} height={22} />
                 <path d="M82 194H99L100 204H81Z" fill={paint("ankle-shade")} />
                 <ClayPart
@@ -228,7 +228,7 @@ export function FoldAvatarClay({
                   height={24.5}
                 />
               </g>
-              <g className="fold-avatar__foot fold-avatar__foot--right">
+              <g className="fold-avatar__foot [transform-origin:157px_194px]">
                 <ClayPart part="ankle" x={145} y={184} width={25} height={24} />
                 <path
                   d="M148 191H167L168 202H147Z"
@@ -261,7 +261,7 @@ export function FoldAvatarClay({
                 height={37}
               />
             </g>
-            <g className="fold-avatar__body">
+            <g className="[transform-origin:122px_196px]">
               <g filter={recolor}>
                 <ClayPart part="body" x={42} y={36} width={160} height={166} />
               </g>

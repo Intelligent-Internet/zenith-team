@@ -139,7 +139,9 @@ export function ChatModelSettings({
         Retry model settings
       </button>
     ) : (
-      <span className="chat-model-loading">Loading model…</span>
+      <span className="text-[length:11px] text-workspace-muted">
+        Loading model…
+      </span>
     );
   }
 
@@ -157,7 +159,7 @@ export function ChatModelSettings({
           : "");
 
   return (
-    <div className="chat-model-settings">
+    <div className="chat-model-settings min-w-0">
       <Popover.Root
         open={open}
         onOpenChange={(next) => {
@@ -190,9 +192,9 @@ export function ChatModelSettings({
               thinkingButton.current?.focus({ preventScroll: true });
             }}
           >
-            <div className="chat-model-popover-surface">
+            <div className="chat-model-popover-surface max-h-[var(--radix-popover-content-available-height)] overflow-y-auto [border:1px_solid_var(--workspace-divider)] rounded-[12px] [background:var(--workspace-overlay-bg)] [box-shadow:inset_0_1px_0_light-dark(rgb(255_255_255_/_90%),_rgb(255_255_255_/_3%)),_0_24px_64px_light-dark(rgb(25_30_36_/_17.6%),_rgb(0_0_0_/_40%)),_0_8px_20px_light-dark(rgb(25_30_36_/_9.6%),_rgb(0_0_0_/_28%)),_0_1px_4px_light-dark(rgb(25_30_36_/_8%),_rgb(0_0_0_/_20%))]">
               {view === "thinking" ? (
-                <div className="chat-model-thinking-panel">
+                <div className="p-[10px_14px]">
                   <div className="chat-thinking-heading">
                     <button
                       ref={thinkingButton}
@@ -201,7 +203,7 @@ export function ChatModelSettings({
                       onClick={() => setView("models")}
                       aria-label="Select model"
                     >
-                      <span className="chat-thinking-title">
+                      <span className="chat-thinking-title min-w-0">
                         <ChatThinkingLabel
                           label={
                             thinkingOptions[previewIndex]?.label ??
@@ -211,7 +213,7 @@ export function ChatModelSettings({
                           galaxy={galaxy}
                         />
                       </span>
-                      <span className="chat-model-switch-name">
+                      <span className="chat-model-switch-name flex items-center gap-[6px] max-w-full">
                         <span>{modelLabel}</span>
                         <ChevronDown size={12} aria-hidden />
                       </span>
@@ -252,8 +254,8 @@ export function ChatModelSettings({
                   )}
                 </div>
               ) : (
-                <div className="chat-model-list">
-                  <div className="chat-model-list-heading">
+                <div className="p-[10px_8px_8px]">
+                  <div className="chat-model-list-heading flex items-center gap-[6px] min-h-[36px] p-[0_3px_6px] text-[length:13px] text-workspace-muted">
                     <button
                       type="button"
                       className="chat-model-icon-button"
@@ -275,7 +277,7 @@ export function ChatModelSettings({
                     </button>
                   </div>
                   <div
-                    className="chat-model-options"
+                    className="grid gap-[2px] max-h-[320px] overflow-y-auto p-[3px]"
                     role="group"
                     aria-label="Available models"
                   >

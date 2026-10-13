@@ -130,7 +130,7 @@ export function WikiLibrary({
           );
         })}
       </div>
-      <div className="zen-wiki__list-head">
+      <div className="zen-wiki__list-head flex justify-between p-[0_0_9px] [border-bottom:1px_solid_var(--wk-border)] text-[length:13px]">
         <strong>
           {filter === "archived" ? "Archived pages" : filterLabels[filter]}
         </strong>
@@ -159,7 +159,9 @@ export function WikiLibrary({
             <strong>
               {item.title}
               {!item.published && (
-                <span className="zen-wiki__draft-label">Draft</span>
+                <span className="ml-[8px] text-[length:10px] font-[400] text-[var(--wk-muted)] whitespace-nowrap">
+                  Draft
+                </span>
               )}
             </strong>
             <small>{collectionName(item.collectionId)}</small>
@@ -169,7 +171,7 @@ export function WikiLibrary({
         </button>
       ))}
       {!pages.isLoading && !pages.isError && items.length === 0 && (
-        <div className="zen-wiki__empty-state">
+        <div className="zen-wiki__empty-state grid [justify-items:center] gap-[7px] p-[60px_20px] text-center text-[var(--wk-muted)]">
           <BookOpen size={32} />
           <h2>
             {search

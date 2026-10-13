@@ -136,7 +136,7 @@ export function WorkspacePersonalMenu({
                   onSwitch={() => setOpen(false)}
                   onAdd={() => setAddCompanyOpen(true)}
                 />
-                <DropdownMenu.Separator className="personal-menu-separator" />
+                <DropdownMenu.Separator className="h-[1px] m-[4px] [background:var(--workspace-divider)]" />
               </>
             ) : null}
             <DropdownMenu.Item onSelect={() => navigate("/settings/profile")}>
@@ -163,9 +163,9 @@ export function WorkspacePersonalMenu({
               <CircleHelp size={16} aria-hidden="true" />
               <span>Help</span>
             </DropdownMenu.Item>
-            <DropdownMenu.Separator className="personal-menu-separator" />
+            <DropdownMenu.Separator className="h-[1px] m-[4px] [background:var(--workspace-divider)]" />
             <DropdownMenu.Item
-              className="personal-menu-sign-out"
+              className="personal-menu-sign-out text-workspace-muted"
               onSelect={() =>
                 void logoutBoardlySession().then(() =>
                   navigate("/login", { replace: true }),

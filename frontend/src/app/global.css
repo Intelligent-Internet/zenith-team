@@ -39,6 +39,46 @@
 }
 
 @theme inline {
+  --color-workspace-text: var(--workspace-native-text);
+  --color-workspace-muted: var(--workspace-native-text-muted);
+  --color-workspace-faint: var(--workspace-native-text-faint);
+  --color-workspace-accent: var(--workspace-native-accent);
+  --color-workspace-accent-fill: var(--workspace-accent-fill);
+  --color-workspace-accent-foreground: var(--workspace-accent-foreground);
+  --color-workspace-danger: var(--workspace-native-danger);
+  --color-workspace-success: var(--workspace-native-success);
+  --color-workspace-info: var(--workspace-native-info);
+  --color-workspace-panel: var(--workspace-panel-bg);
+  --color-workspace-raised: var(--workspace-panel-raised-bg);
+  --color-workspace-canvas: var(--workspace-content-bg);
+  --color-workspace-control: var(--workspace-control-bg);
+  --color-workspace-hover: var(--workspace-hover-bg);
+  --color-workspace-selected: var(--workspace-selected-bg);
+  --color-workspace-divider: var(--workspace-divider);
+  --color-workspace-divider-strong: var(--workspace-divider-strong);
+  --font-workspace-body: var(--workspace-font-body);
+  --font-workspace-heading: var(--workspace-font-heading);
+  --text-workspace-micro: var(--workspace-text-micro);
+  --text-workspace-caption: var(--workspace-text-caption);
+  --text-workspace-label: var(--workspace-text-label);
+  --text-workspace-body: var(--workspace-text-body);
+  --text-workspace-document: var(--workspace-text-document);
+  --text-workspace-chat: var(--workspace-text-chat);
+  --text-workspace-title: var(--workspace-text-title);
+  --text-workspace-page: var(--workspace-text-page);
+  --leading-workspace-micro: var(--workspace-leading-micro);
+  --leading-workspace-caption: var(--workspace-leading-caption);
+  --leading-workspace-label: var(--workspace-leading-label);
+  --leading-workspace-body: var(--workspace-leading-body);
+  --leading-workspace-document: var(--workspace-leading-document);
+  --leading-workspace-chat: var(--workspace-leading-chat);
+  --leading-workspace-title: var(--workspace-leading-title);
+  --leading-workspace-page: var(--workspace-leading-page);
+  --radius-workspace-control: var(--workspace-radius-control);
+  --radius-workspace-panel: var(--workspace-radius-panel);
+  --radius-workspace-composer: var(--workspace-radius-composer);
+  --radius-workspace-overlay: var(--workspace-radius-overlay);
+  --spacing-workspace-control: var(--workspace-control-size);
   --color-brand-primary: var(--brand-primary);
   --color-brand-hover: var(--brand-hover);
   --color-brand-active: var(--brand-active);
@@ -657,36 +697,10 @@
   font-family: var(--font-ui);
 }
 
-.workspace-loading-screen__content {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 64px 24px 48px;
-  text-align: center;
-}
-
 .workspace-loading-screen__character {
   display: flex;
   margin-bottom: 16px;
   animation: workspace-loading-arrive 600ms cubic-bezier(0.2, 0, 0, 1) both;
-}
-
-.workspace-loading-screen__title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 28px;
-  letter-spacing: -0.02em;
-}
-
-.workspace-loading-screen__status {
-  margin: 12px 0 0;
-  color: var(--loading-muted);
-  font-size: 13px;
-  line-height: 1.5;
-  letter-spacing: -0.12px;
 }
 
 .workspace-loading-screen__progress {
@@ -712,16 +726,6 @@
   );
   animation: workspace-loading-progress 1800ms cubic-bezier(0.45, 0, 0.55, 1)
     infinite;
-}
-
-.workspace-loading-screen__footer {
-  margin: 0;
-  padding: 0 24px max(26px, env(safe-area-inset-bottom));
-  color: var(--loading-muted);
-  font-size: 11px;
-  line-height: 1.5;
-  letter-spacing: 0.1px;
-  text-align: center;
 }
 
 @keyframes workspace-loading-arrive {

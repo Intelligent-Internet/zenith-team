@@ -129,14 +129,14 @@ export function WikiGraph({
   }, [scene, normalizedSearch]);
 
   return (
-    <div className="wk-graph-layout">
-      <div className="wk-graph-main">
-        <div className="wk-graph-toolbar">
-          <span className="wk-graph-count">
+    <div className="w-full max-w-[1400px] m-[0_auto] min-w-0">
+      <div className="[background:var(--wk-panel)] [border:1px_solid_var(--wk-border)] rounded-[12px] [box-shadow:0_12px_38px_color-mix(in_srgb,_var(--workspace-native-text)_4%,_transparent)] min-w-0 overflow-hidden">
+        <div className="min-h-[58px] p-[10px_15px] flex items-center justify-between gap-[12px] [border-bottom:1px_solid_var(--wk-border)]">
+          <span className="text-[var(--wk-muted)] text-[length:11px]">
             {graph.pages.length} pages
             {graph.truncated ? " · showing first 500" : ""}
           </span>
-          <label className="wk-graph-search">
+          <label className="wk-graph-search flex items-center gap-[7px] text-[var(--wk-muted)] [border:1px_solid_var(--wk-border)] rounded-[7px] p-[6px_9px] min-w-[150px] max-w-[210px]">
             <Search size={15} />
             <input
               value={search}
@@ -153,7 +153,7 @@ export function WikiGraph({
           aria-label="Wiki page graph"
         >
           {!hasPages ? (
-            <div className="zen-wiki__empty-state wk-graph-empty">
+            <div className="zen-wiki__empty-state grid [justify-items:center] gap-[7px] p-[60px_20px] text-center text-[var(--wk-muted)] h-full [align-content:center]">
               <Workflow size={32} />
               <h2>No pages to map yet</h2>
               <p>Pages and the links between them appear here.</p>
@@ -167,7 +167,7 @@ export function WikiGraph({
             <>
               <canvas
                 ref={canvasRef}
-                className="wk-graph-canvas"
+                className="absolute inset-0 block w-full h-full cursor-grab [touch-action:none]"
                 aria-hidden="true"
               />
               {/* The canvas is pointer-only; these buttons give keyboard and
@@ -186,15 +186,21 @@ export function WikiGraph({
                   </li>
                 ))}
               </ul>
-              <span className="wk-graph-hint">
+              <span className="absolute z-[5] top-[13px] left-[14px] p-[5px_8px] [border:1px_solid_var(--wk-border)] rounded-[6px] [background:color-mix(in_srgb,_var(--wk-panel)_86%,_transparent)] text-[var(--wk-muted)] text-[length:10px] pointer-events-none">
                 Drag to explore · scroll or use + / − to zoom
               </span>
               {normalizedSearch && matchingPages.length === 0 && (
-                <span className="wk-graph-no-match" role="status">
+                <span
+                  className="absolute z-[5] top-[50%] left-[50%] w-[min(240px,_80%)] [transform:translate(-50%,_-50%)] p-[12px] [border:1px_solid_var(--wk-border)] rounded-[8px] [background:var(--wk-panel)] text-[var(--wk-muted)] text-center text-[length:11px] [box-shadow:var(--workspace-overlay-shadow)]"
+                  role="status"
+                >
                   No matching page. Try another title.
                 </span>
               )}
-              <div className="wk-graph-controls" aria-label="Graph controls">
+              <div
+                className="wk-graph-controls absolute z-[5] left-[14px] bottom-[14px] flex flex-col [border:1px_solid_var(--wk-border)] rounded-[8px] overflow-hidden [background:var(--wk-panel)] [box-shadow:0_5px_15px_color-mix(in_srgb,_var(--workspace-native-text)_8%,_transparent)]"
+                aria-label="Graph controls"
+              >
                 <button
                   aria-label="Auto arrange"
                   title="Auto arrange"

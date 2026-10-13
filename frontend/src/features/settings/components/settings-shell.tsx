@@ -19,6 +19,7 @@ import {
 } from "@/features/settings/model/settings-navigation";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCompanyPermissions } from "@/shared/permissions";
+import { cx } from "@/shared/lib/cx";
 import "@/features/settings/styles/settings.css";
 import "@/features/settings/styles/settings-workspace.css";
 import "@/features/settings/styles/settings-detail.css";
@@ -70,22 +71,40 @@ export function SettingsShell({
     },
   ];
   return (
-    <div className="settings-workspace" data-tour-id="settings-overview">
-      <aside className="settings-workspace-nav">
-        <div className="settings-workspace-heading">Settings</div>
-        <nav aria-label="Settings sections">
+    <div
+      className="grid h-full min-h-0 w-full grid-cols-[208px_minmax(0,1fr)] text-workspace-text [background:var(--workspace-panel-bg)] [@media(max-width:800px)]:grid-cols-[minmax(0,1fr)] [@media(max-width:800px)]:grid-rows-[auto_minmax(0,1fr)]"
+      data-tour-id="settings-overview"
+    >
+      <aside className="overflow-auto p-[20px_12px] [border-right:1px_solid_var(--workspace-divider)] [background:var(--workspace-sidebar-bg)] [@media(max-width:800px)]:p-[8px_12px] [@media(max-width:800px)]:[border-right:0] [@media(max-width:800px)]:[border-bottom:1px_solid_var(--workspace-divider)]">
+        <div className="flex items-center gap-[9px] p-[0_12px_24px] text-workspace-body leading-workspace-body font-[600] [@media(max-width:800px)]:hidden">
+          Settings
+        </div>
+        <nav
+          aria-label="Settings sections"
+          className="[@media(max-width:800px)]:flex [@media(max-width:800px)]:overflow-auto"
+        >
           {groups.map((group) => {
             const visible = tabs.filter((tab) => group.ids.includes(tab.id));
             return visible.length ? (
-              <section key={group.title}>
-                <h2>{group.title}</h2>
+              <section
+                key={group.title}
+                className="[&+section]:mt-[28px] [@media(max-width:800px)]:flex [@media(max-width:800px)]:shrink-0 [@media(max-width:800px)]:[&+section]:m-0"
+              >
+                <h2 className="m-[0_12px_8px] text-workspace-label leading-workspace-label font-[500] text-workspace-muted [@media(max-width:800px)]:hidden">
+                  {group.title}
+                </h2>
                 {visible.map((tab) => {
                   const Icon = icons[tab.id];
                   return (
                     <NavLink
                       key={tab.id}
                       to={tab.href}
-                      className={tab.id === activeTab ? "is-active" : undefined}
+                      className={cx(
+                        "flex items-center gap-[10px] rounded-workspace-control p-[7px_12px] text-workspace-body leading-workspace-body text-workspace-text [text-decoration:none]",
+                        tab.id === activeTab
+                          ? "is-active [background:var(--workspace-selected-bg)] font-[500]"
+                          : "[&:hover]:[background:var(--workspace-hover-bg)]",
+                      )}
                     >
                       <Icon size={16} />
                       {tab.id === "profile"
@@ -126,7 +145,7 @@ export function SettingsShell({
             : current.description)
         }
       >
-        <div className="settings-current-content" key={activeTab}>
+        <div className="w-full min-w-0" key={activeTab}>
           {children}
         </div>
       </WorkspacePageFrame>

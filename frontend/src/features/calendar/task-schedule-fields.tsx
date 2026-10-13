@@ -62,7 +62,7 @@ export function TaskRunTime({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="task-run-time">
+    <div className="grid grid-cols-[minmax(0,_1fr)_minmax(80px,_0.6fr)] gap-[8px] items-center">
       <CalendarDatePicker
         appearance={appearance}
         label="Run date"
@@ -171,7 +171,7 @@ export function TaskScheduleFields({
             />
           )}
           {preset === "hourly" && (
-            <div className="task-run-time">
+            <div className="grid grid-cols-[minmax(0,_1fr)_minmax(80px,_0.6fr)] gap-[8px] items-center">
               <CalendarOptionPicker
                 appearance={appearance}
                 label="Every"
@@ -196,7 +196,7 @@ export function TaskScheduleFields({
                 }))}
                 onChange={(value) => changeField(1, value)}
               />
-              <label className="task-schedule-input">
+              <label className="task-schedule-input grid gap-[6px] text-workspace-muted text-[length:12px]">
                 At minute
                 <input
                   aria-label="Minute of the hour"
@@ -257,7 +257,7 @@ export function TaskScheduleFields({
             </div>
           )}
           {preset === "monthly" && (
-            <label className="task-schedule-input">
+            <label className="task-schedule-input grid gap-[6px] text-workspace-muted text-[length:12px]">
               Day of month
               <input
                 aria-label="Day of month"
@@ -280,7 +280,7 @@ export function TaskScheduleFields({
             </label>
           )}
           {!preset && (
-            <label className="task-schedule-input">
+            <label className="task-schedule-input grid gap-[6px] text-workspace-muted text-[length:12px]">
               Cron expression
               <input
                 aria-label="Cron expression"

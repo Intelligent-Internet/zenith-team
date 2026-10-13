@@ -100,11 +100,11 @@ export function PagePdfExport({
             </button>
           </header>
           {error && (
-            <p role="alert" className="pc-pdf-error">
+            <p role="alert" className="p-[12px_24px] text-workspace-danger">
               {error}
             </p>
           )}
-          <div className="pc-pdf-preview">
+          <div className="flex-1 min-h-0 overflow-auto p-[28px] [background:var(--pc-raised)]">
             <div
               ref={preview}
               className={`pc-pdf-report pc-pdf-${style}`}

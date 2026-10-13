@@ -46,7 +46,10 @@ export const reviewDate = (value: string) => timestamp.format(new Date(value));
 
 export function CommentAvatar({ name }: { name: string }) {
   return (
-    <span className="pc-comment-avatar" aria-hidden>
+    <span
+      className="w-[27px] h-[27px] rounded-[50%] [background:var(--workspace-selected-bg)] text-[var(--pc-accent)] inline-flex items-center justify-center text-[length:10px] font-[600] flex-none"
+      aria-hidden
+    >
       {name
         .trim()
         .split(/\s+/)
@@ -78,7 +81,7 @@ export function CommentFilters({
   const open = threads.filter((thread) => thread.status === "open").length;
   return (
     <div
-      className="pc-comment-filters"
+      className="pc-comment-filters flex flex-none gap-[4px] p-[12px_14px_8px]"
       role="group"
       aria-label="Filter comments"
     >
@@ -358,7 +361,7 @@ export function ReviewThread({
           <ChevronRight size={12} />
         </button>
         {thread.status === "resolved" && (
-          <span className="pc-thread-resolved">
+          <span className="inline-flex items-center gap-[3px] text-[length:9px] text-workspace-success">
             <Check size={12} /> Resolved
           </span>
         )}

@@ -118,8 +118,8 @@ export function ProjectTaskDetail({
         }
       }}
     >
-      <header className="project-task-detail-header">
-        <div className="project-task-detail-topline">
+      <header className="project-task-detail-header flex-none p-[16px_24px_8px]">
+        <div className="project-task-detail-topline flex items-center justify-between gap-[12px] text-workspace-muted text-workspace-caption">
           <span>{labelTask(task)}</span>
           <div>
             {onOpenChat ? (
@@ -153,8 +153,11 @@ export function ProjectTaskDetail({
           </div>
         </div>
         <h2 id={`project-task-title-${task.id}`}>{task.title}</h2>
-        <div className="project-task-detail-metadata">
-          <span className="project-task-state" title={statusLabel}>
+        <div className="project-task-detail-metadata flex items-center flex-wrap gap-[12px] text-workspace-muted text-workspace-caption">
+          <span
+            className="inline-flex items-center gap-[7px] p-[4px_9px] rounded-workspace-control [background:var(--workspace-control-bg)]"
+            title={statusLabel}
+          >
             <TaskStatusIcon status={task.status} />
             {waiting ? "Waiting" : statusLabel}
           </span>
@@ -162,9 +165,9 @@ export function ProjectTaskDetail({
           <OutsideProjectBadge task={task} />
         </div>
       </header>
-      <div className="project-task-detail-scroll">
+      <div className="flex-1 min-h-0 overflow-y-auto p-[0_24px_24px] [scrollbar-width:thin]">
         {(needsResponse || awaitsReview) && onOpenChat ? (
-          <section className="project-task-response">
+          <section className="flex flex-wrap items-center justify-between gap-[8px_12px] p-[12px_16px] mb-[16px] rounded-[12px] [background:var(--workspace-approval-soft)]">
             <strong>
               {needsResponse ? "Needs your response" : "Needs your review"}
             </strong>
@@ -179,7 +182,7 @@ export function ProjectTaskDetail({
           </section>
         ) : null}
         <div
-          className="project-task-detail-tabs"
+          className="project-task-detail-tabs flex items-center flex-wrap gap-[0_20px] [border-bottom:1px_solid_var(--workspace-divider)] m-[6px_0_18px]"
           role="tablist"
           aria-label="Task detail sections"
         >

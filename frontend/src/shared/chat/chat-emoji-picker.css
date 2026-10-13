@@ -1,20 +1,3 @@
-.chat-emoji-picker {
-  z-index: 360;
-  width: min(352px, calc(100vw - 24px));
-  height: min(
-    440px,
-    var(--radix-popover-content-available-height, 440px),
-    calc(100dvh - 24px)
-  );
-  overflow: hidden;
-  border: 1px solid var(--workspace-divider-strong, var(--input-border));
-  border-radius: 10px;
-  background: var(--workspace-overlay-bg, var(--popover));
-  color: var(--workspace-native-text, var(--popover-foreground));
-  box-shadow: var(--workspace-overlay-shadow, 0 8px 28px rgb(0 0 0 / 18%));
-  outline: none;
-}
-
 .chat-emoji-picker .EmojiPickerReact.epr-main {
   --epr-bg-color: var(--workspace-overlay-bg, var(--popover));
   --epr-text-color: var(--workspace-native-text-muted, var(--text-secondary));
@@ -87,12 +70,4 @@
 
 .chat-emoji-picker .EmojiPickerReact .epr-icn-clear-search {
   mask-image: url("../../assets/iconsax/close.svg");
-}
-
-.chat-emoji-picker__loading {
-  display: grid;
-  height: 100%;
-  place-items: center;
-  color: var(--workspace-native-text-muted, var(--text-secondary));
-  font-size: 13px;
 }

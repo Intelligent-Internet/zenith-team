@@ -15,7 +15,10 @@ export function ArtifactDraftCards({
 }) {
   if (!artifacts.length) return null;
   return (
-    <div className="artifact-draft-cards" aria-label="Attached artifacts">
+    <div
+      className="artifact-draft-cards flex min-w-0 overflow-x-auto gap-[8px] p-[10px_12px_0]"
+      aria-label="Attached artifacts"
+    >
       {artifacts.map((artifact) => (
         <div className="artifact-draft-card" key={artifact.id}>
           <PackageCheck size={20} />

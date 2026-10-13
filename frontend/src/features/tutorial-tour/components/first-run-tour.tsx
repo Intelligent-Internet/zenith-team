@@ -249,10 +249,10 @@ export function FirstRunTour({ enabled }: { enabled: boolean }) {
             Find your conversations, organize work, and explore the tools your
             team shares.
           </DialogDescription>
-          <p className="tutorial-tour-welcome__hint">
+          <p className="m-[18px_0_0] text-workspace-muted text-[length:12px] leading-[18px]">
             You can take this tour anytime from Help.
           </p>
-          <div className="tutorial-tour-welcome__actions">
+          <div className="flex justify-end gap-[8px] mt-[24px]">
             <button
               className="tutorial-tour-button tutorial-tour-button--secondary"
               type="button"
@@ -274,7 +274,7 @@ export function FirstRunTour({ enabled }: { enabled: boolean }) {
 
       {phase === "transitioning" ? (
         <div className="tutorial-tour-transition">
-          <div className="tutorial-tour-transition__status">
+          <div className="flex items-center gap-[20px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] p-[10px_14px] [background:var(--workspace-overlay-bg)] text-workspace-muted [box-shadow:var(--workspace-overlay-shadow)] font-workspace-body text-[length:13px] leading-[20px]">
             <span role="status">Opening tour step…</span>
             <button type="button" onClick={skipTour}>
               End tour
@@ -354,7 +354,7 @@ function TutorialTourTooltip({
       </p>
       <h2 id="tutorial-tour-tooltip-title">{step.title}</h2>
       <div id="tutorial-tour-tooltip-content">{step.content}</div>
-      <div className="tutorial-tour-tooltip__footer">
+      <div className="flex items-center justify-between gap-[12px] mt-[20px]">
         <button
           className="tutorial-tour-button tutorial-tour-button--quiet"
           disabled={index === 0}

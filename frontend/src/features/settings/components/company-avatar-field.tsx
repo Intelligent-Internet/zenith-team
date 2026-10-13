@@ -24,7 +24,7 @@ export function CompanyAvatarField({
           attachmentId={attachmentId}
           name={name}
           previewUrl={previewUrl}
-          className="company-settings-avatar"
+          className="grid w-[44px] h-[44px] flex-none place-items-center rounded-[6px] [background:var(--workspace-accent-soft)] text-workspace-accent text-[length:20px] font-[600]"
         />
       )}
     </AvatarImagePicker>

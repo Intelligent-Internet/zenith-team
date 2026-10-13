@@ -42,14 +42,6 @@
   background: var(--collection-surface);
 }
 
-.collection-list__header {
-  min-height: 38px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  font-weight: 500;
-}
-
 .collection-list__row {
   min-height: var(--collection-row-height);
   border-top: 1px solid var(--workspace-divider);
@@ -73,13 +65,6 @@
   min-width: 0;
   align-items: center;
   gap: 12px;
-}
-
-.collection-list__primary {
-  color: var(--workspace-native-text);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  font-weight: 600;
 }
 
 .collection-list__secondary {

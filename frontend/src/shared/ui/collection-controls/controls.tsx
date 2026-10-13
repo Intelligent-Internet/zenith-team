@@ -12,7 +12,6 @@ import { Icon } from "@/shared/ui/icon";
 import { LayoutGrid, List } from "@/shared/ui/icons";
 
 import { GlassButton } from "./glass-primitives";
-import "./controls.css";
 
 export type CollectionViewMode = "grid" | "list";
 
@@ -70,7 +69,11 @@ export function ViewSwitch({
   ] as const;
 
   return (
-    <div className="collection-view-switch" role="group" aria-label={ariaLabel}>
+    <div
+      className="flex h-[var(--workspace-control-size,32px)] flex-none items-center gap-[2px] rounded-[var(--workspace-radius-control,6px)] [border:1px_solid_var(--workspace-divider)] [background:var(--workspace-content-bg)] p-[2px] [@media(pointer:coarse)]:h-[48px]"
+      role="group"
+      aria-label={ariaLabel}
+    >
       {options.map(({ icon: ViewIcon, ...option }) => (
         <button
           key={option.value}
@@ -78,6 +81,7 @@ export function ViewSwitch({
           aria-label={option.label}
           title={option.label}
           aria-pressed={value === option.value}
+          className="grid h-[26px] w-[28px] place-items-center rounded-[calc(var(--workspace-radius-control,8px)_-_3px)] [border:0] [background:transparent] text-workspace-muted [&:hover]:[outline:none] focus-visible:[outline:none] [&:hover:not([aria-pressed=true])]:[background:var(--workspace-hover-bg)] [&:focus-visible:not([aria-pressed=true])]:[background:var(--workspace-hover-bg)] [&:hover]:text-workspace-text focus-visible:text-workspace-text aria-pressed:[background:var(--workspace-control-bg)] aria-pressed:text-workspace-text [@media(pointer:coarse)]:h-[42px] [@media(pointer:coarse)]:w-[44px]"
           onClick={() => onChange(option.value)}
         >
           <ViewIcon size={18} aria-hidden />

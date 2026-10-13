@@ -104,7 +104,7 @@ export function NewChatSessionPreview({
   ];
   return (
     <section
-      className="new-chat-session"
+      className="new-chat-session flex flex-col h-full min-h-0 [background:var(--workspace-chat-bg)] text-workspace-text"
       aria-label={`New chat with ${agent.name}`}
     >
       <header>
@@ -131,7 +131,7 @@ export function NewChatSessionPreview({
         <h1>Chat with {agent.name}</h1>
         <p>{agent.title}</p>
         <p>Explore an idea, plan your day, or hand off a task.</p>
-        <div className="new-chat-session-starters">
+        <div className="new-chat-session-starters grid gap-[9px] mt-[23px] w-[min(430px,_100%)]">
           {starters.map((starter, index) => (
             <button
               key={starter}
@@ -188,7 +188,7 @@ export function NewChatSessionPreview({
             placeholder={`Message ${agent.name}…`}
             rows={3}
           />
-          <div className="new-chat-session-model-controls">
+          <div className="flex justify-end min-h-[32px] mt-[8px] pr-[40px]">
             <NewChatModelSettings
               companyId={companyId}
               agentId={agent.id}

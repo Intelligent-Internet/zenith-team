@@ -214,7 +214,7 @@ export function ProjectWorkspace({
           hidden={isCanvasView && canvasFullscreen.active}
           project={project}
         />
-        <main className="project-workspace-main">
+        <main className="flex min-w-0 min-h-0 flex-1 flex-col overflow-hidden">
           <div
             className={cx(
               "project-workspace-body",
@@ -233,7 +233,9 @@ export function ProjectWorkspace({
                 {isCanvasView ? (
                   <Suspense
                     fallback={
-                      <p className="project-workspace-state">Opening canvas…</p>
+                      <p className="project-workspace-state m-[16px_22px_0] p-[11px_13px] [border:1px_solid_var(--workspace-divider,_rgba(242,_238,_226,_0.1))] rounded-[10px] text-[var(--workspace-native-text-muted,_rgba(242,_238,_226,_0.6))] text-[length:12px]">
+                        Opening canvas…
+                      </p>
                     }
                   >
                     <ProjectCanvas
@@ -254,7 +256,7 @@ export function ProjectWorkspace({
                   activeSection === "artifacts" ? (
                   <Suspense
                     fallback={
-                      <p className="project-workspace-state">
+                      <p className="project-workspace-state m-[16px_22px_0] p-[11px_13px] [border:1px_solid_var(--workspace-divider,_rgba(242,_238,_226,_0.1))] rounded-[10px] text-[var(--workspace-native-text-muted,_rgba(242,_238,_226,_0.6))] text-[length:12px]">
                         Opening {activeSection}…
                       </p>
                     }
@@ -267,7 +269,7 @@ export function ProjectWorkspace({
                     />
                   </Suspense>
                 ) : activeSection === "settings" ? (
-                  <section className="project-settings-surface">
+                  <section className="project-settings-surface p-[16px_var(--project-content-gutter)] min-h-0 overflow-y-auto">
                     <h2>Project settings</h2>
                     <dl>
                       <dt>Project key</dt>
@@ -280,7 +282,7 @@ export function ProjectWorkspace({
                       <dt>Status</dt>
                       <dd>{project.archivedAt ? "Archived" : "Active"}</dd>
                     </dl>
-                    <div className="project-settings-actions">
+                    <div className="project-settings-actions flex flex-wrap gap-[8px]">
                       <Link
                         className="dashboard-button"
                         to={teamProjectAccessPath(project.id)}
@@ -513,14 +515,20 @@ function ProjectReadState({
   // the viewer to Projects in a moment.
   if (query.isLoading || checkingAccess) {
     return (
-      <p className="project-workspace-state" role="status">
+      <p
+        className="project-workspace-state m-[16px_22px_0] p-[11px_13px] [border:1px_solid_var(--workspace-divider,_rgba(242,_238,_226,_0.1))] rounded-[10px] text-[var(--workspace-native-text-muted,_rgba(242,_238,_226,_0.6))] text-[length:12px]"
+        role="status"
+      >
         Loading project work…
       </p>
     );
   }
   if (query.isError) {
     return (
-      <p className="project-workspace-state" role="alert">
+      <p
+        className="project-workspace-state m-[16px_22px_0] p-[11px_13px] [border:1px_solid_var(--workspace-divider,_rgba(242,_238,_226,_0.1))] rounded-[10px] text-[var(--workspace-native-text-muted,_rgba(242,_238,_226,_0.6))] text-[length:12px]"
+        role="alert"
+      >
         Project work could not be loaded.{" "}
         <button type="button" onClick={() => void query.refetch()}>
           Try again

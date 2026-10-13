@@ -31,7 +31,7 @@ export function WorkspaceHistoryControls() {
   }
   return (
     <div
-      className="workspace-history-controls"
+      className="workspace-history-controls shrink-0 flex items-center gap-[3px] [-webkit-app-region:no-drag]"
       role="group"
       aria-label="Workspace navigation"
     >

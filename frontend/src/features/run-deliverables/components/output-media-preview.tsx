@@ -278,7 +278,10 @@ function CanvasMediaPlayer({
         )}
       </button>
       {playError ? (
-        <span className="studio-player__error" role="status">
+        <span
+          className="absolute z-[2] top-[4px] left-[4px] right-[4px] p-[4px] rounded-[4px] [background:var(--workspace-panel-bg)] text-workspace-text text-[length:10px] text-center"
+          role="status"
+        >
           Unable to play. Try again.
         </span>
       ) : null}

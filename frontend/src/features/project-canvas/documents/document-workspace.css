@@ -44,14 +44,6 @@
 .pc-document-workspace .pc-review-body {
   position: relative;
 }
-.pc-review-document {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
 .pc-review-document > .pc-live-document {
   flex: 1;
   height: auto;
@@ -378,16 +370,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
   padding: 7px 10px;
   border-radius: 4px;
 }
-.pc-menu-caption {
-  padding: 8px 10px;
-  color: var(--pc-muted);
-  font-size: 11px;
-  font-weight: 600;
-}
-.pc-menu-empty {
-  padding: 14px 10px;
-  color: var(--pc-muted);
-}
 .pc-document-workspace .pc-block-url {
   position: absolute;
   width: min(320px, calc(100% - 24px));
@@ -404,11 +386,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
   color: inherit;
   font: inherit;
 }
-.pc-block-url-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
 .pc-output-document-action {
   display: flex;
   align-items: center;
@@ -418,14 +395,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
   color: var(--pc-muted);
   font-size: 12px;
   border-bottom: 1px solid var(--pc-line);
-}
-.pc-output-workspace-state {
-  display: grid;
-  place-content: center;
-  gap: 12px;
-  height: 100%;
-  padding: 32px;
-  color: var(--workspace-native-text-muted);
 }
 .pc-dialog.pc-embedded-document {
   position: relative;
@@ -548,13 +517,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
   :is(.pc-document-title, .pc-document-title-field textarea) {
   font-size: 24px;
 }
-
-.pc-review-floating-actions {
-  position: absolute;
-  inset: 0;
-  z-index: 70;
-  pointer-events: none;
-}
 .pc-review-floating-actions > button {
   pointer-events: auto;
 }
@@ -630,13 +592,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
 .pc-review-layout[data-loading] {
   visibility: hidden;
 }
-.pc-review-loading-cover {
-  position: absolute;
-  inset: 0;
-  z-index: 80;
-  overflow: hidden;
-  background: var(--workspace-panel-bg);
-}
 .pc-review-formatting {
   height: 0;
   overflow: hidden;
@@ -665,9 +620,6 @@ html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
   .pc-review-formatting > .pc-format-toolbar {
     animation: none;
   }
-}
-.pc-review-document-menu {
-  position: relative;
 }
 .pc-review-document-menu > .pc-document-menu-panel {
   right: 0;

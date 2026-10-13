@@ -115,15 +115,6 @@
   font-size: 10px;
 }
 
-.project-workspace-main {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .project-workspace-header {
   display: flex;
   min-height: 76px;
@@ -196,15 +187,6 @@
   border-color: var(--workspace-divider, rgba(242, 238, 226, 0.18));
   background: var(--workspace-control-bg);
   color: var(--workspace-native-text-muted, rgba(242, 238, 226, 0.6));
-}
-
-.project-workspace-state {
-  margin: 16px 22px 0;
-  padding: 11px 13px;
-  border: 1px solid var(--workspace-divider, rgba(242, 238, 226, 0.1));
-  border-radius: 10px;
-  color: var(--workspace-native-text-muted, rgba(242, 238, 226, 0.6));
-  font-size: 12px;
 }
 
 .project-workspace-state button {
@@ -624,17 +606,6 @@
 }
 
 /* A Project the viewer can't open, missing or hidden alike. */
-.project-unavailable {
-  display: grid;
-  max-width: 360px;
-  justify-items: center;
-  gap: 8px;
-  margin: 64px auto 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-body, 13px);
-  line-height: 1.45;
-  text-align: center;
-}
 
 .project-unavailable > svg {
   margin-bottom: 4px;
@@ -937,14 +908,6 @@
     padding-inline: 14px;
   }
 }
-.project-view-switch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 10px;
-}
 .project-view-switch button {
   display: flex;
   align-items: center;
@@ -957,15 +920,6 @@
 .project-view-switch button[aria-pressed="true"] {
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
-}
-.project-task-controls {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  min-width: 0;
 }
 .project-task-controls .project-task-search {
   width: 300px;
@@ -1007,21 +961,11 @@
 .project-task-search:focus-within {
   border-color: var(--workspace-native-accent);
 }
-.project-collection-section {
-  min-height: 0;
-  overflow: auto;
-  padding: 16px var(--project-content-gutter);
-}
 .project-collection-section select {
   padding: 8px 12px;
   border: 1px solid var(--workspace-divider);
   border-radius: 8px;
   background: var(--workspace-input-bg);
-}
-.project-approval-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
-  gap: 16px;
 }
 .project-workspace-page button:focus-visible,
 .project-workspace-page a:focus-visible {

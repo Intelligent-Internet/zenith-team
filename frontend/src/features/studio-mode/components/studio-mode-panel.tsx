@@ -172,7 +172,7 @@ export function StudioModePanel(props: StudioModeProps) {
         }
       }}
       aria-label="Studio workspace"
-      className={`studio-mode-panel studio-mode-shell${expanded ? " studio-mode-panel--full-page" : ""}${expanded && !props.fullPage ? " studio-mode-shell--expanded" : ""}${props.fullPage && !expanded ? " studio-mode-shell--compact" : ""}`}
+      className={`studio-mode-panel studio-mode-shell${expanded ? " studio-mode-panel--full-page" : ""}${expanded && !props.fullPage ? " studio-mode-shell--expanded" : ""}${props.fullPage && !expanded ? " left-auto w-[min(720px,_100%)]" : ""}`}
     >
       <Toaster id={toasterId} position="bottom-right" closeButton richColors />
       {props.runtimeId ? (
@@ -367,7 +367,7 @@ function StudioLoadingState({ onClose }: { onClose: () => void }) {
       aria-label="Studio mode"
     >
       <header>
-        <h2 className="studio-mode-panel__loading-title">
+        <h2 className="flex items-center gap-[7px] m-0 text-workspace-text [font-family:var(--font-heading)] text-[length:15px] font-[600] leading-[20px]">
           <Studio size={16} aria-hidden />
           Studio Mode
         </h2>
@@ -379,7 +379,7 @@ function StudioLoadingState({ onClose }: { onClose: () => void }) {
       </header>
       <div className="studio-mode-panel__loading-body" role="status">
         <StudioStatusArt />
-        <div className="studio-mode-panel__loading-status">
+        <div className="studio-mode-panel__loading-status relative flex items-center gap-[6px] text-workspace-muted text-[length:12px] leading-[18px]">
           <LoaderCircle size={13} aria-hidden />
           <span>Loading…</span>
         </div>
@@ -1437,7 +1437,7 @@ function StudioEditor({
   return (
     <section className="studio-mode-panel" aria-label="Studio mode">
       <header>
-        <div className="studio-mode-panel__project">
+        <div className="min-w-0">
           <span className="studio-mode-panel__project-icon">
             <Studio size={20} aria-hidden />
           </span>
@@ -1567,7 +1567,7 @@ function StudioEditor({
           />
           {showReconnect ? (
             <div
-              className="studio-mode-panel__reconnect-overlay"
+              className="studio-mode-panel__reconnect-overlay absolute inset-0 z-[20] grid place-items-center p-[24px] [background:color-mix(in_srgb,_var(--workspace-content-bg)_65%,_transparent)]"
               role="dialog"
               aria-label="Reconnect Studio"
             >

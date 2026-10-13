@@ -51,14 +51,17 @@ export function CancelInvitationDialog({
         </header>
         <div className="company-invite-body">
           {error ? (
-            <p className="company-invite-error" role="alert">
+            <p
+              className="m-[8px_0_0] text-workspace-danger text-[length:12px] leading-[1.5] wrap-anywhere"
+              role="alert"
+            >
               {error}
             </p>
           ) : null}
           <div className="company-invite-actions">
             <Button
               ref={keepButton}
-              className="company-invite-secondary"
+              className="rounded-[9px] text-workspace-muted text-[length:12px]"
               disabled={busy}
               onClick={onClose}
             >

@@ -336,9 +336,9 @@ export function CalendarPage() {
             >
               <ChevronRight size={18} />
             </button>
-            <div className="calendar-period-heading">
+            <div className="flex flex-col gap-[2px] ml-[8px]">
               <h2>{periodLabel(date, view, days)}</h2>
-              <span className="calendar-timezone-label">
+              <span className="text-[var(--workspace-text-muted)] text-[length:11px] leading-[16px]">
                 {Intl.DateTimeFormat()
                   .resolvedOptions()
                   .timeZone.replaceAll("_", " ")}
@@ -419,7 +419,7 @@ export function CalendarPage() {
           )}
           {view === "Month" && (
             <>
-              <div className="calendar-weekdays">
+              <div className="calendar-weekdays grid grid-cols-[repeat(7,_minmax(0,_1fr))] text-[var(--workspace-text-muted)] text-[length:10px] tracking-[0.04em] uppercase p-[14px_0]">
                 {weekdays.map((day) => (
                   <span key={day}>{day}</span>
                 ))}
@@ -492,7 +492,7 @@ export function CalendarPage() {
                         ))}
                         {events.length > 3 && (
                           <button
-                            className="calendar-more"
+                            className="[background:none] [border:none] text-left text-[length:10px] text-[var(--workspace-text-muted)] p-[2px_7px] cursor-pointer"
                             onClick={() => {
                               setDate(day);
                               setView("Day");

@@ -63,7 +63,10 @@ export function ChatCompanyPlanOverview({
   });
 
   return (
-    <section className="company-plan-overview" aria-label="Company plan">
+    <section
+      className="min-w-0 overflow-hidden [border:1px_solid_var(--workspace-divider,_#2b3945)] rounded-[16px] [background:var(--workspace-panel-bg,_#18242f)] text-[var(--workspace-native-text,_#f3f5f7)]"
+      aria-label="Company plan"
+    >
       <header className="company-plan-overview__header">
         <h2>{heading?.title ?? "Here's your plan"}</h2>
         <p>
@@ -83,7 +86,7 @@ export function ChatCompanyPlanOverview({
             <span className="company-plan-overview__task-number">
               {index + 1}
             </span>
-            <span className="company-plan-overview__task-copy">
+            <span className="company-plan-overview__task-copy min-w-0 flex-1">
               <strong>{task.title}</strong>
               <span>{task.agentPlan.title}</span>
             </span>
@@ -147,7 +150,7 @@ export function ChatAgentPlanDialog({
                 <DialogTitle className="chat-company-plan-detail__title">
                   {agentPlan.title}
                 </DialogTitle>
-                <p className="chat-company-plan-detail__subtitle">
+                <p className="m-[4px_0_0] text-[var(--plan-detail-muted)] text-workspace-caption leading-workspace-caption">
                   Initial Plan version 1.0
                 </p>
               </div>
@@ -164,10 +167,10 @@ export function ChatAgentPlanDialog({
           <div className="chat-company-plan-detail__body">
             <div className="chat-company-plan-detail__columns">
               <div className="min-w-0">
-                <h3 className="chat-company-plan-detail__section-title">
+                <h3 className="m-0 text-[var(--plan-detail-text)] text-workspace-label font-[700] leading-workspace-label">
                   Plan Summary
                 </h3>
-                <div className="chat-company-plan-detail__summary">
+                <div className="grid grid-cols-[repeat(2,_minmax(0,_1fr))] gap-[12px] mt-[12px]">
                   <PlanSummaryCard
                     icon={<Icon name="task-square" className="size-5" />}
                     label="Tasks"
@@ -176,7 +179,7 @@ export function ChatAgentPlanDialog({
                   />
                 </div>
 
-                <h3 className="chat-company-plan-detail__section-title">
+                <h3 className="m-0 text-[var(--plan-detail-text)] text-workspace-label font-[700] leading-workspace-label">
                   Task Preview
                 </h3>
                 <ol className="m-0 grid list-none gap-3 p-0">

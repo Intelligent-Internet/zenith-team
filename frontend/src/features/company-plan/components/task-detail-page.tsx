@@ -173,7 +173,10 @@ export function TaskDetailPage({
       aria-labelledby="task-detail-title"
     >
       <header className="task-detail-header">
-        <nav className="task-detail-breadcrumb" aria-label="Task location">
+        <nav
+          className="task-detail-breadcrumb flex items-center gap-[10px] min-w-0 text-workspace-muted text-workspace-caption leading-workspace-caption"
+          aria-label="Task location"
+        >
           <Link to="/projects">Projects</Link>
           <span aria-hidden="true">/</span>
           <TaskProjectLabel
@@ -190,7 +193,7 @@ export function TaskDetailPage({
             <TaskStatusIcon status={task.status} /> {statusLabel}
           </span>
           <TaskProjectVisibility
-            className="task-detail-visibility"
+            className="justify-center w-[26px] h-[26px] rounded-[5px] [background:var(--workspace-control-bg)] text-workspace-muted"
             companyId={companyId}
             projectId={task.projectId}
           />
@@ -231,7 +234,7 @@ export function TaskDetailPage({
           onClick={() => setTab("files")}
         >
           Results{" "}
-          <span className="task-detail-count">
+          <span className="rounded-[4px] p-[1px_6px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]">
             {results.isLoading ||
             results.error ||
             (messages.isFetching && !messages.currentData) ||
@@ -242,7 +245,7 @@ export function TaskDetailPage({
         </button>
       </nav>
       <div className="task-detail-body">
-        <div className="task-detail-content">
+        <div className="task-detail-content min-w-0 p-[24px_var(--task-detail-gutter)_36px]">
           {tab === "overview" ? (
             <>
               <TaskLatestUpdate
@@ -317,10 +320,12 @@ export function TaskDetailPage({
         </div>
         <aside className="task-detail-properties" aria-label="Task context">
           <TaskProperties task={task} variant="detail" />
-          <section className="task-detail-dependencies">
+          <section className="mt-[26px] pt-[22px] [border-top:1px_solid_var(--workspace-divider)]">
             <h2>
               Dependencies{" "}
-              <span className="task-detail-count">{task.blockedByCount}</span>
+              <span className="rounded-[4px] p-[1px_6px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]">
+                {task.blockedByCount}
+              </span>
             </h2>
             <TaskDependencySummary
               blockedBy={dependencies.blockedBy}
@@ -375,14 +380,14 @@ export function TaskFileList({
     );
   if (!files.length) return <p className="task-detail-empty">{emptyLabel}</p>;
   return (
-    <div className="task-detail-files">
+    <div className="grid gap-[10px]">
       {files.map((file) => {
         const content = (
           <>
             <span className="task-detail-file-icon">
               <FileText size={20} />
             </span>
-            <span className="task-detail-file-name">
+            <span className="flex-1 min-w-0">
               <strong>{file.file_name}</strong>
               <small>{file.content_type || "Task attachment"}</small>
             </span>
@@ -456,7 +461,7 @@ export function TaskActivity({
                   ) : member ? (
                     <TaskMemberAvatar member={member} />
                   ) : (
-                    <span className="task-detail-person">
+                    <span className="grid place-items-center w-[27px] h-[27px] shrink-0 rounded-[50%] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption">
                       {event.actor.kind === "system" ? (
                         <Settings size={15} />
                       ) : (
@@ -464,7 +469,7 @@ export function TaskActivity({
                       )}
                     </span>
                   )}
-                  <div className="task-detail-event-content">
+                  <div className="flex-1 min-w-0">
                     <div className="task-detail-event-summary">
                       <p>
                         <strong>{activityActorName(event.actor)}</strong>

@@ -361,15 +361,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
-.po-result-card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border: 1px solid var(--pc-line);
-  border-radius: 12px;
-  background: var(--pc-paper);
-  overflow: hidden;
-}
 .po-document .po-result-open {
   display: flex;
   flex-direction: column;
@@ -381,13 +372,6 @@
   border: 0;
   border-radius: 0;
   padding: 22px 24px 18px;
-}
-.po-result-kind {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--pc-muted);
 }
 .po-result-open h3 {
   font-size: 18px;
@@ -410,14 +394,6 @@
 }
 .po-result-excerpt.is-empty {
   color: var(--pc-soft);
-}
-.po-result-state {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11px;
-  color: var(--pc-muted);
-  margin-top: auto;
 }
 .po-result-state [data-review="needs_review"],
 .po-result-state [data-review="changes_requested"] {
@@ -650,11 +626,6 @@
 }
 .po-library-search:focus-within {
   border-color: var(--workspace-native-accent);
-}
-.po-library-rows {
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--pc-line);
 }
 .po-document .po-library-row {
   display: flex;
@@ -947,25 +918,6 @@
   border: 0;
   color: var(--pc-muted);
 }
-.po-page-breadcrumb-separator {
-  color: var(--pc-soft);
-}
-.po-page-breadcrumb-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-.po-page-overview-badge {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: var(--workspace-selected-bg);
-  color: var(--pc-ink);
-  font-size: var(--workspace-text-caption);
-  white-space: nowrap;
-}
 .po-page-navigation .po-document-status-slot {
   flex: 0 1 auto;
   margin-left: auto;
@@ -1062,12 +1014,6 @@
   min-height: 64px;
   padding-bottom: 8px;
 }
-.po-project-intro {
-  box-sizing: border-box;
-  max-width: var(--po-page-width);
-  margin: 0 auto;
-  padding: 20px var(--po-page-gutter) 8px;
-}
 .po-project-intro h1 {
   margin: 0;
   font-size: 28px;
@@ -1075,24 +1021,6 @@
   line-height: 1.3;
   letter-spacing: -0.6px;
   overflow-wrap: anywhere;
-}
-.po-project-description {
-  max-width: 68ch;
-  margin: 10px 0 0;
-  color: var(--pc-muted);
-  line-height: 1.65;
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
-.po-overview-prompt {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 20px;
-  padding: 14px 16px;
-  border: 1px solid var(--pc-line);
-  border-radius: 10px;
 }
 .po-overview-prompt > svg {
   flex-shrink: 0;
@@ -1136,35 +1064,11 @@
 }
 
 /* Keep a single loading surface until the reader and report can appear together. */
-.po-overview-loading-boundary {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
 .po-overview-loading-boundary > .po-project-home {
   width: 100%;
 }
 .po-overview-loading-boundary > .po-project-home[data-loading] {
   visibility: hidden;
-}
-.po-overview-loading-cover {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  background: var(--workspace-content-bg);
-}
-
-.po-page-frame {
-  position: relative;
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
 }
 .po-page-frame > .po-page-workspace {
   width: 100%;

@@ -27,21 +27,6 @@
   padding: 24px;
 }
 
-.setup-bank-dialog__title {
-  margin: 0;
-  font-family: var(--workspace-font-heading, sans-serif);
-  font-size: 21px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.setup-bank-dialog__description {
-  margin: 0;
-  color: var(--workspace-native-text-muted, #706875);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
 .setup-bank-dialog__close {
   display: grid;
   width: 36px;
@@ -61,22 +46,6 @@
   color: var(--workspace-native-text, #2d2631);
 }
 
-.setup-bank-dialog__steps {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 20px;
-  color: var(--workspace-native-text-muted, #706875);
-}
-
-.setup-bank-dialog__progress {
-  height: 4px;
-  flex: 1;
-  overflow: hidden;
-  border-radius: 4px;
-  background: var(--workspace-control-bg, #f1edf4);
-}
-
 .setup-bank-dialog__progress > div {
   height: 100%;
   border-radius: inherit;
@@ -89,19 +58,6 @@
   overscroll-behavior: contain;
   padding: 24px;
   scrollbar-width: thin;
-}
-
-.setup-bank-dialog__section-title {
-  font-family: var(--workspace-font-heading, sans-serif);
-}
-
-.setup-bank-dialog__muted {
-  color: var(--workspace-native-text-muted, #706875);
-}
-
-.setup-bank-dialog__icon {
-  background: var(--workspace-control-bg, #f1edf4);
-  color: var(--workspace-native-accent, #7556b9);
 }
 
 .setup-bank-dialog__document,
@@ -133,12 +89,6 @@
 
 .setup-bank-dialog__consent input {
   accent-color: var(--workspace-accent-fill, #7556b9);
-}
-
-.setup-bank-dialog__accepted {
-  border-color: var(--workspace-native-success, #32785a);
-  background: var(--workspace-success-soft, #eaf4ed);
-  color: var(--workspace-native-success, #32785a);
 }
 
 .setup-bank-dialog__status-icon {

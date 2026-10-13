@@ -45,14 +45,18 @@ export function DocumentHistoryDiff({
   }, [before, after]);
   if (!lines)
     return (
-      <p className="pc-muted">
+      <p className="text-[var(--pc-muted)] text-[length:11px]">
         This comparison is large; the complete saved states are shown below.
       </p>
     );
   if (before === after)
-    return <p className="pc-muted">No text changes between these saves.</p>;
+    return (
+      <p className="text-[var(--pc-muted)] text-[length:11px]">
+        No text changes between these saves.
+      </p>
+    );
   return (
-    <details className="pc-history-diff" open>
+    <details className="pc-history-diff col-[1_/_-1]" open>
       <summary>Text changes</summary>
       <pre>
         {lines.map((line, i) => (

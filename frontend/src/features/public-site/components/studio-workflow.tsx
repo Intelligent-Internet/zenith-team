@@ -157,8 +157,8 @@ export function StudioWorkflow() {
               </div>
               <div className="studio-plan-scene" key={step}>
                 {step === 0 ? (
-                  <div className="studio-idea-demo">
-                    <span className="studio-example-note">
+                  <div className="studio-idea-demo h-full flex flex-col">
+                    <span className="block text-[length:11px] text-[#7b8da1] m-[4px_0_13px]">
                       It starts with a conversation
                     </span>
                     <p className="studio-idea-message">
@@ -190,7 +190,7 @@ export function StudioWorkflow() {
                         ? "3 proposed tasks"
                         : "A shared plan. Clear owners."}
                     </p>
-                    <div className="studio-plan-tasks">
+                    <div className="grid gap-[9px]">
                       {proposedTasks.map((task, index) => (
                         <div
                           className="studio-plan-task"
@@ -232,7 +232,7 @@ export function StudioWorkflow() {
                         </div>
                       ))}
                     </div>
-                    <div className="studio-plan-bottom">
+                    <div className="studio-plan-bottom flex items-center justify-between gap-[10px] mt-[14px]">
                       <span>
                         {step === 2 ? "You decide what happens next." : ""}
                       </span>
@@ -247,8 +247,8 @@ export function StudioWorkflow() {
                     </div>
                   </>
                 ) : (
-                  <div className="studio-result-demo">
-                    <div className="studio-result-icon">
+                  <div className="studio-result-demo relative h-full flex flex-col items-center justify-center text-center">
+                    <div className="grid place-items-center w-[59px] h-[59px] rounded-[16px] m-[0_auto_14px] [background:#e2f5fd] text-[#4c809b]">
                       <FileText size={28} />
                     </div>
                     <span className="studio-review-pill">In review</span>
@@ -272,7 +272,10 @@ export function StudioWorkflow() {
                       : "Scroll to explore. The direction stays yours."
                     : "Explore the four steps at your own pace."}
                 </span>
-                <span className="studio-step-counter" aria-hidden="true">
+                <span
+                  className="shrink-0 [font-variant-numeric:tabular-nums] tracking-[0.12em]"
+                  aria-hidden="true"
+                >
                   0{step + 1} / 04
                 </span>
               </span>

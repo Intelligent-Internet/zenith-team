@@ -46,8 +46,14 @@ export function DocumentBlockMenu({
       role="listbox"
       aria-label="Insert content"
     >
-      <div className="pc-menu-caption">Insert</div>
-      {items.length === 0 && <p className="pc-menu-empty">No matching items</p>}
+      <div className="p-[8px_10px] text-[var(--pc-muted)] text-[length:11px] font-[600]">
+        Insert
+      </div>
+      {items.length === 0 && (
+        <p className="p-[14px_10px] text-[var(--pc-muted)]">
+          No matching items
+        </p>
+      )}
       {items.map((block, index) => (
         <button
           role="option"

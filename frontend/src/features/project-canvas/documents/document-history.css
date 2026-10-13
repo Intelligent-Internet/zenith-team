@@ -1,7 +1,3 @@
-.pc-document-history {
-  padding: 12px;
-  min-width: 0;
-}
 .pc-history-filters {
   display: grid;
   gap: 8px;
@@ -47,13 +43,6 @@
 .pc-history-entry small,
 .pc-history-dialog small {
   opacity: 0.65;
-  font-size: 12px;
-}
-.pc-history-pagination {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
   font-size: 12px;
 }
 .pc-history-dialog {
@@ -107,9 +96,6 @@
 
 .pc-history-overlay {
   z-index: 199 !important;
-}
-.pc-history-diff {
-  grid-column: 1 / -1;
 }
 .pc-history-diff pre {
   margin-top: 10px;

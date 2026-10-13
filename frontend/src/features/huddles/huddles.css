@@ -139,21 +139,6 @@
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────── */
-.huddle-stage-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  grid-column: 1 / -1;
-  grid-row: 1;
-  padding: 0 6px;
-}
-.huddle-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
 .huddle-title h2 {
   margin: 0;
   font-size: 14px;
@@ -180,19 +165,6 @@
   border-radius: inherit;
   background: inherit;
   animation: huddle-beacon 2.4s ease-out infinite;
-}
-.huddle-elapsed {
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: var(--control);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.huddle-header-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 .huddle-network {
   display: inline-flex;
@@ -228,9 +200,6 @@
   border-radius: 999px;
   font-size: 11px;
   white-space: nowrap;
-}
-.huddle-avatar-stack {
-  display: flex;
 }
 .huddle-avatar-stack span {
   display: grid;
@@ -273,19 +242,6 @@
 .huddle-stage[data-reconnecting="true"] > .huddle-spotlight {
   opacity: 0.55;
   filter: saturate(0.4);
-}
-.huddle-banners {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: max-content;
-  max-width: calc(100% - 32px);
-  transform: translateX(-50%);
 }
 .huddle-call-error,
 .huddle-audio-blocked {
@@ -365,15 +321,6 @@
   padding: 16px;
   overflow-y: auto;
 }
-.huddle-pagination {
-  display: flex;
-  flex-shrink: 0;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
-  font-size: 12px;
-}
 .huddle-pagination button {
   border-radius: 6px;
   padding: 6px 10px;
@@ -403,11 +350,6 @@
   gap: 12px;
   min-height: 0;
   padding: 16px;
-}
-.huddle-spotlight-main {
-  display: flex;
-  flex: 1;
-  min-width: 0;
 }
 .huddle-spotlight-main > .huddle-tile {
   flex: 1;
@@ -653,17 +595,6 @@
 .huddle-tile[data-muted="true"] .huddle-tile-audio {
   color: var(--danger-soft);
 }
-.huddle-tile-name-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.huddle-eq {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 12px;
-}
 .huddle-eq i {
   width: 3px;
   height: calc(3px + var(--level) * 9px * var(--k, 1));
@@ -675,10 +606,6 @@
 }
 .huddle-eq i:nth-child(3) {
   --k: 0.8;
-}
-.huddle-tile-joining-dots {
-  display: inline-flex;
-  gap: 3px;
 }
 .huddle-tile-joining-dots i {
   width: 4px;
@@ -720,28 +647,6 @@
   font-size: 10px;
   font-style: normal;
 }
-.huddle-tile-identity {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 2px;
-}
-.huddle-tile-agent-status {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  font-weight: 400;
-}
-.huddle-agent-context-menu {
-  z-index: 100;
-  min-width: 160px;
-  padding: 6px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--background);
-  color: var(--foreground);
-  box-shadow: 0 8px 32px rgb(0 0 0 / 24%);
-  font-size: 13px;
-}
 .huddle-agent-context-menu [role="menuitem"] {
   padding: 9px 12px;
   border-radius: 8px;
@@ -754,18 +659,6 @@
 .huddle-agent-context-menu [data-disabled] {
   opacity: 0.5;
   cursor: wait;
-}
-.huddle-tile-agent-error {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
-  z-index: 4;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--overlay);
-  color: var(--foreground);
-  font-size: 12px;
 }
 .huddle-tile-pin {
   position: absolute;
@@ -813,19 +706,6 @@
   width: 26px;
   height: 26px;
 }
-.huddle-presenting {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  background: var(--overlay-strong);
-  backdrop-filter: blur(6px);
-  text-align: center;
-}
 .huddle-presenting p {
   font-size: 15px;
   font-weight: 500;
@@ -840,16 +720,6 @@
 }
 
 /* ─── Toasts ─────────────────────────────────────────────────────────── */
-.huddle-toasts {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  pointer-events: none;
-}
 .huddle-toast {
   display: flex;
   align-items: center;
@@ -890,17 +760,6 @@
   display: flex;
   justify-content: flex-end;
   min-width: 0;
-}
-.huddle-mic-hint {
-  color: var(--muted-foreground);
-  font-size: 12px;
-}
-.huddle-helia-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted-foreground);
-  font-size: 12px;
 }
 .huddle-helia-hint strong {
   color: var(--helia-ink);
@@ -984,23 +843,6 @@
 }
 :is(.huddle-call, .huddle-lobby) .huddle-control-leave:hover:not(:disabled) {
   background: color-mix(in srgb, var(--destructive) 82%, #ffffff);
-}
-.huddle-dock-divider {
-  width: 1px;
-  height: 28px;
-  margin: 0 2px;
-  background: var(--border);
-}
-.huddle-split {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding-right: 4px;
-  border-radius: 999px;
-  background: var(--control);
-}
-.huddle-device-menu {
-  position: relative;
 }
 .huddle-device-trigger {
   display: grid;
@@ -1117,14 +959,6 @@
 .huddle-sidebar[hidden] {
   display: none;
 }
-.huddle-chat-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  padding: 0 14px 0 18px;
-  border-bottom: 1px solid var(--border);
-}
 .huddle-chat-header h2 {
   font-size: 13px;
   font-weight: 600;
@@ -1156,24 +990,8 @@
   flex-direction: column;
   min-height: 0;
 }
-.huddle-messages {
-  flex: 1;
-  min-height: 0;
-  padding: 8px 0 16px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
 .huddle-chat :is(button, textarea) {
   font-family: inherit;
-}
-.huddle-chat-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  color: var(--discussion-muted);
-  font-size: var(--workspace-text-caption, 12px);
 }
 .huddle-chat-status button {
   color: var(--foreground);
@@ -1184,14 +1002,6 @@
 .huddle-chat-status button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
-}
-.huddle-chat-loading {
-  padding: 16px;
-}
-.huddle-chat-placeholder {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
 }
 .huddle-chat-placeholder > span {
   flex: 0 0 36px;
@@ -1216,17 +1026,6 @@
 .huddle-chat-placeholder > div > span:last-child {
   width: 70%;
 }
-.huddle-chat-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  height: 100%;
-  min-height: 160px;
-  padding: 20px;
-  color: var(--muted-foreground);
-  text-align: left;
-}
 .huddle-chat-empty h3 {
   margin-top: 16px;
   color: var(--foreground);
@@ -1238,11 +1037,6 @@
   margin-top: 7px;
   font-size: 12px;
   line-height: 1.7;
-}
-.huddle-chat-pending {
-  padding: 20px;
-  color: var(--muted-foreground);
-  font-size: 12px;
 }
 
 /* ─── Lobby, invitation ──────────────────────────────────────────────── */
@@ -1264,16 +1058,6 @@
   background: var(--surface);
   text-align: center;
   box-shadow: var(--shadow);
-}
-.huddle-join-symbol {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
-  margin: 0 auto 30px;
-  border-radius: 29px;
-  background: var(--accent);
-  color: var(--accent-foreground);
 }
 .huddle-join-card h1 {
   margin: 14px 0 18px;
@@ -1320,17 +1104,6 @@
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--accent) 24%, var(--background));
 }
-.huddle-invitation-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  margin-right: 4px;
-  border-radius: 15px;
-  background: #bee6ed;
-  color: #0f233f;
-}
 .huddle-invitation button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1341,14 +1114,6 @@
 }
 .huddle-invitation button:hover:not(:disabled) {
   filter: brightness(0.94);
-}
-
-.huddle-invitation-actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
 }
 /* Labelled pill buttons: .huddle-control is the round, icon-only call control. */
 .huddle-invitation-action {
@@ -1370,42 +1135,8 @@
   background: var(--primary);
   color: var(--primary-foreground);
 }
-
-.huddle-incoming-call {
-  position: fixed;
-  z-index: 100;
-  top: 20px;
-  right: 20px;
-  width: min(440px, calc(100vw - 40px));
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--background);
-  box-shadow: 0 18px 60px rgb(0 0 0 / 24%);
-}
 .huddle-incoming-call .huddle-invitation {
   border-bottom: 0;
-}
-.huddle-incoming-error {
-  margin: 0;
-  padding: 10px 20px 16px;
-  color: var(--destructive);
-  font-size: 13px;
-}
-
-.huddle-invite-wrap {
-  position: relative;
-}
-.huddle-invite-group-title {
-  display: block;
-  margin: 14px 0 6px;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  font-weight: 600;
-}
-.huddle-invite-agents {
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
 }
 .huddle-invite-agent-name,
 .huddle-invite-agent-actions,
@@ -1425,30 +1156,9 @@
   color: inherit;
   cursor: pointer;
 }
-.huddle-invite-hint {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  line-height: 1.5;
-}
-.huddle-invite-context-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
 .huddle-invite-context-note svg {
   flex-shrink: 0;
   margin-top: 2px;
-}
-.huddle-invite-context {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--muted);
-  font-size: 12px;
-  line-height: 1.5;
 }
 .huddle-invite-context p {
   margin: 0;
@@ -1466,22 +1176,6 @@
 .huddle-invite-context button:disabled {
   cursor: default;
   opacity: 0.6;
-}
-.huddle-invite-popover {
-  position: absolute;
-  z-index: 40;
-  bottom: calc(100% + 14px);
-  left: 50%;
-  width: min(320px, calc(100vw - 30px));
-  max-height: min(520px, calc(100dvh - 160px));
-  transform: translateX(-50%);
-  overflow: auto;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--background);
-  box-shadow: 0 16px 48px rgb(0 0 0 / 24%);
-  color: var(--foreground);
 }
 .huddle-invite-heading,
 .huddle-invite-list button {
@@ -1587,22 +1281,6 @@
   width: var(--avatar);
   aspect-ratio: 1;
 }
-.huddle-preview-avatar {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #bee6ed;
-  color: var(--tone-ink);
-  font-size: 40px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 14%);
-  transform: scale(calc(1 + var(--level) * 0.04));
-}
 .huddle-preview-portrait p {
   position: absolute;
   top: calc(100% + 18px);
@@ -1636,15 +1314,6 @@
 .huddle-preview[data-speaking="true"] .huddle-preview-check {
   color: var(--primary);
 }
-.huddle-preview-controls {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  z-index: 4;
-  display: flex;
-  gap: 12px;
-  transform: translateX(-50%);
-}
 .huddle-preview-controls .huddle-control {
   background: var(--overlay);
   backdrop-filter: blur(10px);
@@ -1654,12 +1323,6 @@
 }
 .huddle-preview-controls .huddle-control[data-active="false"] {
   box-shadow: inset 0 0 0 1px var(--border);
-}
-
-.huddle-join-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
 }
 .huddle-join-panel h1 {
   margin: 0 0 24px;
@@ -1681,11 +1344,6 @@
   margin-bottom: 7px;
   font-size: 12px;
   font-weight: 600;
-}
-.huddle-lobby-select {
-  position: relative;
-  display: flex;
-  align-items: center;
 }
 .huddle-lobby-select select {
   width: 100%;
@@ -1753,11 +1411,6 @@
   color: var(--muted-foreground);
   font-size: 11px;
   line-height: 1.5;
-}
-.huddle-join-copy {
-  color: var(--muted-foreground);
-  font-size: 13px;
-  line-height: 1.6;
 }
 .huddle-join-link {
   display: inline-block;
@@ -2025,15 +1678,6 @@
   max-width: 720px;
   gap: 20px;
 }
-.huddle-screen-picker-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px;
-  width: min(320px, 100%);
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--control);
-}
 .huddle-screen-picker-tabs button {
   display: inline-flex;
   align-items: center;
@@ -2062,16 +1706,6 @@
 .huddle-screen-picker-tabs button span {
   color: var(--muted-foreground);
   font-weight: 500;
-}
-.huddle-screen-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
-  align-content: start;
-  gap: 10px;
-  height: min(380px, 50dvh);
-  overflow-y: auto;
-  margin: 0 -4px;
-  padding: 4px;
 }
 .huddle-screen-picker-grid > p {
   grid-column: 1 / -1;
@@ -2118,15 +1752,6 @@
   height: 100%;
   object-fit: contain;
 }
-.huddle-screen-picker-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 0 2px;
-  font-size: 12px;
-  font-weight: 600;
-}
 .huddle-screen-picker-name img {
   flex: none;
   width: 16px;
@@ -2154,26 +1779,6 @@
     animation: none;
   }
 }
-.huddle-screen-picker-error {
-  color: var(--destructive);
-}
-.huddle-screen-permission {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 28px 16px 8px;
-  text-align: center;
-}
-.huddle-screen-permission-icon {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin-bottom: 4px;
-  border-radius: 18px;
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
 .huddle-screen-permission strong {
   font-size: 16px;
 }
@@ -2190,12 +1795,4 @@
   border-radius: 12px;
   background: var(--control);
   text-align: left;
-}
-.huddle-screen-picker-audio {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: auto;
-  font-size: 12px;
-  font-weight: 600;
 }

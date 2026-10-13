@@ -48,7 +48,7 @@ export function StudioTools() {
                 : "Bring your Claude Code setup into the team."}
             </p>
             <div
-              className="studio-provider-options"
+              className="studio-provider-options grid grid-cols-[1fr_1fr] gap-[9px]"
               role="group"
               aria-label="Explore a provider"
             >
@@ -77,7 +77,7 @@ export function StudioTools() {
               <small>Example output</small>
             </div>
             <fieldset className="studio-week">
-              <legend className="studio-sr-only">
+              <legend className="absolute w-[1px] h-[1px] p-0 m-[-1px] overflow-hidden [clip:rect(0,_0,_0,_0)] whitespace-nowrap [border:0]">
                 Choose the example schedule day
               </legend>
               {weekdays.map((name, index) => (

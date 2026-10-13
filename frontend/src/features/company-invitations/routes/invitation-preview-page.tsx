@@ -30,20 +30,25 @@ export function InvitationPreviewPage() {
   return (
     <main className="invitation-preview">
       <header className="invitation-preview__header">
-        <div className="invitation-preview__wordmark" aria-label="Zenith Team">
-          <Icon name="logo" className="invitation-preview__logo" />
+        <div className="text-[var(--invitation-text)]" aria-label="Zenith Team">
+          <Icon
+            name="logo"
+            className="invitation-preview__logo w-[112px] h-[20px]"
+          />
         </div>
-        <span className="invitation-preview__badge">Preview</span>
+        <span className="[border:1px_solid_var(--invitation-border)] rounded-[6px] p-[4px_9px] text-[var(--invitation-muted)] text-[length:11px] font-[500] leading-[16px]">
+          Preview
+        </span>
       </header>
 
       <div className="invitation-preview__body">
         <InvitationCard key={state} state={state} />
 
         <aside
-          className="invitation-preview__controls"
+          className="grid max-w-[480px] [justify-items:center] gap-[12px] mt-[24px] text-[var(--invitation-muted)] text-[length:11px] leading-[1.6] text-center"
           aria-label="Recipient preview controls"
         >
-          <div className="invitation-preview__state-picker">
+          <div className="invitation-preview__state-picker flex items-center gap-[10px]">
             <label htmlFor="invitation-preview-state">Preview state</label>
             <select
               id="invitation-preview-state"
@@ -93,22 +98,26 @@ function InvitationCard({ state }: { state: InvitationPreviewState }) {
       className="invitation-preview__card"
       aria-labelledby="invitation-preview-title"
     >
-      <div className="invitation-preview__company-art" aria-hidden="true">
-        <span className="invitation-preview__company-mark">
+      <div className="relative w-[68px] mb-[28px]" aria-hidden="true">
+        <span className="flex w-[64px] h-[64px] items-center justify-center [border:1px_solid_color-mix(in_srgb,_var(--invitation-accent)_16%,_transparent)] rounded-[16px] [background:var(--invitation-accent-soft)] text-[var(--invitation-accent)] [font-family:var(--workspace-font-heading,_var(--font-ui))] text-[length:23px] font-[600] tracking-[-0.06em]">
           {state === "invalid" ? (
             <Link2Off size={28} />
           ) : (
             invitationPreviewExample.companyInitials
           )}
         </span>
-        <span className="invitation-preview__status-mark">
+        <span className="absolute right-[-7px] bottom-[-5px] flex w-[31px] h-[31px] items-center justify-center [border:3px_solid_var(--invitation-panel)] rounded-[50%] [background:var(--invitation-control)] text-[var(--invitation-muted)]">
           <StateIcon size={17} />
         </span>
       </div>
 
-      <p className="invitation-preview__eyebrow">{copy.eyebrow}</p>
+      <p className="mb-[9px] text-[var(--invitation-accent)] text-[length:11px] font-[600] tracking-[0.08em] leading-[1.5] uppercase">
+        {copy.eyebrow}
+      </p>
       <h1 id="invitation-preview-title">{copy.title}</h1>
-      <p className="invitation-preview__description">{copy.description}</p>
+      <p className="mt-[13px] text-[var(--invitation-muted)] text-[length:14px] leading-[1.65] wrap-anywhere">
+        {copy.description}
+      </p>
 
       {state !== "invalid" ? <InvitationDetails /> : null}
 
@@ -127,7 +136,7 @@ function InvitationCard({ state }: { state: InvitationPreviewState }) {
         </p>
       ) : null}
 
-      <div className="invitation-preview__actions">
+      <div className="grid gap-[8px] mt-[22px]">
         <Button
           type="button"
           variant="default"
@@ -158,7 +167,7 @@ function InvitationCard({ state }: { state: InvitationPreviewState }) {
         ) : null}
       </div>
 
-      <p className="invitation-preview__coming-soon">
+      <p className="mt-[20px] text-[var(--invitation-muted)] text-[length:11px] leading-[1.5] text-center">
         Invitations are coming soon
       </p>
     </section>
@@ -175,7 +184,10 @@ function InvitationDetails() {
       <div>
         <dt>Invited by</dt>
         <dd>
-          <span className="invitation-preview__inviter" aria-hidden="true">
+          <span
+            className="flex w-[23px] h-[23px] items-center justify-center shrink-0 [border:1px_solid_var(--invitation-border)] rounded-[50%] [background:var(--invitation-control)] text-[var(--invitation-muted)] text-[length:8px] font-[600]"
+            aria-hidden="true"
+          >
             {invitationPreviewExample.inviterInitials}
           </span>
           {invitationPreviewExample.inviterName}

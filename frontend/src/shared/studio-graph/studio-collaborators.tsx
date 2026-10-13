@@ -137,22 +137,24 @@ export const StudioCollaborators = memo(function StudioCollaborators({
             aria-hidden="true"
           >
             <div
-              className="studio-collaborator-cursor__content"
+              className="flex items-start gap-[3px] w-[max-content] [transform-origin:top_left] text-[var(--studio-cursor-color)]"
               style={{ transform: `scale(${1 / Math.max(zoom, 0.1)})` }}
             >
               <MousePointer
                 className="studio-collaborator-cursor__icon"
                 size={23}
               />
-              <span className="studio-collaborator-cursor__label">
-                <span className="studio-collaborator-cursor__avatar">
+              <span className="flex items-center gap-[6px] max-w-[180px] mt-[15px] p-[4px_9px_4px_4px] [border:1px_solid_color-mix(in_srgb,_var(--studio-cursor-color)_38%,_transparent)] rounded-[7px_12px_12px_12px] [background:var(--workspace-panel-bg,_var(--workspace-content-bg))] [box-shadow:0_3px_12px_color-mix(in_srgb,_var(--studio-cursor-color)_12%,_transparent)] text-[length:11px] font-[600] leading-[16px]">
+                <span className="studio-collaborator-cursor__avatar flex items-center justify-center shrink-0 w-[20px] h-[20px] overflow-hidden rounded-[50%] [background:color-mix(in_srgb,_var(--studio-cursor-color)_12%,_transparent)] text-[length:9px]">
                   {cursor.avatar ? (
                     <img src={cursor.avatar} alt="" draggable={false} />
                   ) : (
                     initials(name)
                   )}
                 </span>
-                <span className="studio-collaborator-cursor__name">{name}</span>
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+                  {name}
+                </span>
               </span>
             </div>
           </div>

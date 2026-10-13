@@ -86,7 +86,7 @@ export function TaskHandoffDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <p className="task-handoff-dialog__hint">
+          <p className="m-[16px_0_0] text-workspace-muted text-workspace-caption leading-workspace-caption">
             Files that were not merged stay on {whose} computer. Nothing moves
             them, and nobody else can reach them. Messages already in the task
             chat are kept: the next run reads them.

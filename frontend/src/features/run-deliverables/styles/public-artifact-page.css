@@ -25,10 +25,6 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.public-artifact-logo {
-  flex-shrink: 0;
-}
-
 .public-artifact-logo svg {
   height: 20px;
 }
@@ -58,12 +54,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.public-artifact-file-picker {
-  display: flex;
-  position: relative;
-  min-width: 0;
 }
 
 .public-artifact-file-picker select {
@@ -217,14 +207,6 @@
   font-size: 14px;
   color: var(--text-secondary);
   overflow: auto;
-}
-
-.public-artifact-notice {
-  margin: 0;
-  padding: 12px 24px;
-  background: var(--state-hover-bg);
-  font-size: 13px;
-  text-align: center;
 }
 
 @media (max-width: 760px) {

@@ -187,7 +187,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
       className={`discussion-message ${compact ? "discussion-message--compact" : ""} ${message.pinned ? "discussion-message--pinned" : ""} ${focused ? "discussion-message--focused" : ""}`}
       aria-label={`${author.displayName}, ${new Date(message.createdAt).toLocaleString()}`}
     >
-      <div className="discussion-message-avatar">
+      <div className="discussion-message-avatar w-[36px] shrink-0">
         {!compact ? (
           <MemberProfileTrigger profile={profile}>
             <DiscussionAvatar
@@ -201,7 +201,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
           </MemberProfileTrigger>
         ) : null}
       </div>
-      <div className="discussion-message-main">
+      <div className="discussion-message-main min-w-0 flex-1 text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)]">
         {!compact ? (
           <header>
             <MemberProfileTrigger profile={profile}>
@@ -230,12 +230,14 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
           </header>
         ) : null}
         {message.pinned ? (
-          <span className="discussion-pin-label">
+          <span className="inline-flex gap-[5px] items-center text-workspace-accent text-[length:12px] mb-[3px]">
             <Pin size={12} /> Pinned for everyone
           </span>
         ) : null}
         {!live ? (
-          <p className="discussion-tombstone">This message was deleted.</p>
+          <p className="text-[var(--discussion-muted)] italic leading-[1.7]">
+            This message was deleted.
+          </p>
         ) : editor ? (
           <form
             className="discussion-message-editor"
@@ -352,13 +354,13 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
             <ChatLinkPreviews text={message.body?.markdown ?? ""} />
             <DiscussionAttachments files={message.attachments} />
             {message.attachmentsWithheld ? (
-              <div className="discussion-message-attachments">
+              <div className="flex min-w-0 flex-col [align-items:start] gap-[8px] m-[8px_0]">
                 <WithheldAttachmentChip />
               </div>
             ) : null}
             {message.editedAt ? (
               <span
-                className="discussion-edited"
+                className="text-[var(--discussion-muted)] text-[length:12px]"
                 title={`Edited ${new Date(message.editedAt).toLocaleString()}`}
               >
                 (edited)
@@ -384,7 +386,10 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
         ) : null}
         <ChannelInvocationStatus conversationId={id} messageId={message.id} />
         {live && message.reactionSummary.length ? (
-          <div className="discussion-reactions" aria-label="Message reactions">
+          <div
+            className="flex flex-wrap items-center gap-[6px] m-[4px_0]"
+            aria-label="Message reactions"
+          >
             {message.reactionSummary.map((reaction) => (
               <DiscussionReactionPeople
                 key={reaction.emoji}
@@ -412,7 +417,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
             onClick={() => onOpenThread(message.threadRootId ?? message.id)}
             aria-label={`Open thread, ${message.threadSummary.replyCount} ${message.threadSummary.replyCount === 1 ? "reply" : "replies"}`}
           >
-            <span className="discussion-thread-authors">
+            <span className="discussion-thread-authors flex items-center gap-[2px]">
               {message.threadSummary.recentAuthors.map((item) => (
                 <DiscussionAvatar
                   key={item.id}
@@ -570,7 +575,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
               {error}
             </p>
           ) : null}
-          <div className="discussion-dialog-footer">
+          <div className="flex justify-between gap-[12px] [border-top:1px_solid_var(--discussion-border)] pt-[16px]">
             <button
               className="discussion-button"
               onClick={() => setDeleting(undefined)}

@@ -107,7 +107,7 @@ export function StudioDownloadDialog({ onClose }: { onClose: () => void }) {
 export function StudioHelpDialog({ onClose }: { onClose: () => void }) {
   return (
     <StudioDialog title="A little clarity before you start." onClose={onClose}>
-      <div className="studio-help-list">
+      <div className="studio-help-list mt-[25px]">
         {[
           [
             "What is Zenith Team?",
@@ -132,7 +132,10 @@ export function StudioHelpDialog({ onClose }: { onClose: () => void }) {
           </details>
         ))}
       </div>
-      <a className="studio-dialog-link" href="mailto:support@ii.inc">
+      <a
+        className="inline-block text-[#2f6a8a]! text-[length:13px] mt-[16px] [text-decoration:underline]! [text-underline-offset:3px]"
+        href="mailto:support@ii.inc"
+      >
         Talk to us: support@ii.inc
       </a>
     </StudioDialog>

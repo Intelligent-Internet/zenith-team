@@ -9,6 +9,12 @@ type DateTimeInputProps = Omit<ComponentProps<"input">, "type"> & {
 
 export function DateTimeInput({ className, ...props }: DateTimeInputProps) {
   return (
-    <input {...props} className={cx("workspace-date-time-input", className)} />
+    <input
+      {...props}
+      className={cx(
+        "workspace-date-time-input [color-scheme:inherit]",
+        className,
+      )}
+    />
   );
 }

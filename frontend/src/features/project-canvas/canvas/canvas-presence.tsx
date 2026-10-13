@@ -94,7 +94,7 @@ export function CanvasPresence({
             className={`pc-live-indicator ${connected ? "" : "is-offline"}`}
           />
           <span>{connected ? "Live" : "Reconnecting"}</span>
-          <div className="pc-avatar-group">
+          <div className="pc-avatar-group flex ml-[5px]">
             {sessions.slice(0, 5).map((person, index) => (
               <button
                 key={person.sessionId}
@@ -120,7 +120,10 @@ export function CanvasPresence({
         </div>
       )}
       {following && (
-        <button className="pc-follow-banner" onClick={() => setFollowing(null)}>
+        <button
+          className="absolute top-[75px] right-[20px] z-[5] flex items-center gap-[9px] p-[7px_11px] text-[length:11px] [background:var(--workspace-selected-bg)] text-[var(--pc-accent)] [border:1px_solid_var(--pc-line)] rounded-[7px]"
+          onClick={() => setFollowing(null)}
+        >
           Following {sessions.find((row) => row.sessionId === following)?.name}
           <X size={14} />
         </button>
@@ -132,7 +135,7 @@ export function CanvasPresence({
           .map((person, index) => (
             <div
               key={person.sessionId}
-              className="pc-cursor"
+              className="pc-cursor absolute [transform-origin:top_left] flex flex-col items-start pointer-events-none [transition:transform_220ms_linear] z-[20]"
               style={{
                 transform: `translate(${person.x}px, ${person.y}px) scale(${1 / viewport.zoom})`,
                 color: colors[index % colors.length],

@@ -1,56 +1,3 @@
-.settings-workspace {
-  display: grid;
-  grid-template-columns: 208px minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  width: 100%;
-  color: var(--workspace-native-text);
-  background: var(--workspace-panel-bg);
-}
-.settings-workspace-nav {
-  padding: 20px 12px;
-  border-right: 1px solid var(--workspace-divider);
-  background: var(--workspace-sidebar-bg);
-  overflow: auto;
-}
-.settings-workspace-heading {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px 24px;
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  font-weight: 600;
-}
-.settings-workspace-nav section + section {
-  margin-top: 28px;
-}
-.settings-workspace-nav h2 {
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
-  font-weight: 500;
-  color: var(--workspace-native-text-muted);
-  margin: 0 12px 8px;
-}
-.settings-workspace-nav nav a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 12px;
-  border-radius: var(--workspace-radius-control);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  color: var(--workspace-native-text);
-  text-decoration: none;
-}
-.settings-workspace-nav nav a:hover {
-  background: var(--workspace-hover-bg);
-}
-.settings-workspace-nav nav a.is-active {
-  background: var(--workspace-selected-bg);
-  color: var(--workspace-native-text);
-  font-weight: 500;
-}
 .boardly-workspace-theme[data-boardly-theme] .settings-shell--current {
   padding: 0;
   min-width: 0;
@@ -63,10 +10,6 @@
    the frame's title. */
 .settings-shell--page-header > .workspace-page-frame__header {
   display: none;
-}
-.settings-current-content {
-  width: 100%;
-  min-width: 0;
 }
 .settings-shell--current
   :is(.general-identity, .general-notifications, .general-secrets) {
@@ -234,32 +177,6 @@
 }
 .settings-shell--current .settings-card {
   border-radius: 8px;
-}
-@media (max-width: 800px) {
-  .settings-workspace {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .settings-workspace-nav {
-    padding: 8px 12px;
-    border-right: 0;
-    border-bottom: 1px solid var(--workspace-divider);
-  }
-  .settings-workspace-heading,
-  .settings-workspace-nav h2 {
-    display: none;
-  }
-  .settings-workspace-nav nav {
-    display: flex;
-    overflow: auto;
-  }
-  .settings-workspace-nav section {
-    display: flex;
-    flex-shrink: 0;
-  }
-  .settings-workspace-nav section + section {
-    margin: 0;
-  }
 }
 
 .daemon-log-search {

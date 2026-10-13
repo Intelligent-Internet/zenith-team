@@ -27,20 +27,6 @@
   letter-spacing: -0.02em;
 }
 
-.my-account-identity {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 24px;
-}
-
-.my-account-avatar {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-}
-
 .my-account-avatar > img {
   display: block;
   width: 100%;
@@ -59,13 +45,6 @@
   overflow-wrap: anywhere;
 }
 
-.my-account-email {
-  margin-top: 3px;
-  color: var(--workspace-native-text-muted);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
 .my-account-form {
   display: grid;
   gap: 20px;
@@ -75,13 +54,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-}
-
-.my-account-field {
-  display: grid;
-  align-content: start;
-  min-width: 0;
-  gap: 8px;
 }
 
 .my-account-field > label {
@@ -130,17 +102,6 @@
   opacity: 0.55;
 }
 
-.my-account-phone {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 8px;
-}
-
-.my-account-country {
-  position: relative;
-  min-width: 0;
-}
-
 .my-account-country > select {
   height: 100%;
   appearance: none;
@@ -164,23 +125,11 @@
   resize: vertical;
 }
 
-.my-account-field__meta {
-  margin: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 16px;
-  text-align: right;
-}
-
 .my-account-form-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px 24px;
-}
-
-.my-account-form-status {
-  min-width: 0;
 }
 
 .my-account-actions {
@@ -352,10 +301,6 @@
   color: var(--workspace-native-text-muted);
 }
 
-.my-account-daily {
-  border-top: 1px solid var(--workspace-divider);
-}
-
 .my-account-daily > .my-account-feedback {
   margin: 0 0 14px;
 }
@@ -388,11 +333,6 @@
   margin: 0 0 20px;
 }
 
-.my-account-activity {
-  padding-top: 18px;
-  border-top: 1px solid var(--workspace-divider);
-}
-
 .my-account-activity > header {
   display: flex;
   flex-wrap: wrap;
@@ -422,10 +362,6 @@
   margin: 0;
 }
 
-.my-account-metric {
-  min-width: 0;
-}
-
 .my-account-metric + .my-account-metric {
   padding-left: 24px;
   border-left: 1px solid var(--workspace-divider);
@@ -452,25 +388,8 @@
   line-height: 18px;
 }
 
-.my-account-metric__skeleton {
-  display: block;
-  width: 70%;
-  height: 24px;
-  margin-top: 4px;
-  border-radius: 4px;
-  background: var(--workspace-control-bg);
-}
-
 .my-account-activity > .my-account-feedback {
   margin-top: 12px;
-}
-
-.my-account-account {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
 }
 
 .my-account-delete {

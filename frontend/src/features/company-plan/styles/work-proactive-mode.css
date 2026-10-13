@@ -39,41 +39,6 @@
   background: rgb(22 16 28 / 46%);
 }
 
-.work-proactive-mode__dialog {
-  z-index: 221;
-  display: flex;
-  width: min(380px, calc(100vw - 32px));
-  max-width: min(380px, calc(100vw - 32px));
-  max-height: calc(100dvh - 48px);
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  border: 1px solid var(--workspace-divider, #e5dfe8);
-  border-radius: var(--workspace-radius-overlay, 14px);
-  padding: 24px;
-  background: var(--workspace-overlay-bg, #fff);
-  color: var(--workspace-native-text, #2d2631);
-  box-shadow: var(--workspace-overlay-shadow, 0 16px 48px rgb(37 28 45 / 12%));
-  font-family: var(--workspace-font-body, sans-serif);
-}
-
-.work-proactive-mode__header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 12px;
-}
-
-.work-proactive-mode__title {
-  min-width: 0;
-  flex: 1;
-  margin: 0;
-  font-family: var(--workspace-font-heading, sans-serif);
-  font-size: var(--workspace-text-title);
-  font-weight: 700;
-  line-height: var(--workspace-leading-title);
-}
-
 .work-proactive-mode__close {
   display: grid;
   width: 28px;
@@ -91,24 +56,6 @@
 .work-proactive-mode__close:hover {
   background: var(--workspace-hover-bg, #f1edf4);
   color: var(--workspace-native-text, #2d2631);
-}
-
-.work-proactive-mode__description {
-  margin: 0;
-  color: var(--workspace-native-text, #2d2631);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
-.work-proactive-mode__features {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding-left: 18px;
-  color: var(--workspace-native-text-muted, #706875);
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
-  list-style: disc;
 }
 
 .work-proactive-mode__status {

@@ -23,14 +23,20 @@ export function OnboardingProgress({ current }: { current: OnboardingScreen }) {
   const currentIndex = steps.indexOf(current);
 
   return (
-    <nav className="onboarding-progress" aria-label="Onboarding progress">
-      <p className="onboarding-progress__label" aria-live="polite">
+    <nav
+      className="onboarding-progress grid [justify-items:center] gap-[10px]"
+      aria-label="Onboarding progress"
+    >
+      <p
+        className="onboarding-progress__label flex items-baseline gap-[8px] m-0 text-workspace-muted text-[length:12px] font-[500]"
+        aria-live="polite"
+      >
         <span>
           Step {currentIndex + 1} of {steps.length}
         </span>
         {screenLabels[current]}
       </p>
-      <ol className="onboarding-progress__track">
+      <ol className="flex gap-[6px] m-0 p-0 [list-style:none]">
         {steps.map((screen, index) => (
           <li
             key={screen}

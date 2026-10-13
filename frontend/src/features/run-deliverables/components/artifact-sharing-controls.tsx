@@ -387,7 +387,7 @@ function SharingContent({
   return (
     <>
       <header className="artifact-dialog-heading">
-        <div className="artifact-dialog-title-row">
+        <div className="flex items-center gap-[8px]">
           <DialogTitle>Share {wording.noun}</DialogTitle>
           <DialogClose asChild>
             <button
@@ -434,7 +434,9 @@ function SharingContent({
                     disabled={busy}
                   />
                 ) : (
-                  <span className="artifact-permission-label">Can view</span>
+                  <span className="shrink-0 px-[8px] text-[var(--text-secondary)] text-[length:12px] whitespace-nowrap">
+                    Can view
+                  </span>
                 )
               }
             />
@@ -468,7 +470,9 @@ function SharingContent({
                 <small>Inactive owner · no access</small>
               ) : null}
             </div>
-            <span className="artifact-permission-label">Owner</span>
+            <span className="shrink-0 px-[8px] text-[var(--text-secondary)] text-[length:12px] whitespace-nowrap">
+              Owner
+            </span>
           </div>
           {access.grants.map((grant) => (
             <div className="artifact-access-entry" key={grant.userId}>
@@ -509,7 +513,7 @@ function SharingContent({
                   }}
                 />
               ) : (
-                <span className="artifact-permission-label">
+                <span className="shrink-0 px-[8px] text-[var(--text-secondary)] text-[length:12px] whitespace-nowrap">
                   {
                     permissionOptions.find(
                       (option) => option.value === grant.permission,
@@ -534,8 +538,10 @@ function SharingContent({
                 <div>
                   <strong>{grant.title || "Conversation"}</strong>
                 </div>
-                <div className="artifact-conversation-access">
-                  <span className="artifact-permission-label">Can view</span>
+                <div className="flex items-center gap-[2px]">
+                  <span className="shrink-0 px-[8px] text-[var(--text-secondary)] text-[length:12px] whitespace-nowrap">
+                    Can view
+                  </span>
                   {canManage ? (
                     <Tooltip label="Remove access">
                       <button
@@ -632,7 +638,7 @@ function SharingContent({
           </>
         ) : (
           <>
-            <div className="artifact-link-access">
+            <div className="artifact-link-access flex items-center gap-[4px] min-w-0 text-[var(--text-secondary)] text-[length:13px]">
               <ScopeIcon size={16} aria-hidden />
               {canManage ? (
                 <ArtifactAccessMenu
@@ -760,11 +766,14 @@ function RemoveAccessDialog({
           are unchanged.
         </p>
         {error ? (
-          <p className="artifact-removal-error" role="alert">
+          <p
+            className="text-[var(--workspace-native-danger,_var(--status-danger,_#b42318))] text-[length:13px]"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
-        <div className="artifact-removal-actions">
+        <div className="flex justify-end gap-[8px] mt-[8px]">
           <Button
             ref={cancelRef}
             variant="ghost"

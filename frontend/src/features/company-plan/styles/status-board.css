@@ -20,16 +20,6 @@
   grid-auto-columns: minmax(232px, 360px);
 }
 
-.status-board__column {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  overflow: hidden;
-  scroll-snap-align: start;
-  background: transparent;
-}
-
 .status-board__column-header {
   display: flex;
   min-height: 46px;
@@ -48,21 +38,6 @@
   line-height: var(--workspace-leading-body);
 }
 
-.status-board__count {
-  display: grid;
-  min-width: 19px;
-  height: 19px;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 4px;
-  padding-inline: 5px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-micro);
-  line-height: var(--workspace-leading-micro);
-  font-variant-numeric: tabular-nums;
-}
-
 .status-board__column-body {
   min-height: 0;
   flex: 1;
@@ -71,25 +46,6 @@
   padding: 0 1px 12px;
   scrollbar-color: var(--workspace-divider-strong) transparent;
   scrollbar-width: thin;
-}
-
-.status-board__tasks {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.status-board__empty {
-  margin: 0;
-  border: 1px dashed var(--workspace-divider-strong);
-  border-radius: 9px;
-  padding: 18px 12px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
 }
 
 .status-board__task {
@@ -139,30 +95,6 @@
   -webkit-line-clamp: 3;
 }
 
-.status-board__input-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 9px;
-  border: 1px solid currentColor;
-  border-radius: 5px;
-  padding: 2px 5px;
-  color: var(--workspace-native-approval);
-  font-size: var(--workspace-text-caption);
-  font-weight: 550;
-  line-height: var(--workspace-leading-caption);
-}
-
-.status-board__review-status {
-  display: inline-flex;
-  align-self: flex-start;
-  align-items: center;
-  gap: 6px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
 .status-board__review-status > svg {
   flex-shrink: 0;
   color: var(--workspace-native-accent);
@@ -174,24 +106,6 @@
   align-items: center;
   gap: 8px;
   margin-top: 2px;
-}
-
-.status-board__avatars {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-board__avatar {
-  display: inline-flex;
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 8px;
-  background: var(--workspace-accent-soft);
-  color: var(--workspace-native-accent);
 }
 
 .status-board__avatar img,
@@ -208,21 +122,6 @@
 }
 
 /* The assignee can't see the Task's Project (ADR 0017). */
-.status-board__outside {
-  display: inline-grid;
-  flex: none;
-  place-items: center;
-  color: var(--workspace-native-approval);
-}
-
-.status-board__updated-at {
-  flex: none;
-  margin-left: auto;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  white-space: nowrap;
-}
 
 @media (max-width: 640px) {
   .status-board {

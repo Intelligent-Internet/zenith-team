@@ -190,7 +190,9 @@ export function SupportSettingsPage() {
           title={
             <>
               Zenith Team
-              <span className="support-settings-channel">Stable</span>
+              <span className="p-[2px_8px] rounded-[4px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption leading-[1.5] font-[400]">
+                Stable
+              </span>
             </>
           }
           description={installedVersionLabel}
@@ -390,7 +392,7 @@ function SupportDiagnosticsFiles({
     }
   };
   return (
-    <div className="support-settings-diagnostic-files">
+    <div className="mt-[16px] p-[16px] rounded-workspace-control [background:var(--workspace-control-bg)]">
       <p className="m-0 text-xs leading-5 text-[var(--workspace-native-text-muted)]">
         Attach both JSON files to your support request. These files are saved
         locally and have not been sent.
@@ -441,7 +443,9 @@ function SupportRow({
         <RowIcon size={22} />
       </span>
       <div className="support-settings-row__copy">
-        <div className="support-settings-row__title">{title}</div>
+        <div className="flex flex-wrap items-center gap-[8px_12px] text-workspace-body leading-workspace-body font-[600]">
+          {title}
+        </div>
         <p>{description}</p>
       </div>
       {action ? (

@@ -170,7 +170,7 @@ export function SkillError({
         {onRetry && (
           <button
             type="button"
-            className="custom-skill-text-button"
+            className="mt-[8px] text-workspace-accent font-[500] cursor-pointer"
             onClick={onRetry}
           >
             Try again

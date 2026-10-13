@@ -34,11 +34,6 @@
 /* The list stays inside the window. Near the bottom it opens above the row
    (the popover flips when there is more room there), and it never grows past
    the room left on its side: the options scroll inside it instead. */
-.task-assignment-menu {
-  display: flex;
-  flex-direction: column;
-  max-height: var(--radix-popover-content-available-height);
-}
 .task-assignment-menu .task-create-agent-options {
   min-height: 0;
 }
@@ -65,9 +60,3 @@
 
 /* What a handoff leaves behind, under the dialog's question
    (task-handoff-dialog.tsx). */
-.task-handoff-dialog__hint {
-  margin: 16px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}

@@ -38,7 +38,7 @@ export function TaskPropertyDate({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="task-property-date-popover"
+          className="task-property-date-popover z-[100] w-[250px] p-[14px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:var(--workspace-overlay-shadow)] text-workspace-body"
           sideOffset={6}
           collisionPadding={12}
           align="end"

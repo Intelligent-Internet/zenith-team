@@ -229,7 +229,7 @@ function ArtifactDocument({
       onScroll={rememberPosition}
     >
       {preview.truncated ? (
-        <p className="artifact-preview-notice">
+        <p className="m-[0_0_16px] [border:1px_solid_var(--workspace-divider,_#dedbd2)] rounded-[8px] p-[9px_11px] text-[var(--workspace-native-text-muted,_#697168)] text-[length:12px]">
           Showing the first 1 MB. Download to read the complete artifact.
         </p>
       ) : null}
@@ -296,7 +296,7 @@ function ArtifactMarkdown({
             code: ({ children }) => <code>{children}</code>,
             pre: ({ children }) => <pre>{children}</pre>,
             img: ({ alt }) => (
-              <span className="artifact-preview-notice">
+              <span className="m-[0_0_16px] [border:1px_solid_var(--workspace-divider,_#dedbd2)] rounded-[8px] p-[9px_11px] text-[var(--workspace-native-text-muted,_#697168)] text-[length:12px]">
                 {alt ? `Image: ${alt}` : "Embedded image"}
               </span>
             ),
@@ -360,7 +360,7 @@ function ArtifactBlobPreview({
         ) : (
           <>
             {preview.truncated ? (
-              <p className="artifact-preview-notice">
+              <p className="m-[0_0_16px] [border:1px_solid_var(--workspace-divider,_#dedbd2)] rounded-[8px] p-[9px_11px] text-[var(--workspace-native-text-muted,_#697168)] text-[length:12px]">
                 Showing the first 1 MB. Download to view the complete file.
               </p>
             ) : null}

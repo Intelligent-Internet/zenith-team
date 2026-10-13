@@ -132,7 +132,7 @@ export function DiscussionThread({
           key={`${rootId}:${status?.guard}`}
           header={
             <>
-              <div className="discussion-thread-root">
+              <div className="discussion-thread-root pt-[2px]">
                 <DiscussionMessageRow
                   message={page.root}
                   detail={detail}
@@ -172,7 +172,10 @@ export function DiscussionThread({
         />
       ) : (
         <>
-          <div className="discussion-empty" role="status">
+          <div
+            className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]"
+            role="status"
+          >
             {status?.error ?? "Loading thread…"}
             {status?.error ? (
               <button

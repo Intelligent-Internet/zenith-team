@@ -152,7 +152,10 @@ export function ProjectsWorkspace({
           {projects.isLoading || single.isFetching ? (
             <p role="status">Loading project…</p>
           ) : projects.isError ? (
-            <div className="project-unavailable" role="alert">
+            <div
+              className="project-unavailable grid max-w-[360px] [justify-items:center] gap-[8px] m-[64px_auto_0] text-workspace-muted text-[length:var(--workspace-text-body,_13px)] leading-[1.45] text-center"
+              role="alert"
+            >
               <strong>Project could not be loaded.</strong>
               <button
                 className="dashboard-button"
@@ -165,7 +168,10 @@ export function ProjectsWorkspace({
           ) : (
             // A hidden Project and a missing one read the same, so this
             // says nothing about whether it exists.
-            <div className="project-unavailable" role="status">
+            <div
+              className="project-unavailable grid max-w-[360px] [justify-items:center] gap-[8px] m-[64px_auto_0] text-workspace-muted text-[length:var(--workspace-text-body,_13px)] leading-[1.45] text-center"
+              role="status"
+            >
               <LockKeyhole size={28} aria-hidden="true" />
               <strong>You can't open this project.</strong>
               <span>It doesn't exist, or you don't have access to it.</span>
@@ -218,8 +224,11 @@ export function ProjectsWorkspace({
       }
     >
       <div className="projects-page">
-        <div className="projects-page__toolbar">
-          <div className="projects-page__tabs" aria-label="Project status">
+        <div className="flex items-center justify-between gap-[16px] flex-wrap mb-[16px]">
+          <div
+            className="projects-page__tabs flex gap-[4px]"
+            aria-label="Project status"
+          >
             <button
               aria-pressed={!showArchived}
               onClick={() => setShowArchived(false)}
@@ -307,7 +316,7 @@ export function ProjectsWorkspace({
           >
             {view === "list" ? (
               <div
-                className="projects-page__columns collection-list__header"
+                className="projects-page__columns min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
                 aria-hidden="true"
               >
                 <span>Project</span>
@@ -384,7 +393,7 @@ export function ProjectsWorkspace({
                     className="projects-page__progress"
                     data-complete={owned.length > 0 && done === owned.length}
                   >
-                    <span className="projects-page__count">
+                    <span className="projects-page__count block text-workspace-caption leading-workspace-caption text-workspace-muted whitespace-nowrap [font-variant-numeric:tabular-nums]">
                       {tasks.currentData ? (
                         owned.length === 0 ? (
                           "No tasks yet"
@@ -712,7 +721,7 @@ function ProjectEditor({
             onChange={setFiles}
             onReadyChange={setFilesReady}
             identity={
-              <div className="project-editor__identity-fields">
+              <div className="project-editor__identity-fields flex-1 min-w-0">
                 <label className="project-editor__field">
                   Project name
                   <input
@@ -743,7 +752,10 @@ function ProjectEditor({
             </label>
           </ProjectFilesEditor>
           {error ? (
-            <p role="alert" className="project-editor__error">
+            <p
+              role="alert"
+              className="m-0 text-workspace-danger text-[length:13px]"
+            >
               {error}
             </p>
           ) : null}
@@ -753,14 +765,14 @@ function ProjectEditor({
               role="alertdialog"
               aria-modal="false"
               aria-labelledby="project-archive-title"
-              className="project-discard-notice project-archive-notice"
+              className="project-discard-notice p-[16px] rounded-[12px] [background:var(--workspace-approval-soft)] project-archive-notice"
               tabIndex={-1}
             >
               <h3 id="project-archive-title">
                 <Archive size={16} aria-hidden="true" />
                 <span>Archive {project.title}?</span>
               </h3>
-              <div className="project-archive-notice__actions">
+              <div className="flex ml-auto">
                 <button
                   type="button"
                   className="dashboard-button"
@@ -785,7 +797,7 @@ function ProjectEditor({
               role="alertdialog"
               aria-modal="false"
               aria-labelledby="project-discard-title"
-              className="project-discard-notice"
+              className="project-discard-notice p-[16px] rounded-[12px] [background:var(--workspace-approval-soft)]"
             >
               <h3 id="project-discard-title">Discard this draft?</h3>
               <p>Your unsaved project details will be lost.</p>

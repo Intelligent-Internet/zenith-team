@@ -66,7 +66,10 @@ export function BoardEdgeMarkers() {
     </marker>
   );
   return (
-    <svg className="wb-edge-markers" aria-hidden="true">
+    <svg
+      className="wb-edge-markers absolute w-0 h-0 overflow-hidden"
+      aria-hidden="true"
+    >
       <defs>
         {marker("wb-marker-arrow", 12, 10, <path d="M0,0 L12,5 L0,10 z" />)}
         {marker(

@@ -133,7 +133,7 @@ export const ArtifactNode = memo(function ArtifactNode({
         position={Position.Left}
         isConnectable={data.canEdit}
       />
-      <div className="pc-card-preview">
+      <div className="w-full h-full overflow-hidden relative rounded-[inherit] text-[var(--pc-ink)]">
         {version && (
           <NodePreview
             scope={data.scope}
@@ -192,7 +192,7 @@ export const FrameNode = memo(function FrameNode({
   selected,
 }: NodeProps<CanvasNode>) {
   return (
-    <section className="pc-frame-node">
+    <section className="w-full h-full [border:1px_solid_color-mix(in_srgb,_var(--pc-accent)_24%,_var(--pc-line))] [background:color-mix(in_srgb,_var(--pc-accent)_2%,_transparent)] rounded-[12px]">
       <NodeResizer
         isVisible={!!selected && data.canEdit}
         minWidth={360}
@@ -200,7 +200,7 @@ export const FrameNode = memo(function FrameNode({
         onResizeStart={data.onInteractionStart}
         onResizeEnd={(_event, bounds) => data.onResize(data.item.id, bounds)}
       />
-      <div className="pc-frame-label">
+      <div className="pc-frame-label absolute top-[-34px] left-0 h-[28px] inline-flex gap-[8px] items-center text-[length:13px] font-[550] text-[var(--pc-muted)] cursor-grab">
         <Layers size={16} />
         <span>{data.item.title || "Untitled frame"}</span>
       </div>

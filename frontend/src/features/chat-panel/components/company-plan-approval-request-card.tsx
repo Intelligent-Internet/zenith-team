@@ -141,7 +141,7 @@ export function CompanyPlanApprovalRequestCard({
       data-compact={compact}
       id={`approval-${approval.id}`}
     >
-      <header className="company-plan-approval__header">
+      <header className="flex items-center justify-between flex-wrap gap-[8px] mb-[16px]">
         <span className="company-plan-approval__eyebrow">Company plan</span>
         <span
           className="company-plan-approval__status"
@@ -155,18 +155,20 @@ export function CompanyPlanApprovalRequestCard({
           {pending ? "For your review" : approvalStatusLabel(approval.status)}
         </span>
       </header>
-      <h2 className="company-plan-approval__title">
+      <h2 className="m-0 text-workspace-page leading-workspace-page font-[650] [text-wrap:pretty]">
         {project?.title ?? (review ? "Review company plan" : approval.title)}
       </h2>
       {project?.description ? (
-        <p className="company-plan-approval__description">
+        <p className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden m-[8px_0_0] text-workspace-muted text-workspace-chat leading-workspace-chat">
           {project.description}
         </p>
       ) : !review && approval.summary ? (
-        <p className="company-plan-approval__description">{approval.summary}</p>
+        <p className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden m-[8px_0_0] text-workspace-muted text-workspace-chat leading-workspace-chat">
+          {approval.summary}
+        </p>
       ) : null}
       {counts ? (
-        <p className="company-plan-approval__summary">
+        <p className="m-[8px_0_0] text-workspace-muted text-workspace-caption leading-workspace-caption">
           {companyPlanChangeSummary(counts)}
         </p>
       ) : null}
@@ -194,7 +196,7 @@ export function CompanyPlanApprovalRequestCard({
       />
 
       <details
-        className="company-plan-approval__details"
+        className="company-plan-approval__details mt-[8px] [border-top:1px_solid_var(--workspace-divider)]"
         key={`details:${approval.id}:${approval.revision}`}
       >
         <summary>
@@ -206,10 +208,10 @@ export function CompanyPlanApprovalRequestCard({
             className="company-plan-approval__chevron"
           />
         </summary>
-        <div className="company-plan-approval__details-body">
+        <div className="p-[8px_0_20px]">
           {review ? <CompanyPlanBriefs review={review} /> : null}
           <CompanyPlanChangeList lines={changeLines} />
-          <dl className="company-plan-approval__metadata">
+          <dl className="company-plan-approval__metadata grid grid-cols-[auto_minmax(0,_1fr)] gap-[6px_16px] m-[16px_0_12px] text-workspace-caption leading-workspace-caption">
             <dt>Requested by</dt>
             <dd>{approval.requestedByAgent.name}</dd>
             <dt>Expires</dt>
@@ -230,13 +232,16 @@ export function CompanyPlanApprovalRequestCard({
       </details>
 
       {pending && !canDecide ? (
-        <p className="company-plan-approval__readonly">
+        <p className="m-[16px_0_0] text-[var(--workspace-native-text-muted,_#abb5bf)] text-workspace-caption leading-workspace-caption">
           {missingProjectPermissionTitle("project.approvals.resolve")}
         </p>
       ) : pending ? (
         <div className="company-plan-approval__decision">
           {noteOpen ? (
-            <label className="company-plan-approval__note" htmlFor={noteId}>
+            <label
+              className="company-plan-approval__note block mt-[12px] text-workspace-caption leading-workspace-caption font-[500]"
+              htmlFor={noteId}
+            >
               Note to {approval.requestedByAgent.name} <span>(optional)</span>
               <textarea
                 id={noteId}
@@ -293,7 +298,7 @@ export function CompanyPlanApprovalRequestCard({
             </div>
           </div>
           {canApprove ? null : (
-            <p className="company-plan-approval__readonly">
+            <p className="m-[16px_0_0] text-[var(--workspace-native-text-muted,_#abb5bf)] text-workspace-caption leading-workspace-caption">
               Approving applies the plan, so it also needs "Create and edit
               tasks" on this project.
             </p>
@@ -302,7 +307,7 @@ export function CompanyPlanApprovalRequestCard({
       ) : (
         <>
           {approval.decisionNote ? (
-            <p className="company-plan-approval__saved-note">
+            <p className="m-[12px_0_0] whitespace-pre-wrap">
               {approval.decisionNote}
             </p>
           ) : null}

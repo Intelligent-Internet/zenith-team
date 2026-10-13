@@ -214,7 +214,7 @@ export function BoardToolbar({
     >
       <guide.Icon
         size={20}
-        className={guide.id === "redo" ? "wb-redo-icon" : undefined}
+        className={guide.id === "redo" ? "[transform:scaleX(-1)]" : undefined}
         aria-hidden
       />
     </CanvasToolGuide>
@@ -226,7 +226,7 @@ export function BoardToolbar({
         {children}
         <div
           ref={toolbar}
-          className="wb-toolbar"
+          className="wb-toolbar flex items-center gap-[2px] p-[7px] [background:var(--wb-paper)] [border:1px_solid_var(--wb-line)] rounded-[12px] [box-shadow:0_4px_24px_#0001] max-w-full overflow-x-auto"
           role="toolbar"
           aria-label="Whiteboard tools"
         >
@@ -252,11 +252,14 @@ export function BoardToolbar({
                   : active(guide.id) && trayOpen,
               )}
               {guide.id === "select" && (
-                <span className="wb-tool-divider" aria-hidden="true" />
+                <span
+                  className="h-[22px] [border-left:1px_solid_var(--wb-line)] m-[0_5px]"
+                  aria-hidden="true"
+                />
               )}
             </Fragment>
           ))}
-          <span className="wb-tool-divider" />
+          <span className="h-[22px] [border-left:1px_solid_var(--wb-line)] m-[0_5px]" />
           {guideButton(
             undoGuide,
             onUndo,
@@ -346,7 +349,7 @@ export function BoardZoomControls() {
             sideOffset={12}
             collisionPadding={12}
           >
-            <DropdownMenu.Label className="wb-zoom-menu__label">
+            <DropdownMenu.Label className="p-[6px_9px] text-[var(--wb-muted)] text-[length:11px]">
               Zoom
             </DropdownMenu.Label>
             <DropdownMenu.RadioGroup
@@ -365,15 +368,17 @@ export function BoardZoomControls() {
                   >
                     <span>{value}%</span>
                     {value === 100 && (
-                      <span className="wb-zoom-menu__hint">Actual size</span>
+                      <span className="text-[var(--wb-muted)] text-[length:11px]">
+                        Actual size
+                      </span>
                     )}
-                    <DropdownMenu.ItemIndicator className="wb-zoom-menu__check">
+                    <DropdownMenu.ItemIndicator className="flex ml-auto">
                       <Check size={14} />
                     </DropdownMenu.ItemIndicator>
                   </DropdownMenu.RadioItem>
                 ))}
             </DropdownMenu.RadioGroup>
-            <DropdownMenu.Separator className="wb-zoom-menu__separator" />
+            <DropdownMenu.Separator className="h-[1px] m-[5px_3px] [background:var(--wb-line)]" />
             <DropdownMenu.Item className="wb-zoom-menu__item" onSelect={onFit}>
               <Maximize2 size={16} aria-hidden /> Fit board
             </DropdownMenu.Item>
@@ -385,7 +390,10 @@ export function BoardZoomControls() {
         () => void flow.zoomIn(),
         zoom >= maxZoom ? "Maximum zoom reached." : undefined,
       )}
-      <span className="wb-zoom-divider" aria-hidden />
+      <span
+        className="h-[20px] m-[0_4px] [border-left:1px_solid_var(--wb-line)]"
+        aria-hidden
+      />
       {guideButton(zoomGuides[1], onFit)}
     </div>
   );
@@ -406,7 +414,11 @@ function BoardToolPreview({ guide }: { guide: Guide }) {
   let illustration;
   if (id === "pen") {
     illustration = (
-      <svg className="wb-tool-preview__ink" viewBox="0 0 200 80" fill="none">
+      <svg
+        className="wb-tool-preview__ink w-[200px] h-[80px] text-workspace-text"
+        viewBox="0 0 200 80"
+        fill="none"
+      >
         <path
           d="M12 54 C32 8 54 8 70 44 S108 74 124 34 S156 10 188 44"
           pathLength="1"
@@ -421,7 +433,7 @@ function BoardToolPreview({ guide }: { guide: Guide }) {
     );
   } else if (id === "shape") {
     illustration = (
-      <div className="wb-tool-preview__shapes">
+      <div className="wb-tool-preview__shapes flex gap-[16px] items-center">
         <div />
         <div />
       </div>
@@ -436,8 +448,12 @@ function BoardToolPreview({ guide }: { guide: Guide }) {
   }
   return (
     <div className="wb-tool-preview" data-tool={id} aria-hidden="true">
-      <div className="wb-tool-preview__scene">{illustration}</div>
-      <span className="wb-tool-preview__caption">{guide.caption}</span>
+      <div className="absolute inset-[0_0_27px] grid [place-content:center] [background-image:radial-gradient(_var(--workspace-divider)_1px,_transparent_1px_)] [background-size:14px_14px]">
+        {illustration}
+      </div>
+      <span className="absolute inset-[auto_0_0] p-[5px_8px] [background:var(--workspace-content-bg)] text-workspace-muted text-[length:9px] leading-[1.5] text-center">
+        {guide.caption}
+      </span>
     </div>
   );
 }

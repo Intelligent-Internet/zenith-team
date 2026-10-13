@@ -16,7 +16,7 @@ export function DiscussionMessageBody({
   return (
     <Streamdown
       key={JSON.stringify(body?.references)}
-      className="discussion-markdown"
+      className="discussion-markdown text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)] wrap-anywhere min-w-0"
       rehypePlugins={[
         ...Object.values(defaultRehypePlugins),
         [discussionMentionHighlightPlugin, body],

@@ -281,14 +281,14 @@ function OnboardingPluginChoices({
     }
   };
   return (
-    <div className="onboarding-connections">
+    <div className="grid gap-[20px]">
       <PluginInstallFlow companyId={companyId} />
       {setupNotice ? (
         <p className="onboarding-connections__notice" role="status">
           {setupNotice}
         </p>
       ) : null}
-      <div className="onboarding-connections__grid">
+      <div className="grid gap-[10px]">
         {onboardingSources.map((choice) => {
           const plugin = catalog.currentData?.plugins.find(
             (item) =>
@@ -396,12 +396,18 @@ function OnboardingPluginChoices({
         })}
       </div>
       {completionError ? (
-        <p className="workspace-onboarding__error" role="alert">
+        <p
+          className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+          role="alert"
+        >
           {completionError} Your company information is saved. Try again, or
           continue and message Andrew yourself.
         </p>
       ) : errorMessage || catalog.isError ? (
-        <p className="workspace-onboarding__error" role="alert">
+        <p
+          className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+          role="alert"
+        >
           {errorMessage || getBoardlyQueryErrorMessage(catalog.error)}
         </p>
       ) : null}

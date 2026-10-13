@@ -55,7 +55,7 @@ export function ChatNavigatorOptions({
       </Tooltip>
       <DropdownMenuContent
         align="end"
-        className="conversation-pin-menu workspace-chat-navigator__menu"
+        className="conversation-pin-menu z-[220] min-w-[192px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] p-[5px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:0_8px_24px_rgb(37_28_45_/_12%)] font-workspace-body workspace-chat-navigator__menu"
       >
         <DropdownMenuRadioGroup
           value={browse.view}
@@ -101,7 +101,7 @@ export function ChatNavigatorOptions({
                 Channels
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuSubContent className="conversation-pin-menu workspace-chat-navigator__menu">
+                <DropdownMenuSubContent className="conversation-pin-menu z-[220] min-w-[192px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] p-[5px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:0_8px_24px_rgb(37_28_45_/_12%)] font-workspace-body workspace-chat-navigator__menu">
                   <DropdownMenuCheckboxItem
                     className="conversation-pin-menu__item"
                     checked={discussions.archived}
@@ -171,7 +171,10 @@ export function ChatNavigatorPageStatus({
 }) {
   if (query.isError)
     return (
-      <p className="workspace-chat-navigator__status" role="alert">
+      <p
+        className="workspace-chat-navigator__status m-[5px_9px] text-workspace-muted text-workspace-caption leading-workspace-caption"
+        role="alert"
+      >
         Couldn’t load {label}.{" "}
         <button type="button" onClick={() => void query.refetch()}>
           Retry
@@ -180,7 +183,10 @@ export function ChatNavigatorPageStatus({
     );
   if (query.isLoading || (query.isFetching && !query.currentData))
     return (
-      <p className="workspace-chat-navigator__status" role="status">
+      <p
+        className="workspace-chat-navigator__status m-[5px_9px] text-workspace-muted text-workspace-caption leading-workspace-caption"
+        role="status"
+      >
         Loading {label}…
       </p>
     );

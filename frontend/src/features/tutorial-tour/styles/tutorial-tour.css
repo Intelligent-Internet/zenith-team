@@ -47,20 +47,6 @@
   line-height: 22px;
 }
 
-.tutorial-tour-welcome__hint {
-  margin: 18px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 18px;
-}
-
-.tutorial-tour-welcome__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 24px;
-}
-
 .tutorial-tour-button {
   display: inline-flex;
   min-height: 34px;
@@ -167,14 +153,6 @@
   line-height: 21px;
 }
 
-.tutorial-tour-tooltip__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 20px;
-}
-
 .tutorial-tour-transition {
   position: fixed;
   z-index: 1200;
@@ -184,21 +162,6 @@
   justify-items: center;
   padding: 24px;
   background: rgb(0 0 0 / 40%);
-}
-
-.tutorial-tour-transition__status {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  padding: 10px 14px;
-  background: var(--workspace-overlay-bg);
-  color: var(--workspace-native-text-muted);
-  box-shadow: var(--workspace-overlay-shadow);
-  font-family: var(--workspace-font-body);
-  font-size: 13px;
-  line-height: 20px;
 }
 
 .tutorial-tour-transition button {

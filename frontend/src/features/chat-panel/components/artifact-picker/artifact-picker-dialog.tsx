@@ -152,8 +152,8 @@ export function ArtifactPickerDialog({
         }}
       >
         <header className="artifact-picker-header">
-          <div className="artifact-picker-heading">
-            <span className="artifact-picker-emblem">
+          <div className="artifact-picker-heading flex items-center gap-[12px]">
+            <span className="grid place-items-center w-[44px] h-[44px] rounded-[12px] [background:var(--picker-hover)] text-[var(--picker-accent)]">
               <PackageCheck size={23} />
             </span>
             <div>
@@ -196,7 +196,7 @@ export function ArtifactPickerDialog({
             </label>
             <div className="artifact-picker-filters">
               <div
-                className="artifact-picker-tabs"
+                className="artifact-picker-tabs flex gap-[4px]"
                 aria-label="Artifact ownership"
               >
                 {(
@@ -296,15 +296,15 @@ export function ArtifactPickerDialog({
                         companyId={companyId}
                         artifact={item}
                       />
-                      <span className="artifact-picker-copy">
+                      <span className="artifact-picker-copy flex flex-col gap-[3px] min-w-0">
                         <strong title={item.title}>{item.title}</strong>
                         <span
-                          className="artifact-picker-source"
+                          className="text-[length:12px] text-[var(--picker-muted)]"
                           title={artifactSourceLabel(item.source)}
                         >
                           {artifactSourceLabel(item.source)}
                         </span>
-                        <span className="artifact-picker-meta">
+                        <span className="text-[length:11px] text-[var(--picker-muted)] opacity-[0.8]">
                           {item.ownerName} ·{" "}
                           {new Intl.DateTimeFormat(undefined, {
                             month: "short",
@@ -343,7 +343,7 @@ export function ArtifactPickerDialog({
           </div>
         </div>
         {preview && (
-          <div className="artifact-picker-preview">
+          <div className="artifact-picker-preview text-[length:var(--workspace-text-body,_14px)] flex-1 min-h-0 flex flex-col overflow-hidden [border-top:1px_solid_var(--picker-border)]">
             {result?.output ? (
               <ConversationArtifactViewer
                 companyId={companyId}
@@ -374,7 +374,10 @@ export function ArtifactPickerDialog({
           </div>
         )}
         {selectionError && (
-          <p className="artifact-picker-error" role="alert">
+          <p
+            className="shrink-0 m-0 p-[10px_26px] text-[var(--color-danger,_#b94a48)] text-[length:12px] [border-top:1px_solid_var(--picker-border)]"
+            role="alert"
+          >
             {selectionError}
           </p>
         )}

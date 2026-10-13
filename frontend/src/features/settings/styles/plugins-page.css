@@ -3,34 +3,10 @@
    one-line notices, the Installed logo strip, then Featured and category
    sections of two-column rows. Everything reads from workspace tokens so the
    light and dark themes follow; focus shows as a border and background. */
-.plugins-page {
-  container: plugins-page / inline-size;
-  /* Switching views scrolls the page's top into view below the frame's gutter. */
-  scroll-margin-top: var(--workspace-page-gutter-block, 24px);
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  flex-direction: column;
-  padding-bottom: 24px;
-  color: var(--workspace-native-text);
-}
 
 /* The page's own header (SettingsShell `ownsHeader`), aligned with the
    catalog: the title, and at its right the computer the catalog is read
    from and refresh. */
-.plugins-header {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px 24px;
-}
-
-.plugins-header__heading {
-  min-width: 0;
-  flex: 1 1 240px;
-}
 
 .plugins-header__heading h1 {
   margin: 0;
@@ -59,11 +35,6 @@
 }
 
 /* One full-width search field under the header. */
-.plugins-toolbar {
-  display: flex;
-  min-width: 0;
-  margin-top: 20px;
-}
 
 .plugins-search {
   display: flex;
@@ -81,13 +52,6 @@
 
 .plugins-search:focus-within {
   border-color: var(--workspace-native-accent);
-}
-
-.plugins-search__icon {
-  width: 18px;
-  height: 18px;
-  flex: none;
-  color: var(--workspace-native-text-muted);
 }
 
 .plugins-search input {
@@ -233,13 +197,6 @@
 }
 
 /* When the computer last reported its catalog, beside refresh. */
-.plugins-sync {
-  flex: none;
-  color: var(--workspace-native-text-faint);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  white-space: nowrap;
-}
 
 .plugins-icon-button--framed {
   width: 40px;
@@ -302,21 +259,6 @@
   );
 }
 
-.plugins-notice__line {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-}
-
-.plugins-notice__dot {
-  width: 8px;
-  height: 8px;
-  flex: none;
-  border-radius: 999px;
-  background: var(--plugins-notice-tone);
-}
-
 .plugins-notice__text {
   min-width: 0;
   flex: 1;
@@ -373,22 +315,6 @@
 
 /* Apps whose tools changed: one quiet line of their logos, a count and
    Reconnect, which opens the list of them. */
-.plugins-reconnect-card {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 12px;
-  padding: 8px 8px 8px 12px;
-  background: var(--workspace-panel-bg);
-}
-
-.plugins-reconnect-card__avatars {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-}
 
 .plugins-reconnect-card__avatars > * {
   box-shadow: 0 0 0 2px var(--workspace-panel-bg);
@@ -396,31 +322,6 @@
 
 .plugins-reconnect-card__avatars > * + * {
   margin-left: -8px;
-}
-
-.plugins-reconnect-card__more {
-  display: inline-grid;
-  min-width: 28px;
-  height: 28px;
-  place-items: center;
-  border-radius: 999px;
-  padding: 0 6px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  font-weight: 600;
-  line-height: 1;
-}
-
-.plugins-reconnect-card__title {
-  min-width: 0;
-  flex: 1;
-  margin: 0;
-  color: var(--workspace-native-text);
-  font-size: var(--workspace-text-body);
-  font-weight: 500;
-  line-height: var(--workspace-leading-body);
-  overflow-wrap: anywhere;
 }
 
 .plugins-reconnect-card__button {
@@ -483,10 +384,6 @@
   outline: none;
 }
 
-.plugins-reconnect-popover__header {
-  padding: 12px 14px 6px;
-}
-
 .plugins-reconnect-popover__header p {
   margin: 0;
   font-weight: 600;
@@ -498,15 +395,6 @@
   font-size: var(--workspace-text-caption);
   font-weight: 400;
   line-height: var(--workspace-leading-caption);
-}
-
-.plugins-reconnect-popover__list {
-  min-height: 0;
-  flex: 1 1 auto;
-  margin: 0;
-  overflow-y: auto;
-  padding: 2px 6px 6px;
-  list-style: none;
 }
 
 .plugins-reconnect-popover__list > li {
@@ -521,14 +409,6 @@
 
 .plugins-reconnect-popover__list > li:hover {
   background: var(--workspace-hover-bg);
-}
-
-.plugins-reconnect-popover__name {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .plugins-reconnect-popover__action,
@@ -559,11 +439,6 @@
 .plugins-reconnect-popover__action > svg {
   width: 14px;
   height: 14px;
-}
-
-.plugins-reconnect-popover__footer {
-  border-top: 1px solid var(--workspace-divider);
-  padding: 6px;
 }
 
 .plugins-reconnect-popover__all {
@@ -599,16 +474,6 @@
 }
 
 /* The Installed, Featured or category view that replaced the All view. */
-.plugins-view-header {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 24px;
-  border-bottom: 1px solid var(--workspace-divider);
-  padding-bottom: 12px;
-}
 
 .plugins-view-header h2 {
   display: flex;
@@ -622,13 +487,6 @@
   font-weight: 600;
   line-height: 28px;
   overflow-wrap: anywhere;
-}
-
-.plugins-view-header__count {
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-label);
-  font-weight: 400;
-  line-height: var(--workspace-leading-label);
 }
 
 .plugins-back {
@@ -714,15 +572,6 @@
 }
 
 /* The Installed strip: logo tiles that open each plugin's page. */
-.plugins-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
-  justify-items: start;
-  gap: 8px 0;
-  margin: 14px 0 0 -4px;
-  padding: 0;
-  list-style: none;
-}
 
 .plugins-strip__tile,
 .plugins-strip__more {
@@ -815,14 +664,6 @@
   background: var(--workspace-hover-bg);
 }
 
-.plugins-row__copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-}
-
 .plugins-row__link {
   overflow: hidden;
   color: var(--workspace-native-text);
@@ -839,25 +680,6 @@
   inset: 0;
   border-radius: inherit;
   content: "";
-}
-
-.plugins-row__description {
-  overflow: hidden;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plugins-row__actions {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  min-width: 56px;
-  flex: none;
-  flex-direction: column;
-  align-items: center;
 }
 
 .plugins-row__status {
@@ -912,11 +734,6 @@
 .plugins-see-more > span:last-child {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.plugins-see-more__avatars {
-  display: inline-flex;
-  flex: none;
 }
 
 .plugins-see-more__avatars .app-avatar {

@@ -287,7 +287,7 @@ function PlanGraph({
   };
   if (tasks.isError && !tasks.currentData)
     return (
-      <div className="pc-state">
+      <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
         <h3>Tasks couldn’t be loaded.</h3>
         <button className="pc-button" onClick={retry}>
           Try again
@@ -296,7 +296,10 @@ function PlanGraph({
     );
   if (!tasks.currentData)
     return (
-      <div className="pc-state" role="status">
+      <div
+        className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]"
+        role="status"
+      >
         Loading project tasks…
       </div>
     );
@@ -352,7 +355,7 @@ function PlanGraph({
         </label>
       </div>
       {(graph.isError || layoutError || tooLarge) && (
-        <p className="pc-view-notice">
+        <p className="m-0 p-[8px_24px] text-[length:11px] text-[var(--pc-muted)] [background:var(--workspace-control-bg)]">
           Tasks are available.{" "}
           {tooLarge
             ? "Showing a grid for this large plan."
@@ -365,12 +368,12 @@ function PlanGraph({
         </p>
       )}
       {layout?.ok && layout.cycleTaskIds.length > 0 && (
-        <p className="pc-view-notice">
+        <p className="m-0 p-[8px_24px] text-[length:11px] text-[var(--pc-muted)] [background:var(--workspace-control-bg)]">
           Some tasks form a dependency cycle. Their connections are preserved
           here.
         </p>
       )}
-      <div className="pc-graph-surface">
+      <div className="pc-graph-surface relative flex-1 min-h-0 overflow-hidden [background:var(--workspace-content-bg)]">
         <ReactFlow<PlanNode>
           nodes={nodes}
           edges={edges}
@@ -422,7 +425,7 @@ function PlanTaskNode({ data, id }: NodeProps<PlanNode>) {
             isConnectable={false}
             style={{ top: 82 }}
           />
-          <div className="pc-plan-task">
+          <div className="pc-plan-task h-[162px]">
             <TaskCanvasCard
               item={data.task}
               onSelect={() => data.onExpand(id)}

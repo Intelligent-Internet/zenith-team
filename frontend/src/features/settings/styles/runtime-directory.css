@@ -1,17 +1,3 @@
-.runtime-directory-content {
-  container: runtime-directory / inline-size;
-  min-width: 0;
-}
-.runtime-directory-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px 16px;
-  margin: 0 0 28px;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-}
 .runtime-directory-search {
   display: flex;
   height: var(--workspace-control-size);
@@ -40,46 +26,14 @@
   outline: none;
   background: transparent;
 }
-.runtime-directory-count {
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  white-space: nowrap;
-}
-.runtime-directory-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
 .runtime-directory-actions a {
   text-decoration: none;
-}
-.runtime-computer-list {
-  display: grid;
-  gap: 32px;
-}
-.runtime-computer-group {
-  min-width: 0;
 }
 .runtime-computer-heading {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 0 16px;
-}
-.runtime-computer-icon {
-  display: grid;
-  width: 40px;
-  height: 40px;
-  flex: none;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-accent);
-}
-.runtime-computer-identity {
-  min-width: 0;
-  flex: 1;
 }
 .runtime-computer-heading h2 {
   margin: 0;
@@ -120,9 +74,6 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
-.runtime-table-scroll {
-  overflow-x: auto;
-}
 .runtime-table {
   --runtime-logo-size: 28px;
   --runtime-logo-gap: 12px;
@@ -152,17 +103,8 @@
   padding: 16px var(--collection-cell-inset);
   vertical-align: middle;
 }
-.runtime-provider-row {
-  position: relative;
-}
 .runtime-table .collection-list__identity {
   gap: var(--runtime-logo-gap);
-}
-.runtime-provider-logo {
-  width: var(--runtime-logo-size);
-  height: var(--runtime-logo-size);
-  flex: none;
-  object-fit: contain;
 }
 .runtime-provider-link {
   text-decoration: none;
@@ -191,15 +133,6 @@
   line-height: var(--workspace-leading-caption);
   color: var(--workspace-native-text-muted);
   overflow-wrap: anywhere;
-}
-.runtime-provider-count {
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-label);
-  font-variant-numeric: tabular-nums;
-}
-.runtime-provider-states {
-  display: grid;
-  gap: 5px;
 }
 .runtime-table .runtime-provider-status {
   margin: 0;
@@ -362,12 +295,6 @@
 .runtime-detail-page .runtime-detail__heading > span:last-child {
   margin-left: auto;
 }
-.runtime-provider-switcher {
-  display: flex;
-  gap: 8px;
-  grid-column: 1/-1;
-  flex-wrap: wrap;
-}
 .runtime-provider-switcher img {
   width: 14px;
   height: 14px;
@@ -432,14 +359,6 @@
 
 /* A local directory bound to the computer sits with its runtimes: the
    binding is a machine-wide rule for the company's Runs. */
-.runtime-bound-directory {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--workspace-divider);
-}
 .runtime-bound-directory > svg {
   width: 28px;
   height: 28px;

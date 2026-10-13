@@ -131,7 +131,7 @@ export function SetupBankDialog({
         <header className="setup-bank-dialog__header">
           <div className="flex items-start justify-between gap-4">
             <DialogHeader className="min-w-0 flex-1 text-left">
-              <DialogTitle className="setup-bank-dialog__title">
+              <DialogTitle className="m-0 [font-family:var(--workspace-font-heading,_sans-serif)] text-[length:21px] font-[700] leading-[1.4]">
                 {step === 1
                   ? "Payment terms"
                   : isAccountReady
@@ -139,7 +139,7 @@ export function SetupBankDialog({
                     : "Set up bank details"}
               </DialogTitle>
               <DialogDescription
-                className="setup-bank-dialog__description"
+                className="m-0 text-[var(--workspace-native-text-muted,_#706875)] text-[length:14px] leading-[1.6]"
                 id="setup-bank-description"
               >
                 {step === 1
@@ -158,11 +158,14 @@ export function SetupBankDialog({
               <X aria-hidden="true" className="size-4" />
             </button>
           </div>
-          <div className="setup-bank-dialog__steps">
+          <div className="flex items-center gap-[16px] mt-[20px] text-[var(--workspace-native-text-muted,_#706875)]">
             <span className="shrink-0 text-xs font-semibold">
               Step {step} of 2
             </span>
-            <div aria-hidden="true" className="setup-bank-dialog__progress">
+            <div
+              aria-hidden="true"
+              className="setup-bank-dialog__progress h-[4px] flex-1 overflow-hidden rounded-[4px] [background:var(--workspace-control-bg,_#f1edf4)]"
+            >
               <div style={{ width: step === 1 ? "50%" : "100%" }} />
             </div>
           </div>
@@ -250,13 +253,13 @@ function TermsStep({
 
   return (
     <section className="setup-bank-dialog__terms">
-      <span className="setup-bank-dialog__icon grid size-11 place-items-center rounded-xl">
+      <span className="[background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-accent,_#7556b9)] grid size-11 place-items-center rounded-xl">
         <ShieldCheck aria-hidden="true" className="size-6" />
       </span>
-      <h2 className="setup-bank-dialog__section-title mb-0 mt-4 text-lg font-bold">
+      <h2 className="[font-family:var(--workspace-font-heading,_sans-serif)] mb-0 mt-4 text-lg font-bold">
         Zenith Team Commerce Addendum
       </h2>
-      <p className="setup-bank-dialog__muted mb-0 mt-2 text-sm leading-6">
+      <p className="text-[var(--workspace-native-text-muted,_#706875)] mb-0 mt-2 text-sm leading-6">
         Your Company is the merchant for payments collected through its
         websites. Stripe processes payments and sends payouts to the bank
         account you provide directly to Stripe.
@@ -274,7 +277,7 @@ function TermsStep({
       </div>
 
       {terms.accepted ? (
-        <div className="setup-bank-dialog__accepted mt-6 flex items-start gap-3 rounded-xl border p-4 text-sm">
+        <div className="[border-color:var(--workspace-native-success,_#32785a)] [background:var(--workspace-success-soft,_#eaf4ed)] text-[var(--workspace-native-success,_#32785a)] mt-6 flex items-start gap-3 rounded-xl border p-4 text-sm">
           <CheckCircle2 aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
           <div>
             <strong>Current terms accepted</strong>
@@ -322,7 +325,7 @@ function TermsDocumentButton({
       {label}
       <ExternalLink
         aria-hidden="true"
-        className="setup-bank-dialog__muted size-4 shrink-0"
+        className="text-[var(--workspace-native-text-muted,_#706875)] size-4 shrink-0"
       />
     </button>
   );
@@ -509,15 +512,15 @@ function DesktopStripeOnboarding({
 
   return (
     <section className="setup-bank-dialog__onboarding mx-auto grid w-full place-items-center py-8 text-center">
-      <span className="setup-bank-dialog__icon grid size-14 place-items-center rounded-2xl">
+      <span className="[background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-accent,_#7556b9)] grid size-14 place-items-center rounded-2xl">
         <ExternalLink aria-hidden="true" className="size-6" />
       </span>
-      <h2 className="setup-bank-dialog__section-title mb-0 mt-4 text-lg font-bold">
+      <h2 className="[font-family:var(--workspace-font-heading,_sans-serif)] mb-0 mt-4 text-lg font-bold">
         {accountIsReady
           ? "Manage your Stripe account in a browser"
           : "Continue securely in your browser"}
       </h2>
-      <p className="setup-bank-dialog__muted mb-0 mt-2 max-w-lg text-sm leading-6">
+      <p className="text-[var(--workspace-native-text-muted,_#706875)] mb-0 mt-2 max-w-lg text-sm leading-6">
         {accountIsReady
           ? "Bank details for a ready account are managed in the full Stripe Dashboard. Zenith Team never receives your bank credentials."
           : "Stripe onboarding cannot run inside a desktop webview. Zenith Team will open a one-time Stripe link in your default browser and keep this window updated."}
@@ -552,7 +555,7 @@ function DesktopStripeOnboarding({
       </button>
       {!accountIsReady && launched ? (
         <p
-          className="setup-bank-dialog__muted mb-0 mt-4 text-xs leading-5"
+          className="text-[var(--workspace-native-text-muted,_#706875)] mb-0 mt-4 text-xs leading-5"
           role="status"
         >
           Waiting for Stripe. Automatic checks stop when the one-time link
@@ -696,10 +699,10 @@ function OnboardingMessage({
           tone === "neutral" && "animate-spin",
         )}
       />
-      <h2 className="setup-bank-dialog__section-title mb-0 mt-4 text-lg font-bold">
+      <h2 className="[font-family:var(--workspace-font-heading,_sans-serif)] mb-0 mt-4 text-lg font-bold">
         {title}
       </h2>
-      <p className="setup-bank-dialog__muted mb-0 mt-2 max-w-md text-sm leading-6">
+      <p className="text-[var(--workspace-native-text-muted,_#706875)] mb-0 mt-2 max-w-md text-sm leading-6">
         {description}
       </p>
     </div>

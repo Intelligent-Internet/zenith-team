@@ -158,14 +158,16 @@ export function CapabilityCards({
   return (
     <section
       id={sectionId}
-      className="agent-capabilities-section"
+      className="agent-capabilities-section [scroll-margin-top:calc(_var(--capabilities-tabs-height,_47px)_+_var(--capabilities-navigation-height,_46px)_+_16px_)]"
       aria-label={title}
       tabIndex={-1}
     >
       <header>
         <h2>
           {title}
-          <span className="agent-capabilities-badge">{badge}</span>
+          <span className="text-workspace-muted text-workspace-caption font-[400] [letter-spacing:0]">
+            {badge}
+          </span>
         </h2>
         {runtimeLink && (
           <Link to={runtimeLink}>
@@ -192,7 +194,7 @@ export function CapabilityCards({
             </span>
             <span>{managedInPlugins ? "Managed by" : "Allow for agent"}</span>
           </div>
-          <div className="agent-capabilities-grid">
+          <div className="flex flex-col">
             {visible.map((item) => {
               const Glyph = item.icon ?? Icon;
               const enabled = item.alwaysOn || overrides[item.id] !== false;
@@ -254,7 +256,7 @@ export function CapabilityCards({
                         Plugins <ArrowUpRight size={13} />
                       </button>
                     ) : item.alwaysOn ? (
-                      <span className="agent-capability-always-on">
+                      <span className="whitespace-nowrap p-[3px_8px] rounded-[12px] [background:var(--workspace-control-bg)] text-workspace-caption text-workspace-muted">
                         Always on
                       </span>
                     ) : (

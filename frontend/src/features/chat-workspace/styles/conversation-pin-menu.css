@@ -33,18 +33,6 @@
   }
 }
 
-.conversation-pin-menu {
-  z-index: 220;
-  min-width: 192px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 10px;
-  padding: 5px;
-  background: var(--workspace-overlay-bg);
-  color: var(--workspace-native-text);
-  box-shadow: 0 8px 24px rgb(37 28 45 / 12%);
-  font-family: var(--workspace-font-body);
-}
-
 .conversation-pin-menu__item {
   min-height: 36px;
   border-radius: 6px;

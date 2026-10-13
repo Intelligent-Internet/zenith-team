@@ -28,11 +28,6 @@
   color: var(--pc-muted);
   font-size: 12px;
 }
-.wiki-document-workspace__draft-label {
-  flex: none;
-  color: var(--pc-ink);
-  font-weight: 600;
-}
 .wiki-document-workspace__bar > button {
   display: inline-flex;
   align-items: center;
@@ -142,14 +137,6 @@
 /* The Wiki page bar hosts the save state and draft actions, where Save sat
    in the earlier editor. These render outside the document section, so they
    use workspace tokens rather than the --pc-* ones. */
-.zen-wiki__draft-slot {
-  display: contents;
-}
-.wiki-draft-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 /* LiveDocument portals its status header into the slot; both dissolve so
    the save state, Export PDF and Review and publish share one row. */
 .wiki-draft-actions > div,
@@ -208,18 +195,6 @@
   cursor: not-allowed;
 }
 /* The draft heading mirrors the published page: collection, title, status. */
-.wiki-draft-heading {
-  display: grid;
-  gap: 8px;
-}
-.wiki-draft-heading__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--pc-muted);
-  font-size: var(--workspace-text-caption);
-  font-weight: 650;
-}
 .wiki-draft-heading__eyebrow select {
   max-width: 220px;
   padding: 2px 4px;
@@ -232,28 +207,9 @@
 .wiki-draft-heading__eyebrow select:hover:not(:disabled) {
   background: var(--pc-raised);
 }
-.wiki-draft-heading__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--pc-muted);
-  font-size: var(--workspace-text-caption);
-}
 .wiki-draft-heading__meta span + span::before {
   content: "·";
   margin-right: 8px;
-}
-.wiki-draft-heading__badge {
-  border: 1px solid var(--pc-line);
-  border-radius: 4px;
-  padding: 0 5px;
-  background: var(--pc-raised);
-  font-size: 10px;
-}
-.wiki-draft-heading__editing {
-  color: var(--pc-accent);
-  font-weight: 600;
 }
 .wiki-draft-heading__summary {
   width: 100%;

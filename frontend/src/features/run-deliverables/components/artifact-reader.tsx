@@ -33,7 +33,7 @@ export function ArtifactReader({
           <div>
             <h1 className="text-2xl font-semibold">{title}</h1>
             {summary ? (
-              <details className="artifact-summary-details">
+              <details className="artifact-summary-details mt-[12px] text-[length:13px] text-[var(--text-secondary)]">
                 <summary>About this artifact</summary>
                 <p className="artifact-share-summary">{summary}</p>
               </details>
@@ -41,7 +41,7 @@ export function ArtifactReader({
           </div>
         </header>
         {artifactActions}
-        <div className="artifact-sidebar-files-heading">
+        <div className="artifact-sidebar-files-heading flex items-center justify-between mb-[12px] text-[length:12px] font-[600]">
           <h2>Files</h2>
           <span>{files.length}</span>
         </div>
@@ -62,7 +62,7 @@ export function ArtifactReader({
       <div className="artifact-share-main">
         {notice}
         <div className="artifact-share-layout">
-          <div className="artifact-share-content">
+          <div className="min-w-0 grid gap-[24px]">
             {files.length ? (
               <section
                 className="artifact-files-panel"

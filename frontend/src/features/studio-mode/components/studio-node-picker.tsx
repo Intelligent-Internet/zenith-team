@@ -284,7 +284,7 @@ export function StudioNodePicker({
                       onClick={() => onCreate(activeKind, model)}
                       aria-label={`Add ${model.label} ${active?.label?.toLowerCase()} node`}
                     >
-                      <span className="studio-mode-panel__model-copy">
+                      <span className="flex flex-1 min-w-0 items-center justify-between gap-[8px]">
                         <strong>{model.label}</strong>
                         {model.pro ? <small>Pro</small> : null}
                       </span>

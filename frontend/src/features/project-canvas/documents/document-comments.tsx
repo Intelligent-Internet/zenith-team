@@ -180,7 +180,7 @@ export function DocumentCommentsPanel({
             !failed &&
             comments.animatedThreads.length === 0 &&
             !comments.showComposer && (
-              <p className="pc-comments-empty">
+              <p className="pc-comments-empty p-[42px_22px] text-center text-[var(--pc-soft)]">
                 {comments.filter === "resolved"
                   ? "No resolved comments."
                   : comments.filter === "open"
@@ -189,7 +189,10 @@ export function DocumentCommentsPanel({
               </p>
             )}
           {failed && (
-            <div className="pc-comments-empty" role="alert">
+            <div
+              className="pc-comments-empty p-[42px_22px] text-center text-[var(--pc-soft)]"
+              role="alert"
+            >
               <p>Comments are unavailable.</p>
               <button onClick={() => void retry()}>Retry</button>
             </div>
@@ -209,7 +212,7 @@ export function DocumentCommentsPanel({
                     comments.finishExit(thread.id);
                 }}
               >
-                <div className="pc-animated-thread-content">
+                <div className="min-h-0 overflow-hidden">
                   <ReviewThread
                     agentScope={agentScope}
                     thread={thread}
@@ -232,7 +235,7 @@ export function DocumentCommentsPanel({
               className={`pc-comment-composer po-page-comment-compose ${cardClass}`}
               data-page-comment="draft"
             >
-              <div className="pc-margin-composer-author">
+              <div className="flex items-center gap-[10px] p-[4px_0_14px] text-[length:13px]">
                 <CommentAvatar name={currentUser.data?.displayName || "You"} />
                 <strong>{currentUser.data?.displayName || "You"}</strong>
               </div>

@@ -311,7 +311,10 @@ export function PageConflictEditor({
         <p>Keep the page as it is.</p>
       )}
       {error && (
-        <p role="alert" className="pc-review-error">
+        <p
+          role="alert"
+          className="pc-review-error p-[8px_0] text-[var(--destructive)]"
+        >
           {error}
         </p>
       )}

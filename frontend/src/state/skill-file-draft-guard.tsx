@@ -68,7 +68,7 @@ export function SkillFileDraftGuard() {
           </button>
           <button
             type="button"
-            className="custom-skill-button custom-skill-button--danger"
+            className="custom-skill-button [background:var(--workspace-native-danger)] text-[var(--workspace-danger-foreground)]"
             onClick={leave}
           >
             Discard and leave

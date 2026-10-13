@@ -26,36 +26,6 @@
   min-height: 0;
   max-height: calc(100dvh - 50px);
 }
-.new-agent-body {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.new-agent-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid var(--workspace-divider);
-}
-.new-agent-symbol {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: var(--workspace-radius-panel);
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-accent);
-}
-.new-agent-heading {
-  flex: 1;
-  min-width: 0;
-}
 .new-agent-title {
   margin: 0;
   font-family: var(
@@ -67,12 +37,6 @@
   line-height: var(--workspace-leading-page);
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
-}
-.new-agent-description {
-  margin: 5px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
 }
 .new-agent-close {
   display: grid;
@@ -91,31 +55,10 @@
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
 }
-.new-agent-fields {
-  display: grid;
-  gap: 22px;
-  min-width: 0;
-  margin: 0;
-  padding: 20px 24px 24px;
-  border: 0;
-}
 .new-agent-identity {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-}
-.new-agent-preview {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-}
-.new-agent-identity-fields {
-  display: grid;
-  flex: 1;
-  gap: 12px;
-  min-width: 0;
 }
 .new-agent-field {
   display: grid;
@@ -169,12 +112,6 @@
   gap: 10px;
   min-width: 0;
 }
-.new-agent-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
 .new-agent-section-heading a {
   display: inline-flex;
   align-items: center;
@@ -182,11 +119,6 @@
   color: var(--workspace-native-accent);
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
-}
-.new-agent-looks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
 }
 .new-agent-look-choice {
   display: grid;
@@ -215,10 +147,6 @@
 .new-agent-disclosure:focus-visible {
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: 2px;
-}
-.new-agent-look-auto {
-  font-size: var(--workspace-text-caption);
-  font-weight: 600;
 }
 /* The two providers side by side, each a card with the runtime row's look. */
 .new-agent-providers.agent-runtime-options {

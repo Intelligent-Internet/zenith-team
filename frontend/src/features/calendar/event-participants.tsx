@@ -77,7 +77,7 @@ export function EventSharingFields({
   );
   return (
     <section className="calendar-sharing" aria-label="Calendar and guests">
-      <div className="calendar-sharing-calendar">
+      <div className="grid grid-cols-[17px_minmax(0,_1fr)] items-center gap-[10px] text-[var(--workspace-text-muted)]">
         <CalendarDays size={17} aria-hidden="true" />
         <CalendarOptionPicker
           label="Calendar"
@@ -97,7 +97,7 @@ export function EventSharingFields({
           onChange={(calendarId) => patch({ calendarId })}
         />
       </div>
-      <div className="calendar-selected-guests">
+      <div className="calendar-selected-guests flex flex-wrap items-center gap-[7px] text-[var(--workspace-text-muted)] pt-[5px]">
         <Users size={17} aria-hidden="true" />
         {selected.map((id) => {
           const guest =
@@ -106,7 +106,10 @@ export function EventSharingFields({
           if (!guest) return null;
           const name = guest.displayName || guest.email;
           return (
-            <span className="calendar-guest-chip" key={id}>
+            <span
+              className="calendar-guest-chip inline-flex items-center gap-[5px] rounded-[20px] [background:var(--workspace-panel-raised-bg)] p-[3px_5px_3px_3px] min-w-0 max-w-[190px]"
+              key={id}
+            >
               <Avatar className="calendar-guest-avatar">
                 <AvatarFallback>
                   {name.trim().slice(0, 1).toUpperCase()}
@@ -148,7 +151,7 @@ export function EventSharingFields({
               onChange={(event) => setSearch(event.target.value)}
             />
           </label>
-          <div className="calendar-guest-picker">
+          <div className="max-h-[220px] overflow-y-auto grid gap-[4px]">
             {members.length ? (
               members.map((member) => {
                 const isSelected = selected.includes(member.userId);

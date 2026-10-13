@@ -66,7 +66,7 @@ export function ConversationPinMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="conversation-pin-menu"
+        className="conversation-pin-menu z-[220] min-w-[192px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] p-[5px] [background:var(--workspace-overlay-bg)] text-workspace-text [box-shadow:0_8px_24px_rgb(37_28_45_/_12%)] font-workspace-body"
         sideOffset={6}
         onCloseAutoFocus={(event) => {
           if (openingRenameRef.current) {

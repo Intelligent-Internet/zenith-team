@@ -29,16 +29,6 @@
   align-items: start;
   gap: 10px;
 }
-.agent-setup-step-number {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--workspace-control-bg);
-  font-size: var(--workspace-text-caption);
-  color: var(--workspace-native-text-muted);
-}
 .agent-setup-step-heading strong,
 .agent-setup-connections > strong {
   font-size: var(--workspace-text-label);
@@ -140,14 +130,6 @@
 .agent-setup-status > span + span::before {
   content: "·";
   margin-inline-end: 6px;
-}
-
-.agent-setup-compact-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
-  margin-top: 16px;
 }
 
 .agent-setup-computer-name {

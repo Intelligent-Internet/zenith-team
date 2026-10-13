@@ -376,7 +376,7 @@ function ChatConversationComponent({
     return (
       <>
         {startsDay && previousMessage ? (
-          <div className="workspace-chat-day">
+          <div className="flex items-center justify-center p-[12px_0] text-workspace-muted text-workspace-micro">
             <time dateTime={message.createdAt}>
               {messageDate.toLocaleDateString(undefined, {
                 weekday: "long",

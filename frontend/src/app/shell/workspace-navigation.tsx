@@ -157,7 +157,7 @@ export function WorkspaceRail({
       data-tour-id="workspace-navigation-desktop"
     >
       <PrimaryNavigationItems {...props} />
-      <div className="workspace-rail-footer">
+      <div className="mt-auto pt-[16px] pb-[8px] flex shrink-0 flex-col items-center gap-[16px]">
         <DesktopUpdateButton />
         {accountMenu}
       </div>

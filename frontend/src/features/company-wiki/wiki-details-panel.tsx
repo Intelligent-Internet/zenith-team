@@ -85,11 +85,14 @@ export function WikiDetailsPanel({
         </button>
       </div>
       {editing ? (
-        <p className="zen-wiki__muted">
+        <p className="text-[var(--wk-muted)] p-[0_10px]">
           Publish the draft to update the page outline and links.
         </p>
       ) : outline.length ? (
-        <nav aria-label="Page outline" className="zen-wiki__outline">
+        <nav
+          aria-label="Page outline"
+          className="zen-wiki__outline grid [border-left:1px_solid_var(--wk-border)] m-[0_0_28px_3px]"
+        >
           {outline.map((heading, index) => (
             <button
               key={`${index}-${heading.text}`}
@@ -105,16 +108,18 @@ export function WikiDetailsPanel({
           ))}
         </nav>
       ) : (
-        <p className="zen-wiki__muted">No headings yet.</p>
+        <p className="text-[var(--wk-muted)] p-[0_10px]">No headings yet.</p>
       )}
-      <div className="zen-wiki__detail-section">
+      <div className="[border-top:1px_solid_var(--wk-border)] p-[19px_0]">
         <div className="zen-wiki__detail-heading">
           <strong>Backlinks</strong>
           <span>{links.data?.incoming.length ?? 0}</span>
         </div>
-        {links.isLoading && <p className="zen-wiki__muted">Loading links…</p>}
+        {links.isLoading && (
+          <p className="text-[var(--wk-muted)] p-[0_10px]">Loading links…</p>
+        )}
         {links.isError && (
-          <p className="zen-wiki__error" role="alert">
+          <p className="text-workspace-danger p-[0_10px]" role="alert">
             Links could not be loaded.
           </p>
         )}
@@ -130,13 +135,17 @@ export function WikiDetailsPanel({
           </button>
         ))}
         {links.data?.incoming.length === 0 && (
-          <p className="zen-wiki__muted">No pages link here.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            No pages link here.
+          </p>
         )}
         {links.data?.incomingTruncated && (
-          <p className="zen-wiki__muted">Showing the first 200 backlinks.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            Showing the first 200 backlinks.
+          </p>
         )}
       </div>
-      <div className="zen-wiki__detail-section">
+      <div className="[border-top:1px_solid_var(--wk-border)] p-[19px_0]">
         <div className="zen-wiki__detail-heading">
           <strong>Linked pages</strong>
           <span>{links.data?.outgoing.length ?? 0}</span>
@@ -153,15 +162,19 @@ export function WikiDetailsPanel({
           </button>
         ))}
         {links.data?.outgoing.length === 0 && (
-          <p className="zen-wiki__muted">No linked pages yet.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            No linked pages yet.
+          </p>
         )}
         {links.data?.outgoingTruncated && (
-          <p className="zen-wiki__muted">Showing the first 200 linked pages.</p>
+          <p className="text-[var(--wk-muted)] p-[0_10px]">
+            Showing the first 200 linked pages.
+          </p>
         )}
       </div>
       <WikiPageAgentReads companyId={companyId} pageId={page.id} />
       {canPublish && (
-        <div className="zen-wiki__detail-section zen-wiki__detail-actions">
+        <div className="[border-top:1px_solid_var(--wk-border)] p-[19px_0] zen-wiki__detail-actions">
           <button
             disabled={archiveState.isLoading || editing}
             onClick={() => void toggleArchive()}

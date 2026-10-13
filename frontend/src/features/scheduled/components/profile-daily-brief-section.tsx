@@ -55,7 +55,10 @@ export function ProfileDailyBriefSection({ companyId }: { companyId: string }) {
   if (!canManageSchedules) return null;
 
   return (
-    <section className="my-account-daily" aria-labelledby="daily-brief-title">
+    <section
+      className="my-account-daily [border-top:1px_solid_var(--workspace-divider)]"
+      aria-labelledby="daily-brief-title"
+    >
       <div className="my-account-setting-row">
         <div>
           <h3 id="daily-brief-title">Daily Brief</h3>

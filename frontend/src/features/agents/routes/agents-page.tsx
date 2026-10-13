@@ -135,7 +135,7 @@ function CompanyAgents({ companyId }: { companyId: string }) {
           <>
             <FoldAvatar agentId={selected.id} size={72} paused />
             <span>
-              <span className="agent-profile-name">
+              <span className="flex flex-wrap items-center gap-[14px]">
                 <EditableAgentName agent={selected} />
                 {/* The viewer's own count: Runs on their computer (ADR 0014).
                     Recent runs lists everyone's, so the label says whose. */}

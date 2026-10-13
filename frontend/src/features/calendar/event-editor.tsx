@@ -369,7 +369,10 @@ export function EventEditor({
               : " will be permanently removed from your calendar."}
           </p>
           {error && (
-            <p role="alert" className="personal-error">
+            <p
+              role="alert"
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            >
               {error}
             </p>
           )}
@@ -464,7 +467,9 @@ export function EventEditor({
           </label>
           <section className="calendar-when" aria-label="Date and time">
             <div className="calendar-schedule-row">
-              <span className="calendar-schedule-label">Starts</span>
+              <span className="text-[length:11px] text-workspace-muted">
+                Starts
+              </span>
               <CalendarDatePicker
                 label="Start date"
                 value={input.startLocal.slice(0, 10)}
@@ -479,7 +484,9 @@ export function EventEditor({
               )}
             </div>
             <div className="calendar-schedule-row">
-              <span className="calendar-schedule-label">Ends</span>
+              <span className="text-[length:11px] text-workspace-muted">
+                Ends
+              </span>
               <CalendarDatePicker
                 label={input.allDay ? "Last day" : "End date"}
                 value={endDate.slice(0, 10)}
@@ -494,7 +501,7 @@ export function EventEditor({
                 />
               )}
             </div>
-            <div className="calendar-schedule-meta">
+            <div className="flex items-center gap-[12px] justify-between pl-[44px]">
               <label className="calendar-all-day-toggle">
                 <input
                   type="checkbox"
@@ -549,7 +556,7 @@ export function EventEditor({
             <div className="calendar-schedule-field">
               <Bell
                 size={17}
-                className="calendar-field-icon"
+                className="text-[var(--workspace-text-muted)]"
                 aria-hidden="true"
               />
               <CalendarOptionPicker
@@ -583,7 +590,7 @@ export function EventEditor({
             <div className="calendar-more-fields">
               <label>
                 Time zone
-                <span className="calendar-timezone-input">
+                <span className="calendar-timezone-input relative block">
                   <input
                     required
                     value={input.timeZone}
@@ -619,7 +626,10 @@ export function EventEditor({
                 />
               </label>
               <span className="calendar-field-label">Event color</span>
-              <div className="calendar-colors" aria-label="Event color">
+              <div
+                className="calendar-colors flex gap-[9px]"
+                aria-label="Event color"
+              >
                 {calendarColors.map((color) => (
                   <button
                     type="button"
@@ -641,7 +651,10 @@ export function EventEditor({
             </p>
           )}
           {error && (
-            <p role="alert" className="personal-error">
+            <p
+              role="alert"
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            >
               {error}
             </p>
           )}

@@ -44,7 +44,7 @@ export function RunContext({
         ? "/scheduled"
         : `/app?conversationKind=direct&conversationId=${run.conversationId}&agentId=${run.agentId}`;
   return (
-    <section className="run-context" aria-label="Run details">
+    <section className="run-context grid gap-[10px]" aria-label="Run details">
       <nav aria-label="Run context">
         <Link to="/agents">Agents</Link>
         <span>/</span>

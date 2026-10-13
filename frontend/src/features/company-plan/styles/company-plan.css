@@ -97,15 +97,6 @@
     max-width: 180px;
   }
 
-  .work-select__chevron {
-    position: absolute;
-    top: 50%;
-    inset-inline-end: 12px;
-    transform: translateY(-50%);
-    pointer-events: none;
-    color: var(--workspace-native-text-muted);
-  }
-
   .work-select select {
     appearance: none;
     display: block;
@@ -123,13 +114,6 @@
     line-height: var(--workspace-leading-body);
     text-overflow: ellipsis;
     cursor: pointer;
-  }
-
-  .work-view-panel {
-    flex: 1;
-    min-height: 0;
-    min-width: 0;
-    overflow: hidden;
   }
 
   .company-plan-scroll {
@@ -238,12 +222,6 @@
   .member-work-filters button[data-active="true"] {
     background: rgba(255, 255, 255, 0.055);
     color: #f2eee2;
-  }
-
-  .member-work-rows {
-    min-height: 0;
-    overflow-y: auto;
-    padding: 8px;
   }
 
   .member-work-row {

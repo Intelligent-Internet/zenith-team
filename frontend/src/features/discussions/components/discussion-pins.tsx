@@ -81,15 +81,21 @@ export function DiscussionPins({
     ? []
     : (query.currentData?.pages.flatMap((page) => page.items) ?? []);
   return (
-    <div className="discussion-pins" aria-label="Pinned messages">
-      <p className="discussion-pins-explanation">
+    <div
+      className="discussion-pins flex-1 overflow-auto p-[16px_20px]"
+      aria-label="Pinned messages"
+    >
+      <p className="flex items-center gap-[7px] text-[var(--discussion-muted)] text-[length:12px] mb-[20px]">
         <Pin size={15} /> Messages pinned here are shared with everyone in this
         conversation.
       </p>
       {pins.map((pin) => (
-        <div key={pin.message.id} className="discussion-pin-card">
+        <div
+          key={pin.message.id}
+          className="[border:1px_solid_var(--discussion-border)] rounded-[8px] mb-[14px]"
+        >
           {pin.root ? (
-            <p className="discussion-pin-context">
+            <p className="p-[10px_18px_0] text-[var(--discussion-muted)] text-[length:12px] overflow-hidden text-ellipsis whitespace-nowrap">
               Reply to {pin.root.author.displayName}:{" "}
               {pin.root.deletedAt
                 ? "Deleted message"
@@ -103,7 +109,7 @@ export function DiscussionPins({
             inThread={Boolean(pin.root)}
           />
           <button
-            className="discussion-pin-jump"
+            className="flex items-center gap-[6px] text-workspace-accent text-[length:12px] m-[8px_20px_12px_64px]"
             onClick={() => onFocus(pin.message.id)}
             disabled={busy}
           >
@@ -122,7 +128,7 @@ export function DiscussionPins({
       ) : query.isLoading ? (
         <p role="status">Loading pinned messages…</p>
       ) : !pins.length ? (
-        <div className="discussion-empty">
+        <div className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]">
           <Pin size={28} />
           <h3>No pinned messages</h3>
           <p>

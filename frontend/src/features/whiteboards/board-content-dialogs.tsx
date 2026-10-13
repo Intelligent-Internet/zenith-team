@@ -181,7 +181,7 @@ export function BoardConnectorDialog({
     if (chosen.stereotype && !label.trim()) setLabel(chosen.stereotype);
   };
   return (
-    <div className="wb-modal-backdrop">
+    <div className="fixed inset-0 flex items-center justify-center [background:#0006] z-[150] p-[24px]">
       <form
         className="wb-dialog"
         role="dialog"
@@ -250,7 +250,7 @@ export function BoardConnectorDialog({
         </label>
         <details className="wb-connector-advanced">
           <summary>Advanced</summary>
-          <div className="wb-connector-grid">
+          <div className="grid grid-cols-[repeat(2,_minmax(0,_1fr))] gap-[12px] mt-[12px]">
             <label>
               Line
               <select

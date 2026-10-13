@@ -425,10 +425,10 @@ function AnalyticsView({ companyId }: { companyId: string }) {
         <p role="status">Company access changed. Showing your work.</p>
       ) : null}
       <section
-        className="analytics-filter-panel"
+        className="[border:0] [background:transparent]"
         aria-label="Analytics filters"
       >
-        <div className="analytics-filter-primary">
+        <div className="flex items-center justify-between gap-[12px] flex-wrap">
           <div className="analytics-period-controls">
             <label>
               Range
@@ -508,7 +508,7 @@ function AnalyticsView({ companyId }: { companyId: string }) {
           </div>
           <button
             type="button"
-            className="analytics-filter-toggle"
+            className="inline-flex items-center gap-[8px]"
             aria-expanded={filtersOpen}
             aria-controls="analytics-advanced-filters"
             onClick={() => setFiltersOpen(!filtersOpen)}
@@ -516,7 +516,9 @@ function AnalyticsView({ companyId }: { companyId: string }) {
             <SlidersHorizontal size={16} />
             Filters
             {filterCount ? (
-              <span className="analytics-filter-count">{filterCount}</span>
+              <span className="grid min-w-[18px] h-[18px] place-items-center rounded-[4px] [background:var(--analytics-control)] text-workspace-caption">
+                {filterCount}
+              </span>
             ) : null}
           </button>
         </div>
@@ -610,7 +612,7 @@ function AnalyticsView({ companyId }: { companyId: string }) {
         ))}
       </nav>
       {filterCount ? (
-        <div className="analytics-chips">
+        <div className="analytics-chips flex gap-[7px] flex-wrap mt-[12px]">
           {Object.entries(filters)
             .filter(([, value]) => value)
             .map(([key, value]) => (
@@ -643,7 +645,10 @@ function AnalyticsView({ companyId }: { companyId: string }) {
       ) : null}
       {period.error ? <p role="alert">{period.error}</p> : null}
       {error ? (
-        <p role="alert" className="analytics-error">
+        <p
+          role="alert"
+          className="mt-[16px] p-[12px_16px] [border:1px_solid_color-mix(in_srgb,_var(--analytics-danger)_35%,_transparent)] rounded-workspace-panel text-[var(--analytics-danger)] text-workspace-caption"
+        >
           {getBoardlyQueryErrorMessage(error)}{" "}
           {"body" in error && error.body?.requestId
             ? `Request ${error.body.requestId}`
@@ -654,7 +659,10 @@ function AnalyticsView({ companyId }: { companyId: string }) {
         </p>
       ) : null}
       {!skip && !data ? (
-        <div className="analytics-loading" role="status">
+        <div
+          className="grid h-[240px] place-items-center text-[var(--analytics-muted)] text-workspace-caption"
+          role="status"
+        >
           Loading analytics…
         </div>
       ) : null}
@@ -947,7 +955,7 @@ function SectionSortControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="analytics-section-controls">
+    <div className="analytics-section-controls flex justify-end m-0">
       <label>
         Sort by
         <AnalyticsSelect
@@ -1061,7 +1069,10 @@ function BudgetCard({
           <p>Inbox alerts at 80% and 100%. Runs are never blocked.</p>
         </div>
         {saveError ? (
-          <span role="alert" className="analytics-error">
+          <span
+            role="alert"
+            className="mt-[16px] p-[12px_16px] [border:1px_solid_color-mix(in_srgb,_var(--analytics-danger)_35%,_transparent)] rounded-workspace-panel text-[var(--analytics-danger)] text-workspace-caption"
+          >
             {getBoardlyQueryErrorMessage(saveError)}
           </span>
         ) : unchanged ? (
@@ -1229,7 +1240,10 @@ function AnalyticsHeatmapView({ data }: { data?: AnalyticsHeatmap }) {
     <section className="analytics-card">
       <h2>When Runs happen</h2>
       {!data ? (
-        <div className="analytics-chart-loading" role="status">
+        <div
+          className="grid place-items-center min-h-[320px] text-[var(--analytics-muted)]"
+          role="status"
+        >
           Loading heatmap…
         </div>
       ) : (
@@ -1442,7 +1456,9 @@ function BreakdownTable({
       <div className="analytics-card-heading">
         <div>
           {!children ? (
-            <span className="analytics-eyebrow">{partLabel(metric)}</span>
+            <span className="block mb-[5px] text-[var(--analytics-muted)] text-[length:12px] font-[600] tracking-[0.1em] leading-[1.4] uppercase">
+              {partLabel(metric)}
+            </span>
           ) : null}
           <h2>{title}</h2>
         </div>
@@ -1473,7 +1489,10 @@ function BreakdownTable({
           </button>
         </p>
       ) : !displayed ? (
-        <div className="analytics-chart-loading" role="status">
+        <div
+          className="grid place-items-center min-h-[320px] text-[var(--analytics-muted)]"
+          role="status"
+        >
           Loading…
         </div>
       ) : !rows.length ? (
@@ -1486,7 +1505,7 @@ function BreakdownTable({
               ))
             : null}
           {details ? (
-            <div className="analytics-table-scroll analytics-ranking-details">
+            <div className="w-full max-w-full overflow-x-auto [scrollbar-width:thin] mt-[14px]">
               <table>
                 <thead>
                   <tr>
@@ -1700,7 +1719,10 @@ function ModelRelationshipSunburst({ data }: { data?: AnalyticsBreakdown }) {
         </div>
       </div>
       {!data ? (
-        <div className="analytics-chart-loading" role="status">
+        <div
+          className="grid place-items-center min-h-[320px] text-[var(--analytics-muted)]"
+          role="status"
+        >
           Loading model share…
         </div>
       ) : !hierarchy.length ? (
@@ -2076,7 +2098,7 @@ function FailureMix({
     [],
   );
   return (
-    <div className="analytics-ranking-list analytics-failure-mix">
+    <div className="analytics-ranking-list mt-0">
       {entries.length ? (
         <>
           <AnalyticsEChart
@@ -2086,7 +2108,10 @@ function FailureMix({
             height={270}
             onEvents={events}
           />
-          <div className="analytics-failure-legend" aria-live="polite">
+          <div
+            className="analytics-failure-legend flex justify-center gap-[10px_16px] flex-wrap m-[12px_0_0]"
+            aria-live="polite"
+          >
             {entries.map(([key, value], index) => (
               <span key={key}>
                 <i

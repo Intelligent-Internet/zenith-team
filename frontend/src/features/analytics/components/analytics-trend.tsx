@@ -96,7 +96,7 @@ export function AnalyticsTrend({
       </div>
       {!series ? (
         <div
-          className="analytics-chart-loading"
+          className="grid place-items-center min-h-[320px] text-[var(--analytics-muted)]"
           style={{ height: height + 80 }}
           role="status"
         >
@@ -109,7 +109,7 @@ export function AnalyticsTrend({
             : "No reported values for this period."}
         </p>
       ) : table ? (
-        <div className="analytics-table-scroll">
+        <div className="w-full max-w-full overflow-x-auto [scrollbar-width:thin]">
           <table>
             <caption className="sr-only">{title}</caption>
             <thead>
@@ -141,7 +141,7 @@ export function AnalyticsTrend({
         </div>
       ) : (
         <>
-          <div className="analytics-trend-insight">
+          <div className="analytics-trend-insight flex items-center flex-wrap gap-[8px] min-h-[32px] m-[14px_0_4px] text-[var(--analytics-muted)] text-workspace-caption">
             <Tooltip label={insight.detail}>
               <span className="analytics-trend-summary" tabIndex={0}>
                 <span className={`analytics-trend-dot ${insight.tone}`} />
@@ -163,7 +163,10 @@ export function AnalyticsTrend({
             height={height}
             onEvents={events}
           />
-          <div className="analytics-legend" aria-label="Chart legend">
+          <div
+            className="analytics-legend flex items-center gap-[14px] flex-wrap mt-[8px] text-[var(--analytics-muted)] text-[length:12px]"
+            aria-label="Chart legend"
+          >
             {keys.map((key, index) => (
               <span key={key}>
                 <i

@@ -399,7 +399,7 @@ function AgentCapabilityContent({
   return (
     <div className="agent-capabilities-layout">
       <div className="agent-capabilities-main" ref={mainRef}>
-        <div className="agent-capabilities-toolbar">
+        <div className="flex items-center gap-[16px] flex-wrap">
           <label className="agent-capabilities-search">
             <Search size={17} />
             <input
@@ -564,7 +564,7 @@ function AgentCapabilityContent({
           runtimeLink={runtimeLink && `${runtimeLink}&tab=plugins`}
           {...controls}
         />
-        <details className="agent-capabilities-help">
+        <details className="agent-capabilities-help mt-[28px] text-workspace-caption text-workspace-muted max-w-[640px]">
           <summary>When changes apply</summary>
           <p>
             Settings apply to new task and direct-chat runs. Queued runs keep

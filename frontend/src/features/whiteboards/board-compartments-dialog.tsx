@@ -62,7 +62,7 @@ export function BoardCompartmentsDialog({
       setDividers(dividers.filter((_, i) => i !== Math.max(0, index - 1)));
   };
   return (
-    <div className="wb-modal-backdrop">
+    <div className="fixed inset-0 flex items-center justify-center [background:#0006] z-[150] p-[24px]">
       <form
         className="wb-dialog wb-compartments-dialog"
         role="dialog"

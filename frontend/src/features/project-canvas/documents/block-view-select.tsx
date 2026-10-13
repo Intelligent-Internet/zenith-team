@@ -12,7 +12,7 @@ export function BlockViewSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="pc-view-select">
+    <label className="inline-flex items-center gap-[8px] text-[var(--pc-muted)] text-[length:11px]">
       <Icon name="setting-2" className="size-3.5" />
       <span>View</span>
       <select

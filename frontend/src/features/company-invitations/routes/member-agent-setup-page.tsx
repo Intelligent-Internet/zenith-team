@@ -97,12 +97,18 @@ function MemberAgentSetupContent({
         showSettingsItems={false}
       />
       <div className="workspace-onboarding__frame">
-        <nav className="onboarding-progress" aria-label="Agent setup progress">
-          <p className="onboarding-progress__label" aria-live="polite">
+        <nav
+          className="onboarding-progress grid [justify-items:center] gap-[10px]"
+          aria-label="Agent setup progress"
+        >
+          <p
+            className="onboarding-progress__label flex items-baseline gap-[8px] m-0 text-workspace-muted text-[length:12px] font-[500]"
+            aria-live="polite"
+          >
             <span>Step {computerStep ? 1 : 2} of 2</span>
             {computerStep ? "Your computer" : "Your agents"}
           </p>
-          <ol className="onboarding-progress__track">
+          <ol className="flex gap-[6px] m-0 p-0 [list-style:none]">
             <li
               className="onboarding-progress__step"
               data-state={computerStep ? "current" : "complete"}
@@ -135,7 +141,7 @@ function MemberAgentSetupContent({
                 : `Choose the agents you want to run on ${setup.computer?.name ?? "your computer"}. Their names and roles are shared with everyone in ${companyName}.`}
             </p>
           </header>
-          <div className="member-agent-setup__body" aria-busy={setup.saving}>
+          <div className="grid gap-[16px]" aria-busy={setup.saving}>
             <div className="member-agent-setup__toolbar">
               <h2>{computerStep ? "Your computers" : "Company agents"}</h2>
               <button

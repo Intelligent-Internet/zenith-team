@@ -143,7 +143,7 @@ export function WorkBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
   if (!scope)
     return (
-      <NodeViewWrapper className="pc-block-empty">
+      <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         Project work is unavailable here.
       </NodeViewWrapper>
     );
@@ -228,7 +228,7 @@ function ProjectWorkBlock({
         </small>
       </header>
       {mode === "comparison" && (
-        <p className="pc-block-comparison-label">
+        <p className="text-[var(--pc-muted)] text-[length:11px] leading-[1.4] m-[0_0_8px]">
           {node.type.name === "taskReference"
             ? "Task reference"
             : "Project work"}{" "}
@@ -308,7 +308,7 @@ function ProjectWorkBlock({
           action={action}
         />
       ) : (
-        <p className="pc-block-empty">
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
           {node.type.name === "taskReference"
             ? node.attrs.taskId
               ? "This Task is unavailable in this view."
@@ -338,7 +338,7 @@ export function OutputCollectionBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
   if (!scope)
     return (
-      <NodeViewWrapper className="pc-block-empty">
+      <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         Project results are unavailable here.
       </NodeViewWrapper>
     );
@@ -391,7 +391,7 @@ function ProjectOutputCollectionBlock({
         </small>
       </header>
       {mode === "comparison" && (
-        <p className="pc-block-comparison-label">
+        <p className="text-[var(--pc-muted)] text-[length:11px] leading-[1.4] m-[0_0_8px]">
           Results · {node.attrs.filter || "all"} ·{" "}
           {node.attrs.display || "list"}
         </p>
@@ -437,7 +437,7 @@ function ProjectOutputCollectionBlock({
           display={String(node.attrs.display || "list")}
         />
       ) : (
-        <p className="pc-block-empty">
+        <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
           {node.attrs.filter === "new"
             ? "No new results yet."
             : "No results yet."}{" "}
@@ -462,7 +462,7 @@ export function ProjectResultList({
   const visible = report ? artifacts : artifacts.slice(0, 24);
   if (!artifacts.length)
     return (
-      <p className="pc-block-empty">
+      <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         No results yet. Submitted Task results appear here automatically.
       </p>
     );
@@ -519,7 +519,7 @@ export function ProjectResultList({
             )
           }
         >
-          <span className="pc-result-symbol">
+          <span className="grid place-items-center flex-none w-[40px] h-[46px] [border:1px_solid_var(--pc-line)] rounded-[8px] [background:var(--pc-raised)] text-[var(--pc-accent)]">
             <Icon name="document-text" className="size-5" />
           </span>
           <span className="pc-result-copy">
@@ -534,7 +534,10 @@ export function ProjectResultList({
               {artifact.pageId ? "Page" : "Saved Output"}
             </small>
           </span>
-          <Icon name="arrow-right" className="pc-result-arrow size-4" />
+          <Icon
+            name="arrow-right"
+            className="flex-none text-[var(--pc-soft)] size-4"
+          />
         </button>
       ))}
     </div>

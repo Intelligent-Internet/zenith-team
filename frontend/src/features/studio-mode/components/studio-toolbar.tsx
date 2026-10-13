@@ -187,7 +187,7 @@ function StudioToolDemo({ tool, label }: { tool: ToolId; label: string }) {
       <div className="studio-tool-demo__scene">
         {tool === "add" ? (
           <>
-            <div className="studio-tool-demo__menu">
+            <div className="studio-tool-demo__menu absolute top-[35px] left-[18px] w-[100px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] p-[5px] [background:var(--workspace-panel-bg)] [box-shadow:0_3px_8px_rgb(24_32_42_/_6%)]">
               <span>
                 <Text size={13} /> Text
               </span>
@@ -232,7 +232,9 @@ function StudioToolDemo({ tool, label }: { tool: ToolId; label: string }) {
       <span className="studio-tool-demo__cursor">
         {tool === "pan" ? <Hand size={20} /> : <Cursor size={20} />}
       </span>
-      <span className="studio-tool-demo__caption">{label}</span>
+      <span className="absolute right-0 bottom-0 left-0 p-[5px_8px] [background:var(--workspace-content-bg)] text-workspace-muted text-[length:9px] leading-[1.5] text-center">
+        {label}
+      </span>
     </div>
   );
 }

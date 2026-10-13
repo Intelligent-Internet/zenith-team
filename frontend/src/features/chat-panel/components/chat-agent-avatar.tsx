@@ -84,7 +84,7 @@ export function ChatAgentWelcome({
   role?: string;
 }) {
   return (
-    <div className="chat-agent-welcome">
+    <div className="chat-agent-welcome flex flex-1 min-h-[240px] flex-col items-center justify-center p-[32px_20px_48px] text-center text-[var(--workspace-native-text,_currentColor)]">
       <ChatAgentAvatar agentId={agentId} priority="foreground" size={88} />
       <h2>Chat with {name}</h2>
       {role ? <p className="chat-agent-welcome__role">{role}</p> : null}
@@ -101,7 +101,7 @@ export function ChatAgentAttention({
   name: string;
 }) {
   return (
-    <div className="chat-agent-attention">
+    <div className="flex items-center gap-[8px] mb-[8px] text-[length:13px] font-[500] text-[var(--workspace-native-text-muted,_#7a8391)]">
       <ChatAgentAvatar
         agentId={agentId}
         priority="foreground"

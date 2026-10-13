@@ -79,14 +79,17 @@ export function AgentProfileContent({
   const root = agent.reportsTo === null;
   return (
     <>
-      <p className="agent-readonly-note" role="note">
+      <p
+        className="m-[0_0_12px] p-[10px_12px] [border:1px_solid_var(--workspace-divider)] rounded-[12px] [background:var(--workspace-control-bg)] text-workspace-muted text-[length:12px] leading-[16px]"
+        role="note"
+      >
         {root
           ? "Only a company owner or admin can change the CEO agent."
           : `Only ${agent.createdBy?.name ?? "the agent's creator"}, or a company owner or admin, can change this agent.`}{" "}
         You can still set it up on your computer, chat with it and give it work.
       </p>
       {tab === "instructions" || tab === "voice" ? (
-        <fieldset className="agent-readonly-scope" disabled>
+        <fieldset className="contents [border:0] m-0 p-0 min-w-0" disabled>
           {body}
         </fieldset>
       ) : (
@@ -174,7 +177,7 @@ function AgentInstructions({ agent }: { agent: AgentDto }) {
             </p>
           </div>
         </div>
-        <div className="agent-instructions-editor">
+        <div className="agent-instructions-editor overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-workspace-panel [background:var(--workspace-panel-bg)]">
           <div
             className="agent-instructions-toolbar"
             role="group"
@@ -263,7 +266,7 @@ function AgentInstructions({ agent }: { agent: AgentDto }) {
         aria-label="Instruction guidance"
       >
         <section>
-          <BookOpen size={20} className="agent-guidance-icon" />
+          <BookOpen size={20} className="text-workspace-accent mb-[18px]" />
           <h2>Give {agent.name} a clear brief</h2>
           <p>
             Use these instructions for expectations that apply across tasks.
@@ -325,7 +328,7 @@ function AgentExecutionSettings({
                 use another provider.
               </AgentSettingsHelp>
             </span>
-            <div className="agent-settings-context-runtime">
+            <div className="agent-settings-context-runtime flex items-center gap-[10px] text-workspace-label leading-workspace-label">
               <img
                 alt=""
                 src={publicAssetPath(`images/settings/${agent.provider}.svg`)}
@@ -423,7 +426,7 @@ function AgentExecutionSettings({
                 The limit is per person. Direct chats and schedules don’t count.
               </AgentSettingsHelp>
             </span>
-            <div className="agent-concurrency-summary">
+            <div className="agent-concurrency-summary flex items-baseline flex-wrap gap-[8px] text-workspace-body text-workspace-muted">
               <strong>{agent.maxConcurrentRuns} at once</strong>
               <span>· {agent.activeRunCount} of yours active</span>
             </div>
@@ -534,7 +537,9 @@ function AgentWork({ agent }: { agent: AgentDto }) {
             {tasks.map((task) => (
               <Link key={task.id} to={`/tasks?taskId=${task.id}&taskView=full`}>
                 <TaskStatusIcon status={task.status} />
-                <span className="agent-work-task-id">{labelTask(task)}</span>
+                <span className="text-workspace-muted text-workspace-caption leading-workspace-caption whitespace-nowrap">
+                  {labelTask(task)}
+                </span>
                 <span className="agent-history-copy">
                   <strong>{task.title}</strong>
                   <small>

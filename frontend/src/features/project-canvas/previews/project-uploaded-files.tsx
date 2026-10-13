@@ -75,7 +75,7 @@ export default function ProjectUploadedFiles({
           />
         </label>
         {files.length ? (
-          <div className="po-library-rows">
+          <div className="flex flex-col [border-top:1px_solid_var(--pc-line)]">
             {files.map((file) => (
               <ProjectDocumentRow
                 key={file.id}
@@ -105,7 +105,10 @@ export default function ProjectUploadedFiles({
         <Suspense
           fallback={
             <div className="po-project-file-preview">
-              <div className="pc-viewer-loading" role="status">
+              <div
+                className="pc-viewer-loading flex flex-col items-center justify-center gap-[14px] min-h-[260px] h-full p-[40px] text-center text-[var(--pc-muted)] text-[length:13px] leading-[1.7]"
+                role="status"
+              >
                 Opening file…
               </div>
             </div>
@@ -164,7 +167,7 @@ function ProjectDocumentRow({
   };
   return (
     <>
-      <div className="po-project-file-row">
+      <div className="po-project-file-row flex items-center [border-bottom:1px_solid_var(--pc-line)]">
         <button
           type="button"
           className="po-library-row"

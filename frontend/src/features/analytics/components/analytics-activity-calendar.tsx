@@ -96,8 +96,8 @@ export function AnalyticsActivityCalendar({
         </div>
       </div>
       <div className="analytics-calendar-layout">
-        <div className="analytics-calendar-main">
-          <div className="analytics-calendar-month">
+        <div className="min-w-0">
+          <div className="analytics-calendar-month flex items-center justify-center gap-[20px] mb-[18px]">
             <button
               type="button"
               aria-label="Previous month"
@@ -117,7 +117,10 @@ export function AnalyticsActivityCalendar({
             </button>
           </div>
           {series.isError ? (
-            <div className="analytics-error" role="alert">
+            <div
+              className="mt-[16px] p-[12px_16px] [border:1px_solid_color-mix(in_srgb,_var(--analytics-danger)_35%,_transparent)] rounded-workspace-panel text-[var(--analytics-danger)] text-workspace-caption"
+              role="alert"
+            >
               Calendar could not be loaded.{" "}
               <button type="button" onClick={() => void series.refetch()}>
                 Retry calendar
@@ -125,7 +128,7 @@ export function AnalyticsActivityCalendar({
             </div>
           ) : null}
           {details ? (
-            <div className="analytics-table-scroll analytics-calendar-table">
+            <div className="w-full max-w-full overflow-x-auto [scrollbar-width:thin] max-h-[415px]">
               <table>
                 <caption className="sr-only">
                   {monthTitle} daily {partLabel(metric)}
@@ -162,12 +165,15 @@ export function AnalyticsActivityCalendar({
             </div>
           ) : (
             <div
-              className="analytics-calendar-grid"
+              className="grid grid-cols-[repeat(7,_minmax(0,_1fr))] gap-[5px]"
               aria-label={monthTitle}
               aria-busy={series.isFetching}
             >
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-                <span className="analytics-calendar-weekday" key={day}>
+                <span
+                  className="pb-[7px] text-[var(--analytics-muted)] text-center text-workspace-caption"
+                  key={day}
+                >
                   {day}
                 </span>
               ))}
@@ -228,7 +234,7 @@ export function AnalyticsActivityCalendar({
               })}
             </div>
           )}
-          <div className="analytics-calendar-key">
+          <div className="analytics-calendar-key flex items-center flex-wrap gap-[6px] mt-[15px] text-[length:12px] text-[var(--analytics-muted)]">
             <span>Less</span>
             {palette.heatmap.map((color) => (
               <i key={color} style={{ background: color }} />

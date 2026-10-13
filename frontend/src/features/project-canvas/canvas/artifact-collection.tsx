@@ -30,7 +30,11 @@ export function ArtifactCollection({
   onPlace,
 }: ArtifactCollectionProps) {
   if (!artifacts.length)
-    return <div className="pc-view-empty">No artifacts here yet.</div>;
+    return (
+      <div className="grid [place-content:center] min-h-[160px] p-[24px] text-[var(--pc-soft)] text-[length:12px] text-center leading-[1.7]">
+        No artifacts here yet.
+      </div>
+    );
   return (
     <Virtuoso
       className="nodrag nopan nowheel"
@@ -118,7 +122,7 @@ export function ArtifactTile({
         />
       </header>
       <div
-        className="pc-collection-preview"
+        className="pc-collection-preview h-[150px] relative overflow-hidden m-[0_12px] [border:1px_solid_var(--pc-line)] rounded-[6px] [background:var(--workspace-content-bg)]"
         onDoubleClick={() => onOpen(artifact)}
       >
         <NodePreview

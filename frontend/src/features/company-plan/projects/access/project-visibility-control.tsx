@@ -57,7 +57,7 @@ export function ProjectEveryoneNotice({
     }
   };
   return (
-    <p className="project-access-everyone">
+    <p className="project-access-everyone flex flex-wrap items-center gap-[8px] m-0 p-[8px_12px] [border:1px_solid_var(--workspace-divider)] rounded-[10px] text-workspace-muted text-[length:12px] leading-[1.4]">
       <Building2 aria-hidden="true" size={14} />
       <span>Open to everyone</span>
       {canLimit ? (

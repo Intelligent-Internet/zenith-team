@@ -142,7 +142,7 @@ export function AnalyticsCumulative({ series }: { series?: AnalyticsSeries }) {
         <p role="status">Loading cumulative usage…</p>
       ) : (
         <>
-          <div className="analytics-cumulative-total">
+          <div className="analytics-cumulative-total flex items-baseline gap-[10px] m-[20px_0_0]">
             <strong>{format(active?.cumulative ?? (isCost ? null : 0))}</strong>
             <span>through {active?.label ?? "this window"}</span>
           </div>

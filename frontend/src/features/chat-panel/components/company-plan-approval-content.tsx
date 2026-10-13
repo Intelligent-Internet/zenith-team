@@ -33,14 +33,17 @@ export function CompanyPlanTasks({
   const multipleProjects = review.projects.length > 1;
 
   return (
-    <div className="company-plan-approval__work">
+    <div className="mt-[20px]">
       {review.projects.map((project) => {
         const tasks = review.tasks.filter(
           (task) => task.projectKey === project.key,
         );
         return (
-          <section key={project.key} className="company-plan-approval__project">
-            <h3 className="company-plan-approval__section-title">
+          <section
+            key={project.key}
+            className="pt-[16px] [border-top:1px_solid_var(--workspace-divider)]"
+          >
+            <h3 className="m-0 text-workspace-chat leading-workspace-chat font-[600]">
               {multipleProjects
                 ? project.title
                 : tasks.length
@@ -48,12 +51,12 @@ export function CompanyPlanTasks({
                   : "Project changes"}
             </h3>
             {multipleProjects && project.description ? (
-              <p className="company-plan-approval__description">
+              <p className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden m-[8px_0_0] text-workspace-muted text-workspace-chat leading-workspace-chat">
                 {project.description}
               </p>
             ) : null}
             {tasks.length ? (
-              <ol className="company-plan-approval__tasks">
+              <ol className="company-plan-approval__tasks m-[8px_0_0] p-0 [list-style:none]">
                 {tasks.map((task, index) => {
                   const operation = taskChanges.get(task.key);
                   const forYou =
@@ -70,12 +73,12 @@ export function CompanyPlanTasks({
                         <summary>
                           <span
                             aria-hidden
-                            className="company-plan-approval__number"
+                            className="grid [flex:0_0_28px] w-[28px] h-[28px] place-items-center rounded-[50%] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-caption leading-workspace-caption font-[600]"
                           >
                             {index + 1}
                           </span>
-                          <span className="company-plan-approval__task-heading">
-                            <span className="company-plan-approval__task-title">
+                          <span className="flex flex-1 min-w-0 items-start flex-col gap-[3px]">
+                            <span className="text-workspace-chat leading-workspace-chat font-[600]">
                               {task.title}
                             </span>
                             <span
@@ -92,7 +95,7 @@ export function CompanyPlanTasks({
                           />
                         </summary>
                         <div className="company-plan-approval__task-body">
-                          <p className="company-plan-approval__task-context">
+                          <p className="m-[0_0_8px] text-workspace-muted text-workspace-caption leading-workspace-caption">
                             {operation === "create"
                               ? "New task"
                               : operation === "update"
@@ -129,7 +132,7 @@ function TaskMetadata({
   taskTitles: ReadonlyMap<string, string>;
 }) {
   return (
-    <dl className="company-plan-approval__metadata">
+    <dl className="company-plan-approval__metadata grid grid-cols-[auto_minmax(0,_1fr)] gap-[6px_16px] m-[16px_0_12px] text-workspace-caption leading-workspace-caption">
       <dt>Milestone</dt>
       <dd>{milestoneLabel(task.milestoneType)}</dd>
       <dt>Priority</dt>
@@ -155,7 +158,9 @@ function TaskMetadata({
 export function CompanyPlanBriefs({ review }: { review: CompanyPlanReview }) {
   return review.projects.map((project) => (
     <section key={project.key} className="company-plan-approval__brief">
-      <h3 className="company-plan-approval__section-title">{project.title}</h3>
+      <h3 className="m-0 text-workspace-chat leading-workspace-chat font-[600]">
+        {project.title}
+      </h3>
       <CompanyPlanMarkdown>{project.description}</CompanyPlanMarkdown>
     </section>
   ));

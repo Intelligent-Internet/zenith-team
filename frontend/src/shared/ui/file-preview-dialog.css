@@ -3,19 +3,6 @@
   color: var(--foreground);
 }
 
-.file-preview-surface {
-  display: flex;
-  width: 100%;
-  height: min(800px, calc(100dvh - 32px));
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--workspace-radius-overlay, 14px);
-  background: var(--card);
-  color: var(--foreground);
-  box-shadow: var(--workspace-overlay-shadow, 0 16px 48px #0003);
-}
-
 .file-preview-header {
   display: flex;
   min-height: 64px;

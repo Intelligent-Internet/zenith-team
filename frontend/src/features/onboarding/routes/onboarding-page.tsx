@@ -192,7 +192,10 @@ function OnboardingContent({
                   />
                 )
               ) : (
-                <p className="workspace-onboarding__error" role="alert">
+                <p
+                  className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+                  role="alert"
+                >
                   Company context is unavailable. Sign in again and retry setup.
                 </p>
               )}

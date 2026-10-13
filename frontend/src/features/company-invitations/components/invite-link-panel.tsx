@@ -91,7 +91,7 @@ export function InviteLinkPanel({
                 ? `This link grants ${roleLabel(link.role)} access`
                 : "Share an invite link"}
             </h2>
-            <p className="company-invite-hint">
+            <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]">
               {legacyLink
                 ? "Replace this older link to invite people as Members. The current link will stop working."
                 : "Anyone with this link can sign in and join as a Member."}
@@ -121,7 +121,7 @@ export function InviteLinkPanel({
               </Button>
             </div>
           ) : null}
-          <p className="company-invite-hint company-invite-expiry">
+          <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6] company-invite-expiry">
             Expires{" "}
             {new Date(link.expiresAt!).toLocaleDateString(undefined, {
               month: "short",
@@ -204,7 +204,7 @@ export function InviteLinkPanel({
               </Button>
             </div>
           )}
-          <p className="company-invite-hint">
+          <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]">
             Removed teammates need a new email invitation to rejoin.
           </p>
         </>
@@ -212,7 +212,7 @@ export function InviteLinkPanel({
         <>
           <div>
             <h2>Create an invite link</h2>
-            <p className="company-invite-hint">
+            <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]">
               {link?.available
                 ? "Let teammates join as Members. The link lasts 7 days, and you can turn it off at any time."
                 : "Invite links are unavailable."}
@@ -230,7 +230,10 @@ export function InviteLinkPanel({
         </>
       )}
       {error ? (
-        <p role="alert" className="company-invite-error">
+        <p
+          role="alert"
+          className="m-[8px_0_0] text-workspace-danger text-[length:12px] leading-[1.5] wrap-anywhere"
+        >
           {error}
         </p>
       ) : null}

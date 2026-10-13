@@ -96,9 +96,12 @@ export function CeoAgentSetupPanel({
           )}
         </ErrorMessage>
       ) : (
-        <form className="agent-onboarding-form" onSubmit={submit}>
+        <form
+          className="agent-onboarding-form grid gap-[24px] w-full"
+          onSubmit={submit}
+        >
           <section aria-labelledby="agent-onboarding-runtime-title">
-            <div className="agent-onboarding-section-heading">
+            <div className="agent-onboarding-section-heading flex min-h-[32px] items-center justify-between gap-[16px] mb-[12px]">
               <h2 id="agent-onboarding-runtime-title">AI setup</h2>
               <button
                 className="agent-onboarding-refresh-button"
@@ -117,7 +120,7 @@ export function CeoAgentSetupPanel({
               </button>
             </div>
 
-            <div className="agent-onboarding-setup-card">
+            <div className="[border:1px_solid_var(--workspace-divider)] rounded-workspace-panel [background:color-mix(_in_srgb,_var(--workspace-panel-raised-bg)_50%,_var(--workspace-content-bg)_)]">
               <RuntimeConnectionSelect
                 runtimes={runtimes}
                 selectedRuntime={selectedRuntime}
@@ -251,7 +254,7 @@ function AgentSetupSurface({ children }: { children: ReactNode }) {
       aria-label="CEO Agent setup"
       role="region"
     >
-      <div className="agent-onboarding-panel__content">{children}</div>
+      <div className="isolate">{children}</div>
     </div>
   );
 }
@@ -303,15 +306,15 @@ function RuntimeConnectionSelect({
         })}
       </select>
       <div className="agent-onboarding-connection__content" aria-hidden="true">
-        <div className="agent-onboarding-connection__identity">
+        <div className="flex min-w-0 flex-1 items-center gap-[14px]">
           {selectedRuntime ? (
             <img
-              className="agent-onboarding-connection__logo"
+              className="w-[48px] h-[48px] flex-none rounded-workspace-panel object-contain"
               alt=""
               src={AGENT_SETUP_ASSETS[selectedRuntime.provider]}
             />
           ) : null}
-          <div className="agent-onboarding-connection__name">
+          <div className="agent-onboarding-connection__name grid min-w-0 gap-[4px]">
             <strong>
               {selectedRuntime
                 ? providerLabel(selectedRuntime.provider)

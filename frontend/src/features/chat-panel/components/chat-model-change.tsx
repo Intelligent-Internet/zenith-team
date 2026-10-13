@@ -59,7 +59,7 @@ function ChatModelChange({
   const model = chatModelLabel(change.model);
   return (
     <div className="chat-model-change">
-      <div className="chat-model-change-content">
+      <div className="inline-flex items-center gap-[8px] min-w-0 max-w-full p-[5px_20px] [background:linear-gradient(_90deg,_transparent,_light-dark(#f6f3fa,_rgb(160_131_200_/_9%))_12%,_light-dark(#f6f3fa,_rgb(160_131_200_/_9%))_88%,_transparent_)]">
         <FoldAvatarMotionContext.Provider value={true}>
           <FoldAvatar
             agentId={`model-change:${change.id}`}
@@ -69,11 +69,11 @@ function ChatModelChange({
           />
         </FoldAvatarMotionContext.Provider>
         <span
-          className="chat-model-change-text"
+          className="min-w-0 overflow-hidden text-center text-ellipsis whitespace-nowrap"
           title={`Model changed from ${previousModel} to ${model}.`}
         >
           Model changed from {previousModel} to{" "}
-          <span className="chat-model-change-name">{model}</span>.
+          <span className="text-workspace-text">{model}</span>.
         </span>
         <Tooltip label="Applies to the next run. A run already in progress keeps its model.">
           <button

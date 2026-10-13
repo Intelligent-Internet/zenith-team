@@ -736,12 +736,6 @@
   opacity: 0.62;
 }
 
-.agent-glass-card {
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  background: var(--workspace-panel-raised-bg);
-}
-
 .agent-provider-grid,
 .agent-runtime-grid {
   display: grid;
@@ -978,16 +972,6 @@
    one calm row. The Workflow's icon and the app's logo are joined by a link
    that shows how far the connection is; the title, one short line and the
    connect steps sit beside them, the state's actions at the right. */
-.workflow-app-connect {
-  container: workflow-app-connect / inline-size;
-  display: grid;
-  gap: 14px;
-  margin-top: 16px;
-  border: 1px solid var(--workspace-divider, rgba(255, 255, 255, 0.12));
-  border-radius: 12px;
-  background: var(--workspace-panel-bg, rgba(255, 255, 255, 0.055));
-  padding: 16px 20px 20px;
-}
 
 .workflow-app-connect__back {
   display: inline-flex;
@@ -1023,24 +1007,6 @@
 }
 
 /* The Workflow's icon, the link, the app's logo. */
-.workflow-app-connect__pair {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 10px;
-}
-
-.workflow-app-connect__workflow {
-  display: grid;
-  width: 52px;
-  height: 52px;
-  flex: none;
-  place-items: center;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 12px;
-  background: var(--workspace-control-bg, rgba(255, 255, 255, 0.06));
-  color: var(--workspace-native-accent);
-}
 
 .workflow-app-connect__link {
   display: inline-flex;
@@ -1098,12 +1064,6 @@
   color: var(--workspace-canvas);
 }
 
-.workflow-app-connect__text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
 .workflow-app-connect__text h3 {
   margin: 0;
   color: var(--workspace-native-text, #fff);
@@ -1116,14 +1076,6 @@
 /* The heading takes focus when the action that held it goes away. */
 .workflow-app-connect__text h3:focus {
   outline: none;
-}
-
-.workflow-app-connect__line {
-  margin: 0;
-  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.64));
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  overflow-wrap: anywhere;
 }
 
 /* Connect in browser — Confirm on {computer} — Ready. */
@@ -1193,12 +1145,6 @@
 }
 
 /* The tools a connected app gives a Run. */
-.workflow-app-connect__stats {
-  margin: 6px 0 0;
-  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.64));
-  font-size: 12px;
-  line-height: 16px;
-}
 
 .workflow-app-connect__actions {
   display: flex;
@@ -1674,10 +1620,6 @@
 .subscription-settings-page {
   width: 100%;
   color: var(--workspace-native-text, #fff);
-}
-
-.settings-availability {
-  padding: 24px;
 }
 
 .settings-availability h2,
@@ -2356,15 +2298,6 @@
   margin-left: 0;
 }
 
-.daemon-card__log-level {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.56));
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-}
-
 .daemon-card__log-level select {
   height: 28px;
   border: 1px solid var(--workspace-divider-strong, rgba(255, 255, 255, 0.3));
@@ -2493,13 +2426,6 @@
   overflow-wrap: anywhere;
 }
 
-.runtime-detail__note {
-  margin: 0;
-  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.6));
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
 .runtime-detail__actions {
   display: flex;
   flex-wrap: wrap;
@@ -2526,16 +2452,6 @@
   color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.56));
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
-}
-
-.runtime-detail__retry {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: inherit;
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
 }
 
 .runtime-detail__section {
@@ -2626,16 +2542,6 @@
   color: var(--workspace-native-accent);
 }
 
-.runtime-dialog__field {
-  display: grid;
-  gap: 8px;
-  margin-top: 20px;
-  color: var(--workspace-native-text-muted, rgba(255, 255, 255, 0.7));
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-  text-align: left;
-}
-
 .runtime-dialog__field > span {
   color: var(--workspace-native-text, #fff);
   font-weight: 700;
@@ -2667,18 +2573,6 @@
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
   overflow-wrap: anywhere;
-}
-
-.runtime-dialog__blockers {
-  display: grid;
-  max-height: 168px;
-  gap: 6px;
-  margin: 16px 0 0;
-  overflow-y: auto;
-  border: 1px solid var(--workspace-divider, rgba(255, 255, 255, 0.1));
-  border-radius: 12px;
-  padding: 10px 12px;
-  list-style: none;
 }
 
 .runtime-dialog__blockers li {

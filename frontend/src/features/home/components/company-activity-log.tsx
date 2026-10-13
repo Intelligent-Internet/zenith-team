@@ -201,7 +201,7 @@ export function CompanyActivityLog({
         ) : (
           <div className="company-activity-log__list collection-list">
             <div
-              className="company-activity-log__columns collection-list__header"
+              className="company-activity-log__columns min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
               aria-hidden="true"
             >
               <span>Activity</span>
@@ -370,11 +370,16 @@ function ActivityLogEntry({
       >
         <summary className="company-activity-log__row collection-list__row">
           <span className="collection-list__identity">
-            <span className="company-activity-log__icon" aria-hidden="true">
+            <span
+              className="grid w-[32px] h-[32px] flex-none place-items-center rounded-[6px] [background:var(--workspace-control-bg)] text-workspace-muted"
+              aria-hidden="true"
+            >
               <EntryIcon size={18} />
             </span>
-            <span className="company-activity-log__identity-text">
-              <span className="collection-list__primary">{title}</span>
+            <span className="block min-w-0 wrap-anywhere">
+              <span className="text-workspace-text text-workspace-body leading-workspace-body font-[600]">
+                {title}
+              </span>
               <span className="collection-list__secondary" title={context}>
                 {context}
               </span>

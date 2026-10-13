@@ -69,7 +69,9 @@ export function WorkTaskTable({
         <thead>
           <tr
             className={
-              variant === "project" ? "collection-list__header" : undefined
+              variant === "project"
+                ? "min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
+                : undefined
             }
           >
             {variant === "default" ? <th scope="col">Priority</th> : null}
@@ -138,7 +140,7 @@ export function WorkTaskTable({
                 </button>
               </td>
               <td>
-                <span className="task-calendar-time">
+                <span className="block whitespace-nowrap text-[length:12px]">
                   {task.scheduledAt
                     ? new Date(task.scheduledAt).toLocaleString([], {
                         month: "short",
@@ -150,7 +152,7 @@ export function WorkTaskTable({
                 </span>
                 {task.scheduleDisposition &&
                 task.scheduleDisposition !== "scheduled" ? (
-                  <small className="task-calendar-time">
+                  <small className="block whitespace-nowrap text-[length:12px]">
                     Run {task.scheduleDisposition}
                   </small>
                 ) : null}

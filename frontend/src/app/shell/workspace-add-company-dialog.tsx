@@ -62,7 +62,7 @@ function AddCompanyChoices({ onClose }: { onClose: () => void }) {
           onContinue={onClose}
         />
       ) : (
-        <div className="workspace-add-company-choices">
+        <div className="grid gap-[10px]">
           <button
             type="button"
             className="workspace-add-company-choice"

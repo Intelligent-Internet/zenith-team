@@ -42,7 +42,7 @@ export function CompanyActivityDetails({
   );
 
   return (
-    <div className="company-activity-details">
+    <div className="company-activity-details p-[0_var(--activity-inset)_20px_calc(var(--activity-inset)_+_var(--activity-identity-inset))] text-workspace-caption leading-workspace-caption">
       {event.run_id ? (
         <p className="company-activity-details__run">
           {event.on_behalf_of
@@ -177,7 +177,7 @@ function AccessChangeDetails({
 }) {
   if (change.kind === "visibility") {
     return (
-      <p className="company-activity-details__access-line">
+      <p className="company-activity-details__access-line flex min-w-0 flex-wrap items-center gap-[12px] m-[0_0_12px] text-workspace-text">
         <VisibilityValue value={change.before} />
         <ArrowRight aria-hidden="true" size={16} />
         <span className="sr-only">to </span>
@@ -194,14 +194,14 @@ function AccessChangeDetails({
     if (known.length === 0) return null;
     const rest = change.userIds.length - known.length;
     return (
-      <p className="company-activity-details__access-line">
+      <p className="company-activity-details__access-line flex min-w-0 flex-wrap items-center gap-[12px] m-[0_0_12px] text-workspace-text">
         {known.join(", ")}
         {rest > 0 ? ` +${rest}` : null}
       </p>
     );
   }
   return (
-    <ul className="company-activity-details__access">
+    <ul className="company-activity-details__access grid gap-[8px] m-[0_0_12px] p-0 [list-style:none]">
       {change.added.length > 0 ? (
         <li data-change="added">
           <Plus aria-hidden="true" size={16} />
@@ -226,12 +226,12 @@ function PermissionList({
   permissions: readonly ProjectPermission[];
 }) {
   return (
-    <span className="company-activity-details__permissions">
+    <span className="flex min-w-0 flex-wrap gap-[6px_8px]">
       {permissions.map((permission) => {
         const Icon = PROJECT_PERMISSION_ICONS[permission];
         return (
           <span
-            className="company-activity-details__permission"
+            className="company-activity-details__permission inline-flex min-w-0 items-center gap-[6px] p-[3px_8px] rounded-[4px] [background:var(--workspace-control-bg)] text-workspace-text wrap-anywhere"
             key={permission}
           >
             <Icon aria-hidden="true" size={14} />
@@ -245,7 +245,7 @@ function PermissionList({
 
 function VisibilityValue({ value }: { value: string }) {
   return (
-    <span className="company-activity-details__permission">
+    <span className="company-activity-details__permission inline-flex min-w-0 items-center gap-[6px] p-[3px_8px] rounded-[4px] [background:var(--workspace-control-bg)] text-workspace-text wrap-anywhere">
       {value === "company" ? (
         <>
           <Building2 aria-hidden="true" size={14} />

@@ -48,7 +48,7 @@ export function SkillDraftRecovery({ draftKey }: { draftKey: string }) {
   const [confirm, setConfirm] = useState(false);
   if (!draft) return null;
   return (
-    <div className="skill-draft-recovery">
+    <div className="skill-draft-recovery mt-[20px]">
       <p>Your unsaved edits are still available.</p>
       <div>
         <SkillDraftCopyButton draftKey={draftKey} />
@@ -79,7 +79,7 @@ export function SkillDraftRecovery({ draftKey }: { draftKey: string }) {
             </button>
             <button
               type="button"
-              className="custom-skill-button custom-skill-button--danger"
+              className="custom-skill-button [background:var(--workspace-native-danger)] text-[var(--workspace-danger-foreground)]"
               onClick={() => dispatch(clearSkillFileDraft(draftKey))}
             >
               Discard changes

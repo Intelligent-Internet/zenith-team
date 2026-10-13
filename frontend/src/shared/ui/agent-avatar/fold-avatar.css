@@ -32,9 +32,6 @@ button.fold-avatar {
   animation: fold-breathe 5.6s ease-in-out infinite;
   animation-delay: var(--fold-breathe-delay);
 }
-.fold-avatar__body {
-  transform-origin: 122px 196px;
-}
 .fold-avatar__face {
   transform-origin: 128px 123px;
   transition: transform 260ms var(--fold-ease);
@@ -44,12 +41,6 @@ button.fold-avatar {
 }
 .fold-avatar__arm--right {
   transform-origin: 198px 133px;
-}
-.fold-avatar__foot--left {
-  transform-origin: 90px 196px;
-}
-.fold-avatar__foot--right {
-  transform-origin: 157px 194px;
 }
 .fold-avatar__shadow {
   transform-origin: 124px 215px;

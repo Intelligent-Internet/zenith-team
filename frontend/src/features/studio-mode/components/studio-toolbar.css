@@ -70,29 +70,6 @@
   color: var(--workspace-native-text);
   filter: drop-shadow(0 1px 2px var(--workspace-panel-bg));
 }
-.studio-tool-demo__caption {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 5px 8px;
-  background: var(--workspace-content-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: 9px;
-  line-height: 1.5;
-  text-align: center;
-}
-.studio-tool-demo__menu {
-  position: absolute;
-  top: 35px;
-  left: 18px;
-  width: 100px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  padding: 5px;
-  background: var(--workspace-panel-bg);
-  box-shadow: 0 3px 8px rgb(24 32 42 / 6%);
-}
 .studio-tool-demo__menu > span {
   display: flex;
   align-items: center;

@@ -143,7 +143,7 @@ function HuddleWindowContent() {
     return (
       <main className="huddle-lobby">
         <section className="huddle-join-card">
-          <div className="huddle-join-symbol">
+          <div className="grid place-items-center w-[84px] h-[84px] m-[0_auto_30px] rounded-[29px] [background:var(--accent)] text-[var(--accent-foreground)]">
             <Users size={32} />
           </div>
           <h1>
@@ -151,7 +151,7 @@ function HuddleWindowContent() {
               ? "This call has ended"
               : "You left the Huddle"}
           </h1>
-          <p className="huddle-join-copy">
+          <p className="text-[var(--muted-foreground)] text-[length:13px] leading-[1.6]">
             Your microphone, camera and screen sharing are off. You can close
             this window.
           </p>

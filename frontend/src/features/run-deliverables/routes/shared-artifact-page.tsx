@@ -195,7 +195,7 @@ function SharedArtifactPageContent() {
     (openSource && (sourceHref || artifact.isFetching))
   ) {
     return (
-      <main className="artifact-share-page artifact-status-page">
+      <main className="artifact-share-page artifact-status-page relative">
         <nav className="artifact-status-back" aria-label="Artifact">
           {exitAction}
         </nav>
@@ -207,7 +207,7 @@ function SharedArtifactPageContent() {
   }
   if (!detail || !output || !access) {
     return (
-      <main className="artifact-share-page artifact-status-page">
+      <main className="artifact-share-page artifact-status-page relative">
         <nav className="artifact-status-back" aria-label="Artifact">
           {exitAction}
         </nav>
@@ -285,7 +285,7 @@ function SharedArtifactPageContent() {
   if (searchParams.get("view") === "canvas" && !output.canvasUrl)
     return (
       <main className="artifact-share-page artifact-share-page--document">
-        <div className="artifact-document-share-body">
+        <div className="flex flex-1 min-h-0 min-w-0">
           <Suspense
             fallback={
               <div className="artifact-share-state" role="status">
@@ -340,7 +340,7 @@ function SharedArtifactPageContent() {
   )
     return (
       <main className="artifact-share-page artifact-share-page--document">
-        <div className="artifact-document-share-tools">
+        <div className="flex items-center justify-end gap-[12px] p-[4px_20px] shrink-0 text-workspace-muted text-[length:12px] [border-bottom:1px_solid_var(--workspace-divider)]">
           <span>Sharing follows the original artifact</span>
           <Button
             ref={shareButtonRef}
@@ -351,7 +351,7 @@ function SharedArtifactPageContent() {
             <Users aria-hidden size={16} /> Share
           </Button>
         </div>
-        <div className="artifact-document-share-body">
+        <div className="flex flex-1 min-h-0 min-w-0">
           <Suspense fallback={<p role="status">Opening document…</p>}>
             <OutputDocumentWorkspace
               companyId={companyId}
@@ -380,7 +380,7 @@ function SharedArtifactPageContent() {
     );
 
   return (
-    <main className="artifact-share-page artifact-share-page--studio-host">
+    <main className="artifact-share-page relative">
       <ArtifactReader
         title={output.title}
         summary={output.summary}
@@ -428,7 +428,10 @@ function SharedArtifactPageContent() {
         }
         notice={
           message ? (
-            <p className="artifact-share-notice" role="status">
+            <p
+              className="mb-[20px] p-[12px_16px] [background:var(--state-hover-bg)] rounded-[10px] text-[length:13px]"
+              role="status"
+            >
               {message}
             </p>
           ) : null

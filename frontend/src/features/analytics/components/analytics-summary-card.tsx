@@ -48,8 +48,8 @@ export function AnalyticsSummaryCard({
       className={cx("analytics-summary-card", className)}
       aria-label="Usage summary"
     >
-      <header className="analytics-summary-card__header">
-        <div className="analytics-summary-card__heading">
+      <header className="analytics-summary-card__header flex flex-wrap items-center justify-between gap-[12px]">
+        <div className="analytics-summary-card__heading min-w-0">
           <h3>
             {scope === "mine"
               ? "Your usage"
@@ -67,14 +67,20 @@ export function AnalyticsSummaryCard({
         </Link>
       </header>
       {query.isError ? (
-        <p className="analytics-summary-card__status" role="alert">
+        <p
+          className="analytics-summary-card__status m-0 text-workspace-muted text-workspace-body leading-workspace-body"
+          role="alert"
+        >
           Usage could not be loaded.{" "}
           <button type="button" onClick={() => void query.refetch()}>
             Retry
           </button>
         </p>
       ) : !metrics ? (
-        <p className="analytics-summary-card__status" role="status">
+        <p
+          className="analytics-summary-card__status m-0 text-workspace-muted text-workspace-body leading-workspace-body"
+          role="status"
+        >
           Loading usage…
         </p>
       ) : (

@@ -245,19 +245,22 @@ export const BoardNode = memo(function BoardNode({
         (shape === "lifeline" ? (
           <>
             <div
-              className="wb-hit wb-hit-header"
+              className="absolute [pointer-events:all] top-0 left-0 right-0"
               style={{ height: lifelineHead }}
             />
-            <div className="wb-hit wb-hit-axis" style={{ top: lifelineHead }} />
+            <div
+              className="absolute [pointer-events:all] bottom-0 left-[calc(50%_-_6px)] w-[12px]"
+              style={{ top: lifelineHead }}
+            />
           </>
         ) : (
           <>
-            <div className="wb-hit wb-hit-edge wb-hit-top" />
-            <div className="wb-hit wb-hit-edge wb-hit-bottom" />
-            <div className="wb-hit wb-hit-edge wb-hit-left" />
-            <div className="wb-hit wb-hit-edge wb-hit-right" />
+            <div className="absolute [pointer-events:all] wb-hit-edge wb-hit-top" />
+            <div className="absolute [pointer-events:all] wb-hit-edge wb-hit-bottom" />
+            <div className="absolute [pointer-events:all] wb-hit-edge wb-hit-left" />
+            <div className="absolute [pointer-events:all] wb-hit-edge wb-hit-right" />
             <div
-              className="wb-hit"
+              className="absolute [pointer-events:all]"
               style={{
                 left: 0,
                 top: 0,
@@ -298,7 +301,10 @@ export const BoardNode = memo(function BoardNode({
         }
       />
       {item.properties.locked && (
-        <LockKeyhole className="wb-lock-indicator" size={13} />
+        <LockKeyhole
+          className="absolute right-[5px] top-[5px] opacity-[0.6] z-[2]"
+          size={13}
+        />
       )}
       {note && context.editable && (
         <div
@@ -312,7 +318,7 @@ export const BoardNode = memo(function BoardNode({
       )}
       {note ? (
         item.id.startsWith("local:") || (compact && !selected) ? (
-          <div className="wb-note-excerpt">
+          <div className="p-[15px] text-[length:18px] max-h-full overflow-hidden whitespace-pre-wrap">
             {item.text || "Waiting to save…"}
           </div>
         ) : !context.note ? (
@@ -384,7 +390,9 @@ export const BoardNode = memo(function BoardNode({
             <span>Loading image…</span>
           )}
           {item.properties.caption && (
-            <span className="wb-media-caption">{item.properties.caption}</span>
+            <span className="absolute bottom-0 left-0 right-0 [background:#ffffffde] text-[#25252d] p-[6px_10px]">
+              {item.properties.caption}
+            </span>
           )}
         </>
       ) : item.type === "file" ? (
@@ -405,12 +413,15 @@ export const BoardNode = memo(function BoardNode({
           width={nodeWidth}
         />
       ) : item.type === "shape" && !editingTitle ? (
-        <span className="wb-shape-label" style={labelBox}>
+        <span
+          className="absolute inset-0 flex items-center justify-center p-[15%] text-center overflow-hidden wrap-anywhere pointer-events-none"
+          style={labelBox}
+        >
           {item.properties.title}
         </span>
       ) : (
         <input
-          className={`wb-item-title nodrag nopan${labelBox ? " wb-item-title-placed" : ""}`}
+          className={`wb-item-title nodrag nopan${labelBox ? " absolute" : ""}`}
           style={labelBox}
           aria-label={item.type === "frame" ? "Frame name" : "Shape label"}
           key={`${item.id}:${item.contentRevision}`}
@@ -499,7 +510,10 @@ function PublicNote({
     };
   }, [item.id, item.textRevision, hydrate]);
   return (
-    <div className="wb-note-excerpt" style={{ whiteSpace: "pre-wrap" }}>
+    <div
+      className="p-[15px] text-[length:18px] max-h-full overflow-hidden whitespace-pre-wrap"
+      style={{ whiteSpace: "pre-wrap" }}
+    >
       {failed ? "Note unavailable" : text}
     </div>
   );
@@ -543,9 +557,13 @@ function BoardFileCard({
   download: () => void;
 }) {
   return (
-    <div className="wb-file-card">
-      <FileText className="wb-file-card__icon" size={28} aria-hidden />
-      <span className="wb-file-card__text">
+    <div className="flex items-center gap-[12px] w-full h-full p-[0_12px_0_14px] min-w-0">
+      <FileText
+        className="shrink-0 text-workspace-accent"
+        size={28}
+        aria-hidden
+      />
+      <span className="wb-file-card__text grid gap-[2px] min-w-0 flex-1">
         <strong title={file?.filename}>{file?.filename ?? "File"}</strong>
         <small>
           {file ? formatFileSize(file.sizeBytes) : "Waiting to save…"}

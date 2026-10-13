@@ -122,7 +122,7 @@ export function ProjectTasks({
   return (
     <section className="project-task-board-section" data-view={view}>
       <div className="project-section-heading">
-        <div className="project-task-controls">
+        <div className="project-task-controls flex w-full items-center justify-between flex-wrap gap-[12px] min-w-0">
           <label className="project-task-search">
             <Icon name="search" className="size-4" />
             <input
@@ -133,7 +133,7 @@ export function ProjectTasks({
             />
           </label>
           <div
-            className="project-view-switch"
+            className="project-view-switch flex flex-wrap gap-[4px] p-[4px] [border:1px_solid_var(--workspace-divider)] rounded-[10px]"
             role="group"
             aria-label="Task view"
           >
@@ -158,7 +158,10 @@ export function ProjectTasks({
         </div>
       </div>
       {reviews.isError ? (
-        <p className="project-overview-request-status" role="alert">
+        <p
+          className="col-[1] m-0 text-workspace-muted text-workspace-caption"
+          role="alert"
+        >
           Reviews could not be loaded.{" "}
           <button type="button" onClick={reviews.retry}>
             Retry

@@ -52,7 +52,7 @@ export function WorkspaceChatHeader({
     <header className="workspace-chat-title" data-task={Boolean(task)}>
       <div className="workspace-chat-title-identity">
         <MemberProfileTrigger
-          className="workspace-chat-title-avatar"
+          className="shrink-0"
           profile={{
             id: agentId ?? agentName,
             kind: "agent",
@@ -66,14 +66,14 @@ export function WorkspaceChatHeader({
             state={avatarState}
           />
         </MemberProfileTrigger>
-        <div className="workspace-chat-title-main">
+        <div className="workspace-chat-title-main min-w-0 flex-1">
           <h1 title={task?.title ?? conversationTab?.title ?? agentName}>
             {task?.title ?? conversationTab?.title ?? agentName}
           </h1>
           <div className="workspace-chat-title-meta">
             {task ? (
               <>
-                <div className="workspace-chat-task-reference">
+                <div className="inline-flex min-w-0 max-w-full items-center gap-[5px]">
                   <Link
                     aria-label={`Task #${taskLabel}`}
                     className="workspace-task-tag"
@@ -85,7 +85,7 @@ export function WorkspaceChatHeader({
                   </Link>
                   <span aria-hidden="true">·</span>
                   <span
-                    className="workspace-chat-title-agent"
+                    className="min-w-0 max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap"
                     title={agentName}
                   >
                     {agentName}
@@ -108,7 +108,7 @@ export function WorkspaceChatHeader({
                 <span>{activeTeam.agentRole}</span>
                 <span>·</span>
                 <span
-                  className="workspace-chat-privacy"
+                  className="inline-flex shrink-0 items-center"
                   aria-label="Private chat"
                   title="Only you and this agent can see this chat"
                 >

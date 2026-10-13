@@ -38,7 +38,7 @@ export function DocumentBlockDetails({
   });
   if (!node)
     return (
-      <aside className="pc-block-details">
+      <aside className="pc-block-details w-[min(420px,_100%)] m-[24px_auto] p-[20px] [background:var(--pc-paper)] [border:1px_solid_var(--pc-line)] rounded-[10px] text-[var(--pc-ink)] text-[length:13px]">
         <p>This content was removed.</p>
         <button onClick={onClose}>Close</button>
       </aside>
@@ -54,7 +54,7 @@ export function DocumentBlockDetails({
   };
   return (
     <aside
-      className="pc-block-details"
+      className="pc-block-details w-[min(420px,_100%)] m-[24px_auto] p-[20px] [background:var(--pc-paper)] [border:1px_solid_var(--pc-line)] rounded-[10px] text-[var(--pc-ink)] text-[length:13px]"
       aria-label="Sources and editing permissions"
     >
       <header>
@@ -96,7 +96,10 @@ export function DocumentBlockDetails({
         const name = state?.title || current?.title || "Exact source version";
         const status = state?.status ?? (current ? "current" : "unknown");
         return (
-          <div className="pc-source-detail" key={id}>
+          <div
+            className="pc-source-detail flex gap-[8px] flex-wrap [border-top:1px_solid_var(--pc-line)] p-[12px_0]"
+            key={id}
+          >
             <span>
               <strong>{name}</strong>
               <small>
@@ -333,7 +336,7 @@ export function PromoteSectionDialog({
       canClose={!busy}
     >
       <form
-        className="pc-promotion-form"
+        className="pc-promotion-form p-[24px] leading-[1.6]"
         onSubmit={(event) => {
           event.preventDefault();
           void promote();

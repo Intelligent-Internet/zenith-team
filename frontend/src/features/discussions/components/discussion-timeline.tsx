@@ -172,7 +172,7 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
   }
   if (!rows.length && !rootId)
     return (
-      <div className="discussion-empty">
+      <div className="discussion-empty flex flex-1 min-h-[120px] items-center justify-center flex-col gap-[10px] p-[32px] text-center text-[var(--discussion-muted)]">
         <MessageSquareText size={30} aria-hidden="true" />
         <h3>Start the conversation</h3>
         <p>
@@ -183,9 +183,12 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
       </div>
     );
   return (
-    <div className="discussion-timeline">
+    <div className="discussion-timeline flex relative flex-col flex-1 min-h-0">
       {runtime.readsPaused(conversationId, rootId) ? (
-        <div className="discussion-history-toolbar" role="status">
+        <div
+          className="discussion-history-toolbar flex justify-between p-[5px_20px] text-[var(--discussion-muted)] text-[length:12px] min-h-[26px]"
+          role="status"
+        >
           Marked as unread
           <button
             onClick={() =>
@@ -199,7 +202,7 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
         </div>
       ) : null}
       {pages[0]?.olderCursor || moreNew ? (
-        <div className="discussion-history-toolbar">
+        <div className="discussion-history-toolbar flex justify-between p-[5px_20px] text-[var(--discussion-muted)] text-[length:12px] min-h-[26px]">
           {pages[0]?.olderCursor ? (
             <button
               disabled={busy}
@@ -230,7 +233,7 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
         firstItemIndex={firstItemIndex}
         computeItemKey={(_index, row) => row.id}
         scrollerRef={attachScroller}
-        className="discussion-virtual-list"
+        className="flex-1 min-h-0 overscroll-contain [scrollbar-width:thin]"
         aria-label={rootId ? "Thread replies" : "Messages"}
         alignToBottom={!rootId}
         atBottomThreshold={48}
@@ -321,7 +324,10 @@ export const DiscussionTimeline = memo(function DiscussionTimeline({
         }}
       />
       {!atBottom || moreNew ? (
-        <button className="discussion-jump" onClick={() => void jumpLatest()}>
+        <button
+          className="absolute bottom-[12px] left-[50%] [transform:translateX(-50%)] flex items-center gap-[8px] [border:1px_solid_var(--discussion-border)] rounded-[20px] p-[8px_14px] [background:var(--discussion-control)] [box-shadow:0_4px_18px_#0002] text-[length:12px] whitespace-nowrap"
+          onClick={() => void jumpLatest()}
+        >
           <ArrowDown size={15} />
           {moreNew ? "New messages" : "Jump to latest"}
         </button>

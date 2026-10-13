@@ -39,15 +39,6 @@
   padding: 20px var(--task-detail-gutter) 16px;
   flex-shrink: 0;
 }
-.task-detail-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
 .task-detail-breadcrumb a {
   color: inherit;
   font: inherit;
@@ -157,14 +148,6 @@
 .task-detail-metadata {
   gap: 8px;
 }
-.task-detail-visibility {
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 5px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-}
 .task-detail-metadata .task-outside-project-badge {
   margin-left: 0;
 }
@@ -222,15 +205,6 @@
 .task-detail-tabs button:hover {
   color: var(--workspace-native-text);
 }
-.task-detail-count {
-  border-radius: 4px;
-  padding: 1px 6px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  font-weight: 500;
-}
 .task-detail-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(300px, 25vw, 340px);
@@ -238,10 +212,6 @@
   flex: 1;
   overflow-y: auto;
   align-items: start;
-}
-.task-detail-content {
-  min-width: 0;
-  padding: 24px var(--task-detail-gutter) 36px;
 }
 .task-detail-content > section {
   margin-bottom: 26px;
@@ -268,29 +238,8 @@
 .task-detail-brief .task-description > :last-child {
   margin-bottom: 0;
 }
-.task-detail-latest-update {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  margin-bottom: 26px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: var(--workspace-control-bg);
-  font-size: var(--workspace-text-body);
-  line-height: var(--workspace-leading-body);
-}
 .task-detail-latest-update > .task-detail-empty {
   grid-column: 1 / -1;
-}
-.task-detail-update-content {
-  min-width: 0;
-}
-.task-detail-update-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 20px;
 }
 .task-detail-update-heading strong {
   font-weight: 600;
@@ -387,15 +336,6 @@
 .task-detail-properties .task-property-more[open] > summary {
   margin-bottom: 10px;
 }
-.task-detail-dependencies {
-  margin-top: 26px;
-  padding-top: 22px;
-  border-top: 1px solid var(--workspace-divider);
-}
-.task-detail-files {
-  display: grid;
-  gap: 10px;
-}
 .task-detail-file {
   display: flex;
   align-items: center;
@@ -421,10 +361,6 @@ a.task-detail-file:hover {
   border-radius: 6px;
   background: var(--workspace-control-bg);
   color: var(--workspace-native-accent);
-}
-.task-detail-file-name {
-  flex: 1;
-  min-width: 0;
 }
 .task-detail-file strong {
   display: block;
@@ -452,10 +388,6 @@ a.task-detail-file:hover {
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
 }
-.task-detail-event-content {
-  flex: 1;
-  min-width: 0;
-}
 .task-detail-event-summary {
   display: flex;
   align-items: baseline;
@@ -475,27 +407,6 @@ a.task-detail-file:hover {
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
   color: var(--workspace-native-text-muted);
-}
-.task-detail-person {
-  display: grid;
-  place-items: center;
-  width: 27px;
-  height: 27px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-}
-.task-detail-run-failure {
-  display: grid;
-  gap: 4px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 6px;
-  background: var(--workspace-danger-soft);
-  color: var(--workspace-native-text-muted);
-  overflow-wrap: anywhere;
 }
 .task-detail-run-failure strong {
   color: var(--workspace-native-danger);
@@ -578,10 +489,6 @@ a.task-detail-file:hover {
 }
 
 /* Presented Artifacts use the same compact rows as shared files. */
-.task-detail-results {
-  display: grid;
-  gap: 14px;
-}
 .task-detail-result > header {
   display: flex;
   align-items: baseline;
@@ -708,17 +615,6 @@ button.task-detail-file:hover {
   border-color: var(--workspace-divider);
   background: var(--workspace-hover-bg);
   outline: none;
-}
-.task-property-date-popover {
-  z-index: 100;
-  width: 250px;
-  padding: 14px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 8px;
-  background: var(--workspace-overlay-bg);
-  color: var(--workspace-native-text);
-  box-shadow: var(--workspace-overlay-shadow);
-  font-size: var(--workspace-text-body);
 }
 .task-property-date-popover label {
   display: grid;

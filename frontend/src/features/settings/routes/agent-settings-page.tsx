@@ -91,8 +91,11 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
     ]);
   }
   return (
-    <section className="runtime-directory-content" aria-label="Computers">
-      <div className="runtime-directory-toolbar">
+    <section
+      className="[container:runtime-directory_/_inline-size] min-w-0"
+      aria-label="Computers"
+    >
+      <div className="runtime-directory-toolbar flex items-center flex-wrap gap-[12px_16px] m-[0_0_28px] text-workspace-muted text-workspace-body leading-workspace-body">
         <label className="runtime-directory-search">
           <Search size={18} aria-hidden="true" />
           <input
@@ -103,7 +106,10 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
-        <span className="runtime-directory-count" role="status">
+        <span
+          className="text-workspace-caption leading-workspace-caption whitespace-nowrap"
+          role="status"
+        >
           {runtimesQuery.currentData ? (
             <>
               {groups.size} {groups.size === 1 ? "computer" : "computers"} ·{" "}
@@ -112,7 +118,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
             </>
           ) : null}
         </span>
-        <div className="runtime-directory-actions">
+        <div className="runtime-directory-actions flex items-center gap-[8px] ml-auto">
           {canManagePlugins ? (
             <Link className="collection-toolbar-control" to="/settings/plugins">
               <Puzzle size={18} aria-hidden="true" />
@@ -142,7 +148,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
       ) : runtimesQuery.isLoading ? (
         <p role="status">Loading connected computers…</p>
       ) : groups.size === 0 ? (
-        <div className="dashboard-empty">
+        <div className="dashboard-empty grid [justify-items:center] p-[50px_20px] text-workspace-muted text-center">
           <Monitor size={28} aria-hidden="true" />
           <p>
             {searchTerm
@@ -151,7 +157,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
           </p>
         </div>
       ) : null}
-      <div className="runtime-computer-list">
+      <div className="grid gap-[32px]">
         {[...groups].map(([daemonId, group]) => {
           // One request covers every provider on the machine; any online
           // runtime of the computer names it. The API only lists the viewer's
@@ -167,14 +173,17 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
           return (
             <section
               aria-labelledby={`runtime-computer-${daemonId}`}
-              className="runtime-computer-group"
+              className="min-w-0"
               key={daemonId}
             >
               <header className="runtime-computer-heading">
-                <span className="runtime-computer-icon" aria-hidden="true">
+                <span
+                  className="grid w-[40px] h-[40px] flex-none place-items-center rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-accent"
+                  aria-hidden="true"
+                >
                   <Monitor size={24} />
                 </span>
-                <div className="runtime-computer-identity">
+                <div className="min-w-0 flex-1">
                   <h2 id={`runtime-computer-${daemonId}`}>{computerName}</h2>
                   <p>
                     {daemonId === localDaemon.daemonId
@@ -205,7 +214,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
                     : "Check setup"}
                 </button>
               </header>
-              <div className="runtime-table-scroll">
+              <div className="overflow-x-auto">
                 <table
                   aria-label={`Runtimes on ${computerName}`}
                   className="runtime-table collection-list"
@@ -216,7 +225,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
                     <col className="runtime-table-status-column" />
                     <col className="runtime-table-action-column" />
                   </colgroup>
-                  <thead className="collection-list__header">
+                  <thead className="min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]">
                     <tr>
                       <th scope="col">Runtime</th>
                       <th scope="col">Your agents</th>
@@ -271,18 +280,18 @@ function RuntimeRow({
 }) {
   const signInLabel = runtimeSignInLabel(runtime);
   return (
-    <tr className="runtime-provider-row collection-list__row">
+    <tr className="relative collection-list__row">
       <td>
         <div className="collection-list__identity">
           <img
-            className="runtime-provider-logo"
+            className="w-[var(--runtime-logo-size)] h-[var(--runtime-logo-size)] flex-none object-contain"
             alt=""
             src={publicAssetPath(`images/settings/${runtime.provider}.svg`)}
           />
           <div className="runtime-provider-identity">
             <Link
               aria-label={`View ${providerLabel(runtime.provider)} runtime`}
-              className="runtime-provider-link collection-list__primary"
+              className="runtime-provider-link text-workspace-text text-workspace-body leading-workspace-body font-[600]"
               to={runtimeDetailHref(runtime.id)}
             >
               {providerLabel(runtime.provider)}
@@ -299,7 +308,7 @@ function RuntimeRow({
           </div>
         </div>
       </td>
-      <td className="runtime-provider-count">
+      <td className="text-workspace-muted text-workspace-label [font-variant-numeric:tabular-nums]">
         <span
           title={
             agentCount === undefined ? "Agent count unavailable" : undefined
@@ -309,7 +318,7 @@ function RuntimeRow({
         </span>
       </td>
       <td>
-        <div className="runtime-provider-states">
+        <div className="grid gap-[5px]">
           <span
             className="runtime-provider-status"
             data-online={runtime.status === "online"}
@@ -348,7 +357,7 @@ function BoundDirectoryRow({
   const [confirming, setConfirming] = useState(false);
   const [unlink, unlinkState] = useDeleteWorkspaceResourceMutation();
   return (
-    <article className="runtime-bound-directory">
+    <article className="runtime-bound-directory flex items-center flex-wrap gap-[12px] p-[16px] [border-bottom:1px_solid_var(--workspace-divider)]">
       <FolderOpen size={28} aria-hidden="true" />
       <div className="runtime-provider-identity">
         <strong>{resource.label || "Bound directory"}</strong>

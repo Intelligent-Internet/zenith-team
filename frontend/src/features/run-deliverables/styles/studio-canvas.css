@@ -247,10 +247,6 @@
 .studio-node-inspector__note {
   color: var(--workspace-native-text-muted);
 }
-.output-preview-gallery {
-  display: grid;
-  gap: 16px;
-}
 .output-preview-gallery figure {
   margin: 0;
   border: 1px solid var(--workspace-divider);
@@ -471,19 +467,6 @@
 .studio-player__transport input:disabled {
   opacity: 0.4;
   cursor: default;
-}
-.studio-player__error {
-  position: absolute;
-  z-index: 2;
-  top: 4px;
-  left: 4px;
-  right: 4px;
-  padding: 4px;
-  border-radius: 4px;
-  background: var(--workspace-panel-bg);
-  color: var(--workspace-native-text);
-  font-size: 10px;
-  text-align: center;
 }
 
 .studio-canvas__actions {

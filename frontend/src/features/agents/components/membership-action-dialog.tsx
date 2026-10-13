@@ -129,10 +129,15 @@ export function MembershipActionDialog({
         </header>
         <div className="company-invite-body">
           {copy.hint ? (
-            <p className="company-invite-hint">{copy.hint}</p>
+            <p className="m-[8px_0_0] text-workspace-muted text-[length:11px] leading-[1.6]">
+              {copy.hint}
+            </p>
           ) : null}
           {error && (
-            <p className="company-invite-errors" role="alert">
+            <p
+              className="grid gap-[4px] max-h-[128px] overflow-y-auto m-[10px_0_0] pl-[16px] text-workspace-danger text-[length:12px] leading-[1.5] wrap-anywhere [list-style:disc]"
+              role="alert"
+            >
               {error}
             </p>
           )}

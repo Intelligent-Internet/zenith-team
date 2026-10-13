@@ -152,7 +152,7 @@ function RuntimeDetailContent({
               "The runtime could not be loaded.",
             )}{" "}
             <button
-              className="runtime-detail__retry"
+              className="[border:0] [background:none] p-0 text-[inherit] [font:inherit] [text-decoration:underline] cursor-pointer"
               type="button"
               onClick={() => void runtimeQuery.refetch()}
             >
@@ -189,7 +189,7 @@ function RuntimeDetailContent({
 
   return (
     <RuntimeDetailFrame>
-      <header className="agent-glass-card runtime-detail__header">
+      <header className="[border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-panel-raised-bg)] runtime-detail__header">
         <div className="runtime-detail__heading">
           <span
             aria-hidden="true"
@@ -207,7 +207,10 @@ function RuntimeDetailContent({
           <RuntimeStatusPill runtime={runtime} />
         </div>
         {runtime.unusableReason ? (
-          <p className="runtime-detail__note" role="note">
+          <p
+            className="m-0 text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.6))] text-workspace-caption leading-workspace-caption"
+            role="note"
+          >
             {runtime.unusableReason.message}
           </p>
         ) : null}
@@ -253,7 +256,7 @@ function RuntimeDetailContent({
           // and the way its daemon was started: the desktop app stops it
           // when it quits, a terminal start needs the CLI. On this computer
           // it is named as Updates & Support labels it: the Agent service.
-          <p className="runtime-detail__note">
+          <p className="m-0 text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.6))] text-workspace-caption leading-workspace-caption">
             {runtime.launchedBy !== "desktop" ? (
               <>
                 To remove this runtime, first run <code>zen daemon stop</code>{" "}
@@ -275,7 +278,7 @@ function RuntimeDetailContent({
             )}
           </p>
         ) : null}
-        <div className="runtime-provider-switcher">
+        <div className="runtime-provider-switcher flex gap-[8px] col-[1/-1] flex-wrap">
           {[runtime, ...siblings]
             .sort((a, b) => a.provider.localeCompare(b.provider))
             .map((candidate) => {
@@ -401,7 +404,7 @@ function RuntimeDetailContent({
         {tab === "overview" ? (
           <section
             aria-labelledby="runtime-detail-agents-title"
-            className="agent-glass-card runtime-detail__section"
+            className="[border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-panel-raised-bg)] runtime-detail__section"
           >
             <h3 id="runtime-detail-agents-title">Configured agents</h3>
             <ListState
@@ -421,7 +424,7 @@ function RuntimeDetailContent({
       {tab === "work" ? (
         <section
           aria-labelledby="runtime-detail-runs-title"
-          className="agent-glass-card runtime-detail__section"
+          className="[border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-panel-raised-bg)] runtime-detail__section"
         >
           <h3 id="runtime-detail-runs-title">Active runs</h3>
           <ListState

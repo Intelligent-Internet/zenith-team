@@ -153,7 +153,10 @@ export function CalendarTaskDetails({
       }
     >
       {query.isError ? (
-        <p role="alert" className="personal-error">
+        <p
+          role="alert"
+          className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+        >
           {getBoardlyQueryErrorMessage(query.error)}
         </p>
       ) : !task ? (
@@ -165,7 +168,10 @@ export function CalendarTaskDetails({
             Applies to future occurrences. Work already running continues.
           </p>
           {schedule.isError ? (
-            <p className="personal-error" role="alert">
+            <p
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+              role="alert"
+            >
               {getBoardlyQueryErrorMessage(schedule.error)}
             </p>
           ) : schedule.currentData ? (
@@ -188,7 +194,10 @@ export function CalendarTaskDetails({
               : "Its task and chat will remain available."}
           </p>
           {error && (
-            <p role="alert" className="personal-error">
+            <p
+              role="alert"
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            >
               {error}
             </p>
           )}
@@ -260,7 +269,10 @@ export function CalendarTaskDetails({
               </p>
             )}
             {error && (
-              <p role="alert" className="personal-error">
+              <p
+                role="alert"
+                className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+              >
                 {error}
               </p>
             )}

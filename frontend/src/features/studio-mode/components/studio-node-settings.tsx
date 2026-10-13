@@ -105,7 +105,7 @@ function StudioSettingFields({
               </StudioSettingsSelect>
             ) : field.type === "boolean" ? (
               field.fixed ? (
-                <span className="studio-settings__fixed-value">
+                <span className="flex items-center gap-[4px] text-workspace-muted text-[length:10px] font-[400]">
                   <Check size={13} /> Included
                 </span>
               ) : (
@@ -338,20 +338,20 @@ export function StudioNodeSettings({
       }}
     >
       <div className="studio-settings__heading">
-        <div className="studio-settings__node-icon">
+        <div className="grid w-[32px] h-[32px] shrink-0 place-items-center rounded-[10px] [background:var(--workspace-control-bg)] text-workspace-text">
           <NodeIcon size={20} />
         </div>
-        <div className="studio-settings__heading-copy">
+        <div className="studio-settings__heading-copy grid flex-1 min-w-0 gap-[3px]">
           <strong>{studioNodeKindLabel(node.kind)}</strong>
           <div
-            className="studio-settings__node-state"
+            className="studio-settings__node-state flex flex-wrap gap-[6px] text-workspace-muted text-[length:10px] leading-[14px]"
             data-status={node.raw.status}
             aria-live="polite"
           >
             {generative &&
               (generationPending ||
                 !["draft", "success"].includes(node.raw.status)) && (
-                <span className="studio-settings__status">
+                <span className="text-workspace-text">
                   {node.raw.status === "cancelling"
                     ? "Cancelling"
                     : generationPending || isStudioNodeRunning(node)
@@ -412,10 +412,12 @@ export function StudioNodeSettings({
           </label>
           {generative && (
             <section className="studio-settings__section">
-              <div className="studio-settings__section-heading">
+              <div className="flex items-center justify-between gap-[8px]">
                 <h3>Model</h3>
                 {model?.pro && (
-                  <span className="studio-settings__pro">Pro</span>
+                  <span className="p-[1px_5px] rounded-[5px] [background:var(--workspace-control-bg)] text-workspace-muted text-[length:9px] leading-[14px] font-[600]">
+                    Pro
+                  </span>
                 )}
               </div>
               <Tooltip
@@ -432,7 +434,7 @@ export function StudioNodeSettings({
                   disabled={!models.length}
                   onClick={() => setPickerOpen(!pickerOpen)}
                 >
-                  <span className="studio-settings__model-name">
+                  <span className="studio-settings__model-name flex-1">
                     <strong>
                       {model?.label ||
                         (modelId
@@ -486,7 +488,7 @@ export function StudioNodeSettings({
                           aria-pressed={model?.id === item.id}
                           onClick={() => selectModel(item)}
                         >
-                          <span className="studio-settings__option-copy">
+                          <span className="studio-settings__option-copy min-w-0">
                             <strong>{item.label}</strong>
                           </span>
                           {item.pro && <small>Pro</small>}
@@ -495,7 +497,7 @@ export function StudioNodeSettings({
                       </Tooltip>
                     ))}
                     {!filtered.length && (
-                      <p className="studio-settings__empty">
+                      <p className="p-[14px_8px] text-workspace-muted text-[length:11px] text-center">
                         No models match “{search}”.
                       </p>
                     )}
@@ -637,7 +639,7 @@ export function StudioNodeSettings({
                       : saveError || saveFeedback?.message}
                   </span>
                 </p>
-                <div className="studio-settings__recovery-actions">
+                <div className="flex justify-end gap-[6px] mt-[6px]">
                   {conflict ? (
                     <>
                       <button

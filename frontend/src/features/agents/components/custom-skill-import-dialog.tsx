@@ -205,9 +205,13 @@ export function SkillImportDialog({
           onRestoreFocus();
         }}
       >
-        <form onSubmit={submit} className="custom-skill-dialog-form" noValidate>
+        <form
+          onSubmit={submit}
+          className="flex flex-col min-h-0 overflow-hidden"
+          noValidate
+        >
           <div className="custom-skill-dialog-header">
-            <span className="custom-skill-step">
+            <span className="custom-skill-step flex items-center gap-[12px] mb-[8px] text-workspace-muted text-workspace-caption leading-workspace-caption">
               {preview ? "Review skills" : "Choose a source"}{" "}
               <span>{preview ? "2" : "1"} / 2</span>
             </span>
@@ -245,7 +249,7 @@ export function SkillImportDialog({
                   ))}
                 </div>
                 <div className="custom-skills-field">
-                  <div className="custom-skill-field-label">
+                  <div className="flex items-center gap-[4px]">
                     <label htmlFor={sourceInputId}>
                       {source === "github"
                         ? "Public GitHub link"
@@ -336,7 +340,7 @@ export function SkillImportDialog({
                   {source === "github" ? (
                     <p
                       id={`${sourceInputId}-help`}
-                      className="custom-skill-source-help"
+                      className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption font-[400]"
                     >
                       Paste a public repository, skill folder or SKILL.md link.
                       For private repositories, choose ZIP.
@@ -351,7 +355,7 @@ export function SkillImportDialog({
               </>
             ) : (
               <>
-                <div className="custom-skill-review-heading">
+                <div className="flex justify-between flex-wrap gap-[6px] text-workspace-muted text-workspace-caption">
                   <span>
                     {preview.skills.length} skill
                     {preview.skills.length === 1 ? "" : "s"} found
@@ -473,7 +477,7 @@ function SkillCandidate({
 }) {
   return (
     <article className="custom-skill-candidate" data-selected={selected}>
-      <label className="custom-skill-candidate-heading">
+      <label className="custom-skill-candidate-heading flex items-start gap-[12px] pb-[16px] cursor-pointer">
         <input
           type="checkbox"
           checked={selected}
@@ -496,7 +500,7 @@ function SkillCandidate({
       </label>
       {needsChoice && (
         <div
-          className="custom-skill-name-choice"
+          className="custom-skill-name-choice flex flex-wrap items-center justify-between gap-[8px] mb-[12px] text-workspace-caption text-workspace-muted"
           role="group"
           aria-label={`Install options for ${originalName}`}
         >
@@ -530,9 +534,9 @@ function SkillCandidate({
           </span>
           <ChevronDown size={16} aria-hidden />
         </summary>
-        <div className="custom-skill-candidate-content">
+        <div className="p-[4px_0_16px]">
           <pre className="custom-skill-code">{skill.instructions}</pre>
-          <ul className="custom-skill-file-list">
+          <ul className="custom-skill-file-list flex flex-col gap-[8px] p-0 m-0 [list-style:none] text-[length:12px]">
             {skill.files.map((file) => (
               <li key={file.path}>
                 <code>{file.path}</code>

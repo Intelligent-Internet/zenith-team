@@ -7,9 +7,6 @@
 .po-page-comments-rail:has(.po-page-comments[hidden]) {
   display: none;
 }
-.po-page-content {
-  min-width: 0;
-}
 .po-comments-toolbar {
   display: flex;
   align-items: center;

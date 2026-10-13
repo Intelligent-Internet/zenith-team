@@ -199,7 +199,7 @@ export function DesktopUpdateDialog() {
         </div>
 
         {!busy ? (
-          <DialogFooter className="desktop-update-dialog__footer px-6 py-4 sm:justify-between">
+          <DialogFooter className="[border-top:1px_solid_var(--border-subtle)] [background:var(--workspace-control-bg,_var(--surface-secondary))] px-6 py-4 sm:justify-between">
             <Button
               disabled={isActing}
               type="button"

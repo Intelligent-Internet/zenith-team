@@ -80,7 +80,11 @@ function PoseColor({ id, palette }: { id: string; palette: Palette }) {
     "#ffffff",
   ].map(channels);
   return (
-    <svg className="fold-pose__filters" aria-hidden="true" focusable="false">
+    <svg
+      className="absolute w-0 h-0 pointer-events-none"
+      aria-hidden="true"
+      focusable="false"
+    >
       <defs>
         <filter
           id={id}

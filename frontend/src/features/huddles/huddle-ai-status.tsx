@@ -256,7 +256,7 @@ export function HuddleAIStatus({
           role="dialog"
           aria-label={`${name} voice agent`}
         >
-          <header className="huddle-ai-panel-head">
+          <header className="huddle-ai-panel-head flex items-center gap-[10px]">
             <span className="huddle-helia-mark" data-size="lg" aria-hidden>
               <HuddleAgentAvatar
                 profile={profile}
@@ -285,7 +285,10 @@ export function HuddleAIStatus({
           </header>
 
           {query.isError ? (
-            <div className="huddle-ai-callout" data-tone="warning">
+            <div
+              className="huddle-ai-callout grid gap-[10px] p-[12px_14px] rounded-[12px] [background:color-mix(in_srgb,_var(--warning)_12%,_transparent)] text-[length:12px] leading-[1.6]"
+              data-tone="warning"
+            >
               <p>
                 Unable to refresh the Agent’s status. Check your connection.
               </p>
@@ -295,11 +298,11 @@ export function HuddleAIStatus({
             </div>
           ) : state === "disabled" ? (
             <>
-              <p className="huddle-ai-lead">
+              <p className="text-[var(--muted-foreground)] text-[length:12px] leading-[1.6]">
                 Bring an Agent into the call to answer questions out loud while
                 you talk.
               </p>
-              <ul className="huddle-ai-facts">
+              <ul className="huddle-ai-facts grid gap-[2px] p-[4px] rounded-[12px] [background:var(--control)]">
                 <li>
                   <Mic size={16} />
                   Hears microphones that are unmuted
@@ -315,7 +318,10 @@ export function HuddleAIStatus({
               </ul>
             </>
           ) : state === "unavailable" ? (
-            <div className="huddle-ai-callout" data-tone="warning">
+            <div
+              className="huddle-ai-callout grid gap-[10px] p-[12px_14px] rounded-[12px] [background:color-mix(in_srgb,_var(--warning)_12%,_transparent)] text-[length:12px] leading-[1.6]"
+              data-tone="warning"
+            >
               <p>
                 {!stale && status?.unavailableReason
                   ? unavailableDescriptions[status.unavailableReason]
@@ -327,19 +333,25 @@ export function HuddleAIStatus({
               )}
             </div>
           ) : state === "ended" ? (
-            <p className="huddle-ai-lead">
+            <p className="text-[var(--muted-foreground)] text-[length:12px] leading-[1.6]">
               This call has ended. Start a new Huddle to invite an Agent.
             </p>
           ) : null}
 
           {error && (
-            <p className="huddle-ai-error" role="alert">
+            <p
+              className="text-[var(--danger-soft,_var(--destructive))] text-[length:12px]"
+              role="alert"
+            >
               {error}
             </p>
           )}
 
           {inCall && !stale && activity && (
-            <div className="huddle-ai-tool-activity" role="status">
+            <div
+              className="huddle-ai-tool-activity grid gap-[6px] p-[12px] [border:1px_solid_var(--border)] rounded-[8px] text-[length:12px] wrap-anywhere"
+              role="status"
+            >
               <strong>
                 {lookupExpired
                   ? "Lookup did not finish"
@@ -393,7 +405,7 @@ export function HuddleAIStatus({
           {canModerate && status && (
             <>
               {(status.disabled || state === "unavailable") && (
-                <div className="huddle-ai-agent-picker">
+                <div className="huddle-ai-agent-picker grid gap-[8px] m-[16px_0] text-[length:13px]">
                   <label htmlFor={`${panelId}-agent`}>Voice Agent</label>
                   <select
                     id={`${panelId}-agent`}
@@ -430,7 +442,7 @@ export function HuddleAIStatus({
                   </Link>
                 </div>
               )}
-              <div className="huddle-ai-actions">
+              <div className="flex flex-wrap gap-[8px]">
                 {(status.disabled || state === "unavailable") && (
                   <button
                     type="button"
@@ -467,7 +479,7 @@ export function HuddleAIStatus({
               </div>
               {!canShareContext &&
                 (status.disabled || state === "unavailable") && (
-                  <p className="huddle-ai-note huddle-ai-context-note">
+                  <p className="text-[var(--muted-foreground)] text-[length:11px] leading-[1.6] huddle-ai-context-note flex items-start gap-[6px]">
                     <Info size={14} aria-hidden />
                     Only someone in this call can share Company context.
                   </p>
@@ -475,7 +487,7 @@ export function HuddleAIStatus({
             </>
           )}
           {status && !canModerate && status.disabled && state !== "ended" && (
-            <p className="huddle-ai-note">
+            <p className="text-[var(--muted-foreground)] text-[length:11px] leading-[1.6]">
               Only the person who started the call or a Company admin can invite
               an Agent.
             </p>
@@ -492,7 +504,7 @@ export function HuddleAIStatus({
       )}
 
       <Dialog open={budgetOpen} onOpenChange={setBudgetOpen}>
-        <DialogContent className="huddle-dialog huddle-ai-dialog">
+        <DialogContent className="huddle-dialog max-h-[calc(100dvh_-_48px)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Company AI budget</DialogTitle>
             <DialogDescription>
@@ -551,7 +563,10 @@ export function HuddleBudgetSettings({ companyId }: { companyId: string }) {
     void query.refetch();
   }
   return (
-    <form className="huddle-ai-budget" onSubmit={(event) => void submit(event)}>
+    <form
+      className="huddle-ai-budget grid gap-[10px] text-[length:13px]"
+      onSubmit={(event) => void submit(event)}
+    >
       {budget && (
         <dl className="huddle-ai-budget-stats">
           <div>
@@ -573,12 +588,12 @@ export function HuddleBudgetSettings({ companyId }: { companyId: string }) {
         </dl>
       )}
       {budget?.warning && (
-        <p className="huddle-ai-error">
+        <p className="text-[var(--danger-soft,_var(--destructive))] text-[length:12px]">
           80% or more of the budget is committed.
         </p>
       )}
       <label htmlFor={inputId}>Monthly limit (USD)</label>
-      <div className="huddle-ai-budget-row">
+      <div className="flex gap-[8px]">
         <input
           id={inputId}
           inputMode="decimal"
@@ -604,14 +619,17 @@ export function HuddleBudgetSettings({ companyId }: { companyId: string }) {
       </div>
       {saved && <p role="status">{saved}</p>}
       {(error || query.isError) && (
-        <p role="alert" className="huddle-ai-error">
+        <p
+          role="alert"
+          className="text-[var(--danger-soft,_var(--destructive))] text-[length:12px]"
+        >
           {error || "Budget unavailable. Please retry."}
         </p>
       )}
       <small id={`${inputId}-hint`}>
         Set to $0 to pause AI spending. Saving does not invite an Agent.
       </small>
-      <p className="huddle-ai-budget-note">
+      <p className="mt-[10px] pt-[16px] [border-top:1px_solid_var(--border)] text-[var(--muted-foreground)] text-[length:12px] leading-[1.6]">
         Held funds are temporary reservations, released when a call ends and
         final usage arrives. Recorded usage is not a provider invoice.
       </p>

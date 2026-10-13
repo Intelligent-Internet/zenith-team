@@ -52,13 +52,6 @@
   color: var(--workspace-native-text);
   font-size: 12px;
 }
-.pc-format-divider {
-  flex: 0 0 1px;
-  width: 1px;
-  height: 20px;
-  margin: 0 8px;
-  background: var(--workspace-divider);
-}
 
 .pc-format-toolbar button > svg {
   width: 18px;

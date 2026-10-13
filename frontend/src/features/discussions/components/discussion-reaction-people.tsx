@@ -58,7 +58,7 @@ export function DiscussionReactionPeople({
         <HoverCard.Content
           id={popoverId}
           role="tooltip"
-          className="discussion-reaction-popover"
+          className="z-[90] w-[max-content] min-w-[170px] max-w-[min(260px,_calc(100vw_-_24px))] p-[10px_12px] [border:1px_solid_var(--workspace-divider,_#26374b)] rounded-[var(--workspace-radius-overlay,_14px)] [background:var(--workspace-overlay-bg,_#14263a)] text-[var(--workspace-native-text,_#e6edf6)] [box-shadow:var(--workspace-overlay-shadow)] text-[length:12px]"
           side="top"
           sideOffset={8}
           collisionPadding={8}
@@ -172,19 +172,19 @@ function ReactionPeopleContent({
         </strong>
       </div>
       {!ready ? (
-        <span className="discussion-reaction-popover-status">
+        <span className="block text-[var(--workspace-native-text-muted,_#98aabd)] text-[length:12px]">
           Checking access…
         </span>
       ) : denied ? (
-        <span className="discussion-reaction-popover-status">
+        <span className="block text-[var(--workspace-native-text-muted,_#98aabd)] text-[length:12px]">
           Reactions unavailable
         </span>
       ) : query.isError ? (
-        <span className="discussion-reaction-popover-status">
+        <span className="block text-[var(--workspace-native-text-muted,_#98aabd)] text-[length:12px]">
           {discussionError(query.error)}
         </span>
       ) : query.isLoading && !shown.length ? (
-        <span className="discussion-reaction-popover-status">
+        <span className="block text-[var(--workspace-native-text-muted,_#98aabd)] text-[length:12px]">
           Loading people…
         </span>
       ) : (
@@ -206,7 +206,7 @@ function ReactionPeopleContent({
             </div>
           ))}
           {remaining > 0 ? (
-            <span className="discussion-reaction-popover-status">
+            <span className="block text-[var(--workspace-native-text-muted,_#98aabd)] text-[length:12px]">
               {query.isFetching && shown.length < 5
                 ? "Loading more people…"
                 : `and ${remaining} ${remaining === 1 ? "other" : "others"}`}

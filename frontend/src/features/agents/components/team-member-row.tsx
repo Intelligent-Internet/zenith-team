@@ -49,7 +49,7 @@ export function TeamPersonIdentity({
         ) : null}
         <Avatar.Fallback>{personInitials(name)}</Avatar.Fallback>
       </Avatar.Root>
-      <div className="team-person-copy">
+      <div className="min-w-0 wrap-anywhere">
         <strong title={name}>
           {name}
           {isSelf ? <small> (you)</small> : null}

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query";
 
 import type { CompanyDetail } from "@/shared/api/types";
-import "./company-avatar.css";
+import { cx } from "@/shared/lib/cx";
 
 export function CompanyAvatar({
   companyId,
@@ -24,9 +24,20 @@ export function CompanyAvatar({
   const [failedUrl, setFailedUrl] = useState<string>();
   const url = previewUrl || image.currentData;
   return (
-    <span className={`company-avatar ${className}`} aria-hidden="true">
+    <span
+      className={cx(
+        "grid shrink-0 place-items-center overflow-hidden",
+        className,
+      )}
+      aria-hidden="true"
+    >
       {url && url !== failedUrl ? (
-        <img src={url} alt="" onError={() => setFailedUrl(url)} />
+        <img
+          className="w-full h-full min-w-0 object-cover"
+          src={url}
+          alt=""
+          onError={() => setFailedUrl(url)}
+        />
       ) : (
         name.trim().slice(0, 1).toUpperCase() || "C"
       )}

@@ -131,7 +131,7 @@ export function FilesView(props: ArtifactCollectionProps) {
           </button>
         )}
       </div>
-      <div className="pc-file-list">
+      <div className="flex-1 min-h-0 p-[0_16px_12px]">
         <ArtifactCollection {...props} artifacts={rows} />
       </div>
     </div>
@@ -170,28 +170,30 @@ export function ArtifactTimeline({
         <Clock3 size={21} />
       </div>
       {query.isError ? (
-        <div className="pc-state">
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
           <p>The timeline couldn’t be loaded.</p>
           <button className="pc-button" onClick={() => void query.refetch()}>
             Try again
           </button>
         </div>
       ) : query.isFetching && !query.currentData ? (
-        <div className="pc-state">Loading activity…</div>
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
+          Loading activity…
+        </div>
       ) : (
-        <div className="pc-timeline-list">
+        <div className="flex-1 min-h-0 p-[16px_24px]">
           <Virtuoso
             data={entries}
             computeItemKey={(_, row) => row.id}
             components={{
               EmptyPlaceholder: () => (
-                <div className="pc-view-empty">
+                <div className="grid [place-content:center] min-h-[160px] p-[24px] text-[var(--pc-soft)] text-[length:12px] text-center leading-[1.7]">
                   No artifact activity on this page.
                 </div>
               ),
             }}
             itemContent={(_, entry) => (
-              <article className="pc-timeline-entry">
+              <article className="pc-timeline-entry grid grid-cols-[82px_minmax(0,_1fr)] max-w-[820px] mx-auto">
                 <time dateTime={entry.createdAt}>
                   {new Date(entry.createdAt).toLocaleDateString(undefined, {
                     month: "short",
@@ -205,7 +207,7 @@ export function ArtifactTimeline({
                   </small>
                 </time>
                 <div>
-                  <span className="pc-eyebrow">
+                  <span className="text-[var(--pc-soft)] text-[length:9px] font-[650] tracking-[1.5px]">
                     {timelineLabels[entry.action]}
                   </span>
                   <button
@@ -227,7 +229,7 @@ export function ArtifactTimeline({
           />
         </div>
       )}
-      <footer className="pc-timeline-pagination">
+      <footer className="flex gap-[18px] items-center justify-center p-[14px] [border-top:1px_solid_var(--pc-line)] text-[var(--pc-muted)] text-[length:11px]">
         <button
           className="pc-button"
           disabled={cursors.length === 1 || query.isFetching}
@@ -356,7 +358,7 @@ export function RelationshipMap(
         </div>
       </div>
       {!model.nodes.length ? (
-        <div className="pc-state">
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
           <Layers size={28} />
           <h3>No artifact connections yet</h3>
           <p>
@@ -366,7 +368,7 @@ export function RelationshipMap(
         </div>
       ) : (
         <ReactFlowProvider>
-          <div className="pc-graph-surface">
+          <div className="pc-graph-surface relative flex-1 min-h-0 overflow-hidden [background:var(--workspace-content-bg)]">
             <ReactFlow
               nodes={model.nodes}
               edges={model.edges}
@@ -429,7 +431,7 @@ export function PresentationView({
         </button>
       </div>
       {frames.length ? (
-        <div className="pc-frame-list">
+        <div className="flex-1 min-h-0 p-[16px_24px]">
           <Virtuoso
             data={frames}
             computeItemKey={(_, row) => row.id}
@@ -446,7 +448,7 @@ export function PresentationView({
                   className="pc-frame-slide"
                   onClick={() => onStart(index)}
                 >
-                  <span className="pc-frame-number">
+                  <span className="text-[length:25px] text-[var(--pc-soft)] tracking-[-1px]">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div>
@@ -467,7 +469,7 @@ export function PresentationView({
           />
         </div>
       ) : (
-        <div className="pc-state">
+        <div className="pc-state flex-1 flex flex-col items-center justify-center gap-[16px]">
           <Play size={30} />
           <h3>Give your work a story</h3>
           <p>Add frames in Free canvas and group artifact cards into them.</p>

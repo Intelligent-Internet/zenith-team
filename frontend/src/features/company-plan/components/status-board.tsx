@@ -114,18 +114,20 @@ export function StatusBoard({
       {columns.map((column) => (
         <section
           aria-label={`${column.label}: ${column.tasks.length} ${column.tasks.length === 1 ? "task" : "tasks"}`}
-          className="status-board__column"
+          className="flex min-w-0 min-h-0 flex-col overflow-hidden [scroll-snap-align:start] [background:transparent]"
           data-column={column.key}
           key={column.key}
         >
           <header className="status-board__column-header">
             <TaskStatusIcon status={columnStatus[column.key]} />
             <h3>{column.label}</h3>
-            <span className="status-board__count">{column.tasks.length}</span>
+            <span className="grid min-w-[19px] h-[19px] shrink-0 place-items-center rounded-[4px] px-[5px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-micro leading-workspace-micro [font-variant-numeric:tabular-nums]">
+              {column.tasks.length}
+            </span>
           </header>
           <div className="status-board__column-body">
             {column.tasks.length ? (
-              <ul className="status-board__tasks">
+              <ul className="grid grid-cols-[minmax(0,_1fr)] gap-[10px] m-0 p-0 [list-style:none]">
                 {column.tasks.map((item) => (
                   <li key={item.task.id}>
                     <StatusTaskCard
@@ -145,7 +147,9 @@ export function StatusBoard({
                 ))}
               </ul>
             ) : (
-              <p className="status-board__empty">{column.emptyText}</p>
+              <p className="m-0 [border:1px_dashed_var(--workspace-divider-strong)] rounded-[9px] p-[18px_12px] text-workspace-muted text-workspace-body leading-workspace-body">
+                {column.emptyText}
+              </p>
             )}
           </div>
         </section>
@@ -258,12 +262,12 @@ function StatusTaskCard({
       <span className="status-board__task-title" title={task.title}>
         {task.title}
       </span>
-      <span className="status-board__task-description">
+      <span className="[display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden text-workspace-caption leading-workspace-caption text-workspace-muted">
         {task.description.replace(/[#*`]/g, "")}
       </span>
       {needsInput ? (
         <span
-          className="status-board__input-badge"
+          className="inline-flex items-center gap-[5px] mt-[9px] [border:1px_solid_currentColor] rounded-[5px] p-[2px_5px] text-[var(--workspace-native-approval)] text-workspace-caption font-[550] leading-workspace-caption"
           title="Pending question or approval"
         >
           <CircleAlert aria-hidden="true" size={13} />
@@ -271,7 +275,7 @@ function StatusTaskCard({
         </span>
       ) : null}
       {awaitsReview ? (
-        <span className="status-board__review-status">
+        <span className="status-board__review-status inline-flex self-start items-center gap-[6px] text-workspace-muted text-workspace-caption leading-workspace-caption">
           <Eye aria-hidden="true" size={14} />
           <span>Needs your review</span>
         </span>
@@ -282,11 +286,14 @@ function StatusTaskCard({
           open={participantsTooltipOpen}
           onOpenChange={setParticipantsTooltipOpen}
         >
-          <span aria-hidden="true" className="status-board__avatars">
+          <span
+            aria-hidden="true"
+            className="inline-flex flex-none items-center gap-[6px]"
+          >
             {agent.kind === "agent" ? (
               <FoldAvatar agentId={agent.id} paused size={28} />
             ) : null}
-            <Avatar.Root className="status-board__avatar">
+            <Avatar.Root className="status-board__avatar inline-flex w-[28px] h-[28px] shrink-0 overflow-hidden rounded-[8px] [background:var(--workspace-accent-soft)] text-workspace-accent">
               {task.assignee.avatarUrl ? (
                 <Avatar.Image
                   alt=""
@@ -300,13 +307,16 @@ function StatusTaskCard({
         </Tooltip>
         {task.assigneeOutsideProject ? (
           <span
-            className="status-board__outside"
+            className="inline-grid flex-none place-items-center text-[var(--workspace-native-approval)]"
             title={`${task.assignee.name} can't see this project`}
           >
             <EyeOff size={14} aria-hidden="true" />
           </span>
         ) : null}
-        <time className="status-board__updated-at" dateTime={task.updatedAt}>
+        <time
+          className="flex-none ml-auto text-workspace-muted text-workspace-caption leading-workspace-caption whitespace-nowrap"
+          dateTime={task.updatedAt}
+        >
           {new Date(task.updatedAt).toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",

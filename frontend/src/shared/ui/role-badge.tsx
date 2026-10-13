@@ -1,6 +1,5 @@
 import { Crown, ShieldCheck, UserRound } from "@/shared/ui/icons";
 import { roleLabel, type CompanyRole } from "@/shared/permissions";
-import "./role-badge.css";
 
 const ROLE_ICONS = {
   owner: Crown,
@@ -27,7 +26,12 @@ export function RoleBadge({
   const Icon = ROLE_ICONS[resolved];
   return (
     <span
-      className={["team-role-badge", className].filter(Boolean).join(" ")}
+      className={[
+        "inline-flex items-center gap-[5px] rounded-[4px] p-[3px_7px] [background:var(--workspace-control-bg)] text-workspace-muted text-[length:var(--workspace-text-caption,12px)] leading-[var(--workspace-leading-caption,1.4)] whitespace-nowrap data-[role=owner]:[background:var(--workspace-accent-soft)] data-[role=owner]:text-workspace-accent data-[role=admin]:[background:color-mix(in_srgb,var(--workspace-native-success)_14%,transparent)] data-[role=admin]:text-workspace-success",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       data-role={resolved}
       title={title}
     >

@@ -1,7 +1,3 @@
-.canvas-tool-guide__trigger {
-  display: inline-flex;
-  flex-shrink: 0;
-}
 .canvas-tool-guide__trigger > button:disabled {
   pointer-events: none;
 }
@@ -25,16 +21,6 @@
   font-family: var(--workspace-font-body);
   user-select: none;
   animation: canvas-guide-enter 150ms ease-out;
-}
-.canvas-tool-guide__copy {
-  padding: 12px 10px 10px;
-}
-.canvas-tool-guide__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 6px;
 }
 .canvas-tool-guide__heading > strong {
   font-size: 13px;

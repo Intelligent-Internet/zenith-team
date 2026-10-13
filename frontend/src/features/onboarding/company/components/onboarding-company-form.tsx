@@ -78,7 +78,7 @@ export function OnboardingCompanyForm({
         {websiteValid ? null : (
           <p
             id={websiteErrorId}
-            className="onboarding-welcome__field-error"
+            className="m-[8px_0_0] text-workspace-danger text-[length:12px] leading-[1.5]"
             role="alert"
           >
             Enter a full website URL beginning with http:// or https://.
@@ -110,10 +110,15 @@ export function OnboardingCompanyForm({
       </div>
 
       {noticeMessage ? (
-        <p className="onboarding-welcome__notice">{noticeMessage}</p>
+        <p className="m-0 text-workspace-muted text-[length:12px]">
+          {noticeMessage}
+        </p>
       ) : null}
       {errorMessage ? (
-        <p className="workspace-onboarding__error" role="alert">
+        <p
+          className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+          role="alert"
+        >
           {errorMessage}
         </p>
       ) : null}
@@ -131,7 +136,9 @@ export function OnboardingCompanyForm({
                 <ArrowLeft size={17} aria-hidden="true" />
                 Back
               </button>
-              <span className="onboarding-actions__meta">About a minute</span>
+              <span className="text-workspace-faint text-[length:12px]">
+                About a minute
+              </span>
             </>
           }
         >
@@ -164,10 +171,12 @@ function ReferenceFilePicker({
   const [isDragging, setIsDragging] = useState(false);
 
   return (
-    <div className="onboarding-uploads">
-      <span className="onboarding-uploads__label">
+    <div className="grid gap-[10px]">
+      <span className="text-[length:13px] font-[500]">
         Anything else worth reading
-        <span className="workspace-onboarding__optional">Optional</span>
+        <span className="ml-[6px] text-workspace-faint text-[length:12px] font-[400]">
+          Optional
+        </span>
       </span>
       <button
         type="button"
@@ -203,7 +212,7 @@ function ReferenceFilePicker({
         }}
       />
       {files.length > 0 ? (
-        <ul className="onboarding-uploads__list">
+        <ul className="grid gap-[6px] m-0 p-0 [list-style:none]">
           {files.map((entry) => (
             <li
               key={entry.id}
@@ -211,10 +220,10 @@ function ReferenceFilePicker({
               data-status={entry.status}
             >
               <FileText size={16} aria-hidden="true" />
-              <span className="onboarding-uploads__name">
+              <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
                 {entry.file.name}
               </span>
-              <span className="onboarding-uploads__meta">
+              <span className="text-workspace-faint text-[length:12px] [font-variant-numeric:tabular-nums]">
                 {entry.status === "error"
                   ? "Failed"
                   : entry.status === "uploading"
@@ -224,7 +233,7 @@ function ReferenceFilePicker({
               {entry.status === "uploading" || entry.status === "uploaded" ? (
                 <span
                   aria-hidden="true"
-                  className="onboarding-uploads__progress"
+                  className="absolute inset-[auto_0_0_0] h-[2px] w-[var(--upload-progress,_0%)] [background:var(--workspace-native-accent)] [transition:width_220ms_ease-out]"
                   style={{ "--upload-progress": `${entry.progress}%` } as never}
                 />
               ) : null}
@@ -259,7 +268,9 @@ function Field({
       <span>
         {label}
         {optional ? (
-          <span className="workspace-onboarding__optional">Optional</span>
+          <span className="ml-[6px] text-workspace-faint text-[length:12px] font-[400]">
+            Optional
+          </span>
         ) : null}
       </span>
       {children}

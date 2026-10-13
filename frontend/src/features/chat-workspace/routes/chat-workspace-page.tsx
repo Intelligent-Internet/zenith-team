@@ -1388,7 +1388,7 @@ export function ChatWorkspacePage({
     >
       {!sidebarOnly && !isMobileViewport && !navigatorCollapsed && (
         <div
-          className="workspace-chat-navigator-resize"
+          className="absolute z-[20] inset-[0_-4px_0_auto] w-[9px] [cursor:col-resize] [touch-action:none] [outline:none]"
           {...navigatorResize.separatorProps}
         />
       )}

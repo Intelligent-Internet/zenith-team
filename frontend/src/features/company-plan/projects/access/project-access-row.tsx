@@ -246,27 +246,30 @@ export function ProjectAccessRow({
 
   return (
     <li className="project-access-row">
-      <div className="project-access-row__who">
+      <div className="flex min-w-0 items-center gap-[12px] [grid-area:who]">
         <Avatar.Root className="team-person-avatar project-access-row__avatar">
           {person.avatarUrl ? (
             <Avatar.Image alt="" draggable={false} src={person.avatarUrl} />
           ) : null}
           <Avatar.Fallback>{personInitials(person.name)}</Avatar.Fallback>
         </Avatar.Root>
-        <div className="project-access-row__copy">
-          <span className="project-access-row__name">
+        <div className="flex min-w-0 flex-col gap-[2px]">
+          <span className="project-access-row__name flex min-w-0 items-center gap-[6px]">
             <strong title={person.name}>{person.name}</strong>
             {person.isSelf ? <small>you</small> : null}
             <RoleMark role={person.role} />
           </span>
           {person.email ? (
-            <span className="project-access-row__sub" title={person.email}>
+            <span
+              className="overflow-hidden text-workspace-muted text-[length:var(--workspace-text-caption,_12px)] leading-[var(--workspace-leading-caption,_1.4)] text-ellipsis whitespace-nowrap"
+              title={person.email}
+            >
               {person.email}
             </span>
           ) : null}
         </div>
       </div>
-      <div className="project-access-row__perms">
+      <div className="flex min-w-0 justify-end [grid-area:perms]">
         {changeable ? (
           <ProjectAccessPicker
             disabled={busy}
@@ -293,7 +296,7 @@ export function ProjectAccessRow({
           />
         )}
       </div>
-      <div className="project-access-row__menu">
+      <div className="flex items-center justify-center [grid-area:menu]">
         {outranks ? <CapLock /> : null}
       </div>
       {refused ? (

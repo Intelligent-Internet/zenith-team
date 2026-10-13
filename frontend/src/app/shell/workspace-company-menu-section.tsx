@@ -115,7 +115,7 @@ export function WorkspaceCompanyMenuSection({
           No companies available.
         </p>
       ) : null}
-      <div className="workspace-company-section-list">
+      <div className="max-h-[208px] overflow-y-auto overscroll-contain">
         {query.currentData?.items.map((company) => (
           <DropdownMenu.Item
             key={company.id}

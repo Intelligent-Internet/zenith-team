@@ -549,7 +549,7 @@ function NewTaskForm({
             values={scheduleValues}
             onChange={setScheduleValues}
           />
-          <div className="calendar-task-property">
+          <div className="calendar-task-property flex items-center gap-[10px] min-w-0 text-[var(--workspace-text-muted)]">
             <FolderOpen size={17} />
             <CalendarOptionPicker
               label="Project"
@@ -565,7 +565,10 @@ function NewTaskForm({
             />
           </div>
           {projectsQuery.isError ? (
-            <p role="alert" className="personal-error">
+            <p
+              role="alert"
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+            >
               Projects could not be loaded.{" "}
               <button
                 type="button"
@@ -580,7 +583,7 @@ function NewTaskForm({
               You need a project with permission to create tasks.
             </p>
           ) : null}
-          <div className="calendar-task-property">
+          <div className="calendar-task-property flex items-center gap-[10px] min-w-0 text-[var(--workspace-text-muted)]">
             <Users size={17} />
             <CalendarOptionPicker
               label="Assignee"
@@ -596,7 +599,7 @@ function NewTaskForm({
               onChange={setAssigneeId}
             />
           </div>
-          <div className="calendar-task-property">
+          <div className="calendar-task-property flex items-center gap-[10px] min-w-0 text-[var(--workspace-text-muted)]">
             <span className="calendar-field-label">Execute with</span>
             <TaskCreationAgentPicker
               agents={taskAgents}
@@ -660,7 +663,10 @@ function NewTaskForm({
             </div>
           )}
           {error && (
-            <p className="personal-error" role="alert">
+            <p
+              className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
+              role="alert"
+            >
               {error}
             </p>
           )}
@@ -694,7 +700,7 @@ function NewTaskForm({
         }
       }}
     >
-      <header className="new-task-header">
+      <header className="new-task-header flex shrink-0 items-center justify-between gap-[16px] p-[12px_20px]">
         <span>
           {session.company?.workspaceName}
           <ChevronRight size={12} />
@@ -727,7 +733,7 @@ function NewTaskForm({
       </DialogDescription>
       <fieldset className="new-task-fields" disabled={pending}>
         {mode === "manual" ? (
-          <div className="task-create-properties">
+          <div className="flex items-center flex-wrap gap-[7px]">
             {/* The same chip as the properties below, so the form reads as
                 one set of controls. */}
             <label className="task-create-chip">
@@ -771,7 +777,7 @@ function NewTaskForm({
         ) : null}
         {mode === "agent" ? (
           <>
-            <div className="task-create-agent">
+            <div className="task-create-agent flex items-center gap-[10px] text-workspace-body leading-workspace-body text-workspace-muted">
               <span>Created with</span>
               <TaskCreationAgentPicker
                 agents={allAgents}
@@ -816,7 +822,7 @@ function NewTaskForm({
           </>
         )}
         {mode === "manual" ? (
-          <div className="task-schedule-create">
+          <div className="task-schedule-create grid gap-[12px] [justify-items:start]">
             <button
               type="button"
               className="task-create-chip"
@@ -887,7 +893,7 @@ function NewTaskForm({
                 </>
               ) : null}
             </p>
-            <div className="task-create-properties">
+            <div className="flex items-center flex-wrap gap-[7px]">
               {mode === "manual" && executorKind === "agent" ? (
                 <span className="task-create-chip">
                   <Circle size={14} /> To do
@@ -1035,7 +1041,7 @@ function NewTaskForm({
           {mode === "agent" ? "Switch to manual" : "Switch to agent"}
         </button>
         {mode === "manual" ? (
-          <label className="task-create-another">
+          <label className="task-create-another flex items-center gap-[6px] whitespace-nowrap text-workspace-caption leading-workspace-caption text-workspace-muted cursor-pointer">
             <input
               type="checkbox"
               checked={another}

@@ -52,7 +52,7 @@ export function OnboardingIntroduction({
         {joiningCompany ? (
           <JoinCompanyForm onBack={() => setJoiningCompany(false)} />
         ) : (
-          <div className="onboarding-introduction__choices">
+          <div className="grid gap-[12px]">
             <button
               type="button"
               className="onboarding-introduction__choice"

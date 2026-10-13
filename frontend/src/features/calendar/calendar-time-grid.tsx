@@ -90,7 +90,7 @@ export function CalendarTimeGrid({
 
   return (
     <div
-      className="calendar-time-view"
+      className="flex flex-col min-h-0 flex-1"
       style={
         {
           "--day-count": days.length,
@@ -147,7 +147,7 @@ export function CalendarTimeGrid({
         </div>
       </div>
       <div className="calendar-time-scroll" ref={scroll}>
-        <div className="calendar-hour-labels">
+        <div className="calendar-hour-labels grid grid-rows-[repeat(24,_60px)] text-[var(--workspace-text-muted)] text-[length:10px] [font-variant-numeric:tabular-nums] text-center">
           {Array.from({ length: 24 }, (_, hour) => (
             <span key={hour}>{String(hour).padStart(2, "0")}:00</span>
           ))}

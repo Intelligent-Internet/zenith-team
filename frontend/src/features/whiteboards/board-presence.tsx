@@ -323,7 +323,10 @@ export function BoardPresence({
                     />
                   ))}
                 </span>
-                <span className="wb-presence-name" aria-live="polite">
+                <span
+                  className="wb-presence-name max-w-[160px] overflow-hidden text-ellipsis"
+                  aria-live="polite"
+                >
                   {people[0].name}
                 </span>
                 {people.length > 1 && <span>+{people.length - 1}</span>}
@@ -365,7 +368,7 @@ export function BoardPresence({
           >
             {person.runId && person.workArea && (
               <div
-                className="wb-agent-work-area"
+                className="absolute [border:2px_dashed_var(--wb-peer)] rounded-[12px] [background:color-mix(in_srgb,_var(--wb-peer)_5%,_transparent)] pointer-events-none z-[998]"
                 style={{
                   left: person.workArea.x,
                   top: person.workArea.y,
@@ -385,11 +388,11 @@ export function BoardPresence({
                 }}
               >
                 <div
-                  className="wb-peer-cursor__scale"
+                  className="flex items-start gap-[6px] [transform-origin:0_0]"
                   style={{ transform: `scale(${1 / viewport.zoom})` }}
                 >
                   <MousePointer className="wb-peer-cursor__icon" size={22} />
-                  <span className="wb-peer-cursor__label">
+                  <span className="mt-[12px] p-[3px_8px] rounded-[4px] [background:var(--wb-peer)] text-[white] whitespace-nowrap text-[length:11px] font-[500] leading-[16px]">
                     {person.name} · Agent
                   </span>
                 </div>
@@ -403,7 +406,9 @@ export function BoardPresence({
                   }}
                 >
                   <MousePointer className="wb-peer-cursor__icon" size={22} />
-                  <span className="wb-peer-cursor__label">{person.name}</span>
+                  <span className="mt-[12px] p-[3px_8px] rounded-[4px] [background:var(--wb-peer)] text-[white] whitespace-nowrap text-[length:11px] font-[500] leading-[16px]">
+                    {person.name}
+                  </span>
                 </div>
               )
             )}
@@ -429,7 +434,7 @@ export function BoardPresence({
               return item ? (
                 <div
                   key={id}
-                  className="wb-peer-selection"
+                  className="absolute [border:2px_solid_var(--wb-peer)] rounded-[4px] pointer-events-none z-[999]"
                   style={{
                     left: drag?.x ?? item.x,
                     top: drag?.y ?? item.y,

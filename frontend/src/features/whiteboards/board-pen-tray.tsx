@@ -56,7 +56,7 @@ export function BoardPenTray({
     <div className="wb-pen-tray" role="group" aria-label="Drawing tools">
       <div className="wb-pen-tray__main">
         <div
-          className="wb-pen-tray__brushes"
+          className="flex gap-[4px] flex-1 min-w-0"
           role="group"
           aria-label="Drawing tool"
         >
@@ -104,7 +104,7 @@ export function BoardPenTray({
           />
         </div>
       </div>
-      <div className="wb-pen-tray__width">
+      <div className="flex items-center p-[10px_16px] [border-top:1px_solid_var(--wb-line)]">
         <BoardStrokeWidths
           width={width}
           widths={widths}

@@ -230,11 +230,11 @@ export function RunResultPage() {
 
             {selectedItem && output.type !== "app" ? (
               <section
-                className="run-document-preview"
+                className="min-w-0 overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[12px]"
                 aria-label="Artifact preview"
               >
                 <div
-                  className="run-document-tabs"
+                  className="run-document-tabs flex gap-[8px] p-[12px] overflow-x-auto [border-bottom:1px_solid_var(--workspace-divider)]"
                   role="group"
                   aria-label="Choose a file to preview"
                 >
@@ -259,7 +259,7 @@ export function RunResultPage() {
                     </button>
                   ))}
                 </div>
-                <div className="run-document-body">
+                <div className="flex flex-col h-[min(65vh,_720px)] min-h-[300px] overflow-auto">
                   <ArtifactFilePreview
                     key={selectedItem.id}
                     companyId={companyId}

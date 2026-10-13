@@ -34,7 +34,10 @@ export function PersonalToolsDialog({
         container={document.querySelector(".boardly-workspace-theme")}
       >
         <Dialog.Overlay
-          className={cn("personal-dialog-overlay", overlayClassName)}
+          className={cn(
+            "fixed inset-0 z-[100] [background:rgb(0_0_0_/_0.3)] [backdrop-filter:blur(3px)]",
+            overlayClassName,
+          )}
         />
         <Dialog.Content
           className={cn("personal-dialog", className)}

@@ -170,7 +170,10 @@ export function BoardNote({
         </div>
       ) : (
         session.error && (
-          <span className="wb-note-error" title={session.error}>
+          <span
+            className="absolute left-[8px] bottom-[3px] text-[length:10px] text-[#8b3120]"
+            title={session.error}
+          >
             {session.status === "offline"
               ? "Offline draft"
               : "Draft needs attention"}
@@ -178,7 +181,7 @@ export function BoardNote({
         )
       )}
       {!readOnly && !session.canEdit && (
-        <span className="wb-note-error">
+        <span className="absolute left-[8px] bottom-[3px] text-[length:10px] text-[#8b3120]">
           Reopen this Board to edit after access changes.
         </span>
       )}

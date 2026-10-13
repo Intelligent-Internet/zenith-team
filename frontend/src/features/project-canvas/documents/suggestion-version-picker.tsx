@@ -67,7 +67,9 @@ export function SuggestionVersionPicker({
             </span>
             <ChevronDown size={13} className="pc-version-picker-arrow" />
             {options.length > 1 && (
-              <span className="pc-version-count">{options.length}</span>
+              <span className="absolute top-[-6px] right-[-3px] min-w-[16px] p-[1px_4px] rounded-[10px] [background:var(--foreground)] text-[var(--background)] [font:600_10px/14px_var(--font-sans,_sans-serif)]">
+                {options.length}
+              </span>
             )}
           </button>
         </DropdownMenuTrigger>

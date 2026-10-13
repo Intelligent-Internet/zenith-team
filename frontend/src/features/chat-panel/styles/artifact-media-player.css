@@ -110,16 +110,6 @@
   background: transparent;
 }
 
-.artifact-player__loading {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgb(20 24 28 / 40%);
-  backdrop-filter: blur(12px);
-}
-
 .artifact-player__controls {
   display: grid;
   width: 90%;
@@ -239,10 +229,6 @@
   cursor: default;
 }
 
-.artifact-player__speed {
-  position: relative;
-}
-
 .artifact-player__speed select {
   appearance: none;
   height: 32px;
@@ -270,14 +256,6 @@
   color: var(--media-muted);
 }
 
-.artifact-player__message {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 4px;
-  color: var(--media-ink);
-  font-size: 12px;
-}
-
 .artifact-player--audio {
   width: min(100%, 560px);
   padding: 28px 0;
@@ -297,21 +275,6 @@
   align-items: center;
   gap: 18px;
   margin-bottom: 28px;
-}
-
-.artifact-player__artwork {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 72px;
-  height: 72px;
-  border-radius: 12px;
-  color: var(--text-secondary);
-  background: var(--state-hover-bg);
-}
-
-.artifact-player__audio-info {
-  min-width: 0;
 }
 
 .artifact-player__audio-info > span {

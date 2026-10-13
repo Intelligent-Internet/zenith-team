@@ -248,7 +248,7 @@ export function OnboardingTeamPanel({
 
   return (
     <>
-      <form className="onboarding-team" onSubmit={submit}>
+      <form className="onboarding-team grid gap-[32px]" onSubmit={submit}>
         <div className="onboarding-team__grid">
           {displayedAgents.map((agent, index) => {
             const isCeo = agent.id === root?.id;
@@ -330,12 +330,18 @@ export function OnboardingTeamPanel({
           })}
         </div>
         {error || completionError ? (
-          <p className="workspace-onboarding__error" role="alert">
+          <p
+            className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+            role="alert"
+          >
             {error || completionError}
           </p>
         ) : null}
         {!root ? (
-          <p className="workspace-onboarding__error" role="alert">
+          <p
+            className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
+            role="alert"
+          >
             Andrew could not be found. Return to agent setup to continue.
           </p>
         ) : null}
@@ -450,12 +456,12 @@ export function OnboardingTeamPanel({
                 setEditing(null);
               }}
             >
-              <header className="new-agent-header">
-                <div className="new-agent-heading">
+              <header className="flex shrink-0 items-start gap-[14px] p-[22px_24px_18px] [border-bottom:1px_solid_var(--workspace-divider)]">
+                <div className="flex-1 min-w-0">
                   <DialogTitle className="new-agent-title">
                     Customize {editing.agent.name}
                   </DialogTitle>
-                  <DialogDescription className="new-agent-description">
+                  <DialogDescription className="m-[5px_0_0] text-workspace-muted text-workspace-caption leading-workspace-caption">
                     {editingCeo
                       ? "Choose a name for your CEO. They are always part of your team."
                       : "Give your teammate a name, a focus, and a way of working."}
@@ -465,8 +471,8 @@ export function OnboardingTeamPanel({
                   <X size={18} aria-hidden="true" />
                 </DialogClose>
               </header>
-              <div className="new-agent-body">
-                <div className="new-agent-fields">
+              <div className="flex-1 min-w-0 min-h-0 overflow-y-auto overscroll-contain">
+                <div className="grid gap-[22px] min-w-0 m-0 p-[20px_24px_24px] [border:0]">
                   <label className="new-agent-field">
                     <span>Name</span>
                     <input

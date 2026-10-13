@@ -49,7 +49,7 @@ export function SocialPostPreview({
         .split(/(https?:\/\/[^\s]+|[#@][\p{L}\p{N}_]+)/gu)
         .map((part, index) =>
           /^(https?:\/\/|[#@])/.test(part) ? (
-            <span className="social-post-preview__mention" key={index}>
+            <span className="text-workspace-accent" key={index}>
               {part}
             </span>
           ) : (
@@ -77,13 +77,13 @@ export function SocialPostPreview({
       aria-label={`${platformNames[platform] ?? "Social"} post preview`}
       data-platform={platform}
     >
-      <figcaption className="social-post-preview__label">
+      <figcaption className="flex items-center justify-between gap-[12px] mb-[10px] text-workspace-muted text-[length:12px] font-[500]">
         <span>Post preview</span>
         <span>{platformNames[platform] ?? "Social"}</span>
       </figcaption>
       <div className="social-post-preview__post">
-        <div className="social-post-preview__identity">
-          <div className="social-post-preview__avatar">
+        <div className="social-post-preview__identity flex items-center gap-[10px]">
+          <div className="social-post-preview__avatar grid place-items-center w-[40px] h-[40px] shrink-0 overflow-hidden rounded-[50%] [background:var(--workspace-accent-soft)] text-workspace-accent font-[600]">
             {post.avatarUrl &&
             !avatarFailed &&
             attachmentUrl(post.avatarUrl) ? (
@@ -97,7 +97,7 @@ export function SocialPostPreview({
               <span aria-hidden>{name.slice(0, 1).toUpperCase()}</span>
             )}
           </div>
-          <div className="social-post-preview__account">
+          <div className="social-post-preview__account grid gap-[2px] flex-1 min-w-0">
             <strong>{name}</strong>
             <span>
               {post.username
@@ -110,17 +110,20 @@ export function SocialPostPreview({
         </div>
         {imagesFirst ? attachments : caption}
         {imagesFirst ? caption : attachments}
-        <p className="social-post-preview__timestamp">
+        <p className="m-[14px_0_12px] text-[length:12px] text-workspace-muted">
           {reviewed ? "Reviewed draft" : "Not published yet"}
         </p>
-        <div className="social-post-preview__actions" aria-hidden>
+        <div
+          className="flex justify-between pt-[12px] [border-top:1px_solid_var(--workspace-divider)] text-workspace-muted"
+          aria-hidden
+        >
           <MessageSquare size={17} />
           <Repeat2 size={18} />
           <Bookmark size={17} />
           <Share size={17} />
         </div>
       </div>
-      <p className="social-post-preview__note">
+      <p className="m-[10px_0_0] text-workspace-muted text-[length:12px] leading-[1.6]">
         Review the account, text and media. Publishing makes this post public.
         {` The final layout may vary on ${platformNames[platform] ?? "the platform"}.`}
       </p>

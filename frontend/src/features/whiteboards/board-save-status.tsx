@@ -69,7 +69,9 @@ export function BoardSaveStatus({
           aria-label="Whiteboard save details"
         >
           <h2>Save details</h2>
-          <div className="wb-recovery-list">{recovery}</div>
+          <div className="min-h-0 overflow-y-auto overscroll-contain">
+            {recovery}
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

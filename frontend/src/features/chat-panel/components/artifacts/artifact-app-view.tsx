@@ -243,7 +243,7 @@ export function ArtifactAppView({
   ) {
     return (
       <div className="artifact-app-empty">
-        <div className="artifact-app-empty__icon">
+        <div className="grid w-[52px] h-[52px] place-items-center rounded-[15px] [background:var(--workspace-control-bg,_#efeee8)] text-[var(--workspace-native-info,_#3567a7)]">
           {publication && publication.status !== "failed" ? (
             <LoaderCircle className="artifact-spinner" size={24} />
           ) : (
@@ -364,7 +364,7 @@ function AppPreviewAvailability({
 }) {
   return (
     <div className="artifact-app-empty">
-      <div className="artifact-app-empty__icon">
+      <div className="grid w-[52px] h-[52px] place-items-center rounded-[15px] [background:var(--workspace-control-bg,_#efeee8)] text-[var(--workspace-native-info,_#3567a7)]">
         {loading ? (
           <LoaderCircle className="artifact-spinner" size={24} />
         ) : (
@@ -378,7 +378,10 @@ function AppPreviewAvailability({
           : reason || "The app preview is unavailable."}
       </p>
       {(!loading && (onStart || onRestart)) || onStop ? (
-        <div aria-label="App preview actions" className="artifact-file-actions">
+        <div
+          aria-label="App preview actions"
+          className="artifact-file-actions inline-flex max-w-full flex-wrap shrink-0 items-center gap-[2px]"
+        >
           {!loading && onStart ? (
             <button
               className="artifact-action-button"
@@ -481,7 +484,10 @@ function EmbeddedAppPreview({
   }
   return (
     <div className="artifact-app-embed">
-      <div className="artifact-app-status" role="status">
+      <div
+        className="flex min-h-[36px] items-center justify-between [border-bottom:1px_solid_var(--workspace-divider,_#dedbd2)] p-[5px_12px] text-[var(--workspace-native-text-muted,_#697168)] text-[length:12px]"
+        role="status"
+      >
         <span>
           {loadState === "loading"
             ? "Loading app preview…"

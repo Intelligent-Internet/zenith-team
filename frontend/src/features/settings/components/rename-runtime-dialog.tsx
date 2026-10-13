@@ -105,7 +105,7 @@ function RenameRuntimeForm({
         </DialogDescription>
       </DialogHeader>
 
-      <label className="runtime-dialog__field">
+      <label className="runtime-dialog__field grid gap-[8px] mt-[20px] text-[var(--workspace-native-text-muted,_rgba(255,_255,_255,_0.7))] text-workspace-body leading-workspace-body text-left">
         <span>Computer name</span>
         <input
           autoComplete="off"

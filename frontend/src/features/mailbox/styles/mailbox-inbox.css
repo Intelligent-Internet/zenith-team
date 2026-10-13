@@ -22,15 +22,6 @@
 .mailbox-inbox__list {
   border-right: 1px solid var(--workspace-divider);
 }
-.mailbox-inbox__list-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--workspace-divider);
-}
 .mailbox-inbox-control {
   display: inline-flex;
   min-height: 32px;
@@ -56,11 +47,6 @@
 .mailbox-inbox-control:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-.mailbox-inbox__message-divider {
-  height: 1px;
-  margin: 0 12px;
-  background: var(--workspace-divider);
 }
 .mailbox-inbox__message:hover {
   background: var(--workspace-hover-bg);

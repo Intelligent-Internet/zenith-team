@@ -153,18 +153,20 @@ export function PageDocument({
             <button type="button" onClick={onBack}>
               Pages
             </button>
-            <span className="po-page-breadcrumb-separator" aria-hidden="true">
+            <span className="text-[var(--pc-soft)]" aria-hidden="true">
               /
             </span>
             <span
-              className="po-page-breadcrumb-title"
+              className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap font-[500]"
               aria-current="page"
               title={data.title}
             >
               {data.title}
             </span>
             {isProjectOverview && (
-              <span className="po-page-overview-badge">Project overview</span>
+              <span className="shrink-0 p-[4px_8px] rounded-[6px] [background:var(--workspace-selected-bg)] text-[var(--pc-ink)] text-workspace-caption whitespace-nowrap">
+                Project overview
+              </span>
             )}
           </nav>
         )}
@@ -407,7 +409,7 @@ export function PageDocument({
         )
       ) : (
         <div className="po-page-discussion-layout">
-          <div className="po-page-content" ref={setContent}>
+          <div className="min-w-0" ref={setContent}>
             <LiveDocument
               onEditor={setDocumentEditor}
               loadingContent={<PageDocumentLoading toolbar={false} />}

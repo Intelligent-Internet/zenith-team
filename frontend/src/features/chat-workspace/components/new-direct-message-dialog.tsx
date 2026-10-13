@@ -121,7 +121,7 @@ export function NewDirectMessageDialog({
       }}
     >
       <DialogContent
-        className="new-direct-message-dialog"
+        className="new-direct-message-dialog z-[221] flex w-[min(520px,_calc(100vw_-_32px))] max-w-[min(520px,_calc(100vw_-_32px))] max-h-[calc(100dvh_-_48px)] flex-col gap-0 overflow-hidden [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[var(--workspace-radius-overlay,_14px)] p-0 [background:var(--workspace-overlay-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] [box-shadow:var(--workspace-overlay-shadow,_0_16px_48px_rgb(37_28_45_/_12%))] [font-family:var(--workspace-font-body,_sans-serif)]"
         overlayClassName="new-direct-message-dialog__overlay"
         showCloseButton={false}
         onOpenAutoFocus={(event) => {
@@ -141,11 +141,11 @@ export function NewDirectMessageDialog({
         }}
       >
         <header className="new-direct-message-dialog__header">
-          <div className="new-direct-message-dialog__heading">
-            <DialogTitle className="new-direct-message-dialog__title">
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="m-0 [font-family:var(--workspace-font-heading,_sans-serif)] text-[length:21px] font-[700] leading-[1.4]">
               {mode === "invite" ? "Invite members" : "New chat"}
             </DialogTitle>
-            <DialogDescription className="new-direct-message-dialog__description">
+            <DialogDescription className="m-[6px_0_0] text-[var(--workspace-native-text-muted,_#706875)] text-[length:13px] leading-[1.5]">
               {mode === "invite"
                 ? "Choose people and agents to add to this group direct message."
                 : "Choose people and agents to start a chat together."}
@@ -207,9 +207,12 @@ export function NewDirectMessageDialog({
             ))}
           </div>
         ) : null}
-        <div className="new-direct-message-dialog__body">
+        <div className="min-h-0 overflow-y-auto overscroll-contain p-[0_12px_12px]">
           {hasError ? (
-            <div className="new-direct-message-dialog__error" role="alert">
+            <div
+              className="new-direct-message-dialog__error flex items-center justify-between gap-[12px] m-[0_12px_12px] [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[9px] p-[12px] text-[var(--workspace-native-text-muted,_#706875)] text-[length:13px] leading-[1.5]"
+              role="alert"
+            >
               <p>We couldn’t load all recipients.</p>
               {onRetry ? (
                 <button onClick={onRetry} type="button">
@@ -221,7 +224,7 @@ export function NewDirectMessageDialog({
           {visibleRecipients.length > 0 ? (
             <ul
               aria-label="Available people and agents"
-              className="new-direct-message-dialog__recipients"
+              className="grid gap-[2px] m-0 p-0 [list-style:none]"
               onKeyDown={(event) => {
                 if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
                   return;
@@ -283,16 +286,16 @@ export function NewDirectMessageDialog({
                         {recipient.avatarSrc ? (
                           <AvatarImage
                             alt=""
-                            className="new-direct-message-dialog__avatar-image"
+                            className="object-cover"
                             src={recipient.avatarSrc}
                           />
                         ) : null}
-                        <AvatarFallback className="new-direct-message-dialog__initials">
+                        <AvatarFallback className="rounded-[inherit] [background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-text,_#2d2631)] text-[length:12px] font-[600]">
                           {personInitials(recipient.name) || "?"}
                         </AvatarFallback>
                       </Avatar>
                     )}
-                    <span className="new-direct-message-dialog__identity">
+                    <span className="grid min-w-0 flex-1 gap-[2px]">
                       <span className="new-direct-message-dialog__name">
                         {recipient.name}
                       </span>
@@ -300,7 +303,7 @@ export function NewDirectMessageDialog({
                         {recipient.description}
                       </span>
                     </span>
-                    <span className="new-direct-message-dialog__kind">
+                    <span className="shrink-0 rounded-[5px] p-[2px_6px] [background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-text-muted,_#706875)] text-[length:10px] font-[600] leading-[1.5]">
                       {recipient.kind === "agent" ? "Agent" : "Person"}
                     </span>
                     {selected.some(
@@ -310,18 +313,21 @@ export function NewDirectMessageDialog({
                     ) ? (
                       <Check
                         aria-hidden="true"
-                        className="new-direct-message-dialog__arrow"
+                        className="shrink-0 text-[var(--workspace-native-text-muted,_#706875)]"
                         size={17}
                       />
                     ) : (
-                      <span className="new-direct-message-dialog__selection-space" />
+                      <span className="w-[17px] shrink-0" />
                     )}
                   </button>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="new-direct-message-dialog__empty" role="status">
+            <p
+              className="m-0 p-[32px_20px] text-[var(--workspace-native-text-muted,_#706875)] text-[length:13px] leading-[1.6] text-center"
+              role="status"
+            >
               {isLoading
                 ? "Loading recipients…"
                 : searchTerm

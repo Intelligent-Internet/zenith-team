@@ -1413,10 +1413,15 @@ function EditorSurface({
   const recovery = hasRecovery ? (
     <>
       {noteRecoveryError && (
-        <div className="wb-recovery-item">{noteRecoveryError}</div>
+        <div className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere">
+          {noteRecoveryError}
+        </div>
       )}
       {orphanNotes.map((row) => (
-        <div key={row.key} className="wb-recovery-item">
+        <div
+          key={row.key}
+          className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere"
+        >
           <span>
             A local note draft was recovered. Its original note was deleted,
             restored, or is now read-only. Export it or discard it; it will not
@@ -1457,7 +1462,10 @@ function EditorSurface({
         </div>
       ))}
       {recoverableNotes.map(([key, session]) => (
-        <div key={key} className="wb-recovery-item">
+        <div
+          key={key}
+          className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere"
+        >
           <span>
             {session.status === "failed"
               ? `A note with unsaved local text could not be loaded. ${session.error}`
@@ -1491,14 +1499,17 @@ function EditorSurface({
         </div>
       ))}
       {query.isError && !accessDenied && (
-        <div className="wb-recovery-item">
+        <div className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere">
           Connection interrupted. Changes will be sent when you reconnect.
         </div>
       )}
       {[...scene.drafts]
         .filter(([, draft]) => draft.status !== "saving")
         .map(([key, draft]) => (
-          <div key={key} className="wb-recovery-item">
+          <div
+            key={key}
+            className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere"
+          >
             <span>{draft.message}</span>
             <button
               onClick={() =>
@@ -1523,7 +1534,9 @@ function EditorSurface({
           </div>
         ))}
       {scene.storageError && (
-        <div className="wb-recovery-item">{scene.storageError}</div>
+        <div className="wb-recovery-item flex flex-wrap gap-[8px] p-[12px_16px] leading-[1.5] wrap-anywhere">
+          {scene.storageError}
+        </div>
       )}
     </>
   ) : null;
@@ -1558,7 +1571,7 @@ function EditorSurface({
           </div>
         </header>
         {leaveDialog}
-        <div className="wb-editor-body">
+        <div className="relative flex flex-1 min-h-0">
           <div
             ref={surface}
             className={`wb-surface ${drawing ? "is-drawing" : ""}`}
@@ -1793,7 +1806,10 @@ function EditorSurface({
               />
             </ReactFlow>
             {fileImport.dragging && (
-              <div className="wb-image-drop-overlay" role="status">
+              <div
+                className="wb-image-drop-overlay absolute inset-[12px] z-[30] flex flex-col items-center justify-center gap-[8px] [border:2px_dashed_var(--workspace-native-text-muted)] rounded-[16px] [background:color-mix(in_srgb,_var(--workspace-content-bg)_92%,_transparent)] text-workspace-text pointer-events-none"
+                role="status"
+              >
                 <strong>Drop files here</strong>
                 <span>
                   Images appear on the Board; other files become file cards · Up
@@ -1802,7 +1818,10 @@ function EditorSurface({
               </div>
             )}
             {fileImport.progress && (
-              <div className="wb-image-upload-status" role="status">
+              <div
+                className="absolute top-[16px] left-[50%] z-[30] max-w-[calc(100%_-_32px)] [transform:translateX(-50%)] p-[10px_16px] [border:1px_solid_var(--workspace-divider)] rounded-[12px] [background:var(--workspace-content-bg)] text-workspace-text text-[length:13px] pointer-events-none"
+                role="status"
+              >
                 {fileImport.progress}
               </div>
             )}

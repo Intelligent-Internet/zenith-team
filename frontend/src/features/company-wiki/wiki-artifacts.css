@@ -71,35 +71,8 @@ button.zen-wiki-artifact {
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: 1px;
 }
-
-.zen-wiki-artifact-card {
-  /* Above the Wiki dialogs (overlay 220, content 221), whose previews show chips. */
-  z-index: 230;
-  display: grid;
-  gap: 4px;
-  width: min(300px, calc(100vw - 24px));
-  padding: 10px 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 9px;
-  background: var(--workspace-overlay-bg);
-  color: var(--workspace-native-text);
-  box-shadow: var(--workspace-overlay-shadow);
-  font-family: var(--workspace-font-body);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-.zen-wiki-artifact-card__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--workspace-native-text-muted);
-  font-size: 11px;
-}
 .zen-wiki-artifact-card strong {
   font-size: 13.5px;
-}
-.zen-wiki-artifact-card__item {
-  color: var(--workspace-native-text-muted);
 }
 .zen-wiki-artifact-card p {
   display: -webkit-box;

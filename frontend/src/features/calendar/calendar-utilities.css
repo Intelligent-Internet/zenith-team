@@ -77,11 +77,6 @@
   outline: 2px solid var(--workspace-native-accent);
   outline-offset: -2px;
 }
-.calendar-utility-panel-shell {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
 .calendar-utility-panel {
   display: flex;
   flex-direction: column;
@@ -89,16 +84,6 @@
   height: 100%;
   min-height: 0;
   border-left: 1px solid var(--workspace-divider);
-}
-.calendar-utility-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  gap: 12px;
-  min-height: 80px;
-  padding: 20px;
-  border-bottom: 1px solid var(--workspace-divider);
 }
 .calendar-utility-heading h2 {
   margin: 0;
@@ -148,46 +133,11 @@
 html[data-boardly-color-mode="dark"] .calendar-utility-preview--maps img {
   filter: brightness(0.45) saturate(0.7);
 }
-.calendar-utility-map-symbol {
-  display: grid;
-  place-items: center;
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  border-radius: 17px;
-  color: var(--workspace-native-accent);
-  background: var(--workspace-panel-bg);
-  box-shadow: var(--calendar-surface-shadow);
-  transform: rotate(-6deg);
-}
-.calendar-utility-miniature {
-  box-shadow: var(--calendar-surface-shadow);
-  width: 206px;
-  padding: 12px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: 10px;
-  background: var(--workspace-panel-bg);
-}
-.calendar-utility-miniature-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--workspace-native-accent);
-  margin-bottom: 10px;
-}
 .calendar-utility-miniature-heading > span {
   width: 64px;
   height: 5px;
   border-radius: 4px;
   background: var(--workspace-divider-strong);
-}
-.calendar-utility-miniature-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  text-align: center;
-  color: var(--workspace-text-muted);
-  font-size: 9px;
 }
 .calendar-utility-miniature-grid > span {
   padding-block: 3px;
@@ -198,11 +148,6 @@ html[data-boardly-color-mode="dark"] .calendar-utility-preview--maps img {
 .calendar-utility-miniature-grid > span:nth-child(24) {
   background: var(--workspace-accent-soft);
   color: var(--workspace-native-accent);
-}
-.calendar-utility-people {
-  display: grid;
-  gap: 9px;
-  width: 206px;
 }
 .calendar-utility-people > div {
   box-shadow: var(--calendar-surface-shadow);
@@ -252,12 +197,6 @@ html[data-boardly-color-mode="dark"] .calendar-utility-preview--maps img {
   color: var(--workspace-native-accent);
   background: var(--workspace-accent-soft);
   white-space: nowrap;
-}
-.calendar-utility-shortcuts {
-  display: grid;
-  gap: 8px;
-  padding-top: 22px;
-  border-top: 1px solid var(--workspace-divider);
 }
 .calendar-utility-shortcuts button {
   display: flex;

@@ -27,11 +27,11 @@ export function DiscussionAttachments({
 
   return (
     <div
-      className="discussion-message-attachments"
+      className="flex min-w-0 flex-col [align-items:start] gap-[8px] m-[8px_0]"
       aria-label="Message attachments"
     >
       {files.length > 1 ? (
-        <span className="discussion-attachment-summary">
+        <span className="text-[var(--discussion-muted)] text-[length:13px] leading-[20px]">
           {files.length} attachments
         </span>
       ) : null}
@@ -52,7 +52,7 @@ export function DiscussionAttachments({
         </div>
       ) : null}
       {otherFiles.length ? (
-        <div className="discussion-file-attachments">
+        <div className="flex flex-wrap max-w-full [align-items:start] gap-[8px]">
           {otherFiles.map((file) => (
             <DiscussionAttachmentCard
               key={file.id}
@@ -200,7 +200,10 @@ function DiscussionImageAttachment({
             onError={() => setPreview({ error: true })}
           />
         ) : (
-          <span className="discussion-image-attachment-status" role="status">
+          <span
+            className="flex w-[320px] max-w-full h-[180px] items-center justify-center gap-[8px] text-[var(--discussion-muted)] text-[length:12px]"
+            role="status"
+          >
             <ImageIcon aria-hidden size={24} />
             {failed ? "Image unavailable" : "Loading image…"}
           </span>

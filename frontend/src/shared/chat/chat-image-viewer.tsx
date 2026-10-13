@@ -136,14 +136,17 @@ export function ChatImageViewer({
             </DialogClose>
           </div>
         </header>
-        <div className="chat-image-viewer__viewport" ref={viewportRef}>
+        <div
+          className="chat-image-viewer__viewport min-h-0 overflow-auto [background:var(--workspace-control-bg)]"
+          ref={viewportRef}
+        >
           {failed || !attachmentUrl(file.url) ? (
             <p role="status">
               This image could not be loaded. You can try downloading it.
             </p>
           ) : (
             <div
-              className="chat-image-viewer__canvas"
+              className="chat-image-viewer__canvas flex items-center justify-center p-[12px]"
               style={{ width: `${zoom * 100}%`, height: `${zoom * 100}%` }}
             >
               <img
@@ -156,7 +159,7 @@ export function ChatImageViewer({
           )}
         </div>
         {files.length > 1 ? (
-          <footer className="chat-image-viewer__navigation">
+          <footer className="chat-image-viewer__navigation flex items-center justify-between gap-[12px] p-[10px_16px] [border-top:1px_solid_var(--workspace-divider)]">
             <button
               aria-label="Previous image"
               disabled={index === 0}

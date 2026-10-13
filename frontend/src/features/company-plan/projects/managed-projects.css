@@ -1,12 +1,5 @@
 /* People cut off from their own work (access-report.tsx), above Team ›
    Project access: one compact line each, with no heading. */
-.access-report__list {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
 .access-report__row {
   display: flex;
@@ -29,28 +22,12 @@
   flex: none;
 }
 
-.access-report__name {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  color: var(--workspace-native-text);
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .access-report__row > .project-access-chips {
   flex: none;
   flex-wrap: nowrap;
 }
 
 /* The Project's name shortens before the person's does at 390 px. */
-.access-report__project {
-  display: flex;
-  min-width: 0;
-  max-width: 40%;
-  flex: 0 1 auto;
-}
 
 .access-report__row .dashboard-button {
   flex: none;

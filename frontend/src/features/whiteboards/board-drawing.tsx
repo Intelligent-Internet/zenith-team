@@ -140,7 +140,10 @@ export function BoardDrawing({
 
   if (!preview) return null;
   return (
-    <svg className="wb-drawing-preview" aria-hidden="true">
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none z-[4]"
+      aria-hidden="true"
+    >
       <g
         transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
       >

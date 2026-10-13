@@ -81,7 +81,7 @@ export function LandingDownloadButton({
   }
 
   return (
-    <div className="landing-download-primary">
+    <div className="inline-flex flex-col items-center gap-[8px]">
       <a
         aria-label={option.label}
         className="landing-download-button"
@@ -114,7 +114,7 @@ export function LandingDownloadOptions({
             <span className="landing-download-option-icon">
               <DownloadIcon option={option} />
             </span>
-            <span className="landing-download-option-title">
+            <span className="text-[length:15px] font-[600] leading-[1.5]">
               {option.title}
             </span>
             <span className="landing-download-option-subtitle">
@@ -186,17 +186,19 @@ function MacDownloadMenu({ options }: { options: DesktopDownloadOption[] }) {
           size={17}
         />
       </summary>
-      <div className="landing-download-menu-panel">
-        <p className="landing-download-menu-label">Choose your Mac</p>
+      <div className="absolute z-[80] top-[calc(100%_+_10px)] left-[50%] w-[min(290px,_calc(100vw_-_40px))] [transform:translateX(-50%)] [border:1px_solid_#e5ded4] rounded-[13px] [background:#faf8f4] p-[8px] text-[#342b26] font-[inherit] [box-shadow:0_16px_40px_rgb(52_43_38_/_13%)]">
+        <p className="m-0 p-[7px_10px] text-[#6b6056] text-[length:10px] font-[600] tracking-[0.07em] uppercase">
+          Choose your Mac
+        </p>
         {options.map((option) => {
           const content = (
             <>
               <DownloadIcon option={option} />
               <span>
-                <span className="landing-download-menu-title">
+                <span className="block text-[length:13px] font-[600] leading-[1.5]">
                   {option.title}
                 </span>
-                <span className="landing-download-menu-description">
+                <span className="block text-[#6b6056] text-[length:11px] leading-[1.6]">
                   {option.isAvailable && option.url
                     ? option.subtitle
                     : "Coming soon"}
@@ -234,7 +236,7 @@ function MacDownloadMenu({ options }: { options: DesktopDownloadOption[] }) {
             </a>
           );
         })}
-        <p className="landing-download-menu-help">
+        <p className="m-[7px_10px_5px] [border-top:1px_solid_#e5ded4] pt-[11px] text-[#6b6056] text-[length:10px] leading-[1.6]">
           Find your chip in Apple menu → About This Mac.
         </p>
       </div>
@@ -250,7 +252,7 @@ function UnavailableDownload({
   reason?: string;
 }) {
   return (
-    <div className="landing-download-primary">
+    <div className="inline-flex flex-col items-center gap-[8px]">
       <button
         className="landing-download-button"
         disabled
@@ -259,7 +261,10 @@ function UnavailableDownload({
       >
         {platformName} · Coming soon
       </button>
-      <a className="landing-download-alternative" href="#download">
+      <a
+        className="text-[#a85438] text-[length:12px] font-[500] [text-decoration:underline] [text-underline-offset:4px]"
+        href="#download"
+      >
         See available downloads
       </a>
     </div>

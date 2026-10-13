@@ -66,20 +66,6 @@
   gap: 20px;
   flex-shrink: 0;
 }
-.artifact-picker-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.artifact-picker-emblem {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--picker-hover);
-  color: var(--picker-accent);
-}
 .artifact-picker-heading h2 {
   font-size: 18px;
   font-weight: 650;
@@ -163,10 +149,6 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 14px;
-}
-.artifact-picker-tabs {
-  display: flex;
-  gap: 4px;
 }
 .artifact-picker-tabs button {
   padding: 7px 10px;
@@ -275,12 +257,6 @@
 .artifact-picker-thumbnail .artifact-thumbnail {
   min-height: 0;
 }
-.artifact-picker-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
 .artifact-picker-copy > * {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -290,15 +266,6 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--picker-text);
-}
-.artifact-picker-source {
-  font-size: 12px;
-  color: var(--picker-muted);
-}
-.artifact-picker-meta {
-  font-size: 11px;
-  color: var(--picker-muted);
-  opacity: 0.8;
 }
 .artifact-picker-empty {
   min-height: 250px;
@@ -377,15 +344,6 @@
   border-color: var(--picker-accent);
   color: var(--workspace-panel-bg, #fff);
 }
-.artifact-picker-preview {
-  font-size: var(--workspace-text-body, 14px);
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-top: 1px solid var(--picker-border);
-}
 .artifact-picker-preview .artifact-viewer__header {
   height: 48px;
   min-height: 48px;
@@ -401,13 +359,6 @@
   padding: 8px 14px;
   font-size: var(--workspace-text-label, 13px);
   line-height: 1.4;
-}
-.artifact-draft-cards {
-  display: flex;
-  min-width: 0;
-  overflow-x: auto;
-  gap: 8px;
-  padding: 10px 12px 0;
 }
 .artifact-draft-card {
   display: flex;
@@ -506,13 +457,4 @@
 
 .artifact-picker-preview [aria-label="Close artifacts"] {
   display: none;
-}
-
-.artifact-picker-error {
-  flex-shrink: 0;
-  margin: 0;
-  padding: 10px 26px;
-  color: var(--color-danger, #b94a48);
-  font-size: 12px;
-  border-top: 1px solid var(--picker-border);
 }

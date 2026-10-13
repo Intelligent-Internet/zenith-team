@@ -76,7 +76,10 @@ export function AgentsDirectory({
           </select>
           <ChevronDown aria-hidden="true" size={16} />
         </span>
-        <span className="agents-directory-count" role="status">
+        <span
+          className="text-workspace-caption whitespace-nowrap ml-[4px]"
+          role="status"
+        >
           {search.trim() || provider ? `${visible.length} of ` : ""}
           {agents.length} {agents.length === 1 ? "agent" : "agents"}
         </span>
@@ -94,7 +97,7 @@ export function AgentsDirectory({
       ) : null}
       <div className="agents-directory-table collection-list">
         <div
-          className="agents-directory-columns collection-list__header"
+          className="agents-directory-columns min-h-[38px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]"
           aria-hidden="true"
         >
           <span>Agent</span>
@@ -129,7 +132,7 @@ export function AgentsDirectory({
               <div className="agents-directory-identity collection-list__identity">
                 <FoldAvatar agentId={agent.id} size={36} paused />
                 <div>
-                  <div className="agents-directory-name">
+                  <div className="flex flex-wrap items-center gap-[4px_10px]">
                     <strong title={agent.name}>{agent.name}</strong>
                     {agent.activeRunCount > 0 ? (
                       <span
@@ -204,7 +207,7 @@ export function AgentsDirectory({
           );
         })}
         {!visible.length ? (
-          <div className="dashboard-empty">
+          <div className="dashboard-empty grid [justify-items:center] p-[50px_20px] text-workspace-muted text-center">
             <Bot size={24} />
             <h2>{agents.length ? "No matching agents" : "No agents yet"}</h2>
             <p>

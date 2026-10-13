@@ -41,8 +41,8 @@ export function StudioContext() {
       aria-labelledby="studio-context-title"
     >
       <div className="studio-container">
-        <header className="studio-knowledge-heading">
-          <span className="studio-knowledge-eyebrow">
+        <header className="studio-knowledge-heading text-center">
+          <span className="block text-[length:11px] tracking-[0.18em] font-[600] text-[#6e8790] mb-[20px]">
             YOUR CONTEXT, CONNECTED
           </span>
           <h2 id="studio-context-title">
@@ -57,7 +57,7 @@ export function StudioContext() {
           </p>
         </header>
         <div className="studio-knowledge-map">
-          <div className="studio-knowledge-sources">
+          <div className="studio-knowledge-sources relative z-[1]">
             <h3>From your tools</h3>
             <ul>
               {contextSources.map(({ name, description, asset }) => (
@@ -81,7 +81,7 @@ export function StudioContext() {
             </ul>
           </div>
           <div className="studio-knowledge-center">
-            <span className="studio-knowledge-center-label">
+            <span className="inline-flex items-center gap-[8px] [border:1px_solid_#d7e3e5] rounded-[30px] [background:#fffdf7] p-[10px_18px] text-[length:12px] mb-[18px]">
               <Folder size={16} aria-hidden="true" /> Company context
             </span>
             <StudioArt
@@ -94,7 +94,7 @@ export function StudioContext() {
               <strong>For every agent on your team.</strong>
             </p>
           </div>
-          <div className="studio-knowledge-sources studio-knowledge-sources--brief">
+          <div className="studio-knowledge-sources relative z-[1] studio-knowledge-sources--brief">
             <h3>With your direction</h3>
             <ul>
               {companyContext.map(({ name, description, Icon }) => (
@@ -187,7 +187,10 @@ export function StudioReview() {
               aria-describedby={error ? "studio-feedback-error" : undefined}
             />
             {error && (
-              <p className="studio-form-error" id="studio-feedback-error">
+              <p
+                className="text-[length:11px] text-[#a24f39] mt-[5px]!"
+                id="studio-feedback-error"
+              >
                 Add a little direction first.
               </p>
             )}
@@ -203,7 +206,10 @@ export function StudioReview() {
                   : "Review result"}
               <ArrowRight size={16} />
             </button>
-            <span className="studio-feedback-status" role="status">
+            <span
+              className="block min-h-[22px] text-[#5b836b] text-[length:12px] mt-[10px]"
+              role="status"
+            >
               {status === "ready"
                 ? "Your feedback is in. Explore the example revision."
                 : ""}

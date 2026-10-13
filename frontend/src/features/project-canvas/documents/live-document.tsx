@@ -1142,7 +1142,7 @@ function NativeEditor({
                       reference for versioned media.
                     </small>
                   )}
-                  <div className="pc-block-url-actions">
+                  <div className="flex justify-end gap-[8px]">
                     <button type="button" onClick={() => setURLMode(null)}>
                       Cancel
                     </button>

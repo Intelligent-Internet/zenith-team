@@ -210,7 +210,7 @@ export function StudioMedia({
     kind === "image" ? ImageIcon : kind === "video" ? Video : Music;
   return (
     <div
-      className="studio-media"
+      className="studio-media relative grid place-items-center w-full h-full min-h-0"
       aria-busy={status === "loading"}
       onLoadCapture={(event) => {
         const target = event.target;
@@ -261,7 +261,10 @@ export function StudioMedia({
           />
         ))}
       {status !== "ready" && (
-        <div className="studio-media__status" role="status">
+        <div
+          className="studio-media__status absolute inset-0 flex flex-col gap-[8px] items-center justify-center [background:var(--workspace-control-bg)] text-workspace-muted text-[length:12px]"
+          role="status"
+        >
           {status === "loading" ? (
             <>
               <LoaderCircle

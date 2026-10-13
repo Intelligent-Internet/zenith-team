@@ -278,13 +278,15 @@ const MemberAgentSetupPage = lazy(() =>
 function RouteFallback() {
   return (
     <div className="workspace-loading-screen">
-      <div className="workspace-loading-screen__content">
+      <div className="flex flex-1 flex-col items-center justify-center p-[64px_24px_48px] text-center">
         <div className="workspace-loading-screen__character" aria-hidden="true">
           <FoldAvatar agentId="workspace-loading" paletteIndex={1} size={144} />
         </div>
-        <h1 className="workspace-loading-screen__title">Zenith Team</h1>
+        <h1 className="m-0 text-[length:20px] font-[600] leading-[28px] tracking-[-0.02em]">
+          Zenith Team
+        </h1>
         <p
-          className="workspace-loading-screen__status"
+          className="m-[12px_0_0] text-[var(--loading-muted)] text-[length:13px] leading-[1.5] tracking-[-0.12px]"
           role="status"
           aria-live="polite"
         >
@@ -295,7 +297,7 @@ function RouteFallback() {
           aria-hidden="true"
         />
       </div>
-      <p className="workspace-loading-screen__footer">
+      <p className="m-0 p-[0_24px_max(26px,_env(safe-area-inset-bottom))] text-[var(--loading-muted)] text-[length:11px] leading-[1.5] tracking-[0.1px] text-center">
         A little space for your next big idea.
       </p>
     </div>

@@ -249,7 +249,7 @@ export function DocumentMentions({
   if (!range) return null;
   return createPortal(
     <div
-      className="pc-document-mentions"
+      className="pc-document-mentions fixed z-[100] w-[min(320px,_calc(100vw_-_24px))] max-h-[calc(100vh_-_24px)] overflow-auto p-[6px] [border:1px_solid_var(--workspace-divider,_var(--border))] rounded-[10px] [background:var(--workspace-overlay-bg,_var(--popover))] text-[var(--workspace-native-text,_var(--foreground))] [box-shadow:var(--workspace-overlay-shadow,_0_8px_30px_#0002)] text-[length:13px]"
       style={position}
       ref={menu}
       onMouseDown={(event) => event.preventDefault()}

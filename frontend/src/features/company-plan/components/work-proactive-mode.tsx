@@ -58,12 +58,12 @@ export function WorkProactiveMode({
         </button>
       </DialogTrigger>
       <DialogContent
-        className="work-proactive-mode__dialog"
+        className="z-[221] flex w-[min(380px,_calc(100vw_-_32px))] max-w-[min(380px,_calc(100vw_-_32px))] max-h-[calc(100dvh_-_48px)] flex-col gap-[16px] overflow-y-auto [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[var(--workspace-radius-overlay,_14px)] p-[24px] [background:var(--workspace-overlay-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] [box-shadow:var(--workspace-overlay-shadow,_0_16px_48px_rgb(37_28_45_/_12%))] [font-family:var(--workspace-font-body,_sans-serif)]"
         overlayClassName="work-proactive-mode__overlay"
         showCloseButton={false}
       >
-        <header className="work-proactive-mode__header">
-          <DialogTitle className="work-proactive-mode__title">
+        <header className="flex shrink-0 items-center gap-[12px]">
+          <DialogTitle className="min-w-0 flex-1 m-0 [font-family:var(--workspace-font-heading,_sans-serif)] text-workspace-title font-[700] leading-workspace-title">
             Proactive Mode
           </DialogTitle>
           <Switch
@@ -83,11 +83,11 @@ export function WorkProactiveMode({
             </button>
           </DialogClose>
         </header>
-        <DialogDescription className="work-proactive-mode__description">
+        <DialogDescription className="m-0 text-[var(--workspace-native-text,_#2d2631)] text-workspace-caption leading-workspace-caption">
           Keep routine CEO approvals, completed Task merges, and outcome reports
           moving without manual confirmation.
         </DialogDescription>
-        <ul className="work-proactive-mode__features">
+        <ul className="grid gap-[6px] m-0 pl-[18px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-label leading-workspace-label [list-style:disc]">
           <li>Auto-approve CEO chat</li>
           <li>Merge completed Tasks</li>
           <li>Send outcome reports</li>

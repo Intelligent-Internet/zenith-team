@@ -80,7 +80,7 @@ export function AppAvatar({
       {logoUrl ? (
         <img
           alt=""
-          className="app-avatar__logo"
+          className="block w-full h-full object-contain rounded-[calc(var(--app-avatar-size)_*_0.1)]"
           decoding="async"
           draggable={false}
           loading="lazy"
@@ -96,7 +96,11 @@ export function AppAvatar({
           }
         />
       ) : brand ? (
-        <Icon aria-hidden="true" className="app-avatar__logo" name={brand} />
+        <Icon
+          aria-hidden="true"
+          className="block w-full h-full object-contain rounded-[calc(var(--app-avatar-size)_*_0.1)]"
+          name={brand}
+        />
       ) : (
         monogram
       )}

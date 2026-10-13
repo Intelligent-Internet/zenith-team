@@ -254,7 +254,7 @@ function StandardQuestionCard({
 
   if (!canAnswer) {
     return (
-      <div className="agent-question-card__locked">
+      <div className="flex flex-col gap-[6px]">
         <QuestionHistory
           question={question}
           compact={compact || variant !== "detail"}
@@ -265,7 +265,7 @@ function StandardQuestionCard({
           }
         />
         {!readOnly && (
-          <p className="agent-question-card__locked-note">
+          <p className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption">
             {missingProjectPermissionTitle("project.approvals.resolve")}
           </p>
         )}
@@ -404,7 +404,7 @@ function StandardQuestionCard({
       data-compact={compact}
       id={`question-${question.id}`}
     >
-      <div className="agent-question-card__header">
+      <div className="agent-question-card__header flex items-start justify-between flex-wrap gap-[12px] pb-[20px] [border-bottom:1px_solid_var(--question-border)]">
         <div className="min-w-0">
           <p className="agent-question-card__title">{question.title}</p>
           <p className="agent-question-card__meta">
@@ -420,7 +420,7 @@ function StandardQuestionCard({
         </span>
       </div>
 
-      <div className="agent-question-card__body">
+      <div className="mt-[20px]">
         {activePrompt ? (
           <QuestionPrompt
             companyId={question.companyId}
@@ -487,7 +487,7 @@ function StandardQuestionCard({
         </div>
       ) : null}
 
-      <div className="agent-question-card__footer">
+      <div className="flex items-center justify-between flex-wrap gap-[4px_12px] mt-[12px]">
         <p className="agent-question-card__expiry">
           Expires {formatHitlDate(question.expiresAt)}
         </p>
@@ -550,7 +550,7 @@ function QuestionPrompt({
   return (
     <fieldset
       aria-labelledby={promptLabelId}
-      className="agent-question-prompt"
+      className="min-w-0 m-0 p-0 [border:0]"
       disabled={disabled}
     >
       <div className="agent-question-prompt__title" id={promptLabelId}>

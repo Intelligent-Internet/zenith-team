@@ -448,7 +448,7 @@ export function BoardShapeGraphic({
   }
   return (
     <svg
-      className="wb-shape-graphic"
+      className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
       viewBox={`0 0 ${Math.max(width, 0.1)} ${Math.max(height, 0.1)}`}
       preserveAspectRatio="none"
       fill={fill}
@@ -481,15 +481,18 @@ export function BoardCompartments({
     const tag = boardFragmentTagWidth(properties.title ?? "", width);
     const dividers = properties.dividers ?? [];
     return (
-      <div className="wb-compartments wb-compartments-fragment">
-        <span className="wb-fragment-tag" style={{ width: tag }}>
+      <div className="absolute inset-0 overflow-hidden text-[length:13px] leading-[18px] pointer-events-none wb-compartments-fragment">
+        <span
+          className="absolute top-0 left-0 h-[22px] p-[0_12px_0_8px] leading-[22px] font-[600] whitespace-nowrap overflow-hidden"
+          style={{ width: tag }}
+        >
           {properties.title}
         </span>
         {sections.map((section, index) =>
           index > 0 && index - 1 >= dividers.length ? null : (
             <span
               key={index}
-              className="wb-compartment-lines"
+              className="absolute right-[8px] whitespace-pre overflow-hidden text-ellipsis"
               style={
                 index === 0
                   ? { left: tag + 8, top: 4 }
@@ -505,9 +508,9 @@ export function BoardCompartments({
   }
   let at = boardCompartmentTitle;
   return (
-    <div className="wb-compartments">
+    <div className="absolute inset-0 overflow-hidden text-[length:13px] leading-[18px] pointer-events-none">
       <strong
-        className="wb-compartment-title"
+        className="absolute top-0 left-[8px] right-[8px] leading-[30px] font-[600] text-center whitespace-nowrap overflow-hidden text-ellipsis"
         style={{ height: boardCompartmentTitle }}
       >
         {properties.title}
@@ -518,7 +521,7 @@ export function BoardCompartments({
         return (
           <span
             key={index}
-            className="wb-compartment-lines"
+            className="absolute right-[8px] whitespace-pre overflow-hidden text-ellipsis"
             style={{ left: 8, top }}
           >
             {section}

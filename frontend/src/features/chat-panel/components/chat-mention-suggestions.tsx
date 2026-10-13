@@ -65,14 +65,18 @@ export function ChatMentionSuggestions({
   }, [activeIndex, members.length]);
 
   return createPortal(
-    <div className="chat-mention-suggestions" ref={popupRef} style={position}>
-      <div className="chat-mention-suggestions__heading">
+    <div
+      className="chat-mention-suggestions fixed z-[210] flex flex-col overflow-hidden [border:1px_solid_var(--workspace-divider-strong,_#d4cbdc)] rounded-[12px] [background:var(--workspace-overlay-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] [box-shadow:0_8px_28px_rgb(37_28_45_/_12%)] [font-family:var(--workspace-font-body,_sans-serif)] text-workspace-label leading-workspace-label"
+      ref={popupRef}
+      style={position}
+    >
+      <div className="chat-mention-suggestions__heading flex flex-none items-center gap-[8px] p-[12px_14px_10px] text-[var(--workspace-native-text-muted,_#706875)] font-[600]">
         <AtSign size={15} aria-hidden />
         <span>Mention someone</span>
       </div>
       <div
         aria-label="Members"
-        className="chat-mention-suggestions__list"
+        className="min-h-0 overflow-y-auto overscroll-contain p-[0_6px_6px]"
         id={listId}
         role="listbox"
       >
@@ -88,10 +92,13 @@ export function ChatMentionSuggestions({
             onClick={() => onSelect(member)}
             role="option"
           >
-            <span className="chat-mention-suggestions__avatar" aria-hidden>
+            <span
+              className="chat-mention-suggestions__avatar grid w-[34px] h-[34px] flex-none overflow-hidden place-items-center rounded-[8px] [background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-accent,_#7556b9)] font-[700]"
+              aria-hidden
+            >
               <MentionAvatar member={member} />
             </span>
-            <span className="chat-mention-suggestions__identity">
+            <span className="grid min-w-0 flex-1 gap-[2px]">
               <span className="chat-mention-suggestions__name">
                 {member.name}
               </span>
@@ -99,7 +106,7 @@ export function ChatMentionSuggestions({
                 {member.description}
               </span>
             </span>
-            <span className="chat-mention-suggestions__kind">
+            <span className="flex-none [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[5px] p-[2px_5px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption">
               {member.unavailable ??
                 (member.broadcastScope
                   ? "Channel"
@@ -111,11 +118,17 @@ export function ChatMentionSuggestions({
         ))}
       </div>
       {members.length === 0 ? (
-        <p className="chat-mention-suggestions__empty" role="status">
+        <p
+          className="m-0 p-[12px_14px_18px] text-[var(--workspace-native-text-muted,_#706875)]"
+          role="status"
+        >
           No matching members
         </p>
       ) : null}
-      <div className="chat-mention-suggestions__help" aria-hidden>
+      <div
+        className="chat-mention-suggestions__help flex flex-none flex-wrap gap-[10px] [border-top:1px_solid_var(--workspace-divider,_#e5dfe8)] p-[8px_14px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption"
+        aria-hidden
+      >
         <span>
           <kbd>↑</kbd>
           <kbd>↓</kbd> to navigate

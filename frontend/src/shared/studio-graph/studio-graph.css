@@ -141,30 +141,6 @@
 }
 
 /* Node chrome sits above the media bounds so resizing preserves its ratio. */
-.studio-graph-node__header {
-  position: absolute;
-  z-index: 2;
-  right: 0;
-  bottom: calc(100% + 8px);
-  left: 0;
-  display: flex;
-  height: 26px;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-}
-.studio-graph-node__kind-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  color: var(--workspace-native-text);
-}
-.studio-graph-node__identity {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: 8px;
-}
 .studio-graph-node__identity strong {
   overflow: hidden;
   font-size: 13px;
@@ -256,21 +232,6 @@
   position: absolute;
   inset: 0;
   border-radius: 14px;
-}
-
-.studio-graph-node__generating {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  isolation: isolate;
-  border-radius: inherit;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.015em;
 }
 
 .studio-graph-node__sheen {
@@ -377,15 +338,6 @@
   border-color: var(--workspace-native-accent);
   background: var(--workspace-accent-soft);
   color: var(--workspace-native-accent);
-}
-
-.studio-graph-node__actions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 0 12px 12px;
 }
 
 .studio-graph-node__actions .studio-generate-button {
@@ -517,30 +469,6 @@
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
 }
-
-.studio-graph__zoom-value {
-  min-width: 46px;
-  color: var(--workspace-native-text-muted);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.studio-graph__context {
-  position: absolute;
-  z-index: 10;
-  width: 208px;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 3px;
-  padding: 6px;
-  border: 1px solid var(--workspace-divider);
-  border-radius: var(--workspace-radius-overlay);
-  background: var(--workspace-panel-bg);
-  box-shadow: 0 8px 20px rgb(45 51 55 / 14%);
-  font-size: 12px;
-}
 .studio-graph__context strong {
   overflow: hidden;
   padding: 7px 8px;
@@ -573,27 +501,6 @@
 .studio-graph .react-flow__minimap {
   width: 144px;
   height: 96px;
-}
-
-.studio-media {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-}
-.studio-media__status {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
 }
 .studio-media__status button {
   display: inline-flex;

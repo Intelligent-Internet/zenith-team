@@ -421,7 +421,10 @@ function PluginDetailContent({
     ) : (
       <>
         <Breadcrumb pluginsHref={pluginsHref} />
-        <p className="plugin-page__loading" role="status">
+        <p
+          className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption"
+          role="status"
+        >
           Loading plugin…
         </p>
       </>
@@ -649,13 +652,15 @@ function PluginDetailContent({
 
       <header className="plugin-page__header">
         <AppAvatar {...avatar} size={72} className="plugin-page__avatar" />
-        <div className="plugin-page__heading">
+        <div className="plugin-page__heading min-w-0 pt-[4px]">
           <h1 title={name}>{name}</h1>
           {plugin.description ? (
-            <p className="plugin-page__summary">{plugin.description}</p>
+            <p className="m-[6px_0_0] text-workspace-muted text-workspace-body leading-workspace-body wrap-anywhere">
+              {plugin.description}
+            </p>
           ) : null}
-          <p className="plugin-page__meta">
-            <span className="plugin-page__meta-state">
+          <p className="plugin-page__meta flex flex-wrap items-center gap-y-[4px] m-[8px_0_0] text-workspace-muted text-workspace-caption leading-workspace-caption">
+            <span className="inline-flex items-center gap-[8px]">
               <span
                 className="plugin-page__dot"
                 data-tone={installTone(plugin)}
@@ -830,7 +835,7 @@ function PluginDetailContent({
               : undefined
           }
         >
-          <ul className="plugin-hero__prompts">
+          <ul className="flex w-[min(100%,_640px)] flex-col gap-[10px] m-0 p-0 [list-style:none]">
             {view.prompts.map((prompt) => (
               <li key={prompt}>
                 <button
@@ -848,7 +853,9 @@ function PluginDetailContent({
                     <AppAvatar {...avatar} size={20} />
                     {name}
                   </span>
-                  <span className="plugin-hero__text">{prompt}</span>
+                  <span className="min-w-0 text-workspace-body leading-workspace-body wrap-anywhere">
+                    {prompt}
+                  </span>
                   <span className="plugin-hero__go" aria-hidden="true">
                     <ArrowRight size={16} />
                   </span>
@@ -860,7 +867,9 @@ function PluginDetailContent({
       ) : null}
 
       {view.longDescription ? (
-        <p className="plugin-page__description">{view.longDescription}</p>
+        <p className="m-0 text-workspace-muted text-workspace-body leading-[1.6] whitespace-pre-line wrap-anywhere">
+          {view.longDescription}
+        </p>
       ) : null}
 
       {view.apps.length > 0 ? (
@@ -898,7 +907,10 @@ function PluginDetailContent({
           {view.skills.length > 0 ? (
             <ul className="plugin-list">
               {view.skills.map((skill, index) => (
-                <li key={`${skill.name}:${index}`} className="plugin-list__row">
+                <li
+                  key={`${skill.name}:${index}`}
+                  className="plugin-list__row flex items-start gap-[14px] p-[12px_0] text-workspace-muted"
+                >
                   <BookOpen aria-hidden="true" size={18} />
                   <p>
                     <strong>{skill.displayName || skill.name}</strong>
@@ -925,7 +937,10 @@ function PluginDetailContent({
           {view.mcpServers.length > 0 ? (
             <ul className="plugin-list">
               {view.mcpServers.map((server, index) => (
-                <li key={`${server}:${index}`} className="plugin-list__row">
+                <li
+                  key={`${server}:${index}`}
+                  className="plugin-list__row flex items-start gap-[14px] p-[12px_0] text-workspace-muted"
+                >
                   <Plug aria-hidden="true" size={18} />
                   <p>
                     <strong>{server}</strong>
@@ -999,7 +1014,10 @@ function Breadcrumb({
   pluginsHref: string;
 }) {
   return (
-    <nav aria-label="Breadcrumb" className="plugin-page__breadcrumb">
+    <nav
+      aria-label="Breadcrumb"
+      className="plugin-page__breadcrumb flex items-center gap-[8px] min-w-0 text-workspace-muted text-workspace-label leading-workspace-label"
+    >
       <Link to={pluginsHref}>Plugins</Link>
       {name ? (
         <>
@@ -1030,7 +1048,7 @@ function PluginPageState({
       <section className="plugin-page__state" role={role}>
         <h1>{title}</h1>
         {body ? <p>{body}</p> : null}
-        <div className="plugin-page__state-actions">
+        <div className="flex flex-wrap gap-[8px] mt-[6px]">
           {action}
           <Link className="plugin-page__button" to={pluginsHref}>
             Back to Plugins
@@ -1051,11 +1069,13 @@ function PluginSection({
   title: string;
 }) {
   return (
-    <section className="plugin-section">
+    <section className="plugin-section flex min-w-0 flex-col">
       <h2>
         {title}
         {count !== undefined ? (
-          <span className="plugin-section__count">{count}</span>
+          <span className="text-workspace-muted text-workspace-body font-[500]">
+            {count}
+          </span>
         ) : null}
       </h2>
       {children}
@@ -1119,7 +1139,7 @@ function PluginAppRow({
   return (
     <li className="plugin-app">
       <AppAvatar iconUrl={app.iconUrl} name={app.name} size={40} />
-      <div className="plugin-app__text">
+      <div className="plugin-app__text min-w-0">
         <strong>{app.name}</strong>
         {app.description ? <p>{app.description}</p> : null}
       </div>
@@ -1197,7 +1217,7 @@ function UsedBy({
     );
   }
   return (
-    <div className="plugin-agents">
+    <div className="plugin-agents flex flex-wrap items-center gap-[12px_24px] pt-[14px]">
       <ul>
         {agents.map((agent) => (
           <li key={agent.agentId}>

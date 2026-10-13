@@ -144,7 +144,10 @@ export function ChatThinkingSlider({
           }}
         />
       </div>
-      <div className="chat-thinking-scale" aria-hidden>
+      <div
+        className="flex justify-between gap-[12px] text-[length:11px] text-workspace-muted"
+        aria-hidden
+      >
         <span>{levels[0]?.label}</span>
         <span>{levels[maximum]?.label}</span>
       </div>

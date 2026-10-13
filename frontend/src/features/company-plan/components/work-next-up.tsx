@@ -44,9 +44,9 @@ export function WorkNextUp(props: WorkNextUpProps) {
     { value: "all", label: "All tasks", count: items.length },
   ];
   return (
-    <div className="work-next-up">
+    <div className="work-next-up flex h-full min-h-0 flex-col text-workspace-text">
       <div
-        className="work-next-up__filters"
+        className="work-next-up__filters flex flex-none flex-wrap gap-[6px] p-[0_0_14px]"
         role="group"
         aria-label="Filter next actions"
       >
@@ -62,9 +62,12 @@ export function WorkNextUp(props: WorkNextUpProps) {
           </button>
         ))}
       </div>
-      <div className="work-next-up__scroll">
+      <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] pr-[6px]">
         {props.actionsUnavailable ? (
-          <div className="work-next-up__notice" role="status">
+          <div
+            className="rounded-[8px] p-[10px] m-[0_0_15px] [background:var(--workspace-control-bg)] text-workspace-muted text-workspace-body leading-workspace-body"
+            role="status"
+          >
             {props.verificationError
               ? "Run or response status could not be verified."
               : "Checking run and response status. Start actions are unavailable until this is verified."}
@@ -193,12 +196,12 @@ function NextUpSection({
         {description ? <p>{description}</p> : null}
       </header>
       {props.items.length === 0 ? (
-        <div className="work-next-up__empty">
+        <div className="work-next-up__empty flex items-center gap-[12px] p-[18px] [border:1px_dashed_var(--workspace-divider-strong)] rounded-[10px] text-workspace-muted text-workspace-label leading-workspace-label">
           <CheckCircle2 size={20} aria-hidden="true" />
           <p>{empty}</p>
         </div>
       ) : (
-        <div className="work-next-up__rows">
+        <div className="[border:1px_solid_var(--workspace-divider)] rounded-[12px] overflow-hidden [background:var(--workspace-panel-bg)]">
           {props.items.slice(start, start + 20).map((item, index) => {
             const laneAgent = laneAgents.get(item.task.id);
             const isNew =
@@ -220,7 +223,7 @@ function NextUpSection({
                   aria-pressed={props.selectedTaskId === item.task.id}
                   onClick={() => props.onSelectTask(item.task.id)}
                 >
-                  <span className="work-next-up__task-top">
+                  <span className="flex flex-wrap gap-[7px] items-center text-workspace-faint text-workspace-caption leading-workspace-caption">
                     <span>{props.labelTask(item.task)}</span>
                     {recommended ? (
                       <span className="work-next-up__recommended">
@@ -235,14 +238,14 @@ function NextUpSection({
                   <strong>{item.task.title}</strong>
                   {/* Why to start it first, for a viewer who can start
                       it. Anyone else reads who can, and where it runs. */}
-                  <span className="work-next-up__reason">
+                  <span className="text-workspace-muted text-workspace-caption leading-workspace-caption">
                     {recommended &&
                     canStart &&
                     item.readyAfterCompletionCount > 0
                       ? item.recommendationReason
                       : item.reason}
                   </span>
-                  <span className="work-next-up__metadata">
+                  <span className="work-next-up__metadata flex items-center flex-wrap gap-[6px] mt-[4px] text-workspace-muted text-workspace-caption leading-workspace-caption">
                     {/* Whose task it is, then the Agent doing the work
                         with its role. The queue is company-wide and only
                         the assignee can start a task (ADR 0014). */}

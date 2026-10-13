@@ -205,7 +205,7 @@ export function AnalyticsAgentActivity({
           ))}
         </AnalyticsSelect>
         <div
-          className="analytics-rhythm-total"
+          className="analytics-rhythm-total flex flex-col text-right gap-[4px] [font-variant-numeric:tabular-nums] max-w-[45%]"
           title="All Agents in this window"
         >
           <strong>
@@ -223,7 +223,7 @@ export function AnalyticsAgentActivity({
         </p>
       ) : loading ? (
         <div
-          className="analytics-rhythm-loading"
+          className="grid [place-content:center] min-h-[420px] text-[var(--analytics-muted)] text-workspace-caption"
           style={{ height }}
           role="status"
         >
@@ -232,7 +232,7 @@ export function AnalyticsAgentActivity({
       ) : !agents.length ? (
         <p>No active Agents in this window.</p>
       ) : (
-        <div className="analytics-rhythm-plot" style={{ height }}>
+        <div className="relative mt-[16px]" style={{ height }}>
           <AnalyticsEChart
             option={option}
             height={height}
@@ -240,7 +240,7 @@ export function AnalyticsAgentActivity({
           />
           {agents.map((row, index) => (
             <div
-              className="analytics-rhythm-labels"
+              className="analytics-rhythm-labels absolute left-0 right-0 flex items-center justify-between pointer-events-none [font-variant-numeric:tabular-nums]"
               key={row.key!.id}
               style={{ top: index * 108 + 14, height: 76 }}
             >

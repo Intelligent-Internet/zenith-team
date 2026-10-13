@@ -111,9 +111,15 @@ export function MailboxSettingsSection({
   }
 
   return (
-    <section className="mailbox-settings" aria-label="Company email">
+    <section
+      className="mailbox-settings flex flex-1 flex-col gap-[16px] min-w-0 min-h-0 w-full"
+      aria-label="Company email"
+    >
       {stateQuery.isError ? (
-        <div className="mailbox-notice" role="alert">
+        <div
+          className="mailbox-notice flex flex-wrap items-center justify-between gap-[12px] [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-workspace-control p-[14px_18px]"
+          role="alert"
+        >
           <p>
             Mailbox could not be refreshed. Showing the last available details.
           </p>
@@ -177,7 +183,7 @@ function MailboxWorkspace({
   }
 
   return (
-    <article className="mailbox-card mailbox-workspace">
+    <article className="min-w-0 [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-workspace-panel [background:var(--workspace-panel-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] flex flex-1 flex-col min-h-[480px] overflow-hidden">
       <header className="mailbox-workspace__header">
         <MailboxIcon />
         <div className="mailbox-card__heading">
@@ -206,11 +212,14 @@ function MailboxWorkspace({
         </span>
       </header>
       {copyStatus === "error" ? (
-        <p className="mailbox-workspace__copy-error" role="alert">
+        <p
+          className="m-0 p-[10px_20px] text-workspace-danger text-[length:13px]"
+          role="alert"
+        >
           Could not copy the address. Select it above and copy it manually.
         </p>
       ) : null}
-      <div className="mailbox-workspace__body">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <MailboxInbox
           companyId={companyId}
           mailboxId={mailbox.id}
@@ -273,7 +282,7 @@ function CreateMailboxCard({
   }
 
   return (
-    <article className="mailbox-card mailbox-card--setup">
+    <article className="min-w-0 [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-workspace-panel [background:var(--workspace-panel-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] mailbox-card--setup">
       <div className="mailbox-setup-overview">
         <header className="mailbox-card__header">
           <MailboxIcon />
@@ -303,7 +312,10 @@ function CreateMailboxCard({
         aria-busy={createState.isLoading}
       >
         <div className="mailbox-card__body">
-          <label className="mailbox-field-label" htmlFor="mailbox-local-part">
+          <label
+            className="block mb-[10px] text-[length:13px] leading-[1.5] font-[600]"
+            htmlFor="mailbox-local-part"
+          >
             Email address
           </label>
           <div
@@ -399,7 +411,10 @@ function MailboxStateCard({
   busy?: boolean;
 }) {
   return (
-    <article className="mailbox-card mailbox-state" aria-busy={busy}>
+    <article
+      className="min-w-0 [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-workspace-panel [background:var(--workspace-panel-bg,_#fff)] text-[var(--workspace-native-text,_#2d2631)] mailbox-state"
+      aria-busy={busy}
+    >
       <MailboxIcon>{icon}</MailboxIcon>
       <div className="mailbox-card__heading">
         <h2>{title}</h2>

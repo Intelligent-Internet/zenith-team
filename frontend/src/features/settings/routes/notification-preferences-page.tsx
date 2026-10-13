@@ -81,7 +81,7 @@ export function NotificationPreferencesPage() {
   const available = availability === "available";
 
   return (
-    <div className="settings-detail-page notification-preferences-page">
+    <div className="[container:settings-detail_/_inline-size] w-full min-w-0 text-workspace-text notification-preferences-page">
       <section
         className="settings-detail-section"
         aria-labelledby="desktop-notifications-title"
@@ -106,7 +106,7 @@ export function NotificationPreferencesPage() {
             }
           />
         </header>
-        <div className="settings-detail-controls">
+        <div className="settings-detail-controls min-w-0">
           {availability !== "available" ? (
             <p
               className="settings-detail-hint notification-preferences-notice"
@@ -140,7 +140,7 @@ export function NotificationPreferencesPage() {
                   key={group.title}
                   data-disabled={disabled || undefined}
                 >
-                  <span className="notification-preference-icon">
+                  <span className="grid place-items-center flex-none w-[32px] h-[32px] rounded-[6px] [background:var(--workspace-control-bg)] text-workspace-muted">
                     <GroupIcon size={20} aria-hidden="true" />
                   </span>
                   <div>

@@ -3,27 +3,8 @@
   color: var(--workspace-native-text);
 }
 
-.agent-onboarding-panel__content {
-  isolation: isolate;
-}
-
-.agent-onboarding-form {
-  display: grid;
-  gap: 24px;
-  width: 100%;
-}
-
 .agent-onboarding-form .onboarding-actions {
   border-top: 0;
-}
-
-.agent-onboarding-section-heading {
-  display: flex;
-  min-height: 32px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
 }
 
 .agent-onboarding-section-heading h2 {
@@ -61,16 +42,6 @@
 .agent-onboarding-refresh-button:disabled {
   cursor: wait;
   opacity: 0.55;
-}
-
-.agent-onboarding-setup-card {
-  border: 1px solid var(--workspace-divider);
-  border-radius: var(--workspace-radius-panel);
-  background: color-mix(
-    in srgb,
-    var(--workspace-panel-raised-bg) 50%,
-    var(--workspace-content-bg)
-  );
 }
 
 .agent-onboarding-connection {
@@ -113,28 +84,6 @@
   align-items: center;
   gap: 20px;
   padding: 24px;
-}
-
-.agent-onboarding-connection__identity {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: 14px;
-}
-
-.agent-onboarding-connection__logo {
-  width: 48px;
-  height: 48px;
-  flex: none;
-  border-radius: var(--workspace-radius-panel);
-  object-fit: contain;
-}
-
-.agent-onboarding-connection__name {
-  display: grid;
-  min-width: 0;
-  gap: 4px;
 }
 
 .agent-onboarding-connection__name strong {

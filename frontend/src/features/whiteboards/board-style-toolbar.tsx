@@ -126,7 +126,7 @@ export function BoardStyleToolbar({
       role="toolbar"
       aria-label={`${label} options`}
     >
-      <div className="wb-style-context">
+      <div className="wb-style-context p-[16px_18px_0] text-workspace-text text-[length:13px] font-[600]">
         {selection
           ? `${selectedItemCount + selectedConnectorCount} selected`
           : label}
@@ -146,8 +146,10 @@ export function BoardStyleToolbar({
                   role="group"
                   aria-label={group.label}
                 >
-                  <span className="wb-shape-group__label">{group.label}</span>
-                  <div className="wb-shape-group__grid">
+                  <span className="block mb-[4px] text-[length:11px] text-[var(--wb-muted)]">
+                    {group.label}
+                  </span>
+                  <div className="grid grid-cols-[repeat(6,_minmax(0,_1fr))] gap-[4px]">
                     {group.shapes.map(({ value, label, Icon }) => (
                       <button
                         key={value}
@@ -190,7 +192,7 @@ export function BoardStyleToolbar({
         </div>
       )}
       {showWidth && (
-        <div className="wb-style-width">
+        <div className="shrink-0 p-[10px_16px] [border-top:1px_solid_var(--wb-line)]">
           <BoardStrokeWidths
             width={width}
             widths={widthOptions}
@@ -224,7 +226,11 @@ function ColorControl({
   disabled: boolean;
 }) {
   return (
-    <div className="wb-color-control" role="group" aria-label={accessibleLabel}>
+    <div
+      className="grid grid-cols-[72px_minmax(0,_1fr)] items-center gap-[20px] text-[var(--wb-muted)]"
+      role="group"
+      aria-label={accessibleLabel}
+    >
       <span>{label}</span>
       <div className="wb-color-control__swatches">
         {presets.map((preset) => (

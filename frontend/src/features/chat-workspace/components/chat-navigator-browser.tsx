@@ -28,7 +28,7 @@ export function ChatNavigatorBrowseControls({
 }) {
   const searchId = useId();
   return (
-    <div className="workspace-chat-navigator__browse-controls">
+    <div className="shrink-0 p-[2px_12px_0] text-workspace-text">
       <label className="workspace-chat-navigator__search" htmlFor={searchId}>
         <Search size={15} aria-hidden />
         <span className="sr-only">Search conversations or agents</span>
@@ -65,7 +65,7 @@ export function ChatNavigatorBrowseControls({
       </label>
       {!selectedAgent &&
       (browse.view === "agents" || browse.view === "archived") ? (
-        <div className="workspace-chat-navigator__view-scope">
+        <div className="workspace-chat-navigator__view-scope flex items-center gap-[8px] m-[10px_0_6px] text-workspace-muted text-workspace-caption">
           <button
             className="workspace-chat-navigator__all-agents"
             aria-label="Back to all chats"
@@ -83,12 +83,12 @@ export function ChatNavigatorBrowseControls({
         </div>
       ) : null}
       {includeHidden ? (
-        <p className="workspace-chat-navigator__status">
+        <p className="workspace-chat-navigator__status m-[5px_9px] text-workspace-muted text-workspace-caption leading-workspace-caption">
           Hidden chats included
         </p>
       ) : null}
       {selectedAgent ? (
-        <div className="workspace-chat-navigator__agent-scope">
+        <div className="pt-[10px]">
           <button
             className="workspace-chat-navigator__all-agents"
             onClick={() =>
@@ -135,7 +135,10 @@ export function ChatNavigatorAgents({
   onSelect: (agentId: string) => void;
 }) {
   return (
-    <ul className="workspace-chat-navigator__agents" aria-label="Agents">
+    <ul
+      className="grid gap-[3px] m-0 p-0 [list-style:none]"
+      aria-label="Agents"
+    >
       {agents.map((agent) => {
         const count = counts.get(agent.id) ?? 0;
         return (
@@ -157,7 +160,7 @@ export function ChatNavigatorAgents({
                 <span>{agent.archived ? "Archived" : agent.title}</span>
               </span>
               <span
-                className="workspace-chat-navigator__agent-count"
+                className="grid min-w-[24px] h-[22px] p-[0_6px] place-items-center rounded-[6px] [background:var(--workspace-control-bg)] [font-variant-numeric:tabular-nums] shrink-0 text-workspace-muted text-workspace-micro leading-workspace-micro"
                 aria-label={`${count} ${count === 1 ? "chat" : "chats"}`}
               >
                 {count}

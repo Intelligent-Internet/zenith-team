@@ -5,8 +5,3 @@
   background: var(--workspace-overlay-bg, var(--input-surface));
   color: var(--text-primary);
 }
-
-.desktop-update-dialog__footer {
-  border-top: 1px solid var(--border-subtle);
-  background: var(--workspace-control-bg, var(--surface-secondary));
-}

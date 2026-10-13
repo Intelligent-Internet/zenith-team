@@ -26,7 +26,7 @@ export function ChannelInputRequests({
   const approvals = useListApprovalsQuery(args, options);
   if (!ids.length) return null;
   return (
-    <div className="channel-input-requests">
+    <div className="channel-input-requests max-w-[640px] mt-[12px] text-[length:13px] text-[var(--discussion-text)]">
       {questions.isError || approvals.isError ? (
         <p role="alert">Could not load the request. Open Inbox to respond.</p>
       ) : null}

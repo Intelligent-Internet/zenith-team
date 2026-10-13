@@ -63,7 +63,9 @@ export function QuestionHistory({
             {sending ? "Sending answer…" : questionStatusLabel(question.status)}
           </span>
           <span aria-hidden>·</span>
-          <span className="agent-question-history__preview">{preview}</span>
+          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+            {preview}
+          </span>
           <ChevronRight
             className="agent-question-history__chevron"
             size={14}
@@ -71,20 +73,22 @@ export function QuestionHistory({
           />
         </summary>
 
-        <div className="agent-question-history__details">
-          <h3 className="agent-question-history__title">{question.title}</h3>
-          <p className="agent-question-history__meta">
+        <div className="m-[6px_0_8px_6px] p-[4px_0_4px_16px] [border-left:1px_solid_var(--workspace-divider)]">
+          <h3 className="m-0 text-[length:var(--workspace-text-body,_14px)] font-[600] leading-[21px]">
+            {question.title}
+          </h3>
+          <p className="flex flex-wrap gap-[0_6px] m-[4px_0_0] text-workspace-muted text-[length:12px] leading-[18px]">
             <span>{question.askedByAgent.name} asked</span>
             <span aria-hidden>·</span>
             <time dateTime={question.createdAt}>
               {formatHitlDate(question.createdAt)}
             </time>
           </p>
-          <div className="agent-question-history__entries">
+          <div className="grid gap-[20px] mt-[16px]">
             {entries.map(({ prompt, answer, options }, index) => (
               <div className="agent-question-history__entry" key={prompt.id}>
                 {entries.length > 1 ? (
-                  <p className="agent-question-history__label">
+                  <p className="m-[0_0_5px] text-workspace-muted text-[length:12px] leading-[18px]">
                     Question {index + 1}
                   </p>
                 ) : null}
@@ -97,19 +101,19 @@ export function QuestionHistory({
                   />
                 ) : null}
                 {prompt.helpText ? (
-                  <div className="agent-question-history__help">
+                  <div className="mt-[8px] text-workspace-muted">
                     <QuestionText>{prompt.helpText}</QuestionText>
                   </div>
                 ) : null}
                 {hasAnswers ? (
-                  <div className="agent-question-history__answer">
-                    <p className="agent-question-history__label">
+                  <div className="mt-[12px]">
+                    <p className="m-[0_0_5px] text-workspace-muted text-[length:12px] leading-[18px]">
                       {question.answeredBy
                         ? `${question.answeredBy.name}’s answer`
                         : "Answer"}
                     </p>
                     {options.length ? (
-                      <ul className="agent-question-history__choices">
+                      <ul className="agent-question-history__choices grid gap-[4px] ps-[18px] m-0 [list-style:disc]">
                         {options.map((option) => (
                           <li key={option.id}>{option.label}</li>
                         ))}
@@ -131,9 +135,7 @@ export function QuestionHistory({
             ))}
           </div>
           {contextLink ? (
-            <footer className="agent-question-history__footer">
-              {contextLink}
-            </footer>
+            <footer className="mt-[12px]">{contextLink}</footer>
           ) : null}
         </div>
       </details>

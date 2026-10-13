@@ -1,14 +1,3 @@
-.chat-agent-welcome {
-  display: flex;
-  flex: 1;
-  min-height: 240px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px 48px;
-  text-align: center;
-  color: var(--workspace-native-text, currentColor);
-}
 .chat-agent-welcome h2 {
   margin: 18px 0 6px;
   font-size: 20px;
@@ -25,13 +14,4 @@
 }
 .chat-agent-welcome .chat-agent-welcome__role {
   margin-bottom: 8px;
-}
-.chat-agent-attention {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--workspace-native-text-muted, #7a8391);
 }

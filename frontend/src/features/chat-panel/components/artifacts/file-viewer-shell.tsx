@@ -132,7 +132,7 @@ export function FileViewerShell({
   // playback and loaded workspace bytes survive fullscreen transitions.
   return host ? (
     <>
-      <div ref={slotRef} className="file-viewer-slot" />
+      <div ref={slotRef} className="flex flex-1 min-h-0 min-w-0 flex-col" />
       {createPortal(viewer, host)}
     </>
   ) : (

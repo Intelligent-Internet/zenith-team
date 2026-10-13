@@ -188,7 +188,7 @@ function AgentSetupContent({
         ) : null}
       </header>
       {compact ? (
-        <div className="agent-setup-compact-row">
+        <div className="agent-setup-compact-row flex flex-wrap items-center gap-[10px_14px] mt-[16px]">
           {runtime ? (
             <span className="agent-setup-computer-name">
               {runtimeMachineName(runtime)}
@@ -230,7 +230,10 @@ function AgentSetupContent({
           {steps.map((step, index) => (
             <li key={step.title} data-tone={step.tone}>
               {!compact ? (
-                <span className="agent-setup-step-number" aria-hidden>
+                <span
+                  className="grid w-[24px] h-[24px] place-items-center rounded-[50%] [background:var(--workspace-control-bg)] text-workspace-caption text-workspace-muted"
+                  aria-hidden
+                >
                   {index + 1}
                 </span>
               ) : null}

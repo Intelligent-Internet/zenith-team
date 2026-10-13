@@ -49,12 +49,6 @@
   background: var(--wk-panel);
   border-bottom: 1px solid var(--wk-border);
 }
-.zen-wiki__brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--wk-text);
-}
 .zen-wiki__brand > div {
   display: grid;
   gap: 2px;
@@ -178,16 +172,6 @@
   background: transparent;
   padding: 5px;
 }
-.zen-wiki__search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--wk-border);
-  border-radius: 8px;
-  padding: 7px 9px;
-  margin: 0 4px 15px;
-  color: var(--wk-muted);
-}
 .zen-wiki__search input {
   width: 100%;
   min-width: 0;
@@ -211,11 +195,6 @@
   color: var(--wk-text);
   font: inherit;
   font-size: 13px;
-}
-.zen-wiki__nav-count {
-  margin-left: auto;
-  color: var(--wk-muted);
-  font-size: 11px;
 }
 .zen-wiki__sidebar-link:hover,
 .zen-wiki__page-link:hover {
@@ -242,11 +221,6 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
-}
-.zen-wiki__sidebar-section--action {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 .zen-wiki__sidebar-section--action button {
   border: 0;
@@ -306,9 +280,6 @@
 .zen-wiki__collection-toggle svg {
   transition: transform 150ms ease;
 }
-.zen-wiki__chevron-expanded {
-  transform: rotate(90deg);
-}
 .zen-wiki__collection {
   display: flex;
   align-items: center;
@@ -333,9 +304,6 @@
 .zen-wiki__collection small {
   color: var(--wk-muted);
 }
-.zen-wiki__tree-pages {
-  padding-left: 18px;
-}
 .zen-wiki__page-link[draggable="true"] {
   cursor: grab;
 }
@@ -356,14 +324,6 @@
 .zen-wiki__collection.is-current {
   background: var(--wk-selected);
 }
-.zen-wiki__muted {
-  color: var(--wk-muted);
-  padding: 0 10px;
-}
-.zen-wiki__error {
-  color: var(--workspace-native-danger);
-  padding: 0 10px;
-}
 :is(.zen-wiki, .zen-wiki-dialog) .zen-wiki__retry {
   border: 0;
   background: transparent;
@@ -373,14 +333,6 @@
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-.zen-wiki__main {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  position: relative;
-  background: var(--wk-panel);
 }
 .zen-wiki__open-sidebar {
   position: absolute;
@@ -409,18 +361,6 @@
 .zen-wiki__sidebar-backdrop {
   display: none;
 }
-.zen-wiki__overview {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 24px var(--workspace-page-inset) 48px;
-}
-.zen-wiki__overview-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-}
 .zen-wiki__overview h1 {
   font-size: var(--workspace-text-page);
   line-height: var(--workspace-leading-page);
@@ -432,10 +372,6 @@
   margin: 0;
   color: var(--wk-muted);
   font-size: var(--workspace-text-body);
-}
-.zen-wiki__overview-aside {
-  color: var(--wk-muted);
-  font-size: var(--workspace-text-caption);
 }
 .zen-wiki__library-tools {
   display: flex;
@@ -538,13 +474,6 @@
   color: var(--wk-muted);
   font-size: 11px;
 }
-.zen-wiki__list-head {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 0 9px;
-  border-bottom: 1px solid var(--wk-border);
-  font-size: 13px;
-}
 .zen-wiki__list-head span {
   color: var(--wk-muted);
   font-size: 12px;
@@ -587,14 +516,6 @@
   gap: 12px;
   margin-top: 22px;
 }
-.zen-wiki__empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 7px;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--wk-muted);
-}
 .zen-wiki__empty-state h2 {
   color: var(--wk-text);
   margin: 0;
@@ -629,14 +550,6 @@
   padding: 6px;
   color: var(--wk-accent);
   font-weight: 600;
-}
-.zen-wiki__breadcrumb-title {
-  min-width: 0;
-  flex: 0 1 auto;
-  color: var(--wk-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .zen-wiki__page-actions {
   flex-wrap: wrap;
@@ -693,15 +606,6 @@
   line-height: 1.25;
   letter-spacing: -0.04em;
 }
-.zen-wiki__meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  color: var(--wk-muted);
-  font-size: var(--workspace-text-caption);
-  margin: 0 0 24px;
-}
 .zen-wiki__meta span + span::before {
   content: "·";
   margin-right: 8px;
@@ -712,13 +616,6 @@
   padding: 6px;
   background: var(--wk-panel);
   color: var(--wk-text);
-}
-.zen-wiki__revision-badge {
-  border: 1px solid var(--wk-border);
-  border-radius: 4px;
-  padding: 0 5px;
-  background: var(--wk-soft);
-  font-size: 10px;
 }
 .zen-wiki__prose {
   font-size: var(--workspace-text-document);
@@ -763,16 +660,6 @@
   vertical-align: middle;
   margin-left: 3px;
 }
-.zen-wiki__empty {
-  color: var(--wk-muted);
-}
-.zen-wiki__archived {
-  display: inline-block;
-  border-radius: 5px;
-  background: var(--workspace-approval-soft);
-  color: var(--workspace-native-approval);
-  padding: 4px 8px;
-}
 .zen-wiki__history,
 .zen-wiki__details {
   min-height: 0;
@@ -803,11 +690,6 @@
   color: var(--wk-muted);
   font-size: 12px;
 }
-.zen-wiki__outline {
-  display: grid;
-  border-left: 1px solid var(--wk-border);
-  margin: 0 0 28px 3px;
-}
 .zen-wiki__outline button {
   border: 0;
   background: transparent;
@@ -819,10 +701,6 @@
 .zen-wiki__outline button:hover {
   color: var(--wk-accent);
   background: var(--wk-hover);
-}
-.zen-wiki__detail-section {
-  border-top: 1px solid var(--wk-border);
-  padding: 19px 0;
 }
 .zen-wiki__detail-actions button {
   display: flex;
@@ -864,12 +742,6 @@
 .zen-wiki__detail-link > svg:last-child {
   color: var(--wk-muted);
 }
-.zen-wiki__revision {
-  border-top: 1px solid var(--wk-border);
-  padding: 15px 0;
-  display: grid;
-  gap: 3px;
-}
 .zen-wiki__revision small {
   color: var(--wk-muted);
 }
@@ -883,15 +755,6 @@
   text-align: left;
   color: var(--wk-accent);
   font-size: 12px;
-}
-.zen-wiki__revision-current {
-  color: var(--wk-muted);
-  font-size: 12px;
-}
-.zen-wiki__loading {
-  padding: 40px;
-  text-align: center;
-  color: var(--wk-muted);
 }
 /* Above the shell header (z-index 70), like the other workspace dialogs. */
 .zen-wiki-dialog__overlay {
@@ -920,18 +783,6 @@
   width: min(920px, calc(100vw - 32px));
   max-width: min(920px, calc(100vw - 32px));
 }
-.zen-wiki-dialog__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.zen-wiki-dialog__title {
-  margin: 0;
-  font-size: var(--workspace-text-title);
-  line-height: var(--workspace-leading-title);
-  font-weight: 600;
-}
 .zen-wiki-dialog__close {
   display: grid;
   place-items: center;
@@ -942,10 +793,6 @@
 }
 .zen-wiki-dialog__close:hover {
   background: var(--wk-hover);
-}
-.zen-wiki-dialog__description {
-  margin: 0;
-  color: var(--wk-muted);
 }
 .zen-wiki-dialog__form {
   display: grid;
@@ -965,16 +812,6 @@
   color: var(--wk-text);
   font: inherit;
   font-weight: 400;
-}
-.zen-wiki-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.zen-wiki-dialog__choices {
-  display: grid;
-  gap: 2px;
-  min-height: 0;
 }
 .zen-wiki-dialog__choices p {
   margin: 4px 0;
@@ -1007,15 +844,6 @@
   border-radius: 9px;
   overflow: hidden;
 }
-.zen-wiki__restore-label {
-  display: block;
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--wk-border);
-  background: var(--wk-soft);
-  color: var(--wk-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
 .zen-wiki__restore-document {
   max-height: min(50vh, 420px);
   padding: 18px;
@@ -1034,20 +862,8 @@
   line-height: 1.25;
   letter-spacing: -0.03em;
 }
-.zen-wiki__restore-summary {
-  margin: 0 0 16px;
-  color: var(--wk-muted);
-  font-size: 13px;
-}
 .zen-wiki__restore-document .zen-wiki__prose {
   font-size: 14px;
-}
-.zen-wiki__restore-stale {
-  margin: 0;
-  border-radius: 8px;
-  padding: 9px 12px;
-  background: var(--workspace-approval-soft);
-  color: var(--workspace-native-approval);
 }
 .zen-wiki__restore-stale button {
   border: 0;
@@ -1169,14 +985,6 @@
   .zen-wiki__document {
     padding: 24px var(--workspace-document-gutter) 48px;
   }
-}
-
-.zen-wiki__draft-label {
-  margin-left: 8px;
-  font-size: 10px;
-  font-weight: 400;
-  color: var(--wk-muted);
-  white-space: nowrap;
 }
 .zen-wiki__research {
   flex: none;

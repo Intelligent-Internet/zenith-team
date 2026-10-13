@@ -128,8 +128,11 @@ export function ManagedTools({
               <Ellipsis size={16} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="managed-tool-menu">
-            <div className="managed-tool-menu-header">
+          <DropdownMenuContent
+            align="end"
+            className="w-[250px] max-w-[calc(100vw_-_24px)]"
+          >
+            <div className="managed-tool-menu-header flex items-center justify-between gap-[12px]">
               <DropdownMenuLabel>
                 {setupLabel} ·{" "}
                 {observation ? `v${observation.version}` : "Checking version"}
@@ -153,28 +156,28 @@ export function ManagedTools({
               </button>
             </div>
             {!local && (
-              <p className="managed-tool-menu-note">
+              <p className="m-0 p-[4px_8px_8px] text-workspace-caption leading-workspace-caption text-workspace-muted wrap-anywhere">
                 Open Zenith Team Desktop on {agentBindingLabel(agent)} to manage
                 it.
               </p>
             )}
             {stale && observation && (
-              <p className="managed-tool-menu-note">
+              <p className="m-0 p-[4px_8px_8px] text-workspace-caption leading-workspace-caption text-workspace-muted wrap-anywhere">
                 Last updated by {agentBindingLabel(agent)}.
               </p>
             )}
             {observation?.state === "error" && (
-              <p className="managed-tool-menu-note">
+              <p className="m-0 p-[4px_8px_8px] text-workspace-caption leading-workspace-caption text-workspace-muted wrap-anywhere">
                 Check Node.js 22+, npm, and your network, then retry.
               </p>
             )}
             {installed && observation.authState === "error" && (
-              <p className="managed-tool-menu-note">
+              <p className="m-0 p-[4px_8px_8px] text-workspace-caption leading-workspace-caption text-workspace-muted wrap-anywhere">
                 Sign-in incomplete. Try again.
               </p>
             )}
             {renderer?.reasonCode === "prerequisites_missing" && (
-              <p className="managed-tool-menu-note">
+              <p className="m-0 p-[4px_8px_8px] text-workspace-caption leading-workspace-caption text-workspace-muted wrap-anywhere">
                 Video needs FFmpeg and ffprobe on this computer.
               </p>
             )}

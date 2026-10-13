@@ -1,38 +1,5 @@
-.chat-mention-suggestions {
-  position: fixed;
-  z-index: 210;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--workspace-divider-strong, #d4cbdc);
-  border-radius: 12px;
-  background: var(--workspace-overlay-bg, #fff);
-  color: var(--workspace-native-text, #2d2631);
-  box-shadow: 0 8px 28px rgb(37 28 45 / 12%);
-  font-family: var(--workspace-font-body, sans-serif);
-  font-size: var(--workspace-text-label);
-  line-height: var(--workspace-leading-label);
-}
-
-.chat-mention-suggestions__heading {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px 10px;
-  color: var(--workspace-native-text-muted, #706875);
-  font-weight: 600;
-}
-
 .chat-mention-suggestions__heading svg {
   color: var(--workspace-native-accent, #7556b9);
-}
-
-.chat-mention-suggestions__list {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 6px 6px;
 }
 
 .chat-mention-suggestions__member {
@@ -56,30 +23,10 @@
   color: var(--workspace-native-text-muted, #706875);
 }
 
-.chat-mention-suggestions__avatar {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  flex: none;
-  overflow: hidden;
-  place-items: center;
-  border-radius: 8px;
-  background: var(--workspace-control-bg, #f1edf4);
-  color: var(--workspace-native-accent, #7556b9);
-  font-weight: 700;
-}
-
 .chat-mention-suggestions__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.chat-mention-suggestions__identity {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-  gap: 2px;
 }
 
 .chat-mention-suggestions__name,
@@ -93,34 +40,6 @@
   font-weight: 600;
 }
 .chat-mention-suggestions__description {
-  color: var(--workspace-native-text-muted, #706875);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
-.chat-mention-suggestions__kind {
-  flex: none;
-  border: 1px solid var(--workspace-divider, #e5dfe8);
-  border-radius: 5px;
-  padding: 2px 5px;
-  color: var(--workspace-native-text-muted, #706875);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
-.chat-mention-suggestions__empty {
-  margin: 0;
-  padding: 12px 14px 18px;
-  color: var(--workspace-native-text-muted, #706875);
-}
-
-.chat-mention-suggestions__help {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  gap: 10px;
-  border-top: 1px solid var(--workspace-divider, #e5dfe8);
-  padding: 8px 14px;
   color: var(--workspace-native-text-muted, #706875);
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);

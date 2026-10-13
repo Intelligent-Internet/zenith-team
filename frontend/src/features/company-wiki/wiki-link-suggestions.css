@@ -54,11 +54,6 @@
 .wk-link-suggestions p button {
   text-decoration: underline;
 }
-
-.wk-link-suggestions__scopes {
-  display: flex;
-  gap: 2px;
-}
 .wk-link-suggestions__scopes button {
   padding: 2px 8px;
   border: 0;
@@ -73,12 +68,6 @@
 }
 .wk-link-suggestions__scopes button:disabled {
   opacity: 0.45;
-}
-.wk-link-suggestions__trail {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .wk-link-suggestions [role="option"] .wk-link-suggestions__text {
   display: grid;

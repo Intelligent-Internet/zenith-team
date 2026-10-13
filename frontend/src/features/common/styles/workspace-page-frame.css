@@ -72,13 +72,6 @@
     text-transform: none;
   }
 
-  .workspace-page-frame__heading {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: 12px;
-  }
-
   .workspace-action-button {
     display: inline-flex;
     height: var(--workspace-control-size, 32px);
@@ -123,11 +116,6 @@
   .workspace-action-button:disabled {
     opacity: 0.45;
     cursor: not-allowed;
-  }
-
-  .workspace-action-button--icon {
-    width: var(--workspace-control-size, 32px);
-    padding: 0;
   }
 
   .workspace-action-button--primary {
@@ -184,12 +172,6 @@
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--workspace-divider-strong) transparent;
-  }
-
-  .workspace-page-frame__toolbar {
-    min-width: 0;
-    flex: none;
-    margin-bottom: 24px;
   }
 
   .workspace-matte-panel-raised {

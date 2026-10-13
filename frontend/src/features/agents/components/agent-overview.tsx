@@ -300,7 +300,7 @@ function AgentSavedWork({
       <div className="agent-section-heading">
         <h2>Saved artifacts</h2>
       </div>
-      <label className="agent-artifact-task-picker">
+      <label className="agent-artifact-task-picker flex flex-col gap-[8px] mb-[16px] text-workspace-muted text-workspace-caption">
         <span>Artifacts from task</span>
         <AgentRuntimeSelect
           value={task.id}

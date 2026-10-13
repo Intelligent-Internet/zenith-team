@@ -47,7 +47,7 @@ export function HuddleDeviceMenu({
   ];
 
   return (
-    <div className="huddle-device-menu" ref={rootRef}>
+    <div className="huddle-device-menu relative" ref={rootRef}>
       <button
         type="button"
         className="huddle-device-trigger"

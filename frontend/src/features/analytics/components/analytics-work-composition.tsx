@@ -63,7 +63,7 @@ export function AnalyticsWorkComposition({
     `${part.name}: ${formatMetricAmount(part.value, metric)} ${partLabel(metric)}, ${percent(part.value)}`;
   return (
     <section
-      className="analytics-card analytics-work-composition"
+      className="analytics-card analytics-work-composition flex flex-col"
       onKeyDown={(event) => {
         if (event.key === "Escape") {
           setSelected(null);
@@ -75,7 +75,10 @@ export function AnalyticsWorkComposition({
         <h2>Work composition</h2>
       </div>
       {!data || !runTypes ? (
-        <div className="analytics-rhythm-loading" role="status">
+        <div
+          className="grid [place-content:center] min-h-[420px] text-[var(--analytics-muted)] text-workspace-caption"
+          role="status"
+        >
           Loading composition…
         </div>
       ) : !total ? (
@@ -101,7 +104,7 @@ export function AnalyticsWorkComposition({
                 return (
                   <g
                     key={part.id}
-                    className="analytics-work-sector"
+                    className="analytics-work-sector [transition:transform_240ms_cubic-bezier(0.2,_0.7,_0.3,_1)]"
                     style={{
                       transform: `translate(${Math.cos(middle) * offset}px, ${Math.sin(middle) * offset}px)`,
                     }}
@@ -235,7 +238,7 @@ export function AnalyticsWorkComposition({
                   );
                 })}
             </svg>
-            <div className="analytics-work-center">
+            <div className="analytics-work-center absolute left-[33%] right-[33%] top-[54.2%] [transform:translateY(-50%)] flex flex-col items-center gap-[6px] pointer-events-none text-center">
               <strong>
                 {runTypes.total
                   ? metricLabel(runTypes.total, metric)

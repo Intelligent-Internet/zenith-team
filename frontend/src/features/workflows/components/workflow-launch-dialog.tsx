@@ -281,19 +281,19 @@ function WorkflowLaunchContent({
     const notFound =
       error.status === 404 || error.code === "workflow_not_found";
     return (
-      <div className="workflow-launch workflow-launch--state">
-        <div className="workflow-launch__state" role="alert">
-          <DialogTitle className="workflow-launch__state-title">
+      <div className="relative flex [flex:1_1_auto] flex-col min-h-0 workflow-launch--state">
+        <div className="grid gap-[10px] p-[36px_28px_28px]" role="alert">
+          <DialogTitle className="m-0 pr-[32px] text-workspace-text text-workspace-title font-[600] leading-[24px]">
             {notFound
               ? "This workflow isn't available"
               : "This workflow could not be loaded"}
           </DialogTitle>
-          <DialogDescription className="workflow-launch__state-copy">
+          <DialogDescription className="m-0 text-workspace-muted text-workspace-body leading-[21px]">
             {notFound
               ? "The link may be out of date, or this release no longer ships it. Pick another workflow from the catalog."
               : (error.message ?? "Something went wrong. Please try again.")}
           </DialogDescription>
-          <div className="workflow-launch__state-actions">
+          <div className="flex justify-end gap-[8px] mt-[12px]">
             {notFound ? null : (
               <button
                 type="button"
@@ -346,7 +346,10 @@ function WorkflowLaunchLoading({
   summary?: WorkflowSummary;
 }) {
   return (
-    <div className="workflow-launch" aria-busy="true">
+    <div
+      className="relative flex [flex:1_1_auto] flex-col min-h-0"
+      aria-busy="true"
+    >
       <div className="workflow-launch__body">
         <aside className="workflow-launch__overview">
           {summary ? (
@@ -354,10 +357,10 @@ function WorkflowLaunchLoading({
               <span className="workflow-launch__icon" aria-hidden="true">
                 <Icon name={summary.icon} size={24} />
               </span>
-              <DialogTitle className="workflow-launch__title">
+              <DialogTitle className="m-[4px_0_0] pr-[32px] text-workspace-text text-workspace-title font-[600] leading-workspace-title tracking-[-0.02em]">
                 {summary.name}
               </DialogTitle>
-              <DialogDescription className="workflow-launch__description">
+              <DialogDescription className="m-0 text-workspace-muted text-workspace-body leading-[21px]">
                 {summary.description}
               </DialogDescription>
             </>
@@ -368,18 +371,18 @@ function WorkflowLaunchLoading({
               <DialogDescription className="sr-only">
                 The workflow form is loading.
               </DialogDescription>
-              <span className="animate-pulse workflow-skeleton workflow-skeleton--title" />
-              <span className="animate-pulse workflow-skeleton workflow-skeleton--line" />
-              <span className="animate-pulse workflow-skeleton workflow-skeleton--line" />
+              <span className="animate-pulse workflow-skeleton w-[60%] h-[24px]" />
+              <span className="animate-pulse workflow-skeleton w-[90%] h-[14px]" />
+              <span className="animate-pulse workflow-skeleton w-[90%] h-[14px]" />
             </>
           )}
         </aside>
         <section className="workflow-launch__setup" aria-label="Loading form">
-          <span className="animate-pulse workflow-skeleton workflow-skeleton--title" />
+          <span className="animate-pulse workflow-skeleton w-[60%] h-[24px]" />
           {[0, 1, 2].map((index) => (
             <span
               key={index}
-              className="animate-pulse workflow-skeleton workflow-skeleton--field"
+              className="animate-pulse workflow-skeleton h-[64px]"
             />
           ))}
         </section>
@@ -936,7 +939,7 @@ function WorkflowLaunchForm({
 
   return (
     <form
-      className="workflow-launch"
+      className="relative flex [flex:1_1_auto] flex-col min-h-0"
       noValidate
       onSubmit={submit}
       onKeyDown={(event) => {
@@ -961,15 +964,24 @@ function WorkflowLaunchForm({
           className="workflow-launch__setup"
           aria-labelledby={`${idPrefix}-setup`}
         >
-          <h3 className="workflow-launch__setup-title" id={`${idPrefix}-setup`}>
+          <h3
+            className="m-0 pr-[36px] text-workspace-text text-[length:16px] font-[600] leading-[22px]"
+            id={`${idPrefix}-setup`}
+          >
             {workflow.name} setup
           </h3>
           {pages.length > 1 ? (
-            <div className="workflow-launch__steps">
-              <p className="workflow-launch__step" aria-live="polite">
+            <div className="grid gap-[8px] mt-[-8px]">
+              <p
+                className="m-0 text-workspace-muted text-workspace-caption font-[600] leading-workspace-caption"
+                aria-live="polite"
+              >
                 Step {pageIndex + 1} of {pages.length} · {page.title}
               </p>
-              <div className="workflow-launch__progress" aria-hidden="true">
+              <div
+                className="workflow-launch__progress flex gap-[4px]"
+                aria-hidden="true"
+              >
                 {pages.map((candidate, index) => (
                   <span
                     key={candidate.title + index}
@@ -979,7 +991,10 @@ function WorkflowLaunchForm({
               </div>
             </div>
           ) : null}
-          <fieldset className="workflow-launch__fields" disabled={pending}>
+          <fieldset
+            className="grid gap-[18px] min-w-0 m-0 p-0 [border:0]"
+            disabled={pending}
+          >
             <legend className="sr-only">{page.title}</legend>
             {page.fields.map((field) => (
               <WorkflowFormField
@@ -1042,7 +1057,7 @@ function WorkflowLaunchForm({
         >
           Cancel
         </button>
-        <span className="workflow-launch__footer-spacer" />
+        <span className="flex-1" />
         {pageIndex > 0 ? (
           <button
             type="button"
@@ -1133,14 +1148,14 @@ function WorkflowOverview({
       <span className="workflow-launch__icon" aria-hidden="true">
         <Icon name={workflow.icon} size={24} />
       </span>
-      <DialogTitle className="workflow-launch__title">
+      <DialogTitle className="m-[4px_0_0] pr-[32px] text-workspace-text text-workspace-title font-[600] leading-workspace-title tracking-[-0.02em]">
         {workflow.name}
       </DialogTitle>
-      <DialogDescription className="workflow-launch__description">
+      <DialogDescription className="m-0 text-workspace-muted text-workspace-body leading-[21px]">
         {workflow.description}
       </DialogDescription>
       {workflow.highlights.length ? (
-        <ul className="workflow-launch__highlights">
+        <ul className="workflow-launch__highlights grid gap-[10px] m-[4px_0_0] p-0 [list-style:none]">
           {workflow.highlights.map((highlight, index) => (
             <li key={`${index}:${highlight}`}>
               <CheckCircle2 aria-hidden size={16} />
@@ -1150,11 +1165,14 @@ function WorkflowOverview({
         </ul>
       ) : null}
       {workflow.deliverables.length ? (
-        <div className="workflow-launch__group">
+        <div className="workflow-launch__group grid gap-[8px]">
           <h4>You get</h4>
-          <ul className="workflow-launch__chips">
+          <ul className="flex flex-wrap gap-[6px] m-0 p-0 [list-style:none]">
             {workflow.deliverables.map((deliverable) => (
-              <li key={deliverable} className="workflow-launch__chip">
+              <li
+                key={deliverable}
+                className="inline-flex items-center gap-[6px] min-h-[26px] p-[3px_10px] [border:1px_solid_var(--workspace-divider)] rounded-[999px] [background:var(--workspace-control-bg)] text-workspace-text text-workspace-caption font-[500] leading-workspace-caption"
+              >
                 {workflowDeliverableLabel(deliverable)}
               </li>
             ))}
@@ -1172,7 +1190,7 @@ function WorkflowOverview({
         />
       ) : null}
       {workflow.recurring ? (
-        <p className="workflow-launch__recurring">
+        <p className="workflow-launch__recurring grid grid-cols-[16px_minmax(0,_1fr)] gap-[10px] m-[4px_0_0] p-[10px_12px] rounded-[8px] [background:var(--workspace-accent-soft)] text-workspace-text text-workspace-caption leading-workspace-caption">
           <Repeat2 aria-hidden size={16} />
           <span>
             {canSchedule
@@ -1372,7 +1390,7 @@ function WorkflowAppChips({
     <>
       {counted ? <WorkflowAppsMeter apps={counted} /> : null}
       {summary ? (
-        <p className="workflow-launch__apps-summary">
+        <p className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption">
           {summary}
           {agent && readiness?.discovery.state === "unbound" ? (
             <>
@@ -1389,18 +1407,25 @@ function WorkflowAppChips({
         </p>
       ) : null}
       {askCopy ? (
-        <p className="workflow-launch__apps-summary">{askCopy}</p>
+        <p className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption">
+          {askCopy}
+        </p>
       ) : null}
     </>
   );
   return (
     <>
       {needed.length ? (
-        <div className="workflow-launch__group">
+        <div className="workflow-launch__group grid gap-[8px]">
           <h4>Needs</h4>
-          <ul className="workflow-launch__apps">{needed.map(row)}</ul>
+          <ul className="grid m-0 p-0 overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[10px] [background:var(--workspace-control-bg)] [list-style:none]">
+            {needed.map(row)}
+          </ul>
           {requirementHints.map((hint) => (
-            <p key={hint} className="workflow-launch__apps-summary">
+            <p
+              key={hint}
+              className="m-0 text-workspace-muted text-workspace-caption leading-workspace-caption"
+            >
               {hint}
             </p>
           ))}
@@ -1408,9 +1433,11 @@ function WorkflowAppChips({
         </div>
       ) : null}
       {optional.length ? (
-        <div className="workflow-launch__group">
+        <div className="workflow-launch__group grid gap-[8px]">
           <h4>Works best with</h4>
-          <ul className="workflow-launch__apps">{optional.map(row)}</ul>
+          <ul className="grid m-0 p-0 overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[10px] [background:var(--workspace-control-bg)] [list-style:none]">
+            {optional.map(row)}
+          </ul>
           {notes}
         </div>
       ) : null}
@@ -1430,7 +1457,10 @@ function WorkflowAppsMeter({
 }) {
   const connected = apps.filter((entry) => entry.state === "ready").length;
   return (
-    <span className="workflow-launch__apps-meter" aria-hidden="true">
+    <span
+      className="workflow-launch__apps-meter flex gap-[3px] mt-[2px]"
+      aria-hidden="true"
+    >
       {apps.map((entry, index) => (
         <span
           key={entry.app}
@@ -1483,11 +1513,14 @@ function WorkflowAppExplainer({
           collisionPadding={12}
           sideOffset={6}
         >
-          <p className="workflow-launch__app-popover-title" aria-hidden="true">
+          <p
+            className="workflow-launch__app-popover-title flex flex-wrap items-baseline gap-[6px] text-workspace-text font-[600]"
+            aria-hidden="true"
+          >
             {appName}
             {stateLabel ? <span>{stateLabel}</span> : null}
           </p>
-          <div className="workflow-launch__app-popover-body" id={detailId}>
+          <div className="grid gap-[6px]" id={detailId}>
             <p>{detail}</p>
             {next ? <p>{next}</p> : null}
           </div>
@@ -1628,7 +1661,10 @@ function WorkflowRequirementNotice({
   onAnswerInstead: (fieldKey: string, pageIndex: number) => void;
 }) {
   return (
-    <div className="workflow-launch__blockers" role="status">
+    <div
+      className="workflow-launch__blockers grid grid-cols-[16px_minmax(0,_1fr)] gap-[10px] p-[10px_12px] [border:1px_solid_color-mix(in_srgb,_var(--workspace-native-approval)_40%,_transparent)] rounded-[8px] [background:color-mix(_in_srgb,_var(--workspace-native-approval)_8%,_transparent_)] text-workspace-text text-workspace-label leading-[19px]"
+      role="status"
+    >
       <AlertCircle aria-hidden size={16} />
       <div>
         {blockers.map((blocker) => (
@@ -1832,10 +1868,15 @@ function RunWithBlock({
   const projectLabelId = `${idPrefix}-project-label`;
   const agent = choices.selectedAgent;
   return (
-    <fieldset className="workflow-launch__run-with" disabled={disabled}>
+    <fieldset
+      className="workflow-launch__run-with grid gap-[12px] min-w-0 m-[4px_0_0] p-[16px] [border:1px_solid_var(--workspace-divider)] rounded-[12px] [background:var(--workspace-panel-bg)]"
+      disabled={disabled}
+    >
       <legend>Run with</legend>
       <div className="workflow-launch__run-row">
-        <span className="workflow-launch__run-label">Agent</span>
+        <span className="text-workspace-text text-workspace-label font-[600] leading-workspace-label">
+          Agent
+        </span>
         {choices.agentsLoading ? (
           <span className="workflow-launch__hint" role="status">
             Loading Agents…
@@ -1861,7 +1902,10 @@ function RunWithBlock({
         )}
       </div>
       <div className="workflow-launch__run-row">
-        <span className="workflow-launch__run-label" id={projectLabelId}>
+        <span
+          className="text-workspace-text text-workspace-label font-[600] leading-workspace-label"
+          id={projectLabelId}
+        >
           Project
         </span>
         {choices.projectsLoading ? (

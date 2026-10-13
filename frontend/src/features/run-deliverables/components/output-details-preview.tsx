@@ -16,7 +16,7 @@ export function OutputDetailsPreview({
 
   return (
     <section className="grid min-w-0 gap-4" aria-label="Result preview">
-      <div className="output-preview-gallery">
+      <div className="output-preview-gallery grid gap-[16px]">
         {media.map((item) => (
           <figure key={item.id}>
             <OutputMediaPreview

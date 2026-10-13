@@ -257,7 +257,10 @@ export function ChannelInvocationStatus({
   );
   if (!items.length) return null;
   return (
-    <div className="channel-invocation-status" aria-label="Agent requests">
+    <div
+      className="channel-invocation-status mt-[5px] text-[var(--discussion-muted)] text-[length:11px]"
+      aria-label="Agent requests"
+    >
       {items.map((item) => {
         const agent = state.agents.find(
           (agent) => agent.agentId === item.agentId,
@@ -388,17 +391,17 @@ export function ChannelAgentPanel({
           <X size={18} />
         </button>
       </header>
-      <div className="channel-agent-privacy">
+      <div className="channel-agent-privacy flex shrink-0 items-center gap-[6px] p-[10px_var(--workspace-thread-inset,_16px)] text-[var(--discussion-muted)] text-[length:11px] leading-[16px] [border-bottom:1px_solid_var(--discussion-border)]">
         <LockKeyhole size={13} />
         <span>Only you can see your runs · Managed by {agent.managerName}</span>
       </div>
-      <div className="channel-agent-activity">
+      <div className="channel-agent-activity flex-1 min-h-0 overflow-auto p-[18px_var(--workspace-thread-inset,_16px)]">
         {activity.isError ? (
           <p role="alert">{discussionError(activity.error)}</p>
         ) : !activity.currentData ? (
           <p>Loading activity…</p>
         ) : invocations.length === 0 ? (
-          <div className="channel-agent-empty">
+          <div className="channel-agent-empty flex flex-col items-center justify-center min-h-[260px] gap-[12px] text-center">
             <FoldAvatar agentId={agent.agentId} size={56} />
             <h3>Work with {agent.name}</h3>
             <p>
@@ -433,7 +436,10 @@ export function ChannelAgentPanel({
                     (part) =>
                       part.type === "toolCall" || part.type === "toolResult",
                   ) ? (
-                    <details className="channel-agent-tool" key={entry.id}>
+                    <details
+                      className="channel-agent-tool mt-[10px] text-[var(--discussion-muted)] text-[length:11px]"
+                      key={entry.id}
+                    >
                       <summary>
                         {entry.parts.find(
                           (part) =>
@@ -480,7 +486,7 @@ export function ChannelAgentPanel({
                         </time>
                       </header>
                       <Streamdown
-                        className="discussion-markdown"
+                        className="discussion-markdown text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)] wrap-anywhere min-w-0"
                         mode="static"
                         controls={false}
                         parseIncompleteMarkdown={false}

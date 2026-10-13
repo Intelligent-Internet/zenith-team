@@ -238,12 +238,6 @@
   flex: 1;
   text-align: left;
 }
-.pc-library-filters {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 10px;
-}
 .pc-library-filters select {
   min-width: 0;
   width: 100%;
@@ -351,12 +345,6 @@
   border-bottom: 0;
   background: var(--workspace-content-bg);
 }
-.pc-eyebrow {
-  color: var(--pc-soft);
-  font-size: 9px;
-  font-weight: 650;
-  letter-spacing: 1.5px;
-}
 .pc-header h2 {
   margin: 0;
   font-size: 17px;
@@ -434,19 +422,6 @@
   color: var(--pc-muted);
   flex: none;
 }
-.pc-body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  overflow: hidden;
-}
-.pc-surface {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  position: relative;
-  isolation: isolate;
-}
 .pc-surface .react-flow {
   background: var(--workspace-content-bg);
 }
@@ -506,20 +481,6 @@
 .pc-viewport-tools {
   bottom: 20px;
   right: 20px;
-}
-.pc-divider {
-  display: inline-block;
-  width: 1px;
-  height: 20px;
-  margin: 0 5px;
-  flex: none;
-  background: var(--pc-line);
-}
-.pc-zoom-value {
-  min-width: 48px;
-  font-size: 11px;
-  color: var(--pc-muted);
-  font-variant-numeric: tabular-nums;
 }
 .pc-selection-tools {
   bottom: 72px;
@@ -588,27 +549,6 @@
   border-radius: 0;
   background: transparent;
 }
-.pc-card-preview {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-  border-radius: inherit;
-  color: var(--pc-ink);
-}
-.pc-card-preview-label {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  color: var(--pc-muted);
-  font-size: 12px;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
 .pc-artifact-card .pc-node-document {
   padding: 28px;
   overflow: hidden;
@@ -633,36 +573,6 @@
 }
 .pc-artifact-card .pc-card-reader-hint {
   display: none;
-}
-.pc-frame-node {
-  width: 100%;
-  height: 100%;
-  border: 1px solid color-mix(in srgb, var(--pc-accent) 24%, var(--pc-line));
-  background: color-mix(in srgb, var(--pc-accent) 2%, transparent);
-  border-radius: 12px;
-}
-.pc-frame-label {
-  position: absolute;
-  top: -34px;
-  left: 0;
-  height: 28px;
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--pc-muted);
-  cursor: grab;
-}
-.pc-empty {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  pointer-events: none;
-  padding: 92px 24px 75px;
 }
 .pc-empty > div:last-child {
   display: flex;
@@ -724,14 +634,6 @@
 .pc-empty-artifacts svg {
   color: var(--pc-accent);
 }
-.pc-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-}
 .pc-state h3 {
   font-size: 18px;
   font-weight: 500;
@@ -780,11 +682,6 @@
   font-size: 12px;
   color: var(--pc-ink);
 }
-.pc-library-scroll {
-  overflow-y: auto;
-  min-height: 0;
-  flex: 1;
-}
 .pc-library-row {
   display: flex;
   padding: 12px 13px;
@@ -822,11 +719,6 @@
 }
 .pc-library-open > svg {
   color: var(--pc-soft);
-}
-.pc-library-empty {
-  padding: 24px 18px;
-  font-size: 12px;
-  color: var(--pc-muted);
 }
 .pc-library.is-full-library {
   width: 100%;
@@ -866,10 +758,6 @@
 .pc-live-indicator.is-offline {
   background: var(--pc-soft);
 }
-.pc-avatar-group {
-  display: flex;
-  margin-left: 5px;
-}
 .pc-avatar-group button {
   border: 2px solid var(--workspace-content-bg);
   background: var(--workspace-control-bg);
@@ -883,16 +771,6 @@
 .pc-avatar-group button.is-following {
   outline: 1px solid currentColor;
 }
-.pc-cursor {
-  position: absolute;
-  transform-origin: top left;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  pointer-events: none;
-  transition: transform 220ms linear;
-  z-index: 20;
-}
 .pc-cursor span {
   color: var(--workspace-content-bg);
   background: currentColor;
@@ -902,21 +780,6 @@
   margin-left: 17px;
   background: var(--workspace-native-text);
   white-space: nowrap;
-}
-.pc-follow-banner {
-  position: absolute;
-  top: 75px;
-  right: 20px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 11px;
-  font-size: 11px;
-  background: var(--workspace-selected-bg);
-  color: var(--pc-accent);
-  border: 1px solid var(--pc-line);
-  border-radius: 7px;
 }
 .pc-presentation-bar {
   bottom: 20px;
@@ -1011,16 +874,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   font-size: 12px;
   line-height: 1.6;
 }
-.pc-add-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 22px 26px 0;
-  gap: 6px;
-  padding: 4px;
-  border: 1px solid var(--pc-line);
-  border-radius: 8px;
-  background: var(--pc-paper);
-}
 .pc-add-tabs button {
   display: flex;
   flex-direction: column;
@@ -1034,12 +887,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 .pc-add-tabs button[aria-selected="true"] {
   background: var(--workspace-selected-bg);
   color: var(--pc-accent);
-}
-.pc-add-form {
-  padding: 22px 26px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 19px;
 }
 .pc-add-form label {
   display: flex;
@@ -1167,13 +1014,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   border: 1px solid
     color-mix(in srgb, var(--pc-format, var(--pc-accent)) 12%, transparent);
   border-radius: 9px;
-}
-.pc-count {
-  border-radius: 4px;
-  padding: 1px 5px;
-  background: var(--workspace-control-bg);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
 }
 .pc-review-toolbar {
   padding: 8px 18px;
@@ -1338,12 +1178,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   border-radius: 4px;
   background: var(--workspace-control-bg);
 }
-.pc-comment-filters {
-  display: flex;
-  flex: none;
-  gap: 4px;
-  padding: 12px 14px 8px;
-}
 .pc-comment-filters button {
   display: inline-flex;
   align-items: center;
@@ -1372,11 +1206,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   flex: 1;
   min-height: 0;
   padding: 4px 10px 12px;
-}
-.pc-comments-empty {
-  padding: 42px 22px;
-  text-align: center;
-  color: var(--pc-soft);
 }
 .pc-comments-empty > svg {
   margin: 0 auto 16px;
@@ -1433,13 +1262,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 .pc-thread-anchor:hover {
   color: var(--pc-accent);
 }
-.pc-thread-resolved {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 9px;
-  color: var(--workspace-native-success);
-}
 .pc-comment {
   position: relative;
   margin: 10px 0 14px;
@@ -1454,19 +1276,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-}
-.pc-comment-avatar {
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
-  background: var(--workspace-selected-bg);
-  color: var(--pc-accent);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  flex: none;
 }
 .pc-comment header strong {
   font-size: 12px;
@@ -1691,10 +1500,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   color: var(--pc-accent);
   margin-bottom: 12px;
 }
-.pc-muted {
-  color: var(--pc-muted);
-  font-size: 11px;
-}
 .pc-annotation-surface {
   position: absolute;
   inset: 0;
@@ -1713,11 +1518,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   background: var(--pc-ink);
   color: var(--pc-paper);
   font-size: 12px;
-}
-.pc-review-pins {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
 }
 .pc-review-pins button {
   position: absolute;
@@ -1809,20 +1609,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   border: 1px solid var(--pc-line);
   padding: 6px 10px;
 }
-.pc-viewer-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  min-height: 260px;
-  height: 100%;
-  padding: 40px;
-  text-align: center;
-  color: var(--pc-muted);
-  font-size: 13px;
-  line-height: 1.7;
-}
 .pc-file-viewer,
 .pc-output-viewer {
   flex: 1;
@@ -1895,11 +1681,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   object-fit: contain;
   box-shadow: 0 5px 20px #0001;
 }
-.pc-media-viewer {
-  max-width: 100%;
-  max-height: calc(100% - 60px);
-  margin: auto;
-}
 .pc-html-preview {
   background: white;
   border: 0;
@@ -1913,16 +1694,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   margin: 18px auto 0;
   border: 1px solid var(--pc-line);
   border-radius: 12px;
-}
-.pc-viewer-caption {
-  padding: 8px 16px;
-  font-size: 10px;
-  text-align: center;
-  color: var(--pc-muted);
-  background: var(--pc-paper);
-  border-top: 1px solid var(--pc-line);
-  margin: 0;
-  flex: none;
 }
 .pc-live-document {
   display: flex;
@@ -1978,11 +1749,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   border-top: 1px solid var(--pc-line);
   color: var(--pc-muted);
   font-size: 10px;
-}
-.pc-inline-note {
-  padding: 8px 14px;
-  color: var(--pc-muted);
-  font-size: 11px;
 }
 .pc-spin {
   animation: pc-spin 1s linear infinite;
@@ -2247,19 +2013,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   color: var(--pc-ink);
   background: var(--workspace-control-bg);
 }
-.pc-image-control-divider {
-  width: 1px;
-  height: 16px;
-  margin: 0 4px;
-  background: var(--pc-line);
-}
-.pc-image-zoom {
-  min-width: 44px;
-  text-align: center;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--pc-muted);
-}
 .pc-image-hint {
   position: absolute;
   left: 16px;
@@ -2268,14 +2021,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   color: var(--pc-soft);
   font-size: 10px;
   pointer-events: none;
-}
-.pc-image-loading {
-  display: grid;
-  place-content: center;
-  height: 100%;
-  margin: 0;
-  color: var(--pc-muted);
-  font-size: 12px;
 }
 .pc-media-review:has(.pc-selection-feedback) .pc-image-controls {
   bottom: 96px;
@@ -2291,11 +2036,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
     right: 10px;
     bottom: 10px;
   }
-}
-.pc-media-frame {
-  position: relative;
-  margin: 0 auto;
-  flex-shrink: 0;
 }
 .pc-media-frame > img,
 .pc-media-frame > video {
@@ -2570,12 +2310,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 .pc-node-comments-arrow {
   fill: var(--pc-paper);
 }
-.pc-node-thread-list {
-  overflow: auto;
-  min-height: 0;
-  padding: 6px;
-  overscroll-behavior: contain;
-}
 .pc-node-thread {
   display: block;
   width: 100%;
@@ -2588,11 +2322,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 }
 .pc-node-thread:hover {
   background: var(--workspace-control-bg);
-}
-.pc-node-thread-heading {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 .pc-node-thread-heading > strong {
   flex: 1;
@@ -2617,14 +2346,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 .pc-node-thread-meta {
   font-size: 10px;
   color: var(--pc-muted);
-}
-.pc-node-comments-state {
-  padding: 28px 20px;
-  color: var(--pc-muted);
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  text-align: center;
 }
 .pc-node-comments-state button {
   display: inline-flex;
@@ -2674,15 +2395,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   color: var(--pc-soft);
   font-size: 9px;
 }
-.pc-node-plain-text {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.6;
-  user-select: text;
-}
 
 .pc-node-thread-heading time {
   font-size: 10px;
@@ -2714,14 +2426,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   margin: 0;
   font-size: 12px;
   line-height: 1.65;
-}
-.pc-node-comments-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 16px;
-  border-top: 1px solid var(--pc-line);
 }
 .pc-node-comments-footer > span {
   flex: 1;
@@ -2802,12 +2506,6 @@ body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
 }
 .pc-markup-toolbar .pc-markup-tool-label {
   display: none;
-}
-.pc-markup-colors {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  flex: none;
 }
 .pc-markup-toolbar .pc-markup-swatch {
   width: 25px;

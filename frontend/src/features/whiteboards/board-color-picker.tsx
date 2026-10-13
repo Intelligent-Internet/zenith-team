@@ -84,7 +84,7 @@ export function BoardColorPicker({
       </Popover.Trigger>
       <Popover.Portal container={container}>
         <Popover.Content
-          className="wb-color-picker nodrag nopan nowheel"
+          className="wb-color-picker z-[160] flex flex-col gap-[14px] w-[280px] max-w-[calc(100vw_-_32px)] max-h-[var(--radix-popover-content-available-height)] overflow-y-auto p-[14px] [border:1px_solid_var(--workspace-divider)] rounded-[20px] [background:var(--workspace-panel-bg)] text-workspace-text [box-shadow:0_16px_48px_rgb(0_0_0_/_16%),_0_2px_6px_rgb(0_0_0_/_5%)] font-workspace-body text-[length:12px] [user-select:none] nodrag nopan nowheel"
           aria-label={`Custom ${label.toLowerCase()}`}
           side="top"
           align="end"
@@ -227,7 +227,7 @@ function ColorPickerControls({
         }}
       >
         <span
-          className="wb-color-picker__cursor"
+          className="absolute w-[16px] h-[16px] [border:2px_solid_white] rounded-[50%] [box-shadow:0_0_0_1px_rgb(0_0_0_/_35%),_0_1px_4px_rgb(0_0_0_/_35%)] [transform:translate(-50%,_-50%)] pointer-events-none"
           aria-hidden="true"
           style={{
             left: `${hsv.saturation * 100}%`,
@@ -254,9 +254,9 @@ function ColorPickerControls({
           updateHSV({ ...hsv, hue: Number(event.target.value) })
         }
       />
-      <div className="wb-color-picker__hex-row">
+      <div className="flex items-center gap-[10px]">
         <span
-          className="wb-color-picker__preview"
+          className="w-[36px] h-[36px] shrink-0 [border:1px_solid_color-mix(in_srgb,_var(--workspace-native-text)_14%,_transparent)] rounded-[50%]"
           style={{ background: color }}
           aria-hidden="true"
         />
@@ -275,7 +275,7 @@ function ColorPickerControls({
           }}
         />
       </div>
-      <div className="wb-color-picker__rgb">
+      <div className="grid grid-cols-[repeat(3,_minmax(0,_1fr))] gap-[8px]">
         {["Red", "Green", "Blue"].map((label, index) => (
           <ColorField
             key={label}

@@ -9,12 +9,6 @@
   width: 600px;
 }
 
-.group-dialog__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .group-dialog__input {
   width: 100%;
   min-height: 36px;
@@ -42,27 +36,8 @@
   border-color: var(--workspace-native-danger, #ff8a7a);
 }
 
-.group-dialog__error {
-  color: var(--workspace-native-danger, #ff8a7a);
-  font-size: 11.5px;
-  line-height: 1.35;
-}
-
-.group-dialog__section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 /* One compact row: the people mark, Add people right beside it, then
    "Nobody yet" while the Group is empty and the search is closed. */
-.group-dialog__section-heading {
-  display: flex;
-  min-height: 30px;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-}
 
 /* The people mark, where a "People" heading used to be. */
 .group-dialog__section-heading > svg {
@@ -83,13 +58,6 @@
   height: 28px;
   justify-content: center;
   padding: 0;
-}
-
-.group-dialog__note {
-  margin: 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 12px;
-  line-height: 1.4;
 }
 
 .group-dialog__people,
@@ -206,15 +174,6 @@
   white-space: nowrap;
 }
 
-.group-dialog__picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px;
-  border-radius: 12px;
-  background: var(--workspace-control-bg);
-}
-
 .group-dialog__picker .project-access-search {
   width: 100%;
   height: 36px;
@@ -250,14 +209,6 @@
   width: 460px;
 }
 
-.group-review__summary {
-  display: flex;
-  grid-column: 2;
-  margin: 4px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: 13px;
-}
-
 .group-review__body {
   display: flex;
   flex-direction: column;
@@ -272,17 +223,6 @@
 /* A long list scrolls on its own, so the question and Cancel and Change
    stay in view. Positioned, so the rows' screen-reader text stays inside
    it and never makes the box scroll too. */
-.group-review__people {
-  position: relative;
-  display: flex;
-  max-height: min(50dvh, 360px);
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
 
 /* The sign follows the name; the Project takes the rest of the row. */
 .group-review__person {
@@ -296,15 +236,6 @@
 
 /* Clipped, so nothing in it ever spills over the runs chip; a container,
    so a short cell drops the label's words (below). */
-.group-review__where {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 6px;
-  overflow: hidden;
-  color: var(--workspace-native-text);
-  container-type: inline-size;
-}
 
 .group-review__where > svg {
   flex: none;
@@ -387,21 +318,6 @@
   color: var(--workspace-native-danger, #e5484d);
 }
 
-.group-review__name {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 6px;
-  color: var(--workspace-native-text);
-  font-weight: 550;
-}
-
-.group-review__name-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .group-review__name small {
   flex: none;
   color: var(--workspace-native-text-muted);
@@ -410,31 +326,6 @@
 }
 
 /* What the change opens for the viewer, and who is told. */
-.group-review__opened {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.group-review__warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid
-    color-mix(in srgb, var(--workspace-native-approval) 40%, transparent);
-  border-radius: 10px;
-  background: color-mix(
-    in srgb,
-    var(--workspace-native-approval) 10%,
-    transparent
-  );
-  color: var(--workspace-native-text);
-  font-size: 12.5px;
-  line-height: 1.45;
-}
 
 .group-review__warning > svg {
   margin-top: 1px;

@@ -62,13 +62,6 @@
   gap: 8px;
   padding-block: 2px;
 }
-.calendar-sharing-calendar {
-  display: grid;
-  grid-template-columns: 17px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  color: var(--workspace-text-muted);
-}
 .calendar-field-label {
   color: var(--workspace-text-muted);
   font-size: 12px;
@@ -144,9 +137,6 @@
   grid-template-columns: 17px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-}
-.calendar-field-icon {
-  color: var(--workspace-text-muted);
 }
 .calendar-option-grid .calendar-recurrence-summary {
   grid-column: 2;
@@ -257,9 +247,6 @@
   background: var(--workspace-overlay-bg);
   box-shadow: var(--workspace-overlay-shadow);
 }
-.calendar-date-popover {
-  width: min(300px, calc(100vw - 24px));
-}
 .calendar-picker-month-heading,
 .calendar-picker-month-heading > div {
   display: flex;
@@ -332,11 +319,6 @@
 .calendar-picker-days button:disabled {
   opacity: 0.25;
   cursor: not-allowed;
-}
-.calendar-picker-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 5px 5px 0;
 }
 .calendar-picker-footer button {
   border: 0;
@@ -411,12 +393,6 @@
   max-width: min(320px, calc(100vw - 24px));
   padding: 6px;
 }
-.calendar-option-heading {
-  padding: 8px 10px;
-  margin: 0;
-  color: var(--workspace-text-muted);
-  font-weight: 600;
-}
 .calendar-option {
   display: flex;
   align-items: center;
@@ -458,12 +434,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.calendar-guest-picker {
-  max-height: 220px;
-  overflow-y: auto;
-  display: grid;
-  gap: 4px;
 }
 .personal-form .calendar-guest-option {
   display: flex;
@@ -559,12 +529,6 @@
 .calendar-event-description {
   white-space: pre-wrap;
 }
-.calendar-rsvp {
-  display: grid;
-  gap: 12px;
-  padding-block: 16px;
-  border-top: 1px solid var(--workspace-border);
-}
 .calendar-rsvp > div {
   display: flex;
   flex-wrap: wrap;
@@ -600,12 +564,6 @@
   align-items: center;
   gap: 12px;
 }
-.calendar-repeat-section {
-  min-width: 0;
-  border: 0;
-  padding: 0;
-  margin: 0;
-}
 .calendar-repeat-section legend {
   margin-bottom: 12px;
   color: var(--workspace-text-muted);
@@ -638,10 +596,6 @@
 .calendar-repeat-weekdays button:focus-visible {
   outline: none;
   border-color: var(--workspace-text);
-}
-.calendar-repeat-end {
-  display: grid;
-  gap: 14px;
 }
 .calendar-repeat-end-row {
   display: grid;
@@ -826,13 +780,6 @@
 .calendar-editor .calendar-when {
   gap: 7px;
 }
-.calendar-schedule-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: space-between;
-  padding-left: 44px;
-}
 .calendar-schedule-row {
   display: grid;
   grid-template-columns: 36px minmax(0, 1fr) 96px;
@@ -842,10 +789,6 @@
 .calendar-schedule-row:not(:has(.calendar-time-trigger)) {
   grid-template-columns: 36px minmax(0, 1fr);
 }
-.calendar-schedule-label {
-  font-size: 11px;
-  color: var(--workspace-native-text-muted);
-}
 .calendar-schedule-row .calendar-picker-trigger {
   width: 100%;
   min-width: 0;
@@ -853,10 +796,6 @@
 .calendar-editor .calendar-field-label,
 .calendar-editor .calendar-timezone-summary {
   font-size: 10px;
-}
-.calendar-timezone-input {
-  position: relative;
-  display: block;
 }
 .calendar-timezone-input > input {
   width: 100%;
@@ -876,26 +815,8 @@
 .calendar-editor .calendar-sharing {
   gap: 6px;
 }
-.calendar-selected-guests {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-  color: var(--workspace-text-muted);
-  padding-top: 5px;
-}
 .calendar-selected-guests > svg {
   margin-right: 2px;
-}
-.calendar-guest-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border-radius: 20px;
-  background: var(--workspace-panel-raised-bg);
-  padding: 3px 5px 3px 3px;
-  min-width: 0;
-  max-width: 190px;
 }
 .calendar-guest-chip > span:not([data-slot]) {
   overflow: hidden;
@@ -1066,11 +987,6 @@
 .calendar-detail-dialog .calendar-event-details > p small {
   margin-top: 4px;
   font-size: 12px;
-}
-.calendar-detail-guests {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
 }
 .calendar-detail-guests > svg {
   flex-shrink: 0;

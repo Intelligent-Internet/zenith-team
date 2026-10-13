@@ -139,7 +139,7 @@ export function AppearanceSettingsPage() {
   }
 
   return (
-    <div className="appearance-settings-page">
+    <div className="appearance-settings-page [container:appearance_/_inline-size] grid min-w-0 text-workspace-text">
       <section
         aria-labelledby="appearance-color-mode"
         className="appearance-section appearance-color-mode"
@@ -201,7 +201,7 @@ export function AppearanceSettingsPage() {
         </header>
         <div
           aria-label="Theme options"
-          className="appearance-tabs"
+          className="flex gap-[24px]"
           role="tablist"
         >
           {themeTabs.map((tab, index) => (
@@ -261,7 +261,7 @@ export function AppearanceSettingsPage() {
                       }}
                     />
                   </span>
-                  <span className="appearance-preset__label">
+                  <span className="appearance-preset__label flex min-h-[36px] items-center justify-between gap-[8px] p-[8px_2px_0] text-workspace-body leading-workspace-body font-[600]">
                     <span>{preset.name}</span>
                     <span className="appearance-preset__check">
                       <Check aria-hidden="true" size={13} />
@@ -280,15 +280,15 @@ export function AppearanceSettingsPage() {
           role="tabpanel"
           tabIndex={0}
         >
-          <div className="appearance-custom">
+          <div className="grid gap-[24px]">
             <div className="appearance-custom__heading">
               <div>
                 <h3>Theme colors</h3>
                 <p>Edits apply immediately.</p>
               </div>
-              <div className="appearance-custom__actions">
+              <div className="flex flex-wrap items-center gap-[12px]">
                 {preferences.themeId === "custom" ? (
-                  <span className="appearance-custom__active">
+                  <span className="inline-flex items-center gap-[5px] text-workspace-accent text-workspace-caption leading-workspace-caption font-[600]">
                     <Check aria-hidden="true" size={14} /> Active theme
                   </span>
                 ) : (
@@ -345,8 +345,8 @@ export function AppearanceSettingsPage() {
                 />
               ))}
             </div>
-            <div className="appearance-custom__preview">
-              <div className="appearance-custom__preview-label">
+            <div className="overflow-hidden [border:1px_solid_var(--workspace-divider)] rounded-[12px]">
+              <div className="flex items-center justify-between [background:var(--workspace-control-bg)] p-[10px_14px] text-workspace-muted text-workspace-caption leading-workspace-caption font-[500]">
                 <span>Preview</span>
                 <span>Light mode</span>
               </div>
@@ -355,7 +355,7 @@ export function AppearanceSettingsPage() {
           </div>
         </div>
 
-        <footer className="appearance-footer">
+        <footer className="appearance-footer flex flex-wrap items-center gap-[4px_12px]">
           <button
             aria-describedby="appearance-reset-description"
             className="appearance-reset"
@@ -396,7 +396,7 @@ export function AppearanceSettingsPage() {
                 }
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="appearance-font-menu !rounded-lg !shadow-[0_8px_24px_rgb(0_0_0_/_14%)]">
+            <SelectContent className="appearance-font-menu w-[var(--radix-select-trigger-width)] max-h-[min(340px,_var(--radix-select-content-available-height))] !rounded-lg !shadow-[0_8px_24px_rgb(0_0_0_/_14%)]">
               {workspaceFonts.map((font) => (
                 <SelectItem
                   key={font.id}
@@ -425,7 +425,7 @@ export function AppearanceSettingsPage() {
             Aa
           </span>
           <div>
-            <span className="appearance-font-preview__title">
+            <span className="text-workspace-title font-[600] leading-workspace-title">
               Make room for your best work.
             </span>
             <p>Aa Bb Cc · 0123456789</p>
@@ -440,7 +440,10 @@ export function AppearanceSettingsPage() {
         ) : null}
       </section>
       {appearance.storageError ? (
-        <p className="appearance-storage-error" role="status">
+        <p
+          className="m-0 text-workspace-danger text-workspace-caption leading-workspace-caption"
+          role="status"
+        >
           Your changes are applied for this session, but couldn’t be saved on
           this device.
         </p>

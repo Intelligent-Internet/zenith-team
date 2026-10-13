@@ -84,7 +84,7 @@ export function ProjectPerformance({
   ];
   return (
     <div className="project-overview" data-analysis="true">
-      <section className="project-overview-intro">
+      <section className="project-overview-intro col-[1_/_-1] min-w-0">
         <h2>Performance</h2>
       </section>
       <div className="project-metric-grid" aria-label="Project summary">
@@ -95,7 +95,10 @@ export function ProjectPerformance({
             data-metric={metric.label}
             data-attention={metric.label === "Blocked or failed" && issues > 0}
           >
-            <Icon name={metric.icon} className="project-metric-icon" />
+            <Icon
+              name={metric.icon}
+              className="w-[22px] h-[22px] flex-none text-workspace-muted"
+            />
             <div>
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
@@ -129,7 +132,10 @@ export function ProjectPerformance({
         className="project-panel"
       />
       {reviews.isError ? (
-        <p className="project-overview-request-status" role="alert">
+        <p
+          className="col-[1] m-0 text-workspace-muted text-workspace-caption"
+          role="alert"
+        >
           Reviews could not be loaded.{" "}
           <button type="button" onClick={reviews.retry}>
             Retry
@@ -137,7 +143,10 @@ export function ProjectPerformance({
         </p>
       ) : null}
       {requests.isError ? (
-        <p className="project-overview-request-status" role="alert">
+        <p
+          className="col-[1] m-0 text-workspace-muted text-workspace-caption"
+          role="alert"
+        >
           Pending responses could not be loaded.{" "}
           <button type="button" onClick={requests.retry}>
             Retry
@@ -145,7 +154,10 @@ export function ProjectPerformance({
         </p>
       ) : null}
       {requests.isLoading ? (
-        <p className="project-overview-request-status" role="status">
+        <p
+          className="col-[1] m-0 text-workspace-muted text-workspace-caption"
+          role="status"
+        >
           Checking pending questions and approvals…
         </p>
       ) : null}
@@ -275,7 +287,7 @@ function ProjectProgress({ tasks }: { tasks: TaskDto[] }) {
 function ProjectMilestones({ tasks }: { tasks: TaskDto[] }) {
   const milestones = [...new Set(tasks.map((task) => task.milestoneType))];
   return (
-    <section className="project-panel project-milestones">
+    <section className="project-panel col-[1_/_-1]">
       <div className="project-panel-heading">
         <div>
           <h3>Milestone progress</h3>

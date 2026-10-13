@@ -1,6 +1,3 @@
-.po-pages-library {
-  width: 100%;
-}
 .po-pages-library .po-library-heading {
   align-items: center;
   margin-bottom: 16px;
@@ -12,13 +9,6 @@
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
   white-space: nowrap;
-}
-.po-pages-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 12px;
 }
 .po-pages-toolbar .po-library-search {
   flex: 1;
@@ -97,17 +87,6 @@
 .po-pages-row:focus-visible .po-pages-open {
   opacity: 1;
 }
-.po-pages-count {
-  margin: 16px 12px 0;
-  color: var(--pc-soft);
-  font-size: 12px;
-}
-.po-pages-create {
-  margin: 0 0 24px;
-  padding: 20px;
-  border: 1px solid var(--pc-line);
-  border-radius: var(--workspace-radius-panel);
-}
 .po-pages-create fieldset {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px;
@@ -133,11 +112,6 @@
   background: var(--pc-paper);
   color: var(--pc-ink);
   font-size: 13px;
-}
-.po-pages-template-description {
-  margin: 12px 0 16px;
-  color: var(--pc-muted);
-  font-size: 12px;
 }
 .po-pages-create .po-options-actions {
   justify-content: flex-end;

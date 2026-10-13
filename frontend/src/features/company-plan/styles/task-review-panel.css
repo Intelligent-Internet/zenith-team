@@ -94,19 +94,10 @@
 
 /* The workspace review uses the active palette in its opaque portal. */
 html[data-boardly-workspace-theme] {
-  .task-review-panel-frame {
-    border: 1px solid var(--workspace-divider) !important;
-    background: var(--workspace-overlay-bg) !important;
-    box-shadow: var(--workspace-overlay-shadow) !important;
-  }
   .task-review-panel {
     background: var(--workspace-panel-bg);
     color: var(--workspace-native-text);
     font-family: var(--workspace-font-body);
-  }
-  .task-review-panel__header {
-    row-gap: 12px;
-    padding-bottom: 20px;
   }
   .task-review-panel__title {
     color: var(--workspace-native-text);
@@ -117,9 +108,6 @@ html[data-boardly-workspace-theme] {
     background: var(--workspace-control-bg);
     color: var(--workspace-native-text-muted);
     font-weight: 500;
-  }
-  .task-review-panel__divider {
-    background: var(--workspace-divider);
   }
   .task-review-panel__text {
     color: var(--workspace-native-text);

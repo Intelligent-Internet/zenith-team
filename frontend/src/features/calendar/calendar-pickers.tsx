@@ -122,7 +122,7 @@ export function CalendarDatePicker({
         <Popover.Content
           style={appearance === "calendar" ? theme : undefined}
           data-appearance={appearance}
-          className="calendar-picker-popover calendar-date-popover"
+          className="calendar-picker-popover w-[min(300px,_calc(100vw_-_24px))]"
           sideOffset={7}
           collisionPadding={12}
           align="start"
@@ -192,7 +192,7 @@ export function CalendarDatePicker({
               );
             })}
           </div>
-          <div className="calendar-picker-footer">
+          <div className="calendar-picker-footer flex justify-end p-[5px_5px_0]">
             <button
               type="button"
               disabled={today < min || today > max}
@@ -392,7 +392,9 @@ export function CalendarOptionPicker({
           collisionPadding={12}
           align="start"
         >
-          <p className="calendar-option-heading">{label}</p>
+          <p className="p-[8px_10px] m-0 text-[var(--workspace-text-muted)] font-[600]">
+            {label}
+          </p>
           {options.map((option) => (
             <Popover.Close asChild key={option.value}>
               <button

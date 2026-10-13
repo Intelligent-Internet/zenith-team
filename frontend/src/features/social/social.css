@@ -1,41 +1,7 @@
 @import "../common/styles/personal-tools.css";
-
-.social-platform-group {
-  min-width: 0;
-  align-self: start;
-}
 .social-platform-row .social-platform-mark {
   width: 40px;
   height: 40px;
-}
-.social-platform-name {
-  margin: 0;
-  color: var(--workspace-native-text);
-  font-size: var(--workspace-text-body);
-  font-weight: 600;
-  line-height: var(--workspace-leading-body);
-}
-.social-platform-accounts {
-  display: grid;
-  gap: 4px;
-  margin: 0 12px 8px 54px;
-  border-top: 1px solid var(--workspace-divider);
-  padding: 4px 0 0;
-  list-style: none;
-}
-.social-platform-account {
-  display: flex;
-  min-width: 0;
-  min-height: 52px;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-}
-.social-account-avatar {
-  width: 28px;
-  height: 28px;
-  font-size: var(--workspace-text-caption);
-  font-weight: 500;
 }
 .social-account-avatar img {
   object-fit: cover;
@@ -43,10 +9,6 @@
 .social-account-avatar [data-slot="avatar-fallback"] {
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text-muted);
-}
-.social-account-detail {
-  flex: 1;
-  min-width: 0;
 }
 .social-account-name,
 .social-account-username {
@@ -78,14 +40,6 @@
   margin-top: 2px;
   color: var(--workspace-native-danger);
   font-size: var(--workspace-text-caption);
-}
-.social-load-state {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 16px 0 0;
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-label);
 }
 .social-load-state p {
   margin: 0;

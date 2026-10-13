@@ -44,34 +44,9 @@
   outline: none;
 }
 
-.member-profile-card__identity {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
 .member-profile-card__identity > div {
   min-width: 0;
   flex: 1;
-}
-
-.member-profile-card__name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.member-profile-card__title {
-  margin: 4px 0 0;
-  overflow-wrap: anywhere;
-  color: var(--workspace-native-text-muted);
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .member-profile-avatar {
@@ -126,12 +101,6 @@
   color: var(--workspace-native-approval);
 }
 
-.member-profile-card__actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 18px;
-}
-
 .member-profile-button {
   display: inline-flex;
   min-height: 38px;
@@ -178,17 +147,6 @@
   border-left: 1px solid var(--workspace-divider);
 }
 
-.member-profile-panel__header {
-  display: flex;
-  min-height: var(--workspace-conversation-header-height, 64px);
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--workspace-divider);
-  padding: 9px var(--workspace-thread-inset, 16px);
-}
-
 .member-profile-panel__header h2 {
   margin: 0;
   font-size: var(--workspace-text-title, 18px);
@@ -215,24 +173,12 @@
   color: var(--workspace-native-text);
 }
 
-.member-profile-panel__body {
-  min-height: 0;
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 24px;
-}
-
 .member-profile-panel__body > .member-profile-avatar {
   width: 100%;
   height: auto;
   aspect-ratio: 1;
   border-radius: 12px;
   font-size: 80px;
-}
-
-.member-profile-panel__identity {
-  margin: 20px 0 0;
 }
 
 .member-profile-panel__identity h3 {
@@ -252,22 +198,8 @@
   line-height: 1.6;
 }
 
-.member-profile-panel__actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
 .member-profile-panel__actions > .member-profile-button {
   min-height: 42px;
-}
-
-.member-profile-panel__details {
-  display: grid;
-  gap: 22px;
-  margin: 16px 0 0;
-  border-top: 1px solid var(--workspace-divider);
-  padding-top: 16px;
 }
 
 .member-profile-panel__details dt {
@@ -299,13 +231,6 @@
   align-self: center;
 }
 
-.member-profile-backdrop {
-  position: fixed;
-  z-index: 240;
-  inset: 0;
-  background: rgb(22 16 28 / 36%);
-}
-
 .boardly-workspace-theme.member-profile-panel--modal {
   position: fixed;
   z-index: 241;
@@ -315,15 +240,6 @@
   max-height: 100dvh;
   box-shadow: -8px 0 28px rgb(22 16 28 / 10%);
   outline: none;
-}
-
-.member-profile-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
 }
 
 @media (pointer: coarse) {

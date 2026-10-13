@@ -1035,7 +1035,10 @@ function ChatOrderedMessageContent({
       {renderItems.map((item) => {
         if (item.type === "activities") {
           return (
-            <div className="chat-runtime-activities" key={item.id}>
+            <div
+              className="grid w-full min-w-0 gap-[2px] text-workspace-muted text-[length:var(--workspace-text-body,_13px)] font-[400] leading-[var(--workspace-leading-body,_20px)]"
+              key={item.id}
+            >
               <ChatRuntimeActivityItems
                 activities={item.activities}
                 activeActivityId={activeActivityId}
@@ -1102,7 +1105,7 @@ function ChatRuntimeActivities({
   }
 
   return (
-    <div className="chat-runtime-activities">
+    <div className="grid w-full min-w-0 gap-[2px] text-workspace-muted text-[length:var(--workspace-text-body,_13px)] font-[400] leading-[var(--workspace-leading-body,_20px)]">
       <ChatRuntimeActivityItems
         activities={runtimeActivities}
         activeActivityId={activeActivityId}
@@ -1241,7 +1244,7 @@ function ChatRuntimeActivityStack({
         )}
         <ChevronRight aria-hidden className="chat-runtime-chevron" size={14} />
       </summary>
-      <div className="chat-runtime-stack__items">
+      <div className="grid min-w-0 gap-[2px] m-[4px_0_8px] pl-[12px] [border-left:1px_solid_var(--workspace-divider)]">
         {activities.map((activity) => (
           <ChatRuntimeActivityRow
             activity={activity}
@@ -1477,7 +1480,7 @@ function ChatRuntimeActivityRow({
             size={14}
           />
         </summary>
-        <div className="chat-runtime-activity__details">
+        <div className="grid gap-[8px] min-w-0 m-[4px_0_12px_20px]">
           {activity.input ? (
             <RuntimeActivityDetailBlock label="Input" value={activity.input} />
           ) : null}
@@ -1551,9 +1554,9 @@ function RuntimeActivityDetailBlock({
   value: string;
 }) {
   return (
-    <div className="chat-runtime-detail">
+    <div className="grid min-w-0 gap-[4px]">
       <div className="chat-runtime-detail__label">{label}</div>
-      <pre className="chat-runtime-detail__payload">
+      <pre className="max-h-[192px] m-0 overflow-auto p-[8px_10px] [border:1px_solid_var(--workspace-divider)] rounded-[8px] [background:var(--workspace-control-bg)] text-workspace-muted text-[length:12px] font-[400] leading-[18px] whitespace-pre-wrap wrap-anywhere">
         {formatRuntimeActivityPayload(value)}
       </pre>
     </div>
