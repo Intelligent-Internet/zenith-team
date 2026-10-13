@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { writeSessionFromLoginResponse } from "@/app/session/session";
-import { reportDesktopDiagnostic } from "@/app/desktop/desktop-environment.service";
+import { writeSessionFromLoginResponse } from "@/shared/session/session";
+import { reportDesktopDiagnostic } from "@/shared/desktop/desktop-environment.service";
 import { AuthFormMessage } from "@/features/auth/components/auth-form-message";
 import { AuthLayout } from "@/features/auth/components/auth-layout";
 import { AuthSubmitButton } from "@/features/auth/components/auth-submit-button";

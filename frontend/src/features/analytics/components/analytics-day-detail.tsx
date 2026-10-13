@@ -1,16 +1,17 @@
-import { useMemo, useState } from "react";
-import type { EChartsOption } from "echarts";
 import {
   useGetWorkspaceAnalyticsBreakdownQuery,
   useGetWorkspaceAnalyticsHeatmapQuery,
   useGetWorkspaceAnalyticsSummaryQuery,
-} from "@/shared/api/workspace-api";
+} from "@/shared/api/analytics-api";
+import { useMemo, useState } from "react";
+import type { EChartsOption } from "echarts";
+
 import { count, countLabel, cost, rate, tokens } from "../model/format";
 import { metricLabel } from "../model/metrics";
 import { useAnalyticsPalette } from "../model/palette";
 import { AnalyticsEChart } from "./analytics-echart";
 import { AnalyticsOutcomeBar } from "./analytics-outcome-bar";
-import type { AnalyticsCalendarQuery } from "./analytics-activity-calendar";
+import type { AnalyticsCalendarQuery } from "../model/calendar-query";
 import type {
   AnalyticsBreakdown,
   AnalyticsHeatmap,

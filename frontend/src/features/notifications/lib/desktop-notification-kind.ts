@@ -1,4 +1,5 @@
-import type { DesktopNotificationKind } from "@/app/desktop/desktop-environment.service";
+import type { DesktopNotificationKind } from "../../../../electron/shared/desktop-bridge.types";
+
 import type { NotificationKind } from "@/features/notifications/model/notification";
 
 export function toDesktopNotificationKind(

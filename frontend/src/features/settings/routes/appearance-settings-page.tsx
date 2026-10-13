@@ -36,7 +36,7 @@ import {
 } from "@/app/appearance/preferences";
 import { resolveWorkspacePalette } from "@/app/appearance/palette";
 import { useWorkspaceAppearance } from "@/app/appearance/workspace-appearance-provider";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { SettingsButton } from "@/features/settings/components/settings-primitives";
 import { cx } from "@/shared/lib/cx";
 

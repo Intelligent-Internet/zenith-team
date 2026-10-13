@@ -5,7 +5,7 @@ import { DiscussionMessageBody } from "@/features/discussions/components/discuss
 import { ChatComposerFormatting } from "@/features/chat-panel/components/chat-composer-formatting";
 import { ChatComposerEmoji } from "@/features/chat-panel/components/chat-composer-emoji";
 import "@/features/discussions/styles/discussions.css";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { HuddleTranscriptMessage } from "@/features/discussions/components/huddle-transcript-message";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import {

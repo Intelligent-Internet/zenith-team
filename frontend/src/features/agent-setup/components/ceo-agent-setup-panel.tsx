@@ -1,9 +1,9 @@
 import { ArrowRight, ChevronDown, RefreshCwIcon } from "@/shared/ui/icons";
 import { useId, useState, type FormEvent, type ReactNode } from "react";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { ComputerHandoverDialog } from "@/features/settings/components/computer-handover-dialog";
 
-import { getCeoAgentApiErrorMessage } from "@/features/agent-setup/api/ceo-agent-api";
+import { getCeoAgentApiErrorMessage } from "@/shared/api/agent-runtime-api";
 import { AgentRuntimeSelect } from "@/features/agent-setup/components/agent-runtime-controls";
 import { useCeoAgentRuntimeController } from "@/features/agent-setup/hooks/use-ceo-agent-runtime-controller";
 import {

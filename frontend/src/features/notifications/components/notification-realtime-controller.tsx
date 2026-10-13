@@ -9,12 +9,12 @@ import {
   setDesktopWorkbenchStatus,
   shouldUseDesktopHashRouter,
   showDesktopNotification,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import {
   isDesktopNotificationKindEnabled,
   loadDesktopWorkbenchPreferences,
 } from "@/app/desktop/desktop-workbench-preferences";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   notificationsApi,
   useGetNotificationCountsQuery,

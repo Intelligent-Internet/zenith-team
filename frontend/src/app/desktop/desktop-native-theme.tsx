@@ -1,11 +1,11 @@
+import type { DesktopNativeTheme } from "../../../electron/shared/desktop-bridge.types";
 import { useEffect } from "react";
 
 import {
   applyDesktopNativeThemeAttributes,
   getDesktopNativeTheme,
   subscribeToDesktopNativeTheme,
-  type DesktopNativeTheme,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 
 export function DesktopNativeThemeAttributes() {
   useEffect(() => {

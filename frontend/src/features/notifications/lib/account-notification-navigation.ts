@@ -1,9 +1,9 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { ACCOUNT_INBOX_SCOPE } from "@/features/notifications/model/notification";
 import {
   activateSessionCompany,
-  getNextRoute,
   readSessionSnapshot,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import { companyService } from "@/shared/api/company.service";
 import { boardlyApi } from "@/shared/api/boardly-api";
 import { notificationService } from "@/features/notifications/api/notification.service";

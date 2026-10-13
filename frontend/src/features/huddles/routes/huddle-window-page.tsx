@@ -1,7 +1,7 @@
 import { Users } from "@/shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { WorkspaceAppearanceProvider } from "@/app/appearance/workspace-appearance-provider";
 import {
   joinHuddle,

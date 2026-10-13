@@ -1,7 +1,7 @@
 import { useRef, useState, type RefObject, type ReactNode } from "react";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";

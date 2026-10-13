@@ -1,20 +1,21 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { detectDesktopPlatform } from "@/app/desktop/desktop-download.service";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
-import { getNextRoute, type SessionSnapshot } from "@/app/session/session";
+import { detectDesktopPlatform } from "@/shared/desktop/desktop-download.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
+import { type SessionSnapshot } from "@/shared/session/session";
 import {
   WorkspaceAppearanceProvider,
   useWorkspaceAppearance,
 } from "@/app/appearance/workspace-appearance-provider";
-import { getCeoAgentApiErrorMessage } from "@/features/agent-setup/api/ceo-agent-api";
+import { getCeoAgentApiErrorMessage } from "@/shared/api/agent-runtime-api";
 import {
   clearAuthContinuation,
   readAuthContinuationReturnPath,
 } from "@/features/auth/model/auth-continuation";
 import { logoutBoardlySession } from "@/features/auth/model/logout";
 import { OnboardingActions } from "@/features/onboarding/company/components/onboarding-actions";
-import { AppTitlebar } from "@/shared/ui/app-titlebar";
+import { AppTitlebar } from "@/app/shell/app-titlebar";
 import { ArrowLeft, ArrowRight, RefreshCwIcon } from "@/shared/ui/icons";
 import {
   MemberSetupAgents,

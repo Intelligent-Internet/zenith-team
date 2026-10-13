@@ -1,4 +1,4 @@
-import { getBoardlyDesktopBridge } from "@/app/desktop/desktop-environment.service";
+import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export function prepareHuddleWindow(): Window | null {
   if (getBoardlyDesktopBridge()?.openHuddleWindow) return null;

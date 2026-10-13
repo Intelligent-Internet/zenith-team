@@ -6,8 +6,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import { useTaskHandoff } from "@/features/company-plan/hooks/use-task-handoff";
 import type { TaskDto } from "@/shared/api/types";

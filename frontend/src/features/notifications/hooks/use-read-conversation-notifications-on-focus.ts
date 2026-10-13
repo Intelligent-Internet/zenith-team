@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useRef } from "react";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useReadConversationNotificationsMutation } from "@/features/notifications/api/notifications-api";
 import {
   clearVisibleConversation,

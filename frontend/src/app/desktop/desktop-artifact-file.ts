@@ -1,7 +1,5 @@
-import {
-  getBoardlyDesktopBridge,
-  type DesktopArtifactFileReference,
-} from "./desktop-environment.service";
+import type { DesktopArtifactFileReference } from "../../../electron/shared/desktop-bridge.types";
+import { getBoardlyDesktopBridge } from "../../shared/desktop/desktop-environment.service";
 
 // The main process owns credentials, disk access and permission revalidation.
 // Web clients and files above the desktop cache limit use the normal API path.

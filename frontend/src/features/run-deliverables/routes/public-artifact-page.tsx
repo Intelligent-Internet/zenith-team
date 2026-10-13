@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { ArtifactFileContent } from "@/features/chat-panel/components/artifacts/artifact-file-preview";
 import type { components } from "@/shared/api/generated/api.generated";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { desktopAppUrl } from "@/shared/lib/desktop-app-url";
 import { Button } from "@/shared/ui/button";
 import { ChevronDown, FileText, Monitor } from "@/shared/ui/icons";

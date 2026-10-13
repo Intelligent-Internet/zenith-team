@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { findCeoAgentInPage } from "@/features/agent-setup/model/ceo-agent-setup";
 import {
   useCompanyResearch,

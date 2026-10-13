@@ -17,7 +17,7 @@ import {
 import {
   openDesktopExternal,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { useCommerceOnboardingActions } from "@/features/revenue/api/use-commerce-onboarding-actions";
 import { StripeAccountOnboardingBoundary } from "@/features/revenue/components/stripe-account-onboarding-boundary";
 import {

@@ -14,7 +14,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   useCancelScheduleMutation,
   useCancelWaitingScheduleRunMutation,

@@ -1,7 +1,8 @@
+import { useCreateWorkspaceChatSessionMutation } from "@/shared/api/conversation-api";
 import { useEffect, useState } from "react";
 import { ChatModelSettings } from "@/features/chat-panel/components/chat-model-settings";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
-import { useCreateWorkspaceChatSessionMutation } from "@/shared/api/workspace-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { ChevronDown } from "@/shared/ui/icons";
 

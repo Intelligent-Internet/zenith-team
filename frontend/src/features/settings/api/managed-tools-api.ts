@@ -1,8 +1,8 @@
-import {
-  operateDesktopTool,
-  type DesktopToolRequest,
-  type DesktopToolValue,
-} from "@/app/desktop/desktop-environment.service";
+import type {
+  DesktopToolRequest,
+  DesktopToolValue,
+} from "../../../../electron/shared/desktop-bridge.types";
+import { operateDesktopTool } from "@/shared/desktop/desktop-environment.service";
 import { boardlyApi } from "@/shared/api/boardly-api";
 
 export const managedToolsApi = boardlyApi.injectEndpoints({

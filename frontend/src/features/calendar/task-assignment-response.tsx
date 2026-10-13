@@ -1,4 +1,4 @@
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import type { TaskDto } from "@/shared/api/types";
 import { hasProjectPermission } from "@/shared/permissions";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";

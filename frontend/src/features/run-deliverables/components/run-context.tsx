@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useGetRunDetailsQuery } from "../api/run-deliverables-api";
 import {
   runCancellationCopy,

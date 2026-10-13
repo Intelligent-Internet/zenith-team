@@ -1,5 +1,6 @@
+import type { DesktopWorkspaceAssetSort } from "../../../../electron/shared/desktop-bridge.types";
 import { useState } from "react";
-import type { DesktopWorkspaceAssetSort } from "@/app/desktop/desktop-environment.service";
+
 import type { WorkspaceAssetViewMode } from "./use-workspace-asset-scopes";
 
 function useAssetPreference<T extends string>(

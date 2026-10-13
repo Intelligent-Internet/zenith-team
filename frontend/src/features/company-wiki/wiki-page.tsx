@@ -14,7 +14,7 @@ import {
   useSearchParams,
 } from "react-router";
 import { WorkspacePageSidebar } from "@/app/shell/workspace-page-sidebar";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCan } from "@/shared/permissions";
 import { toast } from "@/shared/ui/sonner";
 import { GitBranch, LayoutGrid, PanelLeft, Plus } from "@/shared/ui/icons";

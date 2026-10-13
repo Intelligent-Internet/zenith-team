@@ -1,3 +1,4 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { ProjectFilesEditor, ProjectLogo } from "../components/project-files";
 import type { components } from "@/shared/api/generated/api.generated";
 import { useState, useEffect, useRef, useId } from "react";
@@ -14,10 +15,10 @@ import {
 } from "../projects/access/project-access-confirm-dialog";
 import "../projects/project-workspace.css";
 import { Link, useParams } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { hasProjectPermission, useCan } from "@/shared/permissions";
 import { WorkspacePageFrame } from "@/features/common/components/workspace-page-frame";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import {
   Archive,

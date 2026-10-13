@@ -29,7 +29,7 @@ import {
 } from "../model/discussion-mentions";
 import type { DiscussionSummary } from "../api/discussions-api";
 import type { ChatMentionMember } from "@/features/chat-panel/model/chat-mentions";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import { useDiscussionUpdates } from "./discussion-provider";
 import { useDiscussionPreview } from "./discussion-preview";

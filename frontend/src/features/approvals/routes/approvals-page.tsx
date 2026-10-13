@@ -5,7 +5,7 @@ import { useAppDispatch } from "@/state/store";
 import { RefreshCcw } from "@/shared/ui/icons";
 import { boardlyApi } from "@/shared/api/boardly-api";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useCan } from "@/shared/permissions";
 import { useListApprovalsQuery } from "@/features/approvals/api/approvals-api";
 import {

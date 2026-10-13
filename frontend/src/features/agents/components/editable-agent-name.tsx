@@ -1,10 +1,11 @@
+import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
 import { useRef, useState } from "react";
 import { useAppDispatch } from "@/state/store";
 import {
-  ceoAgentApi,
+  agentRuntimeApi,
   getCeoAgentApiErrorMessage,
-} from "@/features/agent-setup/api/ceo-agent-api";
-import { useUpdateWorkspaceAgentMutation } from "@/shared/api/workspace-api";
+} from "@/shared/api/agent-runtime-api";
+
 import type { AgentDto } from "@/shared/api/types";
 import { Pencil } from "@/shared/ui/icons";
 import { toast } from "@/shared/ui/sonner";
@@ -31,7 +32,7 @@ export function EditableAgentName({ agent }: { agent: AgentDto }) {
         request: { expectedRevision: agent.revision, name },
       }).unwrap();
       dispatch(
-        ceoAgentApi.util.updateQueryData(
+        agentRuntimeApi.util.updateQueryData(
           "listCompanyAgents",
           agent.companyId,
           (page) => {

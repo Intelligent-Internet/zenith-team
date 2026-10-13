@@ -1,12 +1,13 @@
+import {
+  conversationApi,
+  useRenameWorkspaceConversationMutation,
+} from "@/shared/api/conversation-api";
 import { type FormEvent, useId, useRef, useState } from "react";
 
 import { directConversationTitle } from "@/features/chat-workspace/model/chat-navigator-browse";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { DirectConversationListItem } from "@/shared/api/types";
-import {
-  useRenameWorkspaceConversationMutation,
-  workspaceApi,
-} from "@/shared/api/workspace-api";
+
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,7 @@ export function RenameConversationDialog({
   const inputId = useId();
   const [rename] = useRenameWorkspaceConversationMutation();
   const [refreshConversations] =
-    workspaceApi.useLazyListWorkspaceChatConversationsQuery();
+    conversationApi.useLazyListWorkspaceChatConversationsQuery();
   const normalized = draft.replace(
     /^[\p{White_Space}\uFEFF]+|[\p{White_Space}\uFEFF]+$/gu,
     "",

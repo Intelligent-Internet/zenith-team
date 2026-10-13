@@ -1,8 +1,8 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { logoutBoardlySession } from "@/features/auth/model/logout";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { discussionsApi } from "@/features/discussions/api/discussions-api";

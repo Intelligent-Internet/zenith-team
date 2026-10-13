@@ -5,8 +5,8 @@ import {
   DialogTitle,
 } from "@/shared/ui/core/dialog";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   agentPlanTasks,
   agentPlansFromCompanyPlan,

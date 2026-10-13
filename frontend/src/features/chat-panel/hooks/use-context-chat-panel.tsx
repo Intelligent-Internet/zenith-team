@@ -3,8 +3,8 @@ import type { PromptInputMessage } from "@/shared/ui/core/ai-elements/prompt-inp
 import { useCallback, useMemo, type ReactNode } from "react";
 
 import { ChatPanel } from "../components/chat-panel";
-import { readSessionSnapshot } from "@/app/session/session";
-import { useLazyListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { readSessionSnapshot } from "@/shared/session/session";
+import { useLazyListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useAgentRealtimeChat } from "@/features/chat-panel/hooks/use-agent-realtime-chat";
 import { useChatPanelFlowActions } from "@/features/chat-panel/hooks/use-chat-panel-flow-actions";
 import { useTaskConversationController } from "@/features/chat-panel/hooks/use-task-conversation-controller";

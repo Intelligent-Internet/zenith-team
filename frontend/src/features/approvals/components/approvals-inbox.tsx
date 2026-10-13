@@ -2,7 +2,7 @@ import { RefreshCcw, ShieldAlert } from "@/shared/ui/icons";
 import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   useGetApprovalQuery,
   useListApprovalsQuery,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   shouldUseDesktopHashRouter,
   subscribeToDesktopHuddleCallActions,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { huddleNotificationCopy } from "@/features/notifications/lib/huddle-notification-copy";
 import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import {

@@ -1,3 +1,4 @@
+import type { DesktopDaemonStatus } from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 
 import {
@@ -5,8 +6,7 @@ import {
   startDesktopDaemon,
   stopDesktopDaemon,
   subscribeToDesktopDaemonStatus,
-  type DesktopDaemonStatus,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { isComputerHandoverPending } from "@/features/settings/model/runtime-management";
 import {
   Dialog,

@@ -1,3 +1,8 @@
+import type {
+  DesktopWorkspaceAssetItem,
+  DesktopWorkspaceAssetKind,
+  DesktopWorkspaceAssetSort,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useRef, useState } from "react";
 import {
   Link,
@@ -7,12 +12,7 @@ import {
   useParams,
 } from "react-router";
 
-import {
-  canBrowseDesktopWorkspaceAssets,
-  type DesktopWorkspaceAssetItem,
-  type DesktopWorkspaceAssetKind,
-  type DesktopWorkspaceAssetSort,
-} from "@/app/desktop/desktop-environment.service";
+import { canBrowseDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
 import {
   useAssetSort,
   useAssetViewMode,

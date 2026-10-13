@@ -1,3 +1,4 @@
+import { useStartWorkspaceChatSessionMutation } from "@/shared/api/conversation-api";
 import {
   ArrowRight,
   ArrowUp,
@@ -12,7 +13,7 @@ import {
   isAgentBindingRequired,
   sendWithAgentSetup,
 } from "@/features/agents/model/agent-binding";
-import { useStartWorkspaceChatSessionMutation } from "@/shared/api/workspace-api";
+
 import { Link } from "react-router";
 import type { ChatWorkspaceAgent } from "./active-conversation-pane";
 import { NewChatModelSettings } from "./new-chat-model-settings";

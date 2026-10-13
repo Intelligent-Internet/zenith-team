@@ -1,4 +1,5 @@
-import type { BoardlyDesktopBridge } from "@/app/desktop/desktop-environment.service";
+import type { BoardlyDesktopBridge } from "../../../../electron/shared/desktop-bridge.types";
+
 import type { AuthProviderCapabilitiesResponse } from "@/shared/api/types";
 
 export function requestDesktopGoogleProviders(

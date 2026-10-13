@@ -9,7 +9,7 @@ import {
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useCan } from "@/shared/permissions";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { useLocalDaemonId } from "@/features/agents/hooks/use-local-daemon-id";
 import {
   useRuntimeConnectorsQuery,

@@ -1,3 +1,4 @@
+import { useListWorkspaceDirectConversationsQuery } from "@/shared/api/conversation-api";
 import { activateAccountNotification } from "@/features/notifications/lib/account-notification-navigation";
 import { ACCOUNT_INBOX_SCOPE } from "@/features/notifications/model/notification";
 import "@/features/notifications/styles/notifications.css";
@@ -16,7 +17,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   useGetNotificationCountsQuery,
   useLazyListNotificationsQuery,
@@ -26,7 +27,6 @@ import {
 } from "@/features/notifications/api/notifications-api";
 import { NotificationKindLabel } from "@/features/notifications/components/notification-kind-label";
 import { useNoticeBody } from "@/features/notifications/hooks/use-notice-body";
-import { useListWorkspaceDirectConversationsQuery } from "@/shared/api/workspace-api";
 import {
   isCompanyResearchWikiNotice,
   notificationConversationId,

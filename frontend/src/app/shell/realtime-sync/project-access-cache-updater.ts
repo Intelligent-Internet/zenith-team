@@ -1,8 +1,9 @@
+import { taskApi } from "@/shared/api/task-api";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
 import { projectApi } from "@/features/company-plan/api/project-api";
 import { ACCOUNT_INBOX_SCOPE } from "@/features/notifications/model/notification";
 import { boardlyApi } from "@/shared/api/boardly-api";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import { toast } from "@/shared/ui/sonner";
 import { forgetTaskChats } from "@/state/slice/chat";
@@ -103,13 +104,13 @@ function cachedProjectTasks(
     taskIds: new Set(),
     conversationIds: new Set(),
   };
-  for (const argument of workspaceApi.util.selectCachedArgsForQuery(
+  for (const argument of taskApi.util.selectCachedArgsForQuery(
     state,
     "listWorkspaceTasks",
   )) {
     if (argument.companyId !== context.companyId) continue;
     const page =
-      workspaceApi.endpoints.listWorkspaceTasks.select(argument)(state).data;
+      taskApi.endpoints.listWorkspaceTasks.select(argument)(state).data;
     for (const task of page?.items ?? []) {
       if (task.projectId !== projectId) continue;
       found.taskIds.add(task.id);

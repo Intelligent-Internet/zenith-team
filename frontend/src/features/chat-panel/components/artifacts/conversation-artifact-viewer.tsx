@@ -3,11 +3,11 @@ import { ArtifactAppView } from "@/features/chat-panel/components/artifacts/arti
 import { ArtifactFileView } from "@/features/chat-panel/components/artifacts/artifact-file-view";
 import { ArtifactViewerShell } from "@/features/chat-panel/components/artifacts/artifact-viewer-shell";
 import type { ConversationArtifactReference } from "@/features/chat-panel/model/conversation-artifact";
-import { outputDocumentLocation } from "@/features/project-canvas/output-document-location";
+import { outputDocumentLocation } from "@/features/project-canvas/documents/output-document-location";
 import { lazy, Suspense } from "react";
 
 const OutputDocumentWorkspace = lazy(
-  () => import("@/features/project-canvas/output-document-workspace"),
+  () => import("@/features/project-canvas/documents/output-document-workspace"),
 );
 
 export function ConversationArtifactViewer({

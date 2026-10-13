@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { useCompanyPermissions } from "@/shared/permissions";
 import {

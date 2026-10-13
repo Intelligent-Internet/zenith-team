@@ -4,7 +4,7 @@ React 19, Vite, and Electron-capable frontend for the Zenith Team founder cockpi
 
 ## Canonical Specs
 
-- Frontend architecture: `../docs/engineering/frontend-architecture.md`
+- Frontend architecture: [Frontend architecture](ARCHITECTURE.md)
 - UI design references: [design handoff](../docs/design/README.md) and
   [accepted chat visual refinement](../docs/design/chat-visual-refinement.md)
 - Root architecture: `../ARCHITECTURE.md`
@@ -1033,7 +1033,7 @@ Existing per-user, per-company completed/skipped preferences are preserved.
 Run the existing frontend checks and the generated-contract drift check:
 
 ```bash
-pnpm --dir frontend lint
+pnpm --dir frontend lint # Import cycles, layer boundaries, and formatting
 pnpm --dir frontend typecheck
 pnpm --dir frontend test:commerce-kit # Server-owned Commerce Kit tests
 pnpm --dir frontend build

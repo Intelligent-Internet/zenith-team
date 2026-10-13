@@ -1,8 +1,8 @@
+import { useGetWorkspaceCompanyQuery } from "@/shared/api/company-api";
 import { useCallback } from "react";
-import { useGetWorkspaceCompanyQuery } from "@/shared/api/workspace-api";
+import { formatTaskLabel, type LabelTask } from "./task-label-format";
 
 export { formatTaskLabel, type LabelTask } from "./task-label-format";
-import { formatTaskLabel, type LabelTask } from "./task-label-format";
 
 /**
  * The label formatter bound to a company: it reads the company's prefix

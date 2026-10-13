@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useListQuestionsQuery } from "@/features/approvals/api/approvals-api";
 import { QuestionCard } from "@/features/approvals/components/question-card";
 import {

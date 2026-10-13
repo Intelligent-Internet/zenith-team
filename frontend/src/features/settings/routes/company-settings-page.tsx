@@ -1,14 +1,14 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { ChevronDown } from "@/shared/ui/icons";
 import { CompanyAvatarField } from "@/features/settings/components/company-avatar-field";
 import { attachmentService } from "@/shared/api/attachment.service";
 import {
-  getNextRoute,
   readSessionSnapshot,
   replaceDeletedSessionCompany,
   updateSessionCompanySummary,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import { COUNTRY_CALLING_CODES } from "@/features/settings/model/country-calling-codes";
 import {
   getApiErrorBody,

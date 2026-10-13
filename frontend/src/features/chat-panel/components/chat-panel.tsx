@@ -12,7 +12,7 @@ import {
   type ComponentProps,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { MessageSquare, X } from "@/shared/ui/icons";
+import { PencilLine, X } from "@/shared/ui/icons";
 import type { PromptInputMessage } from "@/shared/ui/core/ai-elements/prompt-input";
 import { ChatComposer } from "./chat-composer";
 import { ChatModelSettings } from "./chat-model-settings";
@@ -61,7 +61,7 @@ import {
   ChatAvatarPresence,
 } from "./chat-agent-avatar";
 import { cx } from "@/shared/lib/cx";
-import { canPreviewDesktopGeneratedFiles } from "@/app/desktop/desktop-environment.service";
+import { canPreviewDesktopGeneratedFiles } from "@/shared/desktop/desktop-environment.service";
 import { ContentPanel } from "@/shared/ui/content-panel";
 import { toast } from "@/shared/ui/sonner";
 import { createConversationRequestTimeline } from "@/features/chat-panel/model/conversation-request-timeline";
@@ -94,11 +94,11 @@ import {
 import { useReadConversationNotificationsOnFocus } from "@/features/notifications/hooks/use-read-conversation-notifications-on-focus";
 import "@/features/chat-panel/styles/conversation-artifacts.css";
 import { StudioModePanel } from "@/features/studio-mode/components/studio-mode-panel";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useCan } from "@/shared/permissions";
 import { useCompanyInitialization } from "@/features/onboarding/company/components/company-initialization-provider";
 import { useCompanyResearch } from "@/features/onboarding/hooks/use-company-research";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { Link } from "react-router";
 
@@ -1135,28 +1135,6 @@ export function ChatPanel({
             </div>
           ) : null}
 
-          {artifactsPanel.feedback && !readOnly && (
-            <div
-              className={cx(
-                "artifacts-feedback mb-2.5",
-                isWideLayout
-                  ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
-                  : "mx-4 w-[calc(100%-32px)]",
-              )}
-            >
-              <MessageSquare size={14} aria-hidden />
-              <span>Request change to {artifactsPanel.feedback.title}</span>
-              <button
-                className="artifacts-icon-button"
-                type="button"
-                aria-label="Cancel change request"
-                onClick={() => artifactsPanel.clearFeedback()}
-              >
-                <X size={14} aria-hidden />
-              </button>
-            </div>
-          )}
-
           {researchHoldsChat ? (
             <div
               aria-live="polite"
@@ -1228,6 +1206,38 @@ export function ChatPanel({
             </div>
           ) : (
             <ChatComposer
+              context={
+                artifactsPanel.feedback && !readOnly ? (
+                  <div className="artifacts-feedback">
+                    <PencilLine size={18} aria-hidden />
+                    <div className="artifacts-feedback__text">
+                      <span className="artifacts-feedback__label">
+                        Request changes
+                      </span>
+                      <span
+                        className="artifacts-feedback__title"
+                        title={artifactsPanel.feedback.title}
+                      >
+                        {artifactsPanel.feedback.title}
+                      </span>
+                    </div>
+                    <button
+                      className="artifacts-icon-button"
+                      type="button"
+                      aria-label="Cancel change request"
+                      title="Cancel change request"
+                      onClick={(event) => {
+                        artifactsPanel.clearFeedback();
+                        event.currentTarget.form
+                          ?.querySelector("textarea")
+                          ?.focus();
+                      }}
+                    >
+                      <X size={14} aria-hidden />
+                    </button>
+                  </div>
+                ) : undefined
+              }
               artifactContext={
                 conversationTab?.kind === "direct" && studioCompanyId
                   ? { companyId: studioCompanyId, draftKey: conversationTab.id }
@@ -1301,7 +1311,7 @@ export function ChatPanel({
                     : hasPendingDiscoveryOtherChoice
                       ? "Type another answer..."
                       : artifactsPanel.feedback
-                        ? `Describe the change to ${artifactsPanel.feedback.title}…`
+                        ? "What would you like to change?"
                         : composerPlaceholder
               }
             />

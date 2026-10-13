@@ -1,3 +1,4 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { InvitationDesktopBridge } from "@/features/company-invitations/routes/invitation-desktop-bridge";
 import { hasPendingCompanyOnboarding } from "@/features/onboarding/model/onboarding-flow";
 import { CompanyInitializationProvider } from "@/features/onboarding/company/components/company-initialization-provider";
@@ -30,18 +31,17 @@ import {
   reportDesktopDiagnostic,
   shouldUseDesktopHashRouter,
   subscribeToDesktopGoogleOAuthCallback,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { DesktopMenuCommandRouter } from "@/app/desktop/desktop-menu-command-router";
 import { DesktopNativeThemeAttributes } from "@/app/desktop/desktop-native-theme";
 import { DesktopNativeContextMenuController } from "@/app/desktop/desktop-native-context-menu";
 import { DesktopUpdateDialog } from "@/app/desktop/desktop-update-dialog";
 import {
-  getNextRoute,
   refreshSessionSnapshot,
   unauthenticatedSession,
   type SessionSnapshot,
-} from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+} from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { RequirePermission } from "@/shared/permissions";
 import { clearInvalidClientSessionState } from "@/app/session/client-session-state";
 import { WorkspaceAccessState } from "@/features/common/components/workspace-page-frame";

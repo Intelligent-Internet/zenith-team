@@ -1,13 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
 import { readableColor } from "@/app/appearance/color";
-import { detectDesktopPlatform } from "@/app/desktop/desktop-download.service";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { detectDesktopPlatform } from "@/shared/desktop/desktop-download.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import {
   WorkspaceAppearanceProvider,
   useWorkspaceAppearance,
 } from "@/app/appearance/workspace-appearance-provider";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { AppTitlebar } from "@/shared/ui/app-titlebar";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { AppTitlebar } from "@/app/shell/app-titlebar";
 import { Logo } from "@/shared/ui/logo";
 import { AuthShowcasePanel } from "./auth-showcase-panel";
 import "../styles/auth-page.css";

@@ -1,16 +1,18 @@
+import type {
+  DesktopPluginAuthApp,
+  DesktopPluginDetail,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { type ReactNode, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 
 import {
   connectDesktopConnector,
-  type DesktopPluginAuthApp,
-  type DesktopPluginDetail,
   DesktopPluginReadError,
   openDesktopExternal,
   readDesktopConnectorStatus,
   readDesktopPlugin,
-} from "@/app/desktop/desktop-environment.service";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/desktop/desktop-environment.service";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   createChatWorkspaceHref,
   createComposerDraftNavigationState,

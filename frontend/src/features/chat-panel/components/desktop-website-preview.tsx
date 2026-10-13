@@ -1,3 +1,7 @@
+import type {
+  DesktopWebsitePreviewBridge,
+  DesktopWebsitePreviewState,
+} from "../../../../electron/shared/desktop-bridge.types";
 import {
   ArrowLeft,
   ArrowRight,
@@ -6,10 +10,6 @@ import {
   RotateCw,
 } from "@/shared/ui/icons";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import type {
-  DesktopWebsitePreviewBridge,
-  DesktopWebsitePreviewState,
-} from "@/app/desktop/desktop-environment.service";
 
 export function DesktopWebsitePreview({
   bridge,

@@ -1,12 +1,12 @@
+import { useListWorkspaceActivityPagesInfiniteQuery } from "@/shared/api/activity-api";
 import { useMemo, useState } from "react";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import {
   activityPeriodBounds,
   type ActivityPeriod,
 } from "@/features/home/model/activity-presentation";
 import type { ActivityListOptions } from "@/shared/api/activity.service";
-import { useListWorkspaceActivityPagesInfiniteQuery } from "@/shared/api/workspace-api";
 
 type ActorFilter = {
   value: string;

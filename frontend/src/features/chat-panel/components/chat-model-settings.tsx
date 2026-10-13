@@ -8,7 +8,7 @@ import {
 import {
   useListCompanyAgentsQuery,
   useListAgentRuntimesQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useRuntimeModelDiscovery } from "@/features/agent-setup/hooks/use-runtime-model-discovery";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { ConversationModelSettingsUpdate } from "@/shared/api/types";

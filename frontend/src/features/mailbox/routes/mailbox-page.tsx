@@ -1,4 +1,4 @@
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { WorkspacePageFrame } from "@/features/common/components/workspace-page-frame";
 import { MailboxSettingsSection } from "@/features/mailbox/components/mailbox-settings-section";
 

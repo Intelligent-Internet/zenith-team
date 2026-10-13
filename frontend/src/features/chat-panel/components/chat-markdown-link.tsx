@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "react-router";
 import { defaultRehypePlugins, type StreamdownProps } from "streamdown";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
-import { openDesktopExternal } from "@/app/desktop/desktop-environment.service";
+import { openDesktopExternal } from "@/shared/desktop/desktop-environment.service";
 import { cx } from "@/shared/lib/cx";
 import { toast } from "@/shared/ui/sonner";
 

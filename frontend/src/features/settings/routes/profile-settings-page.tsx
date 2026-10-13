@@ -6,7 +6,7 @@ import {
   readSessionSnapshot,
   updateSessionUserSummary,
   type SessionSnapshot,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import {
   deleteBoardlyAccount,
   logoutBoardlySession,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { FoldAvatarState } from "./fold-avatar";
+import type { FoldAvatarState } from "./fold-avatar-state";
 import "./fold-avatar-motion.css";
 
 const assets = import.meta.glob<string>("./assets/fold-motion/*.webp", {

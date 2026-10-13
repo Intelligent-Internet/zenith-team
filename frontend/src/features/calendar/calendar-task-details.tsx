@@ -1,6 +1,7 @@
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
-import { useGetWorkspaceTaskQuery } from "@/shared/api/workspace-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { hasProjectPermission } from "@/shared/permissions";
 import {

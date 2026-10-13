@@ -1,10 +1,10 @@
+import type {
+  DesktopWorkspaceAssetKind,
+  DesktopWorkspaceAssetSort,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import {
-  canBrowseDesktopWorkspaceAssets,
-  type DesktopWorkspaceAssetKind,
-  type DesktopWorkspaceAssetSort,
-} from "@/app/desktop/desktop-environment.service";
+import { canBrowseDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
 import { useBrowseWorkspaceAssetsInfiniteQuery } from "@/features/assets/api/workspace-assets-api";
 import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
 

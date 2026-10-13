@@ -1,3 +1,5 @@
+import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { managedToolObservation } from "@/features/settings/model/managed-tool-observation";
 import {
   useCallback,
@@ -7,19 +9,16 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "react-router";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useAnswerQuestionMutation } from "@/features/approvals/api/approvals-api";
 import {
   getCeoAgentApiErrorMessage,
   useGetRuntimeQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useLocalDaemonId } from "@/features/agents/hooks/use-local-daemon-id";
 import { useOperateManagedToolMutation } from "@/features/settings/api/managed-tools-api";
-import {
-  useGetWorkspaceTaskQuery,
-  useUpdateWorkspaceAgentMutation,
-} from "@/shared/api/workspace-api";
+
 import type { AgentDto, QuestionDto } from "@/shared/api/types";
 import { missingProjectPermissionTitle } from "@/shared/permissions";
 import { Button } from "@/shared/ui/core/button";

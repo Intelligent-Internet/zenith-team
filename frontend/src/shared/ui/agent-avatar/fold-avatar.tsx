@@ -16,14 +16,8 @@ import { FoldAvatarClay } from "./fold-avatar-clay";
 import { followAvatarPointer } from "./fold-avatar-gaze";
 import { FoldAvatarMotion } from "./fold-avatar-motion";
 
-export type FoldAvatarState =
-  | "idle"
-  | "thinking"
-  | "working"
-  | "needs-input"
-  | "done"
-  | "error"
-  | "sleeping";
+import type { FoldAvatarState } from "./fold-avatar-state";
+export type { FoldAvatarState } from "./fold-avatar-state";
 
 export const avatarPalettes = [
   {

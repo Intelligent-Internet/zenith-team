@@ -1,4 +1,4 @@
-import { resolveDesktopGeneratedFileLink } from "@/app/desktop/desktop-environment.service";
+import { resolveDesktopGeneratedFileLink } from "@/shared/desktop/desktop-environment.service";
 import type { FileUIPart } from "ai";
 import { cockpitService } from "@/shared/api/cockpit.service";
 import { attachmentUrl } from "@/shared/chat/attachment-preview";

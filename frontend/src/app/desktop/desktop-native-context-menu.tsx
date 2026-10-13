@@ -1,9 +1,9 @@
+import type { DesktopContextMenuPayload } from "../../../electron/shared/desktop-bridge.types";
 import { useEffect } from "react";
 import {
   shouldUseDesktopHashRouter,
   showDesktopContextMenu,
-  type DesktopContextMenuPayload,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 
 const DESKTOP_CONTEXT_SELECTOR = "[data-boardly-desktop-context-kind]";
 

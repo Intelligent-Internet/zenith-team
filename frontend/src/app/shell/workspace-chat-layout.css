@@ -790,8 +790,7 @@ html[data-boardly-workspace-theme]
   .workspace-chat-page
   :is(
     .workspace-chat-composer-accessory,
-    .workspace-chat-suggestions,
-    .artifacts-feedback
+    .workspace-chat-suggestions
   ) {
   width: calc(100% - 2 * var(--workspace-chat-gutter));
   max-width: var(--workspace-chat-column-width);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { X } from "@/shared/ui/icons";
 import {
   useListWikiRevisionsQuery,

@@ -1,3 +1,4 @@
+import { useCreateWorkspaceAgentMutation } from "@/shared/api/agent-api";
 import {
   Bot,
   ChevronDown,
@@ -19,7 +20,7 @@ import {
   getCeoAgentApiErrorMessage,
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { AgentRuntimeSelect } from "@/features/agent-setup/components/agent-runtime-controls";
 import {
   useRuntimeModelDiscovery,
@@ -50,7 +51,7 @@ import {
   createAgentDraft,
   type AgentDraft,
 } from "@/features/agents/model/agent-draft";
-import { useCreateWorkspaceAgentMutation } from "@/shared/api/workspace-api";
+
 import type { AgentDto, AgentProvider, RuntimeDto } from "@/shared/api/types";
 import { publicAssetPath } from "@/shared/lib/public-assets";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";

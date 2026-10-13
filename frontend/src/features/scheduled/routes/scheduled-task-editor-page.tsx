@@ -17,7 +17,7 @@ import {
   useSearchParams,
 } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useRefreshPluginsMutation } from "@/features/settings/api/plugins-api";
 import {
   useCreateScheduleMutation,

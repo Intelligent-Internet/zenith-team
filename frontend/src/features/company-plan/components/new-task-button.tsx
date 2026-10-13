@@ -1,3 +1,4 @@
+import { useCreateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import type { CalendarEntryDraft } from "@/features/calendar/event-editor";
 import {
   CalendarEventDialog,
@@ -36,8 +37,8 @@ import {
   X,
 } from "@/shared/ui/icons";
 import { useNavigate, useSearchParams } from "react-router";
-import { readSessionSnapshot } from "@/app/session/session";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { readSessionSnapshot } from "@/shared/session/session";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import {
@@ -46,7 +47,7 @@ import {
   sendWithAgentSetup,
 } from "@/features/agents/model/agent-binding";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
-import { useCreateWorkspaceTaskMutation } from "@/shared/api/workspace-api";
+
 import type { AgentDto, TaskCreateRequest } from "@/shared/api/types";
 import { chatConversationTargetKey } from "@/shared/chat/conversation-target";
 import { hasProjectPermission, useCan } from "@/shared/permissions";

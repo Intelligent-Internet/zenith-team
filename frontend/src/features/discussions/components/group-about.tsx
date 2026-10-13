@@ -23,7 +23,7 @@ import {
 import { MemberProfileTrigger } from "@/shared/chat/member-profile";
 import { useCompanyPermissions } from "@/shared/permissions";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   discussionsApi,
   type ChannelAction,

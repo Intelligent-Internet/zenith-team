@@ -81,6 +81,7 @@ module.exports = {
     ignore: [
       /^\/\.DS_Store$/,
       /^\/\.env($|\.)/,
+      /^\/.*\.rdb$/,
       /^\/\.gitignore$/,
       /^\/\.npmrc$/,
       /^\/\.vite($|\/)/,

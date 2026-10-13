@@ -1,3 +1,12 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
+import {
+  useListWorkspaceChatConversationsQuery,
+  useListWorkspaceConversationStatesQuery,
+  useLazyGetWorkspaceConversationStateQuery,
+  useUpdateWorkspaceConversationStateMutation,
+} from "@/shared/api/conversation-api";
+import { useGetWorkspaceCockpitQuery } from "@/shared/api/activity-api";
+import { useGetWorkspaceCompanyQuery } from "@/shared/api/company-api";
 import { useWorkspaceSidebar } from "@/app/shell/workspace-sidebar-context";
 import { usePanelResize } from "@/shared/ui/use-panel-resize";
 import { WorkspacePageSidebar } from "@/app/shell/workspace-page-sidebar";
@@ -27,8 +36,8 @@ import { useLocation, useNavigate } from "react-router";
 
 import { openDesktopCommandPalette } from "@/app/desktop/desktop-command-palette";
 import { formatTaskLabel } from "@/shared/lib/task-label";
-import { useGetWorkspaceCompanyQuery } from "@/shared/api/workspace-api";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import {
@@ -49,7 +58,7 @@ import { CreateGroupDialog } from "@/features/discussions/components/create-grou
 import { discussionError } from "@/features/discussions/model/discussion-runtime";
 import "@/features/discussions/styles/discussions.css";
 import { roleLabel, useCompanyPermissions } from "@/shared/permissions";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   useListApprovalsQuery,
   useListQuestionsQuery,
@@ -86,14 +95,7 @@ import type {
   TaskDto,
 } from "@/shared/api/types";
 import { findRootAgent } from "@/shared/api/adapters";
-import {
-  useGetWorkspaceCockpitQuery,
-  useListWorkspaceChatConversationsQuery,
-  useListWorkspaceConversationStatesQuery,
-  useListWorkspaceTasksQuery,
-  useLazyGetWorkspaceConversationStateQuery,
-  useUpdateWorkspaceConversationStateMutation,
-} from "@/shared/api/workspace-api";
+
 import { chatConversationTargetKey } from "@/shared/chat/conversation-target";
 import { CEO_CHAT_TEAM_ID, agentChatTeamId } from "@/shared/chat/chat-team";
 import { ChatSessionMemoryScope } from "@/shared/chat/chat-session-memory";

@@ -1,7 +1,8 @@
 import type {
   DesktopMenuCommand,
   DesktopRouteKey,
-} from "@/app/desktop/desktop-environment.service";
+} from "../../../electron/shared/desktop-bridge.types";
+
 import type { CompanyPermission } from "@/shared/permissions";
 import {
   BookOpen,

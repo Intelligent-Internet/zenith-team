@@ -1,4 +1,8 @@
 import {
+  useDeleteWorkspaceResourceMutation,
+  useListWorkspaceResourcesQuery,
+} from "@/shared/api/resource-api";
+import {
   FolderOpen,
   Monitor,
   RefreshCw,
@@ -8,12 +12,12 @@ import {
 } from "@/shared/ui/icons";
 import { useState } from "react";
 import { Link } from "react-router";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   getCeoAgentApiErrorMessage,
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   providerLabel,
   runtimeDisplayName,
@@ -24,10 +28,7 @@ import { useRuntimeSetupRefresh } from "@/features/settings/model/use-runtime-se
 import { useLocalDaemonId } from "@/features/agents/hooks/use-local-daemon-id";
 import { runtimeDetailHref } from "@/features/settings/model/settings-navigation";
 import type { CompanyResourceDto, RuntimeDto } from "@/shared/api/types";
-import {
-  useDeleteWorkspaceResourceMutation,
-  useListWorkspaceResourcesQuery,
-} from "@/shared/api/workspace-api";
+
 import { publicAssetPath } from "@/shared/lib/public-assets";
 import { useCan } from "@/shared/permissions";
 import { toast } from "@/shared/ui/sonner";

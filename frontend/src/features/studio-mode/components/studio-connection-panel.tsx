@@ -1,11 +1,11 @@
 import { managedToolObservation } from "@/features/settings/model/managed-tool-observation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useGetRuntimeQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useGetRuntimeQuery } from "@/shared/api/agent-runtime-api";
 import { useOperateManagedToolMutation } from "@/features/settings/api/managed-tools-api";
 import {
   getDesktopDaemonStatus,
   subscribeToDesktopDaemonStatus,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import {
   LoaderCircle,
   RefreshCw,

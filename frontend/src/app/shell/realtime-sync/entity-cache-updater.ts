@@ -1,10 +1,14 @@
+import { resourceApi } from "@/shared/api/resource-api";
+import { taskApi } from "@/shared/api/task-api";
+import { activityApi } from "@/shared/api/activity-api";
+import { companyApi } from "@/shared/api/company-api";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
-import { updateSessionCompanySummary } from "@/app/session/session";
+import { updateSessionCompanySummary } from "@/shared/session/session";
 import { agentToAgentSummary } from "@/shared/api/adapters";
-import { ceoAgentApi } from "@/features/agent-setup/api/ceo-agent-api";
+import { agentRuntimeApi } from "@/shared/api/agent-runtime-api";
 import { boardlyApi } from "@/shared/api/boardly-api";
 import type { AgentDto, CompanyResourceDto } from "@/shared/api/types";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {
   removeVersioned,
@@ -197,7 +201,7 @@ function updateCompany(context: RealtimeSyncContext, company: Company) {
   updateSessionCompanySummary(company);
   // Company events omit viewer access; only the member's access event changes it.
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    companyApi.util.updateQueryData(
       "listWorkspaceCompanies",
       undefined,
       (page) => {
@@ -212,7 +216,7 @@ function updateCompany(context: RealtimeSyncContext, company: Company) {
     ),
   );
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    companyApi.util.updateQueryData(
       "getWorkspaceCompany",
       context.companyId,
       (current) => {
@@ -227,7 +231,7 @@ function updateCompany(context: RealtimeSyncContext, company: Company) {
     ),
   );
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    activityApi.util.updateQueryData(
       "getWorkspaceCockpit",
       context.companyId,
       (cockpit) => {
@@ -251,7 +255,7 @@ function updateAgent(context: RealtimeSyncContext, agent: AgentDto) {
   let needsOwnVerdict = false;
   let viewerAgent = agent;
   context.dispatch(
-    ceoAgentApi.util.updateQueryData(
+    agentRuntimeApi.util.updateQueryData(
       "listCompanyAgents",
       context.companyId,
       (page) => {
@@ -290,7 +294,7 @@ function updateAgent(context: RealtimeSyncContext, agent: AgentDto) {
 
   if (agent.reportsTo === null) {
     context.dispatch(
-      workspaceApi.util.updateQueryData(
+      activityApi.util.updateQueryData(
         "getWorkspaceCockpit",
         context.companyId,
         (cockpit) => {
@@ -313,7 +317,7 @@ function updateAgentStatus(
   );
 
   context.dispatch(
-    ceoAgentApi.util.updateQueryData(
+    agentRuntimeApi.util.updateQueryData(
       "listCompanyAgents",
       context.companyId,
       (page) => {
@@ -339,7 +343,7 @@ function updateAgentStatus(
   }
 
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    activityApi.util.updateQueryData(
       "getWorkspaceCockpit",
       context.companyId,
       (cockpit) => {
@@ -356,24 +360,20 @@ function updateAgentStatus(
 
 function updateAgentReferences(context: RealtimeSyncContext, agent: AgentDto) {
   const state = context.getState();
-  for (const argument of workspaceApi.util.selectCachedArgsForQuery(
+  for (const argument of taskApi.util.selectCachedArgsForQuery(
     state,
     "listWorkspaceTasks",
   )) {
     if (argument.companyId !== context.companyId) continue;
     context.dispatch(
-      workspaceApi.util.updateQueryData(
-        "listWorkspaceTasks",
-        argument,
-        (page) => {
-          for (const task of page.items) {
-            // The Agent is the one doing the work; the assignee is always
-            // a member (ADR 0014).
-            updateActorName(task.executedBy, agent);
-            updateActorName(task.creator, agent);
-          }
-        },
-      ),
+      taskApi.util.updateQueryData("listWorkspaceTasks", argument, (page) => {
+        for (const task of page.items) {
+          // The Agent is the one doing the work; the assignee is always
+          // a member (ADR 0014).
+          updateActorName(task.executedBy, agent);
+          updateActorName(task.creator, agent);
+        }
+      }),
     );
   }
 }
@@ -392,7 +392,7 @@ function updateResource(
   resource: CompanyResourceDto,
 ) {
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    resourceApi.util.updateQueryData(
       "listWorkspaceResources",
       context.companyId,
       (page) => {
@@ -409,7 +409,7 @@ function removeResource(
   revision: number,
 ) {
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    resourceApi.util.updateQueryData(
       "listWorkspaceResources",
       context.companyId,
       (page) => {

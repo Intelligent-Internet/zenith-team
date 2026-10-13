@@ -1,6 +1,7 @@
+import { analyticsApi } from "@/shared/api/analytics-api";
 import { useEffect, useMemo } from "react";
 import { createSelector } from "@reduxjs/toolkit";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import { companyService } from "@/shared/api/company.service";
 import { useAppDispatch, useAppSelector } from "@/state";
 
@@ -14,7 +15,7 @@ export function useAgentSeries(queries: AnalyticsSeriesQuery[]) {
   const dispatch = useAppDispatch();
   const key = JSON.stringify(queries);
   const args = useMemo(() => JSON.parse(key) as AnalyticsSeriesQuery[], [key]);
-  const endpoint = workspaceApi.endpoints.getWorkspaceAnalyticsSeries;
+  const endpoint = analyticsApi.endpoints.getWorkspaceAnalyticsSeries;
   const selector = useMemo(
     () =>
       createSelector(

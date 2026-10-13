@@ -1,7 +1,7 @@
 import { Link, Outlet } from "react-router";
 import { WorkspaceAppearanceProvider } from "@/app/appearance/workspace-appearance-provider";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { AppTitlebar } from "@/shared/ui/app-titlebar";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { AppTitlebar } from "@/app/shell/app-titlebar";
 import { ArrowLeft } from "@/shared/ui/icons";
 import "./workspace-theme.css";
 import "./public-artifact-shell.css";

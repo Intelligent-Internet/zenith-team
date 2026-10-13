@@ -13,11 +13,11 @@ import {
   openDesktopExternal,
   readDesktopConnectorStatus,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import {
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   providerLabel,
   runtimeMachineName,

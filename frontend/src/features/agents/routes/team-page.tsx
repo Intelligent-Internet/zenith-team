@@ -1,3 +1,4 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { ShieldCheck, UserPlus, Users } from "@/shared/ui/icons";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
@@ -6,8 +7,8 @@ import {
   TEAM_PROJECT_ACCESS_VIEW,
   opensProjectAccess,
 } from "@/features/company-plan/projects/access/team-access-path";
-import { refreshSessionSnapshot, getNextRoute } from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { refreshSessionSnapshot } from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
   WorkspaceAccessState,
   WorkspacePageFrame,

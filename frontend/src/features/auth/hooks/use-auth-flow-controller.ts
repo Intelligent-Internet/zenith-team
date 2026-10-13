@@ -5,7 +5,7 @@ import { BOARDLY_API_BASE_URL } from "@/lib/api-client";
 import {
   writeSessionFromLoginResponse,
   type SessionProvider,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import {
   createPendingVerificationFromSignupResponse,
   extractPendingVerificationFromError,

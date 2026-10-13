@@ -5,7 +5,7 @@ import {
 } from "./presence-subscriptions";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { discussionsApi } from "../api/discussions-api";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 
 import {
   hasRecentPresenceActivity,

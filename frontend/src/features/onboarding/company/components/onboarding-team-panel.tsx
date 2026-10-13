@@ -1,5 +1,10 @@
+import {
+  useArchiveWorkspaceAgentMutation,
+  useRestoreWorkspaceAgentMutation,
+  useUpdateWorkspaceAgentMutation,
+} from "@/shared/api/agent-api";
 import { useRef, useState, type FormEvent } from "react";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { findCeoAgentInPage } from "@/features/agent-setup/model/ceo-agent-setup";
 import { NewAgentDialog } from "@/features/agents/components/new-agent-dialog";
 import { useBindAgentMutation } from "@/features/agents/api/agent-binding-api";
@@ -10,11 +15,7 @@ import {
 } from "@/features/agents/model/agent-draft";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { AgentDto } from "@/shared/api/types";
-import {
-  useArchiveWorkspaceAgentMutation,
-  useRestoreWorkspaceAgentMutation,
-  useUpdateWorkspaceAgentMutation,
-} from "@/shared/api/workspace-api";
+
 import {
   readStorageItem,
   removeStorageItem,

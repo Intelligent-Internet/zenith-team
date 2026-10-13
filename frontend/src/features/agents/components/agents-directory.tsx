@@ -1,3 +1,4 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { useListWorkActiveRunsQuery } from "@/features/company-plan/api/work-next-up-api";
 import { useTaskAttention } from "@/features/company-plan/hooks/use-task-attention";
 import {
@@ -17,7 +18,7 @@ import {
   agentAvailabilityLabel,
 } from "@/features/agents/model/agent-binding";
 import { agentCurrentTask } from "@/features/agents/model/agent-current-task";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import type { AgentDto } from "@/shared/api/types";
 import { useTaskLabel } from "@/shared/lib/task-label";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";

@@ -4,7 +4,7 @@ import {
 } from "./workspace-explore-menu";
 import type { ReactNode } from "react";
 import { DesktopUpdateButton } from "@/app/desktop/desktop-update-button";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
   Bot,
   FolderOpen,
@@ -23,7 +23,7 @@ import { cx } from "@/shared/lib/cx";
 import { useCompanyResearch } from "@/features/onboarding/hooks/use-company-research";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { selectCompanyConversationWorkspace, useAppSelector } from "@/state";
-import { WorkspaceSidebarLink } from "./workspace-page-sidebar";
+import { WorkspaceSidebarLink } from "./workspace-sidebar";
 import { workspaceSidebarPages } from "./workspace-sidebar-pages";
 
 type PrimaryDestination = {

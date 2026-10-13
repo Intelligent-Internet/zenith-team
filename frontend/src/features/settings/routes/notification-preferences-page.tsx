@@ -1,9 +1,9 @@
+import type { DesktopNotificationKind } from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 import {
   getDesktopEnvironment,
   getDesktopWorkbenchState,
-  type DesktopNotificationKind,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import {
   loadDesktopWorkbenchPreferences,
   saveDesktopWorkbenchPreferences,

@@ -1,3 +1,4 @@
+import { useGetWorkspaceTaskDependencyGraphQuery } from "@/shared/api/task-api";
 import { useSearchParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { WorkDependencyCanvas } from "@/features/company-plan/components/work-dependency-canvas";
@@ -8,11 +9,11 @@ import {
   type CompanyPlanTaskLane,
 } from "@/features/company-plan/model/company-plan-view-model";
 import type { Project } from "../api/project-api";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useTaskAttention } from "../hooks/use-task-attention";
 import { useProjectTaskReviews } from "../hooks/use-project-task-reviews";
 import type { AgentDto, TaskDto } from "@/shared/api/types";
-import { useGetWorkspaceTaskDependencyGraphQuery } from "@/shared/api/workspace-api";
+
 import { Icon } from "@/shared/ui/icon";
 import { useTaskLabel } from "@/shared/lib/task-label";
 import {

@@ -1,3 +1,4 @@
+import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
 import {
   BookOpen,
   Layers,
@@ -8,10 +9,10 @@ import {
   RefreshCw,
 } from "@/shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
-import { useUpdateWorkspaceAgentMutation } from "@/shared/api/workspace-api";
+
 import { Link, useSearchParams } from "react-router";
 import type { AgentDto, AgentProvider } from "@/shared/api/types";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { useLocalRuntime } from "../hooks/use-local-runtime";
 import {
   agentAvailabilityHelp,

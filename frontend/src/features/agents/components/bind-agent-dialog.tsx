@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   getCeoAgentApiErrorMessage,
   useListAgentRuntimesQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   useBindAgentMutation,
   useUnbindAgentMutation,

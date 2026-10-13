@@ -1,7 +1,8 @@
+import { useGetWorkspaceAnalyticsSummaryQuery } from "@/shared/api/analytics-api";
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { useCompanyPermissions } from "@/shared/permissions";
-import { useGetWorkspaceAnalyticsSummaryQuery } from "@/shared/api/workspace-api";
+
 import { cx } from "@/shared/lib/cx";
 import { ArrowUpRight } from "@/shared/ui/icons";
 import { cost, count, duration, tokens } from "../model/format";

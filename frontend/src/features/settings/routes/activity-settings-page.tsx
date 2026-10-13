@@ -1,4 +1,4 @@
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { CompanyActivityLog } from "@/features/home/components/company-activity-log";
 
 export function ActivitySettingsPage() {

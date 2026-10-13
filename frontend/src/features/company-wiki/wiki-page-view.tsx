@@ -1,4 +1,4 @@
-import { PagePdfExport } from "../project-canvas/page-pdf";
+import { PagePdfExport } from "../project-canvas/documents/page-pdf";
 import { useState } from "react";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { webAppUrl } from "@/shared/lib/web-app-url";

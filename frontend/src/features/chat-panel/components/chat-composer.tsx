@@ -76,6 +76,7 @@ type ChatComposerProps = {
   minimal?: boolean;
   mentionMembers?: readonly ChatMentionMember[];
   modelControls?: ReactNode;
+  context?: ReactNode;
   onDraftMessageChange: (message: string) => void;
   onFocus?: () => void;
   onSendMessage: (message: PromptInputMessage) => Promise<void>;
@@ -107,6 +108,7 @@ export function ChatComposer({
   minimal = false,
   mentionMembers,
   modelControls,
+  context,
   onDraftMessageChange,
   onFocus,
   onSendMessage,
@@ -177,6 +179,7 @@ export function ChatComposer({
   const { promptInputHeight, textareaRef, textareaStyle } =
     useAutoResizeChatComposer({
       additionalVerticalSpace:
+        (context ? 60 : 0) +
         (sendFailure ? 72 : 0) +
         (sendDisabledReason ? 40 : 0) +
         (attachmentsEnabled && promptAttachmentCount > 0 ? 58 : 0) +
@@ -518,6 +521,7 @@ export function ChatComposer({
             textareaRef={textareaRef}
           />
         ) : null}
+        {context}
         <PromptInputBody />
         {artifactPickerOpen && artifactContext && (
           <ArtifactPickerDialog

@@ -3,7 +3,7 @@ import { type FormEvent, useState } from "react";
 import {
   getCeoAgentApiErrorMessage,
   useRenameRuntimeMutation,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   RUNTIME_CUSTOM_NAME_MAX_LENGTH,
   normalizeRuntimeCustomName,

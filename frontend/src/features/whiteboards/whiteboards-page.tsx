@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Navigate } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { activateSessionCompany } from "@/app/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { activateSessionCompany } from "@/shared/session/session";
 import { companyService } from "@/shared/api/company.service";
 import { WhiteboardLibrary } from "./board-library";
 import { WhiteboardEditor } from "./board-editor";

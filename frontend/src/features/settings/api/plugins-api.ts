@@ -1,9 +1,9 @@
+import type { DesktopPluginOperation } from "../../../../electron/shared/desktop-bridge.types";
 import {
   installDesktopPlugin,
   refreshDesktopPlugins,
-  type DesktopPluginOperation,
   uninstallDesktopPlugin,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import { pluginService } from "@/shared/api/plugin.service";
 import type {

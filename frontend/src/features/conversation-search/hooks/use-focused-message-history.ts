@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { displayItemsToChatMessages } from "@/features/chat-panel/hooks/use-agent-realtime-chat";
+import { displayItemsToChatMessages } from "@/features/chat-panel/model/agent-chat-transcript";
 import type { ChatTeamId } from "@/shared/chat/chat-team";
 import type { ChatMessage } from "@/shared/chat/types";
 import { conversationService } from "@/shared/api";

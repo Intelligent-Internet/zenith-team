@@ -1,3 +1,7 @@
+import type {
+  DesktopSupportDiagnosticsCaptureResult,
+  DesktopUpdateState,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useId, useState, type ReactNode } from "react";
 
 import {
@@ -9,10 +13,8 @@ import {
   setDesktopAutomaticUpdates,
   shouldUseDesktopHashRouter,
   subscribeToDesktopUpdateState,
-  type DesktopSupportDiagnosticsCaptureResult,
-  type DesktopUpdateState,
   WEB_DESKTOP_UPDATE_STATE_FALLBACK,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { DaemonSettingsCard } from "@/features/settings/components/daemon-settings-card";
 import { SettingsSwitch } from "@/features/settings/components/settings-primitives";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";

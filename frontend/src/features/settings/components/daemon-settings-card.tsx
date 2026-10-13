@@ -1,3 +1,9 @@
+import type {
+  DesktopDaemonActionResult,
+  DesktopDaemonLogLevel,
+  DesktopDaemonLogLine,
+  DesktopDaemonStatus,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -11,14 +17,10 @@ import {
   stopDesktopDaemonLogs,
   subscribeToDesktopDaemonLogLines,
   subscribeToDesktopDaemonStatus,
-  type DesktopDaemonActionResult,
-  type DesktopDaemonLogLevel,
-  type DesktopDaemonLogLine,
-  type DesktopDaemonStatus,
   WEB_DESKTOP_DAEMON_STATUS_FALLBACK,
-} from "@/app/desktop/desktop-environment.service";
-import { readSessionSnapshot } from "@/app/session/session";
-import { ceoAgentApi } from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/desktop/desktop-environment.service";
+import { readSessionSnapshot } from "@/shared/session/session";
+import { agentRuntimeApi } from "@/shared/api/agent-runtime-api";
 import {
   daemonActionOutcome,
   isComputerHandoverPending,
@@ -133,7 +135,7 @@ export function DaemonSettingsCard() {
       }
     };
     dispatch(
-      ceoAgentApi.util.updateQueryData(
+      agentRuntimeApi.util.updateQueryData(
         "listAgentRuntimes",
         companyId,
         (page) => {
@@ -143,13 +145,13 @@ export function DaemonSettingsCard() {
     );
     // The runtime detail, when open, shows the same machine.
     dispatch((_, getState) => {
-      for (const argument of ceoAgentApi.util.selectCachedArgsForQuery(
+      for (const argument of agentRuntimeApi.util.selectCachedArgsForQuery(
         getState(),
         "getRuntime",
       )) {
         if (argument.companyId !== companyId) continue;
         dispatch(
-          ceoAgentApi.util.updateQueryData("getRuntime", argument, patch),
+          agentRuntimeApi.util.updateQueryData("getRuntime", argument, patch),
         );
       }
     });

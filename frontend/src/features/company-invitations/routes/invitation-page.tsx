@@ -1,10 +1,10 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   activateSessionCompany,
-  getNextRoute,
   type SessionSnapshot,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import { AuthLayout } from "@/features/auth/components/auth-layout";
 import { logoutBoardlySession } from "@/features/auth/model/logout";
 import { Button } from "@/shared/ui/button";

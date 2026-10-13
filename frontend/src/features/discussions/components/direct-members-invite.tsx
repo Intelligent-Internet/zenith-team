@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Search } from "@/shared/ui/icons";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import type { DirectMessageRecipient } from "@/features/chat-workspace/components/new-direct-message-dialog";
 import { DiscussionAvatar } from "./discussion-identity";
 import { discussionsApi, type DiscussionDetail } from "../api/discussions-api";

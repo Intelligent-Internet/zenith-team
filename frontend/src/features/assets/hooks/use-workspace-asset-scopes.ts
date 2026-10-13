@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useListProjectsQuery } from "@/features/company-plan/api/project-api";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 
 export type WorkspaceAssetScope = {
   label: string;

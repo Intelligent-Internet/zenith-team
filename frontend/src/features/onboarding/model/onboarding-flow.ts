@@ -1,4 +1,4 @@
-import type { SessionSnapshot } from "@/app/session/session";
+import type { SessionSnapshot } from "@/shared/session/session";
 import { readStorageItem } from "@/shared/lib/browser-storage";
 
 // The screens of onboarding, in order. One list is the whole step

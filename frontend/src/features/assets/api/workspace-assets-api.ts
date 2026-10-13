@@ -1,8 +1,8 @@
-import {
-  listDesktopWorkspaceAssets,
-  type DesktopWorkspaceAssetList,
-  type DesktopWorkspaceAssetListRequest,
-} from "@/app/desktop/desktop-environment.service";
+import type {
+  DesktopWorkspaceAssetList,
+  DesktopWorkspaceAssetListRequest,
+} from "../../../../electron/shared/desktop-bridge.types";
+import { listDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
 import { boardlyApi } from "@/shared/api/boardly-api";
 
 export type WorkspaceAssetListQuery = Omit<

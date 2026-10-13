@@ -1,6 +1,6 @@
 import type { RootOptions } from "react-dom/client";
 import sentryOptions from "../../../electron/shared/sentry-options.json";
-import { getBoardlyDesktopBridge } from "./desktop-environment.service";
+import { getBoardlyDesktopBridge } from "../../shared/desktop/desktop-environment.service";
 
 export async function initializeDesktopErrorReporting(): Promise<
   RootOptions | undefined

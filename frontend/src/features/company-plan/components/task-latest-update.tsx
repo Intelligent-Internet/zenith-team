@@ -1,5 +1,5 @@
 import { useGetTaskLatestRunQuery } from "../api/task-detail-api";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCan } from "@/shared/permissions";
 import {
   runFailureMessageForViewer,

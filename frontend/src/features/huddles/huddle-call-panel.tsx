@@ -30,7 +30,7 @@ import {
   type HuddleMedia,
 } from "../discussions/api/huddle-api";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useHuddleRoom, type HuddleVideo } from "./use-huddle-room";
 import { useAudioLevel } from "./use-audio-level";
 import { HuddleChatPanel } from "./huddle-chat-panel";
@@ -55,7 +55,7 @@ import {
   canPickDesktopScreenShareSource,
   reportDesktopScreenShareState,
   subscribeToDesktopScreenShareActions,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 
 type HuddleCallPanelProps = {
   media: HuddleMedia;

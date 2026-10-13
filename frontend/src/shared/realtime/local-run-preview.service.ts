@@ -1,8 +1,8 @@
-import {
-  getBoardlyDesktopBridge,
-  type DesktopGlobalLike,
-  type DesktopRunPreviewFrame,
-} from "@/app/desktop/desktop-environment.service";
+import type {
+  DesktopGlobalLike,
+  DesktopRunPreviewFrame,
+} from "../../../electron/shared/desktop-bridge.types";
+import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export type LocalRunPreviewFrame = DesktopRunPreviewFrame;
 

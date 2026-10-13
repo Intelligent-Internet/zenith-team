@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useReactFlow, useViewport, ViewportPortal } from "@xyflow/react";
 import { createPortal } from "react-dom";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import * as Popover from "@radix-ui/react-popover";
 import { personInitials } from "@/shared/ui/person-initials";
 import { ArrowRight, MousePointer } from "@/shared/ui/icons";

@@ -1,4 +1,4 @@
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 
 export function requireActiveCompanyId(): string {
   const companyId = readSessionSnapshot().company?.id;

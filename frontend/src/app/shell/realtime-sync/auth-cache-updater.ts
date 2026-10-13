@@ -4,7 +4,7 @@ import {
   refreshSessionSnapshot,
   updateSessionCompanyAccess,
   updateSessionUserSummary,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
 import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {

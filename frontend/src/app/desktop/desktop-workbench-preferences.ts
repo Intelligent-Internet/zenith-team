@@ -1,4 +1,4 @@
-import type { DesktopNotificationKind } from "./desktop-environment.service";
+import type { DesktopNotificationKind } from "../../../electron/shared/desktop-bridge.types";
 
 export type DesktopNotificationCategoryPreference = {
   description: string;

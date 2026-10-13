@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { Link2Off, Plus } from "@/shared/ui/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/core/avatar";
 import { personInitials } from "@/shared/ui/person-initials";

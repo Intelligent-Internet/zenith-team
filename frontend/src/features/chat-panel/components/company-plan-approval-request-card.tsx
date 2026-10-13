@@ -8,7 +8,7 @@ import {
   NotebookText,
   Undo2,
 } from "@/shared/ui/icons";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   useApproveApprovalMutation,
   useCancelApprovalMutation,

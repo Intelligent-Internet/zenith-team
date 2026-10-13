@@ -12,12 +12,12 @@ import { useLocation } from "react-router";
 import {
   markSessionCompanyInitializationPending,
   refreshSessionSnapshot,
-} from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+} from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
   useListCompanyAgentsQuery,
   useListAgentRuntimesQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useRuntimeModelDiscovery } from "@/features/agent-setup/hooks/use-runtime-model-discovery";
 import { findCeoAgentInPage } from "@/features/agent-setup/model/ceo-agent-setup";
 import {

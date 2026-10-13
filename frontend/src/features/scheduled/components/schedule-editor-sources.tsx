@@ -7,7 +7,7 @@ import {
 import { Link } from "react-router";
 import { useEffect, useRef } from "react";
 
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
 import { ScheduleSourceCard } from "@/features/scheduled/components/schedule-source-card";
 import {
   formatPreviewTrigger,

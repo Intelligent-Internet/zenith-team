@@ -1,6 +1,7 @@
+import { useGetWorkspaceCompanyAvatarQuery } from "@/shared/api/company-api";
 import { useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query";
-import { useGetWorkspaceCompanyAvatarQuery } from "@/shared/api/workspace-api";
+
 import type { CompanyDetail } from "@/shared/api/types";
 import "./company-avatar.css";
 

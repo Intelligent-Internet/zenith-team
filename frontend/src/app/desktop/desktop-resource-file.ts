@@ -1,4 +1,4 @@
-import type { DesktopResourceFilePayload } from "@/app/desktop/desktop-environment.service";
+import type { DesktopResourceFilePayload } from "../../../electron/shared/desktop-bridge.types";
 
 export type DesktopResourceFileDescriptor = {
   blob: Blob;

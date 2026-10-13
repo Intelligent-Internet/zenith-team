@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 
-import type { SessionProvider } from "@/app/session/session";
+import type { SessionProvider } from "@/shared/session/session";
 import { Button } from "@/shared/ui/core/button";
 import {
   Dialog,

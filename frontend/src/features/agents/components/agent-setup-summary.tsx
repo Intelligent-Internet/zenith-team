@@ -5,7 +5,7 @@ import type { AgentDto } from "@/shared/api/types";
 import {
   getCeoAgentApiErrorMessage,
   useRefreshRuntimeMutation,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   providerLabel,
   runtimeDisplayName,

@@ -1,9 +1,11 @@
+import { activityApi } from "@/shared/api/activity-api";
+import { conversationApi } from "@/shared/api/conversation-api";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
 import { activityDateKey } from "@/shared/api/activity.service";
 import { activityToActivityEvent } from "@/shared/api/adapters";
 import { conversationService } from "@/shared/api/conversation.service";
 import type { ConversationDisplayItemSummary } from "@/shared/api/types";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import type { RealtimeSyncContext } from "@/app/shell/realtime-sync/realtime-sync-context";
 import { boardlyApi } from "@/shared/api/boardly-api";
@@ -140,7 +142,7 @@ function updateCachedAttachments(
     message: ConversationDisplayItemSummary,
   ) => void,
 ) {
-  for (const argument of workspaceApi.util.selectCachedArgsForQuery(
+  for (const argument of conversationApi.util.selectCachedArgsForQuery(
     context.getState(),
     "getWorkspaceConversationHistory",
   )) {
@@ -150,7 +152,7 @@ function updateCachedAttachments(
     )
       continue;
     context.dispatch(
-      workspaceApi.util.updateQueryData(
+      conversationApi.util.updateQueryData(
         "getWorkspaceConversationHistory",
         argument,
         (history) => {
@@ -164,13 +166,13 @@ function updateCachedAttachments(
       ),
     );
   }
-  for (const cachedConversationId of workspaceApi.util.selectCachedArgsForQuery(
+  for (const cachedConversationId of conversationApi.util.selectCachedArgsForQuery(
     context.getState(),
     "listWorkspaceMessages",
   )) {
     if (conversationId && cachedConversationId !== conversationId) continue;
     context.dispatch(
-      workspaceApi.util.updateQueryData(
+      conversationApi.util.updateQueryData(
         "listWorkspaceMessages",
         cachedConversationId,
         (items) => {
@@ -201,7 +203,7 @@ function updateMessage(
     message,
   ])[0];
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    conversationApi.util.updateQueryData(
       "getWorkspaceConversationHistory",
       { companyId: context.companyId, conversationId: message.conversationId },
       (history) => {
@@ -218,7 +220,7 @@ function updateMessage(
     ),
   );
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    conversationApi.util.updateQueryData(
       "listWorkspaceMessages",
       message.conversationId,
       (items) => {
@@ -251,7 +253,7 @@ function upsertDisplayItem(
 function updateActivity(context: RealtimeSyncContext, activity: ActivityEntry) {
   const summary = activityToActivityEvent(activity);
   context.dispatch(
-    workspaceApi.util.updateQueryData(
+    activityApi.util.updateQueryData(
       "listWorkspaceActivity",
       context.companyId,
       (items) => {
@@ -268,7 +270,7 @@ function updateActivity(context: RealtimeSyncContext, activity: ActivityEntry) {
     ),
   );
 
-  for (const request of workspaceApi.util.selectCachedArgsForQuery(
+  for (const request of activityApi.util.selectCachedArgsForQuery(
     context.getState(),
     "getWorkspaceActivityCalendar",
   )) {
@@ -283,7 +285,7 @@ function updateActivity(context: RealtimeSyncContext, activity: ActivityEntry) {
     const dateKey = activityDateKey(activity.createdAt, request.timeZone);
     if (!dateKey) continue;
     context.dispatch(
-      workspaceApi.util.updateQueryData(
+      activityApi.util.updateQueryData(
         "getWorkspaceActivityCalendar",
         request,
         (calendar) => {

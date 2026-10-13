@@ -2,7 +2,8 @@ import type {
   DesktopDaemonActionResult,
   DesktopDaemonState,
   DesktopDaemonStatus,
-} from "@/app/desktop/desktop-environment.service";
+} from "../../../../electron/shared/desktop-bridge.types";
+
 import {
   runtimeDisplayName,
   runtimeOptionLabel,

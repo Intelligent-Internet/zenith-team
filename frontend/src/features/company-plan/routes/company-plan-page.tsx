@@ -1,3 +1,13 @@
+import {
+  useGetWorkspaceTaskDependencyGraphQuery,
+  useListWorkspaceTaskMessagesQuery,
+  useListWorkspaceTasksQuery,
+  useUpdateWorkspaceTaskMutation,
+} from "@/shared/api/task-api";
+import {
+  useGetWorkspaceProactiveModeQuery,
+  useUpdateWorkspaceProactiveModeMutation,
+} from "@/shared/api/company-api";
 import { ProjectControls } from "../components/project-controls";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { NewTaskButton } from "@/features/company-plan/components/new-task-button";
@@ -54,7 +64,7 @@ import {
 } from "react";
 import { ChevronDown, Funnel, Layers, Maximize2 } from "@/shared/ui/icons";
 import { useNavigate, useSearchParams } from "react-router";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useTaskAttention } from "@/features/company-plan/hooks/use-task-attention";
 import { useTaskRun } from "@/features/company-plan/hooks/use-task-run";
 import {
@@ -65,7 +75,7 @@ import {
   taskStartNotes,
 } from "@/features/company-plan/model/task-execution";
 import { hasProjectPermission, useCan } from "@/shared/permissions";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import {
   WorkspaceAccessState,
@@ -91,14 +101,7 @@ import {
   useTaskDependencyPresentation,
   type TaskDependencyPresentationItem,
 } from "@/features/task-dependencies/model/use-task-dependency-presentation";
-import {
-  useGetWorkspaceProactiveModeQuery,
-  useGetWorkspaceTaskDependencyGraphQuery,
-  useListWorkspaceTaskMessagesQuery,
-  useListWorkspaceTasksQuery,
-  useUpdateWorkspaceProactiveModeMutation,
-  useUpdateWorkspaceTaskMutation,
-} from "@/shared/api/workspace-api";
+
 import type { TaskDto } from "@/shared/api/types";
 import type { ChatConversationTarget } from "@/shared/chat/types";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";

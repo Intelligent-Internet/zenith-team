@@ -42,7 +42,7 @@ import {
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import "./calendar.css";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { EventDetails } from "./event-details";
 
 const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];

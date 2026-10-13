@@ -1,3 +1,4 @@
+import type { DesktopPluginDetail } from "../../../../electron/shared/desktop-bridge.types";
 import {
   type CSSProperties,
   type ReactNode,
@@ -11,17 +12,16 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 
 import {
   connectDesktopConnector,
-  type DesktopPluginDetail,
   openDesktopExternal,
   readDesktopConnectorStatus,
   readDesktopPlugin,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
-import { readSessionSnapshot } from "@/app/session/session";
+} from "@/shared/desktop/desktop-environment.service";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   providerLabel,
   runtimeMachineName,

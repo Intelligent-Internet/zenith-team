@@ -1,4 +1,10 @@
-import { readSessionSnapshot } from "@/app/session/session";
+import type {
+  DesktopGeneratedFileActionResult,
+  DesktopGeneratedFilePreview,
+  DesktopWorkspaceAssetPreview,
+  DesktopWorkspaceAssetReference,
+} from "../../../../electron/shared/desktop-bridge.types";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   previewDesktopGeneratedFile,
   previewDesktopWorkspaceAsset,
@@ -6,11 +12,7 @@ import {
   revealDesktopWorkspaceAsset,
   saveDesktopGeneratedFile,
   saveDesktopWorkspaceAsset,
-  type DesktopGeneratedFileActionResult,
-  type DesktopGeneratedFilePreview,
-  type DesktopWorkspaceAssetPreview,
-  type DesktopWorkspaceAssetReference,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import type { ChatTeamId } from "@/shared/chat/chat-team";
 import type { ChatGeneratedFile } from "@/shared/chat/types";
 

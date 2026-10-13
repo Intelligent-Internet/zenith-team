@@ -5,7 +5,7 @@ import {
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
   useUpdateCeoAgentMutation,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useRuntimeModelDiscovery } from "@/features/agent-setup/hooks/use-runtime-model-discovery";
 import { useBindAgentMutation } from "@/features/agents/api/agent-binding-api";
 import {

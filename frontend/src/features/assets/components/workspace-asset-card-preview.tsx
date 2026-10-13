@@ -1,6 +1,6 @@
+import type { DesktopWorkspaceAssetItem } from "../../../../electron/shared/desktop-bridge.types";
 import type { ReactNode } from "react";
 
-import type { DesktopWorkspaceAssetItem } from "@/app/desktop/desktop-environment.service";
 import { useLazyWorkspaceAssetPreview } from "@/features/assets/hooks/use-lazy-workspace-asset-preview";
 import { cx } from "@/shared/lib/cx";
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { useListQuestionsQuery } from "@/features/approvals/api/approvals-api";
 
 export function useConversationQuestions(conversationId?: string | null) {

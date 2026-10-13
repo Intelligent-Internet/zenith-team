@@ -24,7 +24,7 @@ import {
 } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { useListAgentRuntimesQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListAgentRuntimesQuery } from "@/shared/api/agent-runtime-api";
 import {
   runtimeDisplayName,
   runtimeMachineName,
@@ -33,8 +33,8 @@ import {
 import {
   openDesktopExternal,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
-import { readSessionSnapshot } from "@/app/session/session";
+} from "@/shared/desktop/desktop-environment.service";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { PluginInstallProgressLabel } from "@/features/settings/components/plugin-install-flow";
 import { PluginUninstallDialog } from "@/features/settings/components/plugin-uninstall-dialog";
 import { AgentSetupReturn } from "../components/agent-setup-return";

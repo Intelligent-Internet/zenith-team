@@ -1,4 +1,4 @@
-import { TaskPages } from "@/features/project-canvas/task-pages";
+import { TaskPages } from "@/features/project-canvas/documents/task-pages";
 import { ProjectTaskDetail } from "../projects/project-task-detail";
 import { TaskProperties } from "@/features/company-plan/components/task-properties";
 import { TaskDescription } from "@/features/company-plan/components/task-description";
@@ -11,7 +11,7 @@ import {
   taskStartAction,
   unreadyReasonLabel,
 } from "@/features/company-plan/model/task-execution";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCan, useTaskAccess } from "@/shared/permissions";
 import { useEffect, type MouseEvent, type ReactNode, type Ref } from "react";
 import { Maximize2, MessagesSquare, X } from "@/shared/ui/icons";

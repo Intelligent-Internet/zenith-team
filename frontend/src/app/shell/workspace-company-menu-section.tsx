@@ -1,14 +1,15 @@
+import { getNextRoute } from "@/app/session/session-routing";
+import { useListWorkspaceCompaniesQuery } from "@/shared/api/company-api";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
-  getNextRoute,
   readSessionSnapshot,
   writeSessionSnapshot,
-} from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+} from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useGetNotificationCountsQuery } from "@/features/notifications/api/notifications-api";
-import { useListWorkspaceCompaniesQuery } from "@/shared/api/workspace-api";
+
 import type { CompanyPage } from "@/shared/api/types";
 import { Check } from "@/shared/ui/icons";
 import { CompanyAvatar } from "@/shared/ui/company-avatar";

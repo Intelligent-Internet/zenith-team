@@ -2,7 +2,7 @@ import type {
   DesktopEnvironment,
   DesktopPowerLifecycleState,
   DesktopUpdateState,
-} from "@/app/desktop/desktop-environment.service";
+} from "../../../electron/shared/desktop-bridge.types";
 
 export const DESKTOP_RUNTIME_SLOW_THRESHOLD_MS = 2500;
 export const DESKTOP_RUNTIME_PROBE_INTERVAL_MS = 30_000;

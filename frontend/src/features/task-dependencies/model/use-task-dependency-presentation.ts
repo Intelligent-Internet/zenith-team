@@ -1,5 +1,6 @@
+import { useGetWorkspaceTaskDependenciesQuery } from "@/shared/api/task-api";
 import { useMemo } from "react";
-import { useGetWorkspaceTaskDependenciesQuery } from "@/shared/api/workspace-api";
+
 import type { TaskStatusDto } from "@/shared/api/types";
 import { useTaskLabel } from "@/shared/lib/task-label";
 

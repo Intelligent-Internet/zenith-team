@@ -1,4 +1,4 @@
-import { useGetRuntimeQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useGetRuntimeQuery } from "@/shared/api/agent-runtime-api";
 import type { AgentDto } from "@/shared/api/types";
 import { useLocalDaemonId } from "./use-local-daemon-id";
 

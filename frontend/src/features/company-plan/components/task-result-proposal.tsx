@@ -4,11 +4,11 @@ import type { components } from "@/shared/api/generated/api.generated";
 import {
   useProjectPresentationQuery,
   usePageChangeDetailQuery,
-} from "@/features/project-canvas/page-api";
+} from "@/features/project-canvas/api/page-api";
 import {
   BlockDocument,
   type Block,
-} from "@/features/project-canvas/block-editor-schema";
+} from "@/features/project-canvas/documents/block-editor-schema";
 import type { RunOutput } from "@/features/run-deliverables/model/run-deliverable";
 import { Link } from "react-router";
 

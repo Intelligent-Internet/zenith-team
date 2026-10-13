@@ -1,11 +1,12 @@
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { useId, useState } from "react";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   milestoneLabel,
   milestoneTypes,
 } from "@/features/company-plan/model/milestone-catalog";
-import { useGetWorkspaceTaskQuery } from "@/shared/api/workspace-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { TaskDto } from "@/shared/api/types";

@@ -1,10 +1,11 @@
+import { useListWorkspaceTaskMessagesQuery } from "@/shared/api/task-api";
 import { skipToken } from "@reduxjs/toolkit/query";
 import {
   useGetTaskResultSelectionQuery,
   useGetTaskSelectedOutputsQuery,
 } from "../api/task-result-selection-api";
 import { TaskResultSelection } from "./task-result-selection";
-import { TaskPages } from "@/features/project-canvas/task-pages";
+import { TaskPages } from "@/features/project-canvas/documents/task-pages";
 import { count, duration } from "@/features/analytics/model/format";
 import { OutsideProjectBadge } from "./outside-project-badge";
 import { TaskProjectLabel, TaskProjectVisibility } from "./project-controls";
@@ -30,7 +31,7 @@ import {
   Settings,
 } from "@/shared/ui/icons";
 import { personInitials } from "@/shared/ui/person-initials";
-import { useListWorkspaceTaskMessagesQuery } from "@/shared/api/workspace-api";
+
 import {
   useTaskDependencyPresentation,
   type TaskDependencyPresentationItem,

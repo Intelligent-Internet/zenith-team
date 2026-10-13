@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { requireActiveCompanyId } from "@/shared/api/active-company";
 import { hasPermission } from "@/shared/permissions";
 import { taskToTaskSummary, agentToAgentSummary } from "@/shared/api/adapters";

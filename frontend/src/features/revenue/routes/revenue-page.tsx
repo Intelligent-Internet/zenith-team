@@ -1,3 +1,4 @@
+import { useGetWorkspaceCompanyQuery } from "@/shared/api/company-api";
 import {
   useCallback,
   useEffect,
@@ -11,8 +12,11 @@ import { useLocation, useNavigate } from "react-router";
 import {
   openDesktopExternal,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
-import { loginWithPassword, readSessionSnapshot } from "@/app/session/session";
+} from "@/shared/desktop/desktop-environment.service";
+import {
+  loginWithPassword,
+  readSessionSnapshot,
+} from "@/shared/session/session";
 import { hasPermission } from "@/shared/permissions";
 import {
   clearAuthContinuation,
@@ -56,7 +60,7 @@ import { getApiErrorMessage } from "@/lib/api-client";
 import { authService } from "@/shared/api/auth.service";
 import { beginDesktopGoogleOAuthRedirect } from "@/shared/api/google-oauth";
 import type { ApprovalDto } from "@/shared/api/types";
-import { useGetWorkspaceCompanyQuery } from "@/shared/api/workspace-api";
+
 import { cx } from "@/shared/lib/cx";
 import { Button } from "@/shared/ui/core/button";
 import { Icon } from "@/shared/ui/icon";

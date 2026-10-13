@@ -1,11 +1,11 @@
+import { getNextRoute } from "@/app/session/session-routing";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   completeCompanyOnboarding,
-  getNextRoute,
   refreshSessionSnapshot,
   type SessionSnapshot,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import {
   createCompanyOnboardingRequest,
   initialCompanyOnboardingDraft,

@@ -2,7 +2,7 @@ import { count, duration, sum } from "@/features/analytics/model/format";
 import { Check, ChevronRight, History, Terminal } from "@/shared/ui/icons";
 import { useState } from "react";
 import { Link } from "react-router";
-import { useListAgentRecentRunsInfiniteQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListAgentRecentRunsInfiniteQuery } from "@/shared/api/agent-runtime-api";
 import { AgentRuntimeSelect } from "@/features/agent-setup/components/agent-runtime-controls";
 import type { AgentDto, TaskDto, RunDto } from "@/shared/api/types";
 

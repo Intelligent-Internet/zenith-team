@@ -5,7 +5,7 @@ import {
   getDesktopDownloadOptions,
   loadDesktopDownloadOptions,
   type MacosArchitecture,
-} from "@/app/desktop/desktop-download.service";
+} from "@/shared/desktop/desktop-download.service";
 import { LandingDownloadOptions } from "./landing-download-actions";
 
 export function StudioDialog({

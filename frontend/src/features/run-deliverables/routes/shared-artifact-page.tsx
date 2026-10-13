@@ -1,3 +1,4 @@
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { DeliveryFreshness } from "../components/delivery-freshness";
 import { artifactSourceHref } from "../model/artifact-source-href";
 import { OpenArtifactCanvasButton } from "@/features/run-deliverables/components/open-artifact-canvas-button";
@@ -6,7 +7,7 @@ import { ArtifactReader } from "../components/artifact-reader";
 import { ArtifactDownloadButton } from "../components/artifact-download-button";
 import { ArtifactSharingControls } from "../components/artifact-sharing-controls";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { outputDocumentLocation } from "@/features/project-canvas/output-document-location";
+import { outputDocumentLocation } from "@/features/project-canvas/documents/output-document-location";
 import {
   Link,
   useLocation,
@@ -28,17 +29,17 @@ import { runDeliverableService } from "@/features/run-deliverables/api/run-deliv
 import { Button } from "@/shared/ui/button";
 import "@/features/chat-panel/styles/conversation-artifacts.css";
 import "../styles/artifact-sharing.css";
-import { useGetWorkspaceTaskQuery } from "@/shared/api/workspace-api";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { toast } from "@/shared/ui/sonner";
 import { StudioModePanel } from "@/features/studio-mode/components/studio-mode-panel";
 
 const OutputReviewWorkspace = lazy(
-  () => import("@/features/project-canvas/output-review-workspace"),
+  () => import("@/features/project-canvas/review/output-review-workspace"),
 );
 
 const OutputDocumentWorkspace = lazy(
-  () => import("@/features/project-canvas/output-document-workspace"),
+  () => import("@/features/project-canvas/documents/output-document-workspace"),
 );
 
 export function SharedArtifactPage() {

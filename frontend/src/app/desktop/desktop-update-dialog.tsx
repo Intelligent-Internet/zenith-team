@@ -1,3 +1,4 @@
+import type { DesktopUpdateState } from "../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 
 import {
@@ -8,9 +9,8 @@ import {
   setDesktopAutomaticUpdates,
   subscribeToDesktopUpdateDialogRequests,
   subscribeToDesktopUpdateState,
-  type DesktopUpdateState,
   WEB_DESKTOP_UPDATE_STATE_FALLBACK,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { Button } from "@/shared/ui/button";
 import {
   Dialog,

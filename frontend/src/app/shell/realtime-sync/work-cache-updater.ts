@@ -1,6 +1,8 @@
+import { activityApi } from "@/shared/api/activity-api";
+import { taskApi } from "@/shared/api/task-api";
 import type { TaskDto, TaskListOptions } from "@/shared/api/types";
 import { boardlyApi } from "@/shared/api/boardly-api";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import { taskLatestRunTag } from "@/features/company-plan/api/task-detail-api";
 import {
   workActiveRunsTag,
@@ -108,35 +110,31 @@ function updateTask(
 ) {
   let previousStatus: TaskDto["status"] | undefined;
   const state = context.getState();
-  for (const argument of workspaceApi.util.selectCachedArgsForQuery(
+  for (const argument of taskApi.util.selectCachedArgsForQuery(
     state,
     "listWorkspaceTasks",
   )) {
     if (argument.companyId !== context.companyId) continue;
     context.dispatch(
-      workspaceApi.util.updateQueryData(
-        "listWorkspaceTasks",
-        argument,
-        (page) => {
-          const tasks = page.items;
-          const cached = tasks.find((candidate) => candidate.id === task.id);
-          previousStatus ??= cached?.status;
-          if (taskMatches(task, argument.options)) {
-            // Task frames reach other people and leave the viewer's
-            // `access` out (ADR 0017); keep what the read said until the
-            // refetch this frame asks for lands.
-            replaceVersioned(
-              tasks,
-              task.access || !cached?.access
-                ? task
-                : { ...task, access: cached.access },
-            );
-            tasks.sort((left, right) => right.number - left.number);
-          } else {
-            removeVersioned(tasks, task.id, task.revision);
-          }
-        },
-      ),
+      taskApi.util.updateQueryData("listWorkspaceTasks", argument, (page) => {
+        const tasks = page.items;
+        const cached = tasks.find((candidate) => candidate.id === task.id);
+        previousStatus ??= cached?.status;
+        if (taskMatches(task, argument.options)) {
+          // Task frames reach other people and leave the viewer's
+          // `access` out (ADR 0017); keep what the read said until the
+          // refetch this frame asks for lands.
+          replaceVersioned(
+            tasks,
+            task.access || !cached?.access
+              ? task
+              : { ...task, access: cached.access },
+          );
+          tasks.sort((left, right) => right.number - left.number);
+        } else {
+          removeVersioned(tasks, task.id, task.revision);
+        }
+      }),
     );
   }
 
@@ -147,7 +145,7 @@ function updateTask(
       const difference = Number(taskIsActive) - Number(previousWasActive);
       if (difference !== 0) {
         context.dispatch(
-          workspaceApi.util.updateQueryData(
+          activityApi.util.updateQueryData(
             "getWorkspaceCockpit",
             context.companyId,
             (cockpit) => {

@@ -1,4 +1,4 @@
-import { PagePdfExport } from "../project-canvas/page-pdf";
+import { PagePdfExport } from "../project-canvas/documents/page-pdf";
 import {
   useCallback,
   useEffect,
@@ -9,12 +9,12 @@ import {
 import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 import { BookOpen } from "@/shared/ui/icons";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { downloadDocument } from "../project-canvas/document-export";
-import { LiveDocument } from "../project-canvas/live-document";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { downloadDocument } from "../project-canvas/documents/document-export";
+import { LiveDocument } from "../project-canvas/documents/live-document";
 import { WikiContent } from "./wiki-content";
 import { WikiDialog } from "./wiki-dialogs";
-import { DocumentFormatToolbar } from "../project-canvas/document-format-toolbar";
+import { DocumentFormatToolbar } from "../project-canvas/documents/document-format-toolbar";
 import { toast } from "@/shared/ui/sonner";
 import {
   useGetWikiDocumentQuery,
@@ -26,8 +26,8 @@ import {
   type WikiDraftMetadata,
   type WikiPageDetail,
 } from "./wiki-api";
-import "../project-canvas/project-canvas.css";
-import "../project-canvas/document-workspace.css";
+import "../project-canvas/canvas/project-canvas.css";
+import "../project-canvas/documents/document-workspace.css";
 import "./wiki-document-workspace.css";
 
 type WikiDocumentWorkspaceProps = {

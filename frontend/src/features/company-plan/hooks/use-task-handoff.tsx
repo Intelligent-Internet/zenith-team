@@ -1,7 +1,8 @@
+import { useUpdateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import { useCallback, useState, type ReactNode } from "react";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import {
   isAgentBindingRequired,
@@ -9,7 +10,7 @@ import {
 } from "@/features/agents/model/agent-binding";
 import { TaskHandoffDialog } from "@/features/company-plan/components/task-handoff-dialog";
 import type { BoardlyApiError } from "@/shared/api/boardly-api";
-import { useUpdateWorkspaceTaskMutation } from "@/shared/api/workspace-api";
+
 import type {
   AgentDto,
   TaskDto,

@@ -1,11 +1,11 @@
+import type { DesktopScreenShareSource } from "../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 import {
   DesktopScreenSharePermissionError,
   listDesktopScreenShareSources,
   openDesktopScreenShareSettings,
   selectDesktopScreenShareSource,
-  type DesktopScreenShareSource,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { Button } from "@/shared/ui/core/button";
 import {
   Dialog,

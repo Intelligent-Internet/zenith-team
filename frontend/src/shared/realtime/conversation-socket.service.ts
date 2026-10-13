@@ -1,5 +1,5 @@
 import { canonicalUuid } from "@/shared/lib/uuid";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import {
   getApiErrorBody,
   getApiErrorCode,

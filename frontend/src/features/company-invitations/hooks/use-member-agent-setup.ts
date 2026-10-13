@@ -3,7 +3,7 @@ import {
   getCeoAgentApiErrorMessage,
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useBindAgentMutation } from "@/features/agents/api/agent-binding-api";
 import { useLocalDaemonId } from "@/features/agents/hooks/use-local-daemon-id";
 import {

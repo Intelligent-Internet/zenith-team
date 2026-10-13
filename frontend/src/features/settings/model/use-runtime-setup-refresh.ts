@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   getCeoAgentApiErrorMessage,
   useRefreshRuntimeMutation,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { toast } from "@/shared/ui/sonner";
 
 // How long a "Refresh setup" control holds its checking state after the

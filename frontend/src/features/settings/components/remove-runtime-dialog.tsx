@@ -6,7 +6,7 @@ import {
   useListCompanyAgentsQuery,
   useListRuntimeAgentsQuery,
   useRemoveRuntimeMutation,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { AgentRuntimeSelect } from "@/features/agent-setup/components/agent-runtime-controls";
 import {
   providerLabel,

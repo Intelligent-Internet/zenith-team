@@ -21,12 +21,12 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Trash2, LockKeyhole, MessagesSquare, Users } from "@/shared/ui/icons";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { toast } from "@/shared/ui/sonner";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { normalizeDrawing } from "@/shared/canvas/freehand";
-import { downloadDocument } from "@/features/project-canvas/document-export";
+import { downloadDocument } from "@/features/project-canvas/documents/document-export";
 import {
   boardPath,
   boardScopeKey,

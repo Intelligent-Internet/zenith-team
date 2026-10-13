@@ -1,3 +1,5 @@
+import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { useAppDispatch, useAppSelector } from "@/state/store";
 import { AgentVoiceSettings } from "./agent-voice-settings";
 import {
@@ -7,9 +9,9 @@ import {
 } from "@/state/slice/agent-drafts";
 import { AgentCapabilities } from "./agent-capabilities";
 import {
-  ceoAgentApi,
+  agentRuntimeApi,
   getCeoAgentApiErrorMessage,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   BookOpen,
   ChevronRight,
@@ -25,10 +27,7 @@ import { AgentSetupSummary } from "./agent-setup-summary";
 import { useCeoAgentRuntimeController } from "@/features/agent-setup/hooks/use-ceo-agent-runtime-controller";
 import { AgentRuntimeSelect } from "@/features/agent-setup/components/agent-runtime-controls";
 import { providerLabel } from "@/features/agent-setup/model/ceo-agent-setup";
-import {
-  useListWorkspaceTasksQuery,
-  useUpdateWorkspaceAgentMutation,
-} from "@/shared/api/workspace-api";
+
 import { AgentContextSidebar, AgentOverview } from "./agent-overview";
 import { taskWorkStatusLabel } from "@/features/company-plan/model/task-work-state";
 import type { AgentDto } from "@/shared/api/types";
@@ -133,7 +132,7 @@ function AgentInstructions({ agent }: { agent: AgentDto }) {
         request: { expectedRevision: baseline.revision, instructions: draft },
       }).unwrap();
       dispatch(
-        ceoAgentApi.util.updateQueryData(
+        agentRuntimeApi.util.updateQueryData(
           "listCompanyAgents",
           agent.companyId,
           (page) => {

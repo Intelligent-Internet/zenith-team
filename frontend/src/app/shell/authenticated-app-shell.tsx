@@ -1,13 +1,13 @@
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { Outlet, useLocation } from "react-router";
 
-import { detectDesktopPlatform } from "@/app/desktop/desktop-download.service";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { detectDesktopPlatform } from "@/shared/desktop/desktop-download.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { DiscussionProvider } from "@/features/discussions/components/discussion-provider";
 import { CompanyInitializationStatus } from "@/features/onboarding/company/components/company-initialization-status";
 import { AgentAvatarProvider } from "@/features/agent-avatar/agent-avatar-provider";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { RuntimeModelPreloader } from "@/features/agent-setup/components/runtime-model-preloader";
 import {
   WorkspaceBottomNavigation,
@@ -33,7 +33,7 @@ import {
 import "@/features/chat-panel/styles/chat-surfaces.css";
 import "@/app/shell/workspace-theme.css";
 import canvasStyles from "./workspace-canvas.module.css";
-import { WorkspaceSidebarProvider } from "./workspace-page-sidebar";
+import { WorkspaceSidebarProvider } from "./workspace-sidebar";
 
 const mobileNavigationQuery = "(max-width: 899px)";
 

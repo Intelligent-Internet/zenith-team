@@ -1,3 +1,4 @@
+import { useGetWorkspaceTaskWorkspaceQuery } from "@/shared/api/task-api";
 import { TaskProperties } from "@/features/company-plan/components/task-properties";
 import { TaskDescription } from "@/features/company-plan/components/task-description";
 import { taskWaitsForPrerequisites } from "@/features/company-plan/model/task-work-state";
@@ -21,7 +22,6 @@ import {
   type RefObject,
 } from "react";
 
-import { useGetWorkspaceTaskWorkspaceQuery } from "@/shared/api/workspace-api";
 import { useTaskLabel } from "@/shared/lib/task-label";
 import { conversationService } from "@/shared/api/conversation.service";
 import { createTaskPanelAttachments } from "@/features/company-plan/model/task-panel-attachments";

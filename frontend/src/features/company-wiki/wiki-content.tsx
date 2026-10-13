@@ -1,4 +1,4 @@
-import { BlockDocument } from "../project-canvas/block-editor-schema";
+import { BlockDocument } from "../project-canvas/documents/block-editor-schema";
 import type { components } from "@/shared/api/generated/api.generated";
 import { WikiMarkdown } from "./wiki-markdown";
 

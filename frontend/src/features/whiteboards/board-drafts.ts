@@ -1,4 +1,4 @@
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 
 let database: Promise<IDBDatabase> | undefined;
 function openDrafts() {

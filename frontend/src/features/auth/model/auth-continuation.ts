@@ -1,4 +1,5 @@
-import { getNextRoute, type SessionSnapshot } from "@/app/session/session";
+import { getNextRoute } from "@/app/session/session-routing";
+import { type SessionSnapshot } from "@/shared/session/session";
 import { invitationReturnPath } from "@/features/company-invitations/model/join-continuation";
 import {
   readStorageJson,

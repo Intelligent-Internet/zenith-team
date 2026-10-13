@@ -15,8 +15,8 @@ import {
 import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { readSessionSnapshot } from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { viewerIsRegistrant } from "@/features/settings/model/runtime-registrant";
 import { useLocalDaemonId } from "@/features/agents/hooks/use-local-daemon-id";
 import {
@@ -26,7 +26,7 @@ import {
   useListCompanyAgentsQuery,
   useListRuntimeActiveRunsQuery,
   useListRuntimeAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import {
   providerLabel,
   runtimeDisplayName,

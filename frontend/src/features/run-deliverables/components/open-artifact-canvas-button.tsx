@@ -1,10 +1,11 @@
+import { useLazyGetWorkspaceCompanyQuery } from "@/shared/api/company-api";
 import { useLocation, useNavigate } from "react-router";
 import {
   readSessionSnapshot,
   writeSessionSnapshot,
-} from "@/app/session/session";
+} from "@/shared/session/session";
 import type { RunOutput } from "@/features/run-deliverables/model/run-deliverable";
-import { useLazyGetWorkspaceCompanyQuery } from "@/shared/api/workspace-api";
+
 import { DropdownMenuItem } from "@/shared/ui/dropdown-menu";
 import { Button } from "@/shared/ui/button";
 import { Layers } from "@/shared/ui/icons";

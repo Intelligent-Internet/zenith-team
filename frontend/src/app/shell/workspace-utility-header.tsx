@@ -4,7 +4,7 @@ import { openDesktopCommandPalette } from "@/app/desktop/desktop-command-palette
 import { Calendar, Search } from "@/shared/ui/icons";
 import type { ReactNode } from "react";
 import { Link, NavLink } from "react-router";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { TopNotificationMenu } from "@/features/notifications/components/recent-notifications-menu";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";

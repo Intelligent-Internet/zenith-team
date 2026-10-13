@@ -1,12 +1,14 @@
+import type {
+  DesktopWorkspaceAssetItem,
+  DesktopWorkspaceAssetPreview,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 
 import {
   previewDesktopWorkspaceAsset,
   revealDesktopWorkspaceAsset,
   saveDesktopWorkspaceAsset,
-  type DesktopWorkspaceAssetItem,
-  type DesktopWorkspaceAssetPreview,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { formatWorkspaceAssetBytes } from "@/features/assets/hooks/use-workspace-asset-scopes";
 import {
   FilePreviewActionButton,

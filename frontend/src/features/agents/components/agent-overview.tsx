@@ -1,3 +1,4 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { AnalyticsSummaryCard } from "@/features/analytics/components/analytics-summary-card";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -7,7 +8,7 @@ import { useTaskAttention } from "@/features/company-plan/hooks/use-task-attenti
 import { useConversationArtifacts } from "@/features/chat-panel/hooks/use-conversation-artifacts";
 import { TaskDetailResults } from "@/features/company-plan/components/task-detail-results";
 import { ArrowUpRight, ChevronDown } from "@/shared/ui/icons";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import { useTaskLabel } from "@/shared/lib/task-label";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 import { agentCurrentTask } from "@/features/agents/model/agent-current-task";

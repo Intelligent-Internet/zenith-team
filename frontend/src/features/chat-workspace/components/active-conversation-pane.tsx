@@ -1,3 +1,4 @@
+import { refreshWorkspaceChatConversations } from "@/shared/api/conversation-api";
 import {
   useCallback,
   useEffect,
@@ -8,8 +9,8 @@ import {
 
 import { Link } from "react-router";
 
-import { getBoardlyDesktopBridge } from "@/app/desktop/desktop-environment.service";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCan, useTaskAccess } from "@/shared/permissions";
 
 import { sendWithAgentSetup } from "@/features/agents/model/agent-binding";
@@ -29,7 +30,7 @@ import {
 import type { TeamNodeData } from "@/features/home/types";
 import { resolveDirectConversation } from "@/shared/api/direct-conversation";
 import { runService } from "@/shared/api/run.service";
-import { refreshWorkspaceChatConversations } from "@/shared/api/workspace-api";
+
 import type { ActorRefDto, AgentDto, TaskDto } from "@/shared/api/types";
 import { PencilLine } from "@/shared/ui/icons";
 import { directConversationTitle } from "@/features/chat-workspace/model/chat-navigator-browse";

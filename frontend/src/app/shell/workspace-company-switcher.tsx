@@ -1,11 +1,12 @@
+import { useGetWorkspaceCompanyQuery } from "@/shared/api/company-api";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, ChevronRight, Settings2 } from "@/shared/ui/icons";
 import { useId, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { WorkspaceCompanyMenuSection } from "./workspace-company-menu-section";
 import { CompanyAvatar } from "@/shared/ui/company-avatar";
-import { useGetWorkspaceCompanyQuery } from "@/shared/api/workspace-api";
+
 import { WorkspaceAddCompanyDialog } from "./workspace-add-company-dialog";
 
 export function WorkspaceCompanySwitcher({

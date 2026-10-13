@@ -1,10 +1,10 @@
+import type {
+  DesktopWorkspaceAssetItem,
+  DesktopWorkspaceAssetPreview,
+} from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  previewDesktopWorkspaceAsset,
-  type DesktopWorkspaceAssetItem,
-  type DesktopWorkspaceAssetPreview,
-} from "@/app/desktop/desktop-environment.service";
+import { previewDesktopWorkspaceAsset } from "@/shared/desktop/desktop-environment.service";
 
 const workspaceAssetCardPreviewCharacterLimit = 4_096;
 const workspaceAssetCardPreviewConcurrency = 4;

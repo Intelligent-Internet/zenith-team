@@ -1,17 +1,14 @@
+import { useGetWorkspaceAnalyticsSeriesQuery } from "@/shared/api/analytics-api";
 import { useMemo, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "@/shared/ui/icons";
-import { companyService } from "@/shared/api/company.service";
-import { useGetWorkspaceAnalyticsSeriesQuery } from "@/shared/api/workspace-api";
+import type { AnalyticsCalendarQuery } from "../model/calendar-query";
+
 import { mixColor, contrastingText } from "@/app/appearance/color";
 import { useAnalyticsPalette } from "../model/palette";
 import { formatMetricAmount } from "../model/metrics";
 import { seriesKeys } from "../model/series";
 import { countLabel, partLabel } from "../model/format";
 import { AnalyticsDayDetail } from "./analytics-day-detail";
-
-export type AnalyticsCalendarQuery = Parameters<
-  typeof companyService.getAnalyticsSummary
->[1] & { companyId: string };
 
 export function AnalyticsActivityCalendar({
   query,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
   useGetHuddleAIQuery,
   useGetHuddleHistoryInfiniteQuery,

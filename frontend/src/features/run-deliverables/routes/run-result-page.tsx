@@ -19,7 +19,7 @@ import {
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { ArtifactAppView } from "@/features/chat-panel/components/artifacts/artifact-app-view";
 import {
   useGetRunDetailsQuery,

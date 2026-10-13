@@ -8,7 +8,7 @@ import type {
 import {
   notifyDocumentMutation,
   watchDocumentChanges,
-} from "../project-canvas/canvas-sync";
+} from "../project-canvas/api/canvas-sync";
 
 type Schemas = components["schemas"];
 

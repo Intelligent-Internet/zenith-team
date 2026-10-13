@@ -1,3 +1,7 @@
+import {
+  useGetWorkspaceTaskDependencyGraphQuery,
+  useListWorkspaceTasksQuery,
+} from "@/shared/api/task-api";
 import { useEffect, useMemo, useRef } from "react";
 import { ArrowRight, CheckCircle2, X } from "@/shared/ui/icons";
 import { Link, useLocation } from "react-router";
@@ -14,10 +18,7 @@ import {
   createWorkNextUpModel,
   type WorkNextUpModel,
 } from "@/features/company-plan/model/work-next-up-model";
-import {
-  useGetWorkspaceTaskDependencyGraphQuery,
-  useListWorkspaceTasksQuery,
-} from "@/shared/api/workspace-api";
+
 import { useAppDispatch, useAppSelector } from "@/state/store";
 import {
   dismissWorkCompletion,

@@ -1,7 +1,7 @@
 import { RefreshCw, Settings2 } from "@/shared/ui/icons";
 import { useNavigate } from "react-router";
 
-import { useListAgentRuntimesQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListAgentRuntimesQuery } from "@/shared/api/agent-runtime-api";
 import { runtimeDisplayName } from "@/features/agent-setup/model/ceo-agent-setup";
 
 import {

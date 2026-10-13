@@ -1,3 +1,4 @@
+import { useCreateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import * as Popover from "@radix-ui/react-popover";
 import {
   useEffect,
@@ -10,7 +11,7 @@ import {
 } from "react";
 import { Link, useNavigate } from "react-router";
 
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { providerLabel } from "@/features/agent-setup/model/ceo-agent-setup";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import {
@@ -117,7 +118,7 @@ import {
   SelectValue,
 } from "@/shared/ui/select";
 import { toast } from "@/shared/ui/sonner";
-import { useCreateWorkspaceTaskMutation } from "@/shared/api/workspace-api";
+
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import {
   clearWorkflowDraft,

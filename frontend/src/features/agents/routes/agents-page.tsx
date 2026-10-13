@@ -13,9 +13,9 @@ import {
 } from "@/shared/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
-import { readSessionSnapshot } from "@/app/session/session";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { readSessionSnapshot } from "@/shared/session/session";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   WorkspaceAccessState,
   WorkspacePageFrame,

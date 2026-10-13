@@ -1,12 +1,13 @@
+import { useStartWorkspaceTaskExecutionMutation } from "@/shared/api/task-api";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import { taskStartAction } from "@/features/company-plan/model/task-execution";
 import type { BoardlyApiError } from "@/shared/api/boardly-api";
 import type { AgentDto, TaskDto } from "@/shared/api/types";
-import { useStartWorkspaceTaskExecutionMutation } from "@/shared/api/workspace-api";
+
 import { toast } from "@/shared/ui/sonner";
 
 // Starting a Task is its assignee's own act, on their own computer (ADR

@@ -1,6 +1,7 @@
+import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
 import { useId, useState } from "react";
 import type { AgentDto } from "@/shared/api/types";
-import { useUpdateWorkspaceAgentMutation } from "@/shared/api/workspace-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { Button } from "@/shared/ui/button";
 import { Mic } from "@/shared/ui/icons";

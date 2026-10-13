@@ -1,7 +1,7 @@
+import { useGetWorkspaceActivityInsightQuery } from "@/shared/api/activity-api";
 import { useCallback, useEffect, useRef } from "react";
 
-import { readSessionSnapshot } from "@/app/session/session";
-import { useGetWorkspaceActivityInsightQuery } from "@/shared/api/workspace-api";
+import { readSessionSnapshot } from "@/shared/session/session";
 
 const activityInsightRefetchDelayMs = 250;
 export function useActivityInsight() {

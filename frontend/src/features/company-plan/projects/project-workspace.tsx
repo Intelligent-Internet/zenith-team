@@ -1,5 +1,6 @@
-import { PageDocumentLoading } from "@/features/project-canvas/page-document-loading";
-import { ProjectUploadedFilesLoading } from "@/features/project-canvas/project-uploaded-files-loading";
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
+import { PageDocumentLoading } from "@/features/project-canvas/documents/page-document-loading";
+import { ProjectUploadedFilesLoading } from "@/features/project-canvas/previews/project-uploaded-files-loading";
 import sidebarStyles from "./project-sidebar.module.css";
 import { ProjectLogo } from "../components/project-files";
 import "./project-overview.css";
@@ -11,7 +12,7 @@ import { ProjectApprovals } from "./project-approvals";
 import { teamProjectAccessPath } from "./access/team-access-path";
 import type { Project } from "../api/project-api";
 import { useProjectAccessLoss } from "../hooks/use-project-access-loss";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import { useProjectAccess, type ProjectAccessView } from "@/shared/permissions";
 import { ProjectVisibilityLabel } from "../components/project-controls";
 import { useCanvasFullscreen } from "@/app/shell/workspace-layout-context";
@@ -28,19 +29,19 @@ import {
 } from "react-router";
 import { lazy, Suspense, useEffect, useRef, type CSSProperties } from "react";
 const ProjectCanvas = lazy(
-  () => import("@/features/project-canvas/project-canvas"),
+  () => import("@/features/project-canvas/canvas/project-canvas"),
 );
 
 const ProjectUploadedFiles = lazy(
-  () => import("@/features/project-canvas/project-uploaded-files"),
+  () => import("@/features/project-canvas/previews/project-uploaded-files"),
 );
 
 const ProjectLibrary = lazy(
-  () => import("@/features/project-canvas/project-library"),
+  () => import("@/features/project-canvas/canvas/project-library"),
 );
 
 const ProjectOverviewDocument = lazy(
-  () => import("@/features/project-canvas/project-overview-document"),
+  () => import("@/features/project-canvas/documents/project-overview-document"),
 );
 
 type ProjectSection =

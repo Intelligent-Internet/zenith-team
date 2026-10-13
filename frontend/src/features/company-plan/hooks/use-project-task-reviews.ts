@@ -1,6 +1,7 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useMemo } from "react";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
   useGetTaskLatestRunQuery,
   useGetTasksLatestRunsQuery,
@@ -11,7 +12,7 @@ import {
   taskAwaitsViewerReview,
 } from "@/features/company-plan/model/task-execution";
 import { taskWorkStatusLabel } from "@/features/company-plan/model/task-work-state";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import type { TaskDto } from "@/shared/api/types";
 import { useCan } from "@/shared/permissions";
 

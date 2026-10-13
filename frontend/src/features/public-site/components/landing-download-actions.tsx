@@ -1,3 +1,4 @@
+import type { DesktopEnvironmentName } from "../../../../electron/shared/desktop-bridge.types";
 import {
   Apple,
   ArrowDown,
@@ -9,9 +10,8 @@ import {
 import {
   detectDesktopPlatform,
   type DesktopDownloadOption,
-  type DesktopEnvironmentName,
   type MacosArchitecture,
-} from "@/app/desktop/desktop-download.service";
+} from "@/shared/desktop/desktop-download.service";
 import "@/features/public-site/styles/landing-downloads.css";
 
 type LandingDownloadProps = {

@@ -1,5 +1,6 @@
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { useState } from "react";
-import { useGetWorkspaceTaskQuery } from "@/shared/api/workspace-api";
+
 import type { TaskDto } from "@/shared/api/types";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { toast } from "@/shared/ui/sonner";

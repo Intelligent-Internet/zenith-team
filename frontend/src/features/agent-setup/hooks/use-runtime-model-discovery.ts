@@ -1,11 +1,11 @@
 import { skipToken } from "@reduxjs/toolkit/query";
 import { useCallback, useEffect } from "react";
 
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
-  ceoAgentApi,
+  agentRuntimeApi,
   getCeoAgentApiErrorMessage,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import type {
   RuntimeDto,
   RuntimeModel,
@@ -47,17 +47,20 @@ export function useRuntimeModelDiscovery({
       : skipToken;
   const enabled = args !== skipToken && runtime?.status === "online";
   const { refetch } =
-    ceoAgentApi.endpoints.getRuntimeModelCatalog.useQuerySubscription(args, {
-      skip: !enabled,
-      // Onboarding submits the discovery receipt; the server retains it for
-      // only two minutes. Ordinary pickers can reuse model labels for longer.
-      refetchOnMountOrArgChange: requireFreshRequest ? 60 : 300,
-      pollingInterval: requireFreshRequest ? 60_000 : 0,
-    });
+    agentRuntimeApi.endpoints.getRuntimeModelCatalog.useQuerySubscription(
+      args,
+      {
+        skip: !enabled,
+        // Onboarding submits the discovery receipt; the server retains it for
+        // only two minutes. Ordinary pickers can reuse model labels for longer.
+        refetchOnMountOrArgChange: requireFreshRequest ? 60 : 300,
+        pollingInterval: requireFreshRequest ? 60_000 : 0,
+      },
+    );
   // Reading separately preserves the last catalogue while the runtime is
   // offline, without starting discovery or borrowing another runtime's data.
   const query =
-    ceoAgentApi.endpoints.getRuntimeModelCatalog.useQueryState(args);
+    agentRuntimeApi.endpoints.getRuntimeModelCatalog.useQueryState(args);
   const receiptExpired =
     requireFreshRequest &&
     query.fulfilledTimeStamp !== undefined &&

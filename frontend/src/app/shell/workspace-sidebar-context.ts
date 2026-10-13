@@ -4,17 +4,15 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import type {
-  workspaceSidebarPages,
-  WorkspaceSidebarId,
-} from "./workspace-sidebar-pages";
+
+export type WorkspaceSidebarId = "chat" | "wiki";
 
 type PreviewHost = { id: WorkspaceSidebarId; element: HTMLDivElement } | null;
 export type SidebarContext = {
   desktop: boolean;
   viewport: HTMLElement | null;
   collapsed: boolean;
-  activePage: (typeof workspaceSidebarPages)[number] | undefined;
+  activePage: { id: WorkspaceSidebarId; label: string } | undefined;
   previewId: WorkspaceSidebarId | null;
   previewHost: PreviewHost;
   setPreviewHost: Dispatch<SetStateAction<PreviewHost>>;

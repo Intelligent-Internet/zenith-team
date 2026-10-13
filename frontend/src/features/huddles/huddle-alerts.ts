@@ -2,7 +2,7 @@ import {
   closeDesktopHuddleCallNotification,
   shouldUseDesktopHashRouter,
   showDesktopHuddleCallNotification,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import {
   isDesktopNotificationKindEnabled,
   loadDesktopWorkbenchPreferences,

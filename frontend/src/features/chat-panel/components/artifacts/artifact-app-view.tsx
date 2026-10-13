@@ -1,3 +1,4 @@
+import type { DesktopAppPreviewStatus } from "../../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useRef, useState } from "react";
 import {
   CircleX,
@@ -7,10 +8,7 @@ import {
   RotateCw,
 } from "@/shared/ui/icons";
 
-import {
-  getBoardlyDesktopBridge,
-  type DesktopAppPreviewStatus,
-} from "@/app/desktop/desktop-environment.service";
+import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 import type { ConversationArtifact } from "@/features/chat-panel/api/conversation-artifacts-api";
 import { DesktopWebsitePreview } from "@/features/chat-panel/components/desktop-website-preview";
 import { ArtifactFileActions } from "@/features/chat-panel/components/artifacts/artifact-file-actions";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { detectDesktopPlatform } from "@/app/desktop/desktop-download.service";
-import { shouldUseDesktopHashRouter } from "@/app/desktop/desktop-environment.service";
-import type { SessionSnapshot } from "@/app/session/session";
+import { detectDesktopPlatform } from "@/shared/desktop/desktop-download.service";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
+import type { SessionSnapshot } from "@/shared/session/session";
 import {
   WorkspaceAppearanceProvider,
   useWorkspaceAppearance,
@@ -20,7 +20,7 @@ import {
   type OnboardingScreen,
 } from "@/features/onboarding/model/onboarding-flow";
 import { FoldAvatarMotionContext } from "@/shared/ui/agent-avatar/fold-avatar";
-import { AppTitlebar } from "@/shared/ui/app-titlebar";
+import { AppTitlebar } from "@/app/shell/app-titlebar";
 import "@/app/shell/workspace-theme.css";
 import "@/features/onboarding/styles/onboarding.css";
 import "@/features/onboarding/styles/onboarding-motion.css";

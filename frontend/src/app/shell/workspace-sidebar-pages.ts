@@ -23,5 +23,3 @@ export const workspaceSidebarPages = [
     ),
   },
 ] as const;
-
-export type WorkspaceSidebarId = (typeof workspaceSidebarPages)[number]["id"];

@@ -24,10 +24,10 @@ import { subscribeToDesktopCommandPaletteOpen } from "@/app/desktop/desktop-comm
 import {
   getDesktopEnvironment,
   subscribeToDesktopMenuCommands,
-} from "@/app/desktop/desktop-environment.service";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+} from "@/shared/desktop/desktop-environment.service";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCompanyPermissions } from "@/shared/permissions";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { createTaskPeekNavigationState } from "@/features/chat-workspace/model/chat-workspace-route";
 import { activateAccountNotification } from "@/features/notifications/lib/account-notification-navigation";
 import { companySearchService } from "@/shared/api";

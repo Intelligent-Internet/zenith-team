@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   useListAgentRuntimesQuery,
   useListCompanyAgentsQuery,
-} from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/api/agent-runtime-api";
 import { useRuntimeModelDiscovery } from "@/features/agent-setup/hooks/use-runtime-model-discovery";
 import { findCeoAgentInPage } from "@/features/agent-setup/model/ceo-agent-setup";
 import {

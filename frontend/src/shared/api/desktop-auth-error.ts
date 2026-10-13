@@ -1,7 +1,7 @@
 import type {
   DesktopAuthFailure,
   DesktopAuthFailureKind,
-} from "@/app/desktop/desktop-environment.service";
+} from "../../../electron/shared/desktop-bridge.types";
 
 // A failed desktop auth bridge call. It keeps the main process's `kind`, so
 // a sign-in screen can tell a sign-in this computer could not save from a

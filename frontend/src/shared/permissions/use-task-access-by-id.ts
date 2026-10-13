@@ -1,4 +1,4 @@
-import { useGetWorkspaceTaskQuery } from "@/shared/api/workspace-api";
+import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 
 import {
   useTaskAccess,

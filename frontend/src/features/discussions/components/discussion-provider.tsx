@@ -6,7 +6,7 @@ import {
   useSyncExternalStore,
   type PropsWithChildren,
 } from "react";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { DiscussionRuntime } from "@/features/discussions/model/discussion-runtime";
 
 const Context = createContext<DiscussionRuntime | null>(null);

@@ -1,3 +1,4 @@
+import { useUpdateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import { TaskScheduling } from "@/features/calendar/task-scheduling";
 import { TaskAssigneeField, TaskExecutorField } from "./task-assignment-fields";
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
@@ -17,7 +18,7 @@ import type { ReactNode } from "react";
 import { milestoneLabel } from "@/features/company-plan/model/milestone-catalog";
 import { useTaskWorkStatusLabel } from "@/features/company-plan/hooks/use-project-task-reviews";
 import type { TaskDto, TaskUpdateRequest } from "@/shared/api/types";
-import { useUpdateWorkspaceTaskMutation } from "@/shared/api/workspace-api";
+
 import { toast } from "@/shared/ui/sonner";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 import { DisclosureSummary } from "@/shared/ui/disclosure-summary";

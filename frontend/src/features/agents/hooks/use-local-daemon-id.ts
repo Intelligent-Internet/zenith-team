@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   getDesktopDaemonStatus,
   subscribeToDesktopDaemonStatus,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 
 // The id of the daemon this desktop runs: the runtimes it registered are
 // "this computer". It is null on the web and while the desktop has no

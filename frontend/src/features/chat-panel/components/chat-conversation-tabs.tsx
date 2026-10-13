@@ -1,3 +1,4 @@
+import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import {
   LoaderCircle,
   MoreHorizontal,
@@ -6,7 +7,7 @@ import {
   X,
 } from "@/shared/ui/icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { readSessionSnapshot } from "@/app/session/session";
+import { readSessionSnapshot } from "@/shared/session/session";
 import { chatPanelMenuLayerClassName } from "@/features/chat-panel/constants";
 import {
   createDirectConversationDockTab,
@@ -16,7 +17,7 @@ import {
 } from "@/features/chat-panel/model/conversation-dock-tab";
 import { useConversationPickerSearch } from "@/features/chat-panel/hooks/use-conversation-picker-search";
 import type { TeamNodeData } from "@/features/home/types";
-import { useListWorkspaceTasksQuery } from "@/shared/api/workspace-api";
+
 import type { TaskDto } from "@/shared/api/types";
 import { cx } from "@/shared/lib/cx";
 import { useTaskLabel, type LabelTask } from "@/shared/lib/task-label";
@@ -35,6 +36,7 @@ import {
   useAppSelector,
   type ConversationDockTab,
 } from "@/state";
+import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 
 type ConversationPickerItem = {
   description: string;
@@ -605,4 +607,3 @@ function splitVisibleTabs(
     visibleTabs,
   };
 }
-import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";

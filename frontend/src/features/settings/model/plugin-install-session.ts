@@ -1,6 +1,6 @@
+import type { DesktopPluginDetail } from "../../../../electron/shared/desktop-bridge.types";
 import { useSyncExternalStore } from "react";
 
-import type { DesktopPluginDetail } from "@/app/desktop/desktop-environment.service";
 import type { PluginItemV1, PluginProvider } from "@/shared/api/types";
 import type { AppAvatarProps } from "@/shared/ui/app-avatar";
 

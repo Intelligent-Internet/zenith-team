@@ -1,3 +1,5 @@
+import type { DesktopTaskReview } from "../../../../electron/shared/desktop-bridge.types";
+import { boardlyApi } from "@/shared/api/boardly-api";
 import {
   type ReactNode,
   useCallback,
@@ -20,15 +22,12 @@ import {
 } from "@/shared/ui/icons";
 import { Diff, Hunk, parseDiff } from "react-diff-view";
 import "react-diff-view/style/index.css";
-import {
-  reviewDesktopTaskWorkspace,
-  type DesktopTaskReview,
-} from "@/app/desktop/desktop-environment.service";
+import { reviewDesktopTaskWorkspace } from "@/shared/desktop/desktop-environment.service";
 import { iconButtonClassName } from "@/features/chat-panel/constants";
 import { runService } from "@/shared/api";
 import { conversationService } from "@/shared/api/conversation.service";
 import { taskService } from "@/shared/api/task.service";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import { cx } from "@/shared/lib/cx";
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
@@ -289,7 +288,7 @@ export function TaskReviewPanel({
         status: "done",
       });
       dispatch(
-        workspaceApi.util.invalidateTags([
+        boardlyApi.util.invalidateTags([
           { id: companyId, type: "Run" },
           { id: companyId, type: "Task" },
         ]),
@@ -320,7 +319,7 @@ export function TaskReviewPanel({
         throw new Error(merge.reason);
       }
       dispatch(
-        workspaceApi.util.invalidateTags([
+        boardlyApi.util.invalidateTags([
           { id: state.binding.companyId, type: "Run" },
           { id: state.binding.companyId, type: "Task" },
         ]),
@@ -349,7 +348,7 @@ export function TaskReviewPanel({
         requestKey: generateUuidV7(),
       });
       dispatch(
-        workspaceApi.util.invalidateTags([
+        boardlyApi.util.invalidateTags([
           { id: latest.conversationId, type: "Message" },
           { id: companyId, type: "Run" },
           { id: companyId, type: "Task" },

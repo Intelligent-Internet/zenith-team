@@ -1,3 +1,4 @@
+import type { DesktopDaemonStatus } from "../../../../electron/shared/desktop-bridge.types";
 import { useEffect, useState } from "react";
 
 import {
@@ -5,8 +6,7 @@ import {
   shouldUseDesktopHashRouter,
   subscribeToDesktopDaemonStatus,
   WEB_DESKTOP_DAEMON_STATUS_FALLBACK,
-  type DesktopDaemonStatus,
-} from "@/app/desktop/desktop-environment.service";
+} from "@/shared/desktop/desktop-environment.service";
 import { useRuntimeSetupRefresh } from "@/features/settings/model/use-runtime-setup-refresh";
 import type { AgentProvider } from "@/shared/api/types";
 import { Button } from "@/shared/ui/button";

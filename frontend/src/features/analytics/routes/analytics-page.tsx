@@ -1,4 +1,14 @@
 import {
+  analyticsApi,
+  useGetWorkspaceAnalyticsBreakdownQuery,
+  useGetWorkspaceAnalyticsFailuresQuery,
+  useGetWorkspaceAnalyticsSeriesQuery,
+  useGetWorkspaceAnalyticsSummaryQuery,
+  useGetWorkspaceAnalyticsHeatmapQuery,
+  useGetWorkspaceAnalyticsBudgetsQuery,
+  usePutWorkspaceAnalyticsBudgetMutation,
+} from "@/shared/api/analytics-api";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -15,7 +25,7 @@ import {
   ChevronDown,
   X,
 } from "@/shared/ui/icons";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { Tooltip } from "@/shared/ui/tooltip";
 import { useCompanyPermissions } from "@/shared/permissions";
 import {
@@ -23,16 +33,7 @@ import {
   getBoardlyQueryErrorMessage,
 } from "@/shared/api/boardly-api";
 import { useAppDispatch } from "@/state";
-import {
-  workspaceApi,
-  useGetWorkspaceAnalyticsBreakdownQuery,
-  useGetWorkspaceAnalyticsFailuresQuery,
-  useGetWorkspaceAnalyticsSeriesQuery,
-  useGetWorkspaceAnalyticsSummaryQuery,
-  useGetWorkspaceAnalyticsHeatmapQuery,
-  useGetWorkspaceAnalyticsBudgetsQuery,
-  usePutWorkspaceAnalyticsBudgetMutation,
-} from "@/shared/api/workspace-api";
+
 import type {
   AnalyticsBreakdown,
   AnalyticsBudget,
@@ -1363,7 +1364,7 @@ type BreakdownTableProps = {
   title: string;
   data?: AnalyticsBreakdown;
   query: Parameters<
-    typeof workspaceApi.endpoints.getWorkspaceAnalyticsBreakdown.initiate
+    typeof analyticsApi.endpoints.getWorkspaceAnalyticsBreakdown.initiate
   >[0];
   apply: (key: string, value: string) => void;
   metric?: string;
@@ -1416,7 +1417,7 @@ function BreakdownTable({
       let cursor: string | undefined;
       do {
         const result = await dispatch(
-          workspaceApi.endpoints.getWorkspaceAnalyticsBreakdown.initiate(
+          analyticsApi.endpoints.getWorkspaceAnalyticsBreakdown.initiate(
             { ...query, limit: 100, cursor },
             { subscribe: false, forceRefetch: true },
           ),

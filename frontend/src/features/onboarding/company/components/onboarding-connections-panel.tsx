@@ -4,8 +4,8 @@ import {
   openDesktopExternal,
   readDesktopConnectorStatus,
   shouldUseDesktopHashRouter,
-} from "@/app/desktop/desktop-environment.service";
-import { useListCompanyAgentsQuery } from "@/features/agent-setup/api/ceo-agent-api";
+} from "@/shared/desktop/desktop-environment.service";
+import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import {
   findCeoAgentInPage,
   runtimeMachineName,

@@ -22,6 +22,9 @@ test-results
 playwright-report
 *.local
 
+# Local Redis snapshots
+*.rdb
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

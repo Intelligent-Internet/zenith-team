@@ -1,8 +1,9 @@
+import { useUpdateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import { TaskResultProposal } from "./task-result-proposal";
 import { useState } from "react";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useGetTaskResultSelectionQuery } from "../api/task-result-selection-api";
-import { useUpdateWorkspaceTaskMutation } from "@/shared/api/workspace-api";
+
 import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import type { TaskDto } from "@/shared/api/types";
 import type { ConversationArtifact } from "@/features/chat-panel/api/conversation-artifacts-api";

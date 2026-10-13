@@ -1,7 +1,5 @@
-import {
-  getBoardlyDesktopBridge,
-  type DesktopLinkPreview,
-} from "@/app/desktop/desktop-environment.service";
+import type { DesktopLinkPreview } from "../../../../electron/shared/desktop-bridge.types";
+import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export type ChatLinkPreview = DesktopLinkPreview;
 

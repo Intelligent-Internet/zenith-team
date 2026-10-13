@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
-import { canBrowseDesktopWorkspaceAssets } from "@/app/desktop/desktop-environment.service";
+import { canBrowseDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
 import {
   useListWorkspaceAssetsQuery,
   workspaceAssetsApi,

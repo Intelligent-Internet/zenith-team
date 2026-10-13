@@ -1,4 +1,5 @@
-import { TaskPages } from "@/features/project-canvas/task-pages";
+import { useListWorkspaceTaskMessagesQuery } from "@/shared/api/task-api";
+import { TaskPages } from "@/features/project-canvas/documents/task-pages";
 import { useTaskAttention } from "../hooks/use-task-attention";
 import {
   useEffect,
@@ -19,7 +20,7 @@ import {
 } from "@/shared/ui/icons";
 import { useTaskLabel } from "@/shared/lib/task-label";
 import type { TaskDto } from "@/shared/api/types";
-import { useListWorkspaceTaskMessagesQuery } from "@/shared/api/workspace-api";
+
 import { useTaskDependencyPresentation } from "@/features/task-dependencies/model/use-task-dependency-presentation";
 import { TaskDependencySummary } from "@/features/task-dependencies/components/task-dependency-summary";
 import { TaskActivity, TaskFileList } from "../components/task-detail-page";

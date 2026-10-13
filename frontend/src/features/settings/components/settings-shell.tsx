@@ -17,7 +17,7 @@ import {
   getVisibleSettingsTabs,
   type SettingsTabId,
 } from "@/features/settings/model/settings-navigation";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCompanyPermissions } from "@/shared/permissions";
 import "@/features/settings/styles/settings.css";
 import "@/features/settings/styles/settings-workspace.css";

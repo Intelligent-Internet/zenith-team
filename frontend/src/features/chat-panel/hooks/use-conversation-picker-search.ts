@@ -1,5 +1,6 @@
+import { useLazySearchWorkspaceConversationsQuery } from "@/shared/api/conversation-api";
 import { useEffect } from "react";
-import { useLazySearchWorkspaceConversationsQuery } from "@/shared/api/workspace-api";
+
 import type {
   CompanyConversationSearchResult,
   CompanyTaskSearchResult,

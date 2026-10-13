@@ -5,7 +5,7 @@ import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
 import { useAppDispatch } from "@/state";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
-import { useSessionSnapshot } from "@/app/session/use-session-snapshot";
+import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { Button } from "@/shared/ui/button";
 import { Tooltip } from "@/shared/ui/tooltip";
 import {

@@ -1,3 +1,4 @@
+import { taskApi } from "@/shared/api/task-api";
 import { useCallback, useMemo } from "react";
 import { useAgentRealtimeChat } from "@/features/chat-panel/hooks/use-agent-realtime-chat";
 import { runFailureMessageForViewer } from "@/features/company-plan/model/task-execution";
@@ -6,7 +7,7 @@ import type { ChatTeamId } from "@/shared/chat/chat-team";
 import type { ChatMessage } from "@/shared/chat/types";
 import { requireActiveCompanyId } from "@/shared/api/active-company";
 import { runService } from "@/shared/api/run.service";
-import { workspaceApi } from "@/shared/api/workspace-api";
+
 import type { TaskDto } from "@/shared/api/types";
 import { useTaskAccess } from "@/shared/permissions";
 import {
@@ -43,7 +44,7 @@ export function useTaskConversationController({
   const backendTaskId = tab?.kind === "task" ? tab.taskId : undefined;
   const taskChatId = backendTaskId ? `task:${backendTaskId}` : "";
   const [loadTaskWorkspaceQuery, taskWorkspaceQuery] =
-    workspaceApi.useLazyGetWorkspaceTaskWorkspaceQuery();
+    taskApi.useLazyGetWorkspaceTaskWorkspaceQuery();
 
   const draftMessage = useAppSelector((state) =>
     taskChatId ? selectTaskChatDraft(state, taskChatId) : "",
@@ -75,7 +76,7 @@ export function useTaskConversationController({
       taskId: backendTaskId,
     }).unwrap();
     dispatch(
-      workspaceApi.util.upsertQueryData(
+      taskApi.util.upsertQueryData(
         "getWorkspaceTaskDependencies",
         { companyId, taskId: backendTaskId },
         value.dependencies,
