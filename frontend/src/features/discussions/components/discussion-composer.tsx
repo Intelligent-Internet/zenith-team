@@ -19,6 +19,7 @@ import {
   Music,
   Paperclip,
   LoaderCircle,
+  Text,
   Video,
   X,
 } from "@/shared/ui/icons";
@@ -68,6 +69,8 @@ export function DiscussionComposer({
   const preview = useDiscussionPreview();
   const channelAgents = useChannelAgents();
   const agentHintId = useId();
+  const formattingId = useId();
+  const [formattingOpen, setFormattingOpen] = useState(false);
   // A tag runs the Agent on the tagger's own computer (ADR 0014). An Agent
   // the viewer has not set up is listed as "Not set up" rather than hidden,
   // and choosing it offers the setup.
@@ -321,8 +324,13 @@ export function DiscussionComposer({
             void runtime.send(conversationId, false, rootId);
         }}
       >
-        {compact ? null : (
-          <DiscussionRichFormatting editor={rich.editor} disabled={!canSend} />
+        {!compact && formattingOpen && (
+          <div id={formattingId}>
+            <DiscussionRichFormatting
+              editor={rich.editor}
+              disabled={!canSend}
+            />
+          </div>
         )}
         <ArtifactDraftCards
           artifacts={draft.artifacts}
@@ -443,6 +451,21 @@ export function DiscussionComposer({
               onUpload={() => fileInput.current?.click()}
               onSelectArtifact={() => setArtifactPickerOpen(true)}
             />
+            {compact ? null : (
+              <button
+                className="discussion-icon-button"
+                type="button"
+                aria-label="Message formatting"
+                aria-expanded={formattingOpen}
+                aria-controls={formattingOpen ? formattingId : undefined}
+                title={formattingOpen ? "Hide formatting" : "Show formatting"}
+                disabled={!canSend}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => setFormattingOpen((open) => !open)}
+              >
+                <Text size={18} aria-hidden />
+              </button>
+            )}
             {compact ? null : (
               <DiscussionRichEmoji editor={rich.editor} disabled={!canSend} />
             )}

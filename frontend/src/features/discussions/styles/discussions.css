@@ -587,6 +587,14 @@
   line-height: var(--workspace-leading-chat, 24px);
   color: var(--discussion-text);
 }
+.discussion-composer .discussion-rich-input {
+  min-height: 48px;
+  padding: 12px 14px 8px;
+}
+.discussion-composer-tools .discussion-icon-button[aria-expanded="true"] {
+  background: var(--workspace-hover-bg);
+  color: var(--workspace-native-text);
+}
 /* The composer shell is the boundary; typing does not frame the inner field. */
 html[data-boardly-workspace-theme] .discussion-composer textarea:focus {
   outline: none;
@@ -598,12 +606,35 @@ html[data-boardly-workspace-theme] .discussion-composer textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px 12px;
+  padding: 4px 12px 8px;
 }
 .discussion-composer-tools > div {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+/* Match visible glyph bounds, since each asset has different internal padding. */
+.discussion-composer-tools .chat-add-button {
+  width: var(--workspace-control-size, 32px);
+  height: var(--workspace-control-size, 32px);
+  color: var(--workspace-native-text-muted, #96abc0);
+}
+.discussion-composer-tools .chat-add-button:hover:not(:disabled),
+.discussion-composer-tools .chat-add-button:focus-visible {
+  color: var(--workspace-native-text, #e6edf6);
+}
+.discussion-composer-tools [data-iconsax="add"],
+.discussion-composer-tools [data-ui-symbol="at-sign"] {
+  width: 20px;
+  height: 20px;
+}
+.discussion-composer-tools [data-iconsax="text"] {
+  width: 18px;
+  height: 18px;
+}
+.discussion-composer-tools [data-iconsax="emoji-happy"] {
+  width: 17px;
+  height: 17px;
 }
 .discussion-send {
   margin-left: auto;
