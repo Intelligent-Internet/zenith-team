@@ -32,8 +32,8 @@ docker build -f server/Dockerfile -t boardly-server:$(git rev-parse --short HEAD
 `server/Dockerfile.dockerignore` trims the BuildKit context to the Go module.
 CI runs the same build when a `release-<semver>` tag (for example
 `release-0.0.1`) is pushed at a commit on `main`
-(`.github/workflows/release.yml`) and pushes `ii-boardly/server:<semver>`
-and `:latest` to ECR without deploying; merges to `main` build no image,
+(`.github/workflows/release.yml`) and pushes `my-registry/zenith-team:<semver>`
+and `:latest` to Artifact Registry without deploying; merges to `main` build no image,
 and the recipe above is for self-hosting. Tag local images with the
 commit; `latest` is a convenience, never a deploy target. The image
 contains two binaries: `/usr/local/bin/boardly-server`
