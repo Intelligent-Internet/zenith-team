@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/companies/{companyId}/message-skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List enabled custom skills selectable for a message
+         * @description Supply exactly one of conversation_id or agent_id. Existing chats return skills of their current active Agents only and require chat membership (or direct-chat ownership). agent_id selects the Agent for a new direct chat. All invoked Agents receive the selected versions without changing their installations.
+         */
+        get: operations["listMessageSkills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history": {
         parameters: {
             query?: never;
@@ -12769,6 +12789,20 @@ export interface components {
             type: "mailbox.draft_changed";
             payload: components["schemas"]["MailboxDraftChangedPayload"];
         };
+        MessageSkill: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            agentId: string;
+            /** Format: uuid */
+            versionId: string;
+            name: string;
+            description: string;
+            agentName: string;
+        };
+        MessageSkillCollection: {
+            items: components["schemas"]["MessageSkill"][];
+        };
         /**
          * @description The single error envelope used by every endpoint.
          * @example {
@@ -13746,7 +13780,7 @@ export interface components {
                 start: number;
                 end: number;
                 /** @enum {string} */
-                type: "user" | "agent" | "attachment" | "asset_version" | "broadcast";
+                type: "user" | "agent" | "attachment" | "asset_version" | "broadcast" | "skill";
                 /** Format: uuid */
                 userId?: string;
                 /** Format: uuid */
@@ -13755,6 +13789,10 @@ export interface components {
                 attachmentId?: string;
                 /** Format: uuid */
                 assetVersionId?: string;
+                /** Format: uuid */
+                skillId?: string;
+                /** Format: uuid */
+                versionId?: string;
                 /** @enum {string} */
                 scope?: "everyone" | "here";
             }[];
@@ -17731,6 +17769,14 @@ export interface components {
             updatedAt: components["schemas"]["Timestamp"];
             revision: components["schemas"]["Revision"];
         };
+        MessageSkillReference: {
+            start: number;
+            end: number;
+            /** Format: uuid */
+            skillId: string;
+            /** Format: uuid */
+            versionId: string;
+        };
         /**
          * @description One item of a conversation's single ordered stream, projected onto the
          *     chat surface. A Conversation has one sequence, and the chat page and its
@@ -17742,6 +17788,7 @@ export interface components {
          *     authorship and provenance are fixed the moment the row exists.
          */
         Message: {
+            skillReferences?: components["schemas"]["MessageSkillReference"][];
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -19791,11 +19838,10 @@ export interface components {
             };
         };
         /**
-         * @description `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
-         *     `company_access_required`, or `human_actor_required` when a Run proof
-         *     (`X-Boardly-Run-Token`) reaches a route that does not accept a Run.
+         * @description `404` — missing **or** not visible to the caller. Company-scoped denial
+         *     always lands here rather than on 403.
          */
-        Forbidden: {
+        NotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -19804,10 +19850,23 @@ export interface components {
             };
         };
         /**
-         * @description `404` — missing **or** not visible to the caller. Company-scoped denial
-         *     always lands here rather than on 403.
+         * @description `422` — well-formed request failing a validation rule
+         *     (`validation_failed`), or a malformed cursor (`invalid_cursor`).
          */
-        NotFound: {
+        ValidationFailed: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /**
+         * @description `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
+         *     `company_access_required`, or `human_actor_required` when a Run proof
+         *     (`X-Boardly-Run-Token`) reaches a route that does not accept a Run.
+         */
+        Forbidden: {
             headers: {
                 [name: string]: unknown;
             };
@@ -19826,18 +19885,6 @@ export interface components {
         };
         /** @description `413 request_too_large` — body over the per-endpoint cap. */
         PayloadTooLarge: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /**
-         * @description `422` — well-formed request failing a validation rule
-         *     (`validation_failed`), or a malformed cursor (`invalid_cursor`).
-         */
-        ValidationFailed: {
             headers: {
                 [name: string]: unknown;
             };
@@ -20079,6 +20126,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listMessageSkills: {
+        parameters: {
+            query?: {
+                /** @description Existing channel, group direct chat or direct conversation. */
+                conversation_id?: string;
+                /** @description Agent for a new direct chat without a conversation yet. Cannot accompany conversation_id. */
+                agent_id?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enabled skills with their source Agent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageSkillCollection"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
     outputDocumentHistoryList: {
         parameters: {
             query?: {
@@ -39112,6 +39190,7 @@ export interface operations {
                      */
                     requestKey: string;
                     content?: string;
+                    skillReferences?: components["schemas"]["MessageSkillReference"][];
                     /** @description Direct Agent chats only. Freezes accessible managed Artifact references into message and Run context. Does not change sharing grants. */
                     artifactIds?: string[];
                     /**
@@ -39376,6 +39455,8 @@ export interface operations {
                      */
                     requestKey: string;
                     content?: string;
+                    /** @description Message skill selection is supported in direct chats and discussions; Task messages must leave this empty. */
+                    skillReferences?: components["schemas"]["MessageSkillReference"][];
                     /** @description Direct Agent chats only. Freezes accessible managed Artifact references into message and Run context. Does not change sharing grants. */
                     artifactIds?: string[];
                     attachmentIds?: string[];

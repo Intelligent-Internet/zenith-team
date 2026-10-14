@@ -110,6 +110,23 @@ func validateDiscussionReferences(
 			}); lookupErr != nil {
 				return nil, ErrDiscussionInvalid
 			}
+		case "skill":
+			if previous != nil {
+				oldRefs, err := decodeDiscussionReferences(*previous)
+				if err != nil {
+					return nil, err
+				}
+				found := false
+				for _, old := range oldRefs {
+					if old.Type == "skill" && *old.SkillID == *reference.SkillID && *old.VersionID == *reference.VersionID {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return nil, ErrDiscussionInvalid
+				}
+			}
 		case "asset_version":
 			// Asset-version references are reserved for the Company resource ACL
 			// surface. Rejecting them here avoids leaking a guessed resource ID.

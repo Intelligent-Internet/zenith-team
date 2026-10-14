@@ -129,6 +129,7 @@ var expectedBusinessTables = []string{
 	"mailbox_messages",
 	"mailbox_received_receipts",
 	"message_attachments",
+	"message_skills",
 	"model_prices",
 	"oauth_accounts",
 	"oauth_login_flows",
@@ -303,6 +304,7 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"activity_events":                    false,
 	"agent_skills":                       true,
 	"run_skills":                         false,
+	"message_skills":                     false,
 	"skill_imports":                      false,
 	"skill_versions":                     false,
 	"agent_runtime_bindings":             true,
@@ -922,6 +924,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 				table == "company_initializations" ||
 				table == "agent_skills" ||
 				table == "run_skills" ||
+				table == "message_skills" ||
 				table == "skill_imports" ||
 				table == "skill_versions" ||
 				table == "company_groups" ||

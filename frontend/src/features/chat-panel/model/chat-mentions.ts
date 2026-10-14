@@ -1,4 +1,5 @@
 export type ChatMentionMember = {
+  skill?: { skillId: string; versionId: string };
   id: string;
   name: string;
   description: string;
@@ -12,6 +13,7 @@ export type ChatMentionMember = {
 };
 
 export type ChatMentionQuery = {
+  trigger: "@" | "$";
   start: number;
   end: number;
   text: string;
@@ -25,12 +27,13 @@ export function findChatMentionQuery(
   if (selectionStart !== selectionEnd) return null;
   const match = text
     .slice(0, selectionStart)
-    .match(/(?:^|[\s([{])@([\p{L}\p{M}\p{N}_.-]*)$/u);
+    .match(/(?:^|[\s([{])([@$])([\p{L}\p{M}\p{N}_.-]*)$/u);
   if (!match) return null;
   return {
-    start: selectionStart - match[1].length - 1,
+    trigger: match[1] as "@" | "$",
+    start: selectionStart - match[2].length - 1,
     end: selectionStart,
-    text: match[1],
+    text: match[2],
   };
 }
 

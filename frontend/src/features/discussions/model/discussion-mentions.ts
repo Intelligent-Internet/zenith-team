@@ -6,7 +6,7 @@ type Body = NonNullable<DiscussionMessage["body"]>;
 export function discussionMentionRanges(references: Body["references"]) {
   return references
     .filter((reference) =>
-      ["user", "agent", "broadcast"].includes(reference.type),
+      ["user", "agent", "broadcast", "skill"].includes(reference.type),
     )
     .sort((a, b) => a.start - b.start);
 }

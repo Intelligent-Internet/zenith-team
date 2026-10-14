@@ -1,3 +1,4 @@
+import type { components } from "@/shared/api/generated/api.generated";
 import { canonicalUuid } from "@/shared/lib/uuid";
 import { readSessionSnapshot } from "@/shared/session/session";
 import {
@@ -111,6 +112,7 @@ export type ConversationRunStreamEvent =
     });
 
 export type ConversationMessageCommand = {
+  skillReferences?: components["schemas"]["MessageSkillReference"][];
   artifactIds?: string[];
   attachmentIds: string[];
   clientRequestId: string;
@@ -388,6 +390,7 @@ export class ConversationSocketSession {
       const request = {
         attachmentIds: command.attachmentIds,
         artifactIds: command.artifactIds,
+        skillReferences: command.skillReferences,
         content: command.content,
         requestKey,
       };

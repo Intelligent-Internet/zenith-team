@@ -1,4 +1,5 @@
-"use client";
+import type { components } from "@/shared/api/generated/api.generated";
+("use client");
 
 import { Button } from "../button";
 import {
@@ -400,6 +401,7 @@ export const PromptInputActionAddAttachments = ({
 };
 
 export type PromptInputMessage = {
+  skillReferences?: components["schemas"]["MessageSkillReference"][];
   artifactIds?: string[];
   text?: string;
   files?: ChatInputFile[];
@@ -416,6 +418,7 @@ export type PromptInputProps = Omit<
   "onSubmit" | "onError"
 > & {
   attachmentsController?: AttachmentsContext;
+  skillReferences?: components["schemas"]["MessageSkillReference"][];
   artifactIds?: string[];
   accept?: string; // e.g., "image/*" or leave undefined for any
   multiple?: boolean;

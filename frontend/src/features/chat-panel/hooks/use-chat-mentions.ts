@@ -45,24 +45,30 @@ export function useChatMentions({
     openSuggestions: boolean;
   } | null>(null);
   const matches = query
-    ? filterChatMentionMembers(members ?? [], query.text)
+    ? filterChatMentionMembers(
+        (members ?? []).filter((member) =>
+          query.trigger === "$" ? !!member.skill : !member.skill,
+        ),
+        query.text,
+      )
     : [];
-  const isOpen = !disabled && !!members?.length && query !== null;
+  const isOpen = !disabled && query !== null;
   const selectedIndex = Math.min(activeIndex, Math.max(0, matches.length - 1));
 
   const syncSelection = (textarea: HTMLTextAreaElement) => {
-    if (disabled || !members?.length || composing.current) return;
+    if (disabled || composing.current) return;
     const nextQuery = findChatMentionQuery(
       textarea.value,
       textarea.selectionStart,
       textarea.selectionEnd,
     );
     const signature = nextQuery
-      ? `${nextQuery.start}:${nextQuery.end}:${nextQuery.text}`
+      ? `${nextQuery.trigger}:${nextQuery.start}:${nextQuery.end}:${nextQuery.text}`
       : null;
     if (signature && signature === dismissedQuery.current) return;
     dismissedQuery.current = null;
     if (
+      query?.trigger === nextQuery?.trigger &&
       query?.start === nextQuery?.start &&
       query?.end === nextQuery?.end &&
       query?.text === nextQuery?.text
@@ -74,7 +80,7 @@ export function useChatMentions({
 
   const dismiss = () => {
     if (query) {
-      dismissedQuery.current = `${query.start}:${query.end}:${query.text}`;
+      dismissedQuery.current = `${query.trigger}:${query.start}:${query.end}:${query.text}`;
     }
     setQuery(null);
   };
@@ -108,7 +114,7 @@ export function useChatMentions({
     }
     const before = textarea.value.slice(0, query.start);
     const after = textarea.value.slice(query.end);
-    const mention = `@${member.name}`;
+    const mention = `${member.skill ? "$" : "@"}${member.name}`;
     const separator = after.startsWith(" ") ? "" : " ";
     setQuery(null);
     dismissedQuery.current = null;
@@ -183,6 +189,7 @@ export function useChatMentions({
   };
 
   return {
+    trigger: query?.trigger,
     activeIndex: selectedIndex,
     activeOptionId:
       isOpen && matches.length ? `${listId}-${selectedIndex}` : undefined,

@@ -6,6 +6,7 @@ import {
 import { ChatAddMenu } from "@/features/chat-panel/components/artifact-picker/chat-add-menu";
 import { ArtifactPickerDialog } from "@/features/chat-panel/components/artifact-picker/artifact-picker-dialog";
 import { ArtifactDraftCards } from "@/features/chat-panel/components/artifact-picker/artifact-draft-cards";
+import { useSkillMentionMembers } from "@/features/chat-panel/hooks/use-skill-mention-members";
 import { useChannelAgents } from "./channel-agents";
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import { useId, useRef, useState } from "react";
@@ -73,6 +74,10 @@ export function DiscussionComposer({
   // the viewer has not set up is listed as "Not set up" rather than hidden,
   // and choosing it offers the setup.
   const companyId = runtime.session.companyId;
+  const skillMembers = useSkillMentionMembers({
+    companyId,
+    conversation_id: conversationId,
+  });
   const roster = useListCompanyAgentsQuery(companyId, { skip: !companyId })
     .currentData?.items;
   const { dialog: bindDialog, openBindDialog } = useBindAgentDialog(companyId);
@@ -166,6 +171,7 @@ export function DiscussionComposer({
       }),
     ).length > 65_536;
   const members: ChatMentionMember[] = [
+    ...skillMembers,
     ...mentionMembers.filter(
       (member) =>
         member.kind !== "agent" && member.id !== runtime.session.userId,

@@ -1,6 +1,10 @@
 import { apiClient } from "@/lib/api-client";
 import { boardlyApi, executeBoardlyQuery } from "./boardly-api";
-import type { components } from "./generated/api.generated";
+import type { components, operations } from "./generated/api.generated";
+
+export type MessageSkillScope = { companyId: string } & NonNullable<
+  operations["listMessageSkills"]["parameters"]["query"]
+>;
 
 type Schemas = components["schemas"];
 export type AgentSkill = Schemas["AgentSkill"];
@@ -18,6 +22,30 @@ const mutationTags = (scope: Scope) => [
 
 export const agentSkillApi = boardlyApi.injectEndpoints({
   endpoints: (builder) => ({
+    messageSkills: builder.query<
+      Schemas["MessageSkillCollection"],
+      MessageSkillScope
+    >({
+      queryFn: ({ companyId, ...params }) =>
+        executeBoardlyQuery(
+          () =>
+            apiClient.get<Schemas["MessageSkillCollection"]>(
+              `/companies/${encodeURIComponent(companyId)}/message-skills`,
+              { params },
+            ),
+          "Skills could not be loaded.",
+        ),
+      providesTags: (_result, _error, { companyId, conversation_id }) => [
+        { type: "AgentSkill", id: companyId },
+        { type: "Agent", id: companyId },
+        ...(conversation_id
+          ? [
+              { type: "DiscussionDetail" as const, id: conversation_id },
+              { type: "ChannelAgent" as const, id: conversation_id },
+            ]
+          : []),
+      ],
+    }),
     agentSkills: builder.query<Schemas["AgentSkillCollection"], Scope>({
       merge: (current, incoming) => {
         current.items = incoming.items.map((skill) => {
@@ -165,6 +193,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
   }),
 });
 export const {
+  useMessageSkillsQuery,
   useAgentSkillsQuery,
   usePreviewSkillUploadMutation,
   usePreviewSkillGitHubMutation,

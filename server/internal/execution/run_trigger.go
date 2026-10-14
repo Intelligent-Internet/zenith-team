@@ -198,6 +198,7 @@ type RunTrigger struct {
 	// message it writes after this call, for the same reason TriggerPrompt is
 	// text: that message does not exist yet. A Task Run freezes them beside
 	// the files already on the Task's Conversation.
+	SkillRequestKey      uuid.UUID
 	TriggerAttachmentIDs []uuid.UUID
 	Priority             int32
 	Context              []byte

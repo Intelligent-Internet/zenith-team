@@ -81,6 +81,8 @@ type discussionReference struct {
 	AgentID        *uuid.UUID `json:"agentId,omitempty"`
 	AttachmentID   *uuid.UUID `json:"attachmentId,omitempty"`
 	AssetVersionID *uuid.UUID `json:"assetVersionId,omitempty"`
+	SkillID        *uuid.UUID `json:"skillId,omitempty"`
+	VersionID      *uuid.UUID `json:"versionId,omitempty"`
 	Scope          string     `json:"scope,omitempty"`
 }
 
@@ -110,6 +112,13 @@ func decodeDiscussionReferences(body DiscussionBody) ([]discussionReference, err
 			label := string(utf16.Decode(encoded[reference.Start:reference.End]))
 			if !strings.HasPrefix(label, "@") || len(label) < 2 ||
 				(reference.Type == "broadcast" && label != "@"+reference.Scope) {
+				return nil, ErrDiscussionInvalid
+			}
+		}
+		if reference.Type == "skill" {
+			encoded := utf16.Encode([]rune(body.Markdown))
+			label := string(utf16.Decode(encoded[reference.Start:reference.End]))
+			if !strings.HasPrefix(label, "$") || len(label) < 2 {
 				return nil, ErrDiscussionInvalid
 			}
 		}
@@ -183,7 +192,7 @@ func discussionReferenceRangeAllowed(markdown string, start, end int) bool {
 
 func validDiscussionReferenceShape(reference discussionReference) bool {
 	count := 0
-	for _, id := range []*uuid.UUID{reference.UserID, reference.AgentID, reference.AttachmentID, reference.AssetVersionID} {
+	for _, id := range []*uuid.UUID{reference.UserID, reference.AgentID, reference.AttachmentID, reference.AssetVersionID, reference.SkillID, reference.VersionID} {
 		if id != nil && *id == uuid.Nil {
 			return false
 		}
@@ -200,7 +209,15 @@ func validDiscussionReferenceShape(reference discussionReference) bool {
 	if reference.AssetVersionID != nil {
 		count++
 	}
+	if reference.SkillID != nil {
+		count++
+	}
+	if reference.VersionID != nil {
+		count++
+	}
 	switch reference.Type {
+	case "skill":
+		return count == 2 && reference.SkillID != nil && reference.VersionID != nil && reference.Scope == ""
 	case "user":
 		return count == 1 && reference.UserID != nil && reference.Scope == ""
 	case "agent":

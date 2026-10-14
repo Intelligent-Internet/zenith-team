@@ -1,6 +1,8 @@
 package conversation
 
 import (
+	"slices"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -103,11 +105,19 @@ type MessageTarget struct {
 	ID   uuid.UUID
 }
 
+type SkillReference struct {
+	Start     int       `json:"start"`
+	End       int       `json:"end"`
+	SkillID   uuid.UUID `json:"skillId"`
+	VersionID uuid.UUID `json:"versionId"`
+}
+
 type SendInput struct {
-	RequestKey    uuid.UUID
-	Content       string
-	AttachmentIDs []uuid.UUID
-	ArtifactIDs   []uuid.UUID
+	SkillReferences []SkillReference
+	RequestKey      uuid.UUID
+	Content         string
+	AttachmentIDs   []uuid.UUID
+	ArtifactIDs     []uuid.UUID
 	// SuppressUserMessage starts the Agent without writing the prompt into the
 	// transcript. It exists for prompts the person never typed — onboarding
 	// hands the CEO Agent its opening instruction, and showing the founder a
@@ -282,11 +292,24 @@ func normalizeRenameDirectInput(input RenameDirectInput) (RenameDirectInput, err
 }
 
 func normalizeSendInput(input SendInput) (SendInput, error) {
+	if err := validateMessageSkillReferences(input.Content, input.SkillReferences); err != nil {
+		return SendInput{}, err
+	}
 	if !util.ValidUUID(input.RequestKey) || len(input.AttachmentIDs) > maxMessageAttachments ||
-		len(input.ArtifactIDs) > 10 || (input.SuppressUserMessage && len(input.ArtifactIDs) > 0) {
+		len(input.ArtifactIDs) > 10 || (input.SuppressUserMessage && (len(input.ArtifactIDs) > 0 || len(input.SkillReferences) > 0)) {
 		return SendInput{}, ErrInvalidInput
 	}
+	originalContent := input.Content
 	input.Content = protocol.TrimContractWhitespace(input.Content)
+	if len(input.SkillReferences) > 0 {
+		input.SkillReferences = slices.Clone(input.SkillReferences)
+		leading := strings.Index(originalContent, input.Content)
+		shift := utf16Len(originalContent[:leading])
+		for i := range input.SkillReferences {
+			input.SkillReferences[i].Start -= shift
+			input.SkillReferences[i].End -= shift
+		}
+	}
 	if input.Content == "" && len(input.ArtifactIDs) > 0 {
 		input.Content = "Attached artifacts."
 	}
@@ -687,12 +710,13 @@ type UserState struct {
 // them, the agent's answer to the Run that wrote it — which is what the
 // NOT NULL label on the row says.
 type MessageResponse struct {
-	ID             uuid.UUID         `json:"id"`
-	ConversationID uuid.UUID         `json:"conversationId"`
-	Seq            int64             `json:"seq"`
-	Type           ItemType          `json:"type"`
-	Author         protocol.ActorRef `json:"author"`
-	RunID          uuid.UUID         `json:"runId"`
-	Content        string            `json:"content"`
-	CreatedAt      time.Time         `json:"createdAt"`
+	SkillReferences []SkillReference  `json:"skillReferences,omitempty"`
+	ID              uuid.UUID         `json:"id"`
+	ConversationID  uuid.UUID         `json:"conversationId"`
+	Seq             int64             `json:"seq"`
+	Type            ItemType          `json:"type"`
+	Author          protocol.ActorRef `json:"author"`
+	RunID           uuid.UUID         `json:"runId"`
+	Content         string            `json:"content"`
+	CreatedAt       time.Time         `json:"createdAt"`
 }

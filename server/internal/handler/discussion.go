@@ -617,6 +617,7 @@ func parseDiscussionQuery(c *gin.Context, allowed ...string) (conversation.Discu
 }
 
 var discussionErrorMappings = []errorMapping{
+	{conversation.ErrMessageSkillSelection, http.StatusConflict, "A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.", "message_skill_unavailable"},
 	{
 		conversation.ErrDiscussionNotFound,
 		http.StatusNotFound,

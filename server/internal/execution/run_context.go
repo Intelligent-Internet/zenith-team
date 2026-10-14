@@ -38,15 +38,16 @@ type runResourceContext struct {
 // RunAgentContext decode — separate types, identical wire — and empty members
 // are omitted so absence keeps meaning "use the runtime default".
 type runAgentBrief struct {
-	SkillRefs       []contentbundle.SkillRef `json:"skillRefs,omitempty"`
-	SkillSetHash    string                   `json:"skillSetHash,omitempty"`
-	Capabilities    json.RawMessage          `json:"capabilities,omitempty"`
-	DisabledPlugins json.RawMessage          `json:"disabledPlugins,omitempty"`
-	Name            string                   `json:"name,omitempty"`
-	Title           string                   `json:"title,omitempty"`
-	Instructions    string                   `json:"instructions,omitempty"`
-	Model           string                   `json:"model,omitempty"`
-	ThinkingLevel   string                   `json:"thinkingLevel,omitempty"`
+	SelectedSkillKeys []string                 `json:"selectedSkillKeys,omitempty"`
+	SkillRefs         []contentbundle.SkillRef `json:"skillRefs,omitempty"`
+	SkillSetHash      string                   `json:"skillSetHash,omitempty"`
+	Capabilities      json.RawMessage          `json:"capabilities,omitempty"`
+	DisabledPlugins   json.RawMessage          `json:"disabledPlugins,omitempty"`
+	Name              string                   `json:"name,omitempty"`
+	Title             string                   `json:"title,omitempty"`
+	Instructions      string                   `json:"instructions,omitempty"`
+	Model             string                   `json:"model,omitempty"`
+	ThinkingLevel     string                   `json:"thinkingLevel,omitempty"`
 	// IsRoot marks the CEO Agent — the root of the reporting tree. It is
 	// frozen here because the Run's planning authority and workspace scope
 	// follow the Agent's place in the tree at enqueue time.
@@ -558,14 +559,20 @@ func runContextAgentBrief(
 		return nil, fmt.Errorf("load frozen agent brief: %w", err)
 	}
 	var skills []contentbundle.SkillRef
+	var selected []string
 	if in.Source != RunSourceSchedule {
 		skills, err = runAgentSkillRefs(ctx, q, in.CompanyID, in.AgentID)
 		if err != nil {
 			return nil, err
 		}
+		skills, selected, err = messageRunSkills(ctx, q, in, skills)
+		if err != nil {
+			return nil, err
+		}
 	}
 	encoded, err := json.Marshal(runAgentBrief{
-		SkillRefs: skills, SkillSetHash: contentbundle.SkillSetHash(skills),
+		SelectedSkillKeys: selected,
+		SkillRefs:         skills, SkillSetHash: contentbundle.SkillSetHash(skills),
 		Capabilities: row.Capabilities, DisabledPlugins: row.DisabledPlugins,
 		Name:          row.Name,
 		Title:         row.Title,

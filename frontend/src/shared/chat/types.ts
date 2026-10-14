@@ -31,6 +31,7 @@ export type ChatConversationTarget =
     };
 
 export type ChatMessage = {
+  skillReferences?: components["schemas"]["MessageSkillReference"][];
   artifactIds?: string[];
   id: number;
   team: ChatTeamId;

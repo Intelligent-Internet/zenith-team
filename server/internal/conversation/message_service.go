@@ -163,6 +163,9 @@ func (s *DefaultConversationService) sendMessage(
 		if resolved.DocumentThreadID != nil {
 			return ErrNotFound
 		}
+		if len(input.SkillReferences) > 0 && resolved.ConversationKind != "direct" {
+			return ErrInvalidInput
+		}
 		if err := lockActiveMembership(ctx, tx, resolved.CompanyID, principal.UserID); err != nil {
 			return err
 		}
@@ -240,11 +243,17 @@ func (s *DefaultConversationService) sendMessage(
 			if queueReplayFound {
 				materializedQueue = &queueReplay
 			}
+			if err := matchMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.SkillReferences); err != nil {
+				return err
+			}
 			return finishMessageReplay(
 				ctx, tx, principal, target, input, resolved, message, materializedQueue, &result,
 			)
 		}
 		if queueReplayFound {
+			if err := matchMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.SkillReferences); err != nil {
+				return err
+			}
 			if queueReplay.State == "materialized" {
 				return ErrRunQueueConflict
 			}
@@ -261,6 +270,9 @@ func (s *DefaultConversationService) sendMessage(
 		}
 		if preparing {
 			return ErrInitializationPending
+		}
+		if err := saveMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.Content, input.SkillReferences); err != nil {
+			return err
 		}
 		if len(input.ArtifactIDs) > 0 {
 			if resolved.ConversationKind != "direct" {
@@ -343,6 +355,7 @@ func (s *DefaultConversationService) sendMessage(
 			AgentID:              *resolved.AgentID,
 			TaskID:               util.NullUUIDFromPtr(resolved.TaskID),
 			TriggerPrompt:        input.Content,
+			SkillRequestKey:      input.RequestKey,
 			TriggerAttachmentIDs: triggerAttachmentIDs,
 			Priority:             taskPriority,
 			Source:               execution.RunSourceMessage,

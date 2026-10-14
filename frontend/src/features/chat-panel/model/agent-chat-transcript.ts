@@ -517,6 +517,7 @@ export function displayItemToChatMessage(
       ...identity,
       team,
       text: item.content,
+      skillReferences: item.skillReferences,
     };
   }
 

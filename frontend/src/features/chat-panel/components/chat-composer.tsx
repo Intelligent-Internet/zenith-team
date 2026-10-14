@@ -1,8 +1,11 @@
+import type { components } from "@/shared/api/generated/api.generated";
+import { useSkillMentionMembers } from "../hooks/use-skill-mention-members";
+import { moveSkillReferences } from "../model/message-skills";
 import { ArtifactPickerDialog } from "./artifact-picker/artifact-picker-dialog";
 import { ArtifactDraftCards } from "./artifact-picker/artifact-draft-cards";
 import type { LibraryArtifact } from "../api/artifact-library-api";
 import { persistor, useAppDispatch, useAppSelector } from "@/state/store";
-import { setArtifactDraft } from "@/state/slice/chat";
+import { setArtifactDraft, setSkillDraft } from "@/state/slice/chat";
 import {
   PromptInput,
   PromptInputBody,
@@ -55,7 +58,12 @@ const emptyArtifactDraft: LibraryArtifact[] = [];
 
 type ChatComposerProps = {
   sessionKey: string;
-  artifactContext?: { companyId: string; draftKey: string };
+  artifactContext?: {
+    companyId: string;
+    draftKey: string;
+    conversationId?: string;
+    agentId?: string;
+  };
   ariaLabel?: string;
   attachmentsEnabled?: boolean;
   disabled?: boolean;
@@ -127,6 +135,12 @@ export function ChatComposer({
   const artifactKey = artifactContext
     ? `${artifactContext.companyId}:${artifactContext.draftKey}`
     : "";
+  const savedSkills = useAppSelector(
+    (state) => state.chat.skillDrafts?.[artifactKey],
+  );
+  const skillRefsRef = useRef(
+    savedSkills?.text === draftMessage ? savedSkills.references : [],
+  );
   const draftArtifacts = useAppSelector(
     (state) => state.chat.artifactDrafts?.[artifactKey] ?? emptyArtifactDraft,
   );
@@ -223,6 +237,13 @@ export function ChatComposer({
   }, [onDraftMessageChange]);
 
   useEffect(() => {
+    const references = moveSkillReferences(
+      localDraftRef.current,
+      draftMessage,
+      skillRefsRef.current,
+    );
+    skillRefsRef.current = references;
+    setSkillReferences(references);
     externalDraftRef.current = draftMessage;
     localDraftRef.current = draftMessage;
     setLocalDraftMessage(draftMessage);
@@ -258,7 +279,29 @@ export function ChatComposer({
     };
   }, [flushDraft]);
 
+  const [skillReferences, setSkillReferences] = useState<
+    components["schemas"]["MessageSkillReference"][]
+  >(skillRefsRef.current);
+  const updateSkillReferences = (
+    references: components["schemas"]["MessageSkillReference"][],
+  ) => {
+    skillRefsRef.current = references;
+    setSkillReferences(references);
+    if (artifactKey)
+      dispatch(
+        setSkillDraft({
+          key: artifactKey,
+          text: localDraftRef.current,
+          references,
+        }),
+      );
+  };
   const handleDraftChange = (message: string) => {
+    const previousText = localDraftRef.current;
+    localDraftRef.current = message;
+    updateSkillReferences(
+      moveSkillReferences(previousText, message, skillRefsRef.current),
+    );
     setSendFailure(null);
     localDraftRef.current = message;
     setLocalDraftMessage(message);
@@ -279,16 +322,38 @@ export function ChatComposer({
     selectionMemory?.setSelection({ start: 0, end: 0 });
   };
 
+  const skillMembers = useSkillMentionMembers(
+    artifactContext
+      ? {
+          companyId: artifactContext.companyId,
+          ...(artifactContext.conversationId
+            ? { conversation_id: artifactContext.conversationId }
+            : { agent_id: artifactContext.agentId }),
+        }
+      : undefined,
+  );
+  const allMentionMembers = [...(mentionMembers ?? []), ...skillMembers];
   const mentions = useChatMentions({
     disabled,
-    members: mentionMembers,
+    members: allMentionMembers,
+    onMentionInserted: (member, range) => {
+      const skill = member.skill;
+      if (skill)
+        updateSkillReferences(
+          [...skillRefsRef.current, { ...range, ...skill }].sort(
+            (a, b) => a.start - b.start,
+          ),
+        );
+    },
     onDraftChange: handleDraftChange,
     textareaRef,
   });
   const mentionRanges = findChatMentionRanges(
     localDraftMessage,
     mentionMembers ?? [],
-  );
+  )
+    .concat(skillReferences.map(({ start, end }) => ({ start, end })))
+    .sort((a, b) => a.start - b.start);
 
   const handleFileDragEnter = (event: DragEvent<HTMLFormElement>) => {
     if (disabled || !attachmentsEnabled || !dragEventHasFiles(event)) {
@@ -465,11 +530,13 @@ export function ChatComposer({
             );
             throw new Error("Conversation run queue is not ready");
           }
+          message.skillReferences = skillReferences;
           setSendFailure(null);
           // Text-only submissions can release the draft immediately. Submissions
           // with files or artifacts retain their attachments until sending succeeds.
           if (
             pendingPrompt &&
+            !message.skillReferences?.length &&
             !message.files?.length &&
             !message.artifactIds?.length &&
             message.clientMessageId &&
@@ -558,7 +625,7 @@ export function ChatComposer({
           )}
           aria-label={ariaLabel}
           data-mentions-highlighted={mentionRanges.length > 0 || undefined}
-          aria-autocomplete={mentionMembers?.length ? "list" : undefined}
+          aria-autocomplete={allMentionMembers.length ? "list" : undefined}
           aria-controls={mentions.isOpen ? mentions.listId : undefined}
           aria-activedescendant={mentions.activeOptionId}
           aria-describedby={
@@ -685,6 +752,7 @@ export function ChatComposer({
       </PromptInput>
       {mentions.isOpen ? (
         <ChatMentionSuggestions
+          trigger={mentions.trigger}
           activeIndex={mentions.activeIndex}
           listId={mentions.listId}
           members={mentions.matches}

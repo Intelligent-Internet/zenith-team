@@ -15,7 +15,7 @@ export function formatChatTimestamp(timestamp = Date.now()) {
 }
 
 export function getPromptInputPayload(message: PromptInputMessage) {
-  const text = message.text?.trim() ?? "";
+  const text = message.text?.trim() ? message.text : "";
   const files = message.files?.length ? message.files : undefined;
 
   if (!text && !files?.length && !message.artifactIds?.length) {
@@ -50,6 +50,7 @@ export function createUserChatMessage({
       (message.artifactIds?.length ? "Attached artifacts." : ""),
     files: payload.files,
     artifactIds: message.artifactIds,
+    skillReferences: message.skillReferences,
     timestamp: formatChatTimestamp(sentAt),
   };
 }

@@ -47,6 +47,7 @@ func (h *Handler) registerAgentSkillRoutes(group *gin.RouterGroup) {
 	if h.AuthService == nil || h.CompanyService == nil || h.SkillService == nil {
 		return
 	}
+	group.GET("/companies/:companyId/message-skills", middleware.RequireUserAuth(h.AuthService), middleware.RequireCompanyMember(h.CompanyService), middleware.RequireHumanActor(), h.listMessageSkills)
 	routes := group.Group(
 		"/companies/:companyId/agents/:agentId",
 		middleware.RequireUserAuth(
@@ -435,4 +436,36 @@ var skillErrorMappings = append([]errorMapping{
 
 func writeSkillError(c *gin.Context, err error) {
 	writeMappedError(c, err, skillErrorMappings, internalErrorFallback)
+}
+
+func (h *Handler) listMessageSkills(c *gin.Context) {
+	query := c.Request.URL.Query()
+	scope := agent.MessageSkillScope{}
+	if len(query) != 1 || (len(query["conversation_id"]) != 1 && len(query["agent_id"]) != 1) {
+		writeBoundaryError(c, boundaryErrorValidationFailed)
+		return
+	}
+	var parseErr error
+	if values, exists := query["conversation_id"]; exists {
+		scope.ConversationID, parseErr = util.ParseGoUUID(values[0])
+	} else {
+		scope.AgentID, parseErr = util.ParseGoUUID(query.Get("agent_id"))
+	}
+	if parseErr != nil {
+		writeBoundaryError(c, boundaryErrorValidationFailed)
+		return
+	}
+	principal, ok := auth.UserPrincipalFromContext(c.Request.Context())
+	if !ok {
+		writeBoundaryError(c, boundaryErrorAuthenticationRequired)
+		return
+	}
+	items, err := h.SkillService.ListForMessage(c.Request.Context(), principal, scope)
+	if err != nil {
+		writeSkillError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, struct {
+		Items []agent.MessageSkill `json:"items"`
+	}{items})
 }

@@ -3,6 +3,31 @@
 # that references it, and docs/api/agents.md is its prose counterpart.
 
 paths:
+  companies_companyId_message_skills:
+    get:
+      tags: [agents]
+      operationId: listMessageSkills
+      summary: List enabled custom skills selectable for a message
+      description: Supply exactly one of conversation_id or agent_id. Existing chats return skills of their current active Agents only and require chat membership (or direct-chat ownership). agent_id selects the Agent for a new direct chat. All invoked Agents receive the selected versions without changing their installations.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - in: query
+          name: conversation_id
+          schema: { type: string, format: uuid }
+          description: Existing channel, group direct chat or direct conversation.
+        - in: query
+          name: agent_id
+          schema: { type: string, format: uuid }
+          description: Agent for a new direct chat without a conversation yet. Cannot accompany conversation_id.
+      responses:
+        '200':
+          description: Enabled skills with their source Agent.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/MessageSkillCollection' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
 
   # =================================================================== agents
 
@@ -983,6 +1008,23 @@ paths:
 
 
 schemas:
+  MessageSkillCollection:
+    type: object
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/MessageSkill' }
+  MessageSkill:
+    type: object
+    required: [id, agentId, versionId, name, description, agentName]
+    properties:
+      id: { type: string, format: uuid }
+      agentId: { type: string, format: uuid }
+      versionId: { type: string, format: uuid }
+      name: { type: string }
+      description: { type: string }
+      agentName: { type: string }
   AgentBindingRequest:
     type: object
     additionalProperties: false

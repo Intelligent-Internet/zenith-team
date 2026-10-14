@@ -748,6 +748,9 @@ schemas:
     required:
       [id, conversationId, seq, type, author, runId, content, createdAt]
     properties:
+      skillReferences:
+        type: array
+        items: { $ref: './conversations.yaml#/schemas/MessageSkillReference' }
       id: { type: string, format: uuid }
       conversationId: { type: string, format: uuid }
       seq:

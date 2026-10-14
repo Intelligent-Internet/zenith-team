@@ -294,6 +294,12 @@ func (s *DefaultDiscussionService) Send(
 				return err
 			}
 			rootID := item.ID
+			if err := saveMessageSkills(ctx, q, messageSkillScope{CompanyID: p.CompanyID, ConversationID: id, UserID: p.UserID, RequestKey: input.RequestKey}, normalized.Input.Body.Markdown, discussionSkillReferences(references)); err != nil {
+				if errors.Is(err, ErrInvalidInput) {
+					return ErrDiscussionInvalid
+				}
+				return err
+			}
 			if err := admitChannelInvocations(ctx, q, &pending, channelAdmission{Principal: p, ChannelID: id, MessageID: item.ID, References: references}); err != nil {
 				return err
 			}

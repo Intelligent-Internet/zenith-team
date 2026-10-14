@@ -128,10 +128,11 @@ type renameConversationRequest struct {
 }
 
 type sendConversationMessageRequest struct {
-	RequestKey    string          `json:"requestKey"    binding:"required,uuid"`
-	Content       string          `json:"content"`
-	AttachmentIDs json.RawMessage `json:"attachmentIds"`
-	ArtifactIDs   []string        `json:"artifactIds" binding:"max=10,unique,dive,uuid"`
+	SkillReferences []conversation.SkillReference `json:"skillReferences" binding:"max=32"`
+	RequestKey      string                        `json:"requestKey"    binding:"required,uuid"`
+	Content         string                        `json:"content"`
+	AttachmentIDs   json.RawMessage               `json:"attachmentIds"`
+	ArtifactIDs     []string                      `json:"artifactIds" binding:"max=10,unique,dive,uuid"`
 	// SuppressUserMessage starts the Agent without writing the prompt into the
 	// transcript, for instructions the person never typed.
 	SuppressUserMessage bool `json:"suppressUserMessage"`
@@ -525,6 +526,7 @@ func (h *Handler) sendMessage(c *gin.Context, kind conversation.TargetKind, para
 		Content:             request.Content,
 		AttachmentIDs:       attachmentIDs,
 		ArtifactIDs:         discussionUUIDs(request.ArtifactIDs),
+		SkillReferences:     request.SkillReferences,
 		SuppressUserMessage: request.SuppressUserMessage,
 	})
 	if err != nil {
@@ -735,6 +737,7 @@ func parseCanonicalNonnegativeInt(value string) (int64, error) {
 }
 
 var conversationErrorMappings = []errorMapping{
+	{conversation.ErrMessageSkillSelection, http.StatusConflict, "A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.", "message_skill_unavailable"},
 	{
 		conversation.ErrModelSettingsForbidden,
 		http.StatusForbidden,

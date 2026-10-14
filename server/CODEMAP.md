@@ -146,6 +146,16 @@ enable general Wiki publication.
 Immutable `skill_versions` bytes live in private object storage, with PostgreSQL
 metadata and `agent_skills` as the current selection. Enqueue freezes references
 and `run_skills` retention in `execution/run_skills.go`; retries inherit them.
+Message `$skill` selections use the conversation-scoped `GET /companies/:companyId/message-skills`
+catalog (active participant Agents only, refreshed on membership changes) and structured skill/version references in direct chats, channels and group DMs
+(Task messages do not expose the picker). `conversation/message_skills.go`
+pins each send in `message_skills`, owned by its Conversation and keyed by sender
+and request key, before queueing or invoking Agents. Every tagged Agent receives
+the same versions. Selections override installed names only inside that Run;
+they never change Agent installations. A skill alone never invokes an Agent.
+Daemon cache hits reuse verified bundles; selected keys tell the Agent which
+local SKILL.md files to load. Two distinct selected versions with the same name
+are refused. Message pins retain versions until the Conversation is deleted.
 `contentbundle/skill_package.go` verifies exact binary/text bytes and hashes.
 The daemon cache and Run snapshot feed both native provider skills and MCP.
 Claude uses a Run-owned additional directory, including for local workspaces.

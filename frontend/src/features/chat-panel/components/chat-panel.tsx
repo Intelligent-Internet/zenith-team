@@ -1266,7 +1266,12 @@ export function ChatPanel({
               }
               artifactContext={
                 conversationTab?.kind === "direct" && studioCompanyId
-                  ? { companyId: studioCompanyId, draftKey: conversationTab.id }
+                  ? {
+                      companyId: studioCompanyId,
+                      draftKey: conversationTab.id,
+                      conversationId: conversationId ?? undefined,
+                      agentId: conversationTab.agentId ?? undefined,
+                    }
                   : undefined
               }
               key={conversationTab?.id ?? conversationId ?? selectedTeam}

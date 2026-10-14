@@ -581,6 +581,7 @@ func PromoteRunQueueInTx(
 			AgentID:              *resolved.AgentID,
 			TaskID:               util.NullUUIDFromPtr(resolved.TaskID),
 			TriggerPrompt:        item.Content,
+			SkillRequestKey:      item.RequestKey,
 			TriggerAttachmentIDs: triggerAttachmentIDs,
 			Priority:             taskPriority,
 			Source:               execution.RunSourcePromotion,

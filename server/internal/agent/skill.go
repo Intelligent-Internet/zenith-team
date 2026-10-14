@@ -35,6 +35,7 @@ var (
 // SkillService owns reviewed imports, Agent installations and immutable
 // versions. Skills carry procedures; installing one grants no execution rights.
 type SkillService interface {
+	ListForMessage(context.Context, auth.UserPrincipal, MessageSkillScope) ([]MessageSkill, error)
 	List(context.Context, auth.UserPrincipal, uuid.UUID) ([]SkillView, error)
 	PreviewUpload(context.Context, auth.UserPrincipal, uuid.UUID, SkillUploadInput) (SkillPreview, error)
 	PreviewGitHub(context.Context, auth.UserPrincipal, uuid.UUID, SkillGitHubInput) (SkillPreview, error)
@@ -859,4 +860,35 @@ func (s *DefaultSkillService) Cleanup(ctx context.Context) error {
 		pgx.TxOptions{},
 		func(q *generated.Queries) error { return q.DeleteEmptyExpiredSkillImports(ctx) },
 	)
+}
+
+// MessageSkill is a currently selectable installation, labelled with its
+// source Agent. Selecting it grants procedures to a message, not permissions.
+type MessageSkill struct {
+	ID          uuid.UUID `json:"id"`
+	AgentID     uuid.UUID `json:"agentId"`
+	VersionID   uuid.UUID `json:"versionId"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	AgentName   string    `json:"agentName"`
+}
+
+type MessageSkillScope struct {
+	ConversationID uuid.UUID
+	AgentID        uuid.UUID
+}
+
+func (s *DefaultSkillService) ListForMessage(ctx context.Context, principal auth.UserPrincipal, scope MessageSkillScope) ([]MessageSkill, error) {
+	if err := authorizeMemberRead(ctx, s.store.Queries(), principal); err != nil {
+		return nil, err
+	}
+	rows, err := s.store.Queries().ListMessageSkillCatalog(ctx, generated.ListMessageSkillCatalogParams{CompanyID: principal.CompanyID, ActorUserID: principal.UserID, ConversationID: scope.ConversationID, AgentID: scope.AgentID})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]MessageSkill, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, MessageSkill{ID: row.ID, AgentID: row.AgentID, VersionID: row.VersionID, Name: row.Name, Description: row.Description, AgentName: row.AgentName})
+	}
+	return result, nil
 }

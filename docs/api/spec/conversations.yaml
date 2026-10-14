@@ -952,6 +952,10 @@ paths:
                     the canonical prior result. Reusing it with different
                     payload returns 409. It is not a Message or Run id.
                 content: { type: string }
+                skillReferences:
+                  type: array
+                  maxItems: 32
+                  items: { $ref: "#/schemas/MessageSkillReference" }
                 artifactIds:
                   type: array
                   maxItems: 10
@@ -1181,6 +1185,11 @@ paths:
                     Same actor-scoped retry token as the conversation-addressed
                     send. It is not a Message, queue-item, or Run id.
                 content: { type: string }
+                skillReferences:
+                  type: array
+                  maxItems: 0
+                  description: Message skill selection is supported in direct chats and discussions; Task messages must leave this empty.
+                  items: { $ref: "#/schemas/MessageSkillReference" }
                 artifactIds:
                   type: array
                   maxItems: 10
@@ -4580,6 +4589,15 @@ paths:
   # /api/v1/companies/{companyId}/conversations
 
 schemas:
+  MessageSkillReference:
+    type: object
+    additionalProperties: false
+    required: [start, end, skillId, versionId]
+    properties:
+      start: { type: integer, minimum: 0 }
+      end: { type: integer, minimum: 1 }
+      skillId: { type: string, format: uuid }
+      versionId: { type: string, format: uuid }
   HuddleCapabilities:
     type: object
     additionalProperties: false
@@ -4989,11 +5007,13 @@ schemas:
           properties:
             start: { type: integer, minimum: 0 }
             end: { type: integer, minimum: 1 }
-            type: { type: string, enum: [user, agent, attachment, asset_version, broadcast] }
+            type: { type: string, enum: [user, agent, attachment, asset_version, broadcast, skill] }
             userId: { type: string, format: uuid }
             agentId: { type: string, format: uuid }
             attachmentId: { type: string, format: uuid }
             assetVersionId: { type: string, format: uuid }
+            skillId: { type: string, format: uuid }
+            versionId: { type: string, format: uuid }
             scope: { type: string, enum: [everyone, here] }
         maxItems: 100
     description: Body v1. Valid UTF-8, LF line endings, no controls except tab/newline.

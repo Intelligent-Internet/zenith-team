@@ -192,6 +192,7 @@ const deleteUnusedSkillVersion = `-- name: DeleteUnusedSkillVersion :exec
 DELETE FROM skill_versions WHERE skill_versions.id = $1
 AND NOT EXISTS (SELECT 1 FROM agent_skills WHERE version_id = skill_versions.id)
 AND NOT EXISTS (SELECT 1 FROM run_skills WHERE version_id = skill_versions.id)
+AND NOT EXISTS (SELECT 1 FROM message_skills WHERE version_id = skill_versions.id)
 `
 
 func (q *Queries) DeleteUnusedSkillVersion(ctx context.Context, id uuid.UUID) error {
@@ -227,6 +228,55 @@ type GetFrozenRunSkillParams struct {
 
 func (q *Queries) GetFrozenRunSkill(ctx context.Context, arg GetFrozenRunSkillParams) (SkillVersion, error) {
 	row := q.db.QueryRow(ctx, getFrozenRunSkill, arg.CompanyID, arg.RunID, arg.VersionID)
+	var i SkillVersion
+	err := row.Scan(
+		&i.ID,
+		&i.CompanyID,
+		&i.ImportID,
+		&i.Name,
+		&i.Description,
+		&i.SourcePath,
+		&i.ContentHash,
+		&i.SizeBytes,
+		&i.FileCount,
+		&i.Manifest,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getSelectableMessageSkill = `-- name: GetSelectableMessageSkill :one
+SELECT skill_versions.id, skill_versions.company_id, skill_versions.import_id, skill_versions.name, skill_versions.description, skill_versions.source_path, skill_versions.content_hash, skill_versions.size_bytes, skill_versions.file_count, skill_versions.manifest, skill_versions.created_at FROM agent_skills
+JOIN agents ON agents.id = agent_skills.agent_id
+JOIN skill_versions ON skill_versions.id = agent_skills.version_id
+WHERE agent_skills.company_id = $1 AND agent_skills.id = $2 AND agent_skills.version_id = $3
+  AND agent_skills.enabled AND agents.archived_at IS NULL
+  AND EXISTS (
+    SELECT 1 FROM conversations c
+    WHERE c.company_id = agent_skills.company_id AND c.id = $4::uuid
+      AND ((c.kind = 'direct' AND c.agent_id = agents.id)
+        OR (c.kind IN ('channel', 'human_direct') AND EXISTS (
+          SELECT 1 FROM conversation_agents g
+          WHERE g.conversation_id = c.id AND g.agent_id = agents.id AND g.status = 'active'
+        )))
+  )
+FOR SHARE OF agent_skills, agents, skill_versions
+`
+
+type GetSelectableMessageSkillParams struct {
+	CompanyID      uuid.UUID `json:"company_id"`
+	ID             uuid.UUID `json:"id"`
+	VersionID      uuid.UUID `json:"version_id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+func (q *Queries) GetSelectableMessageSkill(ctx context.Context, arg GetSelectableMessageSkillParams) (SkillVersion, error) {
+	row := q.db.QueryRow(ctx, getSelectableMessageSkill,
+		arg.CompanyID,
+		arg.ID,
+		arg.VersionID,
+		arg.ConversationID,
+	)
 	var i SkillVersion
 	err := row.Scan(
 		&i.ID,
@@ -425,6 +475,39 @@ func (q *Queries) InsertAgentSkill(ctx context.Context, arg InsertAgentSkillPara
 	return i, err
 }
 
+const insertMessageSkill = `-- name: InsertMessageSkill :exec
+INSERT INTO message_skills (company_id, conversation_id, request_key, selected_by_user_id,
+ position, skill_id, version_id, start_offset, end_offset)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+`
+
+type InsertMessageSkillParams struct {
+	CompanyID        uuid.UUID `json:"company_id"`
+	ConversationID   uuid.UUID `json:"conversation_id"`
+	RequestKey       uuid.UUID `json:"request_key"`
+	SelectedByUserID uuid.UUID `json:"selected_by_user_id"`
+	Position         int32     `json:"position"`
+	SkillID          uuid.UUID `json:"skill_id"`
+	VersionID        uuid.UUID `json:"version_id"`
+	StartOffset      int32     `json:"start_offset"`
+	EndOffset        int32     `json:"end_offset"`
+}
+
+func (q *Queries) InsertMessageSkill(ctx context.Context, arg InsertMessageSkillParams) error {
+	_, err := q.db.Exec(ctx, insertMessageSkill,
+		arg.CompanyID,
+		arg.ConversationID,
+		arg.RequestKey,
+		arg.SelectedByUserID,
+		arg.Position,
+		arg.SkillID,
+		arg.VersionID,
+		arg.StartOffset,
+		arg.EndOffset,
+	)
+	return err
+}
+
 const listAgentSkills = `-- name: ListAgentSkills :many
 SELECT agent_skills.id, agent_skills.company_id, agent_skills.agent_id, agent_skills.version_id, agent_skills.name, agent_skills.enabled, agent_skills.revision, agent_skills.created_at, agent_skills.updated_at, skill_versions.description, skill_versions.content_hash, skill_versions.size_bytes,
        skill_versions.file_count, skill_versions.manifest, skill_versions.source_path,
@@ -506,6 +589,7 @@ SELECT skill_versions.id, skill_versions.company_id, skill_versions.import_id, s
 WHERE skill_imports.expires_at < now()
 AND NOT EXISTS (SELECT 1 FROM agent_skills WHERE version_id = skill_versions.id)
 AND NOT EXISTS (SELECT 1 FROM run_skills WHERE version_id = skill_versions.id)
+AND NOT EXISTS (SELECT 1 FROM message_skills WHERE version_id = skill_versions.id)
 ORDER BY skill_versions.created_at LIMIT 100
 `
 
@@ -530,6 +614,286 @@ func (q *Queries) ListExpiredUnusedSkillVersions(ctx context.Context) ([]SkillVe
 			&i.FileCount,
 			&i.Manifest,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listInvocationSkillVersions = `-- name: ListInvocationSkillVersions :many
+SELECT DISTINCT skill_versions.id, skill_versions.company_id, skill_versions.import_id, skill_versions.name, skill_versions.description, skill_versions.source_path, skill_versions.content_hash, skill_versions.size_bytes, skill_versions.file_count, skill_versions.manifest, skill_versions.created_at FROM channel_invocations
+JOIN conversation_items ON conversation_items.id=channel_invocations.trigger_message_id
+JOIN message_skills ON message_skills.conversation_id=conversation_items.conversation_id
+ AND message_skills.request_key=conversation_items.request_key
+ AND message_skills.selected_by_user_id=conversation_items.author_id
+JOIN skill_versions ON skill_versions.id=message_skills.version_id
+WHERE channel_invocations.company_id=$1 AND channel_invocations.id=$2
+ORDER BY skill_versions.name
+`
+
+type ListInvocationSkillVersionsParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) ListInvocationSkillVersions(ctx context.Context, arg ListInvocationSkillVersionsParams) ([]SkillVersion, error) {
+	rows, err := q.db.Query(ctx, listInvocationSkillVersions, arg.CompanyID, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SkillVersion{}
+	for rows.Next() {
+		var i SkillVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyID,
+			&i.ImportID,
+			&i.Name,
+			&i.Description,
+			&i.SourcePath,
+			&i.ContentHash,
+			&i.SizeBytes,
+			&i.FileCount,
+			&i.Manifest,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMessageSkillCatalog = `-- name: ListMessageSkillCatalog :many
+SELECT agent_skills.id, agent_skills.agent_id, agent_skills.version_id,
+       agent_skills.name, skill_versions.description, agents.name AS agent_name
+FROM agent_skills
+JOIN agents ON agents.id = agent_skills.agent_id
+JOIN skill_versions ON skill_versions.id = agent_skills.version_id
+WHERE agent_skills.company_id = $1::uuid AND agent_skills.enabled AND agents.archived_at IS NULL
+AND (
+  ($2::uuid = '00000000-0000-0000-0000-000000000000' AND agents.id = $3::uuid)
+  OR EXISTS (
+    SELECT 1 FROM conversations c
+    WHERE c.company_id = agent_skills.company_id AND c.id = $2::uuid
+      AND c.archived_at IS NULL AND c.document_thread_id IS NULL
+      AND (
+        (c.kind = 'direct' AND c.agent_id = agents.id AND c.created_by_user_id = $4::uuid)
+        OR (c.kind IN ('channel', 'human_direct')
+          AND EXISTS (SELECT 1 FROM conversation_members m WHERE m.conversation_id = c.id AND m.user_id = $4::uuid AND m.status = 'active')
+          AND EXISTS (SELECT 1 FROM conversation_agents g WHERE g.conversation_id = c.id AND g.agent_id = agents.id AND g.status = 'active'))
+      )
+  )
+)
+ORDER BY agent_skills.name, agents.name, agent_skills.id
+`
+
+type ListMessageSkillCatalogParams struct {
+	CompanyID      uuid.UUID `json:"company_id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+	AgentID        uuid.UUID `json:"agent_id"`
+	ActorUserID    uuid.UUID `json:"actor_user_id"`
+}
+
+type ListMessageSkillCatalogRow struct {
+	ID          uuid.UUID `json:"id"`
+	AgentID     uuid.UUID `json:"agent_id"`
+	VersionID   uuid.UUID `json:"version_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	AgentName   string    `json:"agent_name"`
+}
+
+func (q *Queries) ListMessageSkillCatalog(ctx context.Context, arg ListMessageSkillCatalogParams) ([]ListMessageSkillCatalogRow, error) {
+	rows, err := q.db.Query(ctx, listMessageSkillCatalog,
+		arg.CompanyID,
+		arg.ConversationID,
+		arg.AgentID,
+		arg.ActorUserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMessageSkillCatalogRow{}
+	for rows.Next() {
+		var i ListMessageSkillCatalogRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.AgentID,
+			&i.VersionID,
+			&i.Name,
+			&i.Description,
+			&i.AgentName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMessageSkillReferencesBulk = `-- name: ListMessageSkillReferencesBulk :many
+SELECT conversation_items.id AS message_id, message_skills.company_id, message_skills.conversation_id, message_skills.request_key, message_skills.selected_by_user_id, message_skills.created_at, message_skills.position, message_skills.skill_id, message_skills.version_id, message_skills.start_offset, message_skills.end_offset FROM conversation_items
+JOIN message_skills ON message_skills.conversation_id=conversation_items.conversation_id
+ AND message_skills.request_key=conversation_items.request_key
+ AND message_skills.selected_by_user_id=conversation_items.author_id
+WHERE conversation_items.company_id=$1 AND conversation_items.id=ANY($2::uuid[])
+ORDER BY conversation_items.id, message_skills.position
+`
+
+type ListMessageSkillReferencesBulkParams struct {
+	CompanyID  uuid.UUID   `json:"company_id"`
+	MessageIds []uuid.UUID `json:"message_ids"`
+}
+
+type ListMessageSkillReferencesBulkRow struct {
+	MessageID        uuid.UUID          `json:"message_id"`
+	CompanyID        uuid.UUID          `json:"company_id"`
+	ConversationID   uuid.UUID          `json:"conversation_id"`
+	RequestKey       uuid.UUID          `json:"request_key"`
+	SelectedByUserID uuid.UUID          `json:"selected_by_user_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Position         int32              `json:"position"`
+	SkillID          uuid.UUID          `json:"skill_id"`
+	VersionID        uuid.UUID          `json:"version_id"`
+	StartOffset      int32              `json:"start_offset"`
+	EndOffset        int32              `json:"end_offset"`
+}
+
+func (q *Queries) ListMessageSkillReferencesBulk(ctx context.Context, arg ListMessageSkillReferencesBulkParams) ([]ListMessageSkillReferencesBulkRow, error) {
+	rows, err := q.db.Query(ctx, listMessageSkillReferencesBulk, arg.CompanyID, arg.MessageIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListMessageSkillReferencesBulkRow{}
+	for rows.Next() {
+		var i ListMessageSkillReferencesBulkRow
+		if err := rows.Scan(
+			&i.MessageID,
+			&i.CompanyID,
+			&i.ConversationID,
+			&i.RequestKey,
+			&i.SelectedByUserID,
+			&i.CreatedAt,
+			&i.Position,
+			&i.SkillID,
+			&i.VersionID,
+			&i.StartOffset,
+			&i.EndOffset,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMessageSkillVersions = `-- name: ListMessageSkillVersions :many
+SELECT DISTINCT skill_versions.id, skill_versions.company_id, skill_versions.import_id, skill_versions.name, skill_versions.description, skill_versions.source_path, skill_versions.content_hash, skill_versions.size_bytes, skill_versions.file_count, skill_versions.manifest, skill_versions.created_at FROM message_skills
+JOIN skill_versions ON skill_versions.id=message_skills.version_id
+WHERE message_skills.company_id=$1 AND message_skills.conversation_id=$2
+ AND message_skills.request_key=$3 AND message_skills.selected_by_user_id=$4
+ORDER BY skill_versions.name
+`
+
+type ListMessageSkillVersionsParams struct {
+	CompanyID        uuid.UUID `json:"company_id"`
+	ConversationID   uuid.UUID `json:"conversation_id"`
+	RequestKey       uuid.UUID `json:"request_key"`
+	SelectedByUserID uuid.UUID `json:"selected_by_user_id"`
+}
+
+func (q *Queries) ListMessageSkillVersions(ctx context.Context, arg ListMessageSkillVersionsParams) ([]SkillVersion, error) {
+	rows, err := q.db.Query(ctx, listMessageSkillVersions,
+		arg.CompanyID,
+		arg.ConversationID,
+		arg.RequestKey,
+		arg.SelectedByUserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SkillVersion{}
+	for rows.Next() {
+		var i SkillVersion
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyID,
+			&i.ImportID,
+			&i.Name,
+			&i.Description,
+			&i.SourcePath,
+			&i.ContentHash,
+			&i.SizeBytes,
+			&i.FileCount,
+			&i.Manifest,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMessageSkills = `-- name: ListMessageSkills :many
+SELECT company_id, conversation_id, request_key, selected_by_user_id, created_at, position, skill_id, version_id, start_offset, end_offset FROM message_skills WHERE company_id=$1 AND conversation_id=$2
+ AND request_key=$3 AND selected_by_user_id=$4 ORDER BY position
+`
+
+type ListMessageSkillsParams struct {
+	CompanyID        uuid.UUID `json:"company_id"`
+	ConversationID   uuid.UUID `json:"conversation_id"`
+	RequestKey       uuid.UUID `json:"request_key"`
+	SelectedByUserID uuid.UUID `json:"selected_by_user_id"`
+}
+
+func (q *Queries) ListMessageSkills(ctx context.Context, arg ListMessageSkillsParams) ([]MessageSkill, error) {
+	rows, err := q.db.Query(ctx, listMessageSkills,
+		arg.CompanyID,
+		arg.ConversationID,
+		arg.RequestKey,
+		arg.SelectedByUserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MessageSkill{}
+	for rows.Next() {
+		var i MessageSkill
+		if err := rows.Scan(
+			&i.CompanyID,
+			&i.ConversationID,
+			&i.RequestKey,
+			&i.SelectedByUserID,
+			&i.CreatedAt,
+			&i.Position,
+			&i.SkillID,
+			&i.VersionID,
+			&i.StartOffset,
+			&i.EndOffset,
 		); err != nil {
 			return nil, err
 		}
@@ -700,7 +1064,8 @@ func (q *Queries) MarkSkillImportReady(ctx context.Context, arg MarkSkillImportR
 
 const skillVersionUnused = `-- name: SkillVersionUnused :one
 SELECT NOT EXISTS (SELECT 1 FROM agent_skills WHERE version_id = $1::uuid)
-AND NOT EXISTS (SELECT 1 FROM run_skills WHERE version_id = $1::uuid) AS unused
+AND NOT EXISTS (SELECT 1 FROM run_skills WHERE version_id = $1::uuid)
+AND NOT EXISTS (SELECT 1 FROM message_skills WHERE version_id = $1::uuid) AS unused
 `
 
 func (q *Queries) SkillVersionUnused(ctx context.Context, versionID uuid.UUID) (pgtype.Bool, error) {

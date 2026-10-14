@@ -1703,6 +1703,19 @@ type MessageAttachment struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type MessageSkill struct {
+	CompanyID        uuid.UUID          `json:"company_id"`
+	ConversationID   uuid.UUID          `json:"conversation_id"`
+	RequestKey       uuid.UUID          `json:"request_key"`
+	SelectedByUserID uuid.UUID          `json:"selected_by_user_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Position         int32              `json:"position"`
+	SkillID          uuid.UUID          `json:"skill_id"`
+	VersionID        uuid.UUID          `json:"version_id"`
+	StartOffset      int32              `json:"start_offset"`
+	EndOffset        int32              `json:"end_offset"`
+}
+
 type ModelPrice struct {
 	Provider             string             `json:"provider"`
 	Model                string             `json:"model"`

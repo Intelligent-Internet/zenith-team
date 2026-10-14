@@ -41,7 +41,7 @@ export function richDiscussionDocument(
 ) {
   const prefix = `ZENITHMENTION${crypto.randomUUID().replaceAll("-", "")}TOKEN`;
   const mentions = references.filter((ref) =>
-    ["user", "agent", "broadcast"].includes(ref.type),
+    ["user", "agent", "broadcast", "skill"].includes(ref.type),
   );
   const tokens = new Map<string, JSONContent>();
   let markdown = text;

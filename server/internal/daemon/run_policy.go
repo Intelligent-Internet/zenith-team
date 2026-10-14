@@ -92,6 +92,7 @@ func runToolPolicy(doc RunContext) agent.ToolPolicy {
 func isolateDocumentRun(run *Run, doc *RunContext) {
 	doc.Resources = nil
 	doc.Agent.McpConfig = nil
+	doc.Agent.SelectedSkillKeys = nil
 	doc.Agent.SkillRefs = nil
 	doc.Agent.Skills = nil
 	doc.ConnectorSnapshot = nil
@@ -114,6 +115,7 @@ func isTaggedRun(doc RunContext) bool {
 // session state, or any Conversation history.
 func isolateScheduledRun(run *Run, doc *RunContext) {
 	doc.Resources = nil
+	doc.Agent.SelectedSkillKeys = nil
 	doc.Agent.SkillRefs = nil
 	doc.Agent.Skills = nil
 	doc.ConversationSnapshot = nil
@@ -423,7 +425,7 @@ func buildRunSystemPromptWithCLI(
 		}
 	}
 	if len(doc.Agent.SkillRefs) > 0 {
-		builder.WriteString("\n\nCustom skills installed for this Agent (this Run's frozen versions):")
+		builder.WriteString("\n\nCustom skills available to this Run (frozen versions):")
 		for _, skill := range doc.Agent.SkillRefs {
 			fmt.Fprintf(&builder, "\n- %s: %s", skill.Name, skill.Description)
 			if cli.SkillSnapshotRoot != "" {
@@ -442,6 +444,9 @@ func buildRunSystemPromptWithCLI(
 				" Resolve relative script and asset paths inside the skill directory shown for this Run, even when resuming a session; paths from earlier Runs may no longer exist. Run scripts with their interpreter and write generated files into the current workspace, leaving skill files unchanged.",
 			)
 		}
+	}
+	if len(doc.Agent.SelectedSkillKeys) > 0 {
+		builder.WriteString("\n\nThe user explicitly selected these skills for this message: " + strings.Join(doc.Agent.SelectedSkillKeys, ", ") + ". Load each selected skill with load_skill_reference (exact skillKey, path SKILL.md) before doing the relevant work, and follow its linked references. These selections apply only to this message, not future turns, and grant no extra permissions.")
 	}
 	appendRunConnectorPolicy(&builder, doc)
 	appendWorkspaceMemoryInstructions(&builder, memory, doc.ExecutionProfile.Task != nil)

@@ -1441,7 +1441,7 @@ export function useAgentRealtimeChat({
   const sendAgentMessage = useCallback(
     async (message: ChatMessage, options: SendAgentMessageOptions = {}) => {
       const content =
-        message.text.trim() ||
+        (message.text.trim() ? message.text : "") ||
         (message.artifactIds?.length
           ? "Attached artifacts."
           : message.files?.length
@@ -1538,6 +1538,7 @@ export function useAgentRealtimeChat({
         const receipt = await socket.sendMessage({
           attachmentIds: resourceAttachments.map((attachment) => attachment.id),
           artifactIds: message.artifactIds,
+          skillReferences: message.skillReferences,
           clientRequestId: clientMessageId,
           content,
           conversationId,

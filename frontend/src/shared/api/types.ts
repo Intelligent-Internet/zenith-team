@@ -468,6 +468,7 @@ export type ConversationDisplayRole =
   "user" | "assistant" | "system" | "app" | "status" | "tool";
 
 export type ConversationDisplayItemSummary = {
+  skillReferences?: ApiComponents["schemas"]["MessageSkillReference"][];
   created_at: string;
   event_id: string;
   sequence: number;

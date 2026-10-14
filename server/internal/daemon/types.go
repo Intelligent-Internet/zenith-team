@@ -226,13 +226,14 @@ type RunConnectorContext struct {
 // nothing server-side ever produced them, so their layering code was
 // unreachable by construction.
 type RunAgentContext struct {
-	Capabilities    RunCapabilitySettings `json:"capabilities,omitempty"`
-	DisabledPlugins []RunDisabledPlugin   `json:"disabledPlugins,omitempty"`
-	Name            string                `json:"name,omitempty"`
-	Title           string                `json:"title,omitempty"`
-	Instructions    string                `json:"instructions,omitempty"`
-	Model           string                `json:"model,omitempty"`
-	ThinkingLevel   string                `json:"thinkingLevel,omitempty"`
+	SelectedSkillKeys []string              `json:"selectedSkillKeys,omitempty"`
+	Capabilities      RunCapabilitySettings `json:"capabilities,omitempty"`
+	DisabledPlugins   []RunDisabledPlugin   `json:"disabledPlugins,omitempty"`
+	Name              string                `json:"name,omitempty"`
+	Title             string                `json:"title,omitempty"`
+	Instructions      string                `json:"instructions,omitempty"`
+	Model             string                `json:"model,omitempty"`
+	ThinkingLevel     string                `json:"thinkingLevel,omitempty"`
 	// IsRoot marks the CEO Agent, the root of the reporting tree, frozen at
 	// enqueue. Planning authority and the Company main workspace follow it.
 	IsRoot       bool            `json:"isRoot,omitempty"`

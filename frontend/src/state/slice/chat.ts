@@ -1,3 +1,4 @@
+import type { components } from "@/shared/api/generated/api.generated";
 import type { LibraryArtifact } from "@/features/chat-panel/api/artifact-library-api";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ChatTeamId } from "@/shared/chat/chat-team";
@@ -13,6 +14,13 @@ type ConversationChatState = Record<string, ChatMessage[]>;
 type ChatMessageChanges = Partial<Omit<ChatMessage, "id" | "team">>;
 
 type ChatState = {
+  skillDrafts: Record<
+    string,
+    {
+      text: string;
+      references: components["schemas"]["MessageSkillReference"][];
+    }
+  >;
   artifactDrafts: Record<string, LibraryArtifact[]>;
   draftsByResource: ResourceDraftState;
   draftsByTeam: TeamDraftState;
@@ -27,6 +35,7 @@ const emptyChatMessages: ChatMessage[] = [];
 
 const initialState: ChatState = {
   artifactDrafts: {},
+  skillDrafts: {},
   draftsByResource: {},
   draftsByTeam: {},
   draftsByTask: {},
@@ -157,6 +166,22 @@ const chatSlice = createSlice({
   name: "chat",
   initialState,
   reducers: {
+    setSkillDraft: (
+      state,
+      action: PayloadAction<{
+        key: string;
+        text: string;
+        references: components["schemas"]["MessageSkillReference"][];
+      }>,
+    ) => {
+      state.skillDrafts ??= {};
+      if (action.payload.references.length)
+        state.skillDrafts[action.payload.key] = {
+          text: action.payload.text,
+          references: action.payload.references,
+        };
+      else delete state.skillDrafts[action.payload.key];
+    },
     setArtifactDraft: (
       state,
       action: PayloadAction<{ key: string; artifacts: LibraryArtifact[] }>,
@@ -379,6 +404,7 @@ const chatSlice = createSlice({
 
 export const {
   setArtifactDraft,
+  setSkillDraft,
   appendChatMessage,
   appendConversationChatMessage,
   appendResourceChatMessage,

@@ -134,10 +134,17 @@ export function useDiscussionRichEditor(options: EditorOptions) {
       ? findChatMentionQuery(before, before.length, before.length)
       : null;
   const signature =
-    query && selection ? `${selection.from}:${query.text}` : null;
+    query && selection
+      ? `${query.trigger}:${selection.from}:${query.text}`
+      : null;
   const isOpen = !options.disabled && !!query && signature !== dismissed;
   const matches = query
-    ? filterChatMentionMembers(options.members, query.text)
+    ? filterChatMentionMembers(
+        options.members.filter((member) =>
+          query.trigger === "$" ? !!member.skill : !member.skill,
+        ),
+        query.text,
+      )
     : [];
   const index = Math.min(activeIndex, Math.max(0, matches.length - 1));
   useEffect(() => {
@@ -173,11 +180,13 @@ export function useDiscussionRichEditor(options: EditorOptions) {
       options.onUnavailableSelect(member);
       return;
     }
-    const reference = member.broadcastScope
-      ? { type: "broadcast", scope: member.broadcastScope }
-      : member.kind === "agent"
-        ? { type: "agent", agentId: member.id }
-        : { type: "user", userId: member.id };
+    const reference = member.skill
+      ? { type: "skill", ...member.skill }
+      : member.broadcastScope
+        ? { type: "broadcast", scope: member.broadcastScope }
+        : member.kind === "agent"
+          ? { type: "agent", agentId: member.id }
+          : { type: "user", userId: member.id };
     editor
       .chain()
       .focus()
@@ -189,7 +198,10 @@ export function useDiscussionRichEditor(options: EditorOptions) {
         [
           {
             type: "discussionMention",
-            attrs: { label: `@${member.name}`, reference },
+            attrs: {
+              label: `${member.skill ? "$" : "@"}${member.name}`,
+              reference,
+            },
           },
           { type: "text", text: " " },
         ],
@@ -281,6 +293,7 @@ export function useDiscussionRichEditor(options: EditorOptions) {
     ),
     suggestions: isOpen ? (
       <ChatMentionSuggestions
+        trigger={query?.trigger}
         activeIndex={index}
         listId={listId}
         members={matches}

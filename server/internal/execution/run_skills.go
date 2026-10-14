@@ -64,3 +64,35 @@ func freezeRunSkills(ctx context.Context, q *generated.Queries, run generated.Ru
 	}
 	return nil
 }
+
+// Message selections override an installed skill with the same name only for
+// this Run. They never mutate the Agent configuration.
+func messageRunSkills(ctx context.Context, q *generated.Queries, in RunTrigger, installed []contentbundle.SkillRef) ([]contentbundle.SkillRef, []string, error) {
+	var rows []generated.SkillVersion
+	var err error
+	if in.InvocationID.Valid {
+		rows, err = q.ListInvocationSkillVersions(ctx, generated.ListInvocationSkillVersionsParams{CompanyID: in.CompanyID, ID: in.InvocationID.UUID})
+	} else if in.SkillRequestKey != uuid.Nil {
+		rows, err = q.ListMessageSkillVersions(ctx, generated.ListMessageSkillVersionsParams{CompanyID: in.CompanyID, ConversationID: in.ConversationID, RequestKey: in.SkillRequestKey, SelectedByUserID: in.ActorUserID})
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	var keys []string
+	for _, row := range rows {
+		ref := contentbundle.SkillRef{ID: row.ID.String(), Source: "company", Name: row.Name, Description: row.Description, Hash: row.ContentHash, SizeBytes: row.SizeBytes, FileCount: int(row.FileCount)}
+		replaced := false
+		for i, current := range installed {
+			if current.Name == ref.Name {
+				installed[i] = ref
+				replaced = true
+				break
+			}
+		}
+		if !replaced {
+			installed = append(installed, ref)
+		}
+		keys = append(keys, ref.Name)
+	}
+	return installed, keys, nil
+}
