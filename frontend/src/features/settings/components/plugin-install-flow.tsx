@@ -109,6 +109,17 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
     }
   }, [companyId, current]);
 
+  const connectingPluginId =
+    current.kind === "connectFirst" && current.mode === "automatic"
+      ? current.target.plugin.id
+      : undefined;
+  useEffect(() => {
+    if (!connectingPluginId) return;
+    return () => {
+      toast.dismiss(`plugin-connecting:${connectingPluginId}`);
+    };
+  }, [connectingPluginId]);
+
   const once = (step: string, request: number) => {
     const key = `${request}:${step}`;
     if (started.current.has(key)) return false;
@@ -245,6 +256,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
         runtimeId: target.runtimeId,
       });
     } catch (caught) {
+      const latest = readPluginInstallSession();
+      if (latest.kind !== "preparing" || latest.request !== request) return;
       // A daemon from before the flow installs as it always did.
       if (
         caught instanceof DesktopPluginReadError &&
@@ -260,6 +273,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
       }
       return;
     }
+    const prepared = readPluginInstallSession();
+    if (prepared.kind !== "preparing" || prepared.request !== request) return;
     // Codex connects first only the one app of an on_install plugin.
     const app =
       detail.authPolicy === "on_install" && detail.apps.length === 1
@@ -278,6 +293,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
         source: "codex_app",
       });
     let status = await readStatus();
+    const pending = readPluginInstallSession();
+    if (pending.kind !== "preparing" || pending.request !== request) return;
     // The daemon knows an app only once its connector discovery has run,
     // which a daemon that just started, or whose discovery keeps failing,
     // has not: discover once, then ask again.
@@ -297,6 +314,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
       if (latest.kind !== "preparing" || latest.request !== request) return;
       if (refreshed) status = await readStatus();
     }
+    const latest = readPluginInstallSession();
+    if (latest.kind !== "preparing" || latest.request !== request) return;
     if (!status.ok) {
       if (status.code === "daemon_update_required") {
         beginInstall(request, detail);
@@ -362,6 +381,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
       runtimeId: target.runtimeId,
       source: "codex_app",
     });
+    const connecting = readPluginInstallSession();
+    if (connecting.kind === "closed" || connecting.request !== request) return;
     const failed = () => {
       // An automatic connect that cannot open falls back to the dialog.
       if (automatic) {
@@ -399,6 +420,8 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
       return;
     }
     const opened = await openDesktopExternal(continueUrl);
+    const active = readPluginInstallSession();
+    if (active.kind === "closed" || active.request !== request) return;
     if (!opened.ok) {
       toast.error(opened.reason);
       failed();
@@ -536,9 +559,7 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
         onClose={() => {
           // Nothing is installed yet; the connect page may still be open in
           // the browser, which Zenith Team cannot close.
-          if (current.app.status !== "launching") {
-            closePluginInstallSession(current.request);
-          }
+          closePluginInstallSession(current.request);
         }}
         onContinue={() => {
           if (!busy) void connect(current.request, current.app.id);
@@ -553,16 +574,7 @@ export function PluginInstallFlow({ companyId }: { companyId: string }) {
         installed
         target={current.target}
         onClose={() => {
-          if (current.app.status === "launching") return;
-          // Codex: the one app still unconnected ends the flow; otherwise
-          // back to the list, where a started connect keeps its spinner.
-          updatePluginInstallSession(current.request, (open) =>
-            open.kind !== "connectApp"
-              ? undefined
-              : open.apps.length === 1 && open.app.status === "pending"
-                ? { kind: "closed" }
-                : { ...open, kind: "needsApps" },
-          );
+          closePluginInstallSession(current.request);
         }}
         onContinue={() => {
           if (current.app.status === "pending") {
@@ -635,8 +647,8 @@ function LogoPair({ children, size }: { children: ReactNode; size: 56 | 60 }) {
 }
 
 // Codex's "Connect {app}" dialog, before an install (nothing is installed
-// until the app connects) or after it (`installed`). It has no Cancel: the
-// close button, Escape or a click outside dismiss it.
+// until the app connects) or after it (`installed`). Cancelling stops waiting
+// locally; an already opened browser sign-in page remains under user control.
 function ConnectAppDialog({
   app,
   installed = false,
@@ -719,6 +731,13 @@ function ConnectAppDialog({
               <ArrowUpRight aria-hidden="true" size={16} />
             </>
           )}
+        </button>
+        <button
+          className="plugin-install-dialog__secondary"
+          type="button"
+          onClick={onClose}
+        >
+          Cancel connection
         </button>
       </DialogContent>
     </Dialog>
@@ -803,7 +822,14 @@ function ConnectAppsDialog({
             </li>
           ))}
         </ul>
-        <footer className="flex h-[84px] items-center justify-end gap-[8px] mt-[8px] [border-top:1px_solid_var(--workspace-divider)] p-[0_24px] [background:var(--workspace-panel-raised-bg,_var(--workspace-panel-bg))]">
+        <footer className="flex min-h-[84px] flex-wrap items-center justify-end gap-[8px] mt-[8px] [border-top:1px_solid_var(--workspace-divider)] p-[16px_24px] [background:var(--workspace-panel-raised-bg,_var(--workspace-panel-bg))]">
+          <button
+            className="plugin-install-dialog__secondary"
+            type="button"
+            onClick={onClose}
+          >
+            Cancel connection
+          </button>
           <button
             className="plugin-install-dialog__secondary"
             type="button"

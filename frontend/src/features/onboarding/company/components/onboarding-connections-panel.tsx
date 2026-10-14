@@ -18,6 +18,7 @@ import {
   PluginInstallFlow,
 } from "@/features/settings/components/plugin-install-flow";
 import {
+  closePluginInstallSession,
   startPluginInstall,
   usePluginInstallSession,
 } from "@/features/settings/model/plugin-install-session";
@@ -432,6 +433,16 @@ function OnboardingPluginChoices({
           </button>
         }
       >
+        {installSession.kind !== "closed" &&
+        installSession.kind !== "installing" ? (
+          <button
+            type="button"
+            className="onboarding-button onboarding-button--secondary"
+            onClick={() => closePluginInstallSession(installSession.request)}
+          >
+            Cancel connection
+          </button>
+        ) : null}
         {completionError ? (
           <button
             type="button"
