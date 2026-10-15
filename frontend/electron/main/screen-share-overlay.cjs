@@ -134,7 +134,10 @@ function createOverlayWindow(bounds, options) {
     },
   });
   window.setAlwaysOnTop(true, "screen-saver");
-  window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // Follow the person across Spaces without visibleOnFullScreen: on macOS
+  // that turns the whole app into a UIElement application, hiding its
+  // windows (the Huddle window and this toolbar) and its Dock icon.
+  window.setVisibleOnAllWorkspaces(true, { skipTransformProcessType: true });
   // Keeps the border and toolbar out of the stream everyone else sees.
   window.setContentProtection(true);
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
