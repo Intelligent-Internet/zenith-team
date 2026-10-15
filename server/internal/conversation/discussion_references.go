@@ -84,7 +84,10 @@ func validateDiscussionReferences(
 			}
 			if _, err := q.GetDiscussionEligibleUser(
 				ctx,
-				generated.GetDiscussionEligibleUserParams{CompanyID: p.CompanyID, UserID: *reference.UserID},
+				generated.GetDiscussionEligibleUserParams{
+					CompanyID: p.CompanyID,
+					UserID:    *reference.UserID,
+				},
 			); err != nil {
 				return nil, ErrDiscussionInvalid
 			}
@@ -94,9 +97,17 @@ func validateDiscussionReferences(
 			}
 			// A tag needs the Agent in the conversation. The refusal says so
 			// rather than calling the body malformed.
-			if _, lookupErr := q.GetDiscussionAgentHistoryGrant(ctx, generated.GetDiscussionAgentHistoryGrantParams{
-				CompanyID: p.CompanyID, ConversationID: conversationID, AgentID: *reference.AgentID,
-			}); errors.Is(lookupErr, pgx.ErrNoRows) {
+			if _, lookupErr := q.GetDiscussionAgentHistoryGrant(
+				ctx,
+				generated.GetDiscussionAgentHistoryGrantParams{
+					CompanyID:      p.CompanyID,
+					ConversationID: conversationID,
+					AgentID:        *reference.AgentID,
+				},
+			); errors.Is(
+				lookupErr,
+				pgx.ErrNoRows,
+			) {
 				return nil, ErrDiscussionAgentRequired
 			} else if lookupErr != nil {
 				return nil, lookupErr
@@ -105,10 +116,39 @@ func validateDiscussionReferences(
 			if _, ok := allowedUploads[*reference.AttachmentID]; ok {
 				continue
 			}
-			if _, lookupErr := q.GetDiscussionAttachmentReference(ctx, generated.GetDiscussionAttachmentReferenceParams{
-				AttachmentID: *reference.AttachmentID, CompanyID: p.CompanyID, ConversationID: conversationID,
-			}); lookupErr != nil {
+			if _, lookupErr := q.GetDiscussionAttachmentReference(
+				ctx,
+				generated.GetDiscussionAttachmentReferenceParams{
+					AttachmentID:   *reference.AttachmentID,
+					CompanyID:      p.CompanyID,
+					ConversationID: conversationID,
+				},
+			); lookupErr != nil {
 				return nil, ErrDiscussionInvalid
+			}
+		case "connector":
+			if previous != nil {
+				oldRefs, err := decodeDiscussionReferences(*previous)
+				if err != nil {
+					return nil, err
+				}
+				found := false
+				for _, old := range oldRefs {
+					if old.Type == "connector" && *old.ConnectorID == *reference.ConnectorID &&
+						string(
+							utf16.Decode(
+								utf16.Encode([]rune(previous.Markdown))[old.Start:old.End],
+							),
+						) == string(
+							utf16.Decode(currentText[reference.Start:reference.End]),
+						) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					return nil, ErrDiscussionInvalid
+				}
 			}
 		case "skill":
 			if previous != nil {
@@ -118,7 +158,8 @@ func validateDiscussionReferences(
 				}
 				found := false
 				for _, old := range oldRefs {
-					if old.Type == "skill" && *old.SkillID == *reference.SkillID && *old.VersionID == *reference.VersionID {
+					if old.Type == "skill" && *old.SkillID == *reference.SkillID &&
+						*old.VersionID == *reference.VersionID {
 						found = true
 						break
 					}
@@ -156,7 +197,13 @@ func createDiscussionMentionInboxItems(
 	directOnly bool,
 ) error {
 	recipients := make(map[uuid.UUID]struct{})
-	preferences, err := q.ListDiscussionNotificationPreferences(ctx, generated.ListDiscussionNotificationPreferencesParams{CompanyID: p.CompanyID, ConversationID: conversationID})
+	preferences, err := q.ListDiscussionNotificationPreferences(
+		ctx,
+		generated.ListDiscussionNotificationPreferencesParams{
+			CompanyID:      p.CompanyID,
+			ConversationID: conversationID,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -210,7 +257,10 @@ func createDiscussionMentionInboxItems(
 				var err error
 				members, err = q.ListDiscussionMembers(
 					ctx,
-					generated.ListDiscussionMembersParams{CompanyID: p.CompanyID, ConversationID: conversationID},
+					generated.ListDiscussionMembersParams{
+						CompanyID:      p.CompanyID,
+						ConversationID: conversationID,
+					},
 				)
 				if err != nil {
 					return err

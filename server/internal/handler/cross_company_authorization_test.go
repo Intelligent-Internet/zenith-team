@@ -208,6 +208,7 @@ func crossCompanyMatrix() map[string]crossCompanyRouteSpec {
 			body: `{"reason":"Task cannot proceed"}`,
 		},
 
+		"GET /api/v1/companies/:companyId/message-connectors":                                    memberDenied,
 		"GET /api/v1/companies/:companyId/connectors":                                            memberDenied,
 		"POST /api/v1/companies/:companyId/connectors/refresh":                                   memberDenied,
 		"POST /api/v1/companies/:companyId/connectors/resolve":                                   memberDenied,
@@ -597,7 +598,11 @@ func projectAccessRoutes() []projectAccessRoute {
 		{http.MethodPost, "/archive", `{"expectedRevision":1}`},
 		{http.MethodPut, "/files", `{"logoId":null,"documentIds":[],"expectedRevision":1}`},
 		{http.MethodGet, "/grants", ""},
-		{http.MethodPut, "/grants/" + crossCompanyResource.String(), `{"permissions":["project.read"],"expectedRevision":1}`},
+		{
+			http.MethodPut,
+			"/grants/" + crossCompanyResource.String(),
+			`{"permissions":["project.read"],"expectedRevision":1}`,
+		},
 		{http.MethodDelete, "/grants/" + crossCompanyResource.String(), `{"expectedRevision":1}`},
 		{http.MethodPost, "/grants/" + crossCompanyResource.String() + "/preview", `{"permissions":[]}`},
 		{http.MethodPost, "/join", `{"expectedRevision":1}`},
@@ -691,7 +696,8 @@ func projectAccessHandler(role auth.CompanyRole, access auth.ProjectAccess, visi
 					People: []company.ProjectAccessReportPerson{{
 						UserID: crossCompanyUser,
 						Reasons: []company.ProjectAccessReportReason{
-							company.ProjectAccessReportReasonRunAuthorizer, company.ProjectAccessReportReasonTaskAssignee,
+							company.ProjectAccessReportReasonRunAuthorizer,
+							company.ProjectAccessReportReasonTaskAssignee,
 						},
 					}},
 				}},
@@ -738,7 +744,10 @@ func TestProjectRoutesAnswerFromProjectAccess(t *testing.T) {
 			request.Header.Set("Content-Type", "application/json")
 		}
 		if runProof {
-			request.Header.Set(runTokenHeader, "brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+			request.Header.Set(
+				runTokenHeader,
+				"brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			)
 		}
 		response := httptest.NewRecorder()
 		h.ServeHTTP(response, request)

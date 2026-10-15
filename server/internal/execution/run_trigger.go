@@ -358,6 +358,9 @@ func EnqueueRunInTx(
 		return db.Run{}, fmt.Errorf("create run: %w", err)
 	}
 
+	if err := freezeMessageRunConnectors(ctx, q, in, &run); err != nil {
+		return db.Run{}, err
+	}
 	if err := freezeRunSkills(ctx, q, run); err != nil {
 		return db.Run{}, err
 	}

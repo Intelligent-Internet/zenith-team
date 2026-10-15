@@ -469,6 +469,7 @@ export type ConversationDisplayRole =
 
 export type ConversationDisplayItemSummary = {
   skillReferences?: ApiComponents["schemas"]["MessageSkillReference"][];
+  connectorReferences?: ApiComponents["schemas"]["MessageConnectorReference"][];
   created_at: string;
   event_id: string;
   sequence: number;

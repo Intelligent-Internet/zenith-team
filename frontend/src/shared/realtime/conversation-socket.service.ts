@@ -113,6 +113,7 @@ export type ConversationRunStreamEvent =
 
 export type ConversationMessageCommand = {
   skillReferences?: components["schemas"]["MessageSkillReference"][];
+  connectorReferences?: components["schemas"]["MessageConnectorReference"][];
   artifactIds?: string[];
   attachmentIds: string[];
   clientRequestId: string;
@@ -391,6 +392,7 @@ export class ConversationSocketSession {
         attachmentIds: command.attachmentIds,
         artifactIds: command.artifactIds,
         skillReferences: command.skillReferences,
+        connectorReferences: command.connectorReferences,
         content: command.content,
         requestKey,
       };

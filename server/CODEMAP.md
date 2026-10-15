@@ -139,6 +139,21 @@ transaction, and citations grant nothing. General Wiki proposals and custom gran
 Page surface below owns its own current Task Run admission and does not
 enable general Wiki publication.
 
+## Message plugin tags
+
+`GET /companies/:companyId/message-connectors` projects executable connectors
+on the sender's own bindings for the conversation's current Agents. The `$`
+picker groups these as Plugins beside Skills. `conversation/message_connectors.go`
+validates every tagged Agent and stores exact contract receipts in
+`message_connectors`, plus the sender's frozen placements in
+`message_connector_bindings`. A plugin-only message never invokes an Agent.
+`execution/run_message_connectors.go` populates `run_connector_selections`;
+claim checks policy, fresh discovery, Agent denials and the frozen Runtime,
+and cancels an unavailable selection without widening its scope. Retries keep
+that exact contract. Receipts never install or enable a plugin.
+
+`internal/agent/connectorselection` shares exact Connector eligibility and Agent capability denials with message admission and Run freezing. It breaks the Agent-service → Conversation/Execution import cycle; credentials remain daemon-local.
+
 ## Custom Agent skills
 
 `internal/agent/skill*.go` owns cloud imports and Agent installations;

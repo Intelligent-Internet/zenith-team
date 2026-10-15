@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"boardly.dev/boardly/server/internal/agent/connectorselection"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -23,6 +25,7 @@ import (
 // ConnectorService owns the server-side connector catalog and the
 // execution allowlist derived from one daemon Runtime's discovery snapshot.
 type ConnectorService interface {
+	ListMessageConnectors(context.Context, auth.UserPrincipal, MessageConnectorScope) ([]MessageConnector, error)
 	PublishDiscovery(
 		context.Context,
 		auth.UserPrincipal,
@@ -766,6 +769,44 @@ func FreezeRunConnectorSnapshotInTx(
 	if err != nil {
 		return generated.Run{}, fmt.Errorf("freeze Run Connector snapshot: %w", err)
 	}
+	var selection struct {
+		MessageConnectorSelection bool      `json:"messageConnectorSelection"`
+		MessageConnectorRuntimeID uuid.UUID `json:"messageConnectorRuntimeId"`
+	}
+	if err := json.Unmarshal(run.Context, &selection); err != nil {
+		return generated.Run{}, err
+	}
+	if selection.MessageConnectorSelection {
+		available, err := connectorselection.ReadAgentMessageConnectors(
+			ctx,
+			q,
+			auth.UserPrincipal{CompanyID: run.CompanyID, UserID: run.ExecutionAuthorizedByUserID.UUID},
+			run.AgentID,
+		)
+		if err != nil {
+			return generated.Run{}, err
+		}
+		if available.RuntimeID != runtimeID || selection.MessageConnectorRuntimeID != runtimeID {
+			return generated.Run{}, ErrConnectorSnapshotUnavailable
+		}
+		selected, err := q.ListSelectedRunConnectorIDs(ctx, runID)
+		if err != nil {
+			return generated.Run{}, err
+		}
+		for _, id := range selected {
+			found := false
+			for _, item := range available.Items {
+				if item.ID == id {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return generated.Run{}, ErrConnectorSnapshotUnavailable
+			}
+		}
+	}
+
 	return run, nil
 }
 

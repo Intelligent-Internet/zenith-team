@@ -113,11 +113,12 @@ type SkillReference struct {
 }
 
 type SendInput struct {
-	SkillReferences []SkillReference
-	RequestKey      uuid.UUID
-	Content         string
-	AttachmentIDs   []uuid.UUID
-	ArtifactIDs     []uuid.UUID
+	ConnectorReferences []ConnectorReference
+	SkillReferences     []SkillReference
+	RequestKey          uuid.UUID
+	Content             string
+	AttachmentIDs       []uuid.UUID
+	ArtifactIDs         []uuid.UUID
 	// SuppressUserMessage starts the Agent without writing the prompt into the
 	// transcript. It exists for prompts the person never typed — onboarding
 	// hands the CEO Agent its opening instruction, and showing the founder a
@@ -285,18 +286,25 @@ func normalizeCreateDirectInput(input CreateDirectInput) (CreateDirectInput, err
 
 func normalizeRenameDirectInput(input RenameDirectInput) (RenameDirectInput, error) {
 	input.Title = protocol.TrimContractWhitespace(input.Title)
-	if !validTitle(input.Title) || input.ExpectedRevision < 1 || input.ExpectedRevision > protocol.MaxJSONSafeInteger {
+	if !validTitle(input.Title) || input.ExpectedRevision < 1 ||
+		input.ExpectedRevision > protocol.MaxJSONSafeInteger {
 		return RenameDirectInput{}, ErrInvalidInput
 	}
 	return input, nil
 }
 
 func normalizeSendInput(input SendInput) (SendInput, error) {
-	if err := validateMessageSkillReferences(input.Content, input.SkillReferences); err != nil {
+	if err := validateMessageConnectorReferences(
+		input.Content,
+		input.ConnectorReferences,
+		input.SkillReferences,
+	); err != nil {
 		return SendInput{}, err
 	}
 	if !util.ValidUUID(input.RequestKey) || len(input.AttachmentIDs) > maxMessageAttachments ||
-		len(input.ArtifactIDs) > 10 || (input.SuppressUserMessage && (len(input.ArtifactIDs) > 0 || len(input.SkillReferences) > 0)) {
+		len(
+			input.ArtifactIDs,
+		) > 10 || (input.SuppressUserMessage && (len(input.ArtifactIDs) > 0 || len(input.SkillReferences) > 0 || len(input.ConnectorReferences) > 0)) {
 		return SendInput{}, ErrInvalidInput
 	}
 	originalContent := input.Content
@@ -308,6 +316,15 @@ func normalizeSendInput(input SendInput) (SendInput, error) {
 		for i := range input.SkillReferences {
 			input.SkillReferences[i].Start -= shift
 			input.SkillReferences[i].End -= shift
+		}
+	}
+	if len(input.ConnectorReferences) > 0 {
+		input.ConnectorReferences = slices.Clone(input.ConnectorReferences)
+		leading := strings.Index(originalContent, input.Content)
+		shift := utf16Len(originalContent[:leading])
+		for i := range input.ConnectorReferences {
+			input.ConnectorReferences[i].Start -= shift
+			input.ConnectorReferences[i].End -= shift
 		}
 	}
 	if input.Content == "" && len(input.ArtifactIDs) > 0 {
@@ -710,13 +727,14 @@ type UserState struct {
 // them, the agent's answer to the Run that wrote it — which is what the
 // NOT NULL label on the row says.
 type MessageResponse struct {
-	SkillReferences []SkillReference  `json:"skillReferences,omitempty"`
-	ID              uuid.UUID         `json:"id"`
-	ConversationID  uuid.UUID         `json:"conversationId"`
-	Seq             int64             `json:"seq"`
-	Type            ItemType          `json:"type"`
-	Author          protocol.ActorRef `json:"author"`
-	RunID           uuid.UUID         `json:"runId"`
-	Content         string            `json:"content"`
-	CreatedAt       time.Time         `json:"createdAt"`
+	ConnectorReferences []ConnectorReference `json:"connectorReferences,omitempty"`
+	SkillReferences     []SkillReference     `json:"skillReferences,omitempty"`
+	ID                  uuid.UUID            `json:"id"`
+	ConversationID      uuid.UUID            `json:"conversationId"`
+	Seq                 int64                `json:"seq"`
+	Type                ItemType             `json:"type"`
+	Author              protocol.ActorRef    `json:"author"`
+	RunID               uuid.UUID            `json:"runId"`
+	Content             string               `json:"content"`
+	CreatedAt           time.Time            `json:"createdAt"`
 }

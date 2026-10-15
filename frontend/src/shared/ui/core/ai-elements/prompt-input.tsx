@@ -402,6 +402,7 @@ export const PromptInputActionAddAttachments = ({
 
 export type PromptInputMessage = {
   skillReferences?: components["schemas"]["MessageSkillReference"][];
+  connectorReferences?: components["schemas"]["MessageConnectorReference"][];
   artifactIds?: string[];
   text?: string;
   files?: ChatInputFile[];
@@ -419,6 +420,7 @@ export type PromptInputProps = Omit<
 > & {
   attachmentsController?: AttachmentsContext;
   skillReferences?: components["schemas"]["MessageSkillReference"][];
+  connectorReferences?: components["schemas"]["MessageConnectorReference"][];
   artifactIds?: string[];
   accept?: string; // e.g., "image/*" or leave undefined for any
   multiple?: boolean;

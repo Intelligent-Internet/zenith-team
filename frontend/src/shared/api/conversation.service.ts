@@ -53,6 +53,7 @@ class ConversationService {
     return items.map(({ attachments, attachmentsWithheld, ...message }) => ({
       content: message.content,
       skillReferences: message.skillReferences,
+      connectorReferences: message.connectorReferences,
       created_at: message.createdAt,
       event_id: message.id,
       event_name:

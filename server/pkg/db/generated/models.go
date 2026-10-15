@@ -1703,6 +1703,33 @@ type MessageAttachment struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type MessageConnector struct {
+	CompanyID        uuid.UUID          `json:"company_id"`
+	ConversationID   uuid.UUID          `json:"conversation_id"`
+	RequestKey       uuid.UUID          `json:"request_key"`
+	SelectedByUserID uuid.UUID          `json:"selected_by_user_id"`
+	Position         int32              `json:"position"`
+	ConnectorID      uuid.UUID          `json:"connector_id"`
+	Name             string             `json:"name"`
+	PolicyRevision   int64              `json:"policy_revision"`
+	Source           string             `json:"source"`
+	NativeID         string             `json:"native_id"`
+	ContractDigest   string             `json:"contract_digest"`
+	StartOffset      int32              `json:"start_offset"`
+	EndOffset        int32              `json:"end_offset"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+type MessageConnectorBinding struct {
+	CompanyID        uuid.UUID          `json:"company_id"`
+	ConversationID   uuid.UUID          `json:"conversation_id"`
+	RequestKey       uuid.UUID          `json:"request_key"`
+	SelectedByUserID uuid.UUID          `json:"selected_by_user_id"`
+	AgentID          uuid.UUID          `json:"agent_id"`
+	RuntimeID        uuid.UUID          `json:"runtime_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
 type MessageSkill struct {
 	CompanyID        uuid.UUID          `json:"company_id"`
 	ConversationID   uuid.UUID          `json:"conversation_id"`

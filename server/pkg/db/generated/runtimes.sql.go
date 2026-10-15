@@ -24,6 +24,10 @@ WHERE status = 'offline'
       SELECT 1 FROM runs
       WHERE runs.runtime_id = runtimes.id
   )
+  AND NOT EXISTS (
+      SELECT 1 FROM message_connector_bindings AS selection
+      WHERE selection.runtime_id = runtimes.id
+  )
 RETURNING id, company_id
 `
 
@@ -36,7 +40,8 @@ type DeleteStaleOfflineRuntimesRow struct {
 // by the NOT EXISTS runs guard forever, and a removed row nothing references
 // is garbage after the TTL like any other offline runtime. A row a member
 // still has an Agent bound to is theirs to keep: their own offline laptop is
-// never pruned out from under their setup.
+// never pruned out from under their setup. Message selections also retain their
+// frozen placement, including queued messages that have not created a Run.
 func (q *Queries) DeleteStaleOfflineRuntimes(ctx context.Context, ttlSecs float64) ([]DeleteStaleOfflineRuntimesRow, error) {
 	rows, err := q.db.Query(ctx, deleteStaleOfflineRuntimes, ttlSecs)
 	if err != nil {

@@ -163,7 +163,8 @@ func (s *DefaultConversationService) sendMessage(
 		if resolved.DocumentThreadID != nil {
 			return ErrNotFound
 		}
-		if len(input.SkillReferences) > 0 && resolved.ConversationKind != "direct" {
+		if (len(input.SkillReferences) > 0 || len(input.ConnectorReferences) > 0) &&
+			resolved.ConversationKind != "direct" {
 			return ErrInvalidInput
 		}
 		if err := lockActiveMembership(ctx, tx, resolved.CompanyID, principal.UserID); err != nil {
@@ -173,8 +174,14 @@ func (s *DefaultConversationService) sendMessage(
 		// take the recipient's membership lock now, while Company and member
 		// locks still precede the Conversation lock, so the Inbox write below
 		// re-enters it instead of taking it out of order.
-		if resolved.TaskID != nil && resolved.AssigneeUserID != nil && *resolved.AssigneeUserID != principal.UserID {
-			if _, err := inbox.LockRecipientInTx(ctx, tx, resolved.CompanyID, *resolved.AssigneeUserID); err != nil {
+		if resolved.TaskID != nil && resolved.AssigneeUserID != nil &&
+			*resolved.AssigneeUserID != principal.UserID {
+			if _, err := inbox.LockRecipientInTx(
+				ctx,
+				tx,
+				resolved.CompanyID,
+				*resolved.AssigneeUserID,
+			); err != nil {
 				return fmt.Errorf("lock Task assignee for a queued Message: %w", err)
 			}
 		}
@@ -243,7 +250,30 @@ func (s *DefaultConversationService) sendMessage(
 			if queueReplayFound {
 				materializedQueue = &queueReplay
 			}
-			if err := matchMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.SkillReferences); err != nil {
+			if err := matchMessageConnectors(
+				ctx,
+				tx,
+				messageSkillScope{
+					CompanyID:      resolved.CompanyID,
+					ConversationID: resolved.ConversationID,
+					UserID:         principal.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				input.ConnectorReferences,
+			); err != nil {
+				return err
+			}
+			if err := matchMessageSkills(
+				ctx,
+				tx,
+				messageSkillScope{
+					CompanyID:      resolved.CompanyID,
+					ConversationID: resolved.ConversationID,
+					UserID:         principal.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				input.SkillReferences,
+			); err != nil {
 				return err
 			}
 			return finishMessageReplay(
@@ -251,7 +281,30 @@ func (s *DefaultConversationService) sendMessage(
 			)
 		}
 		if queueReplayFound {
-			if err := matchMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.SkillReferences); err != nil {
+			if err := matchMessageConnectors(
+				ctx,
+				tx,
+				messageSkillScope{
+					CompanyID:      resolved.CompanyID,
+					ConversationID: resolved.ConversationID,
+					UserID:         principal.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				input.ConnectorReferences,
+			); err != nil {
+				return err
+			}
+			if err := matchMessageSkills(
+				ctx,
+				tx,
+				messageSkillScope{
+					CompanyID:      resolved.CompanyID,
+					ConversationID: resolved.ConversationID,
+					UserID:         principal.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				input.SkillReferences,
+			); err != nil {
 				return err
 			}
 			if queueReplay.State == "materialized" {
@@ -262,16 +315,43 @@ func (s *DefaultConversationService) sendMessage(
 			)
 			return err
 		}
-		preparing, err := tx.IsConversationInitializationPending(ctx, generated.IsConversationInitializationPendingParams{
-			CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID,
-		})
+		preparing, err := tx.IsConversationInitializationPending(
+			ctx,
+			generated.IsConversationInitializationPendingParams{
+				CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("check Conversation initialization: %w", err)
 		}
 		if preparing {
 			return ErrInitializationPending
 		}
-		if err := saveMessageSkills(ctx, tx, messageSkillScope{CompanyID: resolved.CompanyID, ConversationID: resolved.ConversationID, UserID: principal.UserID, RequestKey: input.RequestKey}, input.Content, input.SkillReferences); err != nil {
+		if err := saveMessageConnectors(ctx, tx, messageConnectorInput{
+			Scope: messageSkillScope{
+				CompanyID:      resolved.CompanyID,
+				ConversationID: resolved.ConversationID,
+				UserID:         principal.UserID,
+				RequestKey:     input.RequestKey,
+			},
+			Content:    input.Content,
+			References: input.ConnectorReferences,
+			AgentIDs:   connectorTargetAgents(resolved.AgentID),
+		}); err != nil {
+			return err
+		}
+		if err := saveMessageSkills(
+			ctx,
+			tx,
+			messageSkillScope{
+				CompanyID:      resolved.CompanyID,
+				ConversationID: resolved.ConversationID,
+				UserID:         principal.UserID,
+				RequestKey:     input.RequestKey,
+			},
+			input.Content,
+			input.SkillReferences,
+		); err != nil {
 			return err
 		}
 		if len(input.ArtifactIDs) > 0 {
@@ -299,7 +379,15 @@ func (s *DefaultConversationService) sendMessage(
 			// no-Agent refusal below like any other send.
 			if resolved.AgentID != nil && taskRow.AssigneeUserID != principal.UserID {
 				result, err = queueTaskMessageForAssignee(
-					ctx, tx, &pending, s.taskMessageRuns, principal, target, input, resolved, *taskRow,
+					ctx,
+					tx,
+					&pending,
+					s.taskMessageRuns,
+					principal,
+					target,
+					input,
+					resolved,
+					*taskRow,
 				)
 				return err
 			}
@@ -444,7 +532,15 @@ func (s *DefaultConversationService) sendMessage(
 				return err
 			}
 		}
-		bumped, err := bumpConversationProjection(ctx, tx, resolved.ConversationID, resolved.CompanyID, &pending, events.UserActor(principal.UserID.String()), beforeHistory)
+		bumped, err := bumpConversationProjection(
+			ctx,
+			tx,
+			resolved.ConversationID,
+			resolved.CompanyID,
+			&pending,
+			events.UserActor(principal.UserID.String()),
+			beforeHistory,
+		)
 		if err != nil {
 			return err
 		}

@@ -751,6 +751,9 @@ schemas:
       skillReferences:
         type: array
         items: { $ref: './conversations.yaml#/schemas/MessageSkillReference' }
+      connectorReferences:
+        type: array
+        items: { $ref: './conversations.yaml#/schemas/MessageConnectorReference' }
       id: { type: string, format: uuid }
       conversationId: { type: string, format: uuid }
       seq:

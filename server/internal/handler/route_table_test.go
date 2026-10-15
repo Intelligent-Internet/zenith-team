@@ -812,6 +812,7 @@ var wantRouteTable = []string{
 	"GET /api/v1/companies/:companyId/artifacts/:artifactId/whiteboard/preview",
 
 	"GET /api/v1/companies/:companyId/message-skills",
+	"GET /api/v1/companies/:companyId/message-connectors",
 	"GET /api/v1/companies/:companyId/agents/:agentId/skills",
 	"POST /api/v1/companies/:companyId/agents/:agentId/skills",
 	"POST /api/v1/companies/:companyId/agents/:agentId/skill-imports/upload",

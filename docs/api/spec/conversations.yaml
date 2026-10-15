@@ -956,6 +956,10 @@ paths:
                   type: array
                   maxItems: 32
                   items: { $ref: "#/schemas/MessageSkillReference" }
+                connectorReferences:
+                  type: array
+                  maxItems: 32
+                  items: { $ref: "#/schemas/MessageConnectorReference" }
                 artifactIds:
                   type: array
                   maxItems: 10
@@ -1190,6 +1194,11 @@ paths:
                   maxItems: 0
                   description: Message skill selection is supported in direct chats and discussions; Task messages must leave this empty.
                   items: { $ref: "#/schemas/MessageSkillReference" }
+                connectorReferences:
+                  type: array
+                  maxItems: 0
+                  description: Message connector selection is supported in direct chats and discussions; Task messages must leave this empty.
+                  items: { $ref: "#/schemas/MessageConnectorReference" }
                 artifactIds:
                   type: array
                   maxItems: 10
@@ -4589,6 +4598,14 @@ paths:
   # /api/v1/companies/{companyId}/conversations
 
 schemas:
+  MessageConnectorReference:
+    type: object
+    additionalProperties: false
+    required: [start, end, connectorId]
+    properties:
+      start: { type: integer, minimum: 0 }
+      end: { type: integer, minimum: 1 }
+      connectorId: { type: string, format: uuid }
   MessageSkillReference:
     type: object
     additionalProperties: false
@@ -5007,11 +5024,12 @@ schemas:
           properties:
             start: { type: integer, minimum: 0 }
             end: { type: integer, minimum: 1 }
-            type: { type: string, enum: [user, agent, attachment, asset_version, broadcast, skill] }
+            type: { type: string, enum: [user, agent, attachment, asset_version, broadcast, skill, connector] }
             userId: { type: string, format: uuid }
             agentId: { type: string, format: uuid }
             attachmentId: { type: string, format: uuid }
             assetVersionId: { type: string, format: uuid }
+            connectorId: { type: string, format: uuid }
             skillId: { type: string, format: uuid }
             versionId: { type: string, format: uuid }
             scope: { type: string, enum: [everyone, here] }

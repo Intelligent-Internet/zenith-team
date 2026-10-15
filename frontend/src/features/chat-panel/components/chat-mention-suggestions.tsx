@@ -1,6 +1,12 @@
-import { useLayoutEffect, useRef, useState, type RefObject } from "react";
+import {
+  Fragment,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
-import { AtSign, BookOpen } from "@/shared/ui/icons";
+import { AtSign, BookOpen, Puzzle } from "@/shared/ui/icons";
 import type { ChatMentionMember } from "@/features/chat-panel/model/chat-mentions";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 import { personInitials } from "@/shared/ui/person-initials";
@@ -78,7 +84,9 @@ export function ChatMentionSuggestions({
         ) : (
           <AtSign size={15} aria-hidden />
         )}
-        <span>{trigger === "$" ? "Use a skill" : "Mention someone"}</span>
+        <span>
+          {trigger === "$" ? "Skills and plugins" : "Mention someone"}
+        </span>
       </div>
       <div
         aria-label="Mention suggestions"
@@ -87,46 +95,63 @@ export function ChatMentionSuggestions({
         role="listbox"
       >
         {members.map((member, index) => (
-          <div
-            aria-selected={activeIndex === index}
-            className="chat-mention-suggestions__member"
-            data-unavailable={member.unavailable ? true : undefined}
-            id={`${listId}-${index}`}
-            key={`${member.kind}:${member.id}`}
-            onMouseDown={(event) => event.preventDefault()}
-            onMouseMove={() => onActiveIndexChange(index)}
-            onClick={() => onSelect(member)}
-            role="option"
+          <Fragment
+            key={`${member.connector ? "connector" : member.skill ? "skill" : member.kind}:${member.id}`}
           >
-            <span
-              className="chat-mention-suggestions__avatar grid w-[34px] h-[34px] flex-none overflow-hidden place-items-center rounded-[8px] [background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-accent,_#7556b9)] font-[700]"
-              aria-hidden
+            {trigger === "$" &&
+            (index === 0 ||
+              !!member.connector !== !!members[index - 1]?.connector) ? (
+              <div
+                role="presentation"
+                className="px-2 py-2 text-workspace-caption font-semibold text-workspace-muted"
+              >
+                {member.connector ? "Plugins" : "Skills"}
+              </div>
+            ) : null}
+            <div
+              aria-selected={activeIndex === index}
+              className="chat-mention-suggestions__member"
+              data-unavailable={member.unavailable ? true : undefined}
+              id={`${listId}-${index}`}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseMove={() => onActiveIndexChange(index)}
+              onClick={() => onSelect(member)}
+              role="option"
             >
-              {member.skill ? (
-                <BookOpen size={18} />
-              ) : (
-                <MentionAvatar member={member} />
-              )}
-            </span>
-            <span className="grid min-w-0 flex-1 gap-[2px]">
-              <span className="chat-mention-suggestions__name">
-                {member.name}
+              <span
+                className="chat-mention-suggestions__avatar grid w-[34px] h-[34px] flex-none overflow-hidden place-items-center rounded-[8px] [background:var(--workspace-control-bg,_#f1edf4)] text-[var(--workspace-native-accent,_#7556b9)] font-[700]"
+                aria-hidden
+              >
+                {member.connector ? (
+                  <Puzzle size={18} />
+                ) : member.skill ? (
+                  <BookOpen size={18} />
+                ) : (
+                  <MentionAvatar member={member} />
+                )}
               </span>
-              <span className="chat-mention-suggestions__description">
-                {member.description}
+              <span className="grid min-w-0 flex-1 gap-[2px]">
+                <span className="chat-mention-suggestions__name">
+                  {member.name}
+                </span>
+                <span className="chat-mention-suggestions__description">
+                  {member.description}
+                </span>
               </span>
-            </span>
-            <span className="flex-none [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[5px] p-[2px_5px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption">
-              {member.unavailable ??
-                (member.skill
-                  ? "Skill"
-                  : member.broadcastScope
-                    ? "Channel"
-                    : member.kind === "agent"
-                      ? "Agent"
-                      : "Member")}
-            </span>
-          </div>
+              <span className="flex-none [border:1px_solid_var(--workspace-divider,_#e5dfe8)] rounded-[5px] p-[2px_5px] text-[var(--workspace-native-text-muted,_#706875)] text-workspace-caption leading-workspace-caption">
+                {member.unavailable ??
+                  (member.connector
+                    ? "Plugin"
+                    : member.skill
+                      ? "Skill"
+                      : member.broadcastScope
+                        ? "Channel"
+                        : member.kind === "agent"
+                          ? "Agent"
+                          : "Member")}
+              </span>
+            </div>
+          </Fragment>
         ))}
       </div>
       {members.length === 0 ? (

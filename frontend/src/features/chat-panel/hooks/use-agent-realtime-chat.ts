@@ -1539,6 +1539,7 @@ export function useAgentRealtimeChat({
           attachmentIds: resourceAttachments.map((attachment) => attachment.id),
           artifactIds: message.artifactIds,
           skillReferences: message.skillReferences,
+          connectorReferences: message.connectorReferences,
           clientRequestId: clientMessageId,
           content,
           conversationId,

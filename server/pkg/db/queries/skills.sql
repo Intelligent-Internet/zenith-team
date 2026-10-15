@@ -116,6 +116,7 @@ AND (
     SELECT 1 FROM conversations c
     WHERE c.company_id = agent_skills.company_id AND c.id = sqlc.arg(conversation_id)::uuid
       AND c.archived_at IS NULL AND c.document_thread_id IS NULL
+      AND EXISTS (SELECT 1 FROM conversation_readers reader WHERE reader.company_id = c.company_id AND reader.conversation_id = c.id AND reader.user_id = sqlc.arg(actor_user_id)::uuid)
       AND (
         (c.kind = 'direct' AND c.agent_id = agents.id AND c.created_by_user_id = sqlc.arg(actor_user_id)::uuid)
         OR (c.kind IN ('channel', 'human_direct')

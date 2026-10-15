@@ -141,7 +141,9 @@ export function useDiscussionRichEditor(options: EditorOptions) {
   const matches = query
     ? filterChatMentionMembers(
         options.members.filter((member) =>
-          query.trigger === "$" ? !!member.skill : !member.skill,
+          query.trigger === "$"
+            ? !!(member.skill || member.connector)
+            : !(member.skill || member.connector),
         ),
         query.text,
       )
@@ -180,13 +182,15 @@ export function useDiscussionRichEditor(options: EditorOptions) {
       options.onUnavailableSelect(member);
       return;
     }
-    const reference = member.skill
-      ? { type: "skill", ...member.skill }
-      : member.broadcastScope
-        ? { type: "broadcast", scope: member.broadcastScope }
-        : member.kind === "agent"
-          ? { type: "agent", agentId: member.id }
-          : { type: "user", userId: member.id };
+    const reference = member.connector
+      ? { type: "connector", connectorId: member.connector.connectorId }
+      : member.skill
+        ? { type: "skill", ...member.skill }
+        : member.broadcastScope
+          ? { type: "broadcast", scope: member.broadcastScope }
+          : member.kind === "agent"
+            ? { type: "agent", agentId: member.id }
+            : { type: "user", userId: member.id };
     editor
       .chain()
       .focus()
@@ -199,7 +203,7 @@ export function useDiscussionRichEditor(options: EditorOptions) {
           {
             type: "discussionMention",
             attrs: {
-              label: `${member.skill ? "$" : "@"}${member.name}`,
+              label: `${member.skill || member.connector ? "$" : "@"}${member.name}`,
               reference,
             },
           },

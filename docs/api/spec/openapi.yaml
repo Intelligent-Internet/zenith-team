@@ -569,6 +569,8 @@ components:
 
 
 paths:
+  /api/v1/companies/{companyId}/message-connectors:
+    $ref: "./agents.yaml#/paths/companies_companyId_message_connectors"
   /api/v1/companies/{companyId}/message-skills:
     $ref: "./agents.yaml#/paths/companies_companyId_message_skills"
   /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history:

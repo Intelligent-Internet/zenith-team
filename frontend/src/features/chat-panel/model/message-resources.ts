@@ -1,13 +1,15 @@
 import type { components } from "@/shared/api/generated/api.generated";
-type SkillReference = components["schemas"]["MessageSkillReference"];
+export type ResourceReference =
+  | components["schemas"]["MessageSkillReference"]
+  | components["schemas"]["MessageConnectorReference"];
 
 // Keep selected identities through edits outside their labels; editing any
-// part of a label turns it back into ordinary text, never a different skill.
-export function moveSkillReferences(
+// part of a label turns it back into ordinary text, never a different resource.
+export function moveResourceReferences(
   before: string,
   after: string,
-  refs: SkillReference[],
-): SkillReference[] {
+  refs: ResourceReference[],
+): ResourceReference[] {
   let start = 0;
   while (
     start < before.length &&

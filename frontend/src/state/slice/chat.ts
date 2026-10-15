@@ -18,7 +18,10 @@ type ChatState = {
     string,
     {
       text: string;
-      references: components["schemas"]["MessageSkillReference"][];
+      references: (
+        | components["schemas"]["MessageSkillReference"]
+        | components["schemas"]["MessageConnectorReference"]
+      )[];
     }
   >;
   artifactDrafts: Record<string, LibraryArtifact[]>;
@@ -171,7 +174,10 @@ const chatSlice = createSlice({
       action: PayloadAction<{
         key: string;
         text: string;
-        references: components["schemas"]["MessageSkillReference"][];
+        references: (
+          | components["schemas"]["MessageSkillReference"]
+          | components["schemas"]["MessageConnectorReference"]
+        )[];
       }>,
     ) => {
       state.skillDrafts ??= {};

@@ -1,6 +1,6 @@
 import type { components } from "@/shared/api/generated/api.generated";
-import { useSkillMentionMembers } from "../hooks/use-skill-mention-members";
-import { moveSkillReferences } from "../model/message-skills";
+import { useResourceMentionMembers } from "../hooks/use-resource-mention-members";
+import { moveResourceReferences } from "../model/message-resources";
 import { ArtifactPickerDialog } from "./artifact-picker/artifact-picker-dialog";
 import { ArtifactDraftCards } from "./artifact-picker/artifact-draft-cards";
 import type { LibraryArtifact } from "../api/artifact-library-api";
@@ -135,11 +135,11 @@ export function ChatComposer({
   const artifactKey = artifactContext
     ? `${artifactContext.companyId}:${artifactContext.draftKey}`
     : "";
-  const savedSkills = useAppSelector(
+  const savedResources = useAppSelector(
     (state) => state.chat.skillDrafts?.[artifactKey],
   );
-  const skillRefsRef = useRef(
-    savedSkills?.text === draftMessage ? savedSkills.references : [],
+  const resourceRefsRef = useRef(
+    savedResources?.text === draftMessage ? savedResources.references : [],
   );
   const draftArtifacts = useAppSelector(
     (state) => state.chat.artifactDrafts?.[artifactKey] ?? emptyArtifactDraft,
@@ -237,13 +237,13 @@ export function ChatComposer({
   }, [onDraftMessageChange]);
 
   useEffect(() => {
-    const references = moveSkillReferences(
+    const references = moveResourceReferences(
       localDraftRef.current,
       draftMessage,
-      skillRefsRef.current,
+      resourceRefsRef.current,
     );
-    skillRefsRef.current = references;
-    setSkillReferences(references);
+    resourceRefsRef.current = references;
+    setResourceReferences(references);
     externalDraftRef.current = draftMessage;
     localDraftRef.current = draftMessage;
     setLocalDraftMessage(draftMessage);
@@ -279,14 +279,20 @@ export function ChatComposer({
     };
   }, [flushDraft]);
 
-  const [skillReferences, setSkillReferences] = useState<
-    components["schemas"]["MessageSkillReference"][]
-  >(skillRefsRef.current);
-  const updateSkillReferences = (
-    references: components["schemas"]["MessageSkillReference"][],
+  const [resourceReferences, setResourceReferences] = useState<
+    (
+      | components["schemas"]["MessageSkillReference"]
+      | components["schemas"]["MessageConnectorReference"]
+    )[]
+  >(resourceRefsRef.current);
+  const updateResourceReferences = (
+    references: (
+      | components["schemas"]["MessageSkillReference"]
+      | components["schemas"]["MessageConnectorReference"]
+    )[],
   ) => {
-    skillRefsRef.current = references;
-    setSkillReferences(references);
+    resourceRefsRef.current = references;
+    setResourceReferences(references);
     if (artifactKey)
       dispatch(
         setSkillDraft({
@@ -299,8 +305,8 @@ export function ChatComposer({
   const handleDraftChange = (message: string) => {
     const previousText = localDraftRef.current;
     localDraftRef.current = message;
-    updateSkillReferences(
-      moveSkillReferences(previousText, message, skillRefsRef.current),
+    updateResourceReferences(
+      moveResourceReferences(previousText, message, resourceRefsRef.current),
     );
     setSendFailure(null);
     localDraftRef.current = message;
@@ -322,7 +328,7 @@ export function ChatComposer({
     selectionMemory?.setSelection({ start: 0, end: 0 });
   };
 
-  const skillMembers = useSkillMentionMembers(
+  const resourceMembers = useResourceMentionMembers(
     artifactContext
       ? {
           companyId: artifactContext.companyId,
@@ -332,15 +338,19 @@ export function ChatComposer({
         }
       : undefined,
   );
-  const allMentionMembers = [...(mentionMembers ?? []), ...skillMembers];
+  const allMentionMembers = [...(mentionMembers ?? []), ...resourceMembers];
   const mentions = useChatMentions({
     disabled,
     members: allMentionMembers,
     onMentionInserted: (member, range) => {
-      const skill = member.skill;
-      if (skill)
-        updateSkillReferences(
-          [...skillRefsRef.current, { ...range, ...skill }].sort(
+      const resource =
+        member.skill ??
+        (member.connector
+          ? { connectorId: member.connector.connectorId }
+          : undefined);
+      if (resource)
+        updateResourceReferences(
+          [...resourceRefsRef.current, { ...range, ...resource }].sort(
             (a, b) => a.start - b.start,
           ),
         );
@@ -352,7 +362,7 @@ export function ChatComposer({
     localDraftMessage,
     mentionMembers ?? [],
   )
-    .concat(skillReferences.map(({ start, end }) => ({ start, end })))
+    .concat(resourceReferences.map(({ start, end }) => ({ start, end })))
     .sort((a, b) => a.start - b.start);
 
   const handleFileDragEnter = (event: DragEvent<HTMLFormElement>) => {
@@ -530,13 +540,32 @@ export function ChatComposer({
             );
             throw new Error("Conversation run queue is not ready");
           }
-          message.skillReferences = skillReferences;
+          const invalidConnector = resourceReferences.find(
+            (ref) =>
+              "connectorId" in ref &&
+              !resourceMembers.some(
+                (member) => member.connector?.connectorId === ref.connectorId,
+              ),
+          );
+          if (invalidConnector) {
+            setSendFailure(
+              "A selected plugin is no longer available. Check your connections or remove its tag.",
+            );
+            throw new Error("Selected plugin is unavailable");
+          }
+          message.skillReferences = resourceReferences.filter(
+            (ref) => "skillId" in ref,
+          );
+          message.connectorReferences = resourceReferences.filter(
+            (ref) => "connectorId" in ref,
+          );
           setSendFailure(null);
           // Text-only submissions can release the draft immediately. Submissions
           // with files or artifacts retain their attachments until sending succeeds.
           if (
             pendingPrompt &&
             !message.skillReferences?.length &&
+            !message.connectorReferences?.length &&
             !message.files?.length &&
             !message.artifactIds?.length &&
             message.clientMessageId &&

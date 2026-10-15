@@ -3,6 +3,32 @@
 # that references it, and docs/api/agents.md is its prose counterpart.
 
 paths:
+  companies_companyId_message_connectors:
+    get:
+      tags: [agents]
+      operationId: listMessageConnectors
+      summary: List connected plugins usable by the caller in this chat
+      description: Supply exactly one of conversation_id or agent_id. Returns executable connectors on the caller's own Agent bindings, with the eligible Agents in this chat. Installed plugins alone do not grant execution. Never selects another member's Runtime.
+      parameters:
+        - $ref: './_common.yaml#/parameters/companyId'
+        - in: query
+          name: conversation_id
+          schema: { type: string, format: uuid }
+          description: Existing channel, group direct chat or direct conversation.
+        - in: query
+          name: agent_id
+          schema: { type: string, format: uuid }
+          description: Agent for a new direct chat without a conversation yet. Cannot accompany conversation_id.
+      responses:
+        '200':
+          description: Connected plugins with eligible Agents.
+          content:
+            application/json:
+              schema: { $ref: '#/schemas/MessageConnectorCollection' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+
   companies_companyId_message_skills:
     get:
       tags: [agents]
@@ -1008,6 +1034,29 @@ paths:
 
 
 schemas:
+  MessageConnectorCollection:
+    type: object
+    additionalProperties: false
+    required: [items]
+    properties:
+      items:
+        type: array
+        items: { $ref: '#/schemas/MessageConnector' }
+  MessageConnector:
+    type: object
+    additionalProperties: false
+    required: [id, name, provider, eligibleAgentIds, agentNames]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      iconUrl: { type: string }
+      provider: { type: string, enum: [codex, claude] }
+      eligibleAgentIds:
+        type: array
+        items: { type: string, format: uuid }
+      agentNames:
+        type: array
+        items: { type: string }
   MessageSkillCollection:
     type: object
     required: [items]

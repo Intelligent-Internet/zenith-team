@@ -145,6 +145,7 @@ write again with the new `revision`.
 | Code | Meaning | What to do |
 |---|---|---|
 | `message_skill_unavailable` | A selected message skill changed, is unavailable, or conflicts by name | Select skills again |
+| `message_connector_unavailable` | A selected plugin is unavailable for a tagged Agent on your Runtime | Change the Agent/plugin selection or reconnect |
 | `agent_revision_conflict` | `expectedRevision` did not match | Re-read, re-apply, write again |
 | `agent_skill_daemon_upgrade` | 409 | Update the Zenith Team daemon to load custom skills. |
 | `agent_skill_invalid` | Invalid portable SKILL.md, unsafe or missing package files, or import size exceeded | Correct the package and preview it again |

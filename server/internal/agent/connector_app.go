@@ -8,6 +8,8 @@ import (
 	"slices"
 	"time"
 
+	"boardly.dev/boardly/server/internal/agent/connectorselection"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -342,8 +344,11 @@ func (s *DefaultConnectorService) ReadAppReadiness(
 				AgentID: readiness.AgentID, Provider: ConnectorProvider(readiness.Provider),
 				RuntimeID: readiness.BoundRuntimeID,
 				Discovery: connectorAppDiscovery(
-					readiness.BoundRuntimeID.Valid, readiness.RuntimeEligible, readiness.Generation.Valid,
-					readiness.DiscoveryFresh, readiness.DiscoveryObservedAt.Time,
+					readiness.BoundRuntimeID.Valid,
+					readiness.RuntimeEligible,
+					readiness.Generation.Valid,
+					readiness.DiscoveryFresh,
+					readiness.DiscoveryObservedAt.Time,
 				),
 				Apps: make([]ConnectorAppReadiness, 0, len(input.Apps)),
 			}
@@ -391,7 +396,10 @@ func (s *DefaultConnectorService) ReadAppReadiness(
 					_ = json.Unmarshal(plugin.ConnectorIdentities, &linked)
 					for _, identity := range linked {
 						if !slices.Contains(identities, ConnectorIdentityInput(identity)) {
-							identities = append(identities, ConnectorIdentityInput(identity))
+							identities = append(
+								identities,
+								ConnectorIdentityInput(identity),
+							)
 						}
 					}
 				}
@@ -454,7 +462,10 @@ func (s *DefaultConnectorService) ReadAppReadiness(
 	if result.Discovery.State == ConnectorDiscoveryStateUnbound ||
 		result.Discovery.State == ConnectorDiscoveryStateMissing {
 		for _, app := range input.Apps {
-			result.Apps = append(result.Apps, ConnectorAppReadiness{App: app, State: ConnectorAppStateUnknown})
+			result.Apps = append(
+				result.Apps,
+				ConnectorAppReadiness{App: app, State: ConnectorAppStateUnknown},
+			)
 		}
 		return result, nil
 	}
@@ -497,9 +508,14 @@ func (s *DefaultConnectorService) ReadAppReadiness(
 			row := rows[winner]
 			tools, writeTools := connectorAppToolCounts(ConnectorSource(row.Source), row.ToolNamespace)
 			readinessEntry.Connector = &ConnectorAppConnector{
-				ID: row.ID, Source: ConnectorSource(row.Source), NativeID: row.NativeID,
-				Name: row.Name, Status: ConnectorStatus(row.Status), Action: ConnectorAction(row.Action),
-				ToolCount: tools, WriteToolCount: writeTools,
+				ID:             row.ID,
+				Source:         ConnectorSource(row.Source),
+				NativeID:       row.NativeID,
+				Name:           row.Name,
+				Status:         ConnectorStatus(row.Status),
+				Action:         ConnectorAction(row.Action),
+				ToolCount:      tools,
+				WriteToolCount: writeTools,
 			}
 		}
 		if revealPlugins && pinnedPlugin != nil {
@@ -559,55 +575,20 @@ func connectorAppIcon(
 // Runtime: a Connector the Agent disabled by id, and every Connector a
 // disabled Plugin provides there — its own claude_plugin Connector and each
 // identity it declares.
-type connectorAppDenial struct {
-	connectorIDs map[string]bool
-	identities   map[ConnectorIdentityInput]bool
+type connectorAppDenial struct{ denial connectorselection.Denial }
+
+func (d connectorAppDenial) denies(id uuid.UUID, identity ConnectorIdentityInput) bool {
+	return d.denial.Denies(id, string(identity.Source), identity.NativeID)
 }
 
-func (d connectorAppDenial) denies(connectorID uuid.UUID, identity ConnectorIdentityInput) bool {
-	return d.connectorIDs[connectorID.String()] || d.identities[identity]
-}
-
-// readConnectorAppDenial reads the Agent's disabled Plugins through their
-// typed column and matches the disabled-MCP-server payload in Go, so no SQL
-// filters on a jsonb value. Both documents are trusted product state,
-// validated before persistence.
 func readConnectorAppDenial(
 	ctx context.Context,
 	q *generated.Queries,
 	companyID, runtimeID uuid.UUID,
 	readiness generated.GetAgentConnectorReadinessContextRow,
 ) (connectorAppDenial, error) {
-	denial := connectorAppDenial{
-		connectorIDs: make(map[string]bool),
-		identities:   make(map[ConnectorIdentityInput]bool),
-	}
-	var disabledConnectors []string
-	_ = json.Unmarshal(readiness.DisabledMcpServers, &disabledConnectors)
-	for _, id := range disabledConnectors {
-		denial.connectorIDs[id] = true
-	}
-	if len(readiness.DisabledPluginIds) == 0 {
-		return denial, nil
-	}
-	rows, err := q.ListDisabledPluginIdentitiesForRuntime(
-		ctx,
-		generated.ListDisabledPluginIdentitiesForRuntimeParams{
-			RuntimeID: runtimeID, CompanyID: companyID, PluginIds: readiness.DisabledPluginIds,
-		},
-	)
-	if err != nil {
-		return connectorAppDenial{}, fmt.Errorf("read disabled Plugins: %w", err)
-	}
-	for _, row := range rows {
-		denial.identities[ConnectorIdentityInput{Source: ConnectorSourceClaudePlugin, NativeID: row.NativeID}] = true
-		var linked []PluginConnectorIdentity
-		_ = json.Unmarshal(row.ConnectorIdentities, &linked)
-		for _, identity := range linked {
-			denial.identities[ConnectorIdentityInput(identity)] = true
-		}
-	}
-	return denial, nil
+	denial, err := connectorselection.ReadDenial(ctx, q, companyID, runtimeID, readiness)
+	return connectorAppDenial{denial: denial}, err
 }
 
 // connectorAppToolCounts counts the tools a Run can call from one current

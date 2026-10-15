@@ -328,6 +328,19 @@ func TestSchemaEnforcesTenantAndExecutionInvariants(t *testing.T) {
 			t.Fatalf("seed retained Run history on the removed runtime: %v", err)
 		}
 
+		messageRuntimeID := dbtest.NewUUID(t)
+		dbtest.MustExec(t, ctx, pool, `
+			INSERT INTO runtimes (
+				id, company_id, daemon_id, name, provider, status, owner_user_id, last_seen_at
+			) VALUES ($1, $2, 'daemon-message-history', 'Message Runtime',
+				'codex', 'offline', $3, now() - interval '8 days')`,
+			messageRuntimeID, fixture.CompanyA, fixture.UserA)
+		dbtest.MustExec(t, ctx, pool, `
+			INSERT INTO message_connector_bindings (
+				company_id, conversation_id, request_key, selected_by_user_id, agent_id, runtime_id
+			) VALUES ($1, $2, gen_random_uuid(), $3, $4, $5)`,
+			fixture.CompanyA, fixture.DirectConversationA, fixture.UserA, fixture.AgentA, messageRuntimeID)
+
 		deleted, err := generated.New(pool).DeleteStaleOfflineRuntimes(ctx, 7*24*60*60)
 		if err != nil {
 			t.Fatalf("DeleteStaleOfflineRuntimes() error = %v", err)
@@ -487,6 +500,9 @@ func TestPreservationForeignKeysAllowOwnedGraphCascades(t *testing.T) {
 				"asset_versions_attachment_fkey",
 				"output_items_asset_version_fkey",
 				"output_publications_output_item_fkey",
+				"message_connectors_connector_id_fkey",
+				"message_connector_bindings_agent_id_fkey",
+				"message_connector_bindings_runtime_id_fkey",
 			} {
 				var deleteAction string
 				var deferrable, initiallyDeferred bool

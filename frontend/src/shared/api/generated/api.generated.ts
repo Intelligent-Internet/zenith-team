@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/companies/{companyId}/message-connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List connected plugins usable by the caller in this chat
+         * @description Supply exactly one of conversation_id or agent_id. Returns executable connectors on the caller's own Agent bindings, with the eligible Agents in this chat. Installed plugins alone do not grant execution. Never selects another member's Runtime.
+         */
+        get: operations["listMessageConnectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/message-skills": {
         parameters: {
             query?: never;
@@ -12789,19 +12809,18 @@ export interface components {
             type: "mailbox.draft_changed";
             payload: components["schemas"]["MailboxDraftChangedPayload"];
         };
-        MessageSkill: {
+        MessageConnector: {
             /** Format: uuid */
             id: string;
-            /** Format: uuid */
-            agentId: string;
-            /** Format: uuid */
-            versionId: string;
             name: string;
-            description: string;
-            agentName: string;
+            iconUrl?: string;
+            /** @enum {string} */
+            provider: "codex" | "claude";
+            eligibleAgentIds: string[];
+            agentNames: string[];
         };
-        MessageSkillCollection: {
-            items: components["schemas"]["MessageSkill"][];
+        MessageConnectorCollection: {
+            items: components["schemas"]["MessageConnector"][];
         };
         /**
          * @description The single error envelope used by every endpoint.
@@ -12821,6 +12840,20 @@ export interface components {
              *     bypassed. Quote it in bug reports.
              */
             requestId?: string | null;
+        };
+        MessageSkill: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            agentId: string;
+            /** Format: uuid */
+            versionId: string;
+            name: string;
+            description: string;
+            agentName: string;
+        };
+        MessageSkillCollection: {
+            items: components["schemas"]["MessageSkill"][];
         };
         DocumentSuggestionReview: {
             /** Format: uuid */
@@ -13780,7 +13813,7 @@ export interface components {
                 start: number;
                 end: number;
                 /** @enum {string} */
-                type: "user" | "agent" | "attachment" | "asset_version" | "broadcast" | "skill";
+                type: "user" | "agent" | "attachment" | "asset_version" | "broadcast" | "skill" | "connector";
                 /** Format: uuid */
                 userId?: string;
                 /** Format: uuid */
@@ -13789,6 +13822,8 @@ export interface components {
                 attachmentId?: string;
                 /** Format: uuid */
                 assetVersionId?: string;
+                /** Format: uuid */
+                connectorId?: string;
                 /** Format: uuid */
                 skillId?: string;
                 /** Format: uuid */
@@ -17777,6 +17812,12 @@ export interface components {
             /** Format: uuid */
             versionId: string;
         };
+        MessageConnectorReference: {
+            start: number;
+            end: number;
+            /** Format: uuid */
+            connectorId: string;
+        };
         /**
          * @description One item of a conversation's single ordered stream, projected onto the
          *     chat surface. A Conversation has one sequence, and the chat page and its
@@ -17789,6 +17830,7 @@ export interface components {
          */
         Message: {
             skillReferences?: components["schemas"]["MessageSkillReference"][];
+            connectorReferences?: components["schemas"]["MessageConnectorReference"][];
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -20126,6 +20168,37 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listMessageConnectors: {
+        parameters: {
+            query?: {
+                /** @description Existing channel, group direct chat or direct conversation. */
+                conversation_id?: string;
+                /** @description Agent for a new direct chat without a conversation yet. Cannot accompany conversation_id. */
+                agent_id?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connected plugins with eligible Agents. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageConnectorCollection"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
     listMessageSkills: {
         parameters: {
             query?: {
@@ -39191,6 +39264,7 @@ export interface operations {
                     requestKey: string;
                     content?: string;
                     skillReferences?: components["schemas"]["MessageSkillReference"][];
+                    connectorReferences?: components["schemas"]["MessageConnectorReference"][];
                     /** @description Direct Agent chats only. Freezes accessible managed Artifact references into message and Run context. Does not change sharing grants. */
                     artifactIds?: string[];
                     /**
@@ -39457,6 +39531,8 @@ export interface operations {
                     content?: string;
                     /** @description Message skill selection is supported in direct chats and discussions; Task messages must leave this empty. */
                     skillReferences?: components["schemas"]["MessageSkillReference"][];
+                    /** @description Message connector selection is supported in direct chats and discussions; Task messages must leave this empty. */
+                    connectorReferences?: components["schemas"]["MessageConnectorReference"][];
                     /** @description Direct Agent chats only. Freezes accessible managed Artifact references into message and Run context. Does not change sharing grants. */
                     artifactIds?: string[];
                     attachmentIds?: string[];

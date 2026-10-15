@@ -335,13 +335,45 @@ func buildMessageViews(
 		return nil, fmt.Errorf("list Message authors in bulk: %w", err)
 	}
 	skeleton.applyActorRefs(authors)
-	skillRows, err := q.ListMessageSkillReferencesBulk(ctx, generated.ListMessageSkillReferencesBulkParams{CompanyID: companyID, MessageIds: skeleton.messageIDs})
+	skillRows, err := q.ListMessageSkillReferencesBulk(
+		ctx,
+		generated.ListMessageSkillReferencesBulkParams{CompanyID: companyID, MessageIds: skeleton.messageIDs},
+	)
 	if err != nil {
 		return nil, err
 	}
 	for _, ref := range skillRows {
 		index := skeleton.messageIndexes[ref.MessageID]
-		skeleton.items[index].Message.SkillReferences = append(skeleton.items[index].Message.SkillReferences, SkillReference{Start: int(ref.StartOffset), End: int(ref.EndOffset), SkillID: ref.SkillID, VersionID: ref.VersionID})
+		skeleton.items[index].Message.SkillReferences = append(
+			skeleton.items[index].Message.SkillReferences,
+			SkillReference{
+				Start:     int(ref.StartOffset),
+				End:       int(ref.EndOffset),
+				SkillID:   ref.SkillID,
+				VersionID: ref.VersionID,
+			},
+		)
+	}
+	connectorRows, err := q.ListMessageConnectorReferencesBulk(
+		ctx,
+		generated.ListMessageConnectorReferencesBulkParams{
+			CompanyID:  companyID,
+			MessageIds: skeleton.messageIDs,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	for _, ref := range connectorRows {
+		index := skeleton.messageIndexes[ref.MessageID]
+		skeleton.items[index].Message.ConnectorReferences = append(
+			skeleton.items[index].Message.ConnectorReferences,
+			ConnectorReference{
+				Start:       int(ref.StartOffset),
+				End:         int(ref.EndOffset),
+				ConnectorID: ref.ConnectorID,
+			},
+		)
 	}
 	attachments, err := q.ListMessageAttachmentsBulk(ctx, generated.ListMessageAttachmentsBulkParams{
 		ActorUserID: actorID, MessageIds: skeleton.messageIDs, CompanyID: companyID,
@@ -391,9 +423,12 @@ func messageViewWithAttachments(
 	}
 	withheld := false
 	if carriesProjectFile {
-		ids, err := q.ListMessagesWithWithheldAttachments(ctx, generated.ListMessagesWithWithheldAttachmentsParams{
-			ActorUserID: actorID, MessageIds: []uuid.UUID{message.ID}, CompanyID: companyID,
-		})
+		ids, err := q.ListMessagesWithWithheldAttachments(
+			ctx,
+			generated.ListMessagesWithWithheldAttachmentsParams{
+				ActorUserID: actorID, MessageIds: []uuid.UUID{message.ID}, CompanyID: companyID,
+			},
+		)
 		if err != nil {
 			return MessageView{}, fmt.Errorf("list withheld Message Attachments: %w", err)
 		}
@@ -435,13 +470,48 @@ func messageResponseWithActor(
 		return MessageResponse{}, fmt.Errorf("get Message author: %w", err)
 	}
 	message := messageFromRow(row)
-	refs, err := q.ListMessageSkillReferencesBulk(ctx, generated.ListMessageSkillReferencesBulkParams{CompanyID: row.CompanyID, MessageIds: []uuid.UUID{row.ID}})
+	refs, err := q.ListMessageSkillReferencesBulk(
+		ctx,
+		generated.ListMessageSkillReferencesBulkParams{
+			CompanyID:  row.CompanyID,
+			MessageIds: []uuid.UUID{row.ID},
+		},
+	)
 	if err != nil {
 		return MessageResponse{}, err
 	}
 	for _, ref := range refs {
-		message.SkillReferences = append(message.SkillReferences, SkillReference{Start: int(ref.StartOffset), End: int(ref.EndOffset), SkillID: ref.SkillID, VersionID: ref.VersionID})
+		message.SkillReferences = append(
+			message.SkillReferences,
+			SkillReference{
+				Start:     int(ref.StartOffset),
+				End:       int(ref.EndOffset),
+				SkillID:   ref.SkillID,
+				VersionID: ref.VersionID,
+			},
+		)
 	}
+	connectorRefs, err := q.ListMessageConnectorReferencesBulk(
+		ctx,
+		generated.ListMessageConnectorReferencesBulkParams{
+			CompanyID:  row.CompanyID,
+			MessageIds: []uuid.UUID{row.ID},
+		},
+	)
+	if err != nil {
+		return MessageResponse{}, err
+	}
+	for _, ref := range connectorRefs {
+		message.ConnectorReferences = append(
+			message.ConnectorReferences,
+			ConnectorReference{
+				Start:       int(ref.StartOffset),
+				End:         int(ref.EndOffset),
+				ConnectorID: ref.ConnectorID,
+			},
+		)
+	}
+
 	message.Author = actorRef(
 		author.AuthorKind,
 		author.AuthorID.UUID,

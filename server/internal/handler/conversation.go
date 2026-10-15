@@ -118,7 +118,7 @@ type MessageContextService interface {
 
 type createDirectConversationRequest struct {
 	RequestKey optional[string] `json:"requestKey"`
-	AgentID    string           `json:"agentId" binding:"required,uuid"`
+	AgentID    string           `json:"agentId"    binding:"required,uuid"`
 	Title      optional[string] `json:"title"`
 }
 
@@ -128,11 +128,12 @@ type renameConversationRequest struct {
 }
 
 type sendConversationMessageRequest struct {
-	SkillReferences []conversation.SkillReference `json:"skillReferences" binding:"max=32"`
-	RequestKey      string                        `json:"requestKey"    binding:"required,uuid"`
-	Content         string                        `json:"content"`
-	AttachmentIDs   json.RawMessage               `json:"attachmentIds"`
-	ArtifactIDs     []string                      `json:"artifactIds" binding:"max=10,unique,dive,uuid"`
+	ConnectorReferences []conversation.ConnectorReference `json:"connectorReferences" binding:"max=32"`
+	SkillReferences     []conversation.SkillReference     `json:"skillReferences"     binding:"max=32"`
+	RequestKey          string                            `json:"requestKey"          binding:"required,uuid"`
+	Content             string                            `json:"content"`
+	AttachmentIDs       json.RawMessage                   `json:"attachmentIds"`
+	ArtifactIDs         []string                          `json:"artifactIds"         binding:"max=10,unique,dive,uuid"`
 	// SuppressUserMessage starts the Agent without writing the prompt into the
 	// transcript, for instructions the person never typed.
 	SuppressUserMessage bool `json:"suppressUserMessage"`
@@ -527,6 +528,7 @@ func (h *Handler) sendMessage(c *gin.Context, kind conversation.TargetKind, para
 		AttachmentIDs:       attachmentIDs,
 		ArtifactIDs:         discussionUUIDs(request.ArtifactIDs),
 		SkillReferences:     request.SkillReferences,
+		ConnectorReferences: request.ConnectorReferences,
 		SuppressUserMessage: request.SuppressUserMessage,
 	})
 	if err != nil {
@@ -737,7 +739,18 @@ func parseCanonicalNonnegativeInt(value string) (int64, error) {
 }
 
 var conversationErrorMappings = []errorMapping{
-	{conversation.ErrMessageSkillSelection, http.StatusConflict, "A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.", "message_skill_unavailable"},
+	{
+		conversation.ErrMessageConnectorSelection,
+		http.StatusConflict,
+		"A selected plugin is unavailable for one or more tagged agents. Check your connections or change the selected agents/plugins.",
+		"message_connector_unavailable",
+	},
+	{
+		conversation.ErrMessageSkillSelection,
+		http.StatusConflict,
+		"A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.",
+		"message_skill_unavailable",
+	},
 	{
 		conversation.ErrModelSettingsForbidden,
 		http.StatusForbidden,

@@ -518,6 +518,7 @@ export function displayItemToChatMessage(
       team,
       text: item.content,
       skillReferences: item.skillReferences,
+      connectorReferences: item.connectorReferences,
     };
   }
 

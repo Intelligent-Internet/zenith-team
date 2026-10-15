@@ -1463,6 +1463,60 @@ func TestFreezeRunConnectorSnapshotCarriesReviewedRuntimeContractIntoContext(t *
 		)
 	}
 
+	// Message tags freeze the sender's placement in addition to the contract.
+	mustAgentExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET connector_selection_mode='exact', execution_authorized_by_user_id=$2,
+ context=context || jsonb_build_object('messageConnectorSelection',true,'messageConnectorRuntimeId',$3::uuid) WHERE id=$1`,
+		runID,
+		fixture.userID,
+		fixture.runtimeID,
+	)
+	mustAgentExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO run_connector_selections(run_id,connector_id,policy_revision,source,native_id,contract_digest) VALUES($1,$2,$3,'codex_app','github',$4)`,
+		runID,
+		frozenConnectorID,
+		frozenRevision,
+		contractDigest,
+	)
+	freezeMessage := func() error {
+		return store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
+			_, err := FreezeRunConnectorSnapshotInTx(ctx, q, runID, fixture.runtimeID)
+			return err
+		})
+	}
+	if err := freezeMessage(); err != nil {
+		t.Fatalf("message claim = %v", err)
+	}
+	mustAgentExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE agents SET settings=jsonb_build_object('capabilities',jsonb_build_object('disabledMcpServers',jsonb_build_array($2::text))) WHERE id=$1`,
+		fixture.rootAgentID,
+		frozenConnectorID.String(),
+	)
+	if err := freezeMessage(); !errors.Is(err, ErrConnectorSnapshotUnavailable) {
+		t.Fatalf("disabled Agent message claim = %v", err)
+	}
+	mustAgentExec(t, ctx, pool, `UPDATE agents SET settings='{}' WHERE id=$1`, fixture.rootAgentID)
+	mustAgentExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET context=jsonb_set(context,'{messageConnectorRuntimeId}',to_jsonb($2::text)) WHERE id=$1`,
+		runID,
+		uuid.New().String(),
+	)
+	if err := freezeMessage(); !errors.Is(err, ErrConnectorSnapshotUnavailable) {
+		t.Fatalf("changed placement message claim = %v", err)
+	}
+
 	var rejectedRunID uuid.UUID
 	if err := pool.QueryRow(
 		ctx, `

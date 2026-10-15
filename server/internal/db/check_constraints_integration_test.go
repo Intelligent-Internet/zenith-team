@@ -40,6 +40,14 @@ import (
 // reintroducing a policy constraint, or quietly dropping a vocabulary or
 // structural projection invariant.
 var wantCheckConstraints = []string{
+	// Message resource receipts retain ordered, non-empty UTF-16 ranges.
+	"message_skills_check",
+	"message_skills_position_check",
+	"message_skills_start_offset_check",
+	"message_connectors_check",
+	"message_connectors_position_check",
+	"message_connectors_start_offset_check",
+
 	"conversations_document_thread_check",
 	"document_changes_storage_check",
 	"document_changes_sequence_check",

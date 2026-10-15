@@ -23,6 +23,7 @@ import "net/http"
 // boundary table is checked as a Go value; the middleware remains source
 // scanned because it is a separate package.
 var errorCodeRegistry = map[string]int{
+	"message_connector_unavailable": http.StatusConflict,
 	"message_skill_unavailable":     http.StatusConflict,
 	"whiteboard_not_found":          404,
 	"whiteboard_forbidden":          403,

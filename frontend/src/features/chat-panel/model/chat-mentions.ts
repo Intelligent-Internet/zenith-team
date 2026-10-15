@@ -1,4 +1,5 @@
 export type ChatMentionMember = {
+  connector?: { connectorId: string; eligibleAgentIds: string[] };
   skill?: { skillId: string; versionId: string };
   id: string;
   name: string;

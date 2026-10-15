@@ -164,6 +164,7 @@ var personActorRoutes = []string{
 	"POST /api/v1/companies/:companyId/agents/:agentId/skill-imports/github",
 	"POST /api/v1/companies/:companyId/agents/:agentId/skill-imports/upload",
 	"GET /api/v1/companies/:companyId/message-skills",
+	"GET /api/v1/companies/:companyId/message-connectors",
 	"GET /api/v1/companies/:companyId/agents/:agentId/skills",
 	"POST /api/v1/companies/:companyId/agents/:agentId/skills",
 	"DELETE /api/v1/companies/:companyId/agents/:agentId/skills/:skillId",

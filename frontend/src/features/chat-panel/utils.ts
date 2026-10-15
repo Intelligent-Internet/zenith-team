@@ -51,6 +51,7 @@ export function createUserChatMessage({
     files: payload.files,
     artifactIds: message.artifactIds,
     skillReferences: message.skillReferences,
+    connectorReferences: message.connectorReferences,
     timestamp: formatChatTimestamp(sentAt),
   };
 }

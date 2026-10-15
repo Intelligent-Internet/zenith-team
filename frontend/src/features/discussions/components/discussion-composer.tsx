@@ -6,7 +6,7 @@ import {
 import { ChatAddMenu } from "@/features/chat-panel/components/artifact-picker/chat-add-menu";
 import { ArtifactPickerDialog } from "@/features/chat-panel/components/artifact-picker/artifact-picker-dialog";
 import { ArtifactDraftCards } from "@/features/chat-panel/components/artifact-picker/artifact-draft-cards";
-import { useSkillMentionMembers } from "@/features/chat-panel/hooks/use-skill-mention-members";
+import { useResourceMentionMembers } from "@/features/chat-panel/hooks/use-resource-mention-members";
 import { useChannelAgents } from "./channel-agents";
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import { useId, useRef, useState } from "react";
@@ -74,7 +74,7 @@ export function DiscussionComposer({
   // the viewer has not set up is listed as "Not set up" rather than hidden,
   // and choosing it offers the setup.
   const companyId = runtime.session.companyId;
-  const skillMembers = useSkillMentionMembers({
+  const resourceMembers = useResourceMentionMembers({
     companyId,
     conversation_id: conversationId,
   });
@@ -171,7 +171,7 @@ export function DiscussionComposer({
       }),
     ).length > 65_536;
   const members: ChatMentionMember[] = [
-    ...skillMembers,
+    ...resourceMembers,
     ...mentionMembers.filter(
       (member) =>
         member.kind !== "agent" && member.id !== runtime.session.userId,
@@ -215,7 +215,26 @@ export function DiscussionComposer({
         ]
       : []),
   ];
+  const taggedAgentIds = draft.references
+    .filter((ref) => ref.type === "agent")
+    .map((ref) => ref.agentId);
+  const invalidConnector = draft.references.find((ref) => {
+    if (ref.type !== "connector") return false;
+    const member = resourceMembers.find(
+      (item) => item.connector?.connectorId === ref.connectorId,
+    );
+    return (
+      !member ||
+      taggedAgentIds.some(
+        (id) => !id || !member.connector?.eligibleAgentIds.includes(id),
+      )
+    );
+  });
+  const connectorError = invalidConnector
+    ? "A selected plugin is unavailable for one or more tagged agents. Change the agents/plugins or check your connections."
+    : undefined;
   const ready =
+    !connectorError &&
     canSend &&
     !runtime.isMutating(conversationId) &&
     !pending &&
@@ -279,6 +298,11 @@ export function DiscussionComposer({
           }}
         />
       )}
+      {connectorError ? (
+        <p role="alert" className="text-workspace-caption text-workspace-muted">
+          {connectorError}
+        </p>
+      ) : null}
       {pending?.status === "failed" ? (
         <div className="discussion-send-state discussion-error" role="alert">
           <span>{pending.error ?? "Message could not be sent."}</span>

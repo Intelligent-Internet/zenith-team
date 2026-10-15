@@ -74,6 +74,7 @@ type normalizedDiscussionSend struct {
 }
 
 type discussionReference struct {
+	ConnectorID    *uuid.UUID `json:"connectorId,omitempty"`
 	Start          int        `json:"start"`
 	End            int        `json:"end"`
 	Type           string     `json:"type"`
@@ -115,7 +116,7 @@ func decodeDiscussionReferences(body DiscussionBody) ([]discussionReference, err
 				return nil, ErrDiscussionInvalid
 			}
 		}
-		if reference.Type == "skill" {
+		if reference.Type == "skill" || reference.Type == "connector" {
 			encoded := utf16.Encode([]rune(body.Markdown))
 			label := string(utf16.Decode(encoded[reference.Start:reference.End]))
 			if !strings.HasPrefix(label, "$") || len(label) < 2 {
@@ -215,7 +216,13 @@ func validDiscussionReferenceShape(reference discussionReference) bool {
 	if reference.VersionID != nil {
 		count++
 	}
+	if reference.ConnectorID != nil {
+		count++
+	}
 	switch reference.Type {
+	case "connector":
+		return count == 1 && reference.ConnectorID != nil && *reference.ConnectorID != uuid.Nil &&
+			reference.Scope == ""
 	case "skill":
 		return count == 2 && reference.SkillID != nil && reference.VersionID != nil && reference.Scope == ""
 	case "user":

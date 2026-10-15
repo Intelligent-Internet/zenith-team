@@ -26,7 +26,12 @@ import (
 )
 
 type DiscussionService interface {
-	UpdateReadState(context.Context, auth.UserPrincipal, uuid.UUID, DiscussionReadInput) (DiscussionUserState, error)
+	UpdateReadState(
+		context.Context,
+		auth.UserPrincipal,
+		uuid.UUID,
+		DiscussionReadInput,
+	) (DiscussionUserState, error)
 	Presence(context.Context, auth.UserPrincipal, DiscussionPresenceInput) ([]DiscussionMemberPresence, error)
 	ListThread(
 		context.Context,
@@ -106,7 +111,10 @@ func (s *DefaultDiscussionService) Send(
 			return err
 		}
 
-		huddle, huddleErr := q.LockHuddleByChat(ctx, generated.LockHuddleByChatParams{CompanyID: p.CompanyID, ChatConversationID: id})
+		huddle, huddleErr := q.LockHuddleByChat(
+			ctx,
+			generated.LockHuddleByChatParams{CompanyID: p.CompanyID, ChatConversationID: id},
+		)
 		if huddleErr != nil && !errors.Is(huddleErr, pgx.ErrNoRows) {
 			return huddleErr
 		}
@@ -114,7 +122,14 @@ func (s *DefaultDiscussionService) Send(
 			if huddle.State != "open" || !huddle.DeadlineAt.Time.After(time.Now()) {
 				return ErrDiscussionForbidden
 			}
-			if _, err := q.LockHuddleChatWriter(ctx, generated.LockHuddleChatWriterParams{CompanyID: p.CompanyID, HuddleID: huddle.ID, UserID: p.UserID}); err != nil {
+			if _, err := q.LockHuddleChatWriter(
+				ctx,
+				generated.LockHuddleChatWriterParams{
+					CompanyID: p.CompanyID,
+					HuddleID:  huddle.ID,
+					UserID:    p.UserID,
+				},
+			); err != nil {
 				if errors.Is(err, pgx.ErrNoRows) {
 					return ErrDiscussionForbidden
 				}
@@ -294,13 +309,53 @@ func (s *DefaultDiscussionService) Send(
 				return err
 			}
 			rootID := item.ID
-			if err := saveMessageSkills(ctx, q, messageSkillScope{CompanyID: p.CompanyID, ConversationID: id, UserID: p.UserID, RequestKey: input.RequestKey}, normalized.Input.Body.Markdown, discussionSkillReferences(references)); err != nil {
+			if err := saveMessageSkills(
+				ctx,
+				q,
+				messageSkillScope{
+					CompanyID:      p.CompanyID,
+					ConversationID: id,
+					UserID:         p.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				normalized.Input.Body.Markdown,
+				discussionSkillReferences(references),
+			); err != nil {
 				if errors.Is(err, ErrInvalidInput) {
 					return ErrDiscussionInvalid
 				}
 				return err
 			}
-			if err := admitChannelInvocations(ctx, q, &pending, channelAdmission{Principal: p, ChannelID: id, MessageID: item.ID, References: references}); err != nil {
+			var connectorAgents []uuid.UUID
+			for _, ref := range references {
+				if ref.Type == "agent" {
+					connectorAgents = append(connectorAgents, *ref.AgentID)
+				}
+			}
+			if err := saveMessageConnectors(ctx, q, messageConnectorInput{
+				Scope: messageSkillScope{
+					CompanyID:      p.CompanyID,
+					ConversationID: id,
+					UserID:         p.UserID,
+					RequestKey:     input.RequestKey,
+				},
+				Content:    normalized.Input.Body.Markdown,
+				References: discussionConnectorReferences(references),
+				AgentIDs:   connectorAgents,
+			}); err != nil {
+				return err
+			}
+			if err := admitChannelInvocations(
+				ctx,
+				q,
+				&pending,
+				channelAdmission{
+					Principal:  p,
+					ChannelID:  id,
+					MessageID:  item.ID,
+					References: references,
+				},
+			); err != nil {
 				return err
 			}
 			if threadRoot == nil {
@@ -392,7 +447,13 @@ func (s *DefaultDiscussionService) Send(
 				)
 			}
 			if normalized.Input.ThreadRootID != nil {
-				if err := q.EnsureDirectThreadReadStates(ctx, generated.EnsureDirectThreadReadStatesParams{ConversationID: id, RootID: *normalized.Input.ThreadRootID}); err != nil {
+				if err := q.EnsureDirectThreadReadStates(
+					ctx,
+					generated.EnsureDirectThreadReadStatesParams{
+						ConversationID: id,
+						RootID:         *normalized.Input.ThreadRootID,
+					},
+				); err != nil {
 					return err
 				}
 			}
@@ -422,7 +483,17 @@ func (s *DefaultDiscussionService) Send(
 			); err != nil {
 				return err
 			}
-			if err := applyDiscussionUnreadDelta(ctx, q, discussionUnreadDelta{ConversationID: id, RootID: item.ThreadRootID, AuthorID: p.UserID, Seq: item.Seq, Delta: 1}); err != nil {
+			if err := applyDiscussionUnreadDelta(
+				ctx,
+				q,
+				discussionUnreadDelta{
+					ConversationID: id,
+					RootID:         item.ThreadRootID,
+					AuthorID:       p.UserID,
+					Seq:            item.Seq,
+					Delta:          1,
+				},
+			); err != nil {
 				return err
 			}
 
@@ -541,14 +612,17 @@ func (s *DefaultDiscussionService) UpdateState(
 		row, err := q.UpdateDiscussionUserState(
 			ctx,
 			generated.UpdateDiscussionUserStateParams{
-				ConversationID:    id,
-				UserID:            p.UserID,
-				GrantGeneration:   access.GrantGeneration.Int64,
-				ExpectedRevision:  input.ExpectedRevision,
-				HeadSeq:           access.HeadSeq,
-				Pinned:            discussionBool(input.Pinned),
-				Hidden:            discussionBool(input.Hidden),
-				NotificationLevel: pgtype.Text{String: discussionNotificationLevel(input.NotificationLevel), Valid: input.NotificationLevel != nil},
+				ConversationID:   id,
+				UserID:           p.UserID,
+				GrantGeneration:  access.GrantGeneration.Int64,
+				ExpectedRevision: input.ExpectedRevision,
+				HeadSeq:          access.HeadSeq,
+				Pinned:           discussionBool(input.Pinned),
+				Hidden:           discussionBool(input.Hidden),
+				NotificationLevel: pgtype.Text{
+					String: discussionNotificationLevel(input.NotificationLevel),
+					Valid:  input.NotificationLevel != nil,
+				},
 			},
 		)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -748,7 +822,17 @@ func publishDiscussionEvents(ctx context.Context, bus *events.Bus, pending []eve
 			}
 			snapshot, err := events.PayloadOf[execution.RunSnapshot](event)
 			if err == nil && snapshot.ConversationKind == "channel_agent" {
-				execution.PublishRuntimeWork(publishCtx, bus, generated.Run{ID: snapshot.ID, CompanyID: snapshot.CompanyID, ConversationID: snapshot.ConversationID, AgentID: snapshot.AgentID, RuntimeID: snapshot.RuntimeID})
+				execution.PublishRuntimeWork(
+					publishCtx,
+					bus,
+					generated.Run{
+						ID:             snapshot.ID,
+						CompanyID:      snapshot.CompanyID,
+						ConversationID: snapshot.ConversationID,
+						AgentID:        snapshot.AgentID,
+						RuntimeID:      snapshot.RuntimeID,
+					},
+				)
 			}
 		}
 	}

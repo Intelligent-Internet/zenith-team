@@ -53,6 +53,13 @@ func (h *Handler) registerConnectorRoutes(group *gin.RouterGroup) {
 		middleware.RequireCompanyMember(h.CompanyService),
 	)
 	reads.GET("", h.listConnectors)
+	group.GET(
+		"/companies/:companyId/message-connectors",
+		middleware.RequireUserAuth(h.AuthService),
+		middleware.RequireCompanyMember(h.CompanyService),
+		middleware.RequireHumanActor(),
+		h.listMessageConnectors,
+	)
 	reads.POST("/refresh", h.refreshConnectors)
 	routes := group.Group(
 		"/companies/:companyId/connectors",
@@ -293,4 +300,36 @@ func writeConnectorError(c *gin.Context, err error) {
 		connectorErrorMappings,
 		errorFallback{detail: "could not access Connectors", code: "connector_request_failed"},
 	)
+}
+
+func (h *Handler) listMessageConnectors(c *gin.Context) {
+	query := c.Request.URL.Query()
+	scope := agent.MessageConnectorScope{}
+	if len(query) != 1 || (len(query["conversation_id"]) != 1 && len(query["agent_id"]) != 1) {
+		writeBoundaryError(c, boundaryErrorValidationFailed)
+		return
+	}
+	var parseErr error
+	if values, exists := query["conversation_id"]; exists {
+		scope.ConversationID, parseErr = util.ParseGoUUID(values[0])
+	} else {
+		scope.AgentID, parseErr = util.ParseGoUUID(query.Get("agent_id"))
+	}
+	if parseErr != nil {
+		writeBoundaryError(c, boundaryErrorValidationFailed)
+		return
+	}
+	principal, ok := auth.UserPrincipalFromContext(c.Request.Context())
+	if !ok {
+		writeBoundaryError(c, boundaryErrorAuthenticationRequired)
+		return
+	}
+	items, err := h.ConnectorService.ListMessageConnectors(c.Request.Context(), principal, scope)
+	if err != nil {
+		writeConnectorError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, struct {
+		Items []agent.MessageConnector `json:"items"`
+	}{items})
 }

@@ -47,7 +47,9 @@ export function useChatMentions({
   const matches = query
     ? filterChatMentionMembers(
         (members ?? []).filter((member) =>
-          query.trigger === "$" ? !!member.skill : !member.skill,
+          query.trigger === "$"
+            ? !!(member.skill || member.connector)
+            : !(member.skill || member.connector),
         ),
         query.text,
       )
@@ -114,7 +116,7 @@ export function useChatMentions({
     }
     const before = textarea.value.slice(0, query.start);
     const after = textarea.value.slice(query.end);
-    const mention = `${member.skill ? "$" : "@"}${member.name}`;
+    const mention = `${member.skill || member.connector ? "$" : "@"}${member.name}`;
     const separator = after.startsWith(" ") ? "" : " ";
     setQuery(null);
     dismissedQuery.current = null;

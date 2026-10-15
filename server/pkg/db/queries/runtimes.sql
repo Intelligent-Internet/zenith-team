@@ -277,7 +277,8 @@ RETURNING id, company_id;
 -- by the NOT EXISTS runs guard forever, and a removed row nothing references
 -- is garbage after the TTL like any other offline runtime. A row a member
 -- still has an Agent bound to is theirs to keep: their own offline laptop is
--- never pruned out from under their setup.
+-- never pruned out from under their setup. Message selections also retain their
+-- frozen placement, including queued messages that have not created a Run.
 -- name: DeleteStaleOfflineRuntimes :many
 DELETE FROM runtimes
 WHERE status = 'offline'
@@ -289,6 +290,10 @@ WHERE status = 'offline'
   AND NOT EXISTS (
       SELECT 1 FROM runs
       WHERE runs.runtime_id = runtimes.id
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM message_connector_bindings AS selection
+      WHERE selection.runtime_id = runtimes.id
   )
 RETURNING id, company_id;
 

@@ -617,7 +617,18 @@ func parseDiscussionQuery(c *gin.Context, allowed ...string) (conversation.Discu
 }
 
 var discussionErrorMappings = []errorMapping{
-	{conversation.ErrMessageSkillSelection, http.StatusConflict, "A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.", "message_skill_unavailable"},
+	{
+		conversation.ErrMessageConnectorSelection,
+		http.StatusConflict,
+		"A selected plugin is unavailable for one or more tagged agents. Check your connections or change the selected agents/plugins.",
+		"message_connector_unavailable",
+	},
+	{
+		conversation.ErrMessageSkillSelection,
+		http.StatusConflict,
+		"A selected skill changed, is unavailable, or conflicts with another selected skill name. Select the skills again.",
+		"message_skill_unavailable",
+	},
 	{
 		conversation.ErrDiscussionNotFound,
 		http.StatusNotFound,

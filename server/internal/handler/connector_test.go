@@ -297,3 +297,11 @@ func TestParseConnectorListInputSourceFilter(t *testing.T) {
 		})
 	}
 }
+
+func (s *connectorServiceStub) ListMessageConnectors(
+	context.Context,
+	auth.UserPrincipal,
+	agent.MessageConnectorScope,
+) ([]agent.MessageConnector, error) {
+	return []agent.MessageConnector{}, nil
+}
