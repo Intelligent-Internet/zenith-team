@@ -103,11 +103,8 @@ export default defineConfig((): UserConfig => ({
 
 function vendorChunk(id: string): string | undefined {
   if (id.includes("commonjsHelpers.js")) return "vendor-react";
-  if (
-    /\/src\/assets\/(iconsax|ui-symbols|brands)\/.*\.svg\?react$/.test(id) ||
-    /\/src\/shared\/ui\/icons?\.tsx$/.test(id)
-  )
-    return "ui-icons";
+  // Keep common glyphs apart from the full registry used by dynamic Icon names.
+  // Rollup follows the named re-exports instead of preloading every SVG.
   if (id.endsWith("/src/shared/lib/cx.ts")) return "vendor-ui-utils";
 
   const packagePath = id.split("/node_modules/").pop();

@@ -37,17 +37,17 @@ export function useStudioScrollSteps(count: number) {
     };
     const measure = () => {
       const viewport = root.clientHeight;
+      const styles = getComputedStyle(stage);
+      const contentHeight =
+        content.getBoundingClientRect().height +
+        parseFloat(styles.paddingTop) +
+        parseFloat(styles.paddingBottom);
       distance.current = Math.max(320, viewport * 0.7);
       section.style.setProperty("--workflow-viewport", `${viewport}px`);
       section.style.setProperty(
         "--workflow-step-distance",
         `${distance.current}px`,
       );
-      const styles = getComputedStyle(stage);
-      const contentHeight =
-        content.getBoundingClientRect().height +
-        parseFloat(styles.paddingTop) +
-        parseFloat(styles.paddingBottom);
       // A short window or text zoom must never hide the controls below the fold.
       canPin.current = contentHeight <= viewport + 1;
       section.dataset.scrollPinned = String(canPin.current);

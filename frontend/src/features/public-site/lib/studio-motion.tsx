@@ -91,8 +91,13 @@ export function useStudioReveals(root: RefObject<HTMLDivElement | null>) {
       },
       { root: container, threshold: 0.12, rootMargin: "0px 0px -20px 0px" },
     );
-    for (const element of elements) {
-      if (element.getBoundingClientRect().top < bounds.bottom) {
+    // Read every position before changing styles, so reveals share one layout.
+    const positions = elements.map((element) => ({
+      element,
+      inViewport: element.getBoundingClientRect().top < bounds.bottom,
+    }));
+    for (const { element, inViewport } of positions) {
+      if (inViewport) {
         element.classList.add("is-revealed");
       } else {
         element.classList.add("will-reveal");

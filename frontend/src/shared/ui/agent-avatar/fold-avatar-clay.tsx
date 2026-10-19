@@ -1,5 +1,5 @@
 import { useId } from "react";
-import clayAtlas from "./assets/fold-clay-atlas.png";
+import clayAtlas from "./assets/fold-clay-atlas.webp";
 import { FoldSecretaryAccessory } from "./fold-secretary-accessory";
 
 type Palette = { color: string; light: string; dark: string; shadow: string };

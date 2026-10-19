@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
 import { ArrowRight, Menu, X } from "@/shared/ui/icons";
 import { Logo } from "@/shared/ui/logo";
 import { PublicPageMetadata } from "../lib/public-page-metadata";
@@ -94,13 +93,9 @@ function CompanyStudioPage() {
       </a>
       <header className="absolute inset-[0_0_auto] z-[20]" ref={header}>
         <div className="studio-container studio-header-inner">
-          <Link
-            className="studio-wordmark"
-            to="/"
-            aria-label="Zenith Team home"
-          >
+          <a className="studio-wordmark" href="/" aria-label="Zenith Team home">
             <Logo />
-          </Link>
+          </a>
           <nav
             className={menuOpen ? "studio-nav is-open" : "studio-nav"}
             aria-label="Main navigation"
@@ -166,20 +161,20 @@ function CompanyStudioPage() {
       </main>
       <footer className="studio-footer">
         <div className="studio-container">
-          <Link
+          <a
             className="studio-wordmark studio-wordmark--footer"
-            to="/"
+            href="/"
             aria-label="Zenith Team home"
           >
             <Logo />
-          </Link>
+          </a>
           <nav aria-label="Footer navigation">
             <a href="#product">Product</a>
             <button type="button" onClick={() => setDialog("help")}>
               Help
             </button>
-            <Link to="/privacy">Privacy</Link>
-            <Link to="/terms">Terms</Link>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
           </nav>
           <div className="studio-footer-note">
             <span>Agent work runs on your connected, online computer.</span>

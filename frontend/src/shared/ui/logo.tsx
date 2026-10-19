@@ -1,5 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
-import { Icon } from "./icon";
+import LogoMark from "@/assets/brands/logo.svg?react";
 
 type LogoProps = {
   className?: string;
@@ -36,7 +36,11 @@ export function Logo({
       className={cn("relative flex items-center gap-x-2", className)}
       role="img"
     >
-      <Icon name="logo" className={`w-auto h-6 ${imageClassName}`} />
+      <LogoMark
+        className={`w-auto h-6 ${imageClassName}`}
+        aria-hidden="true"
+        focusable="false"
+      />
 
       {showBeta || labelWrapperClassName ? (
         <div className={labelWrapperClassName}>

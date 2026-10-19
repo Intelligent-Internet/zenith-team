@@ -2,12 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "@/shared/ui/icons";
 import { studioAgents, studioAssets, StudioAction } from "./studio-primitives";
 import { useStudioMotion, useStudioVisibility } from "../lib/studio-motion";
+import { getStudioHeroPoster } from "../lib/studio-assets";
 
 export function StudioHero({ onGetStarted }: { onGetStarted: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const { ref, visible } = useStudioVisibility<HTMLElement>();
   const { enabled } = useStudioMotion();
   const [activeAgent, setActiveAgent] = useState<number | null>(null);
+  const [posterUrl] = useState(getStudioHeroPoster);
   const [smallScreen] = useState(
     () => window.matchMedia("(max-width: 767px)").matches,
   );
@@ -15,13 +17,33 @@ export function StudioHero({ onGetStarted }: { onGetStarted: () => void }) {
   useEffect(() => {
     const element = video.current;
     if (!element) return;
-    if (enabled && visible) {
-      // The poster remains visible if the browser does not allow autoplay.
-      void element.play().catch(() => {});
-    } else {
+    if (!enabled || !visible) {
       element.pause();
+      return;
     }
-    return () => element.pause();
+
+    let disposed = false;
+    let frame = 0;
+    const poster = new Image();
+    poster.src = element.poster;
+    // Let the poster paint before video download and decoding compete for work.
+    void poster
+      .decode()
+      .catch(() => {})
+      .then(() => {
+        if (disposed) return;
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            // Retain the poster when autoplay is unavailable.
+            void element.play().catch(() => {});
+          });
+        });
+      });
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      element.pause();
+    };
   }, [enabled, visible]);
 
   return (
@@ -35,7 +57,7 @@ export function StudioHero({ onGetStarted }: { onGetStarted: () => void }) {
         <div className="studio-hero-scene">
           <video
             ref={video}
-            poster={`${studioAssets}/hero-poster.webp?v=4`}
+            poster={posterUrl}
             src={`${studioAssets}/hero-${smallScreen ? "720p" : "1080p"}.mp4?v=4`}
             width="1920"
             height="1080"

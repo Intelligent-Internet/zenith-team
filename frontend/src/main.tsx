@@ -1,41 +1,24 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { ThemeProvider } from "next-themes";
-import { Provider } from "react-redux";
-import { PersistGate } from "redux-persist/integration/react";
+import { shouldUseDesktopHashRouter } from "@/shared/desktop/desktop-environment.service";
+import { getStudioHeroPoster } from "@/features/public-site/lib/studio-assets";
 
-import App from "@/app";
-import { initializeDesktopErrorReporting } from "@/app/desktop/desktop-error-reporting";
-import { hydrateStoredAccessToken } from "@/lib/auth-token";
-import store, { persistor } from "@/state/store";
-import {
-  readStorageItem,
-  removeStorageItem,
-} from "@/shared/lib/browser-storage";
+async function render() {
+  if (window.location.pathname === "/" && !shouldUseDesktopHashRouter()) {
+    // Discover the hero before downloading and rendering the landing component.
+    const poster = document.createElement("link");
+    poster.rel = "preload";
+    poster.as = "image";
+    poster.href = getStudioHeroPoster();
+    poster.fetchPriority = "high";
+    document.head.append(poster);
 
-async function renderApp() {
-  const errorReporting = await initializeDesktopErrorReporting();
-  await hydrateStoredAccessToken();
-
-  const storedMode = readStorageItem("local", "theme");
-  if (storedMode && !["light", "dark", "system"].includes(storedMode)) {
-    removeStorageItem("local", "theme");
+    const { renderPublicLandingPage } =
+      await import("@/features/public-site/public-entry");
+    renderPublicLandingPage();
+    return;
   }
 
-  ReactDOM.createRoot(
-    document.getElementById("root") as HTMLElement,
-    errorReporting,
-  ).render(
-    <React.StrictMode>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-            <App />
-          </ThemeProvider>
-        </PersistGate>
-      </Provider>
-    </React.StrictMode>,
-  );
+  const { renderApp } = await import("@/app/bootstrap");
+  await renderApp();
 }
 
-void renderApp();
+void render();

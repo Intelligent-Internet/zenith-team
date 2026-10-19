@@ -5,3 +5,11 @@
 /invite/*
   Cache-Control: no-store
   Referrer-Policy: no-referrer
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+  X-Content-Type-Options: nosniff
+
+/.well-known/ai-catalog.json
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff

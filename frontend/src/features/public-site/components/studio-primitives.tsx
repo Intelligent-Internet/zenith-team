@@ -1,7 +1,15 @@
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { ArrowRight, Lightbulb, X } from "@/shared/ui/icons";
-import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
-import { useStudioMotion } from "@/features/public-site/lib/studio-motion";
+import { FoldAvatarClay } from "@/shared/ui/agent-avatar/fold-avatar-clay";
+import { avatarPalettes } from "@/shared/ui/agent-avatar/fold-avatar-palettes";
+import "@/shared/ui/agent-avatar/fold-avatar.css";
 
 export const studioAssets = "/images/company-studio";
 
@@ -43,17 +51,48 @@ export function StudioAvatar({
   role: string;
   size?: number;
 }) {
-  const { enabled } = useStudioMotion();
+  const id = useId().replace(/:/g, "");
+  const ref = useRef<HTMLSpanElement>(null);
+  const [ready, setReady] = useState(false);
   const agent =
     studioAgents.find((item) => item.role === role) ?? studioAgents[0];
+  const palette = avatarPalettes[agent.palette];
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    // Fetch the shared atlas shortly before an avatar scrolls into view.
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setReady(true);
+        observer.disconnect();
+      },
+      { root: element.closest("[data-studio-scroll]"), rootMargin: "300px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <span className={`studio-avatar studio-avatar--${agent.tone}`}>
-      <FoldAvatar
-        agentId={`studio-${role}`}
-        paletteIndex={agent.palette}
-        size={size}
-        paused={!enabled}
-      />
+    <span ref={ref} className={`studio-avatar studio-avatar--${agent.tone}`}>
+      <span
+        className="fold-avatar"
+        style={{ width: size, height: size }}
+        data-state="idle"
+        data-paused="true"
+        data-compact={size <= 40 || undefined}
+        aria-hidden="true"
+      >
+        {ready && (
+          <FoldAvatarClay
+            id={id}
+            palette={palette}
+            originalColor={palette.name === "Tangerine"}
+            replayKey={0}
+          />
+        )}
+      </span>
     </span>
   );
 }

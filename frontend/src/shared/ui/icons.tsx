@@ -1,3 +1,33 @@
+import { createIcon } from "./icon-component";
+export type { IconProps, IconComponent } from "./icon-component";
+import {
+  GlyphApple,
+  GlyphArrowDown01,
+  GlyphArrowDown02,
+  GlyphArrowRight01,
+  GlyphBookOpen,
+  GlyphBriefcase,
+  GlyphCalendarDate,
+  GlyphCheckmark,
+  GlyphClock,
+  GlyphClose,
+  GlyphCode,
+  GlyphCpu,
+  GlyphDocumentText,
+  GlyphFolder,
+  GlyphHierarchySquare,
+  GlyphHome2,
+  GlyphLampOn,
+  GlyphMenuLines,
+  GlyphMessageSquare,
+  GlyphMonitor,
+  GlyphPlay,
+  GlyphProfile2user,
+  GlyphRecord,
+  GlyphRotateLeft,
+  GlyphSend2,
+  GlyphSetting2,
+} from "./icons-common";
 import SvgBookmarkBold from "@/assets/iconsax/bookmark-bold.svg?react";
 import SvgStarBold from "@/assets/iconsax/star-bold.svg?react";
 import SvgGripVertical from "@/assets/iconsax/grip-vertical.svg?react";
@@ -12,46 +42,33 @@ import SvgPuzzle from "@/assets/ui-symbols/puzzle.svg?react";
 import SvgSaveFile from "@/assets/ui-symbols/save-file.svg?react";
 import SvgSelectionPointer from "@/assets/ui-symbols/selection-pointer.svg?react";
 import SvgSpinner from "@/assets/ui-symbols/spinner.svg?react";
-import type { ComponentType, SVGProps } from "react";
-import { cx } from "@/shared/lib/cx";
 import Svg3DotsMore from "@/assets/iconsax/3-dots-more.svg?react";
 import SvgAdd from "@/assets/iconsax/add.svg?react";
-import SvgApple from "@/assets/iconsax/apple.svg?react";
 import SvgArchive from "@/assets/iconsax/archive.svg?react";
 import SvgArchiveAdd from "@/assets/iconsax/archive-add.svg?react";
 import SvgArchiveMinus from "@/assets/iconsax/archive-minus.svg?react";
-import SvgArrowDown01 from "@/assets/iconsax/arrow-down-01.svg?react";
-import SvgArrowDown02 from "@/assets/iconsax/arrow-down-02.svg?react";
 import SvgArrowLeft01 from "@/assets/iconsax/arrow-left-01.svg?react";
 import SvgArrowLeft02 from "@/assets/iconsax/arrow-left-02.svg?react";
-import SvgArrowRight01 from "@/assets/iconsax/arrow-right-01.svg?react";
 import SvgArrowRight02 from "@/assets/iconsax/arrow-right-02.svg?react";
 import SvgArrowUp01 from "@/assets/iconsax/arrow-up-01.svg?react";
 import SvgArrowUp02 from "@/assets/iconsax/arrow-up-02.svg?react";
 import SvgArrowUpRight from "@/assets/iconsax/arrow-up-right.svg?react";
 import SvgAward from "@/assets/iconsax/award.svg?react";
 import SvgBook from "@/assets/iconsax/book.svg?react";
-import SvgBookOpen from "@/assets/iconsax/book-open.svg?react";
 import SvgBookSquare from "@/assets/iconsax/book-square.svg?react";
 import SvgBookmark from "@/assets/iconsax/bookmark.svg?react";
 import SvgBox from "@/assets/iconsax/box.svg?react";
 import SvgBoxTick from "@/assets/iconsax/box-tick.svg?react";
-import SvgBriefcase from "@/assets/iconsax/briefcase.svg?react";
 import SvgBrush from "@/assets/iconsax/brush.svg?react";
 import SvgBuilding from "@/assets/iconsax/building.svg?react";
 import SvgBuildings2 from "@/assets/iconsax/buildings-2.svg?react";
 import SvgCalendar2 from "@/assets/iconsax/calendar-2.svg?react";
-import SvgCalendarDate from "@/assets/iconsax/calendar-date.svg?react";
 import SvgCalendarTick from "@/assets/iconsax/calendar-tick.svg?react";
 import SvgCallSlash from "@/assets/iconsax/call-slash.svg?react";
 import SvgCard from "@/assets/iconsax/card.svg?react";
 import SvgCategory from "@/assets/iconsax/category.svg?react";
 import SvgChart2 from "@/assets/iconsax/chart-2.svg?react";
-import SvgCheckmark from "@/assets/iconsax/checkmark.svg?react";
-import SvgClock from "@/assets/iconsax/clock.svg?react";
-import SvgClose from "@/assets/iconsax/close.svg?react";
 import SvgCloseCircle from "@/assets/iconsax/close-circle.svg?react";
-import SvgCode from "@/assets/iconsax/code.svg?react";
 import SvgCode1 from "@/assets/iconsax/code-1.svg?react";
 import SvgCoffee from "@/assets/iconsax/coffee.svg?react";
 import SvgCoin from "@/assets/iconsax/coin.svg?react";
@@ -61,7 +78,6 @@ import SvgCommand from "@/assets/iconsax/command.svg?react";
 import SvgComponent from "@/assets/iconsax/component.svg?react";
 import SvgCopy from "@/assets/iconsax/copy.svg?react";
 import SvgCopySuccess from "@/assets/iconsax/copy-success.svg?react";
-import SvgCpu from "@/assets/iconsax/cpu.svg?react";
 import SvgCpuCharge from "@/assets/iconsax/cpu-charge.svg?react";
 import SvgCrown from "@/assets/iconsax/crown.svg?react";
 import SvgDanger from "@/assets/iconsax/danger.svg?react";
@@ -74,7 +90,6 @@ import SvgDocumentCode2 from "@/assets/iconsax/document-code-2.svg?react";
 import SvgDocumentCopy from "@/assets/iconsax/document-copy.svg?react";
 import SvgDocumentLike from "@/assets/iconsax/document-like.svg?react";
 import SvgDocumentNormal from "@/assets/iconsax/document-normal.svg?react";
-import SvgDocumentText from "@/assets/iconsax/document-text.svg?react";
 import SvgDollarCircle from "@/assets/iconsax/dollar-circle.svg?react";
 import SvgDollarSquare from "@/assets/iconsax/dollar-square.svg?react";
 import SvgDoubleChevronDown from "@/assets/iconsax/double-chevron-down.svg?react";
@@ -91,7 +106,6 @@ import SvgFlag from "@/assets/iconsax/flag.svg?react";
 import SvgFlag2 from "@/assets/iconsax/flag-2.svg?react";
 import SvgFlash from "@/assets/iconsax/flash.svg?react";
 import SvgFlashCircle from "@/assets/iconsax/flash-circle.svg?react";
-import SvgFolder from "@/assets/iconsax/folder.svg?react";
 import SvgFolderOpen from "@/assets/iconsax/folder-open.svg?react";
 import SvgForbidden2 from "@/assets/iconsax/forbidden-2.svg?react";
 import SvgGallery from "@/assets/iconsax/gallery.svg?react";
@@ -105,14 +119,11 @@ import SvgHappyemoji from "@/assets/iconsax/happyemoji.svg?react";
 import SvgHashtag from "@/assets/iconsax/hashtag.svg?react";
 import SvgHierarchy from "@/assets/iconsax/hierarchy.svg?react";
 import SvgHierarchy2 from "@/assets/iconsax/hierarchy-2.svg?react";
-import SvgHierarchySquare from "@/assets/iconsax/hierarchy-square.svg?react";
-import SvgHome2 from "@/assets/iconsax/home-2.svg?react";
 import SvgHourglass from "@/assets/iconsax/hourglass.svg?react";
 import SvgImportArrow01 from "@/assets/iconsax/import-arrow-01.svg?react";
 import SvgInfoCircle from "@/assets/iconsax/info-circle.svg?react";
 import SvgKey from "@/assets/iconsax/key.svg?react";
 import SvgKeyboard from "@/assets/iconsax/keyboard.svg?react";
-import SvgLampOn from "@/assets/iconsax/lamp-on.svg?react";
 import SvgLayer from "@/assets/iconsax/layer.svg?react";
 import SvgLink from "@/assets/iconsax/link.svg?react";
 import SvgLink2 from "@/assets/iconsax/link-2.svg?react";
@@ -123,20 +134,17 @@ import SvgLogout01 from "@/assets/iconsax/logout-01.svg?react";
 import SvgMagicStar from "@/assets/iconsax/magic-star.svg?react";
 import SvgMap from "@/assets/iconsax/map.svg?react";
 import SvgMaximize4 from "@/assets/iconsax/maximize-4.svg?react";
-import SvgMenuLines from "@/assets/iconsax/menu-lines.svg?react";
 import SvgMessageAdd from "@/assets/iconsax/message-add.svg?react";
 import SvgMessageBubble from "@/assets/iconsax/message-bubble.svg?react";
 import SvgMessageCircle from "@/assets/iconsax/message-circle.svg?react";
 import SvgHeadphone from "@/assets/iconsax/headphone.svg?react";
 import SvgMessageQuestion from "@/assets/iconsax/message-question.svg?react";
-import SvgMessageSquare from "@/assets/iconsax/message-square.svg?react";
 import SvgMessageText from "@/assets/iconsax/message-text.svg?react";
 import SvgMessages from "@/assets/iconsax/messages.svg?react";
 import SvgMicrophone from "@/assets/iconsax/microphone.svg?react";
 import SvgMicrophoneSlash from "@/assets/iconsax/microphone-slash.svg?react";
 import SvgMinimize from "@/assets/iconsax/minimize.svg?react";
 import SvgMinus from "@/assets/iconsax/minus.svg?react";
-import SvgMonitor from "@/assets/iconsax/monitor.svg?react";
 import SvgMonitorRecorder from "@/assets/iconsax/monitor-recorder.svg?react";
 import SvgMoon from "@/assets/iconsax/moon.svg?react";
 import SvgMoreVertical from "@/assets/iconsax/more-vertical.svg?react";
@@ -150,19 +158,15 @@ import SvgPaperclip from "@/assets/iconsax/paperclip.svg?react";
 import SvgPause from "@/assets/iconsax/pause.svg?react";
 import SvgPauseCircle from "@/assets/iconsax/pause-circle.svg?react";
 import SvgPeople from "@/assets/iconsax/people.svg?react";
-import SvgPlay from "@/assets/iconsax/play.svg?react";
-import SvgProfile2user from "@/assets/iconsax/profile-2user.svg?react";
 import SvgProfileCircle from "@/assets/iconsax/profile-circle.svg?react";
 import SvgRadio from "@/assets/iconsax/radio.svg?react";
 import SvgReceipt2 from "@/assets/iconsax/receipt-2.svg?react";
-import SvgRecord from "@/assets/iconsax/record.svg?react";
 import SvgSelectionDot from "@/assets/iconsax/selection-dot.svg?react";
 import SvgRecordCircle from "@/assets/iconsax/record-circle.svg?react";
 import SvgRefreshArrow01 from "@/assets/iconsax/refresh-arrow-01.svg?react";
 import SvgRefreshArrow02 from "@/assets/iconsax/refresh-arrow-02.svg?react";
 import SvgRefreshLeft from "@/assets/iconsax/refresh-left.svg?react";
 import SvgRepeatArrow from "@/assets/iconsax/repeat-arrow.svg?react";
-import SvgRotateLeft from "@/assets/iconsax/rotate-left.svg?react";
 import SvgRotateRight from "@/assets/iconsax/rotate-right.svg?react";
 import SvgRouting2 from "@/assets/iconsax/routing-2.svg?react";
 import SvgSave2 from "@/assets/iconsax/save-2.svg?react";
@@ -170,8 +174,6 @@ import SvgScan from "@/assets/iconsax/scan.svg?react";
 import SvgSearch from "@/assets/iconsax/search.svg?react";
 import SvgSearchZoomIn1 from "@/assets/iconsax/search-zoom-in-1.svg?react";
 import SvgSearchZoomOut1 from "@/assets/iconsax/search-zoom-out-1.svg?react";
-import SvgSend2 from "@/assets/iconsax/send-2.svg?react";
-import SvgSetting2 from "@/assets/iconsax/setting-2.svg?react";
 import SvgSetting4 from "@/assets/iconsax/setting-4.svg?react";
 import SvgShare from "@/assets/iconsax/share.svg?react";
 import SvgShieldSecurity from "@/assets/iconsax/shield-security.svg?react";
@@ -235,338 +237,522 @@ import SvgShapeClass from "@/assets/ui-symbols/shape-class.svg?react";
 import SvgShapeEntity from "@/assets/ui-symbols/shape-entity.svg?react";
 import SvgShapeFragment from "@/assets/ui-symbols/shape-fragment.svg?react";
 
-export interface IconProps extends SVGProps<SVGSVGElement> {
-  size?: number | string;
-}
-
-export type IconComponent = ComponentType<IconProps>;
-
-function createIcon(
-  Svg: ComponentType<SVGProps<SVGSVGElement>>,
-  name: string,
-  source: "iconsax" | "symbol" = "iconsax",
-): IconComponent {
-  function IconsaxIcon({ size = 24, className, ...props }: IconProps) {
-    return (
-      <Svg
-        width={size}
-        height={size}
-        aria-hidden={
-          props["aria-label"] || props["aria-labelledby"] ? undefined : true
-        }
-        focusable="false"
-        {...props}
-        className={cx(
-          source === "iconsax" ? "iconsax-icon" : "ui-symbol",
-          className,
-        )}
-        data-iconsax={source === "iconsax" ? name : undefined}
-        data-ui-symbol={source === "symbol" ? name : undefined}
-      />
-    );
-  }
-  IconsaxIcon.displayName = `${source === "iconsax" ? "Iconsax" : "Symbol"}(${name})`;
-  return IconsaxIcon;
-}
-
-const Glyph3DotsMore = createIcon(Svg3DotsMore, "3-dots-more");
-const GlyphGripVertical = createIcon(SvgGripVertical, "grip-vertical");
-const GlyphAddReaction = createIcon(SvgAddReaction, "add-reaction", "symbol");
-const GlyphAtSign = createIcon(SvgAtSign, "at-sign", "symbol");
-const GlyphGitHubOutline = createIcon(
+const Glyph3DotsMore = /* @__PURE__ */ createIcon(Svg3DotsMore, "3-dots-more");
+const GlyphGripVertical = /* @__PURE__ */ createIcon(
+  SvgGripVertical,
+  "grip-vertical",
+);
+const GlyphAddReaction = /* @__PURE__ */ createIcon(
+  SvgAddReaction,
+  "add-reaction",
+  "symbol",
+);
+const GlyphAtSign = /* @__PURE__ */ createIcon(SvgAtSign, "at-sign", "symbol");
+const GlyphGitHubOutline = /* @__PURE__ */ createIcon(
   SvgGitHubOutline,
   "github-outline",
   "symbol",
 );
-const GlyphMousePointer = createIcon(
+const GlyphMousePointer = /* @__PURE__ */ createIcon(
   SvgMousePointer,
   "mouse-pointer",
   "symbol",
 );
-const GlyphPin = createIcon(SvgPin, "pin", "symbol");
-const GlyphHighlighter = createIcon(SvgHighlighter, "highlighter", "symbol");
-const GlyphPinOff = createIcon(SvgPinOff, "pin-off", "symbol");
-const GlyphPuzzle = createIcon(SvgPuzzle, "puzzle", "symbol");
-const GlyphSaveFile = createIcon(SvgSaveFile, "save-file", "symbol");
-const GlyphSelectionPointer = createIcon(
+const GlyphPin = /* @__PURE__ */ createIcon(SvgPin, "pin", "symbol");
+const GlyphHighlighter = /* @__PURE__ */ createIcon(
+  SvgHighlighter,
+  "highlighter",
+  "symbol",
+);
+const GlyphPinOff = /* @__PURE__ */ createIcon(SvgPinOff, "pin-off", "symbol");
+const GlyphPuzzle = /* @__PURE__ */ createIcon(SvgPuzzle, "puzzle", "symbol");
+const GlyphSaveFile = /* @__PURE__ */ createIcon(
+  SvgSaveFile,
+  "save-file",
+  "symbol",
+);
+const GlyphSelectionPointer = /* @__PURE__ */ createIcon(
   SvgSelectionPointer,
   "selection-pointer",
   "symbol",
 );
-const GlyphSpinner = createIcon(SvgSpinner, "spinner", "symbol");
-const GlyphAdd = createIcon(SvgAdd, "add");
-const GlyphApple = createIcon(SvgApple, "apple");
-const GlyphArchive = createIcon(SvgArchive, "archive");
-const GlyphArchiveAdd = createIcon(SvgArchiveAdd, "archive-add");
-const GlyphArchiveMinus = createIcon(SvgArchiveMinus, "archive-minus");
-const GlyphArrowDown01 = createIcon(SvgArrowDown01, "arrow-down-01");
-const GlyphArrowDown02 = createIcon(SvgArrowDown02, "arrow-down-02");
-const GlyphArrowLeft01 = createIcon(SvgArrowLeft01, "arrow-left-01");
-const GlyphArrowLeft02 = createIcon(SvgArrowLeft02, "arrow-left-02");
-const GlyphArrowRight01 = createIcon(SvgArrowRight01, "arrow-right-01");
-const GlyphArrowRight02 = createIcon(SvgArrowRight02, "arrow-right-02");
-const GlyphArrowUp01 = createIcon(SvgArrowUp01, "arrow-up-01");
-const GlyphArrowUp02 = createIcon(SvgArrowUp02, "arrow-up-02");
-const GlyphArrowUpRight = createIcon(SvgArrowUpRight, "arrow-up-right");
-const GlyphAward = createIcon(SvgAward, "award");
-const GlyphBook = createIcon(SvgBook, "book");
-const GlyphBookOpen = createIcon(SvgBookOpen, "book-open");
-const GlyphBookSquare = createIcon(SvgBookSquare, "book-square");
-const GlyphBookmark = createIcon(SvgBookmark, "bookmark");
-const GlyphBox = createIcon(SvgBox, "box");
-const GlyphBoxTick = createIcon(SvgBoxTick, "box-tick");
-const GlyphBriefcase = createIcon(SvgBriefcase, "briefcase");
-const GlyphBrush = createIcon(SvgBrush, "brush");
-const GlyphBuilding = createIcon(SvgBuilding, "building");
-const GlyphBuildings2 = createIcon(SvgBuildings2, "buildings-2");
-const GlyphCalendar2 = createIcon(SvgCalendar2, "calendar-2");
-const GlyphCalendarDate = createIcon(SvgCalendarDate, "calendar-date");
-const GlyphCalendarTick = createIcon(SvgCalendarTick, "calendar-tick");
-const GlyphCallSlash = createIcon(SvgCallSlash, "call-slash");
-const GlyphCard = createIcon(SvgCard, "card");
-const GlyphCategory = createIcon(SvgCategory, "category");
-const GlyphChart2 = createIcon(SvgChart2, "chart-2");
-const GlyphCheckmark = createIcon(SvgCheckmark, "checkmark");
-const GlyphClock = createIcon(SvgClock, "clock");
-const GlyphClose = createIcon(SvgClose, "close");
-const GlyphCloseCircle = createIcon(SvgCloseCircle, "close-circle");
-const GlyphCode = createIcon(SvgCode, "code");
-const GlyphCode1 = createIcon(SvgCode1, "code-1");
-const GlyphCoffee = createIcon(SvgCoffee, "coffee");
-const GlyphCoin = createIcon(SvgCoin, "coin");
-const GlyphCoin1 = createIcon(SvgCoin1, "coin-1");
-const GlyphColorSwatch = createIcon(SvgColorSwatch, "color-swatch");
-const GlyphCommand = createIcon(SvgCommand, "command");
-const GlyphComponent = createIcon(SvgComponent, "component");
-const GlyphCopy = createIcon(SvgCopy, "copy");
-const GlyphCopySuccess = createIcon(SvgCopySuccess, "copy-success");
-const GlyphCpu = createIcon(SvgCpu, "cpu");
-const GlyphCpuCharge = createIcon(SvgCpuCharge, "cpu-charge");
-const GlyphCrown = createIcon(SvgCrown, "crown");
-const GlyphDanger = createIcon(SvgDanger, "danger");
-const GlyphDesigntools = createIcon(SvgDesigntools, "designtools");
-const GlyphDirectInbox = createIcon(SvgDirectInbox, "direct-inbox");
-const GlyphDirectboxSend = createIcon(SvgDirectboxSend, "directbox-send");
-const GlyphDiscover = createIcon(SvgDiscover, "discover");
-const GlyphDocumentCode = createIcon(SvgDocumentCode, "document-code");
-const GlyphDocumentCode2 = createIcon(SvgDocumentCode2, "document-code-2");
-const GlyphDocumentCopy = createIcon(SvgDocumentCopy, "document-copy");
-const GlyphDocumentLike = createIcon(SvgDocumentLike, "document-like");
-const GlyphDocumentNormal = createIcon(SvgDocumentNormal, "document-normal");
-const GlyphDocumentText = createIcon(SvgDocumentText, "document-text");
-const GlyphDollarCircle = createIcon(SvgDollarCircle, "dollar-circle");
-const GlyphDollarSquare = createIcon(SvgDollarSquare, "dollar-square");
-const GlyphDoubleChevronDown = createIcon(
+const GlyphSpinner = /* @__PURE__ */ createIcon(
+  SvgSpinner,
+  "spinner",
+  "symbol",
+);
+const GlyphAdd = /* @__PURE__ */ createIcon(SvgAdd, "add");
+const GlyphArchive = /* @__PURE__ */ createIcon(SvgArchive, "archive");
+const GlyphArchiveAdd = /* @__PURE__ */ createIcon(
+  SvgArchiveAdd,
+  "archive-add",
+);
+const GlyphArchiveMinus = /* @__PURE__ */ createIcon(
+  SvgArchiveMinus,
+  "archive-minus",
+);
+const GlyphArrowLeft01 = /* @__PURE__ */ createIcon(
+  SvgArrowLeft01,
+  "arrow-left-01",
+);
+const GlyphArrowLeft02 = /* @__PURE__ */ createIcon(
+  SvgArrowLeft02,
+  "arrow-left-02",
+);
+const GlyphArrowRight02 = /* @__PURE__ */ createIcon(
+  SvgArrowRight02,
+  "arrow-right-02",
+);
+const GlyphArrowUp01 = /* @__PURE__ */ createIcon(SvgArrowUp01, "arrow-up-01");
+const GlyphArrowUp02 = /* @__PURE__ */ createIcon(SvgArrowUp02, "arrow-up-02");
+const GlyphArrowUpRight = /* @__PURE__ */ createIcon(
+  SvgArrowUpRight,
+  "arrow-up-right",
+);
+const GlyphAward = /* @__PURE__ */ createIcon(SvgAward, "award");
+const GlyphBook = /* @__PURE__ */ createIcon(SvgBook, "book");
+const GlyphBookSquare = /* @__PURE__ */ createIcon(
+  SvgBookSquare,
+  "book-square",
+);
+const GlyphBookmark = /* @__PURE__ */ createIcon(SvgBookmark, "bookmark");
+const GlyphBox = /* @__PURE__ */ createIcon(SvgBox, "box");
+const GlyphBoxTick = /* @__PURE__ */ createIcon(SvgBoxTick, "box-tick");
+const GlyphBrush = /* @__PURE__ */ createIcon(SvgBrush, "brush");
+const GlyphBuilding = /* @__PURE__ */ createIcon(SvgBuilding, "building");
+const GlyphBuildings2 = /* @__PURE__ */ createIcon(
+  SvgBuildings2,
+  "buildings-2",
+);
+const GlyphCalendar2 = /* @__PURE__ */ createIcon(SvgCalendar2, "calendar-2");
+const GlyphCalendarTick = /* @__PURE__ */ createIcon(
+  SvgCalendarTick,
+  "calendar-tick",
+);
+const GlyphCallSlash = /* @__PURE__ */ createIcon(SvgCallSlash, "call-slash");
+const GlyphCard = /* @__PURE__ */ createIcon(SvgCard, "card");
+const GlyphCategory = /* @__PURE__ */ createIcon(SvgCategory, "category");
+const GlyphChart2 = /* @__PURE__ */ createIcon(SvgChart2, "chart-2");
+const GlyphCloseCircle = /* @__PURE__ */ createIcon(
+  SvgCloseCircle,
+  "close-circle",
+);
+const GlyphCode1 = /* @__PURE__ */ createIcon(SvgCode1, "code-1");
+const GlyphCoffee = /* @__PURE__ */ createIcon(SvgCoffee, "coffee");
+const GlyphCoin = /* @__PURE__ */ createIcon(SvgCoin, "coin");
+const GlyphCoin1 = /* @__PURE__ */ createIcon(SvgCoin1, "coin-1");
+const GlyphColorSwatch = /* @__PURE__ */ createIcon(
+  SvgColorSwatch,
+  "color-swatch",
+);
+const GlyphCommand = /* @__PURE__ */ createIcon(SvgCommand, "command");
+const GlyphComponent = /* @__PURE__ */ createIcon(SvgComponent, "component");
+const GlyphCopy = /* @__PURE__ */ createIcon(SvgCopy, "copy");
+const GlyphCopySuccess = /* @__PURE__ */ createIcon(
+  SvgCopySuccess,
+  "copy-success",
+);
+const GlyphCpuCharge = /* @__PURE__ */ createIcon(SvgCpuCharge, "cpu-charge");
+const GlyphCrown = /* @__PURE__ */ createIcon(SvgCrown, "crown");
+const GlyphDanger = /* @__PURE__ */ createIcon(SvgDanger, "danger");
+const GlyphDesigntools = /* @__PURE__ */ createIcon(
+  SvgDesigntools,
+  "designtools",
+);
+const GlyphDirectInbox = /* @__PURE__ */ createIcon(
+  SvgDirectInbox,
+  "direct-inbox",
+);
+const GlyphDirectboxSend = /* @__PURE__ */ createIcon(
+  SvgDirectboxSend,
+  "directbox-send",
+);
+const GlyphDiscover = /* @__PURE__ */ createIcon(SvgDiscover, "discover");
+const GlyphDocumentCode = /* @__PURE__ */ createIcon(
+  SvgDocumentCode,
+  "document-code",
+);
+const GlyphDocumentCode2 = /* @__PURE__ */ createIcon(
+  SvgDocumentCode2,
+  "document-code-2",
+);
+const GlyphDocumentCopy = /* @__PURE__ */ createIcon(
+  SvgDocumentCopy,
+  "document-copy",
+);
+const GlyphDocumentLike = /* @__PURE__ */ createIcon(
+  SvgDocumentLike,
+  "document-like",
+);
+const GlyphDocumentNormal = /* @__PURE__ */ createIcon(
+  SvgDocumentNormal,
+  "document-normal",
+);
+const GlyphDollarCircle = /* @__PURE__ */ createIcon(
+  SvgDollarCircle,
+  "dollar-circle",
+);
+const GlyphDollarSquare = /* @__PURE__ */ createIcon(
+  SvgDollarSquare,
+  "dollar-square",
+);
+const GlyphDoubleChevronDown = /* @__PURE__ */ createIcon(
   SvgDoubleChevronDown,
   "double-chevron-down",
 );
-const GlyphDriver = createIcon(SvgDriver, "driver");
-const GlyphDriver2 = createIcon(SvgDriver2, "driver-2");
-const GlyphEdit = createIcon(SvgEdit, "edit");
-const GlyphEdit2 = createIcon(SvgEdit2, "edit-2");
-const GlyphEmojiHappy = createIcon(SvgEmojiHappy, "emoji-happy");
-const GlyphExportArrow02 = createIcon(SvgExportArrow02, "export-arrow-02");
-const GlyphEye = createIcon(SvgEye, "eye");
-const GlyphEyeSlash = createIcon(SvgEyeSlash, "eye-slash");
-const GlyphFilter = createIcon(SvgFilter, "filter");
-const GlyphFlag = createIcon(SvgFlag, "flag");
-const GlyphFlag2 = createIcon(SvgFlag2, "flag-2");
-const GlyphFlash = createIcon(SvgFlash, "flash");
-const GlyphFlashCircle = createIcon(SvgFlashCircle, "flash-circle");
-const GlyphFolder = createIcon(SvgFolder, "folder");
-const GlyphFolderOpen = createIcon(SvgFolderOpen, "folder-open");
-const GlyphForbidden2 = createIcon(SvgForbidden2, "forbidden-2");
-const GlyphGallery = createIcon(SvgGallery, "gallery");
-const GlyphGlobal = createIcon(SvgGlobal, "global");
-const GlyphGps = createIcon(SvgGps, "gps");
-const GlyphGraph = createIcon(SvgGraph, "graph");
-const GlyphGrid1 = createIcon(SvgGrid1, "grid-1");
-const GlyphGrid2 = createIcon(SvgGrid2, "grid-2");
-const GlyphGrid5 = createIcon(SvgGrid5, "grid-5");
-const GlyphHappyemoji = createIcon(SvgHappyemoji, "happyemoji");
-const GlyphHashtag = createIcon(SvgHashtag, "hashtag");
-const GlyphHierarchy = createIcon(SvgHierarchy, "hierarchy");
-const GlyphHierarchy2 = createIcon(SvgHierarchy2, "hierarchy-2");
-const GlyphHierarchySquare = createIcon(SvgHierarchySquare, "hierarchy-square");
-const GlyphHome2 = createIcon(SvgHome2, "home-2");
-const GlyphHourglass = createIcon(SvgHourglass, "hourglass");
-const GlyphImportArrow01 = createIcon(SvgImportArrow01, "import-arrow-01");
-const GlyphInfoCircle = createIcon(SvgInfoCircle, "info-circle");
-const GlyphKey = createIcon(SvgKey, "key");
-const GlyphKeyboard = createIcon(SvgKeyboard, "keyboard");
-const GlyphLampOn = createIcon(SvgLampOn, "lamp-on");
-const GlyphLayer = createIcon(SvgLayer, "layer");
-const GlyphLink = createIcon(SvgLink, "link");
-const GlyphLink2 = createIcon(SvgLink2, "link-2");
-const GlyphLinkOff = createIcon(SvgLinkOff, "link-off");
-const GlyphLock = createIcon(SvgLock, "lock");
-const GlyphLogin01 = createIcon(SvgLogin01, "login-01");
-const GlyphLogout01 = createIcon(SvgLogout01, "logout-01");
-const GlyphMagicStar = createIcon(SvgMagicStar, "magic-star");
-const GlyphMap = createIcon(SvgMap, "map");
-const GlyphMaximize4 = createIcon(SvgMaximize4, "maximize-4");
-const GlyphMenuLines = createIcon(SvgMenuLines, "menu-lines");
-const GlyphMessageAdd = createIcon(SvgMessageAdd, "message-add");
-const GlyphMessageBubble = createIcon(SvgMessageBubble, "message-bubble");
-const GlyphMessageCircle = createIcon(SvgMessageCircle, "message-circle");
-const GlyphHeadphone = createIcon(SvgHeadphone, "headphone");
-const GlyphMessageQuestion = createIcon(SvgMessageQuestion, "message-question");
-const GlyphMessageSquare = createIcon(SvgMessageSquare, "message-square");
-const GlyphMessageText = createIcon(SvgMessageText, "message-text");
-const GlyphMessages = createIcon(SvgMessages, "messages");
-const GlyphMicrophone = createIcon(SvgMicrophone, "microphone");
-const GlyphMicrophoneSlash = createIcon(SvgMicrophoneSlash, "microphone-slash");
-const GlyphMinimize = createIcon(SvgMinimize, "minimize");
-const GlyphMinus = createIcon(SvgMinus, "minus");
-const GlyphMonitor = createIcon(SvgMonitor, "monitor");
-const GlyphMonitorRecorder = createIcon(SvgMonitorRecorder, "monitor-recorder");
-const GlyphMoon = createIcon(SvgMoon, "moon");
-const GlyphMoreVertical = createIcon(SvgMoreVertical, "more-vertical");
-const GlyphMouse = createIcon(SvgMouse, "mouse");
-const GlyphMouseSquare = createIcon(SvgMouseSquare, "mouse-square");
-const GlyphMusic = createIcon(SvgMusic, "music");
-const GlyphMusicnote = createIcon(SvgMusicnote, "musicnote");
-const GlyphNoteText = createIcon(SvgNoteText, "note-text");
-const GlyphNotification = createIcon(SvgNotification, "notification");
-const GlyphPaperclip = createIcon(SvgPaperclip, "paperclip");
-const GlyphPause = createIcon(SvgPause, "pause");
-const GlyphPauseCircle = createIcon(SvgPauseCircle, "pause-circle");
-const GlyphPeople = createIcon(SvgPeople, "people");
-const GlyphPlay = createIcon(SvgPlay, "play");
-const GlyphProfile2user = createIcon(SvgProfile2user, "profile-2user");
-const GlyphProfileCircle = createIcon(SvgProfileCircle, "profile-circle");
-const GlyphRadio = createIcon(SvgRadio, "radio");
-const GlyphReceipt2 = createIcon(SvgReceipt2, "receipt-2");
-const GlyphRecord = createIcon(SvgRecord, "record");
-const GlyphSelectionDot = createIcon(SvgSelectionDot, "selection-dot");
-const GlyphRecordCircle = createIcon(SvgRecordCircle, "record-circle");
-const GlyphRefreshArrow01 = createIcon(SvgRefreshArrow01, "refresh-arrow-01");
-const GlyphRefreshArrow02 = createIcon(SvgRefreshArrow02, "refresh-arrow-02");
-const GlyphRefreshLeft = createIcon(SvgRefreshLeft, "refresh-left");
-const GlyphRepeatArrow = createIcon(SvgRepeatArrow, "repeat-arrow");
-const GlyphRotateLeft = createIcon(SvgRotateLeft, "rotate-left");
-const GlyphRotateRight = createIcon(SvgRotateRight, "rotate-right");
-const GlyphRouting2 = createIcon(SvgRouting2, "routing-2");
-const GlyphSave2 = createIcon(SvgSave2, "save-2");
-const GlyphScan = createIcon(SvgScan, "scan");
-const GlyphSearch = createIcon(SvgSearch, "search");
-const GlyphSearchZoomIn1 = createIcon(SvgSearchZoomIn1, "search-zoom-in-1");
-const GlyphSearchZoomOut1 = createIcon(SvgSearchZoomOut1, "search-zoom-out-1");
-const GlyphSend2 = createIcon(SvgSend2, "send-2");
-const GlyphSetting2 = createIcon(SvgSetting2, "setting-2");
-const GlyphSetting4 = createIcon(SvgSetting4, "setting-4");
-const GlyphShare = createIcon(SvgShare, "share");
-const GlyphShieldSecurity = createIcon(SvgShieldSecurity, "shield-security");
-const GlyphShieldTick = createIcon(SvgShieldTick, "shield-tick");
-const GlyphShuffle = createIcon(SvgShuffle, "shuffle");
-const GlyphSidebarLeft = createIcon(SvgSidebarLeft, "sidebar-left");
-const GlyphSidebarLeftOpen = createIcon(
+const GlyphDriver = /* @__PURE__ */ createIcon(SvgDriver, "driver");
+const GlyphDriver2 = /* @__PURE__ */ createIcon(SvgDriver2, "driver-2");
+const GlyphEdit = /* @__PURE__ */ createIcon(SvgEdit, "edit");
+const GlyphEdit2 = /* @__PURE__ */ createIcon(SvgEdit2, "edit-2");
+const GlyphEmojiHappy = /* @__PURE__ */ createIcon(
+  SvgEmojiHappy,
+  "emoji-happy",
+);
+const GlyphExportArrow02 = /* @__PURE__ */ createIcon(
+  SvgExportArrow02,
+  "export-arrow-02",
+);
+const GlyphEye = /* @__PURE__ */ createIcon(SvgEye, "eye");
+const GlyphEyeSlash = /* @__PURE__ */ createIcon(SvgEyeSlash, "eye-slash");
+const GlyphFilter = /* @__PURE__ */ createIcon(SvgFilter, "filter");
+const GlyphFlag = /* @__PURE__ */ createIcon(SvgFlag, "flag");
+const GlyphFlag2 = /* @__PURE__ */ createIcon(SvgFlag2, "flag-2");
+const GlyphFlash = /* @__PURE__ */ createIcon(SvgFlash, "flash");
+const GlyphFlashCircle = /* @__PURE__ */ createIcon(
+  SvgFlashCircle,
+  "flash-circle",
+);
+const GlyphFolderOpen = /* @__PURE__ */ createIcon(
+  SvgFolderOpen,
+  "folder-open",
+);
+const GlyphForbidden2 = /* @__PURE__ */ createIcon(
+  SvgForbidden2,
+  "forbidden-2",
+);
+const GlyphGallery = /* @__PURE__ */ createIcon(SvgGallery, "gallery");
+const GlyphGlobal = /* @__PURE__ */ createIcon(SvgGlobal, "global");
+const GlyphGps = /* @__PURE__ */ createIcon(SvgGps, "gps");
+const GlyphGraph = /* @__PURE__ */ createIcon(SvgGraph, "graph");
+const GlyphGrid1 = /* @__PURE__ */ createIcon(SvgGrid1, "grid-1");
+const GlyphGrid2 = /* @__PURE__ */ createIcon(SvgGrid2, "grid-2");
+const GlyphGrid5 = /* @__PURE__ */ createIcon(SvgGrid5, "grid-5");
+const GlyphHappyemoji = /* @__PURE__ */ createIcon(SvgHappyemoji, "happyemoji");
+const GlyphHashtag = /* @__PURE__ */ createIcon(SvgHashtag, "hashtag");
+const GlyphHierarchy = /* @__PURE__ */ createIcon(SvgHierarchy, "hierarchy");
+const GlyphHierarchy2 = /* @__PURE__ */ createIcon(
+  SvgHierarchy2,
+  "hierarchy-2",
+);
+const GlyphHourglass = /* @__PURE__ */ createIcon(SvgHourglass, "hourglass");
+const GlyphImportArrow01 = /* @__PURE__ */ createIcon(
+  SvgImportArrow01,
+  "import-arrow-01",
+);
+const GlyphInfoCircle = /* @__PURE__ */ createIcon(
+  SvgInfoCircle,
+  "info-circle",
+);
+const GlyphKey = /* @__PURE__ */ createIcon(SvgKey, "key");
+const GlyphKeyboard = /* @__PURE__ */ createIcon(SvgKeyboard, "keyboard");
+const GlyphLayer = /* @__PURE__ */ createIcon(SvgLayer, "layer");
+const GlyphLink = /* @__PURE__ */ createIcon(SvgLink, "link");
+const GlyphLink2 = /* @__PURE__ */ createIcon(SvgLink2, "link-2");
+const GlyphLinkOff = /* @__PURE__ */ createIcon(SvgLinkOff, "link-off");
+const GlyphLock = /* @__PURE__ */ createIcon(SvgLock, "lock");
+const GlyphLogin01 = /* @__PURE__ */ createIcon(SvgLogin01, "login-01");
+const GlyphLogout01 = /* @__PURE__ */ createIcon(SvgLogout01, "logout-01");
+const GlyphMagicStar = /* @__PURE__ */ createIcon(SvgMagicStar, "magic-star");
+const GlyphMap = /* @__PURE__ */ createIcon(SvgMap, "map");
+const GlyphMaximize4 = /* @__PURE__ */ createIcon(SvgMaximize4, "maximize-4");
+const GlyphMessageAdd = /* @__PURE__ */ createIcon(
+  SvgMessageAdd,
+  "message-add",
+);
+const GlyphMessageBubble = /* @__PURE__ */ createIcon(
+  SvgMessageBubble,
+  "message-bubble",
+);
+const GlyphMessageCircle = /* @__PURE__ */ createIcon(
+  SvgMessageCircle,
+  "message-circle",
+);
+const GlyphHeadphone = /* @__PURE__ */ createIcon(SvgHeadphone, "headphone");
+const GlyphMessageQuestion = /* @__PURE__ */ createIcon(
+  SvgMessageQuestion,
+  "message-question",
+);
+const GlyphMessageText = /* @__PURE__ */ createIcon(
+  SvgMessageText,
+  "message-text",
+);
+const GlyphMessages = /* @__PURE__ */ createIcon(SvgMessages, "messages");
+const GlyphMicrophone = /* @__PURE__ */ createIcon(SvgMicrophone, "microphone");
+const GlyphMicrophoneSlash = /* @__PURE__ */ createIcon(
+  SvgMicrophoneSlash,
+  "microphone-slash",
+);
+const GlyphMinimize = /* @__PURE__ */ createIcon(SvgMinimize, "minimize");
+const GlyphMinus = /* @__PURE__ */ createIcon(SvgMinus, "minus");
+const GlyphMonitorRecorder = /* @__PURE__ */ createIcon(
+  SvgMonitorRecorder,
+  "monitor-recorder",
+);
+const GlyphMoon = /* @__PURE__ */ createIcon(SvgMoon, "moon");
+const GlyphMoreVertical = /* @__PURE__ */ createIcon(
+  SvgMoreVertical,
+  "more-vertical",
+);
+const GlyphMouse = /* @__PURE__ */ createIcon(SvgMouse, "mouse");
+const GlyphMouseSquare = /* @__PURE__ */ createIcon(
+  SvgMouseSquare,
+  "mouse-square",
+);
+const GlyphMusic = /* @__PURE__ */ createIcon(SvgMusic, "music");
+const GlyphMusicnote = /* @__PURE__ */ createIcon(SvgMusicnote, "musicnote");
+const GlyphNoteText = /* @__PURE__ */ createIcon(SvgNoteText, "note-text");
+const GlyphNotification = /* @__PURE__ */ createIcon(
+  SvgNotification,
+  "notification",
+);
+const GlyphPaperclip = /* @__PURE__ */ createIcon(SvgPaperclip, "paperclip");
+const GlyphPause = /* @__PURE__ */ createIcon(SvgPause, "pause");
+const GlyphPauseCircle = /* @__PURE__ */ createIcon(
+  SvgPauseCircle,
+  "pause-circle",
+);
+const GlyphPeople = /* @__PURE__ */ createIcon(SvgPeople, "people");
+const GlyphProfileCircle = /* @__PURE__ */ createIcon(
+  SvgProfileCircle,
+  "profile-circle",
+);
+const GlyphRadio = /* @__PURE__ */ createIcon(SvgRadio, "radio");
+const GlyphReceipt2 = /* @__PURE__ */ createIcon(SvgReceipt2, "receipt-2");
+const GlyphSelectionDot = /* @__PURE__ */ createIcon(
+  SvgSelectionDot,
+  "selection-dot",
+);
+const GlyphRecordCircle = /* @__PURE__ */ createIcon(
+  SvgRecordCircle,
+  "record-circle",
+);
+const GlyphRefreshArrow01 = /* @__PURE__ */ createIcon(
+  SvgRefreshArrow01,
+  "refresh-arrow-01",
+);
+const GlyphRefreshArrow02 = /* @__PURE__ */ createIcon(
+  SvgRefreshArrow02,
+  "refresh-arrow-02",
+);
+const GlyphRefreshLeft = /* @__PURE__ */ createIcon(
+  SvgRefreshLeft,
+  "refresh-left",
+);
+const GlyphRepeatArrow = /* @__PURE__ */ createIcon(
+  SvgRepeatArrow,
+  "repeat-arrow",
+);
+const GlyphRotateRight = /* @__PURE__ */ createIcon(
+  SvgRotateRight,
+  "rotate-right",
+);
+const GlyphRouting2 = /* @__PURE__ */ createIcon(SvgRouting2, "routing-2");
+const GlyphSave2 = /* @__PURE__ */ createIcon(SvgSave2, "save-2");
+const GlyphScan = /* @__PURE__ */ createIcon(SvgScan, "scan");
+const GlyphSearch = /* @__PURE__ */ createIcon(SvgSearch, "search");
+const GlyphSearchZoomIn1 = /* @__PURE__ */ createIcon(
+  SvgSearchZoomIn1,
+  "search-zoom-in-1",
+);
+const GlyphSearchZoomOut1 = /* @__PURE__ */ createIcon(
+  SvgSearchZoomOut1,
+  "search-zoom-out-1",
+);
+const GlyphSetting4 = /* @__PURE__ */ createIcon(SvgSetting4, "setting-4");
+const GlyphShare = /* @__PURE__ */ createIcon(SvgShare, "share");
+const GlyphShieldSecurity = /* @__PURE__ */ createIcon(
+  SvgShieldSecurity,
+  "shield-security",
+);
+const GlyphShieldTick = /* @__PURE__ */ createIcon(
+  SvgShieldTick,
+  "shield-tick",
+);
+const GlyphShuffle = /* @__PURE__ */ createIcon(SvgShuffle, "shuffle");
+const GlyphSidebarLeft = /* @__PURE__ */ createIcon(
+  SvgSidebarLeft,
+  "sidebar-left",
+);
+const GlyphSidebarLeftOpen = /* @__PURE__ */ createIcon(
   SvgSidebarLeftOpen,
   "sidebar-left-open",
 );
-const GlyphSidebarRight = createIcon(SvgSidebarRight, "sidebar-right");
-const GlyphSms = createIcon(SvgSms, "sms");
-const GlyphSmsEdit = createIcon(SvgSmsEdit, "sms-edit");
-const GlyphSpeedometer = createIcon(SvgSpeedometer, "speedometer");
-const GlyphStar = createIcon(SvgStar, "star");
-const GlyphStatus = createIcon(SvgStatus, "status");
-const GlyphSticker = createIcon(SvgSticker, "sticker");
-const GlyphStickynote = createIcon(SvgStickynote, "stickynote");
-const GlyphStop = createIcon(SvgStop, "stop");
-const GlyphStopFilled = createIcon(SvgStopFilled, "stop-filled");
-const GlyphSun = createIcon(SvgSun, "sun");
-const GlyphSwapHorizontal01 = createIcon(
+const GlyphSidebarRight = /* @__PURE__ */ createIcon(
+  SvgSidebarRight,
+  "sidebar-right",
+);
+const GlyphSms = /* @__PURE__ */ createIcon(SvgSms, "sms");
+const GlyphSmsEdit = /* @__PURE__ */ createIcon(SvgSmsEdit, "sms-edit");
+const GlyphSpeedometer = /* @__PURE__ */ createIcon(
+  SvgSpeedometer,
+  "speedometer",
+);
+const GlyphStar = /* @__PURE__ */ createIcon(SvgStar, "star");
+const GlyphStatus = /* @__PURE__ */ createIcon(SvgStatus, "status");
+const GlyphSticker = /* @__PURE__ */ createIcon(SvgSticker, "sticker");
+const GlyphStickynote = /* @__PURE__ */ createIcon(SvgStickynote, "stickynote");
+const GlyphStop = /* @__PURE__ */ createIcon(SvgStop, "stop");
+const GlyphStopFilled = /* @__PURE__ */ createIcon(
+  SvgStopFilled,
+  "stop-filled",
+);
+const GlyphSun = /* @__PURE__ */ createIcon(SvgSun, "sun");
+const GlyphSwapHorizontal01 = /* @__PURE__ */ createIcon(
   SvgSwapHorizontal01,
   "swap-horizontal-01",
 );
-const GlyphTag = createIcon(SvgTag, "tag");
-const GlyphTask = createIcon(SvgTask, "task");
-const GlyphTaskSquare = createIcon(SvgTaskSquare, "task-square");
-const GlyphText = createIcon(SvgText, "text");
-const GlyphTextBlock = createIcon(SvgTextBlock, "text-block");
-const GlyphTextBold = createIcon(SvgTextBold, "text-bold");
-const GlyphTextItalic = createIcon(SvgTextItalic, "text-italic");
-const GlyphTextStrikethrough = createIcon(
+const GlyphTag = /* @__PURE__ */ createIcon(SvgTag, "tag");
+const GlyphTask = /* @__PURE__ */ createIcon(SvgTask, "task");
+const GlyphTaskSquare = /* @__PURE__ */ createIcon(
+  SvgTaskSquare,
+  "task-square",
+);
+const GlyphText = /* @__PURE__ */ createIcon(SvgText, "text");
+const GlyphTextBlock = /* @__PURE__ */ createIcon(SvgTextBlock, "text-block");
+const GlyphTextBold = /* @__PURE__ */ createIcon(SvgTextBold, "text-bold");
+const GlyphTextItalic = /* @__PURE__ */ createIcon(
+  SvgTextItalic,
+  "text-italic",
+);
+const GlyphTextStrikethrough = /* @__PURE__ */ createIcon(
   SvgTextStrikethrough,
   "text-strikethrough",
 );
-const GlyphTextalignJustifyleft = createIcon(
+const GlyphTextalignJustifyleft = /* @__PURE__ */ createIcon(
   SvgTextalignJustifyleft,
   "textalign-justifyleft",
 );
-const GlyphTextalignLeft = createIcon(SvgTextalignLeft, "textalign-left");
-const GlyphTickCircle = createIcon(SvgTickCircle, "tick-circle");
-const GlyphTickSquare = createIcon(SvgTickSquare, "tick-square");
-const GlyphTimerPause = createIcon(SvgTimerPause, "timer-pause");
-const GlyphTimerStart = createIcon(SvgTimerStart, "timer-start");
-const GlyphTrash = createIcon(SvgTrash, "trash");
-const GlyphTree = createIcon(SvgTree, "tree");
-const GlyphUndoArrow = createIcon(SvgUndoArrow, "undo-arrow");
-const GlyphUser = createIcon(SvgUser, "user");
-const GlyphUserAdd = createIcon(SvgUserAdd, "user-add");
-const GlyphUserMinus = createIcon(SvgUserMinus, "user-minus");
-const GlyphUserTag = createIcon(SvgUserTag, "user-tag");
-const GlyphVideoPlay = createIcon(SvgVideoPlay, "video-play");
-const GlyphVideo = createIcon(SvgVideo, "video");
-const GlyphVideoSlash = createIcon(SvgVideoSlash, "video-slash");
-const GlyphVolumeHigh = createIcon(SvgVolumeHigh, "volume-high");
-const GlyphWallet = createIcon(SvgWallet, "wallet");
-const GlyphWarning2 = createIcon(SvgWarning2, "warning-2");
-const GlyphWifiOff = createIcon(SvgWifiOff, "wifi-off");
-const GlyphShapeTriangle = createIcon(
+const GlyphTextalignLeft = /* @__PURE__ */ createIcon(
+  SvgTextalignLeft,
+  "textalign-left",
+);
+const GlyphTickCircle = /* @__PURE__ */ createIcon(
+  SvgTickCircle,
+  "tick-circle",
+);
+const GlyphTickSquare = /* @__PURE__ */ createIcon(
+  SvgTickSquare,
+  "tick-square",
+);
+const GlyphTimerPause = /* @__PURE__ */ createIcon(
+  SvgTimerPause,
+  "timer-pause",
+);
+const GlyphTimerStart = /* @__PURE__ */ createIcon(
+  SvgTimerStart,
+  "timer-start",
+);
+const GlyphTrash = /* @__PURE__ */ createIcon(SvgTrash, "trash");
+const GlyphTree = /* @__PURE__ */ createIcon(SvgTree, "tree");
+const GlyphUndoArrow = /* @__PURE__ */ createIcon(SvgUndoArrow, "undo-arrow");
+const GlyphUser = /* @__PURE__ */ createIcon(SvgUser, "user");
+const GlyphUserAdd = /* @__PURE__ */ createIcon(SvgUserAdd, "user-add");
+const GlyphUserMinus = /* @__PURE__ */ createIcon(SvgUserMinus, "user-minus");
+const GlyphUserTag = /* @__PURE__ */ createIcon(SvgUserTag, "user-tag");
+const GlyphVideoPlay = /* @__PURE__ */ createIcon(SvgVideoPlay, "video-play");
+const GlyphVideo = /* @__PURE__ */ createIcon(SvgVideo, "video");
+const GlyphVideoSlash = /* @__PURE__ */ createIcon(
+  SvgVideoSlash,
+  "video-slash",
+);
+const GlyphVolumeHigh = /* @__PURE__ */ createIcon(
+  SvgVolumeHigh,
+  "volume-high",
+);
+const GlyphWallet = /* @__PURE__ */ createIcon(SvgWallet, "wallet");
+const GlyphWarning2 = /* @__PURE__ */ createIcon(SvgWarning2, "warning-2");
+const GlyphWifiOff = /* @__PURE__ */ createIcon(SvgWifiOff, "wifi-off");
+const GlyphShapeTriangle = /* @__PURE__ */ createIcon(
   SvgShapeTriangle,
   "shape-triangle",
   "symbol",
 );
-const GlyphShapeDiamond = createIcon(
+const GlyphShapeDiamond = /* @__PURE__ */ createIcon(
   SvgShapeDiamond,
   "shape-diamond",
   "symbol",
 );
-const GlyphShapeRounded = createIcon(
+const GlyphShapeRounded = /* @__PURE__ */ createIcon(
   SvgShapeRounded,
   "shape-rounded",
   "symbol",
 );
-const GlyphShapeTerminal = createIcon(
+const GlyphShapeTerminal = /* @__PURE__ */ createIcon(
   SvgShapeTerminal,
   "shape-terminal",
   "symbol",
 );
-const GlyphShapeActor = createIcon(SvgShapeActor, "shape-actor", "symbol");
-const GlyphShapeDatabase = createIcon(
+const GlyphShapeActor = /* @__PURE__ */ createIcon(
+  SvgShapeActor,
+  "shape-actor",
+  "symbol",
+);
+const GlyphShapeDatabase = /* @__PURE__ */ createIcon(
   SvgShapeDatabase,
   "shape-database",
   "symbol",
 );
-const GlyphShapeQueue = createIcon(SvgShapeQueue, "shape-queue", "symbol");
-const GlyphShapeCloud = createIcon(SvgShapeCloud, "shape-cloud", "symbol");
-const GlyphShapeComponent = createIcon(
+const GlyphShapeQueue = /* @__PURE__ */ createIcon(
+  SvgShapeQueue,
+  "shape-queue",
+  "symbol",
+);
+const GlyphShapeCloud = /* @__PURE__ */ createIcon(
+  SvgShapeCloud,
+  "shape-cloud",
+  "symbol",
+);
+const GlyphShapeComponent = /* @__PURE__ */ createIcon(
   SvgShapeComponent,
   "shape-component",
   "symbol",
 );
-const GlyphShapeDocument = createIcon(
+const GlyphShapeDocument = /* @__PURE__ */ createIcon(
   SvgShapeDocument,
   "shape-document",
   "symbol",
 );
-const GlyphShapeNote = createIcon(SvgShapeNote, "shape-note", "symbol");
-const GlyphShapeLifeline = createIcon(
+const GlyphShapeNote = /* @__PURE__ */ createIcon(
+  SvgShapeNote,
+  "shape-note",
+  "symbol",
+);
+const GlyphShapeLifeline = /* @__PURE__ */ createIcon(
   SvgShapeLifeline,
   "shape-lifeline",
   "symbol",
 );
-const GlyphShapeClass = createIcon(SvgShapeClass, "shape-class", "symbol");
-const GlyphShapeEntity = createIcon(SvgShapeEntity, "shape-entity", "symbol");
-const GlyphShapeFragment = createIcon(
+const GlyphShapeClass = /* @__PURE__ */ createIcon(
+  SvgShapeClass,
+  "shape-class",
+  "symbol",
+);
+const GlyphShapeEntity = /* @__PURE__ */ createIcon(
+  SvgShapeEntity,
+  "shape-entity",
+  "symbol",
+);
+const GlyphShapeFragment = /* @__PURE__ */ createIcon(
   SvgShapeFragment,
   "shape-fragment",
   "symbol",
 );
 
-const GlyphBookmarkBold = createIcon(SvgBookmarkBold, "bookmark-bold");
-const GlyphStarBold = createIcon(SvgStarBold, "star-bold");
+const GlyphBookmarkBold = /* @__PURE__ */ createIcon(
+  SvgBookmarkBold,
+  "bookmark-bold",
+);
+const GlyphStarBold = /* @__PURE__ */ createIcon(SvgStarBold, "star-bold");
 
 export const iconsaxIcons = {
   "bookmark-bold": GlyphBookmarkBold,

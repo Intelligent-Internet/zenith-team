@@ -36,6 +36,24 @@ existing selectors; preserve their cascade and exact responsive boundaries.
 
 ### Production bundles
 
+The public landing page has a separate bootstrap and stylesheet from the signed-in application.
+It does not initialize Redux persistence, session recovery, desktop controllers,
+or application-only Google Fonts. Links from that entry to other routes perform
+a document navigation so those routes retain the normal application bootstrap.
+Electron always uses the application bootstrap, including at its root URL.
+The landing entry preloads its hero poster, and video playback waits until the
+poster has decoded and painted. Keep the poster URL shared with the video when
+updating that asset so the preload remains useful.
+Public Tailwind utilities scan only the landing components and shared logo;
+the font stacks are shared with the application. Static landing avatars use
+the Clay renderer directly, and the WebP atlas loads as they approach the viewport.
+
+`public/llms.txt` describes public product information and links. The public
+`/.well-known/ai-catalog.json` advertises no callable resources: Company-scoped
+MCP tools and authenticated workspace APIs are not anonymous public endpoints.
+Keep its entries empty until there is an actual public discovery contract.
+These files must be served as text/JSON rather than the SPA fallback.
+
 Vite keeps React, state, routing, shared Iconsax assets, editor dependencies and
 chart rendering in separate cacheable chunks. Explicit manual chunks do not
 absorb their dependencies; feature routes and document viewers retain their

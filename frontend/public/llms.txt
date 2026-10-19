@@ -1,0 +1,27 @@
+# Zenith Team
+
+> Zenith Team is a shared web and desktop workspace for planning projects, assigning tasks to specialist AI agents, and reviewing their work together.
+
+Zenith Team is a product of Intelligent Internet (ii.inc). The cloud synchronizes structured company and task state. Agent execution runs on a member's connected, online computer using their signed-in Codex or Claude Code installation. Provider access and usage are separate.
+
+People remain responsible for reviewing plans, answering questions, approving actions when required, and reviewing task results. A finished agent run does not automatically mean that its task has been accepted as done.
+
+The public website describes the product and provides desktop download options. Company workspaces require authentication and the appropriate access. This website does not currently publish anonymous MCP servers, A2A endpoints, or WebMCP tools; its public AI catalog therefore has no entries.
+
+## Product
+
+- [Zenith Team](https://app.example.com/): Product overview and the Get Zenith Team download dialog.
+- [Specialist agents](https://app.example.com/#team): Meet the team and explore each agent's role.
+- [Product examples](https://app.example.com/#product): Examples of work produced with Zenith Team.
+- [How it works](https://app.example.com/#how-it-works): Planning, task ownership, and review.
+
+## Policies and support
+
+- [Privacy Policy](https://app.example.com/privacy): How information is handled.
+- [Terms of Service](https://app.example.com/terms): Terms governing use of Zenith Team.
+- [Support](mailto:support@ii.inc): Questions about setup and the product.
+
+## Optional
+
+- [AI resource catalog](https://app.example.com/.well-known/ai-catalog.json): Public agent resource discovery metadata; currently no callable resources are advertised.
+- [Sitemap](https://app.example.com/sitemap.xml): Public pages available for discovery.

@@ -1,23 +1,11 @@
 @import "tailwindcss";
+@import "../shared/styles/fonts.css";
 @import "../shared/styles/focus.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 @custom-variant light (&:where(.light, .light *));
 
 @theme {
-  --font-ui:
-    -apple-system-body, ui-sans-serif, -apple-system, system-ui, "Segoe UI",
-    Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji",
-    "Segoe UI Symbol";
-  --font-sans: var(--font-ui);
-  --font-heading: var(--font-ui);
-  --font-mono: "Geist Mono", monospace;
-  --font-pixel: "Geist Pixel", sans-serif;
-  --font-serif:
-    "Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", Times,
-    serif;
-  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
-
   --color-charcoal: #0f233f;
   --color-black: #0f233f;
   --color-green: #006600;
