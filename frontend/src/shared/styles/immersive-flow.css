@@ -1,20 +1,4 @@
 @layer components {
-  .immersive-canvas-texture {
-    background: var(--color-immersive-cream);
-  }
-
-  .immersive-canvas-texture.immersive-canvas-dark {
-    background-color: var(--color-immersive-canvas);
-    background-image: var(--immersive-canvas-dark-bg-image, none);
-    background-position: top;
-    background-size: cover;
-    color: var(--color-immersive-cream);
-  }
-
-  .immersive-canvas-texture::before {
-    display: none;
-  }
-
   .gradient-cta-button {
     border-radius: 109px;
     background:

@@ -813,9 +813,6 @@
   font: inherit;
   font-weight: 400;
 }
-.zen-wiki-dialog__choices p {
-  margin: 4px 0;
-}
 .zen-wiki__button {
   display: inline-flex;
   align-items: center;
@@ -881,20 +878,6 @@
   .zen-wiki__restore-document {
     max-height: 26vh;
   }
-}
-.zen-wiki__link-choice {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  gap: 9px;
-  border: 0;
-  border-radius: 7px;
-  padding: 8px;
-  background: transparent;
-  text-align: left;
-}
-.zen-wiki__link-choice:hover {
-  background: var(--wk-hover);
 }
 @media (max-width: 900px) {
   .zen-wiki {

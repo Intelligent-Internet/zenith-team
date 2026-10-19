@@ -10,7 +10,6 @@ const allowedRoutePrefixes = [
   "/login",
   "/onboarding",
   "/resources",
-  "/revenue",
   "/settings",
   "/team",
 ];

@@ -722,16 +722,6 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.analytics-cumulative-total strong {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  color: var(--analytics-accent-strong);
-}
-.analytics-cumulative-total span {
-  color: var(--analytics-muted);
-  font-size: 12px;
-}
 .analytics-failure-legend span {
   display: inline-flex;
   align-items: center;

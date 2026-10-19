@@ -149,31 +149,6 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-nav-text);
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-runner-status {
-  font-family: var(--workspace-font-body);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-  font-weight: 500;
-}
-
-.boardly-workspace-theme[data-boardly-theme]
-  .workspace-runner-status[data-tone="online"]
-  .workspace-runner-dot {
-  background: var(--workspace-nav-success);
-}
-
-.boardly-workspace-theme[data-boardly-theme]
-  .workspace-runner-status:is([data-tone="offline"], [data-tone="unavailable"])
-  .workspace-runner-dot {
-  background: var(--workspace-nav-danger);
-}
-
-.boardly-workspace-theme[data-boardly-theme]
-  .workspace-runner-status[data-tone="checking"]
-  .workspace-runner-dot {
-  background: var(--workspace-nav-accent);
-}
-
 .boardly-workspace-theme[data-boardly-theme] .workspace-shell-body {
   padding: 0 10px 10px 0;
   background: transparent;

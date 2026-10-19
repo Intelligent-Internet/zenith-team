@@ -40,24 +40,6 @@
   font-weight: 600;
 }
 
-.boardly-workspace-theme .workspace-runner-status {
-  height: 26px;
-  gap: 6px;
-  border-color: transparent;
-  border-radius: var(--workspace-radius-control);
-  padding-inline: 8px;
-  background: var(--workspace-control-bg);
-  color: var(--workspace-native-text-muted);
-  font-size: var(--workspace-text-caption);
-  line-height: var(--workspace-leading-caption);
-}
-
-.boardly-workspace-theme
-  .workspace-runner-status[data-tone="online"]
-  .workspace-runner-dot {
-  box-shadow: none;
-}
-
 .boardly-workspace-theme .workspace-header-action,
 .boardly-workspace-theme .workspace-profile-button,
 .boardly-workspace-theme .workspace-icon-button {

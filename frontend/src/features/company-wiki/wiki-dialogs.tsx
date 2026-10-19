@@ -13,18 +13,15 @@ import {
   DialogTitle,
 } from "@/shared/ui/core/dialog";
 import { toast } from "@/shared/ui/sonner";
-import { FileText, X } from "@/shared/ui/icons";
+import { X } from "@/shared/ui/icons";
 import {
   useGetWikiDocumentQuery,
   type WikiDocument,
   useCreateWikiCollectionMutation,
   useCreateWikiPageMutation,
-  useListWikiPagesQuery,
   useRestoreWikiRevisionMutation,
-  WIKI_PAGE_LIMIT,
   type WikiCollection,
   type WikiPageDetail,
-  type WikiPageSummary,
   type WikiRevision,
 } from "./wiki-api";
 import { WikiContent } from "./wiki-content";
@@ -430,81 +427,6 @@ export function WikiNewCollectionDialog({
           </button>
         </div>
       </form>
-    </WikiDialog>
-  );
-}
-
-export function WikiLinkPickerDialog({
-  companyId,
-  excludePageId,
-  onPick,
-  onClose,
-}: {
-  companyId: string;
-  /** The page being edited, which cannot link to itself. */
-  excludePageId: string;
-  onPick: (page: WikiPageSummary) => void;
-  onClose: () => void;
-}) {
-  const [search, setSearch] = useState("");
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    const timer = window.setTimeout(() => setQuery(search), 220);
-    return () => window.clearTimeout(timer);
-  }, [search]);
-  const choices = useListWikiPagesQuery(
-    { companyId, status: "active", search: query },
-    { skip: !companyId },
-  );
-  const items =
-    choices.data?.items.filter((item) => item.id !== excludePageId) ?? [];
-
-  return (
-    <WikiDialog title="Link a page" onClose={onClose}>
-      <div className="zen-wiki-dialog__form">
-        <label>
-          Find page
-          <input
-            autoFocus
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search pages…"
-          />
-        </label>
-      </div>
-      <div className="zen-wiki-dialog__choices grid gap-[2px] min-h-0">
-        {choices.isLoading && <p role="status">Loading pages…</p>}
-        {choices.isError && (
-          <p className="text-workspace-danger p-[0_10px]" role="alert">
-            Pages could not be loaded.{" "}
-            <button
-              className="zen-wiki__retry"
-              onClick={() => void choices.refetch()}
-            >
-              Retry
-            </button>
-          </p>
-        )}
-        {items.map((item) => (
-          <button
-            className="zen-wiki__link-choice"
-            key={item.id}
-            onClick={() => onPick(item)}
-          >
-            <FileText size={16} /> {item.title}
-          </button>
-        ))}
-        {choices.data && items.length === 0 && (
-          <p className="text-[var(--wk-muted)] p-[0_10px]">
-            No matching pages.
-          </p>
-        )}
-        {(choices.data?.total ?? 0) > WIKI_PAGE_LIMIT && (
-          <p className="text-[var(--wk-muted)] p-[0_10px]">
-            Search by title to find more pages.
-          </p>
-        )}
-      </div>
     </WikiDialog>
   );
 }

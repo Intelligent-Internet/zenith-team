@@ -185,7 +185,7 @@ function dialogCopy(action: MembershipAction, companyName: string) {
         description: `${name} is currently ${roleLabel(action.member.role)}. As ${roleLabel(action.nextRole)}: ${ROLE_DESCRIPTIONS[action.nextRole]}`,
         hint:
           action.nextRole === "owner"
-            ? `${name} will be able to delete ${companyName}, manage owners and manage revenue. You keep your own role.`
+            ? `${name} will be able to delete ${companyName} and manage owners. You keep your own role.`
             : undefined,
         confirm: `Change to ${roleLabel(action.nextRole)}`,
         destructive: false,

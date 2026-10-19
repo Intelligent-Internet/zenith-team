@@ -55,7 +55,6 @@ export function sanitizeNotificationPath(
       url.pathname !== "/team" &&
       url.pathname !== "/app" &&
       url.pathname !== "/approvals" &&
-      url.pathname !== "/revenue" &&
       url.pathname !== "/analytics" &&
       !isScheduleDetailPath(url.pathname) &&
       !isRuntimeDetailPath(url.pathname)
@@ -194,7 +193,7 @@ async function resolveActivatedNotificationPath(
       return path;
     }
   }
-  if (url.pathname !== "/approvals" && url.pathname !== "/revenue") {
+  if (url.pathname !== "/approvals") {
     return path;
   }
   try {
@@ -357,10 +356,9 @@ function hasRequiredNotificationTarget(
       );
     }
     return (
-      (url.pathname === "/approvals" &&
-        params.get("tab") ===
-          (kind === "approval_request" ? "approvals" : "questions")) ||
-      (kind === "approval_request" && url.pathname === "/revenue")
+      url.pathname === "/approvals" &&
+      params.get("tab") ===
+        (kind === "approval_request" ? "approvals" : "questions")
     );
   }
   return (

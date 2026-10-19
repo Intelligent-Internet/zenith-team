@@ -21,14 +21,15 @@ import { workflowPinsReducer } from "@/state/slice/workflow-pins";
 const uiPersistConfig = {
   key: "ui",
   storage,
-  whitelist: ["activeTeam", "sidebarCollapsedByCompany"],
-  version: 2,
+  whitelist: ["sidebarCollapsedByCompany"],
+  version: 3,
   migrate: async (persistedState: PersistedState) => {
     if (!persistedState) {
       return persistedState;
     }
 
     const uiState = { ...(persistedState as Record<string, unknown>) };
+    delete uiState.activeTeam;
     delete uiState.chatOpen;
     return uiState as unknown as PersistedState;
   },

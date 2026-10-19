@@ -4,9 +4,3 @@
     text-wrap: pretty;
   }
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .public-landing-video {
-    display: none;
-  }
-}

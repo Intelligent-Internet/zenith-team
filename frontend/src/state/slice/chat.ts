@@ -8,8 +8,6 @@ type TeamChatState = Partial<Record<ChatTeamId, ChatMessage[]>>;
 type TeamDraftState = Partial<Record<ChatTeamId, string>>;
 type TaskChatState = Record<string, ChatMessage[]>;
 type TaskDraftState = Record<string, string>;
-type ResourceChatState = Record<string, ChatMessage[]>;
-type ResourceDraftState = Record<string, string>;
 type ConversationChatState = Record<string, ChatMessage[]>;
 type ChatMessageChanges = Partial<Omit<ChatMessage, "id" | "team">>;
 
@@ -25,11 +23,9 @@ type ChatState = {
     }
   >;
   artifactDrafts: Record<string, LibraryArtifact[]>;
-  draftsByResource: ResourceDraftState;
   draftsByTeam: TeamDraftState;
   draftsByTask: TaskDraftState;
   messagesByConversation: ConversationChatState;
-  messagesByResource: ResourceChatState;
   messagesByTeam: TeamChatState;
   messagesByTask: TaskChatState;
 };
@@ -39,11 +35,9 @@ const emptyChatMessages: ChatMessage[] = [];
 const initialState: ChatState = {
   artifactDrafts: {},
   skillDrafts: {},
-  draftsByResource: {},
   draftsByTeam: {},
   draftsByTask: {},
   messagesByConversation: {},
-  messagesByResource: {},
   messagesByTeam: {},
   messagesByTask: {},
 };
@@ -61,11 +55,6 @@ const getConversationMessages = (state: ChatState, conversationKey: string) => {
 const getTaskMessages = (state: ChatState, taskChatId: string) => {
   state.messagesByTask[taskChatId] ??= [];
   return state.messagesByTask[taskChatId];
-};
-
-const getResourceMessages = (state: ChatState, resourceChatId: string) => {
-  state.messagesByResource[resourceChatId] ??= [];
-  return state.messagesByResource[resourceChatId];
 };
 
 function findEquivalentMessageIndex(
@@ -299,51 +288,6 @@ const chatSlice = createSlice({
         Object.assign(message, action.payload.changes);
       }
     },
-    appendResourceChatMessage: (
-      state,
-      action: PayloadAction<{
-        message: ChatMessage;
-        resourceChatId: string;
-      }>,
-    ) => {
-      getResourceMessages(state, action.payload.resourceChatId).push(
-        action.payload.message,
-      );
-    },
-    setResourceChatMessages: (
-      state,
-      action: PayloadAction<{
-        messages: ChatMessage[];
-        resourceChatId: string;
-      }>,
-    ) => {
-      state.messagesByResource[action.payload.resourceChatId] =
-        action.payload.messages;
-    },
-    setResourceDraft: (
-      state,
-      action: PayloadAction<{ message: string; resourceChatId: string }>,
-    ) => {
-      state.draftsByResource[action.payload.resourceChatId] =
-        action.payload.message;
-    },
-    updateResourceChatMessage: (
-      state,
-      action: PayloadAction<{
-        changes: ChatMessageChanges;
-        id: number;
-        resourceChatId: string;
-      }>,
-    ) => {
-      const message = getResourceMessages(
-        state,
-        action.payload.resourceChatId,
-      ).find((item) => item.id === action.payload.id);
-
-      if (message) {
-        Object.assign(message, action.payload.changes);
-      }
-    },
     updateChatMessage: (
       state,
       action: PayloadAction<{
@@ -413,11 +357,8 @@ export const {
   setSkillDraft,
   appendChatMessage,
   appendConversationChatMessage,
-  appendResourceChatMessage,
   appendTaskChatMessage,
   forgetTaskChats,
-  setResourceChatMessages,
-  setResourceDraft,
   setConversationChatMessages,
   setTeamChatMessages,
   setTaskChatMessages,
@@ -425,7 +366,6 @@ export const {
   setTeamDraft,
   updateChatMessage,
   updateConversationChatMessage,
-  updateResourceChatMessage,
   updateTaskChatMessage,
   upsertChatMessage,
 } = chatSlice.actions;
@@ -456,15 +396,5 @@ export const selectTaskChatDraft = (
   state: { chat: ChatState },
   taskChatId: string,
 ) => state.chat.draftsByTask[taskChatId] ?? "";
-
-export const selectResourceChatMessages = (
-  state: { chat: ChatState },
-  resourceChatId: string,
-) => state.chat.messagesByResource[resourceChatId] ?? emptyChatMessages;
-
-export const selectResourceChatDraft = (
-  state: { chat: ChatState },
-  resourceChatId: string,
-) => state.chat.draftsByResource[resourceChatId] ?? "";
 
 export type { ChatState };
