@@ -37,6 +37,7 @@ export function useProjectAccessLoss(
         getState: store.getState,
         pathname: live.current.location.pathname,
         requestRefresh: () => undefined,
+        requestWikiRefresh: () => undefined,
         leave: (destination) => {
           const to = destination({
             pathname: live.current.location.pathname,

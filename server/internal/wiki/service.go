@@ -276,27 +276,6 @@ func normalizeCollectionName(name string) (string, error) {
 	return name, nil
 }
 
-func authorizePublish(ctx context.Context, q *generated.Queries, principal auth.UserPrincipal) error {
-	if _, err := q.LockCompanyForMembershipMutation(ctx, principal.CompanyID); errors.Is(err, pgx.ErrNoRows) {
-		return ErrPageNotFound
-	} else if err != nil {
-		return fmt.Errorf("lock Wiki Company: %w", err)
-	}
-	membership, err := q.GetCompanyMemberForUpdate(ctx, generated.GetCompanyMemberForUpdateParams{
-		CompanyID: principal.CompanyID, UserID: principal.UserID,
-	})
-	if errors.Is(err, pgx.ErrNoRows) || err == nil && membership.Status != "active" {
-		return ErrPageNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("lock Wiki actor membership: %w", err)
-	}
-	if !auth.CompanyRole(membership.Role).Can(auth.PermissionWikiPublish) {
-		return ErrPageForbidden
-	}
-	return nil
-}
-
 func mapWriteError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
@@ -340,7 +319,7 @@ func (s *DefaultWikiService) CreateCollection(
 	}
 	var row generated.WikiCollection
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if err := authorizePublish(ctx, q, principal); err != nil {
+		if err := authorizePublisher(ctx, q, principal); err != nil {
 			return err
 		}
 		var err error
@@ -378,7 +357,7 @@ func (s *DefaultWikiService) RenameCollection(
 	}
 	var row generated.WikiCollection
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if err := authorizePublish(ctx, q, principal); err != nil {
+		if err := authorizePublisher(ctx, q, principal); err != nil {
 			return err
 		}
 		current, err := q.GetWikiCollectionForUpdate(ctx, generated.GetWikiCollectionForUpdateParams{
@@ -422,9 +401,14 @@ func (s *DefaultWikiService) DeleteCollection(ctx context.Context, principal aut
 	}
 	var deleted CollectionResponse
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		// The Company lock serializes Wiki mutations before any page/collection locks.
-		if err := authorizePublish(ctx, q, principal); err != nil {
+		if err := authorizePublisher(ctx, q, principal); err != nil {
 			return err
+		}
+		// Exclusive side of the collections lock, ahead of the collection row
+		// and the pages it unfiles: publish locks page -> collection, so only
+		// this lock keeps the two walks from deadlocking.
+		if err := q.LockWikiCollectionsExclusive(ctx, principal.CompanyID); err != nil {
+			return fmt.Errorf("lock Wiki collections: %w", err)
 		}
 		current, err := q.GetWikiCollectionForUpdate(ctx, generated.GetWikiCollectionForUpdateParams{CompanyID: principal.CompanyID, CollectionID: id})
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -606,8 +590,13 @@ func (s *DefaultWikiService) CreatePage(ctx context.Context, principal auth.User
 	}
 	var response PageResponse
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if err := authorizePublish(ctx, q, principal); err != nil {
+		if err := authorizePublisher(ctx, q, principal); err != nil {
 			return err
+		}
+		if input.CollectionID != nil {
+			if err := q.LockWikiCollectionsShared(ctx, principal.CompanyID); err != nil {
+				return fmt.Errorf("lock Wiki collections: %w", err)
+			}
 		}
 		if err := checkCollection(ctx, q, principal.CompanyID, input.CollectionID); err != nil {
 			return err
@@ -628,7 +617,8 @@ func (s *DefaultWikiService) CreatePage(ctx context.Context, principal auth.User
 }
 
 // createDraftInTx inserts a page and its first block draft. The caller holds
-// the Company publication lock and has normalized the text.
+// the Company and membership share locks, holds the shared collections lock
+// when it files the page, and has normalized the text.
 func createDraftInTx(
 	ctx context.Context,
 	q *generated.Queries,
@@ -661,11 +651,15 @@ func createDraftInTx(
 	return id, nil
 }
 
+// checkCollection answers ErrCollectionNotFound for a collection that does not
+// exist. It takes no row lock: the caller holds the shared collections lock,
+// which is what keeps DeleteCollection from running between this check and the
+// write that files the page.
 func checkCollection(ctx context.Context, q *generated.Queries, companyID uuid.UUID, id *uuid.UUID) error {
 	if id == nil {
 		return nil
 	}
-	_, err := q.GetWikiCollectionForUpdate(ctx, generated.GetWikiCollectionForUpdateParams{
+	_, err := q.GetWikiCollection(ctx, generated.GetWikiCollectionParams{
 		CompanyID: companyID, CollectionID: *id,
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -847,7 +841,7 @@ func (s *DefaultWikiService) setArchiveStatus(
 	}
 	var response PageResponse
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if err := authorizePublish(ctx, q, principal); err != nil {
+		if err := authorizePublisher(ctx, q, principal); err != nil {
 			return err
 		}
 		current, err := q.GetWikiPageForUpdate(

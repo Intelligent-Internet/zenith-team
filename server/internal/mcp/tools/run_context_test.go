@@ -205,6 +205,10 @@ func TestRunScopedToolsCallTheServerOnlyThroughTheRunChannel(t *testing.T) {
 			_, err := social.ReadSocial(ctx, ReadSocialInput{})
 			return err
 		},
+		"wiki_list": func(ctx context.Context) error {
+			_, err := wiki.ListWiki(ctx, WikiListInput{})
+			return err
+		},
 		"wiki_read": func(ctx context.Context) error {
 			_, err := wiki.ReadWiki(ctx, WikiReadInput{PageID: pageID})
 			return err

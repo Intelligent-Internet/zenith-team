@@ -16,6 +16,7 @@ import {
 } from "../documents/document-cache";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
+import { wikiTags } from "@/shared/api/wiki-tags";
 
 export { canvasPath, type CanvasScope } from "./canvas-scope";
 
@@ -251,7 +252,9 @@ export const canvasApi = boardlyApi.injectEndpoints({
         }
       },
       invalidatesTags: (_r, _e, scope) =>
-        scope.command.type === "create_document" ? ["Wiki"] : [],
+        scope.command.type === "create_document"
+          ? [wikiTags.pages(scope.companyId)]
+          : [],
     }),
     canvasTimeline: builder.query<
       Schema["CanvasTimelinePage"],

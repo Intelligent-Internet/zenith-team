@@ -21,7 +21,9 @@ const wikiAgentRunToken = "brt_0123456789abcdef0123456789abcdef0123456789abcdef0
 type wikiAgentReadServiceStub struct {
 	wiki.AgentReadService
 	searchErr error
+	listErr   error
 	searches  []wikiAgentSearchCall
+	lists     []wikiAgentListCall
 	reads     int
 	runReads  []uuid.UUID
 	pageReads []int
@@ -36,6 +38,18 @@ type wikiAgentSearchCall struct {
 func (s *wikiAgentReadServiceStub) Search(_ context.Context, _ auth.UserPrincipal, runID uuid.UUID, query string, limit int) (wiki.AgentSearchResponse, error) {
 	s.searches = append(s.searches, wikiAgentSearchCall{runID, query, limit})
 	return wiki.AgentSearchResponse{Items: []wiki.AgentSearchItem{}}, s.searchErr
+}
+
+type wikiAgentListCall struct {
+	runID        uuid.UUID
+	collectionID *uuid.UUID
+	offset       int
+	limit        int
+}
+
+func (s *wikiAgentReadServiceStub) List(_ context.Context, _ auth.UserPrincipal, runID uuid.UUID, collectionID *uuid.UUID, offset, limit int) (wiki.AgentListResponse, error) {
+	s.lists = append(s.lists, wikiAgentListCall{runID, collectionID, offset, limit})
+	return wiki.AgentListResponse{Collections: []wiki.AgentListCollection{}, Items: []wiki.AgentListItem{}}, s.listErr
 }
 
 func (s *wikiAgentReadServiceStub) Read(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, int) (wiki.AgentReadResponse, error) {
@@ -139,6 +153,7 @@ func TestWikiAgentRoutesAdmitOnlyTheRunsOwnProof(t *testing.T) {
 				served func() int
 			}{
 				{"/search?q=refunds", func() int { return len(fixture.service.searches) }},
+				{"/list", func() int { return len(fixture.service.lists) }},
 				{"/pages/" + uuid.NewString(), func() int { return fixture.service.reads }},
 			} {
 				result := fixture.get(h, runID, route.suffix, token)
@@ -180,12 +195,48 @@ func TestWikiAgentSearchParsesItsQueryParameters(t *testing.T) {
 	}
 }
 
+func TestWikiAgentListParsesItsQueryParameters(t *testing.T) {
+	t.Parallel()
+	fixture := newWikiAgentFixture("task")
+	h := fixture.handler()
+	collection := uuid.New()
+
+	if result := fixture.get(h, fixture.runID, "/list", wikiAgentRunToken); result.Code != http.StatusOK {
+		t.Fatalf("default list = %d %s", result.Code, result.Body.String())
+	}
+	explicit := "/list?collectionId=" + collection.String() + "&offset=50&limit=10"
+	if result := fixture.get(h, fixture.runID, explicit, wikiAgentRunToken); result.Code != http.StatusOK {
+		t.Fatalf("explicit list = %d %s", result.Code, result.Body.String())
+	}
+	want := []wikiAgentListCall{
+		{runID: fixture.runID, offset: 0, limit: wiki.DefaultAgentListLimit},
+		{runID: fixture.runID, collectionID: &collection, offset: 50, limit: 10},
+	}
+	if len(fixture.service.lists) != 2 {
+		t.Fatalf("service calls = %+v, want %+v", fixture.service.lists, want)
+	}
+	for i, call := range fixture.service.lists {
+		if call.runID != want[i].runID || call.offset != want[i].offset || call.limit != want[i].limit ||
+			(call.collectionID == nil) != (want[i].collectionID == nil) ||
+			call.collectionID != nil && *call.collectionID != *want[i].collectionID {
+			t.Fatalf("service call %d = %+v, want %+v", i, call, want[i])
+		}
+	}
+
+	for _, suffix := range []string{"/list?collectionId=nope", "/list?offset=x", "/list?limit=abc"} {
+		assertErrorResponse(t, fixture.get(h, fixture.runID, suffix, wikiAgentRunToken), http.StatusUnprocessableEntity, "validation_failed")
+	}
+	if len(fixture.service.lists) != 2 {
+		t.Fatalf("invalid request reached the service")
+	}
+}
+
 func TestWikiAgentRoutesReportDisabledAccessAndPrivateCaching(t *testing.T) {
 	t.Parallel()
 	fixture := newWikiAgentFixture("task")
 	h := fixture.handler()
 
-	for _, suffix := range []string{"/search?q=refunds", "/pages/" + uuid.NewString()} {
+	for _, suffix := range []string{"/search?q=refunds", "/list", "/pages/" + uuid.NewString()} {
 		result := fixture.get(h, fixture.runID, suffix, wikiAgentRunToken)
 		if result.Code != http.StatusOK {
 			t.Fatalf("%s = %d %s", suffix, result.Code, result.Body.String())
@@ -198,6 +249,10 @@ func TestWikiAgentRoutesReportDisabledAccessAndPrivateCaching(t *testing.T) {
 	fixture.service.searchErr = wiki.ErrAgentAccessDisabled
 	search := fixture.get(h, fixture.runID, "/search?q=refunds", wikiAgentRunToken)
 	assertErrorResponse(t, search, http.StatusForbidden, "wiki_agent_access_disabled")
+	fixture.service.listErr = wiki.ErrAgentAccessDisabled
+	assertErrorResponse(t, fixture.get(h, fixture.runID, "/list", wikiAgentRunToken), http.StatusForbidden, "wiki_agent_access_disabled")
+	fixture.service.listErr = wiki.ErrCollectionNotFound
+	assertErrorResponse(t, fixture.get(h, fixture.runID, "/list", wikiAgentRunToken), http.StatusNotFound, "wiki_collection_not_found")
 }
 
 func TestWikiEvidenceRoutesAreHumanOnlyAndNameMissingRunsAsNotFound(t *testing.T) {

@@ -45,7 +45,20 @@ WHERE company_id = sqlc.arg(company_id)::uuid AND page_id = sqlc.arg(page_id)::u
 UPDATE wiki_revisions SET author_agent_id = sqlc.arg(agent_id)::uuid
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(revision_id)::uuid;
 
+-- name: LockWikiResearchWrites :exec
+-- Serializes the Company's research writes with one another and with nothing
+-- else. The 40-page cap and key ownership are read-then-insert over every
+-- attempt of the Company's research (a retry child shares its parent's pages),
+-- so two concurrent calls must not both read the same total. Nothing but
+-- AgentWriteService takes it, always right after the member lock, so it cannot
+-- join a cycle with an editor's locks.
+SELECT pg_advisory_xact_lock(hashtextextended(
+    'boardly/wiki-research-writes/v1/' || sqlc.arg(company_id)::uuid::text,
+    0
+));
+
 -- name: GetWikiCollectionByName :one
+-- No row lock: the caller holds LockWikiCollectionsShared, which excludes a
+-- delete; a concurrent rename only decides which side of this write it falls on.
 SELECT * FROM wiki_collections
-WHERE company_id = sqlc.arg(company_id)::uuid AND lower(name) = lower(sqlc.arg(name)::text)
-FOR UPDATE;
+WHERE company_id = sqlc.arg(company_id)::uuid AND lower(name) = lower(sqlc.arg(name)::text);

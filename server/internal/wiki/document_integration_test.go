@@ -3,10 +3,14 @@
 package wiki_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
@@ -164,5 +168,92 @@ func TestWikiDraftConcurrentEditingAndReaderIsolation(t *testing.T) {
 	}
 	if _, err = s.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: saved.Sequence}); !errors.Is(err, wiki.ErrPageConflict) {
 		t.Fatalf("stale published revision=%v", err)
+	}
+}
+
+func TestReadDocumentDoesNotWaitForPageLocksOfUpgradedDrafts(t *testing.T) {
+	h := startWiki(t)
+	s := h.service.DefaultWikiService
+	page, err := s.CreatePage(t.Context(), h.owner, wiki.CreatePageInput{Title: "Busy", Body: "Autosaved"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The first open upgrades or creates the draft under the page lock.
+	first, err := s.ReadDocument(t.Context(), h.owner, page.ID, wiki.DocumentReadInput{Since: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// An autosave in flight holds the page and draft rows.
+	tx, err := h.pool.Begin(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(t.Context()) }()
+	if _, err := tx.Exec(t.Context(), `SELECT id FROM wiki_pages WHERE id=$1 FOR UPDATE`, page.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(t.Context(), `SELECT page_id FROM wiki_canvas_drafts WHERE page_id=$1 FOR UPDATE`, page.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	got, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1})
+	if err != nil {
+		t.Fatalf("read behind a page lock = %v, want it to return", err)
+	}
+	if got.Sequence != first.Sequence || got.SchemaVersion != 1 || !got.CanEdit || got.Markdown != first.Markdown ||
+		got.Title != "Busy" || len(got.State) == 0 {
+		t.Fatalf("read = %+v, want the same draft as %+v", got, first)
+	}
+	unchanged, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: first.Sequence})
+	if err != nil || unchanged.State != nil || unchanged.Content != nil || unchanged.Markdown != "" || unchanged.Sequence != first.Sequence {
+		t.Fatalf("unchanged read = %+v, %v", unchanged, err)
+	}
+	projection, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1, Projection: true})
+	if err != nil || projection.State != nil || len(projection.Content) == 0 {
+		t.Fatalf("projection read = %+v, %v", projection, err)
+	}
+}
+
+func TestReadDocumentKeepsAccessErrorsOnTheLockFreePath(t *testing.T) {
+	h := startWiki(t)
+	ctx := t.Context()
+	s := h.service.DefaultWikiService
+	page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Guarded", Body: "Text"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); err != nil {
+		t.Fatal(err)
+	}
+	dbtest.MustExec(t, ctx, h.pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, h.fixture.CompanyA, h.fixture.UserB)
+	plain := auth.UserPrincipal{CompanyID: h.fixture.CompanyA, UserID: h.fixture.UserB, Role: auth.CompanyRoleMember}
+
+	if _, err := s.ReadDocument(ctx, plain, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageForbidden) {
+		t.Fatalf("non-publisher = %v, want ErrPageForbidden", err)
+	}
+	if _, err := s.ReadDocument(ctx, h.owner, uuid.New(), wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+		t.Fatalf("unknown page = %v, want ErrPageNotFound", err)
+	}
+	if _, err := s.ReadDocument(ctx, h.foreign, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+		t.Fatalf("other Company's member = %v, want ErrPageNotFound", err)
+	}
+
+	archived, err := s.ArchivePage(ctx, h.owner, page.ID, page.Revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageArchived) {
+		t.Fatalf("archived page = %v, want ErrPageArchived", err)
+	}
+	if _, err := s.RestorePage(ctx, h.owner, page.ID, archived.Revision); err != nil {
+		t.Fatal(err)
+	}
+
+	dbtest.MustExec(t, ctx, h.pool, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, h.owner.CompanyID, h.owner.UserID)
+	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+		t.Fatalf("revoked member = %v, want ErrPageNotFound", err)
 	}
 }

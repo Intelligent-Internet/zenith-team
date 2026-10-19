@@ -15,6 +15,7 @@ const LEGACY_SUBAGENT_ACTIVITY_NAMES = new Set([
 
 const RUNTIME_TOOL_DISPLAY_LABELS: Record<string, string> = {
   emit_company_plan_payload: "Save Company Plan Draft",
+  wiki_list: "Browse Company Wiki",
   wiki_read: "Read Company Wiki Page",
   wiki_search: "Search Company Wiki",
   wiki_write: "Write Company Wiki Pages",

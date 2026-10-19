@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api-client";
 import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
 import type { components } from "@/shared/api/generated/api.generated";
+import { wikiTags } from "@/shared/api/wiki-tags";
 
 type Schemas = components["schemas"];
 
@@ -17,9 +18,10 @@ const companyPath = (companyId: string) =>
 
 export const agentReadsApi = boardlyApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Provides the company-wide Wiki tag so the existing Wiki realtime events
-    // refresh `page.currentRevision` and `page.status`; the Run tag lets Run
-    // lifecycle events refresh the trail when the Run settles.
+    // Provides the Run's own evidence tag for the evidence frame, and the page
+    // lists tag so page frames refresh `page.currentRevision` and
+    // `page.status`; the Run tag lets Run lifecycle events refresh the trail
+    // when the Run settles.
     listRunWikiReads: builder.query<
       RunWikiReadList,
       { companyId: string; runId: string }
@@ -33,7 +35,8 @@ export const agentReadsApi = boardlyApi.injectEndpoints({
           "Wiki sources could not be loaded.",
         ),
       providesTags: (_result, _error, { companyId, runId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.runReads(runId),
+        wikiTags.pages(companyId),
         { type: "Run", id: runId },
       ],
     }),
@@ -50,9 +53,11 @@ export const agentReadsApi = boardlyApi.injectEndpoints({
             ),
           "Agent reads could not be loaded.",
         ),
+      // The page's own frame refreshes `Used by Agents` when its content moves;
+      // the Run evidence frame refreshes every page's list when a Run reads.
       providesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
+        wikiTags.page(companyId, pageId),
+        wikiTags.agentReads(companyId),
       ],
     }),
   }),

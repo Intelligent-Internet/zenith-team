@@ -1,3 +1,4 @@
+import { wikiTags } from "@/shared/api/wiki-tags";
 import { resourceApi } from "@/shared/api/resource-api";
 import { taskApi } from "@/shared/api/task-api";
 import { activityApi } from "@/shared/api/activity-api";
@@ -30,30 +31,37 @@ export function applyEntityCacheEvent(
     case "wiki.page_created":
     case "wiki.page_updated":
     case "wiki.page_archived":
-    case "wiki.page_restored":
-      context.dispatch(
-        boardlyApi.util.invalidateTags([
-          { type: "Wiki", id: context.companyId },
-          ...(hasStringField(event.payload, "id")
-            ? [
-                {
-                  type: "Wiki" as const,
-                  id: (event.payload as { id: string }).id,
-                },
-              ]
-            : []),
-        ]),
+    case "wiki.page_restored": {
+      const pageId = event.payload.id;
+      context.requestWikiRefresh(
+        wikiTags.pages(context.companyId),
+        ...(typeof pageId === "string"
+          ? [wikiTags.page(context.companyId, pageId)]
+          : []),
       );
       return true;
+    }
     case "wiki.collection_created":
     case "wiki.collection_updated":
+      context.requestWikiRefresh(wikiTags.collections(context.companyId));
+      return true;
     case "wiki.collection_deleted":
-      context.dispatch(
-        boardlyApi.util.invalidateTags([
-          { type: "Wiki", id: context.companyId },
-        ]),
+      // The server moved the collection's pages to Unfiled.
+      context.requestWikiRefresh(
+        wikiTags.collections(context.companyId),
+        wikiTags.pages(context.companyId),
+        wikiTags.pageDetails(context.companyId),
       );
       return true;
+    case "wiki.run_reads_changed": {
+      // Evidence trails only: no page, collection or graph data moved.
+      const runId = event.payload.runId;
+      context.requestWikiRefresh(
+        wikiTags.agentReads(context.companyId),
+        ...(typeof runId === "string" ? [wikiTags.runReads(runId)] : []),
+      );
+      return true;
+    }
     case "project.created":
     case "project.updated":
     case "project.archived":

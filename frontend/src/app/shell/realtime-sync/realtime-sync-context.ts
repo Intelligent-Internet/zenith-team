@@ -1,3 +1,4 @@
+import type { WikiTag } from "@/shared/api/wiki-tags";
 import type { AppDispatch, RootState } from "@/state/store";
 
 export type RealtimeRefreshDomain =
@@ -22,6 +23,11 @@ export type RealtimeSyncContext = {
   getState: () => RootState;
   pathname: string;
   requestRefresh: (...domains: RealtimeRefreshDomain[]) => void;
+  /**
+   * Invalidates Wiki cache tags once a burst of Wiki frames settles: a Run
+   * that publishes dozens of pages refetches the open views once.
+   */
+  requestWikiRefresh: (...tags: WikiTag[]) => void;
   /**
    * Leaves a page the viewer can no longer see: `destination` reads the
    * live location and names where to go instead, or null to stay. Answers

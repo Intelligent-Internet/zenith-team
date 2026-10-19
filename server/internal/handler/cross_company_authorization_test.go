@@ -247,6 +247,7 @@ func crossCompanyMatrix() map[string]crossCompanyRouteSpec {
 		"GET /api/v1/companies/:companyId/wiki/pages/:pageId/agent-reads":         memberDenied,
 		"GET /api/v1/companies/:companyId/runs/:runId/wiki-reads":                 memberDenied,
 		"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/search":          memberDenied,
+		"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/list":            memberDenied,
 		"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages/:pageId":   memberDenied,
 	}
 }

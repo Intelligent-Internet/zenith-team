@@ -908,3 +908,30 @@ their history without leaving an unread request for an unavailable action.
 Rollback leaves the cancelled requests and abandoned continuations terminal;
 reopening provider work requires a new review. This migration does not revoke
 credentials or change resources in Stripe.
+
+## Wiki indexes (000117)
+
+Four indexes for Wiki lookups that had none: `wiki_revisions` and
+`wiki_canvas_drafts` by `(company_id, collection_id)` where the Collection is
+set (the `ON DELETE SET NULL` foreign keys of 000055 and 000089 and
+`UnfileWikiCollectionPages` use that pair), `wiki_canvas_checkpoints` by
+`(company_id, page_id, through_seq)` (`OutputDocumentCheckpoint`) and
+`run_wiki_writes` by `(company_id, created_at, key)` (`ListRunWikiWrites`).
+They are plain `CREATE INDEX`: the runner applies each file as one implicit
+transaction, where `CONCURRENTLY` cannot run. Rollback drops them.
+
+## Wiki search weights (000118)
+
+`wiki_pages.search_vector` was the current Revision's title and body at one
+weight; it is now the `simple` lexemes of the title (A), summary (B) and body
+(C), backfilled in one `UPDATE` from each page's current revision, so
+`ts_rank` puts a title hit above a body-only hit. The configuration stays
+`simple` because the content is multilingual. A page link `[[<uuid>|label]]`
+and an Artifact citation are reduced to their label before the body is
+tokenized, so ids do not pollute the index; `SetWikiPageCurrentRevision` writes
+the same expression on every publish. The migration also adds `list` to the
+closed `run_wiki_reads.kind` vocabulary (the Agent `wiki_list` browse) and
+redefines `run_wiki_reads_kind_check` and `run_wiki_reads_shape_check`: a list
+row is shaped like a search row, with the collection browsed in `query` and the
+pages covered in `result_count`. Rollback deletes the `list` rows, restores the
+000064 constraints and rewrites the unweighted title-and-body vectors.

@@ -9739,15 +9739,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List what a Run searched and read in the Wiki
+         * List what a Run searched, browsed and read in the Wiki
          * @description The Run's evidence trail, oldest first, at most 200 rows. Visibility
          *     follows Run history (ADR 0017): a Task Run reads for the readers of
          *     its Task chat, that is of its Project; only the member who opened a
          *     direct or Schedule Conversation sees its Runs. A Run that does not exist or is not visible is
          *     `404 run_not_found`. Read rows carry the revision that was returned
          *     and the page's live state, so a client can show "changed since" (the
-         *     current revision is newer) and "archived". Rejects Run-token requests
-         *     with `403 human_actor_required`.
+         *     current revision is newer) and "archived". Search rows carry the
+         *     redacted query and match count; list rows (one per `wiki_list` call)
+         *     carry the name of the collection browsed in `query` (empty for every
+         *     page) and the pages the browse covered in `resultCount`. Rejects
+         *     Run-token requests with `403 human_actor_required`.
          */
         get: operations["listRunWikiReads"];
         put?: never;
@@ -9769,13 +9772,49 @@ export interface paths {
          * Search the Company Wiki as an Agent's Run
          * @description Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
          *     Run of this Company, sent by the Run's authorizer. Searches
-         *     active pages only, ranked by relevance then recency; the words of `q`
-         *     are OR-ed as word prefixes. Records one `search` row on the Run's
-         *     evidence trail. A `403 wiki_agent_access_disabled` means the Agent's
-         *     `wiki` capability group is off. A bad, missing or mismatched proof is
+         *     active pages only; the words of `q` are matched as word prefixes
+         *     (exact below three characters) against the page's title, summary and
+         *     body, in that order of weight. When any page holds every word only
+         *     those pages match; otherwise pages holding any word match. Ranked by
+         *     relevance then recency; `total` counts exactly the matches in play.
+         *     Records one `search` row on the Run's evidence trail. A
+         *     `403 wiki_agent_access_disabled` means the Agent's `wiki` capability
+         *     group is off. A bad, missing or mismatched proof is
          *     `401 run_token_invalid`.
          */
         get: operations["searchWikiForRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-wiki/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse the Company Wiki as an Agent's Run
+         * @description Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+         *     Run of this Company, sent by the Run's authorizer. Lists the active
+         *     published pages ordered by title, optionally within one collection.
+         *     The first page (`offset` 0) also returns every collection with its
+         *     count of active pages; later pages return an empty `collections`.
+         *     `total` is the number of pages the listing covers (the collection's
+         *     when `collectionId` is given) and `nextOffset` is null on the last
+         *     page. Records one `list` row on the Run's evidence trail. A
+         *     `collectionId` that is not a collection of this Company is
+         *     `404 wiki_collection_not_found`; a malformed one, or an out-of-range
+         *     `offset` or `limit`, is `422`. A `403 wiki_agent_access_disabled`
+         *     means the Agent's `wiki` capability group is off. A bad, missing or
+         *     mismatched proof is `401 run_token_invalid`.
+         */
+        get: operations["listWikiForRun"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11913,6 +11952,20 @@ export interface components {
             /** @enum {string} */
             type?: "wiki.collection_created" | "wiki.collection_updated" | "wiki.collection_deleted";
             payload?: components["schemas"]["WikiCollectionEventPayload"];
+        };
+        /**
+         * @description Scoped invalidation signal published after a Run's Wiki search or read
+         *     is recorded in its evidence trail. It is not a Company-visible fact: a
+         *     Task Run's frame reaches only the readers of the Task's Project, decided
+         *     in the producing transaction (ADR 0017); a direct or Schedule Run's frame
+         *     reaches only the Conversation's creator; a channel Run's reaches nobody.
+         *     Clients refetch the Run's Wiki reads and the pages' "Used by Agents"
+         *     lists rather than reading evidence from the frame.
+         */
+        WikiRunReadsRealtimeEvent: components["schemas"]["RealtimeEnvelope"] & {
+            /** @enum {string} */
+            type?: "wiki.run_reads_changed";
+            payload?: components["schemas"]["WikiRunReadsChangedPayload"];
         };
         RealtimeEnvelope: {
             /** @description Opaque id used to deduplicate local and relay delivery. */
@@ -18977,8 +19030,8 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "search" | "read";
-            /** @description Redacted search text; empty for a read. */
+            kind: "search" | "read" | "list";
+            /** @description Redacted search text for a search; the collection browsed for a list (empty for every page); empty for a read. */
             query: string;
             /** Format: int32 */
             resultCount: number | null;
@@ -18988,7 +19041,7 @@ export interface components {
             revisionId: string | null;
             /** Format: int32 */
             revisionNumber: number | null;
-            /** @description Page title when it was read; empty for a search. */
+            /** @description Page title when it was read; empty for a search or a list. */
             title: string;
             truncated: boolean;
             /** Format: date-time */
@@ -19015,8 +19068,39 @@ export interface components {
         };
         WikiAgentSearchResult: {
             items: components["schemas"]["WikiAgentSearchItem"][];
-            /** @description Every active page that matched, not only those returned. */
+            /** @description Every page that matched, not only those returned: the pages holding every word of the query when any does, otherwise the pages holding any word. */
             total: number;
+        };
+        WikiAgentListCollection: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description Active published pages in the collection. */
+            pageCount: number;
+        };
+        WikiAgentListItem: {
+            /** Format: uuid */
+            pageId: string;
+            title: string;
+            summary: string;
+            collectionName: string | null;
+            /**
+             * Format: int64
+             * @description Content revision number of the page's current revision.
+             */
+            revision: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        WikiAgentListResult: {
+            /** @description Every collection of the Company with its page count; filled only when offset is 0. */
+            collections: components["schemas"]["WikiAgentListCollection"][];
+            /** @description Pages ordered by title. */
+            items: components["schemas"]["WikiAgentListItem"][];
+            /** @description Pages the listing covers (the collection's when collectionId is given), not only those returned. */
+            total: number;
+            /** @description Offset of the next page, or null on the last page. */
+            nextOffset: number | null;
         };
         WikiAgentWritePage: {
             /** @description The Run's handle for the page and the target of `[[key]]` links. */
@@ -19065,7 +19149,10 @@ export interface components {
             revisionId: string;
             /** Format: date-time */
             updatedAt: string;
+            /** @description The member the revision is attributed to. */
             updatedByName: string | null;
+            /** @description Present when an Agent wrote the revision on that member's behalf; absent when a person wrote it. */
+            updatedByAgentName?: string;
             /** @description Untrusted reference text; at most 24000 characters. */
             content: string;
             offset: number;
@@ -19104,6 +19191,10 @@ export interface components {
             name: string;
             /** Format: int64 */
             revision: number;
+        };
+        WikiRunReadsChangedPayload: {
+            /** Format: uuid */
+            runId: string;
         };
         /** @description Refetch signal for a newly durable pending Task outcome report. */
         TaskReportReadyPayload: {
@@ -44176,6 +44267,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WikiAgentSearchResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    listWikiForRun: {
+        parameters: {
+            query?: {
+                /** @description List only this collection's pages. */
+                collectionId?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header: {
+                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+            };
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
+                runId: components["parameters"]["runId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the browse */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WikiAgentListResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];

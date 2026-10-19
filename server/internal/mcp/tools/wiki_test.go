@@ -87,6 +87,35 @@ func TestWikiToolsUseTheRunProvenRoutesBoundToTheRun(t *testing.T) {
 	}
 }
 
+func TestWikiListUsesTheRunProvenRouteAndSendsOnlyWhatWasAsked(t *testing.T) {
+	t.Parallel()
+	api := &wikiAPIStub{body: `{"collections":[{"id":"c1","name":"Policies","pageCount":2}],"items":[{"pageId":"p1","title":"Refunds","summary":"","collectionName":"Policies","revision":4,"updatedAt":"2026-09-29T00:00:00Z"}],"total":30,"nextOffset":25}`}
+	service := newTestWikiService(t, api)
+	result, err := service.ListWiki(context.Background(), WikiListInput{CollectionID: " c1 ", Offset: 25, Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Collections) != 1 || result.Collections[0].PageCount != 2 || len(result.Items) != 1 ||
+		result.Items[0].Revision != 4 || result.Total != 30 || result.NextOffset == nil || *result.NextOffset != 25 {
+		t.Fatalf("result = %+v", result)
+	}
+	if want := "/companies/company/runs/run/agent-wiki/list?collectionId=c1&limit=10&offset=25"; api.paths[0] != want {
+		t.Fatalf("list path = %q, want %q", api.paths[0], want)
+	}
+	// The server rejects limit<1, so an omitted limit and offset are not sent.
+	api.body = `{"collections":null,"items":null,"total":0,"nextOffset":null}`
+	result, err = service.ListWiki(context.Background(), WikiListInput{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "/companies/company/runs/run/agent-wiki/list"; api.paths[1] != want {
+		t.Fatalf("default list path = %q, want %q", api.paths[1], want)
+	}
+	if result.Collections == nil || result.Items == nil || result.NextOffset != nil {
+		t.Fatalf("empty result = %+v, want empty slices and no next offset", result)
+	}
+}
+
 func TestWikiToolsRejectBadInputBeforeAnyRequest(t *testing.T) {
 	t.Parallel()
 	api := new(wikiAPIStub)
@@ -105,6 +134,18 @@ func TestWikiToolsRejectBadInputBeforeAnyRequest(t *testing.T) {
 			return err
 		},
 		"missing page id": func() error { _, err := service.ReadWiki(context.Background(), WikiReadInput{}); return err },
+		"list limit too big": func() error {
+			_, err := service.ListWiki(context.Background(), WikiListInput{Limit: 51})
+			return err
+		},
+		"list negative limit": func() error {
+			_, err := service.ListWiki(context.Background(), WikiListInput{Limit: -1})
+			return err
+		},
+		"list negative offset": func() error {
+			_, err := service.ListWiki(context.Background(), WikiListInput{Offset: -1})
+			return err
+		},
 		"negative offset": func() error {
 			_, err := service.ReadWiki(context.Background(), WikiReadInput{PageID: "p", Offset: -1})
 			return err
@@ -123,8 +164,9 @@ func TestWikiToolsWrapServerRefusals(t *testing.T) {
 	t.Parallel()
 	service := newTestWikiService(t, &wikiAPIStub{err: errors.New("wiki_agent_access_disabled")})
 	_, searchErr := service.SearchWiki(context.Background(), WikiSearchInput{Query: "x"})
+	_, listErr := service.ListWiki(context.Background(), WikiListInput{})
 	_, readErr := service.ReadWiki(context.Background(), WikiReadInput{PageID: "p"})
-	for name, err := range map[string]error{"search": searchErr, "read": readErr} {
+	for name, err := range map[string]error{"search": searchErr, "list": listErr, "read": readErr} {
 		if err == nil || !strings.Contains(err.Error(), "wiki_agent_access_disabled") {
 			t.Errorf("%s error = %v, want the server refusal code", name, err)
 		}

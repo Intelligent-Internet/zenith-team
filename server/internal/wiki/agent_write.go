@@ -241,6 +241,15 @@ func resolveWikiKeys(markdown string, known map[string]agentWriteTarget) (string
 
 // replaceDraftInTx makes the page's draft the given content, title, summary and
 // collection, as one new draft sequence. It returns that sequence.
+//
+// The Markdown parse and the CRDT encode stay inside the transaction on
+// purpose: the Markdown is the resolved text, whose [[key]] placeholders
+// became the ids of pages this same transaction created, the block ids come
+// from the page's reservation rows, and the CRDT edit replaces the content of
+// the draft state read under the page lock (an encode against any earlier
+// state would discard a person's concurrent save). What the batch holds is its
+// own page rows and the research-write lock, never the Company or anyone
+// else's page.
 func replaceDraftInTx(
 	ctx context.Context,
 	q *generated.Queries,
@@ -378,7 +387,7 @@ func writeInTx(
 	response *AgentWriteResponse,
 	pending *[]events.Event,
 ) error {
-	if err := authorizePublish(ctx, q, principal); err != nil {
+	if err := authorizePublisher(ctx, q, principal); err != nil {
 		return err
 	}
 	standing, err := q.LockRunForWikiWrite(ctx, generated.LockRunForWikiWriteParams{
@@ -395,6 +404,21 @@ func writeInTx(
 	}
 	if standing.Disabled {
 		return ErrAgentAccessDisabled
+	}
+	// Only a proven research Run reaches this point. Its writes queue behind
+	// one another here, ahead of every page lock: the 40-page cap and key
+	// ownership read the whole lineage's pages and then insert, so two
+	// concurrent calls must not both read the same total. Only a research
+	// write takes this lock; editors, autosaves and other Wiki writes never
+	// wait for it, and the batch locks page rows one by one as it reaches
+	// them, so an autosave of any other page is untouched for its whole run.
+	if err := q.LockWikiResearchWrites(ctx, principal.CompanyID); err != nil {
+		return fmt.Errorf("lock research Wiki writes: %w", err)
+	}
+	// The batch files pages into the "Company" collection and publishes them,
+	// so it holds the shared collections lock like any other filing write.
+	if err := q.LockWikiCollectionsShared(ctx, principal.CompanyID); err != nil {
+		return fmt.Errorf("lock Wiki collections: %w", err)
 	}
 	owned, err := q.ListRunWikiWrites(ctx, principal.CompanyID)
 	if err != nil {
@@ -428,13 +452,21 @@ func writeInTx(
 			CompanyID: principal.CompanyID, Name: "Company",
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
-			collection, err = q.CreateWikiCollection(ctx, generated.CreateWikiCollectionParams{
+			// A person may create the same name between the read and the
+			// insert; no row back means they won, and their collection is reused.
+			collection, err = q.CreateWikiCollectionIfAbsent(ctx, generated.CreateWikiCollectionIfAbsentParams{
 				CompanyID: principal.CompanyID, Name: "Company",
 			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				collection, err = q.GetWikiCollectionByName(ctx, generated.GetWikiCollectionByNameParams{
+					CompanyID: principal.CompanyID, Name: "Company",
+				})
+			} else if err == nil {
+				*pending = append(*pending, newCollectionEvent(principal.CompanyID, actor, EventCollectionCreated, collectionResponse(collection)))
+			}
 			if err != nil {
 				return fmt.Errorf("create Wiki collection: %w", err)
 			}
-			*pending = append(*pending, newCollectionEvent(principal.CompanyID, actor, EventCollectionCreated, collectionResponse(collection)))
 		} else if err != nil {
 			return fmt.Errorf("find Wiki collection: %w", err)
 		}

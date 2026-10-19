@@ -93,11 +93,14 @@ func TestRunWikiReadsKeepTheirShapeAndGoWithTheirPageAndRun(t *testing.T) {
 		{"read without a revision", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,page_id) VALUES($1,$2,$3,'read',$4)`, []any{f.CompanyA, f.RunA, f.AgentA, pageA}},
 		{"search naming a page", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,result_count,page_id) VALUES($1,$2,$3,'search',0,$4)`, []any{f.CompanyA, f.RunA, f.AgentA, pageA}},
 		{"search without a count", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind) VALUES($1,$2,$3,'search')`, []any{f.CompanyA, f.RunA, f.AgentA}},
+		{"list naming a page", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,result_count,page_id) VALUES($1,$2,$3,'list',0,$4)`, []any{f.CompanyA, f.RunA, f.AgentA, pageA}},
+		{"list without a count", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind) VALUES($1,$2,$3,'list')`, []any{f.CompanyA, f.RunA, f.AgentA}},
 		{"unknown kind", "23514", `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,result_count) VALUES($1,$2,$3,'edit',0)`, []any{f.CompanyA, f.RunA, f.AgentA}},
 		{"page of another Company", "23503", read, []any{f.CompanyA, f.RunA, f.AgentA, pageB, revisionA}},
 	} {
 		t.Run(tc.name, func(t *testing.T) { dbtest.AssertStatementRejected(t, ctx, pool, tc.code, tc.sql, tc.args...) })
 	}
+	dbtest.MustExec(t, ctx, pool, `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,query,result_count) VALUES($1,$2,$3,'list','Handbook',3)`, f.CompanyA, f.RunA, f.AgentA)
 
 	// Purging a page or a Run purges the trail that points at it.
 	evidence := func(where string, id uuid.UUID) int {

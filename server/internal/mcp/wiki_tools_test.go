@@ -10,11 +10,20 @@ import (
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-type wikiToolsStub struct{ searched, read, written []string }
+type wikiToolsStub struct{ searched, listed, read, written []string }
 
 func (s *wikiToolsStub) SearchWiki(_ context.Context, input tools.WikiSearchInput) (tools.WikiSearchResult, error) {
 	s.searched = append(s.searched, input.Query)
 	return tools.WikiSearchResult{Items: []tools.WikiSearchItem{{PageID: "p1", Title: "Refunds", Revision: 4}}, Total: 1}, nil
+}
+
+func (s *wikiToolsStub) ListWiki(_ context.Context, input tools.WikiListInput) (tools.WikiListResult, error) {
+	s.listed = append(s.listed, input.CollectionID)
+	return tools.WikiListResult{
+		Collections: []tools.WikiListCollection{{ID: "c1", Name: "Policies", PageCount: 1}},
+		Items:       []tools.WikiListItem{{PageID: "p1", Title: "Refunds", Revision: 4}},
+		Total:       1,
+	}, nil
 }
 
 func (s *wikiToolsStub) ReadWiki(_ context.Context, input tools.WikiReadInput) (tools.WikiReadResult, error) {
@@ -30,8 +39,8 @@ func (s *wikiToolsStub) WriteWiki(_ context.Context, input tools.WikiWriteInput)
 func TestWikiWriteIsAdvertisedOnlyWhenAllowed(t *testing.T) {
 	t.Parallel()
 	for name, allowedWiki := range map[string][]string{
-		"read tools only": {"wiki_search", "wiki_read"},
-		"research tools":  {"wiki_search", "wiki_read", "wiki_write"},
+		"read tools only": {"wiki_search", "wiki_list", "wiki_read"},
+		"research tools":  {"wiki_search", "wiki_list", "wiki_read", "wiki_write"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -85,7 +94,8 @@ func TestWikiToolsRequireExplicitAllowlist(t *testing.T) {
 	for name, allowedWiki := range map[string][]string{
 		"not allowed": nil,
 		"search only": {"wiki_search"},
-		"both":        {"wiki_search", "wiki_read"},
+		"list only":   {"wiki_list"},
+		"all three":   {"wiki_search", "wiki_list", "wiki_read"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -130,6 +140,12 @@ func TestWikiToolsRequireExplicitAllowlist(t *testing.T) {
 				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_search", Arguments: map[string]any{"query": "refunds"}})
 				if err != nil || result.IsError || !slices.Equal(wiki.searched, []string{"refunds"}) {
 					t.Fatalf("wiki_search = %#v, %v; searched %q", result, err, wiki.searched)
+				}
+			}
+			if found["wiki_list"] != nil {
+				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_list", Arguments: map[string]any{"collectionId": "c1"}})
+				if err != nil || result.IsError || !slices.Equal(wiki.listed, []string{"c1"}) {
+					t.Fatalf("wiki_list = %#v, %v; listed %q", result, err, wiki.listed)
 				}
 			}
 			if found["wiki_read"] != nil {

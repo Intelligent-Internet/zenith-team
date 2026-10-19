@@ -111,8 +111,9 @@ work area) and it is removed when its Run ends.
 revisions, archive status, personal favorites and the current directed link
 graph. `handler/wiki.go` exposes the Company-scoped HTTP API; `wiki.sql`
 supplies active-member reads and transactional writes. The owner/admin
-`wiki.publish` permission is checked at the route and again under the Company
-and acting-membership locks before a write. Members read; Run actors have no
+`wiki.publish` permission is checked at the route and again under the shared
+Company and acting-membership locks before a write (the exclusive Company lock
+is never taken; lock order and invariants are in company-wiki TECH §4.1). Members read; Run actors have no
 route under `/wiki/`. `wiki/document.go` owns the shared Wiki block draft and its
 metadata. Editing saves the draft only; `PublishPage` compares both
 `expectedRevision` and `expectedSequence`, freezes the block snapshot, updates
@@ -124,14 +125,14 @@ its Wiki caches on those events. The only Agent write is `AgentWriteService`
 Run saves up to 12 pages a call and 40 for the whole company research through `POST
 /runs/{runId}/agent-wiki/pages`. The write transaction re-proves the Run
 (running, `runs.context.executionProfile.source`, authorizer, `wiki.publish`,
-the `wiki` switch) under the Company lock, upserts by key among the pages the
+the `wiki` switch) under the shared Company fence, the Run row and the Company's research-write advisory lock, upserts by key among the pages the
 Run created (`run_wiki_writes`), resolves `[[key]]` placeholders, publishes
 through the same internals as `PublishPage`, then rebuilds link edges once every
 page of the batch is published. Every other Agent Wiki route is read-only: `AgentReadService`
-(`wiki/agent_read.go`, `run_wiki_reads.sql`) serves the Run-proven search and
-read routes in `handler/wiki_agent.go` (outside `/wiki/`, checked against the
+(`wiki/agent_read.go`, `run_wiki_reads.sql`) serves the Run-proven search, browse
+(`wiki_list`) and read routes in `handler/wiki_agent.go` (outside `/wiki/`, checked against the
 Run token, the per-Agent `wiki` capability switch and the membership fence) and
-records each search and the exact revision each read returned in `run_wiki_reads`
+records each search, browse and the exact revision each read returned in `run_wiki_reads`
 in the same transaction, with the human evidence views. Page writes also
 rebuild `wiki_artifact_refs`, the index of `[[artifact:…]]` citations; a newly
 added citation is checked against `output_access` for the author in the same

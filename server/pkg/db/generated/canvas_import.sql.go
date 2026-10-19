@@ -76,7 +76,7 @@ func (q *Queries) GetCanvasOutputDocumentSource(ctx context.Context, arg GetCanv
 }
 
 const lockCanvasWikiPage = `-- name: LockCanvasWikiPage :one
-SELECT id,status,version FROM wiki_pages WHERE company_id=$1 AND id=$2 FOR UPDATE
+SELECT id,status,version FROM wiki_pages WHERE company_id=$1 AND id=$2 FOR NO KEY UPDATE
 `
 
 type LockCanvasWikiPageParams struct {
@@ -90,6 +90,8 @@ type LockCanvasWikiPageRow struct {
 	Version int64     `json:"version"`
 }
 
+// NO KEY UPDATE, like GetWikiPageForUpdate: it serializes page writers without
+// blocking a wiki_links insert that targets this page.
 func (q *Queries) LockCanvasWikiPage(ctx context.Context, arg LockCanvasWikiPageParams) (LockCanvasWikiPageRow, error) {
 	row := q.db.QueryRow(ctx, lockCanvasWikiPage, arg.CompanyID, arg.ID)
 	var i LockCanvasWikiPageRow

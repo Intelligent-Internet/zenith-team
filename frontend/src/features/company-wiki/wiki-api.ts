@@ -4,6 +4,7 @@ import type {
   components,
   operations,
 } from "@/shared/api/generated/api.generated";
+import { wikiTags } from "@/shared/api/wiki-tags";
 
 import {
   notifyDocumentMutation,
@@ -53,7 +54,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Collections could not be loaded.",
         ),
       providesTags: (_result, _error, companyId) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.collections(companyId),
       ],
     }),
     listWikiPages: builder.query<
@@ -69,7 +70,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Pages could not be loaded.",
         ),
       providesTags: (_result, _error, { companyId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.pages(companyId),
       ],
     }),
     getWikiPage: builder.query<
@@ -82,8 +83,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Page could not be loaded.",
         ),
       providesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
+        wikiTags.page(companyId, pageId),
+        wikiTags.pageDetails(companyId),
       ],
     }),
     getWikiPageLinks: builder.query<
@@ -98,9 +99,10 @@ export const wikiApi = boardlyApi.injectEndpoints({
             ),
           "Page links could not be loaded.",
         ),
+      // Link rows carry the titles of the pages on the other end.
       providesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
+        wikiTags.page(companyId, pageId),
+        wikiTags.pages(companyId),
       ],
     }),
     getWikiGraph: builder.query<WikiGraphData, string>({
@@ -109,9 +111,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           () => apiClient.get<WikiGraphData>(`${root(companyId)}/graph`),
           "Graph could not be loaded.",
         ),
-      providesTags: (_result, _error, companyId) => [
-        { type: "Wiki", id: companyId },
-      ],
+      providesTags: (_result, _error, companyId) => [wikiTags.pages(companyId)],
     }),
     listWikiRevisions: builder.query<
       WikiRevisionList,
@@ -126,8 +126,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
             ),
           "History could not be loaded.",
         ),
-      providesTags: (_result, _error, { pageId }) => [
-        { type: "Wiki", id: pageId },
+      providesTags: (_result, _error, { companyId, pageId }) => [
+        wikiTags.page(companyId, pageId),
       ],
     }),
     createWikiPage: builder.mutation<
@@ -141,7 +141,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Page could not be created.",
         ),
       invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.pages(companyId),
       ],
     }),
     getWikiDocument: builder.query<
@@ -178,8 +178,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
         await cacheEntryRemoved;
         dispose();
       },
-      providesTags: (_r, _e, { pageId }) => [
-        { type: "Wiki", id: `${pageId}:draft` },
+      providesTags: (_r, _e, { companyId, pageId }) => [
+        wikiTags.draft(companyId, pageId),
       ],
       keepUnusedDataFor: 0,
     }),
@@ -218,9 +218,13 @@ export const wikiApi = boardlyApi.injectEndpoints({
           /* The mutation exposes the error. */
         }
       },
+      // A published page shows its draft details only after the next publish,
+      // but an unpublished page shows its draft's title, summary and collection
+      // in the page lists and its own header, and no realtime frame follows.
       invalidatesTags: (_r, _e, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: `${pageId}:draft` },
+        wikiTags.draft(companyId, pageId),
+        wikiTags.pages(companyId),
+        wikiTags.page(companyId, pageId),
       ],
     }),
     publishWikiPage: builder.mutation<
@@ -241,9 +245,9 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "The draft could not be published. It may have changed; review it again.",
         ),
       invalidatesTags: (_r, _e, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
-        { type: "Wiki", id: `${pageId}:draft` },
+        wikiTags.page(companyId, pageId),
+        wikiTags.pages(companyId),
+        wikiTags.draft(companyId, pageId),
         { type: "Canvas" },
       ],
     }),
@@ -266,8 +270,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Page status could not be changed.",
         ),
       invalidatesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
+        wikiTags.page(companyId, pageId),
+        wikiTags.pages(companyId),
       ],
     }),
     setWikiFavorite: builder.mutation<
@@ -283,8 +287,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Favorite could not be changed.",
         ),
       invalidatesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
+        wikiTags.page(companyId, pageId),
+        wikiTags.pages(companyId),
       ],
     }),
     createWikiCollection: builder.mutation<
@@ -300,7 +304,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Collection could not be created.",
         ),
       invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.collections(companyId),
       ],
     }),
     renameWikiCollection: builder.mutation<
@@ -321,7 +325,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Collection could not be renamed.",
         ),
       invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.collections(companyId),
       ],
     }),
     deleteWikiCollection: builder.mutation<
@@ -342,7 +346,10 @@ export const wikiApi = boardlyApi.injectEndpoints({
           "Collection could not be deleted.",
         ),
       invalidatesTags: (_result, _error, { companyId }) => [
-        { type: "Wiki", id: companyId },
+        wikiTags.collections(companyId),
+        // The server moves the collection's pages to Unfiled.
+        wikiTags.pages(companyId),
+        wikiTags.pageDetails(companyId),
       ],
     }),
     restoreWikiRevision: builder.mutation<
@@ -393,9 +400,8 @@ export const wikiApi = boardlyApi.injectEndpoints({
         }
       },
       invalidatesTags: (_result, _error, { companyId, pageId }) => [
-        { type: "Wiki", id: companyId },
-        { type: "Wiki", id: pageId },
-        { type: "Wiki", id: `${pageId}:draft` },
+        wikiTags.page(companyId, pageId),
+        wikiTags.draft(companyId, pageId),
       ],
     }),
   }),

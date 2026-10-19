@@ -69,8 +69,11 @@ export function RunWikiSources({
   const [previewSource, setPreviewSource] = useState<WikiSource | null>(null);
   const items = reads.currentData?.items;
   const sources = useMemo(() => collectSources(items ?? []), [items]);
-  const searches = useMemo(
-    () => (items ?? []).filter((read) => read.kind === "search"),
+  const lookups = useMemo(
+    () =>
+      (items ?? []).filter(
+        (read) => read.kind === "search" || read.kind === "list",
+      ),
     [items],
   );
 
@@ -133,17 +136,28 @@ export function RunWikiSources({
               ))}
             </ol>
           )}
-          {searches.length > 0 ? (
+          {lookups.length > 0 ? (
             <div className="zen-wiki-sources__searches">
-              <h3>Searches</h3>
+              <h3>Searches and browsing</h3>
               <ul>
-                {searches.map((search) => (
-                  <li key={search.id}>
-                    <Search size={13} aria-hidden />
-                    <span title={search.query}>{search.query}</span>
-                    <small>{resultLabel(search.resultCount)}</small>
-                  </li>
-                ))}
+                {lookups.map((lookup) => {
+                  const label = lookupLabel(lookup);
+                  return (
+                    <li key={lookup.id}>
+                      {lookup.kind === "list" ? (
+                        <BookOpen size={13} aria-hidden />
+                      ) : (
+                        <Search size={13} aria-hidden />
+                      )}
+                      <span title={label}>{label}</span>
+                      <small>
+                        {lookup.kind === "list"
+                          ? pageCountLabel(lookup.resultCount)
+                          : resultLabel(lookup.resultCount)}
+                      </small>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}
@@ -245,4 +259,19 @@ function resultLabel(count: number | null) {
     return "";
   }
   return count === 1 ? "1 result" : `${count} results`;
+}
+
+/** A search shows its query; a browse shows the collection it listed. */
+function lookupLabel(lookup: RunWikiRead) {
+  if (lookup.kind !== "list") {
+    return lookup.query;
+  }
+  return lookup.query ? `Browsed ${lookup.query}` : "Browsed all pages";
+}
+
+function pageCountLabel(count: number | null) {
+  if (count === null) {
+    return "";
+  }
+  return count === 1 ? "1 page" : `${count} pages`;
 }

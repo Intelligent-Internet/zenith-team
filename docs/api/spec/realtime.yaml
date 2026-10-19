@@ -6,7 +6,8 @@
 # Wiki page facts wiki.page_created, wiki.page_updated, wiki.page_archived and
 # wiki.page_restored are Company-visible envelopes carrying WikiPageEventPayload;
 # wiki.collection_created, wiki.collection_updated and wiki.collection_deleted carry
-# WikiCollectionEventPayload.
+# WikiCollectionEventPayload; wiki.run_reads_changed is a scoped invalidation
+# signal carrying WikiRunReadsChangedPayload.
 # Authored domain section of the Zenith Team API contract.
 # docs/api/spec/openapi.yaml is the index
 # that references it, and docs/api/realtime.md is its prose counterpart.
@@ -47,6 +48,7 @@ paths:
         - $ref: '#/schemas/ProjectAccessChangedRealtimeEvent'
         - $ref: '#/schemas/WikiPageRealtimeEvent'
         - $ref: '#/schemas/WikiCollectionRealtimeEvent'
+        - $ref: '#/schemas/WikiRunReadsRealtimeEvent'
         - $ref: '#/schemas/RunMessageRealtimeEvent'
         - $ref: '#/schemas/TerminalRunRealtimeEvent'
         - $ref: '#/schemas/AgentStatusRealtimeEvent'
@@ -338,6 +340,31 @@ schemas:
       id: { type: string, format: uuid }
       name: { type: string }
       revision: { type: integer, format: int64, minimum: 1 }
+
+  WikiRunReadsRealtimeEvent:
+    description: |
+      Scoped invalidation signal published after a Run's Wiki search or read
+      is recorded in its evidence trail. It is not a Company-visible fact: a
+      Task Run's frame reaches only the readers of the Task's Project, decided
+      in the producing transaction (ADR 0017); a direct or Schedule Run's frame
+      reaches only the Conversation's creator; a channel Run's reaches nobody.
+      Clients refetch the Run's Wiki reads and the pages' "Used by Agents"
+      lists rather than reading evidence from the frame.
+    allOf:
+      - $ref: '#/schemas/RealtimeEnvelope'
+      - type: object
+        properties:
+          type:
+            type: string
+            enum: [wiki.run_reads_changed]
+          payload:
+            $ref: '#/schemas/WikiRunReadsChangedPayload'
+
+  WikiRunReadsChangedPayload:
+    type: object
+    required: [runId]
+    properties:
+      runId: { type: string, format: uuid }
 
   RealtimeEnvelope:
     type: object

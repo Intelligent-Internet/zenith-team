@@ -136,6 +136,35 @@ func (q *Queries) CreateWikiCollection(ctx context.Context, arg CreateWikiCollec
 	return i, err
 }
 
+const createWikiCollectionIfAbsent = `-- name: CreateWikiCollectionIfAbsent :one
+INSERT INTO wiki_collections (company_id, name) VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+RETURNING id, company_id, name, version, created_at, updated_at
+`
+
+type CreateWikiCollectionIfAbsentParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	Name      string    `json:"name"`
+}
+
+// Files the research's "Company" collection without failing a transaction
+// when a person (or another call) creates the same name first: ON CONFLICT
+// waits for the other transaction, then returns no row, and the caller reads
+// the winner. A bare INSERT would abort the whole write transaction instead.
+func (q *Queries) CreateWikiCollectionIfAbsent(ctx context.Context, arg CreateWikiCollectionIfAbsentParams) (WikiCollection, error) {
+	row := q.db.QueryRow(ctx, createWikiCollectionIfAbsent, arg.CompanyID, arg.Name)
+	var i WikiCollection
+	err := row.Scan(
+		&i.ID,
+		&i.CompanyID,
+		&i.Name,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createWikiPage = `-- name: CreateWikiPage :one
 INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id)
 SELECT seed.id, $1, $2, 'page-' || seed.id::text, $3, $4, $5
@@ -253,6 +282,57 @@ type DeleteWikiLinksFromPageParams struct {
 func (q *Queries) DeleteWikiLinksFromPage(ctx context.Context, arg DeleteWikiLinksFromPageParams) error {
 	_, err := q.db.Exec(ctx, deleteWikiLinksFromPage, arg.CompanyID, arg.PageID)
 	return err
+}
+
+const getEditableWikiPage = `-- name: GetEditableWikiPage :one
+SELECT id, status, version FROM wiki_pages WHERE company_id = $1::uuid
+  AND id = $2::uuid AND source_output_id IS NULL AND project_id IS NULL
+`
+
+type GetEditableWikiPageParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	PageID    uuid.UUID `json:"page_id"`
+}
+
+type GetEditableWikiPageRow struct {
+	ID      uuid.UUID `json:"id"`
+	Status  string    `json:"status"`
+	Version int64     `json:"version"`
+}
+
+// GetWikiPageForUpdate's visibility without the row lock, for readers that
+// must not queue behind an autosave.
+func (q *Queries) GetEditableWikiPage(ctx context.Context, arg GetEditableWikiPageParams) (GetEditableWikiPageRow, error) {
+	row := q.db.QueryRow(ctx, getEditableWikiPage, arg.CompanyID, arg.PageID)
+	var i GetEditableWikiPageRow
+	err := row.Scan(&i.ID, &i.Status, &i.Version)
+	return i, err
+}
+
+const getWikiCollection = `-- name: GetWikiCollection :one
+SELECT id, company_id, name, version, created_at, updated_at FROM wiki_collections
+WHERE company_id = $1::uuid AND id = $2::uuid
+`
+
+type GetWikiCollectionParams struct {
+	CompanyID    uuid.UUID `json:"company_id"`
+	CollectionID uuid.UUID `json:"collection_id"`
+}
+
+// A collection read without a row lock: the caller holds
+// LockWikiCollectionsShared, which is what excludes a concurrent delete.
+func (q *Queries) GetWikiCollection(ctx context.Context, arg GetWikiCollectionParams) (WikiCollection, error) {
+	row := q.db.QueryRow(ctx, getWikiCollection, arg.CompanyID, arg.CollectionID)
+	var i WikiCollection
+	err := row.Scan(
+		&i.ID,
+		&i.CompanyID,
+		&i.Name,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getWikiCollectionForUpdate = `-- name: GetWikiCollectionForUpdate :one
@@ -405,7 +485,8 @@ func (q *Queries) GetWikiPageForMember(ctx context.Context, arg GetWikiPageForMe
 
 const getWikiPageForUpdate = `-- name: GetWikiPageForUpdate :one
 SELECT id, status, version FROM wiki_pages WHERE company_id = $1::uuid
-  AND id = $2::uuid AND source_output_id IS NULL AND project_id IS NULL FOR UPDATE
+  AND id = $2::uuid AND source_output_id IS NULL AND project_id IS NULL
+FOR NO KEY UPDATE
 `
 
 type GetWikiPageForUpdateParams struct {
@@ -419,6 +500,9 @@ type GetWikiPageForUpdateRow struct {
 	Version int64     `json:"version"`
 }
 
+// NO KEY UPDATE excludes every other page writer but not the KEY SHARE that a
+// wiki_links insert takes on its target, so two pages that link to each other
+// can publish at once without deadlocking. No Wiki write changes a page key.
 func (q *Queries) GetWikiPageForUpdate(ctx context.Context, arg GetWikiPageForUpdateParams) (GetWikiPageForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, getWikiPageForUpdate, arg.CompanyID, arg.PageID)
 	var i GetWikiPageForUpdateRow
@@ -743,7 +827,20 @@ WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY($2::text[]))
   AND (length(to_tsvector('simple', $7::text)) = 0
     OR p.search_vector @@ (SELECT query FROM search_input)
     OR (p.current_revision_id IS NULL AND to_tsvector('simple',d.title || ' ' || d.markdown) @@ (SELECT query FROM search_input)))
-ORDER BY p.updated_at DESC, p.id DESC
+ORDER BY
+  -- A search ranks first (title A, summary B, body C; see 000118) and falls
+  -- back to recency; browsing keeps the recency order. A draft has no stored
+  -- vector, so it is ranked on the same weights computed from its own text.
+  -- The browse arm is a constant the planner folds away, so the ordered index
+  -- still serves it.
+  CASE WHEN length(to_tsvector('simple', $7::text)) = 0 THEN 0::real
+    ELSE COALESCE(ts_rank(
+      CASE WHEN p.current_revision_id IS NULL
+        THEN setweight(to_tsvector('simple', d.title), 'A') || setweight(to_tsvector('simple', d.summary), 'B')
+          || setweight(to_tsvector('simple', d.markdown), 'C')
+        ELSE p.search_vector END,
+      (SELECT query FROM search_input)), 0::real) END DESC,
+  p.updated_at DESC, p.id DESC
 LIMIT $9::int OFFSET $8::int
 `
 
@@ -877,6 +974,38 @@ func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRe
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockWikiCollectionsExclusive = `-- name: LockWikiCollectionsExclusive :exec
+SELECT pg_advisory_xact_lock(hashtextextended(
+    'boardly/wiki-collections/v1/' || $1::uuid::text,
+    0
+))
+`
+
+// Taken only by DeleteCollection, before the collection row lock and before it
+// unfiles pages. Deleting walks collection -> pages while a publish walks
+// page -> collection; this lock, taken first on both sides, keeps the two
+// orders from forming a deadlock cycle.
+func (q *Queries) LockWikiCollectionsExclusive(ctx context.Context, companyID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, lockWikiCollectionsExclusive, companyID)
+	return err
+}
+
+const lockWikiCollectionsShared = `-- name: LockWikiCollectionsShared :exec
+SELECT pg_advisory_xact_lock_shared(hashtextextended(
+    'boardly/wiki-collections/v1/' || $1::uuid::text,
+    0
+))
+`
+
+// Taken by every Wiki write that files a page into a collection (create with a
+// collection, draft metadata, publish, restore, the research write), before
+// any page row lock. It excludes only DeleteCollection, so filing writers
+// never queue behind each other or behind an autosave.
+func (q *Queries) LockWikiCollectionsShared(ctx context.Context, companyID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, lockWikiCollectionsShared, companyID)
+	return err
 }
 
 const renameWikiCollection = `-- name: RenameWikiCollection :one
@@ -1023,7 +1152,11 @@ const setWikiPageCurrentRevision = `-- name: SetWikiPageCurrentRevision :one
 UPDATE wiki_pages SET title = $1::text, summary = $2::text,
   collection_id = $3::uuid,
   current_revision_id = $4::uuid,
-  search_vector = (SELECT to_tsvector('simple', r.title || ' ' || r.body) FROM wiki_revisions r
+  search_vector = (SELECT setweight(to_tsvector('simple', r.title), 'A')
+      || setweight(to_tsvector('simple', r.summary), 'B')
+      || setweight(to_tsvector('simple', regexp_replace(r.body,
+        '\[\[(?:artifact:)?[0-9a-fA-F-]{36}(?:#[0-9]{1,2})?(?:\|([^]]*))?\]\]', '\1', 'g')), 'C')
+    FROM wiki_revisions r
     WHERE r.company_id = wiki_pages.company_id AND r.page_id = wiki_pages.id
       AND r.id = $4::uuid),
   version = version + 1, next_revision_number = GREATEST(next_revision_number,(SELECT number+1 FROM wiki_revisions WHERE id=$4::uuid)), updated_at = clock_timestamp()

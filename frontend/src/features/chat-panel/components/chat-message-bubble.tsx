@@ -1717,6 +1717,8 @@ function runtimeActivityDisplayLabel(
       return isInProgress ? "Searching the web" : "Searched the web";
     case "wiki_search":
       return isInProgress ? "Searching the wiki" : "Searched the wiki";
+    case "wiki_list":
+      return isInProgress ? "Browsing the wiki" : "Browsed the wiki";
     case "wiki_read":
       return isInProgress ? "Reading a wiki page" : "Read wiki page";
     case "wiki_write":

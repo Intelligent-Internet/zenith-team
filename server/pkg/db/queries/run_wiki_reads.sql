@@ -10,48 +10,104 @@ JOIN company_members actor ON actor.company_id = runs.company_id
 WHERE runs.company_id = sqlc.arg(company_id)::uuid AND runs.id = sqlc.arg(run_id)::uuid;
 
 -- name: SearchWikiPagesForRun :many
--- Ranked full-text search over active pages. The words of the input are OR-ed
--- as lexeme prefixes (exact below three characters), so a natural-language
--- question still finds pages and ts_rank puts the ones matching most terms
--- first. total counts every match; only result_limit rows are returned and
--- only those pay for a snippet. No lexemes means no matches.
+-- Ranked full-text search over active pages. The words of the input become
+-- lexeme prefixes (exact below three characters). A page holding every word
+-- is the answer: when any active page matches the AND of the words, only
+-- those pages are matches. Otherwise the words are OR-ed, so a natural-language
+-- question that no single page covers still finds the pages matching most of
+-- it. ts_rank weighs a title hit (A) over a summary (B) over a body hit (C),
+-- the weights search_vector was built with (000118). total counts every
+-- match; only result_limit rows are returned and only those pay for a
+-- snippet. No lexemes means no matches.
 WITH search_input AS MATERIALIZED (
-  SELECT string_agg(
-    '''' || replace(replace(lexeme, '\', '\\'), '''', '''''') || ''''
-      || CASE WHEN char_length(lexeme) >= 3 THEN ':*' ELSE '' END, ' | ')::tsquery AS query
-  FROM unnest(to_tsvector('simple', sqlc.arg(search)::text)) AS token(lexeme)
+  SELECT string_agg(term, ' & ')::tsquery AS all_query, string_agg(term, ' | ')::tsquery AS any_query
+  FROM (
+    SELECT '''' || replace(replace(lexeme, '\', '\\'), '''', '''''') || ''''
+      || CASE WHEN char_length(lexeme) >= 3 THEN ':*' ELSE '' END AS term
+    FROM unnest(to_tsvector('simple', sqlc.arg(search)::text)) AS token(lexeme)
+  ) AS terms
+), chosen AS MATERIALIZED (
+  SELECT CASE WHEN EXISTS (
+      SELECT 1 FROM company_wiki_pages p
+      WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.status = 'active'
+        AND p.current_revision_id IS NOT NULL AND p.search_vector @@ search_input.all_query)
+    THEN search_input.all_query ELSE search_input.any_query END AS query
+  FROM search_input
 ), matches AS (
   SELECT p.id, p.title, p.summary, p.updated_at, p.collection_id, p.current_revision_id,
-    ts_rank(p.search_vector, search_input.query) AS rank,
+    chosen.query,
+    ts_rank(p.search_vector, chosen.query) AS rank,
     count(*) OVER ()::int AS total
   FROM company_wiki_pages p
   JOIN company_members actor ON actor.company_id = p.company_id
     AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
-  CROSS JOIN search_input
+  CROSS JOIN chosen
   WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.status = 'active'
     AND p.current_revision_id IS NOT NULL
-    AND p.search_vector @@ search_input.query
+    AND p.search_vector @@ chosen.query
   ORDER BY rank DESC, p.updated_at DESC, p.id DESC
   LIMIT sqlc.arg(result_limit)::int
 )
 SELECT matches.id, matches.title, matches.summary, matches.updated_at, matches.total,
   revision.number AS revision_number, collection.name AS collection_name,
-  ts_headline('simple', revision.body, search_input.query,
+  ts_headline('simple', revision.body, matches.query,
     'StartSel="", StopSel="", MaxFragments=2, MaxWords=28, MinWords=12, FragmentDelimiter=" ... "')::text AS snippet
 FROM matches
 JOIN wiki_revisions revision ON revision.id = matches.current_revision_id
 LEFT JOIN wiki_collections collection ON collection.company_id = sqlc.arg(company_id)::uuid
   AND collection.id = matches.collection_id
-CROSS JOIN search_input
 ORDER BY matches.rank DESC, matches.updated_at DESC, matches.id DESC;
+
+-- name: ListWikiCollectionsForRun :many
+-- Every Collection of the Company with how many active published pages it
+-- holds, for the Run's browse overview.
+SELECT c.id, c.name,
+  (SELECT count(*) FROM company_wiki_pages p
+    WHERE p.company_id = c.company_id AND p.collection_id = c.id
+      AND p.status = 'active' AND p.current_revision_id IS NOT NULL)::int AS page_count
+FROM wiki_collections c
+JOIN company_members actor ON actor.company_id = c.company_id
+  AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
+WHERE c.company_id = sqlc.arg(company_id)::uuid
+ORDER BY lower(c.name), c.id;
+
+-- name: CountWikiPagesForRun :one
+-- The active published pages a browse covers: every page, or one Collection's.
+SELECT count(*)::int AS total
+FROM company_wiki_pages p
+JOIN company_members actor ON actor.company_id = p.company_id
+  AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
+WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.status = 'active'
+  AND p.current_revision_id IS NOT NULL
+  AND (sqlc.narg(collection_id)::uuid IS NULL OR p.collection_id = sqlc.narg(collection_id)::uuid);
+
+-- name: ListWikiPagesForRun :many
+-- One page of the browse, ordered by title so the order survives edits made
+-- between two calls (recency order would shift pages across the boundary).
+SELECT p.id, p.title, p.summary, p.updated_at,
+  revision.number AS revision_number, collection.name AS collection_name
+FROM company_wiki_pages p
+JOIN wiki_revisions revision ON revision.id = p.current_revision_id
+JOIN company_members actor ON actor.company_id = p.company_id
+  AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
+LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
+  AND collection.id = p.collection_id
+WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.status = 'active'
+  AND p.current_revision_id IS NOT NULL
+  AND (sqlc.narg(collection_id)::uuid IS NULL OR p.collection_id = sqlc.narg(collection_id)::uuid)
+ORDER BY lower(p.title), p.id
+LIMIT sqlc.arg(result_limit)::int OFFSET sqlc.arg(result_offset)::int;
 
 -- name: GetWikiPageSliceForRun :one
 -- An active page's current revision with one character slice of its body:
 -- content is total_chars characters long at most char_limit from char_offset.
--- The revision id is what the evidence row pins.
+-- The revision id is what the evidence row pins. updated_by_name is the
+-- accountable member; updated_by_agent_name is set when an Agent wrote the
+-- revision on that member's behalf.
 SELECT p.id, p.title, p.summary, p.updated_at,
   revision.id AS revision_id, revision.number AS revision_number,
   collection.name AS collection_name, author.display_name AS updated_by_name,
+  author_agent.name AS updated_by_agent_name,
   char_length(revision.body)::int AS total_chars,
   substr(revision.body, sqlc.arg(char_offset)::int + 1, sqlc.arg(char_limit)::int)::text AS content
 FROM company_wiki_pages p
@@ -61,6 +117,8 @@ JOIN company_members actor ON actor.company_id = p.company_id
 LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
   AND collection.id = p.collection_id
 LEFT JOIN users author ON author.id = revision.author_user_id
+LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id
+  AND author_agent.id = revision.author_agent_id
 WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.id = sqlc.arg(page_id)::uuid
   AND p.status = 'active';
 
@@ -69,6 +127,14 @@ WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.id = sqlc.arg(page_id)::uu
 -- another Company insert nothing.
 INSERT INTO run_wiki_reads (company_id, run_id, agent_id, kind, query, result_count)
 SELECT runs.company_id, runs.id, runs.agent_id, 'search', sqlc.arg(query)::text, sqlc.arg(result_count)::int
+FROM runs
+WHERE runs.company_id = sqlc.arg(company_id)::uuid AND runs.id = sqlc.arg(run_id)::uuid;
+
+-- name: InsertRunWikiList :execrows
+-- A browse row: query is the name of the Collection browsed (empty for every
+-- page), result_count the pages the browse covers.
+INSERT INTO run_wiki_reads (company_id, run_id, agent_id, kind, query, result_count)
+SELECT runs.company_id, runs.id, runs.agent_id, 'list', sqlc.arg(query)::text, sqlc.arg(result_count)::int
 FROM runs
 WHERE runs.company_id = sqlc.arg(company_id)::uuid AND runs.id = sqlc.arg(run_id)::uuid;
 

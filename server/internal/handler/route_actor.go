@@ -80,6 +80,7 @@ var runActorRoutes = []string{
 	// Wiki reads and Project page work under the path's own Run
 	// (contentRunPrincipal).
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/search",
+	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/list",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages/:pageId",
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-project",

@@ -469,7 +469,7 @@ lists and creators never appear in the JSON payload.
 | `artifact.changed` | `{}` | Current authorized artifact recipients captured in the mutation transaction; refresh artifact/results reads. Publication create, progress, retry, failure, expired leases, subdomain routing, unpublish and Studio attachment changes emit it. Reads recheck access. |
 | `schedule.changed` | `{id}` | Schedule creator only; refresh definitions, lifecycle and firing receipts, including worker pause/skip/failure transitions. |
 | `calendar.changed` | `{}` | Company calendar changes reach that Company; personal/shared changes reach the organizer and affected invitees across their Company tabs. Occurrence completion reaches only the acting user. |
-| `wiki.run_reads_changed` | `{runId}` | Task Run evidence reaches its Company; direct and Schedule evidence reaches only the Conversation creator. Channel execution evidence is not exposed by this read surface. |
+| `wiki.run_reads_changed` | `{runId}` | Task Run evidence reaches the readers of the Task's Project (ADR 0017); direct and Schedule evidence reaches only the Conversation creator. Channel execution evidence is not exposed by this read surface. |
 | `whiteboard.changed` | `{boardId, sequence}` | Readers of the Whiteboard Artifact (`boardId` is its Artifact ID) who have the Board open (a presence session); they catch up by delta from their last sequence. A sharing change is the Artifact's own `artifact.access_changed`. A replayed request emits nothing. |
 | `whiteboard.renamed` | `{boardId, sequence}` | Every reader of the Whiteboard Artifact, open Board or not: the title also names it in chats and Artifact lists, so they refresh the Board header, discussion cards and Artifact reads. |
 

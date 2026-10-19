@@ -47,6 +47,7 @@ export function RealtimeSyncController({
           getState: store.getState,
           pathname: pathnameRef.current,
           requestRefresh: refreshQueue.request,
+          requestWikiRefresh: refreshQueue.requestWiki,
           leave: (destination) => {
             const to = destination({
               pathname: pathnameRef.current,

@@ -300,7 +300,7 @@ paths:
     get:
       tags: [wiki]
       operationId: listRunWikiReads
-      summary: List what a Run searched and read in the Wiki
+      summary: List what a Run searched, browsed and read in the Wiki
       description: |
         The Run's evidence trail, oldest first, at most 200 rows. Visibility
         follows Run history (ADR 0017): a Task Run reads for the readers of
@@ -308,8 +308,11 @@ paths:
         direct or Schedule Conversation sees its Runs. A Run that does not exist or is not visible is
         `404 run_not_found`. Read rows carry the revision that was returned
         and the page's live state, so a client can show "changed since" (the
-        current revision is newer) and "archived". Rejects Run-token requests
-        with `403 human_actor_required`.
+        current revision is newer) and "archived". Search rows carry the
+        redacted query and match count; list rows (one per `wiki_list` call)
+        carry the name of the collection browsed in `query` (empty for every
+        page) and the pages the browse covered in `resultCount`. Rejects
+        Run-token requests with `403 human_actor_required`.
       parameters: [{ $ref: './_common.yaml#/parameters/companyId' }, { $ref: './_common.yaml#/parameters/runId' }]
       responses:
         '200': { description: Evidence trail, content: { application/json: { schema: { $ref: '#/schemas/RunWikiReadList' } } } }
@@ -325,10 +328,14 @@ paths:
       description: |
         Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
         Run of this Company, sent by the Run's authorizer. Searches
-        active pages only, ranked by relevance then recency; the words of `q`
-        are OR-ed as word prefixes. Records one `search` row on the Run's
-        evidence trail. A `403 wiki_agent_access_disabled` means the Agent's
-        `wiki` capability group is off. A bad, missing or mismatched proof is
+        active pages only; the words of `q` are matched as word prefixes
+        (exact below three characters) against the page's title, summary and
+        body, in that order of weight. When any page holds every word only
+        those pages match; otherwise pages holding any word match. Ranked by
+        relevance then recency; `total` counts exactly the matches in play.
+        Records one `search` row on the Run's evidence trail. A
+        `403 wiki_agent_access_disabled` means the Agent's `wiki` capability
+        group is off. A bad, missing or mismatched proof is
         `401 run_token_invalid`.
       parameters:
         - { $ref: './_common.yaml#/parameters/companyId' }
@@ -338,6 +345,39 @@ paths:
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 5 } }
       responses:
         '200': { description: Ranked matches, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentSearchResult' } } } }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
+        '404': { $ref: './_common.yaml#/responses/NotFound' }
+        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
+        '500': { $ref: './_common.yaml#/responses/InternalError' }
+  agentList:
+    get:
+      tags: [wiki]
+      operationId: listWikiForRun
+      summary: Browse the Company Wiki as an Agent's Run
+      description: |
+        Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+        Run of this Company, sent by the Run's authorizer. Lists the active
+        published pages ordered by title, optionally within one collection.
+        The first page (`offset` 0) also returns every collection with its
+        count of active pages; later pages return an empty `collections`.
+        `total` is the number of pages the listing covers (the collection's
+        when `collectionId` is given) and `nextOffset` is null on the last
+        page. Records one `list` row on the Run's evidence trail. A
+        `collectionId` that is not a collection of this Company is
+        `404 wiki_collection_not_found`; a malformed one, or an out-of-range
+        `offset` or `limit`, is `422`. A `403 wiki_agent_access_disabled`
+        means the Agent's `wiki` capability group is off. A bad, missing or
+        mismatched proof is `401 run_token_invalid`.
+      parameters:
+        - { $ref: './_common.yaml#/parameters/companyId' }
+        - { $ref: './_common.yaml#/parameters/runId' }
+        - { $ref: '#/parameters/runToken' }
+        - { name: collectionId, in: query, description: "List only this collection's pages.", schema: { type: string, format: uuid } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 25 } }
+      responses:
+        '200': { description: One page of the browse, content: { application/json: { schema: { $ref: '#/schemas/WikiAgentListResult' } } } }
         '401': { $ref: './_common.yaml#/responses/Unauthorized' }
         '403': { $ref: './_common.yaml#/responses/Forbidden' }
         '404': { $ref: './_common.yaml#/responses/NotFound' }
@@ -631,7 +671,32 @@ schemas:
     required: [items, total]
     properties:
       items: { type: array, maxItems: 10, items: { $ref: '#/schemas/WikiAgentSearchItem' } }
-      total: { type: integer, description: "Every active page that matched, not only those returned." }
+      total: { type: integer, description: "Every page that matched, not only those returned: the pages holding every word of the query when any does, otherwise the pages holding any word." }
+  WikiAgentListCollection:
+    type: object
+    required: [id, name, pageCount]
+    properties:
+      id: { type: string, format: uuid }
+      name: { type: string }
+      pageCount: { type: integer, description: Active published pages in the collection. }
+  WikiAgentListItem:
+    type: object
+    required: [pageId, title, summary, collectionName, revision, updatedAt]
+    properties:
+      pageId: { type: string, format: uuid }
+      title: { type: string }
+      summary: { type: string }
+      collectionName: { type: [string, 'null'] }
+      revision: { type: integer, format: int64, description: Content revision number of the page's current revision. }
+      updatedAt: { type: string, format: date-time }
+  WikiAgentListResult:
+    type: object
+    required: [collections, items, total, nextOffset]
+    properties:
+      collections: { type: array, items: { $ref: '#/schemas/WikiAgentListCollection' }, description: "Every collection of the Company with its page count; filled only when offset is 0." }
+      items: { type: array, maxItems: 50, items: { $ref: '#/schemas/WikiAgentListItem' }, description: Pages ordered by title. }
+      total: { type: integer, description: "Pages the listing covers (the collection's when collectionId is given), not only those returned." }
+      nextOffset: { type: [integer, 'null'], description: "Offset of the next page, or null on the last page." }
   WikiAgentPage:
     type: object
     required: [pageId, title, summary, collectionName, revision, revisionId, updatedAt, updatedByName, content, offset, returnedChars, totalChars, truncated, nextOffset, notice]
@@ -644,7 +709,8 @@ schemas:
       expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
       revisionId: { type: string, format: uuid }
       updatedAt: { type: string, format: date-time }
-      updatedByName: { type: [string, 'null'] }
+      updatedByName: { type: [string, 'null'], description: The member the revision is attributed to. }
+      updatedByAgentName: { type: string, description: Present when an Agent wrote the revision on that member's behalf; absent when a person wrote it. }
       content: { type: string, description: Untrusted reference text; at most 24000 characters. }
       offset: { type: integer }
       returnedChars: { type: integer }
@@ -692,13 +758,13 @@ schemas:
     required: [id, kind, query, resultCount, pageId, revisionId, revisionNumber, title, truncated, createdAt, page]
     properties:
       id: { type: string, format: uuid }
-      kind: { type: string, enum: [search, read] }
-      query: { type: string, description: Redacted search text; empty for a read. }
+      kind: { type: string, enum: [search, read, list] }
+      query: { type: string, description: "Redacted search text for a search; the collection browsed for a list (empty for every page); empty for a read." }
       resultCount: { type: [integer, 'null'], format: int32 }
       pageId: { type: [string, 'null'], format: uuid }
       revisionId: { type: [string, 'null'], format: uuid }
       revisionNumber: { type: [integer, 'null'], format: int32 }
-      title: { type: string, description: Page title when it was read; empty for a search. }
+      title: { type: string, description: Page title when it was read; empty for a search or a list. }
       truncated: { type: boolean }
       createdAt: { type: string, format: date-time }
       page: { oneOf: [{ $ref: '#/schemas/RunWikiReadPage' }, { type: 'null' }] }

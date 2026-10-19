@@ -50,7 +50,7 @@ in this table omit that prefix.
 ## Capability boundaries
 
 Built-in Zenith Team skills control groups of `boardly-mcp` tools; the `wiki` group
-controls the read-only Company Wiki tools (`wiki_search`, `wiki_read`) and, because
+controls the read-only Company Wiki tools (`wiki_search`, `wiki_list`, `wiki_read`) and, because
 the daemon allowlist alone is not authority, the server's Run-proven Wiki read
 routes for that Agent. Discovered Skills
 are grouped by their containing plugin, so Skills and Plugins cards share one

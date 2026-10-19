@@ -47,6 +47,30 @@ func (q *Queries) CanViewRunWikiReads(ctx context.Context, arg CanViewRunWikiRea
 	return visible, err
 }
 
+const countWikiPagesForRun = `-- name: CountWikiPagesForRun :one
+SELECT count(*)::int AS total
+FROM company_wiki_pages p
+JOIN company_members actor ON actor.company_id = p.company_id
+  AND actor.user_id = $1::uuid AND actor.status = 'active'
+WHERE p.company_id = $2::uuid AND p.status = 'active'
+  AND p.current_revision_id IS NOT NULL
+  AND ($3::uuid IS NULL OR p.collection_id = $3::uuid)
+`
+
+type CountWikiPagesForRunParams struct {
+	ActorUserID  uuid.UUID     `json:"actor_user_id"`
+	CompanyID    uuid.UUID     `json:"company_id"`
+	CollectionID uuid.NullUUID `json:"collection_id"`
+}
+
+// The active published pages a browse covers: every page, or one Collection's.
+func (q *Queries) CountWikiPagesForRun(ctx context.Context, arg CountWikiPagesForRunParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countWikiPagesForRun, arg.ActorUserID, arg.CompanyID, arg.CollectionID)
+	var total int32
+	err := row.Scan(&total)
+	return total, err
+}
+
 const getRunWikiAccess = `-- name: GetRunWikiAccess :one
 SELECT (COALESCE(agents.settings->'capabilities'->'disabledBuiltIns', '[]'::jsonb) @> '"wiki"'::jsonb)::boolean AS disabled
 FROM runs
@@ -76,6 +100,7 @@ const getWikiPageSliceForRun = `-- name: GetWikiPageSliceForRun :one
 SELECT p.id, p.title, p.summary, p.updated_at,
   revision.id AS revision_id, revision.number AS revision_number,
   collection.name AS collection_name, author.display_name AS updated_by_name,
+  author_agent.name AS updated_by_agent_name,
   char_length(revision.body)::int AS total_chars,
   substr(revision.body, $1::int + 1, $2::int)::text AS content
 FROM company_wiki_pages p
@@ -85,6 +110,8 @@ JOIN company_members actor ON actor.company_id = p.company_id
 LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
   AND collection.id = p.collection_id
 LEFT JOIN users author ON author.id = revision.author_user_id
+LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id
+  AND author_agent.id = revision.author_agent_id
 WHERE p.company_id = $4::uuid AND p.id = $5::uuid
   AND p.status = 'active'
 `
@@ -98,21 +125,24 @@ type GetWikiPageSliceForRunParams struct {
 }
 
 type GetWikiPageSliceForRunRow struct {
-	ID             uuid.UUID          `json:"id"`
-	Title          string             `json:"title"`
-	Summary        string             `json:"summary"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	RevisionID     uuid.UUID          `json:"revision_id"`
-	RevisionNumber int64              `json:"revision_number"`
-	CollectionName pgtype.Text        `json:"collection_name"`
-	UpdatedByName  pgtype.Text        `json:"updated_by_name"`
-	TotalChars     int32              `json:"total_chars"`
-	Content        string             `json:"content"`
+	ID                 uuid.UUID          `json:"id"`
+	Title              string             `json:"title"`
+	Summary            string             `json:"summary"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+	RevisionID         uuid.UUID          `json:"revision_id"`
+	RevisionNumber     int64              `json:"revision_number"`
+	CollectionName     pgtype.Text        `json:"collection_name"`
+	UpdatedByName      pgtype.Text        `json:"updated_by_name"`
+	UpdatedByAgentName pgtype.Text        `json:"updated_by_agent_name"`
+	TotalChars         int32              `json:"total_chars"`
+	Content            string             `json:"content"`
 }
 
 // An active page's current revision with one character slice of its body:
 // content is total_chars characters long at most char_limit from char_offset.
-// The revision id is what the evidence row pins.
+// The revision id is what the evidence row pins. updated_by_name is the
+// accountable member; updated_by_agent_name is set when an Agent wrote the
+// revision on that member's behalf.
 func (q *Queries) GetWikiPageSliceForRun(ctx context.Context, arg GetWikiPageSliceForRunParams) (GetWikiPageSliceForRunRow, error) {
 	row := q.db.QueryRow(ctx, getWikiPageSliceForRun,
 		arg.CharOffset,
@@ -131,10 +161,40 @@ func (q *Queries) GetWikiPageSliceForRun(ctx context.Context, arg GetWikiPageSli
 		&i.RevisionNumber,
 		&i.CollectionName,
 		&i.UpdatedByName,
+		&i.UpdatedByAgentName,
 		&i.TotalChars,
 		&i.Content,
 	)
 	return i, err
+}
+
+const insertRunWikiList = `-- name: InsertRunWikiList :execrows
+INSERT INTO run_wiki_reads (company_id, run_id, agent_id, kind, query, result_count)
+SELECT runs.company_id, runs.id, runs.agent_id, 'list', $1::text, $2::int
+FROM runs
+WHERE runs.company_id = $3::uuid AND runs.id = $4::uuid
+`
+
+type InsertRunWikiListParams struct {
+	Query       string    `json:"query"`
+	ResultCount int32     `json:"result_count"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	RunID       uuid.UUID `json:"run_id"`
+}
+
+// A browse row: query is the name of the Collection browsed (empty for every
+// page), result_count the pages the browse covers.
+func (q *Queries) InsertRunWikiList(ctx context.Context, arg InsertRunWikiListParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertRunWikiList,
+		arg.Query,
+		arg.ResultCount,
+		arg.CompanyID,
+		arg.RunID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const insertRunWikiRead = `-- name: InsertRunWikiRead :execrows
@@ -274,6 +334,51 @@ func (q *Queries) ListRunWikiReads(ctx context.Context, arg ListRunWikiReadsPara
 	return items, nil
 }
 
+const listWikiCollectionsForRun = `-- name: ListWikiCollectionsForRun :many
+SELECT c.id, c.name,
+  (SELECT count(*) FROM company_wiki_pages p
+    WHERE p.company_id = c.company_id AND p.collection_id = c.id
+      AND p.status = 'active' AND p.current_revision_id IS NOT NULL)::int AS page_count
+FROM wiki_collections c
+JOIN company_members actor ON actor.company_id = c.company_id
+  AND actor.user_id = $1::uuid AND actor.status = 'active'
+WHERE c.company_id = $2::uuid
+ORDER BY lower(c.name), c.id
+`
+
+type ListWikiCollectionsForRunParams struct {
+	ActorUserID uuid.UUID `json:"actor_user_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+}
+
+type ListWikiCollectionsForRunRow struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	PageCount int32     `json:"page_count"`
+}
+
+// Every Collection of the Company with how many active published pages it
+// holds, for the Run's browse overview.
+func (q *Queries) ListWikiCollectionsForRun(ctx context.Context, arg ListWikiCollectionsForRunParams) ([]ListWikiCollectionsForRunRow, error) {
+	rows, err := q.db.Query(ctx, listWikiCollectionsForRun, arg.ActorUserID, arg.CompanyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWikiCollectionsForRunRow{}
+	for rows.Next() {
+		var i ListWikiCollectionsForRunRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.PageCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWikiPageAgentReads = `-- name: ListWikiPageAgentReads :many
 WITH latest AS (
   SELECT DISTINCT ON (w.run_id) w.run_id, w.agent_id, w.revision_number, w.created_at,
@@ -379,35 +484,112 @@ func (q *Queries) ListWikiPageAgentReads(ctx context.Context, arg ListWikiPageAg
 	return items, nil
 }
 
+const listWikiPagesForRun = `-- name: ListWikiPagesForRun :many
+SELECT p.id, p.title, p.summary, p.updated_at,
+  revision.number AS revision_number, collection.name AS collection_name
+FROM company_wiki_pages p
+JOIN wiki_revisions revision ON revision.id = p.current_revision_id
+JOIN company_members actor ON actor.company_id = p.company_id
+  AND actor.user_id = $1::uuid AND actor.status = 'active'
+LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
+  AND collection.id = p.collection_id
+WHERE p.company_id = $2::uuid AND p.status = 'active'
+  AND p.current_revision_id IS NOT NULL
+  AND ($3::uuid IS NULL OR p.collection_id = $3::uuid)
+ORDER BY lower(p.title), p.id
+LIMIT $5::int OFFSET $4::int
+`
+
+type ListWikiPagesForRunParams struct {
+	ActorUserID  uuid.UUID     `json:"actor_user_id"`
+	CompanyID    uuid.UUID     `json:"company_id"`
+	CollectionID uuid.NullUUID `json:"collection_id"`
+	ResultOffset int32         `json:"result_offset"`
+	ResultLimit  int32         `json:"result_limit"`
+}
+
+type ListWikiPagesForRunRow struct {
+	ID             uuid.UUID          `json:"id"`
+	Title          string             `json:"title"`
+	Summary        string             `json:"summary"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	RevisionNumber int64              `json:"revision_number"`
+	CollectionName pgtype.Text        `json:"collection_name"`
+}
+
+// One page of the browse, ordered by title so the order survives edits made
+// between two calls (recency order would shift pages across the boundary).
+func (q *Queries) ListWikiPagesForRun(ctx context.Context, arg ListWikiPagesForRunParams) ([]ListWikiPagesForRunRow, error) {
+	rows, err := q.db.Query(ctx, listWikiPagesForRun,
+		arg.ActorUserID,
+		arg.CompanyID,
+		arg.CollectionID,
+		arg.ResultOffset,
+		arg.ResultLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListWikiPagesForRunRow{}
+	for rows.Next() {
+		var i ListWikiPagesForRunRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Summary,
+			&i.UpdatedAt,
+			&i.RevisionNumber,
+			&i.CollectionName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchWikiPagesForRun = `-- name: SearchWikiPagesForRun :many
 WITH search_input AS MATERIALIZED (
-  SELECT string_agg(
-    '''' || replace(replace(lexeme, '\', '\\'), '''', '''''') || ''''
-      || CASE WHEN char_length(lexeme) >= 3 THEN ':*' ELSE '' END, ' | ')::tsquery AS query
-  FROM unnest(to_tsvector('simple', $2::text)) AS token(lexeme)
+  SELECT string_agg(term, ' & ')::tsquery AS all_query, string_agg(term, ' | ')::tsquery AS any_query
+  FROM (
+    SELECT '''' || replace(replace(lexeme, '\', '\\'), '''', '''''') || ''''
+      || CASE WHEN char_length(lexeme) >= 3 THEN ':*' ELSE '' END AS term
+    FROM unnest(to_tsvector('simple', $2::text)) AS token(lexeme)
+  ) AS terms
+), chosen AS MATERIALIZED (
+  SELECT CASE WHEN EXISTS (
+      SELECT 1 FROM company_wiki_pages p
+      WHERE p.company_id = $1::uuid AND p.status = 'active'
+        AND p.current_revision_id IS NOT NULL AND p.search_vector @@ search_input.all_query)
+    THEN search_input.all_query ELSE search_input.any_query END AS query
+  FROM search_input
 ), matches AS (
   SELECT p.id, p.title, p.summary, p.updated_at, p.collection_id, p.current_revision_id,
-    ts_rank(p.search_vector, search_input.query) AS rank,
+    chosen.query,
+    ts_rank(p.search_vector, chosen.query) AS rank,
     count(*) OVER ()::int AS total
   FROM company_wiki_pages p
   JOIN company_members actor ON actor.company_id = p.company_id
     AND actor.user_id = $3::uuid AND actor.status = 'active'
-  CROSS JOIN search_input
+  CROSS JOIN chosen
   WHERE p.company_id = $1::uuid AND p.status = 'active'
     AND p.current_revision_id IS NOT NULL
-    AND p.search_vector @@ search_input.query
+    AND p.search_vector @@ chosen.query
   ORDER BY rank DESC, p.updated_at DESC, p.id DESC
   LIMIT $4::int
 )
 SELECT matches.id, matches.title, matches.summary, matches.updated_at, matches.total,
   revision.number AS revision_number, collection.name AS collection_name,
-  ts_headline('simple', revision.body, search_input.query,
+  ts_headline('simple', revision.body, matches.query,
     'StartSel="", StopSel="", MaxFragments=2, MaxWords=28, MinWords=12, FragmentDelimiter=" ... "')::text AS snippet
 FROM matches
 JOIN wiki_revisions revision ON revision.id = matches.current_revision_id
 LEFT JOIN wiki_collections collection ON collection.company_id = $1::uuid
   AND collection.id = matches.collection_id
-CROSS JOIN search_input
 ORDER BY matches.rank DESC, matches.updated_at DESC, matches.id DESC
 `
 
@@ -429,11 +611,15 @@ type SearchWikiPagesForRunRow struct {
 	Snippet        string             `json:"snippet"`
 }
 
-// Ranked full-text search over active pages. The words of the input are OR-ed
-// as lexeme prefixes (exact below three characters), so a natural-language
-// question still finds pages and ts_rank puts the ones matching most terms
-// first. total counts every match; only result_limit rows are returned and
-// only those pay for a snippet. No lexemes means no matches.
+// Ranked full-text search over active pages. The words of the input become
+// lexeme prefixes (exact below three characters). A page holding every word
+// is the answer: when any active page matches the AND of the words, only
+// those pages are matches. Otherwise the words are OR-ed, so a natural-language
+// question that no single page covers still finds the pages matching most of
+// it. ts_rank weighs a title hit (A) over a summary (B) over a body hit (C),
+// the weights search_vector was built with (000118). total counts every
+// match; only result_limit rows are returned and only those pay for a
+// snippet. No lexemes means no matches.
 func (q *Queries) SearchWikiPagesForRun(ctx context.Context, arg SearchWikiPagesForRunParams) ([]SearchWikiPagesForRunRow, error) {
 	rows, err := q.db.Query(ctx, searchWikiPagesForRun,
 		arg.CompanyID,

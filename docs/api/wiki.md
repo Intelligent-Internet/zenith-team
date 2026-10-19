@@ -71,11 +71,14 @@ must name an Artifact item the author can open, otherwise the write is
 author cannot open them. A page cites at most 50 distinct Artifacts or items
 (`422 wiki_artifact_ref_limit`). The server keeps a current index of each
 page's citations for later backlinks.
-Page search matches prefixes of the current title and body words as the
+Page search matches prefixes of the current title, summary and body words as the
 PostgreSQL text parser splits them — an email or host is one word, and a
 partly typed one already matches; every word must match; text without letters
 or digits is no filter — filters on collection/status or
-the caller's favorites, and returns a paginated list. The API checks current
+the caller's favorites, and returns a paginated list. With a search the list is
+ranked by relevance (a title match above a summary match above a body-only
+match), then newest first; without one it is newest first. The index keeps a
+page link's label and drops its id. The API checks current
 membership for every read and locks the Company and acting membership before
 every publication transaction.
 
@@ -87,24 +90,37 @@ separate stores; no background sync is implied.
 
 An Agent's Run may read the Company Wiki; only the company-research Run may write
 it ([Agent writes](#agent-writes)). Every Run except a
-Schedule Run (Task, direct chat, root Agent) can search and read the **active**
-pages of its own Company through two routes that carry the Run's proof instead
+Schedule Run (Task, direct chat, root Agent) can search, browse and read the **active**
+pages of its own Company through three routes that carry the Run's proof instead
 of requiring a human actor:
 
 - `GET /companies/{companyId}/runs/{runId}/agent-wiki/search?q=&limit=` —
   `q` is required, trimmed and at most 200 characters; `limit` is 1–10
-  (default 5). Pages are matched with the same full-text index as page search,
-  ranked by relevance then recency; the words of `q` are OR-ed as word prefixes,
+  (default 5). Pages are matched with the same full-text index as page search
+  (title, summary and body words as prefixes, a title match ranking above a
+  summary match above a body-only one, then recency). When any page holds every
+  word of `q`, only those pages match; otherwise pages holding any word match,
   so a question in plain language still finds pages. Each item has the title,
   summary, a short snippet, the collection name, the page's content `revision`
-  and `updatedAt`; `total` counts every match.
+  and `updatedAt`; `total` counts the matches in play.
+- `GET /companies/{companyId}/runs/{runId}/agent-wiki/list?collectionId=&offset=&limit=` —
+  browses the active pages ordered by title without a search term. `collectionId`
+  narrows it to one collection (`404 wiki_collection_not_found` when it is not
+  one of the Company's); `offset` is 0–100000 (default 0); `limit` is 1–50
+  (default 25). The first page (`offset` 0) also returns `collections`, every
+  collection with its `pageCount`; later pages return an empty list. Each item has
+  `pageId`, title, summary, collection name, `revision` and `updatedAt`; `total`
+  counts the pages the listing covers and `nextOffset` is null on the last page.
 - `GET /companies/{companyId}/runs/{runId}/agent-wiki/pages/{pageId}?offset=` —
   returns at most 24000 characters of the current revision from `offset`, with
-  `returnedChars`, `totalChars`, `truncated` and `nextOffset` for paging. An
+  `returnedChars`, `totalChars`, `truncated` and `nextOffset` for paging. It also
+  names who last updated the page: `updatedByName` is the member the revision is
+  attributed to, and `updatedByAgentName` is present when an Agent (the
+  company-research Run) wrote it on that member's behalf, absent otherwise. An
   archived or missing page is `404 wiki_page_not_found`. Every read carries a
   fixed `notice`: page text is untrusted reference data, not instructions.
 
-Both require `X-Boardly-Run-Token` for a live Run of this Company whose
+All three require `X-Boardly-Run-Token` for a live Run of this Company whose
 authorizer is the caller (the proof's bearer, ADR 0017); anything else — no
 token, another Run, another Company, a Schedule Run, another member, a Run with
 no authorizer — is `401 run_token_invalid`. The Wiki has no Project, so no Run
@@ -112,7 +128,8 @@ scope narrows what a Run reads here. They live outside `/wiki/`, so the human-ac
 fence above does not apply to them.
 
 Reading is a per-Agent switch: the built-in capability group `wiki` in an
-Agent's `capabilities.disabledBuiltIns` removes the tools from its Runs, and
+Agent's `capabilities.disabledBuiltIns` removes the tools (`wiki_search`,
+`wiki_list`, `wiki_read`, `wiki_write`) from its Runs, and
 the server independently refuses the routes with `403 wiki_agent_access_disabled`,
 because the daemon's tool list alone is not authority.
 
@@ -172,11 +189,12 @@ the pages the research wrote are counted and found by key (for example the
 
 ### Evidence trail
 
-Each search and read is recorded in the same transaction as its answer, so
+Each search, browse and read is recorded in the same transaction as its answer, so
 nothing the Agent saw is missing from the trail. A read records the page, the
 exact revision whose text was returned, the page title at that time and the
 character range; a search records its query (credential formats redacted) and
-result count.
+result count; a browse (`kind` `list`) records the name of the collection it
+listed (empty for every page) and the number of pages it covered.
 
 - `GET /companies/{companyId}/runs/{runId}/wiki-reads` (human) lists a Run's
   trail oldest first, at most 200 rows. Each read row carries the page's live

@@ -58,6 +58,7 @@ func Run(ctx context.Context, getenv func(string) string) error {
 	calendarEnabled := toolExplicitlyAllowed(allowedTools, "calendar_read") ||
 		toolExplicitlyAllowed(allowedTools, "calendar_write")
 	wikiEnabled := toolExplicitlyAllowed(allowedTools, "wiki_search") ||
+		toolExplicitlyAllowed(allowedTools, "wiki_list") ||
 		toolExplicitlyAllowed(allowedTools, "wiki_read") ||
 		toolExplicitlyAllowed(allowedTools, "wiki_write")
 	pagesEnabled := toolExplicitlyAllowed(allowedTools, "project_read") ||

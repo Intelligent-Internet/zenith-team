@@ -8,6 +8,41 @@ ORDER BY lower(c.name), c.id;
 -- name: CreateWikiCollection :one
 INSERT INTO wiki_collections (company_id, name) VALUES ($1, $2) RETURNING *;
 
+-- name: CreateWikiCollectionIfAbsent :one
+-- Files the research's "Company" collection without failing a transaction
+-- when a person (or another call) creates the same name first: ON CONFLICT
+-- waits for the other transaction, then returns no row, and the caller reads
+-- the winner. A bare INSERT would abort the whole write transaction instead.
+INSERT INTO wiki_collections (company_id, name) VALUES ($1, $2)
+ON CONFLICT DO NOTHING
+RETURNING *;
+
+-- name: LockWikiCollectionsShared :exec
+-- Taken by every Wiki write that files a page into a collection (create with a
+-- collection, draft metadata, publish, restore, the research write), before
+-- any page row lock. It excludes only DeleteCollection, so filing writers
+-- never queue behind each other or behind an autosave.
+SELECT pg_advisory_xact_lock_shared(hashtextextended(
+    'boardly/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
+    0
+));
+
+-- name: LockWikiCollectionsExclusive :exec
+-- Taken only by DeleteCollection, before the collection row lock and before it
+-- unfiles pages. Deleting walks collection -> pages while a publish walks
+-- page -> collection; this lock, taken first on both sides, keeps the two
+-- orders from forming a deadlock cycle.
+SELECT pg_advisory_xact_lock(hashtextextended(
+    'boardly/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
+    0
+));
+
+-- name: GetWikiCollection :one
+-- A collection read without a row lock: the caller holds
+-- LockWikiCollectionsShared, which is what excludes a concurrent delete.
+SELECT * FROM wiki_collections
+WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(collection_id)::uuid;
+
 -- name: GetWikiCollectionForUpdate :one
 SELECT * FROM wiki_collections
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(collection_id)::uuid
@@ -91,7 +126,20 @@ WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY(sqlc.arg(publisher_ro
   AND (length(to_tsvector('simple', sqlc.arg(search)::text)) = 0
     OR p.search_vector @@ (SELECT query FROM search_input)
     OR (p.current_revision_id IS NULL AND to_tsvector('simple',d.title || ' ' || d.markdown) @@ (SELECT query FROM search_input)))
-ORDER BY p.updated_at DESC, p.id DESC
+ORDER BY
+  -- A search ranks first (title A, summary B, body C; see 000118) and falls
+  -- back to recency; browsing keeps the recency order. A draft has no stored
+  -- vector, so it is ranked on the same weights computed from its own text.
+  -- The browse arm is a constant the planner folds away, so the ordered index
+  -- still serves it.
+  CASE WHEN length(to_tsvector('simple', sqlc.arg(search)::text)) = 0 THEN 0::real
+    ELSE COALESCE(ts_rank(
+      CASE WHEN p.current_revision_id IS NULL
+        THEN setweight(to_tsvector('simple', d.title), 'A') || setweight(to_tsvector('simple', d.summary), 'B')
+          || setweight(to_tsvector('simple', d.markdown), 'C')
+        ELSE p.search_vector END,
+      (SELECT query FROM search_input)), 0::real) END DESC,
+  p.updated_at DESC, p.id DESC
 LIMIT sqlc.arg(page_limit)::int OFFSET sqlc.arg(page_offset)::int;
 
 -- name: CountWikiPagesForMember :one
@@ -117,8 +165,18 @@ WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY(sqlc.arg(publisher_ro
     OR (p.current_revision_id IS NULL AND to_tsvector('simple',d.title || ' ' || d.markdown) @@ (SELECT query FROM search_input)));
 
 -- name: GetWikiPageForUpdate :one
+-- NO KEY UPDATE excludes every other page writer but not the KEY SHARE that a
+-- wiki_links insert takes on its target, so two pages that link to each other
+-- can publish at once without deadlocking. No Wiki write changes a page key.
 SELECT id, status, version FROM wiki_pages WHERE company_id = sqlc.arg(company_id)::uuid
-  AND id = sqlc.arg(page_id)::uuid AND source_output_id IS NULL AND project_id IS NULL FOR UPDATE;
+  AND id = sqlc.arg(page_id)::uuid AND source_output_id IS NULL AND project_id IS NULL
+FOR NO KEY UPDATE;
+
+-- name: GetEditableWikiPage :one
+-- GetWikiPageForUpdate's visibility without the row lock, for readers that
+-- must not queue behind an autosave.
+SELECT id, status, version FROM wiki_pages WHERE company_id = sqlc.arg(company_id)::uuid
+  AND id = sqlc.arg(page_id)::uuid AND source_output_id IS NULL AND project_id IS NULL;
 
 -- name: CreateWikiPage :one
 INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id)
@@ -134,7 +192,11 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
 UPDATE wiki_pages SET title = sqlc.arg(title)::text, summary = sqlc.arg(summary)::text,
   collection_id = sqlc.narg(collection_id)::uuid,
   current_revision_id = sqlc.arg(revision_id)::uuid,
-  search_vector = (SELECT to_tsvector('simple', r.title || ' ' || r.body) FROM wiki_revisions r
+  search_vector = (SELECT setweight(to_tsvector('simple', r.title), 'A')
+      || setweight(to_tsvector('simple', r.summary), 'B')
+      || setweight(to_tsvector('simple', regexp_replace(r.body,
+        '\[\[(?:artifact:)?[0-9a-fA-F-]{36}(?:#[0-9]{1,2})?(?:\|([^]]*))?\]\]', '\1', 'g')), 'C')
+    FROM wiki_revisions r
     WHERE r.company_id = wiki_pages.company_id AND r.page_id = wiki_pages.id
       AND r.id = sqlc.arg(revision_id)::uuid),
   version = version + 1, next_revision_number = GREATEST(next_revision_number,(SELECT number+1 FROM wiki_revisions WHERE id=sqlc.arg(revision_id)::uuid)), updated_at = clock_timestamp()

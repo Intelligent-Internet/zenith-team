@@ -535,6 +535,11 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"conversations_project_idx",
 		"inbox_items_recipient_project_idx",
 		"activity_events_project_created_idx",
+		// 000117: Collection deletes unfile revisions and drafts through these.
+		"wiki_revisions_collection_idx",
+		"wiki_canvas_drafts_collection_idx",
+		"wiki_canvas_checkpoints_page_seq_idx",
+		"run_wiki_writes_company_created_idx",
 	})
 	t.Run("retained table timestamps", func(t *testing.T) {
 		if len(retainedTableHasUpdatedAt) != len(expectedBusinessTables) {

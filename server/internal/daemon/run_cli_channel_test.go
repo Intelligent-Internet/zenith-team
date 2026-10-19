@@ -1179,6 +1179,10 @@ func mcpToolDrivers(
 			_, err := wiki.SearchWiki(ctx, tools.WikiSearchInput{Query: "refunds"})
 			return err
 		},
+		"wiki_list": func(ctx context.Context) error {
+			_, err := wiki.ListWiki(ctx, tools.WikiListInput{Limit: 10})
+			return err
+		},
 		"wiki_read": func(ctx context.Context) error {
 			_, err := wiki.ReadWiki(ctx, tools.WikiReadInput{PageID: pageID})
 			return err

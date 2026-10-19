@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 
 	"boardly.dev/boardly/server/internal/middleware"
 	"boardly.dev/boardly/server/internal/util"
@@ -26,6 +27,7 @@ func (h *Handler) registerWikiAgentRoutes(group *gin.RouterGroup) {
 		middleware.RequireCompanyMember(h.CompanyService),
 	)
 	agent.GET("/search", h.searchWikiForRun)
+	agent.GET("/list", h.listWikiForRun)
 	agent.GET("/pages/:pageId", h.readWikiPageForRun)
 	if h.WikiAgentWriteService != nil {
 		agent.POST("/pages", h.writeWikiPagesForRun)
@@ -65,6 +67,39 @@ func (h *Handler) searchWikiForRun(c *gin.Context) {
 		return
 	}
 	result, err := h.WikiAgentReadService.Search(c.Request.Context(), principal, runID, c.Query("q"), limit)
+	if err != nil {
+		writeWikiError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}
+
+// listWikiForRun browses the active published pages for a Run: optional
+// collectionId, offset and limit.
+func (h *Handler) listWikiForRun(c *gin.Context) {
+	c.Header("Cache-Control", "private, no-store")
+	principal, runID, ok := h.contentRunPrincipal(c)
+	if !ok {
+		return
+	}
+	var collectionID *uuid.UUID
+	if raw := c.Query("collectionId"); raw != "" {
+		parsed, err := util.ParseGoUUID(raw)
+		if err != nil {
+			writeWikiError(c, wiki.ErrPageInvalidInput)
+			return
+		}
+		collectionID = &parsed
+	}
+	offset, ok := wikiQueryInt(c, "offset", 0)
+	if !ok {
+		return
+	}
+	limit, ok := wikiQueryInt(c, "limit", wiki.DefaultAgentListLimit)
+	if !ok {
+		return
+	}
+	result, err := h.WikiAgentReadService.List(c.Request.Context(), principal, runID, collectionID, offset, limit)
 	if err != nil {
 		writeWikiError(c, err)
 		return

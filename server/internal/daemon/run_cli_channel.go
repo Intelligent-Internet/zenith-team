@@ -311,6 +311,7 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		},
 		"social_read":    {social(http.MethodGet, conversation+"/social")},
 		"social_publish": {social(http.MethodPost, conversation+"/social/posts")},
+		"wiki_list":      {row(http.MethodGet, ownRun+"/agent-wiki/list")},
 		"wiki_search":    {row(http.MethodGet, ownRun+"/agent-wiki/search")},
 		"wiki_read":      {row(http.MethodGet, ownRun+"/agent-wiki/pages/*")},
 		"wiki_write":     {row(http.MethodPost, ownRun+"/agent-wiki/pages")},

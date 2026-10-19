@@ -984,3 +984,53 @@ func TestRevokedMemberCannotRead(t *testing.T) {
 		t.Fatalf("revoked write = %v", err)
 	}
 }
+
+// A search lists the best match first: a title hit, then a summary hit, then a
+// body-only hit however often the body repeats the word and however recently
+// it changed. Without a search the list stays newest first. An unpublished
+// draft, which has no stored vector, is ranked on the same weights from its
+// own text.
+func TestSearchRanksTitleThenSummaryThenBodyAndBrowsingStaysNewestFirst(t *testing.T) {
+	h := startWiki(t)
+	ctx := t.Context()
+	create := func(title, summary, body string) wiki.PageResponse {
+		t.Helper()
+		page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: title, Summary: summary, Body: body})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return page
+	}
+	create("Onboarding", "How new hires start", "Welcome aboard.")
+	create("Handbook", "How onboarding works", "Nothing about it here.")
+	draft, err := h.service.DefaultWikiService.CreatePage(ctx, h.owner, wiki.CreatePageInput{
+		Title: "Onboarding plan", Body: "Draft notes.",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	create("Policies", "Company rules", strings.Repeat("Onboarding onboarding onboarding. ", 6))
+
+	titles := func(search string) []string {
+		t.Helper()
+		list, err := h.service.ListPages(ctx, h.owner, wiki.PageListInput{Search: search, Limit: 50})
+		if err != nil {
+			t.Fatalf("search %q: %v", search, err)
+		}
+		titles := make([]string, len(list.Items))
+		for i, item := range list.Items {
+			titles[i] = item.Title
+		}
+		if int(list.Total) != len(titles) {
+			t.Fatalf("search %q total = %d, items = %d", search, list.Total, len(titles))
+		}
+		return titles
+	}
+	// The two title hits tie on rank and fall back to the newer one (the draft).
+	if got, want := titles("onboarding"), []string{draft.Title, "Onboarding", "Handbook", "Policies"}; !slices.Equal(got, want) {
+		t.Fatalf("search = %v, want %v", got, want)
+	}
+	if got, want := titles(""), []string{"Policies", draft.Title, "Handbook", "Onboarding"}; !slices.Equal(got, want) {
+		t.Fatalf("browse = %v, want newest first %v", got, want)
+	}
+}

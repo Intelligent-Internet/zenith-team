@@ -492,6 +492,8 @@ components:
       $ref: './realtime.yaml#/schemas/WikiPageRealtimeEvent'
     WikiCollectionRealtimeEvent:
       $ref: './realtime.yaml#/schemas/WikiCollectionRealtimeEvent'
+    WikiRunReadsRealtimeEvent:
+      $ref: './realtime.yaml#/schemas/WikiRunReadsRealtimeEvent'
     RealtimeEnvelope:
       $ref: './realtime.yaml#/schemas/RealtimeEnvelope'
     RunLifecyclePayload:
@@ -1372,6 +1374,8 @@ paths:
     $ref: './wiki.yaml#/paths/runWikiReads'
   /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/search:
     $ref: './wiki.yaml#/paths/agentSearch'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/list:
+    $ref: './wiki.yaml#/paths/agentList'
   /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages:
     $ref: './wiki.yaml#/paths/agentWritePages'
   /api/v1/companies/{companyId}/runs/{runId}/agent-wiki/pages/{pageId}:

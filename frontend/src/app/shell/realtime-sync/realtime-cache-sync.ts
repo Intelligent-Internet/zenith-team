@@ -1,3 +1,4 @@
+import type { WikiTag } from "@/shared/api/wiki-tags";
 import { boardlyApi } from "@/shared/api/boardly-api";
 import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import { realtimeEventConversationId } from "@/shared/realtime/realtime-client.service";
@@ -15,6 +16,9 @@ import { applyWorkCacheEvent } from "@/app/shell/realtime-sync/work-cache-update
 import type { AppDispatch } from "@/state/store";
 
 const refreshBatchDelayMs = 75;
+// A Run that publishes dozens of Wiki pages emits one frame per page.
+const wikiRefreshQuietMs = 400;
+const wikiRefreshMaxWaitMs = 2000;
 
 export function applyRealtimeCacheEvent(
   context: RealtimeSyncContext,
@@ -54,12 +58,6 @@ export function applyRealtimeCacheEvent(
         { type: "Group", id: context.companyId },
         { type: "Activity", id: context.companyId },
       ]),
-    );
-    return;
-  }
-  if (event.type === "wiki.run_reads_changed") {
-    context.dispatch(
-      boardlyApi.util.invalidateTags([{ type: "Wiki", id: context.companyId }]),
     );
     return;
   }
@@ -213,6 +211,9 @@ export function createRealtimeRefreshQueue({
 }) {
   const pending = new Set<RealtimeRefreshDomain>();
   let timer: number | undefined;
+  const pendingWiki = new Map<string, WikiTag>();
+  let wikiTimer: number | undefined;
+  let wikiBurstStartedAt = 0;
 
   const flush = () => {
     timer = undefined;
@@ -220,18 +221,43 @@ export function createRealtimeRefreshQueue({
     pending.clear();
     refreshRealtimeDomains({ companyId, dispatch, domains });
   };
+  const flushWiki = () => {
+    wikiTimer = undefined;
+    const tags = [...pendingWiki.values()];
+    pendingWiki.clear();
+    dispatch(boardlyApi.util.invalidateTags(tags));
+  };
 
   return {
     dispose() {
       if (timer !== undefined) window.clearTimeout(timer);
       timer = undefined;
       pending.clear();
+      if (wikiTimer !== undefined) window.clearTimeout(wikiTimer);
+      wikiTimer = undefined;
+      pendingWiki.clear();
     },
     request(...domains: RealtimeRefreshDomain[]) {
       domains.forEach((domain) => pending.add(domain));
       if (timer === undefined) {
         timer = window.setTimeout(flush, refreshBatchDelayMs);
       }
+    },
+    // Waits for the burst to go quiet, but never longer than the cap, so a
+    // steady trickle of Wiki frames still refreshes.
+    requestWiki(...tags: WikiTag[]) {
+      tags.forEach((tag) => pendingWiki.set(tag.id, tag));
+      const now = Date.now();
+      if (wikiTimer === undefined) {
+        wikiBurstStartedAt = now;
+      } else {
+        window.clearTimeout(wikiTimer);
+      }
+      const remaining = wikiBurstStartedAt + wikiRefreshMaxWaitMs - now;
+      wikiTimer = window.setTimeout(
+        flushWiki,
+        Math.max(0, Math.min(wikiRefreshQuietMs, remaining)),
+      );
     },
   };
 }

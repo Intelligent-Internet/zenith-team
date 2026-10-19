@@ -12,7 +12,7 @@ func TestResearchRunGetsItsPolicyAndOnlyTheWikiTools(t *testing.T) {
 	t.Parallel()
 	research := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}, Agent: RunAgentContext{IsRoot: true}}
 	tools := boardlyMCPToolsForRun(research)
-	if want := []string{"wiki_read", "wiki_search", "wiki_write"}; !slices.Equal(tools, want) {
+	if want := []string{"wiki_list", "wiki_read", "wiki_search", "wiki_write"}; !slices.Equal(tools, want) {
 		t.Fatalf("research platform tools = %v, want exactly %v", tools, want)
 	}
 	prompt := buildRunSystemPrompt(research, "/work/current", runMemoryContext{})

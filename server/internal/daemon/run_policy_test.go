@@ -105,6 +105,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"create_mail_drafts",
 				"mark_task_failed",
 				"present_output",
+				"wiki_list",
 				"wiki_read",
 				"wiki_search",
 				"project_read",
@@ -122,7 +123,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			want: []string{
 				"ask_human", "company_plan_export", "company_plan_transaction_apply",
 				"company_plan_transaction_preview", "create_mail_drafts", "list_agents",
-				"wiki_read", "wiki_search",
+				"wiki_list", "wiki_read", "wiki_search",
 			},
 			forbid: []string{
 				"mark_task_failed",
@@ -142,7 +143,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			// The export reads every Task in full with the member's session
 			// and no Run proof, so it is the root Agent's alone: any other
 			// Agent reads its own Tasks through the scoped CLI.
-			want: []string{"ask_human", "create_mail_drafts", "wiki_read", "wiki_search"},
+			want: []string{"ask_human", "create_mail_drafts", "wiki_list", "wiki_read", "wiki_search"},
 			forbid: []string{
 				"attest_milestones",
 				"company_plan_export",
@@ -159,7 +160,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				ChannelInvocation: &RunChannelInvocation{ID: "0198aa00-0000-7000-8000-0000000000b1"},
 				ExecutionProfile:  RunExecutionProfileContext{Source: "message"},
 			},
-			want:   []string{"ask_human", "create_mail_drafts", "wiki_read", "wiki_search"},
+			want:   []string{"ask_human", "create_mail_drafts", "wiki_list", "wiki_read", "wiki_search"},
 			forbid: []string{"company_plan_export", "company_plan_transaction_apply", "list_agents"},
 		},
 		{
@@ -193,6 +194,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"mark_task_failed",
 				"finalize_task_results",
 				"search_skills",
+				"wiki_list",
 				"wiki_read",
 				"wiki_search",
 				"project_read",
@@ -259,7 +261,7 @@ func TestTaskPageAuthoringKeepsItsGuideWhenCoordinationIsDisabled(t *testing.T) 
 					t.Errorf("Task tools = %v, want %q", got, tool)
 				}
 			}
-			for _, tool := range []string{"create_mail_drafts", "mark_task_failed", "company_plan_export", "wiki_read"} {
+			for _, tool := range []string{"create_mail_drafts", "mark_task_failed", "company_plan_export", "wiki_list", "wiki_read"} {
 				if slices.Contains(got, tool) {
 					t.Errorf("Task tools = %v, disabled capability still offers %q", got, tool)
 				}
@@ -1196,7 +1198,7 @@ func TestWikiToolsFollowRunKindAndCapabilityPolicy(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got := boardlyMCPToolsForRun(test.doc)
-			for _, tool := range []string{"wiki_search", "wiki_read"} {
+			for _, tool := range []string{"wiki_search", "wiki_list", "wiki_read"} {
 				if slices.Contains(got, tool) != test.want {
 					t.Fatalf("%s present=%v, want %v (tools %v)", tool, !test.want, test.want, got)
 				}
@@ -1214,6 +1216,9 @@ func TestWikiToolsFollowRunKindAndCapabilityPolicy(t *testing.T) {
 					test.want,
 					prompt,
 				)
+			}
+			if strings.Contains(prompt, "wiki_list browses") != test.want {
+				t.Fatalf("prompt wiki_list line present=%v, want %v", !test.want, test.want)
 			}
 		})
 	}

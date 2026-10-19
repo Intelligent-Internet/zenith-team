@@ -4,6 +4,7 @@ package wiki_test
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -259,6 +260,39 @@ func TestAgentSearchRanksActivePagesOfTheCompanyAndRecordsEvidence(t *testing.T)
 	}
 	if after := h.evidenceCount(t, `kind = 'search'`); after != before {
 		t.Fatalf("refused searches recorded %d rows", after-before)
+	}
+}
+
+func TestAgentReadNamesTheAgentThatWroteTheRevision(t *testing.T) {
+	h := startAgentWrite(t)
+	ctx := t.Context()
+	var agentName string
+	if err := h.pool.QueryRow(ctx, `SELECT name FROM agents WHERE id = $1`, h.fixture.AgentA).Scan(&agentName); err != nil {
+		t.Fatal(err)
+	}
+
+	written := byKey(h.write(t, h.research, page("company-overview", "Company overview", "Written by research.")))
+	researched, err := h.reads.Read(ctx, h.owner, h.research, written["company-overview"].PageID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if researched.UpdatedByAgentName == nil || *researched.UpdatedByAgentName != agentName {
+		t.Fatalf("updatedByAgentName = %v, want %q", researched.UpdatedByAgentName, agentName)
+	}
+	if researched.UpdatedByName == nil || *researched.UpdatedByName != "Schema A" {
+		t.Fatalf("updatedByName = %v, want the founder the Agent wrote for", researched.UpdatedByName)
+	}
+
+	human, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Human page", Body: "Written by a person."})
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := h.reads.Read(ctx, h.owner, h.research, human.ID, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.UpdatedByAgentName != nil {
+		t.Fatalf("updatedByAgentName = %q for a human-written page, want none", *read.UpdatedByAgentName)
 	}
 }
 
@@ -593,5 +627,276 @@ func TestPageAgentReadsGroupRunsAndHideInvisibleOnes(t *testing.T) {
 		) {
 			t.Fatalf("limit %d = %v, want ErrPageInvalidInput", limit, err)
 		}
+	}
+}
+
+func searchIDs(items []wiki.AgentSearchItem) []uuid.UUID {
+	ids := make([]uuid.UUID, len(items))
+	for i, item := range items {
+		ids[i] = item.PageID
+	}
+	return ids
+}
+
+// A title hit outranks a summary hit, which outranks a body-only hit, however
+// often the body repeats the word and however recently it was edited (000118).
+func TestAgentSearchRanksTitleThenSummaryThenBody(t *testing.T) {
+	h := startAgentRead(t)
+	ctx := t.Context()
+	create := func(title, summary, body string) wiki.PageResponse {
+		t.Helper()
+		page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: title, Summary: summary, Body: body})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return page
+	}
+	title := create("Onboarding", "How new hires start", "Welcome aboard.")
+	summary := create("Handbook", "How onboarding works", "Nothing about it here.")
+	body := create("Policies", "Company rules", strings.Repeat("Onboarding onboarding onboarding. ", 6))
+
+	result, err := h.reads.Search(ctx, h.owner, h.taskRun, "onboarding", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []uuid.UUID{title.ID, summary.ID, body.ID}
+	if got := searchIDs(result.Items); result.Total != 3 || !slices.Equal(got, want) {
+		t.Fatalf("search = %v (total %d), want title, summary, body hits in that order %v", got, result.Total, want)
+	}
+}
+
+// A question whose words all appear on one page finds that page and only the
+// pages holding every word; when no page holds them all the words are OR-ed.
+func TestAgentSearchPrefersPagesHoldingEveryWordAndFallsBackToAny(t *testing.T) {
+	h := startAgentRead(t)
+	ctx := t.Context()
+	both := h.publish(t, h.owner, "Refund policy", "Customers receive a refund within 14 days.")
+	h.publish(t, h.owner, "Refund process", "Requests are reviewed weekly.")
+	h.publish(t, h.owner, "Travel policy", "Employees book flights early.")
+	holidays := h.publish(t, h.owner, "Holidays", "The office is closed in December.")
+
+	all, err := h.reads.Search(ctx, h.owner, h.taskRun, "refund policy", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := searchIDs(all.Items); all.Total != 1 || !slices.Equal(got, []uuid.UUID{both.ID}) {
+		t.Fatalf("search = %v (total %d), want only the page with both words", got, all.Total)
+	}
+	var recorded int32
+	if err := h.pool.QueryRow(ctx, `SELECT result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'search' AND query = 'refund policy'`, h.taskRun).Scan(&recorded); err != nil || recorded != 1 {
+		t.Fatalf("recorded result_count = %d, %v; want the AND total 1", recorded, err)
+	}
+
+	// No page holds both words: pages with either one answer.
+	either, err := h.reads.Search(ctx, h.owner, h.taskRun, "refund holidays", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if either.Total != 3 || len(either.Items) != 3 {
+		t.Fatalf("fallback search = %+v, want the two refund pages and Holidays", either)
+	}
+	found := false
+	for _, item := range either.Items {
+		found = found || item.PageID == holidays.ID
+	}
+	if !found {
+		t.Fatalf("fallback search %+v misses the page holding the other word", either)
+	}
+
+	// A natural-language question is no longer a match on every page.
+	question, err := h.reads.Search(ctx, h.owner, h.taskRun, "what is the refund policy", 10)
+	if err != nil || question.Total == 0 {
+		t.Fatalf("question = %+v, %v", question, err)
+	}
+	if question.Items[0].PageID != both.ID {
+		t.Fatalf("question ranks %v first, want the Refund policy page %s", searchIDs(question.Items), both.ID)
+	}
+}
+
+// A page link keeps its label in the index and loses its id, which is not
+// text anyone searches for and would match unrelated words and numbers.
+func TestAgentSearchIndexesLinkLabelsNotLinkTargets(t *testing.T) {
+	h := startAgentRead(t)
+	ctx := t.Context()
+	target := h.publish(t, h.owner, "Pricing sheet", "Prices.")
+	index := h.publish(t, h.owner, "Index", "See [["+target.ID.String()+"|Rate card]] for details.")
+
+	byLabel, err := h.reads.Search(ctx, h.owner, h.taskRun, "rate card", 5)
+	if err != nil || len(byLabel.Items) != 1 || byLabel.Items[0].PageID != index.ID {
+		t.Fatalf("search by link label = %+v, %v", byLabel, err)
+	}
+	byID, err := h.reads.Search(ctx, h.owner, h.taskRun, target.ID.String(), 5)
+	if err != nil || byID.Total != 0 {
+		t.Fatalf("search by link target id = %+v, %v; want none", byID, err)
+	}
+}
+
+func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
+	h := startAgentRead(t)
+	ctx := t.Context()
+	handbook, err := h.service.CreateCollection(ctx, h.owner, "Handbook")
+	if err != nil {
+		t.Fatal(err)
+	}
+	policies, err := h.service.CreateCollection(ctx, h.owner, "Policies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	create := func(title string, collection *uuid.UUID) wiki.PageResponse {
+		t.Helper()
+		page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{
+			Title: title, Summary: title + " summary", Body: title + " body", CollectionID: collection,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return page
+	}
+	beta := create("Beta", &handbook.ID)
+	alpha := create("Alpha", &handbook.ID)
+	gamma := create("Gamma", &policies.ID)
+	delta := create("Delta", nil)
+	archived := create("Zeta", &handbook.ID)
+	if _, err := h.service.ArchivePage(ctx, h.owner, archived.ID, archived.Revision); err != nil {
+		t.Fatal(err)
+	}
+	foreignCollection, err := h.service.CreateCollection(ctx, h.foreign, "Foreign")
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.publish(t, h.foreign, "Foreign page", "secret")
+
+	itemIDs := func(list wiki.AgentListResponse) []uuid.UUID {
+		ids := make([]uuid.UUID, len(list.Items))
+		for i, item := range list.Items {
+			ids[i] = item.PageID
+		}
+		return ids
+	}
+
+	// The first page carries the collections and the next offset; pages
+	// come ordered by title; archived and foreign pages are absent.
+	first, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 0, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := itemIDs(first); first.Total != 4 || !slices.Equal(got, []uuid.UUID{alpha.ID, beta.ID, delta.ID}) ||
+		first.NextOffset == nil || *first.NextOffset != 3 {
+		t.Fatalf("first page = %+v, want Alpha Beta Delta of 4 and nextOffset 3", first)
+	}
+	if len(first.Collections) != 2 || first.Collections[0].Name != "Handbook" || first.Collections[0].PageCount != 2 ||
+		first.Collections[1].Name != "Policies" || first.Collections[1].PageCount != 1 {
+		t.Fatalf("collections = %+v, want Handbook 2 and Policies 1 (archived page not counted)", first.Collections)
+	}
+	if a := first.Items[0]; a.Title != "Alpha" || a.Summary != "Alpha summary" || a.Revision != 1 ||
+		a.CollectionName == nil || *a.CollectionName != "Handbook" || a.UpdatedAt.IsZero() {
+		t.Fatalf("first item = %+v", a)
+	}
+	if first.Items[2].CollectionName != nil {
+		t.Fatalf("uncollected page reports collection %q", *first.Items[2].CollectionName)
+	}
+
+	// The last page has no next offset and no collections.
+	last, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 3, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := itemIDs(last); last.Total != 4 || !slices.Equal(got, []uuid.UUID{gamma.ID}) || last.NextOffset != nil ||
+		last.Collections == nil || len(last.Collections) != 0 {
+		t.Fatalf("last page = %+v, want Gamma alone, no collections, no next offset", last)
+	}
+	past, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 40, 3)
+	if err != nil || len(past.Items) != 0 || past.Total != 4 || past.NextOffset != nil {
+		t.Fatalf("page past the end = %+v, %v; want no items and the real total", past, err)
+	}
+
+	// A collection narrows the pages and the total, not the overview.
+	filtered, err := h.reads.List(ctx, h.owner, h.taskRun, &handbook.ID, 0, 25)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := itemIDs(filtered); filtered.Total != 2 || !slices.Equal(got, []uuid.UUID{alpha.ID, beta.ID}) ||
+		filtered.NextOffset != nil || len(filtered.Collections) != 2 {
+		t.Fatalf("filtered list = %+v, want Alpha and Beta of 2", filtered)
+	}
+
+	// Every call left a list row; the browse's collection and total are on it.
+	rows, err := h.pool.Query(ctx, `SELECT query, result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'list' ORDER BY created_at, id`, h.taskRun)
+	if err != nil {
+		t.Fatal(err)
+	}
+	type listRow struct {
+		query string
+		count int32
+	}
+	var got []listRow
+	for rows.Next() {
+		var row listRow
+		if err := rows.Scan(&row.query, &row.count); err != nil {
+			t.Fatal(err)
+		}
+		got = append(got, row)
+	}
+	rows.Close()
+	if want := []listRow{{"", 4}, {"", 4}, {"", 4}, {"Handbook", 2}}; !slices.Equal(got, want) {
+		t.Fatalf("list evidence = %+v, want %+v", got, want)
+	}
+	trail, err := h.reads.ListRunReads(ctx, h.owner, h.taskRun)
+	if err != nil || len(trail.Items) != 4 {
+		t.Fatalf("trail = %+v, %v", trail, err)
+	}
+	if item := trail.Items[3]; item.Kind != "list" || item.Query != "Handbook" || item.ResultCount == nil || *item.ResultCount != 2 ||
+		item.PageID != nil || item.RevisionID != nil || item.RevisionNumber != nil || item.Page != nil {
+		t.Fatalf("list trail row = %+v", item)
+	}
+
+	// Refused browses record nothing.
+	before := h.evidenceCount(t, `kind = 'list'`)
+	unknown := uuid.New()
+	nilID := uuid.Nil
+	for name, call := range map[string]struct {
+		run        uuid.UUID
+		principal  auth.UserPrincipal
+		collection *uuid.UUID
+		offset     int
+		limit      int
+		want       error
+	}{
+		"limit 0":                 {h.taskRun, h.owner, nil, 0, 0, wiki.ErrPageInvalidInput},
+		"limit 51":                {h.taskRun, h.owner, nil, 0, 51, wiki.ErrPageInvalidInput},
+		"negative offset":         {h.taskRun, h.owner, nil, -1, 5, wiki.ErrPageInvalidInput},
+		"offset too deep":         {h.taskRun, h.owner, nil, wiki.MaxAgentListOffset + 1, 5, wiki.ErrPageInvalidInput},
+		"nil collection id":       {h.taskRun, h.owner, &nilID, 0, 5, wiki.ErrPageInvalidInput},
+		"nil Run":                 {uuid.Nil, h.owner, nil, 0, 5, wiki.ErrPageInvalidInput},
+		"unknown collection":      {h.taskRun, h.owner, &unknown, 0, 5, wiki.ErrCollectionNotFound},
+		"another Company's":       {h.taskRun, h.owner, &foreignCollection.ID, 0, 5, wiki.ErrCollectionNotFound},
+		"another Company's Run":   {h.otherRunB, h.owner, nil, 0, 5, wiki.ErrRunNotFound},
+		"non-member of the Run's": {h.taskRun, h.outsiderIn, nil, 0, 5, wiki.ErrRunNotFound},
+	} {
+		if _, err := h.reads.List(ctx, call.principal, call.run, call.collection, call.offset, call.limit); !errors.Is(err, call.want) {
+			t.Fatalf("%s list = %v, want %v", name, err, call.want)
+		}
+	}
+	if after := h.evidenceCount(t, `kind = 'list'`); after != before {
+		t.Fatalf("refused browses recorded %d rows", after-before)
+	}
+}
+
+func TestAgentListHonoursTheAgentSwitch(t *testing.T) {
+	h := startAgentRead(t)
+	ctx := t.Context()
+	h.publish(t, h.owner, "Handbook", "Company handbook text.")
+	dbtest.MustExec(t, ctx, h.pool, `UPDATE agents SET settings = $2::jsonb WHERE id = $1`,
+		h.fixture.AgentA, `{"capabilities":{"disabledBuiltIns":["wiki"]}}`)
+	if _, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 0, 5); !errors.Is(err, wiki.ErrAgentAccessDisabled) {
+		t.Fatalf("list with wiki disabled = %v, want ErrAgentAccessDisabled", err)
+	}
+	if got := h.evidenceCount(t, `true`); got != 0 {
+		t.Fatalf("disabled Agent left %d evidence rows", got)
+	}
+	dbtest.MustExec(t, ctx, h.pool, `UPDATE agents SET settings = $2::jsonb WHERE id = $1`,
+		h.fixture.AgentA, `{"capabilities":{"disabledBuiltIns":[]}}`)
+	if list, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 0, 5); err != nil || list.Total != 1 {
+		t.Fatalf("list after re-enabling = %+v, %v", list, err)
 	}
 }

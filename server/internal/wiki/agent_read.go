@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -32,6 +33,11 @@ const (
 	MaxAgentSearchLimit     = 10
 	// MaxAgentReadRunes bounds the body text one read returns.
 	MaxAgentReadRunes = 24000
+	// DefaultAgentListLimit and MaxAgentListLimit bound the pages one browse call returns.
+	DefaultAgentListLimit = 25
+	MaxAgentListLimit     = 50
+	// MaxAgentListOffset bounds how deep a browse may page.
+	MaxAgentListOffset = 100000
 	// DefaultPageAgentReadsLimit and MaxPageAgentReadsLimit bound a page's "used by" list.
 	DefaultPageAgentReadsLimit = 10
 	MaxPageAgentReadsLimit     = 50
@@ -59,25 +65,58 @@ type AgentSearchResponse struct {
 	Total int               `json:"total"`
 }
 
-// AgentReadResponse is one slice of a page's current revision. Revision and
-// RevisionID name the version whose text Content came from; the same pair is
-// recorded as the Run's evidence.
-type AgentReadResponse struct {
+// AgentListCollection is one Collection of the browse overview with the
+// number of active published pages it holds.
+type AgentListCollection struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	PageCount int       `json:"pageCount"`
+}
+
+// AgentListItem is one page of a browse. Revision is the content revision
+// number of the page's current revision.
+type AgentListItem struct {
 	PageID         uuid.UUID `json:"pageId"`
 	Title          string    `json:"title"`
 	Summary        string    `json:"summary"`
 	CollectionName *string   `json:"collectionName"`
 	Revision       int64     `json:"revision"`
-	RevisionID     uuid.UUID `json:"revisionId"`
 	UpdatedAt      time.Time `json:"updatedAt"`
-	UpdatedByName  *string   `json:"updatedByName"`
-	Content        string    `json:"content"`
-	Offset         int       `json:"offset"`
-	ReturnedChars  int       `json:"returnedChars"`
-	TotalChars     int       `json:"totalChars"`
-	Truncated      bool      `json:"truncated"`
-	NextOffset     *int      `json:"nextOffset"`
-	Notice         string    `json:"notice"`
+}
+
+// AgentListResponse is one page of the browse, ordered by title. Collections
+// is filled on the first page only (offset 0) and is empty after it. Total
+// counts every page the browse covers (the Collection's when one is named);
+// NextOffset is absent on the last page.
+type AgentListResponse struct {
+	Collections []AgentListCollection `json:"collections"`
+	Items       []AgentListItem       `json:"items"`
+	Total       int                   `json:"total"`
+	NextOffset  *int                  `json:"nextOffset"`
+}
+
+// AgentReadResponse is one slice of a page's current revision. Revision and
+// RevisionID name the version whose text Content came from; the same pair is
+// recorded as the Run's evidence. UpdatedByName is the member the revision is
+// attributed to; UpdatedByAgentName names the Agent that wrote it for them,
+// and is absent for a revision a person wrote.
+type AgentReadResponse struct {
+	PageID             uuid.UUID `json:"pageId"`
+	Title              string    `json:"title"`
+	Summary            string    `json:"summary"`
+	CollectionName     *string   `json:"collectionName"`
+	Revision           int64     `json:"revision"`
+	RevisionID         uuid.UUID `json:"revisionId"`
+	UpdatedAt          time.Time `json:"updatedAt"`
+	UpdatedByName      *string   `json:"updatedByName"`
+	UpdatedByAgentName *string   `json:"updatedByAgentName,omitempty"`
+	Content            string    `json:"content"`
+	Offset             int       `json:"offset"`
+	ReturnedChars      int       `json:"returnedChars"`
+	TotalChars         int       `json:"totalChars"`
+	Truncated          bool      `json:"truncated"`
+	NextOffset         *int      `json:"nextOffset"`
+	Notice             string    `json:"notice"`
 }
 
 // RunWikiPage is a read row's page as it is now.
@@ -87,8 +126,10 @@ type RunWikiPage struct {
 }
 
 // RunWikiRead is one entry of a Run's evidence trail. Search rows carry Query
-// and ResultCount; read rows carry the page, the pinned revision and the
-// title at read time, plus the page's live state in Page.
+// and ResultCount; list (browse) rows carry the browsed Collection's name in
+// Query (empty for every page) and the pages covered in ResultCount; read rows
+// carry the page, the pinned revision and the title at read time, plus the
+// page's live state in Page.
 type RunWikiRead struct {
 	ID             uuid.UUID    `json:"id"`
 	Kind           string       `json:"kind"`
@@ -126,7 +167,7 @@ type PageAgentReadList struct {
 // the members' view of what Runs used. Agents cannot write: there is no
 // method here that changes a page.
 //
-// Search and Read take the member the Run works for and the Run's id. The
+// Search, List and Read take the member the Run works for and the Run's id. The
 // caller has already proved the Run (its token, Company, Conversation and
 // user); the service re-reads the Run row, refuses an Agent that switched
 // Wiki reading off, and records the evidence with the result in one
@@ -139,6 +180,13 @@ type AgentReadService interface {
 		query string,
 		limit int,
 	) (AgentSearchResponse, error)
+	List(
+		ctx context.Context,
+		principal auth.UserPrincipal,
+		runID uuid.UUID,
+		collectionID *uuid.UUID,
+		offset, limit int,
+	) (AgentListResponse, error)
 	Read(
 		ctx context.Context,
 		principal auth.UserPrincipal,
@@ -259,6 +307,92 @@ func (s *DefaultAgentReadService) Search(
 	return response, nil
 }
 
+// List browses the active published pages, optionally within one Collection,
+// and records the browse as the Run's evidence like a search. A Collection
+// outside the Company is ErrCollectionNotFound and records nothing.
+func (s *DefaultAgentReadService) List(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	runID uuid.UUID,
+	collectionID *uuid.UUID,
+	offset, limit int,
+) (AgentListResponse, error) {
+	if runID == uuid.Nil || offset < 0 || offset > MaxAgentListOffset || limit < 1 || limit > MaxAgentListLimit ||
+		collectionID != nil && *collectionID == uuid.Nil {
+		return AgentListResponse{}, ErrPageInvalidInput
+	}
+	response := AgentListResponse{Collections: []AgentListCollection{}, Items: []AgentListItem{}}
+	var changed events.Event
+	err := s.store.WithinTx(ctx, snapshot, func(q *generated.Queries) error {
+		if err := admitRun(ctx, q, principal, runID); err != nil {
+			return err
+		}
+		collections, err := q.ListWikiCollectionsForRun(ctx, generated.ListWikiCollectionsForRunParams{
+			CompanyID: principal.CompanyID, ActorUserID: principal.UserID,
+		})
+		if err != nil {
+			return fmt.Errorf("list Wiki collections for Run: %w", err)
+		}
+		browsed := ""
+		if collectionID != nil {
+			index := slices.IndexFunc(collections, func(c generated.ListWikiCollectionsForRunRow) bool {
+				return c.ID == *collectionID
+			})
+			if index < 0 {
+				return ErrCollectionNotFound
+			}
+			browsed = collections[index].Name
+		}
+		if offset == 0 {
+			for _, collection := range collections {
+				response.Collections = append(response.Collections, AgentListCollection{
+					ID: collection.ID, Name: collection.Name, PageCount: int(collection.PageCount),
+				})
+			}
+		}
+		total, err := q.CountWikiPagesForRun(ctx, generated.CountWikiPagesForRunParams{
+			CompanyID: principal.CompanyID, ActorUserID: principal.UserID, CollectionID: nullableUUID(collectionID),
+		})
+		if err != nil {
+			return fmt.Errorf("count Wiki pages for Run: %w", err)
+		}
+		rows, err := q.ListWikiPagesForRun(ctx, generated.ListWikiPagesForRunParams{
+			CompanyID: principal.CompanyID, ActorUserID: principal.UserID, CollectionID: nullableUUID(collectionID),
+			ResultOffset: int32(offset), ResultLimit: int32(limit),
+		})
+		if err != nil {
+			return fmt.Errorf("list Wiki pages for Run: %w", err)
+		}
+		response.Total = int(total)
+		for _, row := range rows {
+			response.Items = append(response.Items, AgentListItem{
+				PageID: row.ID, Title: row.Title, Summary: row.Summary,
+				CollectionName: textPointer(row.CollectionName), Revision: row.RevisionNumber,
+				UpdatedAt: row.UpdatedAt.Time,
+			})
+		}
+		if next := offset + len(rows); next < response.Total && len(rows) > 0 {
+			response.NextOffset = &next
+		}
+		evidence, err := q.InsertRunWikiList(ctx, generated.InsertRunWikiListParams{
+			CompanyID: principal.CompanyID, RunID: runID, Query: browsed, ResultCount: total,
+		})
+		if err != nil {
+			return fmt.Errorf("record Wiki browse: %w", err)
+		}
+		if err := recordedEvidence(evidence); err != nil {
+			return err
+		}
+		changed, err = runReadsChangedInTx(ctx, q, principal.CompanyID, runID)
+		return err
+	})
+	if err != nil {
+		return AgentListResponse{}, err
+	}
+	s.bus.Publish(ctx, TopicWiki, changed)
+	return response, nil
+}
+
 func (s *DefaultAgentReadService) Read(
 	ctx context.Context,
 	principal auth.UserPrincipal,
@@ -296,8 +430,9 @@ func (s *DefaultAgentReadService) Read(
 			PageID: row.ID, Title: row.Title, Summary: row.Summary,
 			CollectionName: textPointer(row.CollectionName), Revision: row.RevisionNumber,
 			RevisionID: row.RevisionID, UpdatedAt: row.UpdatedAt.Time,
-			UpdatedByName: textPointer(row.UpdatedByName), Content: row.Content,
-			Offset: offset, ReturnedChars: returned, TotalChars: total,
+			UpdatedByName: textPointer(row.UpdatedByName), UpdatedByAgentName: textPointer(row.UpdatedByAgentName),
+			Content: row.Content,
+			Offset:  offset, ReturnedChars: returned, TotalChars: total,
 			Truncated: offset+returned < total, Notice: AgentUntrustedNotice,
 		}
 		if response.Truncated {

@@ -70,13 +70,34 @@ func documentResponse(d generated.WikiCanvasDraft) Document {
 	}
 }
 
-// Draft edits hold shared lifecycle locks before the page lock. Collection
-// changes retain the exclusive Company fence used by the Wiki service.
-func authorizeDraft(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) error {
+// Wiki lock order, shared by every Wiki write and the lifecycle writers it
+// must fence (Company mutation, membership revoke and role change, account
+// deletion):
+//
+//	Company -> acting membership -> [research writes] -> [collections] ->
+//	page -> draft
+//
+// Company and membership are taken FOR SHARE here. That is a complete
+// lifecycle fence: every writer of those rows updates or deletes the exact
+// Company or membership row held here, so it conflicts directly. Revoke, role
+// change, invitation accept and Company deletion also take the Company row
+// FOR UPDATE first; account deletion revokes the membership row itself. A Wiki
+// write either commits before the change or sees the revoked or demoted
+// membership, because authorizePublisher reads it under the share lock. The Wiki never needs the exclusive Company lock: it
+// would make every page create, archive or collection change wait for all
+// in-flight autosaves Company-wide and stall them in turn.
+//
+// The set-level Wiki invariants are protected below the Company, not by it:
+// collection names by the (company_id, lower(name)) unique index, revision
+// numbers and archive status by the page row lock, and a collection's
+// existence while pages are filed into it by the shared/exclusive collections
+// advisory lock (writers that file a page take lockFilingWiki, only
+// DeleteCollection takes the exclusive side).
+func authorizePublisher(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) error {
 	if _, err := q.LockCompanyForMembershipRead(ctx, p.CompanyID); errors.Is(err, pgx.ErrNoRows) {
 		return ErrPageNotFound
 	} else if err != nil {
-		return err
+		return fmt.Errorf("lock Wiki Company: %w", err)
 	}
 	member, err := q.GetCompanyMemberForShare(
 		ctx,
@@ -86,7 +107,7 @@ func authorizeDraft(ctx context.Context, q *generated.Queries, p auth.UserPrinci
 		return ErrPageNotFound
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("lock Wiki actor membership: %w", err)
 	}
 	if !auth.CompanyRole(member.Role).Can(auth.PermissionWikiPublish) {
 		return ErrPageForbidden
@@ -94,18 +115,47 @@ func authorizeDraft(ctx context.Context, q *generated.Queries, p auth.UserPrinci
 	return nil
 }
 
+// lockEditableWiki fences the actor and locks the page for a draft edit that
+// leaves the page's collection alone (autosave, block ids, the first open).
 func lockEditableWiki(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
 	id uuid.UUID,
 ) (generated.GetWikiPageForUpdateRow, error) {
-	if err := authorizeDraft(ctx, q, p); err != nil {
+	if err := authorizePublisher(ctx, q, p); err != nil {
 		return generated.GetWikiPageForUpdateRow{}, err
 	}
+	return lockActivePage(ctx, q, p.CompanyID, id)
+}
+
+// lockFilingWiki is lockEditableWiki for a write that can file the page into a
+// collection (draft metadata, publish, restore): it takes the shared
+// collections lock between the membership fence and the page lock, the order
+// DeleteCollection's exclusive lock relies on.
+func lockFilingWiki(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+) (generated.GetWikiPageForUpdateRow, error) {
+	if err := authorizePublisher(ctx, q, p); err != nil {
+		return generated.GetWikiPageForUpdateRow{}, err
+	}
+	if err := q.LockWikiCollectionsShared(ctx, p.CompanyID); err != nil {
+		return generated.GetWikiPageForUpdateRow{}, fmt.Errorf("lock Wiki collections: %w", err)
+	}
+	return lockActivePage(ctx, q, p.CompanyID, id)
+}
+
+func lockActivePage(
+	ctx context.Context,
+	q *generated.Queries,
+	companyID, id uuid.UUID,
+) (generated.GetWikiPageForUpdateRow, error) {
 	row, err := q.GetWikiPageForUpdate(
 		ctx,
-		generated.GetWikiPageForUpdateParams{CompanyID: p.CompanyID, PageID: id},
+		generated.GetWikiPageForUpdateParams{CompanyID: companyID, PageID: id},
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return row, ErrPageNotFound
@@ -119,35 +169,84 @@ func lockEditableWiki(
 	return row, nil
 }
 
+// readUpgradedDraft is ReadDocument's lock-free path: a read-only snapshot that
+// applies authorizePublisher's and lockEditableWiki's rules without taking the
+// Company, member, page or draft locks, so a reader never queues behind an
+// autosave. ok is false when no draft exists yet or it still needs the
+// legacy-Markdown upgrade; only the locked path may create or upgrade it.
+func (s *DefaultWikiService) readUpgradedDraft(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+) (draft generated.WikiCanvasDraft, ok bool, err error) {
+	err = s.store.WithinTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(q *generated.Queries) error {
+		member, err := q.GetActiveCompanyMembership(
+			ctx,
+			generated.GetActiveCompanyMembershipParams{CompanyID: p.CompanyID, UserID: p.UserID},
+		)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrPageNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if !auth.CompanyRole(member.Role).Can(auth.PermissionWikiPublish) {
+			return ErrPageForbidden
+		}
+		page, err := q.GetEditableWikiPage(ctx, generated.GetEditableWikiPageParams{CompanyID: p.CompanyID, PageID: id})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrPageNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if page.Status != "active" {
+			return ErrPageArchived
+		}
+		draft, err = q.GetCanvasDraft(ctx, generated.GetCanvasDraftParams{CompanyID: p.CompanyID, PageID: id})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		ok = err == nil && draft.SchemaVersion == 1
+		return err
+	})
+	return draft, ok, err
+}
+
 func (s *DefaultWikiService) ReadDocument(
 	ctx context.Context,
 	p auth.UserPrincipal,
 	id uuid.UUID,
 	input DocumentReadInput,
 ) (Document, error) {
-	var result Document
-	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := lockEditableWiki(ctx, q, p, id); err != nil {
+	draft, ok, err := s.readUpgradedDraft(ctx, p, id)
+	if err != nil {
+		return Document{}, err
+	}
+	if !ok {
+		err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
+			if _, err := lockEditableWiki(ctx, q, p, id); err != nil {
+				return err
+			}
+			draft, err = BlockDraftInTx(ctx, q, p.CompanyID, id)
 			return err
-		}
-		draft, err := BlockDraftInTx(ctx, q, p.CompanyID, id)
+		})
 		if err != nil {
-			return err
+			return Document{}, err
 		}
-		result = documentResponse(draft)
-		if input.Since == draft.HeadSeq {
-			result.State = nil
-			result.Content = nil
-			result.Markdown = ""
-			return nil
-		}
-		if input.Projection {
-			result.State = nil
-			return nil
-		}
-		result.State, result.StateVector, err = BlockStateDelta(draft.State, input.StateVector)
-		return err
-	})
+	}
+	result := documentResponse(draft)
+	if input.Since == draft.HeadSeq {
+		result.State = nil
+		result.Content = nil
+		result.Markdown = ""
+		return result, nil
+	}
+	if input.Projection {
+		result.State = nil
+		return result, nil
+	}
+	result.State, result.StateVector, err = BlockStateDelta(draft.State, input.StateVector)
 	return result, err
 }
 
@@ -325,7 +424,7 @@ func (s *DefaultWikiService) UpdateDraftMetadata(
 	}
 	var result Document
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := lockEditableWiki(ctx, q, p, id); err != nil {
+		if _, err := lockFilingWiki(ctx, q, p, id); err != nil {
 			return err
 		}
 		draft, err := BlockDraftInTx(ctx, q, p.CompanyID, id)
@@ -393,7 +492,7 @@ func (s *DefaultWikiService) PublishPage(
 // publishDraftInTx publishes the page's draft as its next revision and
 // rebuilds the links its body names. created reports the first publication.
 func publishDraftInTx(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, id uuid.UUID, input PublishPageInput) (response PageResponse, created bool, err error) {
-	page, err := lockEditableWiki(ctx, q, p, id)
+	page, err := lockFilingWiki(ctx, q, p, id)
 	if err != nil {
 		return response, false, err
 	}
@@ -487,7 +586,7 @@ func (s *DefaultWikiService) RestoreRevision(
 	}
 	var result Document
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		page, err := lockEditableWiki(ctx, q, p, id)
+		page, err := lockFilingWiki(ctx, q, p, id)
 		if err != nil {
 			return err
 		}

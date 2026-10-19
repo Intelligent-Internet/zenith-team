@@ -15,7 +15,6 @@ import (
 const getWikiCollectionByName = `-- name: GetWikiCollectionByName :one
 SELECT id, company_id, name, version, created_at, updated_at FROM wiki_collections
 WHERE company_id = $1::uuid AND lower(name) = lower($2::text)
-FOR UPDATE
 `
 
 type GetWikiCollectionByNameParams struct {
@@ -23,6 +22,8 @@ type GetWikiCollectionByNameParams struct {
 	Name      string    `json:"name"`
 }
 
+// No row lock: the caller holds LockWikiCollectionsShared, which excludes a
+// delete; a concurrent rename only decides which side of this write it falls on.
 func (q *Queries) GetWikiCollectionByName(ctx context.Context, arg GetWikiCollectionByNameParams) (WikiCollection, error) {
 	row := q.db.QueryRow(ctx, getWikiCollectionByName, arg.CompanyID, arg.Name)
 	var i WikiCollection
@@ -155,6 +156,24 @@ func (q *Queries) LockRunForWikiWrite(ctx context.Context, arg LockRunForWikiWri
 		&i.Disabled,
 	)
 	return i, err
+}
+
+const lockWikiResearchWrites = `-- name: LockWikiResearchWrites :exec
+SELECT pg_advisory_xact_lock(hashtextextended(
+    'boardly/wiki-research-writes/v1/' || $1::uuid::text,
+    0
+))
+`
+
+// Serializes the Company's research writes with one another and with nothing
+// else. The 40-page cap and key ownership are read-then-insert over every
+// attempt of the Company's research (a retry child shares its parent's pages),
+// so two concurrent calls must not both read the same total. Nothing but
+// AgentWriteService takes it, always right after the member lock, so it cannot
+// join a cycle with an editor's locks.
+func (q *Queries) LockWikiResearchWrites(ctx context.Context, companyID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, lockWikiResearchWrites, companyID)
+	return err
 }
 
 const setRunWikiWriteSaved = `-- name: SetRunWikiWriteSaved :exec

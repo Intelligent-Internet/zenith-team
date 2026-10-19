@@ -16,4 +16,6 @@ ORDER BY v.number DESC LIMIT 1;
 UPDATE wiki_pages SET source_output_id=$3 WHERE company_id=$1 AND id=$2;
 
 -- name: LockCanvasWikiPage :one
-SELECT id,status,version FROM wiki_pages WHERE company_id=$1 AND id=$2 FOR UPDATE;
+-- NO KEY UPDATE, like GetWikiPageForUpdate: it serializes page writers without
+-- blocking a wiki_links insert that targets this page.
+SELECT id,status,version FROM wiki_pages WHERE company_id=$1 AND id=$2 FOR NO KEY UPDATE;
