@@ -1,8 +1,7 @@
-// Package approval owns durable action approvals and human questions. Approval
-// kinds carry typed domain-resource edges; their owning domain prepares or
-// executes the action while approval owns the human decision and continuation
-// receipt. These input nouns share one lifecycle worker without being collapsed
-// into one service or one status vocabulary.
+// Package approval owns durable Company Plan approvals and human questions.
+// The Company domain executes the frozen plan while approval owns the human
+// decision and continuation receipt. These input nouns share one lifecycle
+// worker without being collapsed into one service or one status vocabulary.
 package approval
 
 import (
@@ -124,8 +123,7 @@ type ActorRef = protocol.ActorRef
 type ApprovalType string
 
 const (
-	ApprovalTypeCompanyPlanApply        ApprovalType = "company_plan_apply"
-	ApprovalTypeCommerceManifestPublish ApprovalType = "commerce_manifest_publish"
+	ApprovalTypeCompanyPlanApply ApprovalType = "company_plan_apply"
 )
 
 //nolint:revive // pre-existing name; dropping the prefix is a separate change.
@@ -168,7 +166,6 @@ type Approval struct {
 	ID                uuid.UUID          `json:"id"`
 	CompanyID         uuid.UUID          `json:"companyId"`
 	Type              ApprovalType       `json:"kind"`
-	SubjectID         *uuid.UUID         `json:"subjectId"`
 	Status            ApprovalStatus     `json:"status"`
 	Title             string             `json:"title"`
 	Summary           *string            `json:"summary"`

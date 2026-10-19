@@ -86,7 +86,7 @@ func newRootCmd() *cobra.Command {
 		cmd.GroupID = groupRuntime
 		root.AddCommand(cmd)
 	}
-	for _, cmd := range []*cobra.Command{newCommerceCmd(), newVersionCmd(), newDesktopSessionCmd()} {
+	for _, cmd := range []*cobra.Command{newVersionCmd(), newDesktopSessionCmd()} {
 		cmd.GroupID = groupAdditional
 		root.AddCommand(cmd)
 	}

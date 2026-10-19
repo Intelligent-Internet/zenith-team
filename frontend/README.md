@@ -1055,7 +1055,6 @@ Run the existing frontend checks and the generated-contract drift check:
 ```bash
 pnpm --dir frontend lint # Import cycles, layer boundaries, and formatting
 pnpm --dir frontend typecheck
-pnpm --dir frontend test:commerce-kit # Server-owned Commerce Kit tests
 pnpm --dir frontend build
 make api-types-check
 ```
@@ -1090,7 +1089,6 @@ rg 'from ["'\''](zustand|zustand/vanilla)' frontend/src frontend/electron
 
 Frontend tests are not maintained or permitted (including Electron tests). Validate
 frontend changes with lint, typecheck, build, and relevant manual UI checks.
-`test:commerce-kit` uses Vitest only for the server-owned Commerce Kit suite.
 
 - Artifacts, uploaded attachments (including images), and workspace file links
   in Agent chat share the resizable right-side file panel and fullscreen shell.

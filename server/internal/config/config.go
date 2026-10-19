@@ -104,7 +104,6 @@ type Config struct {
 	CloudRun       CloudRunConfig
 	Cloudflare     CloudflareConfig
 	Mailbox        MailboxConfig
-	Commerce       CommerceConfig
 	Social         SocialConfig
 }
 
@@ -202,15 +201,6 @@ func Load(lookup LookupEnv) (Config, error) {
 		return Config{}, errors.New(
 			"AUTH_WEB_APP_ORIGIN must appear in AUTH_WEB_ORIGINS when email authentication is enabled",
 		)
-	}
-	commerceConfig, err := loadCommerceConfig(
-		lookup,
-		appEnvironment,
-		webAppOrigin,
-		webOrigins,
-	)
-	if err != nil {
-		return Config{}, err
 	}
 	socialConfig, err := loadSocialConfig(lookup, appEnvironment)
 	if err != nil {
@@ -381,7 +371,6 @@ func Load(lookup LookupEnv) (Config, error) {
 		CloudRun:       cloudRunConfig,
 		Cloudflare:     cloudflareConfig,
 		Mailbox:        mailboxConfig,
-		Commerce:       commerceConfig,
 		Social:         socialConfig,
 	}, nil
 }

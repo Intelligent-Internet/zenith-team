@@ -149,53 +149,6 @@ backend, and canary one message through list/detail/attachment retrieval. Treat
 the default five-request-per-second Resend team limit as beta capacity and
 request a higher provider limit before public GA.
 
-### Stripe Connect Commerce (optional; all values together)
-
-Commerce keeps every Stripe credential in the Zenith Team backend. Generated Sites
-authenticate their own customers and send only short-lived ES256 request
-proofs plus approved Offer aliases; they never receive a Stripe key or a
-Zenith Team shared Site secret. Site private keys remain in the Site deployment's
-secret manager or KMS, while Zenith Team stores only public keys. Use three
-distinct restricted keys, store them in the deployment secret manager, and
-apply Stripe IP restrictions to the Zenith Team API egress addresses. Register
-`POST /api/v1/webhooks/stripe/commerce` as a Connect webhook destination whose
-event source is **Connected accounts** (not only the platform account), for the
-Checkout, Invoice, Subscription, Charge refund, and Dispute events in the
-Commerce runbook.
-
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `COMMERCE_ENABLED` | `false` | Kill switch for new catalog publishing and Checkout; Portal, entitlement reads, webhook processing, and reconciliation remain available when configured |
-| `STRIPE_CONNECT_KEY` | — | Restricted key for Connect account creation, onboarding, and fresh Account readiness reads before Checkout |
-| `STRIPE_COMMERCE_KEY` | — | Distinct restricted key for Product, Price, Customer, Checkout, and Portal writes |
-| `STRIPE_RECONCILE_KEY` | — | Distinct read-only restricted key for current-object reconciliation; sandbox deployments used for local payment testing also require **Events: Read** for connected accounts |
-| `STRIPE_PUBLISHABLE_KEY` | — | Publishable key for Stripe-hosted Connect onboarding UI |
-| `STRIPE_WEBHOOK_SECRET` | — | Secret for the Commerce webhook endpoint |
-| `STRIPE_PLATFORM_ACCOUNT_ID` | — | Exact platform `acct_` identity; Connected Account direct charges may never use this account |
-| `COMMERCE_CUSTOMER_HMAC_KEY` | — | Standard-base64 encoding of exactly 32 random bytes; durable identity material for Site/customer subject mappings and session assertions |
-| `COMMERCE_ALLOWED_CONNECTED_COUNTRIES` | `GB` | Release-pinned corridor; must currently be exactly `GB` |
-| `COMMERCE_PROVIDER_TIMEOUT_SECONDS` | `10` | Stripe and Site-authority verification request timeout, range `1..30` |
-
-The variable names are mode-neutral. Non-production accepts only Stripe test
-credentials; production accepts only live credentials and rejects the legacy
-`STRIPE_SECRET_KEY`. Rotate one restricted Stripe key at a time through the
-secret manager, restart/canary the API, confirm reconciliation and webhook
-health, and then revoke the previous key. Do not rotate
-`COMMERCE_CUSTOMER_HMAC_KEY` until a dual-key or key-ID migration exists:
-changing it would orphan existing customer subject hashes and entitlements and
-replace the session assertion signing identity. Before enabling
-`COMMERCE_ENABLED` in production, complete the documented sandbox matrix and
-repeat it against a controlled live Site.
-
-Restricted-key permissions are Zenith Team deployment configuration, never a
-Company or website-builder question. Before using the local sandbox Event
-fallback, verify the sandbox `STRIPE_RECONCILE_KEY` can list test Events while
-impersonating a known connected account. Stripe requires restricted-key
-permission changes in the Dashboard; Zenith Team cannot grant its own platform key
-additional authority through Connect onboarding. A missing permission opens a
-one-minute local retry circuit and is reported as
-`provider_permission_missing` instead of calling Stripe every poll interval.
-
 ### PostgreSQL pool
 
 | Variable | Default | Notes |

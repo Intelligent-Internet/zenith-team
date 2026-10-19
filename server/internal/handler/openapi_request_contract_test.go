@@ -112,8 +112,7 @@ func TestOpenAPIRequestBodiesMatchHandlerWireTypes(t *testing.T) {
 }
 
 func rawSignedJSONRequestRoute(route string) bool {
-	return route == "POST /api/v1/webhooks/resend/mailbox" ||
-		route == "POST /api/v1/webhooks/stripe/commerce"
+	return route == "POST /api/v1/webhooks/resend/mailbox"
 }
 
 func requestBodyMethod(method string) bool {

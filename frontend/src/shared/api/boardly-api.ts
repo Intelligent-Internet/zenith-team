@@ -64,7 +64,6 @@ export const boardlyApi = createApi({
     "Approval",
     "Artifact",
     "Company",
-    "Commerce",
     "Group",
     "Connector",
     "Conversation",

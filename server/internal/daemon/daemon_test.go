@@ -1600,7 +1600,7 @@ func TestBoardlyMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
 		CompanyID:      "01900000-0000-4000-8000-0000000000f0",
 		AgentID:        "01900000-0000-4000-8000-0000000000f1",
 		ConversationID: "01900000-0000-4000-8000-0000000000f2",
-		AuthToken:      testRunAuthTokenForCommerceDev,
+		AuthToken:      testChannelRunToken,
 	}
 	for name, endpoint := range map[string]string{
 		"channel":    "http://127.0.0.1:19713",

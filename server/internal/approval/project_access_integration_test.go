@@ -480,25 +480,3 @@ func TestTaskApprovalWithOnlyMemberDecidersIsRefused(t *testing.T) {
 		t.Fatalf("RequestCompanyPlanApply() with only a member decider error = %v, want ErrNoEligibleResolver", err)
 	}
 }
-
-// A Commerce publication Approval raised in a Task chat is told to the
-// Company approvals.resolve holders who read the chat's Project, the only
-// ones who can open it: an admin outside the Project and a member reader are
-// not told.
-func TestCommerceApprovalRecipientsReadTheTaskChat(t *testing.T) {
-	w := newProjectDecisionWorld(t)
-	outsideAdmin, _ := w.seedMember(t, "outside-admin@example.com", auth.CompanyRoleAdmin)
-	q := w.store.Queries()
-	recipients, scoped, err := commerceApprovalRecipientsInTx(w.ctx, q, w.fixture.CompanyA, w.fixture.ConversationA)
-	if err != nil || !scoped {
-		t.Fatalf("commerceApprovalRecipientsInTx() = %v, scoped %t, %v", recipients, scoped, err)
-	}
-	want := []uuid.UUID{w.fixture.UserA, w.reader.UserID}
-	slices.SortFunc(want, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
-	if !slices.Equal(recipients, want) {
-		t.Errorf("Commerce recipients = %v, want the owner and the reading admin %v", recipients, want)
-	}
-	if slices.Contains(recipients, outsideAdmin) || slices.Contains(recipients, w.deciderID) {
-		t.Errorf("Commerce recipients %v include someone who cannot open it or may not resolve it", recipients)
-	}
-}

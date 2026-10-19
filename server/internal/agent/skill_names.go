@@ -106,7 +106,7 @@ func normalizeImportedSkillName(original string) string {
 	// Protect actual native slots and release-owned skills, not the Zenith prefix.
 	switch name {
 	case "zenith-platform", "zenith-workflows", "zenith-studio-cli", "zenith-studio-cli-skill-installer",
-		"boardly-commerce", "synced", "anthropic-skills":
+		"synced", "anthropic-skills":
 		name = "custom-" + name
 	}
 	return name

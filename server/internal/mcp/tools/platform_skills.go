@@ -17,16 +17,11 @@ import (
 // reference architecture names its built-in: zenith-<name>.
 // A compiled skill's name is the directory under builtin/ and the `name:` in
 // its SKILL.md; the description is pinned here because the daemon's prompts
-// and the app quote it, and search_skills matches the Commerce prompt's query
-// against it.
+// and the app quote it, and search_skills matches queries against it.
 const (
 	zenithPlatformSkillKey         = "zenith-platform"
 	zenithPlatformSkillName        = "Zenith platform"
-	zenithPlatformSkillDescription = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, Mail drafts, and the Zenith Team Commerce Gateway procedure for payment work. Not for the product code you are working on."
-	// zenithCommerceProcedurePath is the payment procedure inside the platform
-	// skill; a payment Task loads it before any Commerce action.
-	zenithCommerceProcedurePath = "commerce/procedure.md"
-
+	zenithPlatformSkillDescription = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
 	// The Workflow playbooks ship as a second platform skill. A Task launched
 	// from the Workflows page names its playbook in the description; the Run
 	// loads <workflow-key>/playbook.md from it. Its files, name and
@@ -43,10 +38,6 @@ const ZenithWorkflowsSkillKey = zenithWorkflowsSkillKey
 // ZenithPlatformSkillKey is the reserved key of the compiled platform skill
 // every attended Run may load for the zen CLI and the product contracts.
 const ZenithPlatformSkillKey = zenithPlatformSkillKey
-
-// ZenithCommerceProcedurePath is the skill-relative path of the Commerce
-// procedure a payment Task must load before any Commerce action.
-const ZenithCommerceProcedurePath = zenithCommerceProcedurePath
 
 // reservedPlatformSkillKeys is the static floor of reserved keys. A Run's
 // Skill snapshot can never take one, whether or not that skill is linked into
@@ -134,8 +125,6 @@ func PlatformSkills(bundles []PlatformBundle) ([]PlatformSkillSummary, error) {
 // Runs can load security-critical platform procedures without a Run-scoped
 // Skill snapshot or a network dependency. The pattern names zenith-platform
 // alone, so a stray directory under builtin/ can never join the skills.
-// zenith-platform embeds dot files on purpose (its
-// commerce/templates/.env.example).
 //
 //go:embed all:builtin/zenith-platform
 var platformSkillFiles embed.FS
@@ -169,8 +158,7 @@ func checkPlatformBundle(bundle PlatformBundle, loaded []platformSkill) error {
 //
 // The compiled skills and the snapshot must load, or the Run has no skill
 // tools. A pinned bundle that does not load is dropped and reported through
-// dropped instead: its key stays reserved, and zenith-platform and the
-// Commerce procedure stay served.
+// dropped instead: its key stays reserved, and zenith-platform stays served.
 func OpenTaskSkillService(
 	snapshotRoot string,
 	bundles []PlatformBundle,

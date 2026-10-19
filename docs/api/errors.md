@@ -70,7 +70,6 @@ Two structural rules explain most of the vocabulary:
 | `oauth_flow_invalid` | OAuth state does not match a live flow, or the flow expired | Restart the OAuth flow from the beginning |
 | `desktop_handoff_invalid` | Desktop handoff code does not match a live handoff | Request a new handoff code |
 | `mailbox_webhook_invalid` | The inbound-email callback body or provider signature is invalid | The provider must send a newly signed valid event. **Do not retry** the same invalid request |
-| `commerce_webhook_invalid` | The Stripe Commerce callback body, account binding, or signature is invalid | Stripe must send a newly signed valid event. **Do not retry** the same invalid request |
 
 ## 401 — Not authenticated
 
@@ -81,7 +80,6 @@ Two structural rules explain most of the vocabulary:
 | `invalid_credentials` | Wrong email or password | Prompt again. Never retry programmatically |
 | `oauth_identity_invalid` | The provider's identity assertion did not verify | Restart the OAuth flow |
 | `oauth_provider_denied` | The user declined at the provider | Return to sign-in. This is not an error to report |
-| `owner_reauthentication_required` | Publishing a Commerce catalog requires a recent owner authentication root | Reauthenticate as the owner, then review and publish again |
 
 ## 403 — Authenticated but not permitted
 
@@ -129,10 +127,6 @@ indistinguishable.
 | `mailbox_message_not_found` | Unknown retained inbound email or attachment | Refresh the Company Email list |
 | `agent_mail_draft_not_found` | Unknown Agent Mail draft, or one outside this Conversation | Refresh the draft groups |
 | `verification_not_found` | No live email verification for this address | Start a new verification |
-| `commerce_manifest_not_found` | Unknown Commerce manifest or Offer, including one outside the Company | Refresh the Commerce manifest list |
-| `commerce_site_not_found` | Unknown Commerce Site, malformed `siteId`, inactive public Site, or a Site outside the Company | Refresh the Commerce integration list |
-| `commerce_signing_key_not_found` | Unknown or malformed Site signing key, including one outside the Company | Refresh the Site signing-key list |
-| `commerce_customer_not_found` | No Stripe Customer exists yet for this authenticated Site subject | Complete a Checkout before opening billing management |
 | `not_found` | A composite result resource is missing or outside the caller-visible Company scope | Refresh the Run result or Deliverable list |
 | `route_not_found` | No registered route matches this method and path: the path is unknown, the API version is wrong, or the method is not served on that path. The one 404 about the URL rather than a resource | Fix the URL or upgrade the client; do not retry unchanged |
 
@@ -216,20 +210,6 @@ write again with the new `revision`.
 | `run_terminal_item_invalid` | Completion nominated an item that is not this Run's newest committed `agent_text` | No head to reconcile against: re-read the transcript. Treat the provider result as failed rather than nominating a different item |
 | `attachment_conflict` | Attachment state does not allow the transition | Re-read the attachment |
 | `attachment_upload_incomplete` | Referenced before its upload completed | Complete the upload, then reference it |
-| `commerce_terms_outdated` | The current Commerce Addendum has not been accepted | Review and accept the current terms |
-| `commerce_terms_conflict` | The accepted terms digest conflicts with the cluster catalogue | Stop and surface the `requestId`; operator repair is required |
-| `commerce_account_conflict` | Stripe account state changed during the operation | Refresh Commerce account state before retrying |
-| `commerce_account_recovery_required` | An ambiguous Stripe account write crossed its safe replay horizon | Reconcile the provider account; never create another blindly |
-| `commerce_provider_setup_required` | Stripe Connect platform or connected-account setup is incomplete | Complete setup in Stripe, refresh, then retry |
-| `commerce_provider_credentials_invalid` | A configured Stripe Commerce key is invalid, deleted, or expired | Rotate the affected restricted key in Zenith Team. **Do not retry** until configuration changes |
-| `commerce_provider_permission_required` | The configured Stripe restricted key lacks permission for the attempted Commerce resource | Grant that resource permission to the restricted key. **Do not retry** until configuration changes; never substitute a secret key in Site code |
-| `commerce_tax_setup_required` | An approved Offer enables automatic tax, but Stripe Tax is not active for the connected account | Activate Stripe Tax or explicitly approve a revised automatic-tax policy. **Do not retry** unchanged and never silently disable tax |
-| `commerce_manifest_conflict` | A manifest replay, digest, or durable request key conflicts with stored state | Re-read the manifest and submit only an exact replay or a new Run request |
-| `commerce_manifest_not_approvable` | The manifest state or its exact companion Approval does not allow publication — for example the Approval expired, was resolved, is missing, or covers another digest | Refresh the manifest and Approval; never publish a different proposal through the stale action |
-| `commerce_site_signing_key_required` | A loopback sandbox Site has no pending or active public signing key | Return to the Zenith Team Task that authored the manifest, run `zen commerce dev --manifest boardly-commerce.json -- npm run dev` there, refresh, then publish again |
-| `commerce_site_verification_failed` | The Site origin proof or ES256/P-256 public signing key failed verification, or the active origin is already bound | Fix the Site verification document or authority conflict, then publish or synchronize again |
-| `commerce_operation_in_progress` | Another worker owns the Commerce operation lease | Wait briefly and refresh; do not start a second provider write |
-| `commerce_operation_recovery_required` | A provider write cannot be safely replayed without reconciliation | Reconcile durable provider state before retrying |
 | `approval_required` | The file result has not been approved for publication | Approve the Deliverable, then publish it |
 | `conflict` | A composite result, Deliverable, or publication changed or no longer permits the operation | Re-read the resource before retrying |
 
@@ -284,8 +264,6 @@ start the flow again.
 | `verification_code_locked` | Too many wrong codes — the flow's attempt budget is exhausted | Stop. The lock is **permanent** for this flow — waiting does not clear it, and resending cannot either. Open a new verification flow |
 | `agent_mail_send_limit_exceeded` | Sending would exceed the Company's rolling Agent Mail recipient limit | Wait for the reported window to clear, then retry the reviewed draft |
 | `mailbox_provider_rate_limited` | The inbound-email provider throttled a content or attachment read | Wait for `Retry-After`, then retry |
-| `commerce_rate_limited` | The Site Commerce subject exceeded its request window | Wait for `Retry-After`, then retry |
-| `commerce_provider_rate_limited` | Stripe throttled the Commerce provider request | Wait with backoff, then retry with the same operation identity; do not hot-loop |
 
 ## 500 / 502 / 503 — Server and dependency
 
@@ -308,13 +286,6 @@ Transient unless stated. Back off exponentially; do not hot-loop.
 | `connector_action_unavailable` | 503 | The active Runtime cannot currently execute the Connector action | Wait for Runtime recovery, then refresh before retrying |
 | `plugin_action_unavailable` | 503 | The active Runtime cannot currently execute the Plugin action | Wait for Runtime recovery, then refresh before retrying |
 | `mailbox_provider_unavailable` | 503 | The inbound-email provider is temporarily unavailable | Retry with backoff |
-| `commerce_provider_invalid` | 502 | Stripe returned a response that violates Zenith Team's provider contract | Retry once; if it persists, surface the `requestId` |
-| `commerce_checkout_tax_address_invalid` | 502 | Stripe rejected the Checkout customer tax location despite the Zenith Team automatic-tax contract | **Do not retry** or disable tax. Surface the `requestId` for platform diagnosis |
-| `commerce_provider_request_invalid` | 502 | Stripe deterministically rejected Zenith Team's Commerce request | **Do not retry** or invent provider parameters. Surface the `requestId` for platform diagnosis |
-| `commerce_terms_unavailable` | 503 | The configured Commerce Addendum cannot currently be served | Retry with backoff; do not accept a different digest |
-| `commerce_provider_unavailable` | 503 | Stripe Connect is temporarily unavailable | Retry with backoff using the same operation key |
-| `commerce_checkout_disabled` | 503 | This deployment has disabled the Commerce catalog and Checkout lane — including every `/companies/{companyId}/commerce/*` route of a deployment configured without Stripe, which answers this rather than a bare 404 | **Do not retry.** Hide Commerce actions and say Commerce is not enabled here |
-| `commerce_webhook_unavailable` | 503 | A valid Stripe callback could not currently be processed | Stripe may retry with backoff using the same event id |
 | `deliverable_unavailable` | 500 | A Deliverable operation failed unexpectedly | Retry once with backoff, then surface the `requestId` |
 | `publication_subdomain_taken` | 409 | This name is already reserved by an Output | Choose another name |
 | `publication_subdomain_disabled` | 503 | Custom URL routing is not configured for this publication | Restore its original Cloudflare routing configuration |

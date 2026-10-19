@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	generated "boardly.dev/boardly/server/pkg/db/generated"
 
 	"github.com/golang-migrate/migrate/v4"
 	migratedb "github.com/golang-migrate/migrate/v4/database"
@@ -2530,5 +2531,174 @@ func TestWhiteboardArtifactMigration(t *testing.T) {
 		)
 		INSERT INTO board_items(company_id,board_id,type,x,y,width,height,parent_frame_id,created_by,updated_by)
 		SELECT $1,$2,'sticky',10,10,200,100,id,$3,$3 FROM parent`, f.CompanyA, output, f.UserA)
+	}
+}
+
+// Retiring a feature must release its human-input waits without deleting the
+// decisions or provider records, or resuming an obsolete agent workflow.
+func TestCommerceRetirementPreservesHistoryAndStopsPendingWork(t *testing.T) {
+	t.Parallel()
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := runMigration(ctx, pool, "previous schema", func(m *migrate.Migrate) error {
+		return m.Migrate(115)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	var siteID uuid.UUID
+	if err := pool.QueryRow(ctx, `
+		WITH account AS (
+			INSERT INTO commerce_accounts(company_id, environment, created_by_user_id)
+			VALUES ($1, 'sandbox', $2) RETURNING id
+		)
+		INSERT INTO commerce_sites(company_id, commerce_account_id, environment,
+			site_alias, origin, verification_token_sha256, portal_return_path, created_by_user_id)
+		SELECT $1, id, 'sandbox', 'retired-site', 'https://example.test',
+			decode(repeat('ab', 32), 'hex'), '/account', $2 FROM account RETURNING id`,
+		f.CompanyA, f.UserA).Scan(&siteID); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name, kind, status, continuation string
+		wantStatus, wantContinuation     string
+		wantRevision                     int64
+		id                               uuid.UUID
+	}{
+		{
+			name: "pending publication", kind: "commerce_manifest_publish", status: "pending",
+			wantStatus: "cancelled", wantContinuation: "abandoned", wantRevision: 2,
+		},
+		{
+			name:             "queued continuation",
+			kind:             "commerce_manifest_publish",
+			status:           "approved",
+			continuation:     "pending",
+			wantStatus:       "approved",
+			wantContinuation: "abandoned",
+			wantRevision:     2,
+		},
+		{
+			name:             "completed history",
+			kind:             "commerce_manifest_publish",
+			status:           "approved",
+			continuation:     "delivered",
+			wantStatus:       "approved",
+			wantContinuation: "delivered",
+			wantRevision:     1,
+		},
+		{
+			name: "current plan", kind: "company_plan_apply", status: "pending",
+			wantStatus: "pending", wantRevision: 1,
+		},
+	}
+	for i := range tests {
+		test := &tests[i]
+		var manifestID uuid.NullUUID
+		if test.kind == "commerce_manifest_publish" {
+			manifestID.Valid = true
+			if err := pool.QueryRow(ctx, `
+				INSERT INTO commerce_manifests(company_id, site_id, task_id, run_id,
+					request_key, schema_version, canonical_json, digest)
+				VALUES ($1, $2, $3, $4, gen_random_uuid(), 2, '{}',
+					decode(md5($5) || md5($5), 'hex')) RETURNING id`,
+				f.CompanyA, siteID, f.TaskA, f.RunA, test.name).Scan(&manifestID.UUID); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := pool.QueryRow(ctx, `
+			INSERT INTO approvals(company_id, type, status, commerce_manifest_id, rule_key,
+				title, preview_markdown, requested_by_agent_id, origin_run_id, request_key,
+				task_id, conversation_id, canonical_action, request_sha256, action_sha256,
+				expires_at, continuation_status, continuation_prompt, continuation_next_attempt_at,
+				continuation_run_id)
+			VALUES ($1, $2, $3, $4, $2, $5, '', $6, $7, gen_random_uuid(), $8, $9,
+				'{}', decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex'),
+				now() - interval '1 hour', NULLIF($10, ''), 'Resume work', now(),
+				CASE WHEN $10 = 'delivered' THEN $7::uuid END) RETURNING id`,
+			f.CompanyA, test.kind, test.status, manifestID, test.name, f.AgentA,
+			f.RunA, f.TaskA, f.ConversationA, test.continuation).Scan(&test.id); err != nil {
+			t.Fatal(err)
+		}
+		dbtest.MustExec(t, ctx, pool, `
+			INSERT INTO inbox_items(company_id, recipient_user_id, kind, entity_type,
+				entity_id, title, body, dedupe_key)
+			VALUES ($1, $2, 'approval_request', 'approval', $3, $4, '', $3)`,
+			f.CompanyA, f.UserA, test.id.String(), test.name)
+	}
+	for _, step := range []struct {
+		name    string
+		version uint
+	}{
+		{"upgrade", 116}, {"rollback", 115}, {"reapply", 116},
+	} {
+		if err := runMigration(ctx, pool, step.name, func(m *migrate.Migrate) error {
+			return m.Migrate(step.version)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		for _, test := range tests {
+			var status, continuation, reason string
+			var revision int64
+			if err := pool.QueryRow(ctx, `SELECT status, COALESCE(continuation_status, ''),
+				COALESCE(continuation_abandon_reason, ''), version FROM approvals WHERE id = $1`, test.id).
+				Scan(&status, &continuation, &reason, &revision); err != nil {
+				t.Fatal(err)
+			}
+			if status != test.wantStatus || continuation != test.wantContinuation ||
+				revision != test.wantRevision {
+				t.Errorf(
+					"%s / %s = (%s, %s, %d), want (%s, %s, %d)",
+					step.name,
+					test.name,
+					status,
+					continuation,
+					revision,
+					test.wantStatus,
+					test.wantContinuation,
+					test.wantRevision,
+				)
+			}
+			if test.wantContinuation == "abandoned" && reason != "feature_removed" {
+				t.Errorf(
+					"%s / %s abandon reason = %q, want feature_removed",
+					step.name,
+					test.name,
+					reason,
+				)
+			}
+			var read, archived bool
+			var inboxRevision int64
+			if err := pool.QueryRow(ctx, `
+				SELECT read_at IS NOT NULL, archived_at IS NOT NULL, version
+				FROM inbox_items WHERE company_id = $1 AND entity_id = $2`,
+				f.CompanyA, test.id.String()).Scan(&read, &archived, &inboxRevision); err != nil {
+				t.Fatal(err)
+			}
+			retired := test.kind == "commerce_manifest_publish"
+			_, projectionErr := generated.New(pool).GetApprovalProjectionForSystem(ctx,
+				generated.GetApprovalProjectionForSystemParams{
+					CompanyID: f.CompanyA, ApprovalID: test.id,
+				})
+			if retired && !errors.Is(projectionErr, pgx.ErrNoRows) {
+				t.Errorf("%s / %s projection error = %v, want pgx.ErrNoRows", step.name, test.name, projectionErr)
+			} else if !retired && projectionErr != nil {
+				t.Errorf("%s / %s projection error = %v, want nil", step.name, test.name, projectionErr)
+			}
+			wantInboxRevision := int64(1)
+			if retired {
+				wantInboxRevision = 2
+			}
+			if read != retired || archived != retired || inboxRevision != wantInboxRevision {
+				t.Errorf("%s / %s Inbox = (%t, %t, %d), want (%t, %t, %d)",
+					step.name, test.name, read, archived, inboxRevision,
+					retired, retired, wantInboxRevision)
+			}
+		}
+		var manifests int
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM commerce_manifests WHERE site_id = $1`, siteID).
+			Scan(&manifests); err != nil || manifests != 3 {
+			t.Fatalf("%s preserved manifests = %d, %v; want 3", step.name, manifests, err)
+		}
 	}
 }

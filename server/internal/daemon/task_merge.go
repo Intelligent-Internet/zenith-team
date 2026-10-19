@@ -424,7 +424,8 @@ func (d *Daemon) acceptTaskMergeWithLease(
 		return blockedDaemonTaskMerge("invalid_context", errors.New("invalid task merge context"))
 	}
 	task := document.ExecutionProfile.Task
-	if task == nil || task.ConversationID != claim.ConversationID || document.ExecutionProfile.Project == nil || !validCommerceCompanyID(document.ExecutionProfile.Project.ID) {
+	if task == nil || task.ConversationID != claim.ConversationID || document.ExecutionProfile.Project == nil ||
+		uuid.Validate(document.ExecutionProfile.Project.ID) != nil {
 		return blockedDaemonTaskMerge("invalid_context", errors.New("invalid task merge context"))
 	}
 	input := workspace.TaskMergeInput{

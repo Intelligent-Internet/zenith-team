@@ -1204,7 +1204,7 @@ Each membership transition bumps the membership row's `revision`, the
 concurrency token every membership mutation takes as `expectedRevision`.
 Roles assign, permissions enforce: an owner holds every permission, an
 admin holds every permission except `company.delete`,
-`members.owners.manage`, `commerce.manage` and `results.publish`, and a
+`members.owners.manage` and `results.publish`, and a
 member holds `conversations.discuss` and `plugins.manage` (installing
 plugins and connecting apps on their own computer, D28). A company keeps at least one active
 owner; nobody is invited as owner.

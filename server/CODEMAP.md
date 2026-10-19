@@ -690,16 +690,6 @@ schema and payload cleanup.
   fences, realtime audiences and Activity history enforce the permission alongside
   chat/Project access. It stays separate from `internal/inbox`: email is user content,
   while Inbox items are Boardly notifications.
-- `internal/commerce` owns Company Stripe Connect setup, immutable Task-authored
-  catalog manifests, Site/customer bindings, Site-owned ES256 request authority,
-  Checkout and Customer Portal operations, webhook receipts, reconciliation,
-  and entitlement projections. The separate domain is required because the
-  owner-facing account lifecycle, Run-scoped MCP manifest flow, public Site
-  gateway, and provider callbacks share one transactional authority while
-  Stripe remains isolated behind `internal/infra/stripe`. Public Site proof
-  fetching is isolated in `internal/infra/siteverify` because its hardened
-  resolver, dial, redirect, size, and timeout policy is an outbound-network
-  adapter and must not enter the transport-independent Commerce domain.
 - `internal/task` owns the closed milestone and execution classifications,
   Task execution generations, Agent-reported business failure, and durable
   upward done/failed outcome reports. `run_scope.go` owns what a Run may read
@@ -823,7 +813,7 @@ server/
 │                        diagnostics additionally mask email addresses
 ├── internal/
 │   ├── auth/ account/ company/ conversation/ inbox/ approval/
-│   │   attachment/ usage/ telemetry/ commerce/
+│   │   attachment/ usage/ telemetry/
 │   │                    product domains: handler → service → sqlc queries.
 │   │                    conversation/huddle_ai.go owns voice intent, leases,
 │   │                    recovery, exact call-chat delivery and attempt receipts;
@@ -1076,8 +1066,7 @@ server/
 │   ├── infra/           technology adapters: cloudrun/ (public application
 │   │                    build/deploy), email/, redis/ (required shared client),
 │   │                    storage/ (S3-compatible
-│   │                    ObjectStorage and Cloudflare KV route projections),
-│   │                    stripe/, and SSRF-safe Commerce origin proof in siteverify/
+│   │                    ObjectStorage and Cloudflare KV route projections)
 │   ├── config/          env configuration, logger construction, secret
 │   │                    redaction
 │   ├── util/            boundary helpers: pgtype conversions for text, time

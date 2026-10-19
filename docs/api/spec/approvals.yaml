@@ -129,7 +129,7 @@ paths:
                       type: object
                       required: [kind, requested, approved, rejected, expired, cancelled]
                       properties:
-                        kind: { type: string, enum: [company_plan_apply, commerce_manifest_publish] }
+                        kind: { type: string, enum: [company_plan_apply] }
                         requested: { type: integer, format: int64 }
                         approved: { type: integer, format: int64 }
                         rejected: { type: integer, format: int64 }
@@ -174,9 +174,7 @@ paths:
       description: |
         Resolves a `company_plan_apply` request and executes the frozen action
         synchronously, so the response reports the real outcome rather than an
-        intent. A `commerce_manifest_publish` Approval is resolved only by the
-        exact Commerce `approve-publish` route after catalog activation; using
-        this generic route for it returns `409 approval_conflict`.
+        intent.
 
         Who decides (ADR 0017): an Approval raised in a Task chat that has a
         Project needs `project.approvals.resolve` on that Project, and the
@@ -232,7 +230,7 @@ paths:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }
         '409':
-          description: '`409 approval_conflict` — already resolved, a revision mismatch, or a Commerce Approval that must use its manifest publish route — or `409 work_plan_conflict` — approving a Company Plan whose apply the current state refuses (for example a new Project under a key that is taken, or a terminal Task the plan would change); the Approval stays pending.'
+          description: '`409 approval_conflict` — already resolved or a revision mismatch — or `409 work_plan_conflict` — approving a Company Plan whose apply the current state refuses (for example a new Project under a key that is taken, or a terminal Task the plan would change); the Approval stays pending.'
           content:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }
@@ -250,7 +248,6 @@ paths:
       tags: [approvals]
       operationId: rejectApproval
       summary: Reject a Company Plan approval without executing
-      description: A Commerce manifest Approval is domain-owned and returns `409 approval_conflict` on this generic route.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - name: approvalId
@@ -294,7 +291,7 @@ paths:
       tags: [approvals]
       operationId: cancelApproval
       summary: Withdraw an approval without a decision
-      description: Requires `approvals.resolve` for Company Plan approvals, or `project.approvals.resolve` on the Project of the Task chat a Task-origin Approval was raised in (ADR 0017; `403 project_permission_required`). A Commerce manifest Approval returns `409 approval_conflict` on this generic route.
+      description: Requires `approvals.resolve` for Company Plan approvals, or `project.approvals.resolve` on the Project of the Task chat a Task-origin Approval was raised in (ADR 0017; `403 project_permission_required`).
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - name: approvalId
@@ -586,7 +583,6 @@ schemas:
       - id
       - companyId
       - kind
-      - subjectId
       - status
       - title
       - summary
@@ -607,11 +603,7 @@ schemas:
     properties:
       id: { type: string, format: uuid }
       companyId: { type: string, format: uuid }
-      kind: { type: string, enum: [company_plan_apply, commerce_manifest_publish] }
-      subjectId:
-        type: [string, "null"]
-        format: uuid
-        description: Exact domain resource authorized by the Approval; the Commerce manifest ID for `commerce_manifest_publish` and null for Company Plan apply.
+      kind: { type: string, enum: [company_plan_apply] }
       status:
         allOf: [{ $ref: '#/schemas/ApprovalStatus' }]
         description: |
@@ -624,7 +616,7 @@ schemas:
         type: string
         description: Rendered as Markdown, never as HTML.
       presentation:
-        description: Structured Company Plan preview; null for other Approval kinds.
+        description: Structured Company Plan preview; older requests may have no presentation.
         oneOf:
           - { $ref: '#/schemas/CompanyPlanApprovalPresentation' }
           - { type: "null" }

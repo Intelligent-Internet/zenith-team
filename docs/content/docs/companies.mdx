@@ -60,10 +60,9 @@ A membership holds one [role](/concepts#role): `owner`, `admin` or `member`. Rol
 | **Create projects; rename, archive and give access to any project, without seeing inside it; manage schedules** | `projects.manage`, `schedules.manage` | ✓ | ✓ | — |
 | **Resolve approvals** outside projects (inside a project it is that project's access), **take over results nobody owns** | `approvals.resolve`, `results.review` | ✓ | ✓ | — |
 | **Create the company mailbox** | `mailbox.manage` | ✓ | ✓ | — |
-| **See usage and revenue** | `usage.read`, `commerce.read` | ✓ | ✓ | — |
+| **See usage** | `usage.read` | ✓ | ✓ | — |
 | **Publish results to public URLs** | `results.publish` | ✓ | — | — |
 | **Manage owners, transfer ownership** | `members.owners.manage` | ✓ | — | — |
-| **Accept commerce terms, connect payouts, publish catalogs** | `commerce.manage` | ✓ | — | — |
 | **Delete the company** | `company.delete` | ✓ | — | — |
 
 A company keeps at least one active owner: the last owner cannot leave, be removed or be demoted until ownership is transferred. Nobody is invited as owner. Team and lifecycle changes are a person's decisions: a Run acting through its proof holds its authorizer's role but is refused with `403 human_actor_required`. Runtimes sit outside the role table: a runtime is its registrant's alone, and no role lets anyone else see it, remove it or run work on it (ADR 0014).

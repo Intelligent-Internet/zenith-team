@@ -129,13 +129,12 @@ func TestRunScopedToolsCallTheServerOnlyThroughTheRunChannel(t *testing.T) {
 	pages, pagesErr := NewPageToolService(api, run)
 	mail, mailErr := NewMailService(api, run)
 	failures, failuresErr := NewTaskFailureService(api, run)
-	commerce, commerceErr := NewCommerceToolService(api, run)
 	milestones, milestonesErr := NewMilestoneToolService(api, run)
 	// present_output is completed by the daemon itself, but it rides the same
 	// channel named by run.json: its endpoint and capability, never a bearer.
 	outputs, outputsErr := NewOutputChannelService(server.URL, capability, run.RunID)
 	if err := errors.Join(
-		calendarErr, socialErr, wikiErr, pagesErr, mailErr, failuresErr, commerceErr, milestonesErr,
+		calendarErr, socialErr, wikiErr, pagesErr, mailErr, failuresErr, milestonesErr,
 		outputsErr,
 	); err != nil {
 		t.Fatalf("build the tool services: %v", err)
@@ -159,22 +158,6 @@ func TestRunScopedToolsCallTheServerOnlyThroughTheRunChannel(t *testing.T) {
 		},
 		"calendar_write": func(ctx context.Context) error {
 			_, err := calendar.WriteCalendar(ctx, WriteCalendarInput{Action: "create"})
-			return err
-		},
-		"commerce_account_status": func(ctx context.Context) error {
-			_, err := commerce.CommerceAccountStatus(ctx, CommerceAccountStatusInput{})
-			return err
-		},
-		"commerce_manifest_status": func(ctx context.Context) error {
-			_, err := commerce.CommerceManifestStatus(ctx, CommerceManifestStatusInput{
-				ManifestID: uuid.NewString(),
-			})
-			return err
-		},
-		"commerce_manifest_submit": func(ctx context.Context) error {
-			_, err := commerce.SubmitCommerceManifest(ctx, SubmitCommerceManifestInput{
-				Environment: "sandbox", Manifest: testCommerceManifest(),
-			})
 			return err
 		},
 		"company_plan_export": func(ctx context.Context) error {

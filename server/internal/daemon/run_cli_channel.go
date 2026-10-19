@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -235,16 +236,6 @@ func runZenCommands(run Run, doc RunContext) []runCLICommand {
 	if _, ok := tools["create_mail_drafts"]; ok {
 		commands = append(commands, zen("zen mail draft", http.MethodPost, conversation+"/mail-draft-groups"))
 	}
-	if _, ok := tools["commerce_account_status"]; ok {
-		commands = append(commands,
-			zen("zen commerce account-status", http.MethodGet, company+"/commerce/account-status"),
-		)
-	}
-	if _, ok := tools["commerce_manifest_status"]; ok {
-		commands = append(commands,
-			zen("zen commerce manifest get <id>", http.MethodGet, company+"/commerce/manifests/*"),
-		)
-	}
 	return commands
 }
 
@@ -282,9 +273,6 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		"attest_milestones":                {row(http.MethodPost, company+"/milestone-attestations")},
 		"calendar_read":                    {row(http.MethodGet, conversation+"/calendar")},
 		"calendar_write":                   {row(http.MethodPost, conversation+"/calendar")},
-		"commerce_account_status":          {row(http.MethodGet, company+"/commerce/account-status")},
-		"commerce_manifest_status":         {row(http.MethodGet, company+"/commerce/manifests/*")},
-		"commerce_manifest_submit":         {row(http.MethodPost, company+"/commerce/manifests")},
 		"company_plan_export":              planReads,
 		"company_plan_transaction_preview": planReads,
 		"company_plan_transaction_apply":   {row(http.MethodPost, company+"/company-plan/apply")},
@@ -682,7 +670,7 @@ func (d *Daemon) registerRunChannel(
 // lookupRunChannel resolves the Authorization header to a live channel and
 // holds it in flight until release is called.
 func (d *Daemon) lookupRunChannel(header string) (*runChannel, func(), bool) {
-	capability, ok := parseCommerceDevAuthorization(header, runchannel.AuthorizationScheme)
+	capability, ok := parseRunChannelAuthorization(header)
 	if !ok || !runchannel.ValidCapability(capability) {
 		return nil, nil, false
 	}
@@ -700,8 +688,8 @@ func (d *Daemon) lookupRunChannel(header string) (*runChannel, func(), bool) {
 	return channel, func() { releaseOnce.Do(channel.inflight.Done) }, true
 }
 
-// writeRunControlConfig places run.json in the Run's isolated home with the
-// same private-file discipline as the Commerce bootstrap.
+// writeRunControlConfig places run.json in the Run's isolated home with
+// user-only permissions and an atomic rename.
 func writeRunControlConfig(directory string, config runchannel.RunControlConfig) (string, error) {
 	encoded, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
@@ -1039,4 +1027,59 @@ func writeRunChannelError(w http.ResponseWriter, status int, code, reason string
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(runchannel.ErrorBody{SchemaVersion: 1, Code: code, Reason: reason})
+}
+
+// writePrivateFile installs data at path readable by this user alone: the
+// directory is 0700, the bytes land in a temporary sibling that is chmod 0600,
+// written, synced and renamed into place, so a reader never sees a partial
+// file and nothing else on the machine can read it.
+func writePrivateFile(path string, data []byte) error {
+	directory := filepath.Dir(path)
+	if err := os.MkdirAll(directory, 0o700); err != nil {
+		return fmt.Errorf("create private state directory: %w", err)
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(directory, 0o700); err != nil {
+			return fmt.Errorf("secure private state directory: %w", err)
+		}
+	}
+	temporary, err := os.CreateTemp(directory, ".private-*.tmp")
+	if err != nil {
+		return fmt.Errorf("create temporary private file: %w", err)
+	}
+	temporaryPath := temporary.Name()
+	defer os.Remove(temporaryPath)
+	if err := temporary.Chmod(0o600); err != nil {
+		temporary.Close()
+		return fmt.Errorf("secure temporary private file: %w", err)
+	}
+	if _, err := io.Copy(temporary, bytes.NewReader(data)); err != nil {
+		temporary.Close()
+		return fmt.Errorf("write temporary private file: %w", err)
+	}
+	if err := temporary.Sync(); err != nil {
+		temporary.Close()
+		return fmt.Errorf("sync temporary private file: %w", err)
+	}
+	if err := temporary.Close(); err != nil {
+		return fmt.Errorf("close temporary private file: %w", err)
+	}
+	if err := os.Rename(temporaryPath, path); err != nil {
+		return fmt.Errorf("install private file: %w", err)
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(path, 0o600); err != nil {
+			return fmt.Errorf("secure private file: %w", err)
+		}
+	}
+	return nil
+}
+
+func parseRunChannelAuthorization(header string) (string, bool) {
+	prefix := runchannel.AuthorizationScheme + " "
+	if !strings.HasPrefix(header, prefix) || strings.Count(header, " ") != 1 {
+		return "", false
+	}
+	capability := strings.TrimPrefix(header, prefix)
+	return capability, capability != ""
 }

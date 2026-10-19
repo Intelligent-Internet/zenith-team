@@ -639,8 +639,7 @@ paths:
         The release-owned procedures every attended Run can load through
         `search_skills` / `load_skill_reference`. Today there are two, in
         this order: `zenith-platform`, the zen CLI and the product contracts
-        behind it, with one reference per domain and the Commerce Gateway
-        procedure (`commerce/procedure.md`) for payment work; and
+        behind it, with one reference per domain; and
         `zenith-workflows`, one `<workflow-key>/playbook.md` per Workflow in
         the catalog (`listWorkflows`); the Workflow forms (`workflow.yaml`)
         are the page's input, not references. The list is read from the files

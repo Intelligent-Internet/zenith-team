@@ -59,9 +59,6 @@ func removeDisabledBoardlyTools(allowed map[string]struct{}, disabled []string) 
 				"calendar_write",
 				"social_read",
 				"social_publish",
-				"commerce_account_status",
-				"commerce_manifest_status",
-				"commerce_manifest_submit",
 				"search_skills",
 				"load_skill_reference",
 			}

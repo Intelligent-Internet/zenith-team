@@ -173,8 +173,6 @@ tags:
     description: Token/cost usage reports and the activity insight tile.
   - name: diagnostics
     description: Crash report intake.
-  - name: commerce
-    description: Stripe Connect setup, reviewed catalogs, and the thin Site Commerce gateway.
   - name: realtime
     description: WebSocket upgrade endpoints. Not HTTP request/response.
   - name: daemon
@@ -970,41 +968,6 @@ paths:
   /api/v1/companies/{companyId}/resources/{resourceId}:
     $ref: './companies.yaml#/paths/companies_companyId_resources_resourceId'
 
-  # ---------------------------------------------------------- commerce
-  /api/v1/companies/{companyId}/commerce/summary:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_summary'
-  /api/v1/companies/{companyId}/commerce/account-status:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_account_status'
-  /api/v1/companies/{companyId}/commerce/terms-acceptances:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_terms_acceptances'
-  /api/v1/companies/{companyId}/commerce/accounts/{environment}/account-session:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_account_session'
-  /api/v1/companies/{companyId}/commerce/accounts/{environment}/onboarding-link:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_onboarding_link'
-  /api/v1/companies/{companyId}/commerce/accounts/{environment}/dashboard-link:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_accounts_environment_dashboard_link'
-  /api/v1/companies/{companyId}/commerce/manifests:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests'
-  /api/v1/companies/{companyId}/commerce/manifests/{manifestId}:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests_manifestId'
-  /api/v1/companies/{companyId}/commerce/manifests/{manifestId}/approve-publish:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_manifests_manifestId_approve_publish'
-  /api/v1/companies/{companyId}/commerce/sites/{siteId}/signing-keys/sync:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_sites_siteId_signing_keys_sync'
-  /api/v1/companies/{companyId}/commerce/sites/{siteId}/signing-keys/{keyId}/revoke:
-    $ref: './commerce.yaml#/paths/companies_companyId_commerce_sites_siteId_signing_keys_keyId_revoke'
-  /api/v1/site-commerce/jwks:
-    $ref: './commerce.yaml#/paths/site_commerce_jwks'
-  /api/v1/site-commerce/challenges:
-    $ref: './commerce.yaml#/paths/site_commerce_challenges'
-  /api/v1/site-commerce/checkout-sessions:
-    $ref: './commerce.yaml#/paths/site_commerce_checkout_sessions'
-  /api/v1/site-commerce/portal-sessions:
-    $ref: './commerce.yaml#/paths/site_commerce_portal_sessions'
-  /api/v1/site-commerce/entitlements/verify:
-    $ref: './commerce.yaml#/paths/site_commerce_entitlements_verify'
-  /api/v1/webhooks/stripe/commerce:
-    $ref: './commerce.yaml#/paths/webhooks_stripe_commerce'
 
   # ---------------------------------------------------------- agents
   /api/v1/companies/{companyId}/agents:
@@ -1278,8 +1241,6 @@ paths:
     $ref: './daemon.yaml#/paths/daemon_config'
   /api/v1/daemon/companies:
     $ref: './daemon.yaml#/paths/daemon_companies'
-  /api/v1/daemon/companies/{companyId}/commerce/sites/{siteAlias}/local-signing-keys:
-    $ref: './daemon.yaml#/paths/daemon_companies_companyId_commerce_sites_siteAlias_local_signing_keys'
   /api/v1/daemon/ws:
     $ref: './daemon.yaml#/paths/daemon_ws'
   /api/v1/daemon/runs/claim:

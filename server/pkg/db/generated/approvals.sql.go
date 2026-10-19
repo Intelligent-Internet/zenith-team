@@ -157,7 +157,8 @@ FROM approvals
 LEFT JOIN conversations AS origin_chat
   ON origin_chat.id = approvals.conversation_id
  AND origin_chat.company_id = approvals.company_id
-WHERE approvals.company_id = $1::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = $1::uuid
   AND approvals.created_at >= $2::timestamptz
   AND (
       NOT $3::boolean
@@ -261,7 +262,8 @@ func (q *Queries) ApprovalStatsByRule(ctx context.Context, arg ApprovalStatsByRu
 const claimDueApprovalContinuation = `-- name: ClaimDueApprovalContinuation :one
 SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
 FROM approvals
-WHERE company_id = $1::uuid
+WHERE type = 'company_plan_apply'
+  AND company_id = $1::uuid
   AND continuation_status = 'pending'
   AND continuation_next_attempt_at <= statement_timestamp()
 ORDER BY continuation_next_attempt_at, id
@@ -360,29 +362,28 @@ func (q *Queries) ClaimDueQuestionContinuation(ctx context.Context, companyID uu
 const createApproval = `-- name: CreateApproval :one
 
 INSERT INTO approvals (
-    company_id, type, commerce_manifest_id, rule_key, title, summary, preview_markdown, presentation,
+    company_id, type, rule_key, title, summary, preview_markdown, presentation,
     requested_by_agent_id, origin_run_id, request_key, task_id,
     conversation_id, origin_user_id, canonical_action,
     request_sha256, action_sha256, expires_at
 ) VALUES (
     $1::uuid,
     $2::text,
-    $3::uuid,
+    $3::text,
     $4::text,
     $5::text,
     $6::text,
-    $7::text,
-    $8::jsonb,
+    $7::jsonb,
+    $8::uuid,
     $9::uuid,
     $10::uuid,
     $11::uuid,
     $12::uuid,
     $13::uuid,
-    $14::uuid,
-    $15::jsonb,
+    $14::jsonb,
+    $15::bytea,
     $16::bytea,
-    $17::bytea,
-    $18::timestamptz
+    $17::timestamptz
 )
 ON CONFLICT (origin_run_id, request_key) DO NOTHING
 RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
@@ -391,7 +392,6 @@ RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdo
 type CreateApprovalParams struct {
 	CompanyID          uuid.UUID          `json:"company_id"`
 	Type               string             `json:"type"`
-	CommerceManifestID uuid.NullUUID      `json:"commerce_manifest_id"`
 	RuleKey            string             `json:"rule_key"`
 	Title              string             `json:"title"`
 	Summary            pgtype.Text        `json:"summary"`
@@ -415,7 +415,6 @@ func (q *Queries) CreateApproval(ctx context.Context, arg CreateApprovalParams) 
 	row := q.db.QueryRow(ctx, createApproval,
 		arg.CompanyID,
 		arg.Type,
-		arg.CommerceManifestID,
 		arg.RuleKey,
 		arg.Title,
 		arg.Summary,
@@ -773,7 +772,8 @@ const expireDueApprovals = `-- name: ExpireDueApprovals :many
 WITH due AS (
     SELECT id
     FROM approvals
-    WHERE status = 'pending'
+    WHERE type = 'company_plan_apply'
+      AND status = 'pending'
       AND expires_at <= statement_timestamp()
     ORDER BY expires_at, id
     LIMIT $1::integer
@@ -925,6 +925,8 @@ type GetApprovalByOriginRequestKeyParams struct {
 	RequestKey  uuid.UUID `json:"request_key"`
 }
 
+// Request keys remain reserved by historical actions, even when their type is
+// no longer exposed by the approval API.
 func (q *Queries) GetApprovalByOriginRequestKey(ctx context.Context, arg GetApprovalByOriginRequestKeyParams) (Approval, error) {
 	row := q.db.QueryRow(ctx, getApprovalByOriginRequestKey, arg.OriginRunID, arg.RequestKey)
 	var i Approval
@@ -978,7 +980,8 @@ JOIN agents
   ON agents.company_id = approvals.company_id
  AND agents.id = approvals.requested_by_agent_id
 LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user_id
-WHERE approvals.company_id = $1::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = $1::uuid
   AND approvals.id = $2::uuid
   AND (
       approvals.origin_user_id = $3::uuid
@@ -1063,7 +1066,8 @@ JOIN agents
   ON agents.company_id = approvals.company_id
  AND agents.id = approvals.requested_by_agent_id
 LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user_id
-WHERE approvals.company_id = $1::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = $1::uuid
   AND approvals.id = $2::uuid
 `
 
@@ -1080,8 +1084,7 @@ type GetApprovalProjectionForSystemRow struct {
 }
 
 // The same projection with no reader filter, for frames and lifecycle writes
-// the server stages itself (their audience is decided by the router) and for
-// the Commerce publication, which has its own owner fence.
+// the server stages itself (their audience is decided by the router).
 func (q *Queries) GetApprovalProjectionForSystem(ctx context.Context, arg GetApprovalProjectionForSystemParams) (GetApprovalProjectionForSystemRow, error) {
 	row := q.db.QueryRow(ctx, getApprovalProjectionForSystem, arg.CompanyID, arg.ApprovalID)
 	var i GetApprovalProjectionForSystemRow
@@ -1427,7 +1430,8 @@ LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user
 LEFT JOIN conversations AS origin_chat
   ON origin_chat.id = approvals.conversation_id
  AND origin_chat.company_id = approvals.company_id
-WHERE approvals.company_id = $1::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = $1::uuid
   AND (
       approvals.origin_user_id = $2::uuid
       -- Task origin: read by the readers of the Task chat it was raised in,
@@ -1762,7 +1766,8 @@ func (q *Queries) ListQuestionProjections(ctx context.Context, arg ListQuestionP
 const lockApprovalForResolution = `-- name: LockApprovalForResolution :one
 SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
 FROM approvals
-WHERE company_id = $1::uuid
+WHERE type = 'company_plan_apply'
+  AND company_id = $1::uuid
   AND id = $2::uuid
 FOR UPDATE
 `
@@ -1774,62 +1779,6 @@ type LockApprovalForResolutionParams struct {
 
 func (q *Queries) LockApprovalForResolution(ctx context.Context, arg LockApprovalForResolutionParams) (Approval, error) {
 	row := q.db.QueryRow(ctx, lockApprovalForResolution, arg.CompanyID, arg.ApprovalID)
-	var i Approval
-	err := row.Scan(
-		&i.ID,
-		&i.CompanyID,
-		&i.Type,
-		&i.Status,
-		&i.RuleKey,
-		&i.Title,
-		&i.Summary,
-		&i.PreviewMarkdown,
-		&i.Presentation,
-		&i.RequestedByAgentID,
-		&i.OriginRunID,
-		&i.RequestKey,
-		&i.TaskID,
-		&i.ConversationID,
-		&i.OriginUserID,
-		&i.CanonicalAction,
-		&i.RequestSha256,
-		&i.ActionSha256,
-		&i.ExpiresAt,
-		&i.DecisionNote,
-		&i.DecidedByUserID,
-		&i.ExecutionStatus,
-		&i.ExecutionResult,
-		&i.SkippedReason,
-		&i.ContinuationRunID,
-		&i.ContinuationPrompt,
-		&i.ContinuationStatus,
-		&i.ContinuationNextAttemptAt,
-		&i.ContinuationAbandonReason,
-		&i.ContinuationAttempts,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Version,
-		&i.CommerceManifestID,
-	)
-	return i, err
-}
-
-const lockCommerceManifestApproval = `-- name: LockCommerceManifestApproval :one
-SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
-FROM approvals
-WHERE company_id = $1::uuid
-  AND type = 'commerce_manifest_publish'
-  AND commerce_manifest_id = $2::uuid
-FOR UPDATE
-`
-
-type LockCommerceManifestApprovalParams struct {
-	CompanyID          uuid.UUID `json:"company_id"`
-	CommerceManifestID uuid.UUID `json:"commerce_manifest_id"`
-}
-
-func (q *Queries) LockCommerceManifestApproval(ctx context.Context, arg LockCommerceManifestApprovalParams) (Approval, error) {
-	row := q.db.QueryRow(ctx, lockCommerceManifestApproval, arg.CompanyID, arg.CommerceManifestID)
 	var i Approval
 	err := row.Scan(
 		&i.ID,
@@ -1919,7 +1868,8 @@ const peekDueApprovalContinuationCompany = `-- name: PeekDueApprovalContinuation
 SELECT approvals.company_id
 FROM approvals
 JOIN companies ON companies.id = approvals.company_id
-WHERE approvals.continuation_status = 'pending'
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.continuation_status = 'pending'
   AND approvals.continuation_next_attempt_at <= statement_timestamp()
   AND companies.deleting_at IS NULL
 ORDER BY approvals.continuation_next_attempt_at, approvals.id

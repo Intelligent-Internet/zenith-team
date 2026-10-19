@@ -97,36 +97,8 @@ func crossCompanyMatrix() map[string]crossCompanyRouteSpec {
 		"POST /api/v1/companies/:companyId/milestone-attestations": {
 			body: `{"milestones":["launch"],"note":"Shipped in 2021."}`,
 		},
-		"GET /api/v1/companies/:companyId/activity":                       memberDenied,
-		"GET /api/v1/companies/:companyId/activity/calendar":              memberDenied,
-		"GET /api/v1/companies/:companyId/commerce/account-status":        memberDenied,
-		"GET /api/v1/companies/:companyId/commerce/summary":               memberDenied,
-		"GET /api/v1/companies/:companyId/commerce/manifests":             memberDenied,
-		"GET /api/v1/companies/:companyId/commerce/manifests/:manifestId": memberDenied,
-		"POST /api/v1/companies/:companyId/commerce/manifests": {
-			body: `{"schemaVersion":1,"environment":"live","claimId":"01900000-0000-7000-8000-000000000010","manifest":{"schemaVersion":1}}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/manifests/:manifestId/approve-publish": {
-			body: `{"schemaVersion":1,"digest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/sync": {
-			body: `{"schemaVersion":1}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/:keyId/revoke": {
-			body: `{"schemaVersion":1}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/terms-acceptances": {
-			body: `{"schemaVersion":1,"termsVersion":"2026-08-20","accepted":true}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/accounts/:environment/account-session": {
-			body: `{"schemaVersion":1}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/accounts/:environment/onboarding-link": {
-			body: `{"schemaVersion":1}`,
-		},
-		"POST /api/v1/companies/:companyId/commerce/accounts/:environment/dashboard-link": {
-			body: `{"schemaVersion":1}`,
-		},
+		"GET /api/v1/companies/:companyId/activity":                         memberDenied,
+		"GET /api/v1/companies/:companyId/activity/calendar":                memberDenied,
 		"GET /api/v1/companies/:companyId/agents":                           memberDenied,
 		"GET /api/v1/companies/:companyId/platform-skills":                  memberDenied,
 		"GET /api/v1/companies/:companyId/workflows":                        memberDenied,
@@ -435,7 +407,6 @@ func crossCompanyHandler(t *testing.T, checks *crossCompanyServiceChecks) *Handl
 		MailboxDraftService:    &mailbox.DefaultDraftService{},
 		ScheduleService:        &schedule.DefaultScheduleService{},
 		TaskReportService:      &task.DefaultReportService{},
-		CommerceService:        routeTableCommerce{},
 		// Every Wiki route is fenced by company membership middleware and
 		// binds any body before calling the service, so no probe reaches it.
 		// A leaked call would get 200 from wikiAgentReadServiceStub or a

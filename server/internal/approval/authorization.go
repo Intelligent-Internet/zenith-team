@@ -173,38 +173,6 @@ func companyPlanApproversInTx(
 	return intersectSorted(deciders, writers), nil
 }
 
-// commerceApprovalRecipientsInTx returns who is told about a Commerce
-// publication Approval raised in a Task chat: the Company approvals.resolve
-// holders who read the chat's Project, since the Approval is read only by
-// the chat's readers (ADR 0017). The list may be empty; the publication is
-// still reviewed on the Commerce page, which is behind its own owner fence.
-// scoped is false when the chat has no Project, and every Company
-// approvals.resolve holder is told, as before.
-func commerceApprovalRecipientsInTx(
-	ctx context.Context,
-	q *generated.Queries,
-	companyID, conversationID uuid.UUID,
-) (recipients []uuid.UUID, scoped bool, err error) {
-	projectID, scoped, err := auth.TaskChatProjectID(ctx, q, companyID, conversationID)
-	if err != nil || !scoped {
-		return nil, false, err
-	}
-	readers, err := q.ListProjectReaderIDs(ctx, generated.ListProjectReaderIDsParams{
-		CompanyID: companyID, ProjectID: projectID,
-	})
-	if err != nil {
-		return nil, false, fmt.Errorf("list Commerce Approval readers: %w", err)
-	}
-	resolvers, err := q.ListActiveCompanyMemberIDsByRoles(ctx, generated.ListActiveCompanyMemberIDsByRolesParams{
-		CompanyID: companyID,
-		Roles:     auth.RolesWith(auth.PermissionApprovalsResolve),
-	})
-	if err != nil {
-		return nil, false, fmt.Errorf("list Commerce Approval resolvers: %w", err)
-	}
-	return intersectSorted(readers, resolvers), true, nil
-}
-
 // intersectSorted keeps the ids of want (sorted) that also appear in among.
 func intersectSorted(want, among []uuid.UUID) []uuid.UUID {
 	kept := make([]uuid.UUID, 0, len(want))

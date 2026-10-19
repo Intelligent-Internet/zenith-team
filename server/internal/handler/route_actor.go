@@ -96,11 +96,6 @@ var runActorRoutes = []string{
 	// limit, a Task Run's included (D31, ReadArtifactForRun).
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/items/:ordinal/download",
-	// Commerce: a Commerce Task's Run submits and reads its manifest, and the
-	// daemon registers the Run's local signing key on the daemon plane.
-	"POST /api/v1/companies/:companyId/commerce/manifests",
-	"GET /api/v1/companies/:companyId/commerce/manifests/:manifestId",
-	"POST /api/v1/daemon/companies/:companyId/commerce/sites/:siteAlias/local-signing-keys",
 }
 
 // anyActorRoutes accept a Run without reading its proof. They hold Company
@@ -116,8 +111,6 @@ var anyActorRoutes = []string{
 	"GET /api/v1/companies/:companyId/agents",
 	// One Agent; `zen agent get`.
 	"GET /api/v1/companies/:companyId/agents/:agentId",
-	// Whether the Company can take payments; `zen commerce account-status`.
-	"GET /api/v1/companies/:companyId/commerce/account-status",
 }
 
 // personActorRoutes refuse a Run: deciding (approve, reject, cancel, answer,
@@ -238,15 +231,6 @@ var personActorRoutes = []string{
 	"DELETE /api/v1/companies/:companyId/channels/:conversationId/members/:userId",
 	"PUT /api/v1/companies/:companyId/channels/:conversationId/members/:userId",
 	"POST /api/v1/companies/:companyId/channels/:conversationId/restore",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/account-session",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/dashboard-link",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/onboarding-link",
-	"GET /api/v1/companies/:companyId/commerce/manifests",
-	"POST /api/v1/companies/:companyId/commerce/manifests/:manifestId/approve-publish",
-	"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/:keyId/revoke",
-	"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/sync",
-	"GET /api/v1/companies/:companyId/commerce/summary",
-	"POST /api/v1/companies/:companyId/commerce/terms-acceptances",
 	"GET /api/v1/companies/:companyId/connectors",
 	"POST /api/v1/companies/:companyId/connectors/:connectorId/connect",
 	"POST /api/v1/companies/:companyId/connectors/refresh",
@@ -536,17 +520,11 @@ var personActorRoutes = []string{
 	"GET /api/v1/public/artifacts/:token/whiteboard",
 	"GET /api/v1/public/artifacts/:token/whiteboard/files/:attachmentId",
 	"POST /api/v1/public/artifacts/:token/whiteboard/hydrate",
-	"POST /api/v1/site-commerce/challenges",
-	"POST /api/v1/site-commerce/checkout-sessions",
-	"POST /api/v1/site-commerce/entitlements/verify",
-	"GET /api/v1/site-commerce/jwks",
-	"POST /api/v1/site-commerce/portal-sessions",
 	"GET /api/v1/social/oauth/:platform/callback",
 	"GET /api/v1/social/oauth/:platform/launch",
 	"GET /api/v1/tasks/:taskId/messages",
 	"POST /api/v1/tasks/:taskId/messages",
 	"POST /api/v1/webhooks/resend/mailbox",
-	"POST /api/v1/webhooks/stripe/commerce",
 	"GET /api/v1/ws",
 	"GET /health/realtime",
 	"GET /healthz",

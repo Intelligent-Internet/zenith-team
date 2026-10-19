@@ -353,7 +353,7 @@ func TestSeatbeltDeniesLaunchPointsAndThePrograms(t *testing.T) {
 
 // runHomeLayout is a workspaces root with this Run's isolated home, another
 // Run's home in another task's folder, and a folder of this Run's work. Each
-// home holds a run.json; the other also its Commerce file.
+// home holds its own run.json.
 func runHomeLayout(t *testing.T) (own, other, work string) {
 	t.Helper()
 	workspaces := t.TempDir()
@@ -366,9 +366,8 @@ func runHomeLayout(t *testing.T) (own, other, work string) {
 		}
 	}
 	for path, content := range map[string]string{
-		filepath.Join(own, "run.json"):            `{"capability":"own"}`,
-		filepath.Join(other, "run.json"):          `{"capability":"other"}`,
-		filepath.Join(other, "commerce-dev.json"): `{"capability":"other-commerce"}`,
+		filepath.Join(own, "run.json"):   `{"capability":"own"}`,
+		filepath.Join(other, "run.json"): `{"capability":"other"}`,
 	} {
 		if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 			t.Fatal(err)
@@ -419,7 +418,6 @@ func TestSeatbeltKeepsARunOutOfAnotherRunsHome(t *testing.T) {
 	// the work folder; every step must leave its run.json as it was.
 	for _, step := range []struct{ name, script, moved string }{
 		{"read another Run's run.json", `cat "$2/run.json"`, ""},
-		{"read another Run's Commerce file", `cat "$2/commerce-dev.json"`, ""},
 		{"list another Run's home", `ls "$2"`, ""},
 		{"write another Run's run.json", `echo planted > "$2/run.json"`, ""},
 		{"plant a file in another Run's home", `echo planted > "$2/planted"`, ""},

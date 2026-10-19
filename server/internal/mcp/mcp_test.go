@@ -222,10 +222,10 @@ func TestOpenTaskSkillsServesThePinnedPlaybooks(t *testing.T) {
 }
 
 // A pin that fails verification, or a pinned skill that fails to load, costs
-// only that skill: boardly-mcp still starts, and zenith-platform and the
-// Commerce procedure stay served. Before ADR 0016 either fault made
+// only that skill: boardly-mcp still starts and serves zenith-platform.
+// Before ADR 0016 either fault made
 // boardly-mcp exit for every Run with skill tools.
-func TestOpenTaskSkillsKeepsCommerceWhenAPinFails(t *testing.T) {
+func TestOpenTaskSkillsKeepsPlatformSkillWhenAPinFails(t *testing.T) {
 	drifted := []byte("---\nname: zenith-workflows\ndescription: Drifted.\n---\n")
 	brokenSkill := tools.PlatformBundle{
 		Key:         tools.ZenithWorkflowsSkillKey,
@@ -252,10 +252,10 @@ func TestOpenTaskSkillsKeepsCommerceWhenAPinFails(t *testing.T) {
 				t.Fatalf("openTaskSkills() error = %v", err)
 			}
 			procedure, err := service.LoadSkillReference(t.Context(), tools.LoadSkillReferenceInput{
-				SkillKey: tools.ZenithPlatformSkillKey, Path: tools.ZenithCommerceProcedurePath,
+				SkillKey: tools.ZenithPlatformSkillKey, Path: "SKILL.md",
 			})
-			if err != nil || !strings.Contains(procedure.Content, "Commerce Gateway") {
-				t.Fatalf("Commerce procedure = %v", err)
+			if err != nil || !strings.Contains(procedure.Content, "Operating Zenith Team") {
+				t.Fatalf("platform instructions = %v", err)
 			}
 			if _, err := service.LoadSkillReference(t.Context(), tools.LoadSkillReferenceInput{
 				SkillKey: tools.ZenithWorkflowsSkillKey, Path: "SKILL.md",

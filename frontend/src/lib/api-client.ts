@@ -181,15 +181,6 @@ function getApiErrorMessageFromBody(body: ApiErrorBody | null): string | null {
   return detail || null;
 }
 
-function requiresInteractiveReauthentication(
-  error: AxiosError<ApiErrorResponseData>,
-) {
-  return (
-    getApiErrorCodeFromBody(normalizeApiErrorBody(error)) ===
-    "owner_reauthentication_required"
-  );
-}
-
 function isApiRouteUnavailableError(
   error: AxiosError<ApiErrorResponseData>,
 ): boolean {
@@ -525,8 +516,7 @@ rawApiClient.interceptors.response.use(
       error.response?.status !== 401 ||
       !originalConfig ||
       originalConfig._boardlyAuthReplay ||
-      publicRoute ||
-      requiresInteractiveReauthentication(error)
+      publicRoute
     ) {
       return Promise.reject(toApiClientError(error));
     }

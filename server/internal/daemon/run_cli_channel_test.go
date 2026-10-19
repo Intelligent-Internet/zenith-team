@@ -109,7 +109,6 @@ func TestRunCLIPolicyFollowsTheFrozenExecutionProfile(t *testing.T) {
 		{http.MethodPost, company + "/questions"},
 		{http.MethodPost, company + "/task-failures"},
 		{http.MethodPost, company + "/conversations/" + testChannelConversation + "/mail-draft-groups"},
-		{http.MethodGet, company + "/commerce/account-status"},
 		{http.MethodPost, "/runs/" + taskRun.ID.String() + "/output"},
 	} {
 		if !taskPolicy.allows(allowed[0], allowed[1]) {
@@ -1043,15 +1042,13 @@ func mcpToolDrivers(
 	if err := errors.Join(calendarErr, socialErr, wikiErr, pagesErr, mailErr, milestonesErr, whiteboardsErr); err != nil {
 		t.Fatalf("build the tool services: %v", err)
 	}
-	// Only a Task Run has the Task the Commerce and failure tools need.
-	var commerce *tools.DefaultCommerceToolService
+	// Only a Task Run has the Task the failure tool needs.
 	var failures *tools.DefaultTaskFailureService
 	if run.TaskID != "" {
-		var commerceErr, failuresErr error
-		commerce, commerceErr = tools.NewCommerceToolService(api, run)
+		var failuresErr error
 		failures, failuresErr = tools.NewTaskFailureService(api, run)
-		if err := errors.Join(commerceErr, failuresErr); err != nil {
-			t.Fatalf("build the Task tool services: %v", err)
+		if failuresErr != nil {
+			t.Fatalf("build the Task tool services: %v", failuresErr)
 		}
 	}
 	pageID := uuid.NewString()
@@ -1076,35 +1073,6 @@ func mcpToolDrivers(
 		},
 		"calendar_write": func(ctx context.Context) error {
 			_, err := calendar.WriteCalendar(ctx, tools.WriteCalendarInput{Action: "create"})
-			return err
-		},
-		"commerce_account_status": func(ctx context.Context) error {
-			_, err := commerce.CommerceAccountStatus(ctx, tools.CommerceAccountStatusInput{})
-			return err
-		},
-		"commerce_manifest_status": func(ctx context.Context) error {
-			_, err := commerce.CommerceManifestStatus(ctx, tools.CommerceManifestStatusInput{
-				ManifestID: uuid.NewString(),
-			})
-			return err
-		},
-		"commerce_manifest_submit": func(ctx context.Context) error {
-			_, err := commerce.SubmitCommerceManifest(ctx, tools.SubmitCommerceManifestInput{
-				Environment: "sandbox",
-				Manifest: tools.CommerceManifest{
-					SchemaVersion: 2,
-					Site: tools.CommerceManifestSite{
-						Alias: "store", Origin: "https://store.example.com",
-						PortalReturnPath: "/settings/billing",
-					},
-					Offers: []tools.CommerceManifestOffer{{
-						Alias: "report", DisplayName: "Premium report",
-						Type:        tools.CommerceOfferTypeOneTime,
-						Entitlement: "report.premium", Amount: 2900, Currency: "usd",
-						SuccessPath: "/reports/processing", CancelPath: "/reports",
-					}},
-				},
-			})
 			return err
 		},
 		"company_plan_export": func(ctx context.Context) error {
@@ -1226,8 +1194,6 @@ func mcpToolDrivers(
 
 // mcpChannelUpstream is the server behind the daemon: it records every
 // forwarded call and answers each tool's route with a body the tool accepts.
-// The Commerce tools check their answers in detail, so they get an empty
-// object and the test only asks that their call was forwarded.
 func mcpChannelUpstream(t *testing.T, run Run, forwarded *[]string, mu *sync.Mutex) http.Handler {
 	t.Helper()
 	company := "/api/v1/companies/" + run.CompanyID
@@ -1286,11 +1252,6 @@ func mcpChannelUpstream(t *testing.T, run Run, forwarded *[]string, mu *sync.Mut
 // without its row fails here. present_output reaches the daemon's
 // presenter, which handles both files and native Pages.
 func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
-	commerceChecksItsAnswer := map[string]bool{
-		"commerce_account_status":  true,
-		"commerce_manifest_status": true,
-		"commerce_manifest_submit": true,
-	}
 	exercised := map[string]bool{}
 	for name, shape := range map[string]struct {
 		task bool
@@ -1422,7 +1383,7 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 				if errors.As(err, &refusal) {
 					t.Fatalf("%s was refused by the Run channel: %v", tool, err)
 				}
-				if err != nil && !commerceChecksItsAnswer[tool] {
+				if err != nil {
 					t.Fatalf("%s failed: %v", tool, err)
 				}
 				mu.Lock()

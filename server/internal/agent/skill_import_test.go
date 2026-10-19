@@ -150,7 +150,6 @@ func TestReadSkillUploadNormalizesNamesBeforeReview(t *testing.T) {
 		{"workflow collision", "zenith-workflows", "custom-zenith-workflows"},
 		{"Studio collision", "zenith-studio-cli", "custom-zenith-studio-cli"},
 		{"native slot collision", "synced", "custom-synced"},
-		{"legacy commerce collision", "boardly-commerce", "custom-boardly-commerce"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

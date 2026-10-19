@@ -7,7 +7,7 @@ import (
 )
 
 // A local capability is a 32-byte random secret the daemon hands to exactly
-// one local caller (a Run's CLI environment, a Task's Commerce bootstrap) and
+// one local caller (a Run's CLI environment) and
 // checks on every request to its loopback plane. It authorizes nothing on
 // the server: the daemon exchanges it for its own session plus the Run proof
 // on the caller's behalf, so the secret is worthless outside this machine

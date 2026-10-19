@@ -10,7 +10,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -595,130 +594,6 @@ func attachTranscriptAppendStatusRPC(t *testing.T, d *Daemon, status int) func()
 	return func() int { return int(appends.Load()) }
 }
 
-func TestPrepareRunCLIHomeGivesTaskOnlyScopedCommerceControl(t *testing.T) {
-	realHome := t.TempDir()
-	t.Setenv("BOARDLY_HOME", realHome)
-	for _, name := range []string{"auth.json", "daemon-auth.json", "config.json"} {
-		if err := os.WriteFile(filepath.Join(realHome, name), []byte("private"), 0o600); err != nil {
-			t.Fatalf("seed %s: %v", name, err)
-		}
-	}
-
-	envRoot := t.TempDir()
-	boardlyExecutable := filepath.Join(t.TempDir(), "source-boardly")
-	if err := os.WriteFile(boardlyExecutable, []byte("exact-boardly-cli"), 0o700); err != nil {
-		t.Fatalf("seed Boardly executable: %v", err)
-	}
-	pinnedExecutable, cleanupPinnedExecutable, err := pinBoardlyExecutable(boardlyExecutable)
-	if err != nil {
-		t.Fatalf("pin Boardly executable: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := cleanupPinnedExecutable(); err != nil {
-			t.Errorf("cleanup pinned Boardly executable: %v", err)
-		}
-	})
-	d := &Daemon{
-		boardlyExecutable:   pinnedExecutable,
-		commerceDevEndpoint: "http://127.0.0.1:19713",
-	}
-	run := Run{
-		ID:        uuid.MustParse("00000000-0000-4000-8000-000000001507"),
-		CompanyID: "01900000-0000-4000-8000-0000000000e9",
-		TaskID:    "01900000-0000-4000-8000-0000000000ea",
-		AuthToken: testRunAuthTokenForCommerceDev,
-	}
-	doc := RunContext{ExecutionProfile: RunExecutionProfileContext{
-		Task: &RunTaskContext{},
-	}}
-	cliEnvironment, err := d.prepareRunCLIEnvironment(run, doc, envRoot, "", execenv.SeatbeltOptions{})
-	if err != nil {
-		t.Fatalf("prepareRunCLIEnvironment() error = %v", err)
-	}
-	isolatedHome := cliEnvironment.boardlyHome
-	if isolatedHome == "" || isolatedHome == realHome {
-		t.Fatalf("prepareRunCLIEnvironment() home = %q, want an isolated home", isolatedHome)
-	}
-	if cliEnvironment.cleanup == nil {
-		t.Fatal("prepareRunCLIEnvironment() cleanup = nil")
-	}
-	entries, err := os.ReadDir(isolatedHome)
-	if err != nil {
-		t.Fatalf("read isolated home: %v", err)
-	}
-	if len(entries) != 1 || entries[0].Name() != "commerce-dev.json" {
-		t.Fatalf("isolated home entries = %v, want only commerce-dev.json", entries)
-	}
-	controlPath := filepath.Join(isolatedHome, "commerce-dev.json")
-	if runtime.GOOS != "windows" {
-		info, err := os.Stat(controlPath)
-		if err != nil {
-			t.Fatalf("stat isolated control config: %v", err)
-		}
-		if got := info.Mode().Perm(); got != 0o600 {
-			t.Fatalf("isolated control config permissions = %04o, want 0600", got)
-		}
-	}
-	t.Setenv("BOARDLY_HOME", isolatedHome)
-	control, err := LoadCommerceDevControlConfig()
-	if err != nil {
-		t.Fatalf("load isolated control config: %v", err)
-	}
-	if control.Endpoint != "http://127.0.0.1:19713" {
-		t.Fatalf("isolated control config = %+v", control)
-	}
-	authority, releaseAuthority, ok := d.commerceDevBootstrapAuthorization(
-		"BoardlyCommerceTask " + control.Capability,
-	)
-	if releaseAuthority != nil {
-		releaseAuthority()
-	}
-	if !ok || !authority.scoped || authority.companyID != run.CompanyID ||
-		authority.runID != run.ID || authority.taskID != run.TaskID ||
-		authority.runAuthToken != run.AuthToken {
-		t.Fatalf("Task Commerce authority = %+v, %v", authority, ok)
-	}
-	binEntries, err := os.ReadDir(cliEnvironment.executableDirectory)
-	if err != nil {
-		t.Fatalf("read isolated executable directory: %v", err)
-	}
-	if len(binEntries) != 1 || binEntries[0].Name() != boardlyExecutableName() {
-		t.Fatalf("isolated executable entries = %v, want only %s", binEntries, boardlyExecutableName())
-	}
-	if runtime.GOOS != "windows" {
-		info, err := os.Stat(filepath.Join(cliEnvironment.executableDirectory, boardlyExecutableName()))
-		if err != nil {
-			t.Fatalf("stat staged Boardly executable: %v", err)
-		}
-		if got := info.Mode().Perm(); got != 0o500 {
-			t.Fatalf("staged Boardly executable permissions = %04o, want 0500", got)
-		}
-	}
-	stagedExecutable, err := os.ReadFile(filepath.Join(
-		cliEnvironment.executableDirectory,
-		boardlyExecutableName(),
-	))
-	if err != nil {
-		t.Fatalf("read staged Boardly executable: %v", err)
-	}
-	if string(stagedExecutable) != "exact-boardly-cli" {
-		t.Fatalf("staged Boardly executable = %q", stagedExecutable)
-	}
-	wantPATH := cliEnvironment.executableDirectory + string(os.PathListSeparator) + "/provider/bin"
-	if got := pathWithRunCLI("/provider/bin", cliEnvironment.executableDirectory); got != wantPATH {
-		t.Fatalf("run-local PATH = %q, want %q", got, wantPATH)
-	}
-	if err := cliEnvironment.cleanup(); err != nil {
-		t.Fatalf("cleanup isolated home: %v", err)
-	}
-	if _, _, ok := d.commerceDevBootstrapAuthorization("BoardlyCommerceTask " + control.Capability); ok {
-		t.Fatal("Task Commerce capability remains valid after run cleanup")
-	}
-	if _, err := os.Stat(isolatedHome); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("isolated home remains after cleanup: %v", err)
-	}
-}
-
 func TestPrepareRunCLIHomeWithholdsAuthorityFromScheduledRuns(t *testing.T) {
 	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
 	envRoot := t.TempDir()
@@ -834,7 +709,7 @@ func TestDaemonRunCleansPinnedBoardlyExecutableOnStartupFailure(t *testing.T) {
 	}
 }
 
-func TestPrepareRunCLIEnvironmentAllowsTaskWithoutCommerceControl(t *testing.T) {
+func TestPrepareRunCLIEnvironmentAllowsTaskWithoutLocalEndpoint(t *testing.T) {
 	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
 	boardlyExecutable := filepath.Join(t.TempDir(), "source-boardly")
 	if err := os.WriteFile(boardlyExecutable, []byte("exact-boardly-cli"), 0o700); err != nil {
@@ -872,146 +747,10 @@ func TestPrepareRunCLIEnvironmentAllowsTaskWithoutCommerceControl(t *testing.T) 
 	}
 	if len(entries) != 0 || cliEnvironment.executableDirectory == "" {
 		t.Fatalf(
-			"Task CLI environment = %+v, entries %v; want CLI with no Commerce authority",
+			"Task CLI environment = %+v, entries %v; want CLI with no local authority",
 			cliEnvironment,
 			entries,
 		)
-	}
-}
-
-func TestPrepareRunCLIEnvironmentIgnoresLegacyGlobalCommerceControl(t *testing.T) {
-	realHome := t.TempDir()
-	if err := os.WriteFile(
-		filepath.Join(realHome, "commerce-dev.json"),
-		[]byte(`{"schemaVersion":1,"endpoint":"https://not-loopback.invalid","capability":"invalid"}`),
-		0o600,
-	); err != nil {
-		t.Fatalf("seed invalid Commerce control: %v", err)
-	}
-	t.Setenv("BOARDLY_HOME", realHome)
-	boardlyExecutable := filepath.Join(t.TempDir(), "source-boardly")
-	if err := os.WriteFile(boardlyExecutable, []byte("exact-boardly-cli"), 0o700); err != nil {
-		t.Fatalf("seed Boardly executable: %v", err)
-	}
-	pinnedExecutable, cleanupPinnedExecutable, err := pinBoardlyExecutable(boardlyExecutable)
-	if err != nil {
-		t.Fatalf("pin Boardly executable: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := cleanupPinnedExecutable(); err != nil {
-			t.Errorf("cleanup pinned Boardly executable: %v", err)
-		}
-	})
-	d := &Daemon{boardlyExecutable: pinnedExecutable}
-	run := Run{
-		ID:        uuid.MustParse("00000000-0000-4000-8000-000000001512"),
-		CompanyID: "01900000-0000-4000-8000-0000000000f0",
-		TaskID:    "01900000-0000-4000-8000-0000000000f1",
-	}
-	doc := RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}}
-
-	cliEnvironment, err := d.prepareRunCLIEnvironment(run, doc, t.TempDir(), "", execenv.SeatbeltOptions{})
-	if err != nil {
-		t.Fatalf("prepareRunCLIEnvironment() error = %v", err)
-	}
-	defer func() {
-		if err := cliEnvironment.cleanup(); err != nil {
-			t.Errorf("cleanup isolated CLI environment: %v", err)
-		}
-	}()
-	entries, err := os.ReadDir(cliEnvironment.boardlyHome)
-	if err != nil {
-		t.Fatalf("read isolated home: %v", err)
-	}
-	if len(entries) != 0 || cliEnvironment.executableDirectory == "" {
-		t.Fatalf(
-			"Task CLI environment = %+v, entries %v; want CLI with no Commerce authority",
-			cliEnvironment,
-			entries,
-		)
-	}
-}
-
-func TestTaskCommerceBootstrapRejectsAnotherCompanyAndUnregisteredCapabilities(t *testing.T) {
-	d := &Daemon{}
-	run := Run{
-		ID:        uuid.MustParse("00000000-0000-4000-8000-000000001509"),
-		CompanyID: "01900000-0000-4000-8000-0000000000eb",
-		TaskID:    "01900000-0000-4000-8000-0000000000ec",
-		AuthToken: testRunAuthTokenForCommerceDev,
-	}
-	capability, cleanup, err := d.registerTaskCommerceBootstrap(run)
-	if err != nil {
-		t.Fatalf("registerTaskCommerceBootstrap() error = %v", err)
-	}
-	defer func() {
-		if err := cleanup(); err != nil {
-			t.Errorf("cleanup Task Commerce bootstrap: %v", err)
-		}
-	}()
-	if _, _, ok := d.commerceDevBootstrapAuthorization("BoardlyLocal " + capability); ok {
-		t.Fatal("legacy global authorization scheme accepted a Task capability")
-	}
-
-	unregistered, err := newCommerceDevCapability()
-	if err != nil {
-		t.Fatalf("new unregistered capability: %v", err)
-	}
-	if _, _, ok := d.commerceDevBootstrapAuthorization("BoardlyCommerceTask " + unregistered); ok {
-		t.Fatal("unregistered global-style capability was authorized")
-	}
-
-	for _, test := range []struct {
-		name       string
-		companyID  string
-		wantStatus int
-	}{
-		{
-			name:       "bound company",
-			companyID:  run.CompanyID,
-			wantStatus: http.StatusServiceUnavailable,
-		},
-		{
-			name:       "another company",
-			companyID:  "01900000-0000-4000-8000-0000000000ed",
-			wantStatus: http.StatusUnauthorized,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			body := `{"schemaVersion":1,"companyId":"` + test.companyID +
-				`","site":{},"ownerPid":1}`
-			request := httptest.NewRequest(
-				http.MethodPost,
-				commerceDevLeaseCreatePath,
-				strings.NewReader(body),
-			)
-			request.Header.Set("Authorization", "BoardlyCommerceTask "+capability)
-			request.Header.Set("Content-Type", "application/json")
-			response := httptest.NewRecorder()
-			d.commerceDevLeaseCreateHandler("http://127.0.0.1:19713").ServeHTTP(response, request)
-			if response.Code != test.wantStatus {
-				t.Fatalf(
-					"lease create status = %d, want %d: %s",
-					response.Code,
-					test.wantStatus,
-					response.Body.String(),
-				)
-			}
-		})
-	}
-}
-
-func TestTaskCommerceBootstrapRequiresClaimedRunProof(t *testing.T) {
-	t.Parallel()
-
-	d := &Daemon{}
-	_, _, err := d.registerTaskCommerceBootstrap(Run{
-		ID:        uuid.MustParse("00000000-0000-4000-8000-000000001516"),
-		CompanyID: "01900000-0000-4000-8000-0000000000eb",
-		TaskID:    "01900000-0000-4000-8000-0000000000ec",
-	})
-	if err == nil {
-		t.Fatal("registerTaskCommerceBootstrap() accepted a Task without its claimed run proof")
 	}
 }
 
@@ -1134,6 +873,7 @@ func TestMainWorkspaceScopeForRunIsAlwaysTheCompanyScope(t *testing.T) {
 		}
 	}
 }
+
 func TestAcquireMainRunWorkspaceRunsInDurableCompanyMain(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1")
 	run := Run{
@@ -1179,6 +919,7 @@ func TestAcquireMainRunWorkspaceRunsInDurableCompanyMain(t *testing.T) {
 		t.Fatalf("root main = %q, want %q", ceoWorkDir, wantMain)
 	}
 }
+
 func TestCompanyRunContextSharesMemoryAndBusinessContextAcrossRunKinds(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1")
 	run := Run{
@@ -1506,21 +1247,19 @@ func pinnedTestExecutable(t *testing.T) *os.File {
 }
 
 // Every attended Run — a direct Conversation as much as a Task — gets the
-// zen binary and a run.json bound to its channel; only a Task Run also gets
-// the Commerce bootstrap, and revoking the environment closes the channel.
+// zen binary and a run.json bound to its channel. Revoking the environment
+// closes the channel.
 func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
 	d := &Daemon{
-		boardlyExecutable:   pinnedTestExecutable(t),
-		localPlaneEndpoint:  "http://127.0.0.1:19713",
-		commerceDevEndpoint: "http://127.0.0.1:19713",
+		boardlyExecutable:  pinnedTestExecutable(t),
+		localPlaneEndpoint: "http://127.0.0.1:19713",
 	}
 	tests := []struct {
-		name         string
-		run          Run
-		doc          RunContext
-		wantCommerce bool
-		wantCommand  string
+		name        string
+		run         Run
+		doc         RunContext
+		wantCommand string
 	}{
 		{
 			name: "direct conversation",
@@ -1529,7 +1268,7 @@ func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 				CompanyID:      "01900000-0000-4000-8000-0000000000f0",
 				AgentID:        "01900000-0000-4000-8000-0000000000f1",
 				ConversationID: "01900000-0000-4000-8000-0000000000f2",
-				AuthToken:      testRunAuthTokenForCommerceDev,
+				AuthToken:      testChannelRunToken,
 			},
 			doc:         RunContext{},
 			wantCommand: "zen task list",
@@ -1542,13 +1281,12 @@ func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 				AgentID:        "01900000-0000-4000-8000-0000000000f1",
 				ConversationID: "01900000-0000-4000-8000-0000000000f3",
 				TaskID:         "01900000-0000-4000-8000-0000000000f4",
-				AuthToken:      testRunAuthTokenForCommerceDev,
+				AuthToken:      testChannelRunToken,
 			},
 			doc: RunContext{ExecutionProfile: RunExecutionProfileContext{
 				Task: &RunTaskContext{Key: "ENG-9"},
 			}},
-			wantCommerce: true,
-			wantCommand:  "zen task fail",
+			wantCommand: "zen task fail",
 		},
 	}
 	for _, test := range tests {
@@ -1571,9 +1309,6 @@ func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 				names = append(names, entry.Name())
 			}
 			wantNames := []string{runchannel.ControlFileName}
-			if test.wantCommerce {
-				wantNames = []string{"commerce-dev.json", runchannel.ControlFileName}
-			}
 			if strings.Join(names, ",") != strings.Join(wantNames, ",") {
 				t.Fatalf("isolated home entries = %v, want %v", names, wantNames)
 			}

@@ -25,7 +25,7 @@ wire contract; [overview.md](overview.md) describes how they are checked.
 | Header Inbox preview and Inbox page | [Inbox](inbox.md) provides notifications and read state. [Approvals and questions](approvals.md) retain their own decision contracts; reading a notification is not an approval. |
 | Team | Company membership and agent reporting relationships remain distinct. The UI can display both without inventing a grouping of its own. |
 | My Account | [Authentication/account](authentication.md) provides the current user and profile mutation. Appearance remains a device preference, scoped locally to the user/company; there is no cloud appearance-sync API. |
-| More: email, schedules, assets, memory, revenue | Existing [mailbox](mailbox.md), [schedule](schedules.md), [workspace](workspaces.md) and [commerce](spec/commerce.yaml) APIs. Provider connections, permissions, object storage and external service configuration are still prerequisites. |
+| More: email, schedules, assets, memory | Existing [mailbox](mailbox.md), [schedule](schedules.md) and [workspace](workspaces.md) APIs. Provider connections, permissions, object storage and external service configuration are still prerequisites. |
 
 All company routes above use `/api/v1/companies/{companyId}`. Abbreviated paths
 in this table omit that prefix.

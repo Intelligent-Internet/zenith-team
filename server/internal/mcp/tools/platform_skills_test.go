@@ -54,10 +54,7 @@ func TestPlatformSkillsListsCompiledThenPinnedSkills(t *testing.T) {
 	}
 	skill := skills[0]
 	if skill.Name != "Zenith platform" || !strings.Contains(skill.Description, "zen CLI") ||
-		!strings.Contains(strings.ToLower(skill.Description), "zenith team commerce") ||
 		!slices.Contains(skill.References, "references/outputs.md") ||
-		!slices.Contains(skill.References, ZenithCommerceProcedurePath) ||
-		!slices.Contains(skill.References, "commerce/templates/nextjs-app-router.md") ||
 		slices.Contains(skill.References, "SKILL.md") {
 		t.Fatalf("zenith-platform summary = %+v", skill)
 	}
@@ -127,8 +124,8 @@ func TestOpenTaskSkillServiceServesAPinnedBundle(t *testing.T) {
 }
 
 // A pinned bundle that fails to load no longer takes down every skill tool:
-// it is dropped and reported, zenith-platform and the Commerce procedure stay
-// served, and its key stays reserved against the Run's snapshot.
+// it is dropped and reported, zenith-platform stays served, and its key
+// stays reserved against the Run's snapshot.
 func TestOpenTaskSkillServiceDropsAFailingBundle(t *testing.T) {
 	t.Parallel()
 	root := newSkillSnapshotFixture(t, []skillFixture{
@@ -155,10 +152,10 @@ func TestOpenTaskSkillServiceDropsAFailingBundle(t *testing.T) {
 		t.Fatalf("dropped = %v, want [%s]", dropped, ZenithWorkflowsSkillKey)
 	}
 	procedure, err := service.LoadSkillReference(t.Context(), LoadSkillReferenceInput{
-		SkillKey: ZenithPlatformSkillKey, Path: ZenithCommerceProcedurePath,
+		SkillKey: ZenithPlatformSkillKey, Path: "SKILL.md",
 	})
-	if err != nil || !strings.Contains(procedure.Content, "Commerce Gateway") {
-		t.Fatalf("Commerce procedure = %v", err)
+	if err != nil || !strings.Contains(procedure.Content, "Operating Zenith Team") {
+		t.Fatalf("platform instructions = %v", err)
 	}
 	if _, err := service.LoadSkillReference(t.Context(), LoadSkillReferenceInput{
 		SkillKey: ZenithWorkflowsSkillKey, Path: "SKILL.md",

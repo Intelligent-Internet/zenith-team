@@ -2348,7 +2348,7 @@ schemas:
       A membership role. Roles are what people assign; code checks
       permissions (`CompanyPermission`). An `owner` holds every permission.
       An `admin` holds every permission except `company.delete`,
-      `members.owners.manage`, `commerce.manage` and `results.publish`. Company roles do not grant private content access. A
+      `members.owners.manage` and `results.publish`. Company roles do not grant private content access. A
       `member` holds `conversations.discuss` and `plugins.manage` — installing
       plugins and connecting apps on their own computers — and no
       Company-wide management permission: they work on Tasks and chats,
@@ -2375,8 +2375,6 @@ schemas:
     enum:
       - agents.manage
       - approvals.resolve
-      - commerce.manage
-      - commerce.read
       - company.delete
       - company.plan.apply
       - company.proactive_mode.manage

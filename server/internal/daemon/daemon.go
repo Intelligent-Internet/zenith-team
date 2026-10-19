@@ -248,17 +248,13 @@ type Daemon struct {
 	// activeRuns counts runs in handleRun (preparation and local-directory
 	// waiters included); runningRuns counts live provider sessions;
 	// resourceWaitRuns counts runs parked on a path lock.
-	activeRuns                atomic.Int64
-	runningRuns               atomic.Int64
-	resourceWaitRuns          atomic.Int64
-	ready                     atomic.Bool // gates /health status starting -> running
-	localPreview              *localPreviewHub
-	localPreviewToken         string
-	appPreviews               *appPreviewService
-	commerceDev               *commerceDevService
-	commerceDevEndpoint       string
-	commerceDevBootstrapMu    sync.RWMutex
-	taskCommerceDevBootstraps map[commerceDevBootstrapKey]*taskCommerceDevBootstrap
+	activeRuns        atomic.Int64
+	runningRuns       atomic.Int64
+	resourceWaitRuns  atomic.Int64
+	ready             atomic.Bool // gates /health status starting -> running
+	localPreview      *localPreviewHub
+	localPreviewToken string
+	appPreviews       *appPreviewService
 	// localPlaneEndpoint is the loopback origin of the health/control
 	// listener; run_cli_channel.go writes it into every Run's run.json.
 	localPlaneEndpoint       string
@@ -547,17 +543,6 @@ func (d *Daemon) Run(ctx context.Context) error {
 		return err
 	}
 	defer healthLn.Close()
-	boardlyHome, err := BoardlyHome()
-	if err != nil {
-		return err
-	}
-	// Purge authority written by the pre-memory-only implementation before
-	// authentication or provider startup. A stale Task must not retain a
-	// readable signing key merely because daemon preflight later fails.
-	if err := removeLegacyCommerceDevAuthority(boardlyHome); err != nil {
-		return err
-	}
-
 	agentNames := make([]string, 0, len(d.agents()))
 	for name := range d.agents() {
 		agentNames = append(agentNames, name)
@@ -594,11 +579,6 @@ func (d *Daemon) Run(ctx context.Context) error {
 		d.logger.Warn("local run preview unavailable", "error", err)
 	}
 	d.localPlaneEndpoint = "http://" + healthLn.Addr().String()
-	cleanupCommerceDev, err := d.prepareCommerceDev(healthLn)
-	if err != nil {
-		return fmt.Errorf("prepare local Commerce signing: %w", err)
-	}
-
 	// Serve the health port before the (potentially slow) preflight so
 	// `daemon start` sees a live "starting" daemon instead of
 	// connection-refused. Liveness (port up) and readiness (status running)
@@ -609,11 +589,6 @@ func (d *Daemon) Run(ctx context.Context) error {
 	// supervisor see a daemon that is still draining rather than one that is
 	// gone (§9.3). This deferred cleanup is what ends it, and it runs after
 	// the drain and after deregisterRuntimes.
-	//
-	// The local HTTP plane reads Commerce lease/key state. Stop accepting
-	// requests and join every active handler before cleanupCommerceDev clears
-	// that state. A handler that survives forced connection closure keeps its
-	// authority until process exit rather than racing an in-place clear.
 	defer func() {
 		cancel()
 		if d.appPreviews != nil {
@@ -625,13 +600,6 @@ func (d *Daemon) Run(ctx context.Context) error {
 		if healthErr != nil {
 			d.logger.Warn("local health server stopped with an error", "error", healthErr)
 		}
-		if errors.Is(healthErr, errHealthHandlersNotDrained) {
-			d.logger.Error(
-				"local Commerce signing state retained until process exit because a handler did not drain",
-			)
-			return
-		}
-		cleanupCommerceDev()
 	}()
 	stopTools := d.startTools(ctx)
 	defer stopTools()

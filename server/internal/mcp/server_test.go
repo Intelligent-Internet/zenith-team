@@ -85,27 +85,6 @@ func (s *toolsStub) AskHuman(
 	}, nil
 }
 
-func (s *toolsStub) CommerceAccountStatus(
-	context.Context,
-	tools.CommerceAccountStatusInput,
-) (tools.CommerceAccountStatusResult, error) {
-	return tools.CommerceAccountStatusResult{}, nil
-}
-
-func (s *toolsStub) SubmitCommerceManifest(
-	context.Context,
-	tools.SubmitCommerceManifestInput,
-) (tools.SubmitCommerceManifestResult, error) {
-	return tools.SubmitCommerceManifestResult{}, nil
-}
-
-func (s *toolsStub) CommerceManifestStatus(
-	context.Context,
-	tools.CommerceManifestStatusInput,
-) (tools.CommerceManifestStatusResult, error) {
-	return tools.CommerceManifestStatusResult{}, nil
-}
-
 func TestAskHumanToolAdvertisesAndEnforcesFreeTextContract(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -247,57 +226,6 @@ func TestAskHumanToolAdvertisesAndEnforcesFreeTextContract(t *testing.T) {
 			stub.questionInput,
 			stub.questionCalls,
 		)
-	}
-}
-
-func TestCommerceManifestSubmitAdvertisesLoopbackSignerLifecycle(t *testing.T) {
-	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	stub := new(toolsStub)
-	server := newServer(
-		stub,
-		stub,
-		nil,
-		map[string]struct{}{"commerce_manifest_submit": {}},
-		optionalTools{commerce: stub},
-	)
-	serverTransport, clientTransport := mcpsdk.NewInMemoryTransports()
-	go func() { _ = server.Run(ctx, serverTransport) }()
-
-	client := mcpsdk.NewClient(
-		&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"},
-		nil,
-	)
-	session, err := client.Connect(ctx, clientTransport, nil)
-	if err != nil {
-		t.Fatalf("Connect() error = %v", err)
-	}
-	defer session.Close()
-
-	var submit *mcpsdk.Tool
-	for tool, listErr := range session.Tools(ctx, nil) {
-		if listErr != nil {
-			t.Fatalf("Tools() error = %v", listErr)
-		}
-		if tool.Name == "commerce_manifest_submit" {
-			submit = tool
-			break
-		}
-	}
-	if submit == nil {
-		t.Fatal("commerce_manifest_submit tool is not advertised")
-	}
-	for _, want := range []string{
-		"For a loopback sandbox",
-		"start zen commerce dev in this same Run",
-		"register its local signing key",
-		"keep the Run active through owner publication and testing",
-		"Only non-loopback manifests use the immediate approval handoff",
-	} {
-		if !strings.Contains(submit.Description, want) {
-			t.Fatalf("commerce_manifest_submit description missing %q: %s", want, submit.Description)
-		}
 	}
 }
 

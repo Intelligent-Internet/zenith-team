@@ -177,7 +177,6 @@ func ValidCapability(value string) bool {
 
 // ValidEndpoint reports whether value is a daemon loopback base URL in
 // canonical form: http, a loopback host, an explicit port and nothing else.
-// A Commerce Site origin has its own rule in the daemon.
 func ValidEndpoint(value string) bool {
 	parsed, err := url.Parse(value)
 	if err != nil || parsed.Scheme != "http" || parsed.User != nil || parsed.Opaque != "" ||

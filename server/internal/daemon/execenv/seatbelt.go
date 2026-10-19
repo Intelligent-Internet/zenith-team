@@ -14,8 +14,8 @@ import (
 )
 
 // RunHomePrefix starts the name of every Run's isolated home: the folder the
-// daemon makes in the Run's env root for its BOARDLY_HOME, run.json and
-// commerce-dev.json (Access TECH B3b). The sandbox finds every Run's home on
+// daemon makes in the Run's env root for its BOARDLY_HOME and run.json
+// (Access TECH B3b). The sandbox finds every Run's home on
 // this computer by this name (B3e).
 const RunHomePrefix = ".boardly-home-"
 

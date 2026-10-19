@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -750,28 +749,6 @@ func configureCodexRunShellEnvironment(
 	return nil
 }
 
-type commerceDevBootstrapKey [sha256.Size]byte
-
-type taskCommerceDevBootstrap struct {
-	companyID string
-	runID     uuid.UUID
-	taskID    string
-	authToken string
-	ctx       context.Context
-	cancel    context.CancelFunc
-	inflight  sync.WaitGroup
-}
-
-type commerceDevBootstrapAuthority struct {
-	scoped       bool
-	companyID    string
-	runID        uuid.UUID
-	taskID       string
-	runAuthToken string
-	bootstrapKey commerceDevBootstrapKey
-	ctx          context.Context
-}
-
 type runCLIEnvironment struct {
 	boardlyHome string
 	// channel reports that run.json is in boardlyHome: the Run channel is
@@ -793,89 +770,6 @@ func (e runCLIEnvironment) channelHome() string {
 		return ""
 	}
 	return e.boardlyHome
-}
-
-func (d *Daemon) registerTaskCommerceBootstrap(run Run) (string, func() error, error) {
-	if run.ID == uuid.Nil || !validCommerceCompanyID(run.CompanyID) || !validCommerceCompanyID(run.TaskID) {
-		return "", nil, errors.New("task commerce bootstrap run identity is invalid")
-	}
-	runAuthToken, err := runScopedAuthToken(run)
-	if err != nil {
-		return "", nil, err
-	}
-	capability, err := newCommerceDevCapability()
-	if err != nil {
-		return "", nil, err
-	}
-	key := commerceDevBootstrapKey(sha256.Sum256([]byte(capability)))
-	issuanceCtx, cancelIssuance := context.WithCancel(context.Background())
-	binding := &taskCommerceDevBootstrap{
-		companyID: run.CompanyID,
-		runID:     run.ID,
-		taskID:    run.TaskID,
-		authToken: runAuthToken,
-		ctx:       issuanceCtx,
-		cancel:    cancelIssuance,
-	}
-	d.commerceDevBootstrapMu.Lock()
-	if d.taskCommerceDevBootstraps == nil {
-		d.taskCommerceDevBootstraps = make(map[commerceDevBootstrapKey]*taskCommerceDevBootstrap)
-	}
-	if _, collision := d.taskCommerceDevBootstraps[key]; collision {
-		d.commerceDevBootstrapMu.Unlock()
-		cancelIssuance()
-		return "", nil, errors.New("task commerce bootstrap capability collision")
-	}
-	d.taskCommerceDevBootstraps[key] = binding
-	d.commerceDevBootstrapMu.Unlock()
-	var cleanupOnce sync.Once
-	return capability, func() error {
-		cleanupOnce.Do(func() {
-			d.commerceDevBootstrapMu.Lock()
-			if d.taskCommerceDevBootstraps[key] == binding {
-				delete(d.taskCommerceDevBootstraps, key)
-			}
-			d.commerceDevBootstrapMu.Unlock()
-			binding.cancel()
-			binding.inflight.Wait()
-			binding.authToken = ""
-			if d.commerceDev != nil {
-				d.commerceDev.revokeBootstrapLeases(key)
-			}
-		})
-		return nil
-	}, nil
-}
-
-func (d *Daemon) commerceDevBootstrapAuthorization(
-	header string,
-) (commerceDevBootstrapAuthority, func(), bool) {
-	capability, ok := parseCommerceDevAuthorization(header, "BoardlyCommerceTask")
-	if !ok || !validCommerceDevCapability(capability) {
-		return commerceDevBootstrapAuthority{}, nil, false
-	}
-	key := commerceDevBootstrapKey(sha256.Sum256([]byte(capability)))
-	d.commerceDevBootstrapMu.Lock()
-	binding, ok := d.taskCommerceDevBootstraps[key]
-	if !ok {
-		d.commerceDevBootstrapMu.Unlock()
-		return commerceDevBootstrapAuthority{}, nil, false
-	}
-	binding.inflight.Add(1)
-	d.commerceDevBootstrapMu.Unlock()
-	var releaseOnce sync.Once
-	release := func() {
-		releaseOnce.Do(binding.inflight.Done)
-	}
-	return commerceDevBootstrapAuthority{
-		scoped:       true,
-		companyID:    binding.companyID,
-		runID:        binding.runID,
-		taskID:       binding.taskID,
-		runAuthToken: binding.authToken,
-		bootstrapKey: key,
-		ctx:          binding.ctx,
-	}, release, true
 }
 
 func boardlyExecutableName() string {
@@ -998,9 +892,8 @@ func copyBoardlyExecutable(source *os.File, directory string) error {
 // prepareRunCLIEnvironment prevents every provider process from falling back
 // to the operator's normal Zenith Team home. Every attended Run (Task or
 // direct Conversation) additionally receives one exact zen binary on PATH and
-// a run.json that binds that binary to this Run's channel; Task runs also
-// receive the run-scoped Commerce bootstrap when the local control endpoint
-// is available. Scheduled Runs get the empty home and nothing else. launch
+// a run.json that binds that binary to this Run's channel. Scheduled Runs
+// get the empty home and nothing else. launch
 // is the Run's own folders and hidden folders, as its sandbox gets them: the
 // channel's output presenter reads for the Run only what they allow.
 func (d *Daemon) prepareRunCLIEnvironment(
@@ -1018,7 +911,6 @@ func (d *Daemon) prepareRunCLIEnvironment(
 	}
 	var (
 		executableDirectory string
-		revokeBootstrap     func() error
 		revokeChannel       func() error
 	)
 	prepared := runCLIEnvironment{boardlyHome: home}
@@ -1026,9 +918,6 @@ func (d *Daemon) prepareRunCLIEnvironment(
 		var cleanupErrors []error
 		if revokeChannel != nil {
 			cleanupErrors = append(cleanupErrors, revokeChannel())
-		}
-		if revokeBootstrap != nil {
-			cleanupErrors = append(cleanupErrors, revokeBootstrap())
 		}
 		if executableDirectory != "" {
 			if err := os.RemoveAll(executableDirectory); err != nil {
@@ -1081,23 +970,6 @@ func (d *Daemon) prepareRunCLIEnvironment(
 		prepared.channel = true
 	} else if d.logger != nil {
 		d.logger.Debug("Run channel unavailable: local control endpoint not bound")
-	}
-	if doc.ExecutionProfile.Task == nil {
-		return prepared, nil
-	}
-	if !runchannel.ValidEndpoint(d.commerceDevEndpoint) {
-		if d.logger != nil {
-			d.logger.Debug("Task Commerce control unavailable")
-		}
-		return prepared, nil
-	}
-	capability, revoke, err := d.registerTaskCommerceBootstrap(run)
-	if err != nil {
-		return fail(err)
-	}
-	revokeBootstrap = revoke
-	if _, err := writeCommerceDevControlConfig(home, d.commerceDevEndpoint, capability); err != nil {
-		return fail(fmt.Errorf("write task commerce cli home: %w", err))
 	}
 	return prepared, nil
 }
@@ -2015,7 +1887,7 @@ func (d *Daemon) acquireManagedRunWorkspace(
 		return d.workspaces.AcquireIsolatedScratch(run.ConversationID, run.ID)
 	}
 	if task := doc.ExecutionProfile.Task; task != nil {
-		if doc.ExecutionProfile.Project == nil || !validCommerceCompanyID(doc.ExecutionProfile.Project.ID) {
+		if doc.ExecutionProfile.Project == nil || uuid.Validate(doc.ExecutionProfile.Project.ID) != nil {
 			return workspace.Acquired{}, errors.New("Task Run requires frozen Project identity")
 		}
 		if task.ConversationID != run.ConversationID {

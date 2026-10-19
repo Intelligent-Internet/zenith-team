@@ -40,8 +40,6 @@ type Registry struct {
 	runTokens   *prometheus.CounterVec
 	runTerminal *prometheus.CounterVec
 
-	commerceWebhookReconciliationIssues *prometheus.CounterVec
-
 	mailboxWebhooks         *prometheus.CounterVec
 	mailboxProviderRequests *prometheus.CounterVec
 	mailboxCache            *prometheus.CounterVec
@@ -75,12 +73,6 @@ func NewRegistry() *Registry {
 		Name:      "terminal_total",
 		Help:      "Total newly persisted terminal Run outcomes by bounded provider and result class.",
 	}, []string{"provider", "outcome", "failure_kind"})
-	commerceWebhookReconciliationIssues := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly",
-		Subsystem: "commerce",
-		Name:      "webhook_reconciliation_issues_total",
-		Help:      "Total Commerce webhook reconciliation issues by closed class.",
-	}, []string{"issue"})
 	mailboxWebhooks := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "boardly", Subsystem: "mailbox", Name: "webhooks_total",
 		Help: "Total verified Mailbox webhook outcomes by closed result class.",
@@ -104,7 +96,6 @@ func NewRegistry() *Registry {
 		httpDuration,
 		runTokens,
 		runTerminal,
-		commerceWebhookReconciliationIssues,
 		mailboxWebhooks,
 		mailboxProviderRequests,
 		mailboxCache,
@@ -119,29 +110,11 @@ func NewRegistry() *Registry {
 		runTokens:   runTokens,
 		runTerminal: runTerminal,
 
-		commerceWebhookReconciliationIssues: commerceWebhookReconciliationIssues,
-
 		mailboxWebhooks:         mailboxWebhooks,
 		mailboxProviderRequests: mailboxProviderRequests,
 		mailboxCache:            mailboxCache,
 		mailboxRetentionDeleted: mailboxRetentionDeleted,
 	}
-}
-
-func (r *Registry) ObserveCommerceWebhookReconciliation(issue string) {
-	if r == nil || r.commerceWebhookReconciliationIssues == nil {
-		return
-	}
-	r.commerceWebhookReconciliationIssues.WithLabelValues(
-		boundedCommerceWebhookReconciliationIssue(issue),
-	).Inc()
-}
-
-func boundedCommerceWebhookReconciliationIssue(value string) string {
-	if value == "dead_lettered" {
-		return value
-	}
-	return "processing_failed"
 }
 
 func (r *Registry) ObserveMailboxWebhook(outcome string) {

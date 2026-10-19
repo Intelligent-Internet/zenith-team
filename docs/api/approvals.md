@@ -11,10 +11,8 @@ Two things an agent can ask a human for mid-work, and they are different:
   answers with content.
 
 Both are company-scoped and gated on **member**; a non-member gets `404`, never
-`403`. Questions and Company Plan approvals are raised by agent tools. A
-Commerce manifest submission instead creates its exact publish Approval in the
-same transaction as the immutable manifest. Humans resolve either kind over the
-client plane.
+`403`. Questions and Company Plan approvals are raised by agent tools.
+Humans resolve them over the client plane.
 
 Both resources are served. Raising one requires the ordinary bearer principal
 plus `X-Boardly-Run-Token`; the token is supplemental proof of a currently
@@ -22,40 +20,24 @@ running Run and never becomes a second user principal.
 
 ## The mechanic that matters: durable human input does not park a run
 
-Normally, **when work needs an approval or a question, its run ends.** It does
+**When work needs an approval or a question, its run ends.** It does
 not park or poll. The outcome reaches the agent later as a **new run** with the
 result injected into its context.
 
-A loopback sandbox Commerce activation is the narrow exception. Manifest
-submission creates the Approval before the daemon can register the local public
-signing key, while the matching private key exists only inside the supervised
-`zen commerce dev` lease. The authoring Task Run therefore persists the
-returned proof, starts that wrapper, and stays active through owner publication
-and the operator payment test. It must not hand off an Approval while the local
-signing key is missing. Non-loopback manifests use the ordinary end-and-resume
-flow below.
-
 ```
 agent calls a gated tool with its live Run token and UUID Idempotency-Key
-  └─► server persists a pending approval/question (or manifest + Approval)
-        └─► ordinary/non-loopback flow ends its run normally  (run → completed)
+  └─► server persists a pending approval/question
+        └─► flow ends its run normally  (run → completed)
               └─► [ hours pass; the human is asleep ]
                     └─► human approves
                           └─► server executes the frozen action
                                 └─► server enqueues a NEW run carrying the outcome
 ```
 
-The Approval, decision, continuation receipt, manifest, and public signing-key
-projection remain durable PostgreSQL state. The loopback private key and signer
-lease are deliberately ephemeral and reconstructible; if their Task Run exits,
-a new active Run of the same Task must restart `zen commerce dev` before
-directing the owner to an unpublished Approval or testing the Site.
-
 Three consequences the contract has to carry:
 
 1. **The receipt is durable and replay-safe.** Direct Approval and Question
-   creation returns the same row on an exact replay. Commerce manifest submit
-   returns the same manifest plus its `approvalId`. Reusing an operation key
+   creation returns the same row on an exact replay. Reusing an operation key
    with another payload is `409`.
 2. **The action is frozen at request time.** What executes on approval is
    exactly what the human was shown — not what the agent would ask for now.
@@ -117,7 +99,6 @@ Task waits on a request at all reads the list without `view`.
       "id": "0197f6a0-1122-7c33-8d44-5e6f7a8b9c01",
       "companyId": "0197f4a1-9d33-7c55-b0a2-51c7e8d90f42",
       "kind": "company_plan_apply",
-      "subjectId": null,
       "status": "pending",
       "title": "Apply Company Plan",
       "summary": "1 authoritative Company Plan changes",
@@ -171,10 +152,9 @@ Task waits on a request at all reads the list without `view`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `kind` | string | Stable operation key: `company_plan_apply` or `commerce_manifest_publish` |
-| `subjectId` | UUID or null | Exact domain resource covered by the Approval. Commerce uses the immutable manifest ID; Company Plan uses `null` |
+| `kind` | string | Stable operation key: `company_plan_apply` |
 | `previewMarkdown` | string | The authoritative server-computed diff. Rendered as Markdown, never as HTML |
-| `presentation` | object or null | Structured Company Plan review projection (`kind: company_plan`, `changes`, `plan`); `null` for other Approval kinds |
+| `presentation` | object or null | Structured Company Plan review projection (`kind: company_plan`, `changes`, `plan`); older requests may have no presentation |
 | `originRunId` | UUID string | The Run that raised it, identified by UUID. That run is already terminal by the time anyone sees this |
 | `expiresAt` | string | Every approval has a TTL. There is no unbounded pending state |
 
@@ -213,9 +193,7 @@ chat's Project, also after the Task is deleted:
   `no_eligible_resolver`: nobody could ever approve it.
 - A direct-origin Approval, or one from a Task chat with no Project (its Task
   was deleted before Project access existed), keeps the Company
-  `approvals.resolve` rule. A Commerce publication Approval keeps its own
-  owner route; it is addressed to the Company `approvals.resolve` holders who
-  read the Task chat's Project, since nobody else can open it.
+  `approvals.resolve` rule.
 - Approvals pending when Project access was introduced were addressed again
   by its migration: each gained an item for the Project's readers holding
   `project.approvals.resolve` (then its owners), other people's copies were
@@ -260,14 +238,6 @@ event carries no reference back to the approval, so it cannot be used to
 correlate; the approval is the source of truth.)
 
 ### Approve an approval
-
-The generic decision routes below are for `company_plan_apply`. A
-`commerce_manifest_publish` Approval is shown as **Review & publish payment
-setup** and is resolved only by
-`POST /api/v1/companies/{companyId}/commerce/manifests/{manifestId}/approve-publish`.
-Successful catalog activation closes that Approval and automatically opens the
-continuation receipt for the originating Task; the user never needs to type
-“done”.
 
 ```
 POST /api/v1/companies/{companyId}/approvals/{approvalId}/approve
@@ -382,7 +352,7 @@ cannot read adds nothing, and a member who decides nowhere gets zeros.
 }
 ```
 
-Current rules are `company_plan_apply` and `commerce_manifest_publish`; the
+The current rule is `company_plan_apply`; the
 grouped shape remains stable as server-owned approval rules evolve.
 
 **Errors**

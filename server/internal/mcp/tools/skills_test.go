@@ -41,108 +41,7 @@ func TestNewSkillServiceSearchesOnlyIndexedSummaries(t *testing.T) {
 	}
 }
 
-func TestOpenTaskSkillServiceProvidesEmbeddedCommerceWithoutSkillSnapshot(t *testing.T) {
-	t.Parallel()
-
-	service, err := OpenTaskSkillService("", nil, nil)
-	if err != nil {
-		t.Fatalf("OpenTaskSkillService() error = %v", err)
-	}
-	result, err := service.SearchSkills(t.Context(), SearchSkillsInput{Query: "zenith team commerce"})
-	if err != nil {
-		t.Fatalf("SearchSkills() error = %v", err)
-	}
-	if len(result.Skills) != 1 || result.Skills[0].Key != "zenith-platform" {
-		t.Fatalf("SearchSkills() = %+v", result)
-	}
-	loaded, err := service.LoadSkillReference(t.Context(), LoadSkillReferenceInput{
-		SkillKey: "zenith-platform",
-		Path:     "commerce/procedure.md",
-	})
-	if err != nil {
-		t.Fatalf("LoadSkillReference() error = %v", err)
-	}
-	for _, required := range []string{
-		"Commerce Gateway",
-		"must already be loaded before any Commerce status call",
-		"commerce_account_status",
-		"Never ask the user whether the Company already has an active Stripe account",
-		"Sandbox-first workflow",
-		"Site-signed boundary",
-		"zen commerce dev --manifest boardly-commerce.json -- npm run dev",
-		"For a loopback sandbox manifest",
-		"cannot be published until the daemon registers its local signing key",
-		"do not end the Run while that signing key is missing",
-		"production KMS, HSM, or secret-manager-backed key",
-		"Manifest schema V2 Site fields",
-		"fresh challenge and fresh signed JWT",
-		"commerce_provider_credentials_invalid",
-		"commerce_provider_permission_required",
-		"commerce_tax_setup_required",
-		"commerce_checkout_tax_address_invalid",
-		"commerce_provider_request_invalid",
-		"call `ask_human` exactly once",
-		"separate `live` manifest",
-	} {
-		if !strings.Contains(loaded.Content, required) {
-			t.Fatalf("embedded SKILL.md missing %q: %s", required, loaded.Content)
-		}
-	}
-	if loaded.SHA256 == "" {
-		t.Fatalf("embedded SKILL.md = %+v", loaded)
-	}
-	kit, err := service.LoadSkillReference(t.Context(), LoadSkillReferenceInput{
-		SkillKey: "zenith-platform",
-		Path:     "commerce/templates/boardly-commerce.server.ts",
-	})
-	if err != nil {
-		t.Fatalf("LoadSkillReference(BFF kit) error = %v", err)
-	}
-	for _, required := range []string{
-		"createBoardlyCommerce", "checkout(offerAlias", "credentials: \"omit\"",
-		"cache: \"no-store\"", "site-commerce/entitlements/verify",
-		"CommerceCustomerContext", "Authorization: `BoardlySite ${token}`",
-		"createBoardlyCommerceSignerFromEnvironment", "createBoardlySiteVerificationDocument",
-		"environment: CommerceEnvironment", "fresh challenge",
-		"NON_RETRYABLE_COMMERCE_CODES", "commerce_provider_request_invalid",
-	} {
-		if !strings.Contains(kit.Content, required) {
-			t.Fatalf("embedded BFF kit missing %q", required)
-		}
-	}
-	for _, path := range []string{
-		"commerce/references/integration-workflow.md",
-		"commerce/templates/nextjs-app-router.md",
-		"commerce/templates/fetch-serverless.md",
-	} {
-		reference, loadErr := service.LoadSkillReference(
-			t.Context(),
-			LoadSkillReferenceInput{SkillKey: "zenith-platform", Path: path},
-		)
-		if loadErr != nil {
-			t.Fatalf("LoadSkillReference(%s) error = %v", path, loadErr)
-		}
-		for _, required := range []string{
-			"BOARDLY_COMMERCE_SITE_ID",
-			"requireCommerceCustomerContext",
-			"createBoardlyCommerceSignerFromEnvironment",
-		} {
-			if !strings.Contains(reference.Content, required) {
-				t.Fatalf("embedded %s missing %q", path, required)
-			}
-		}
-	}
-	for _, path := range []string{"commerce/templates/.env.example", "commerce/references/manifest-v2.md"} {
-		if _, loadErr := service.LoadSkillReference(
-			t.Context(),
-			LoadSkillReferenceInput{SkillKey: "zenith-platform", Path: path},
-		); loadErr != nil {
-			t.Fatalf("LoadSkillReference(%s) error = %v", path, loadErr)
-		}
-	}
-}
-
-func TestOpenTaskSkillServiceDoesNotAllowSnapshotToShadowReservedCommerceSkill(t *testing.T) {
+func TestOpenTaskSkillServiceDoesNotAllowSnapshotToShadowReservedPlatformSkill(t *testing.T) {
 	t.Parallel()
 
 	// The snapshot index is sorted by key; the reserved key sorts last here.
@@ -158,13 +57,13 @@ func TestOpenTaskSkillServiceDoesNotAllowSnapshotToShadowReservedCommerceSkill(t
 	defer service.Close()
 	loaded, err := service.LoadSkillReference(t.Context(), LoadSkillReferenceInput{
 		SkillKey: "zenith-platform",
-		Path:     "commerce/procedure.md",
+		Path:     "SKILL.md",
 	})
 	if err != nil {
 		t.Fatalf("LoadSkillReference() error = %v", err)
 	}
 	if strings.Contains(loaded.Content, "Untrusted replacement") ||
-		!strings.Contains(loaded.Content, "Commerce Gateway") {
+		!strings.Contains(loaded.Content, "Operating Zenith Team") {
 		t.Fatalf("reserved platform Skill was shadowed: %s", loaded.Content)
 	}
 	result, err := service.SearchSkills(t.Context(), SearchSkillsInput{Query: "incident"})

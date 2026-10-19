@@ -1,6 +1,6 @@
 ---
 name: zenith-platform
-description: Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, Mail drafts, and the Zenith Team Commerce Gateway procedure for payment work. Not for the product code you are working on.
+description: Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on.
 user-invocable: false
 allowed-tools: Bash(zen *), Bash(git *)
 ---
@@ -34,12 +34,9 @@ needs — usually one, sometimes a few. Do not read them all.
 | `references/questions.md` | Raising one founder Question and ending the Run |
 | `references/company.md` | The Company profile, business context, the Agent roster, and the Projects and Task list a Run outside a Task may read |
 | `references/mail.md` | Reviewable Agent Mail drafts |
-| `references/commerce.md` | Commerce reads from a Task Run; manifest submission stays on the MCP tool |
-| `commerce/procedure.md` | Payment work on a customer-facing website: the Commerce Gateway procedure, loaded before any Commerce status call, setup question or code change; its own `commerce/references/` and `commerce/templates/` |
 
 Open what the work needs. Finishing an ordinary Task needs `tasks.md` and
-`outputs.md`; a Task blocked on a decision adds `questions.md`; a Task that
-takes customer payments starts with `commerce/procedure.md`.
+`outputs.md`; a Task blocked on a decision adds `questions.md`.
 
 ## Invariants
 

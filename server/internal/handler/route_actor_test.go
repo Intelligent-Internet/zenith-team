@@ -219,10 +219,6 @@ func runRouteProbes() map[string]runRouteProbe {
 		"POST /api/v1/attachments/:attachmentId/complete": {
 			body: `{"companyId":"` + routeActorCompany.String() + `"}`,
 		},
-		"POST /api/v1/companies/:companyId/commerce/manifests": {
-			body:  `{"schemaVersion":1,"environment":"sandbox","manifest":{"schemaVersion":1}}`,
-			keyed: true,
-		},
 	}
 }
 
@@ -310,7 +306,6 @@ func TestAnyRoutesAreTheListedReads(t *testing.T) {
 		"GET /api/v1/companies/:companyId",
 		"GET /api/v1/companies/:companyId/agents",
 		"GET /api/v1/companies/:companyId/agents/:agentId",
-		"GET /api/v1/companies/:companyId/commerce/account-status",
 	}
 	var got []string
 	for route, actor := range routeActorTypes {
@@ -643,9 +638,6 @@ var runWriteActivity = map[string]struct {
 		recordedBy: "handler.TestUploadsCheckTheRunProofBearer and " +
 			"attachment.TestCompletedEffectNamesTheRunThatUploaded",
 	},
-	"POST /api/v1/companies/:companyId/commerce/manifests": {
-		recordedBy: "commerce.TestCommerceManifestSubmissionIsIdempotentPerRun",
-	},
 	"POST /api/v1/runs/:runId/output": {
 		noActivity: "a presentation stores an Output and raises only the canvas change hint (with no " +
 			"reviewer the server, not the Run, ends the Run as the system); the " +
@@ -676,9 +668,6 @@ var runWriteActivity = map[string]struct {
 	},
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-wiki/pages": {
 		noActivity: "a research Run's Wiki write raises only the Wiki page events; run_wiki_writes is its evidence",
-	},
-	"POST /api/v1/daemon/companies/:companyId/commerce/sites/:siteAlias/local-signing-keys": {
-		noActivity: "a signing key registration raises no event",
 	},
 }
 

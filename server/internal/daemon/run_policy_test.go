@@ -180,7 +180,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			},
 		},
 		{
-			name: "Task receives outcome and Commerce tools without a Skill snapshot",
+			name: "Task receives outcome tools without a Skill snapshot",
 			doc: RunContext{
 				ExecutionProfile: RunExecutionProfileContext{
 					Source: "assign", Task: &RunTaskContext{Key: "ENG-1"},
@@ -188,9 +188,6 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			},
 			want: []string{
 				"ask_human",
-				"commerce_account_status",
-				"commerce_manifest_status",
-				"commerce_manifest_submit",
 				"create_mail_drafts",
 				"load_skill_reference",
 				"mark_task_failed",
@@ -271,111 +268,6 @@ func TestTaskPageAuthoringKeepsItsGuideWhenCoordinationIsDisabled(t *testing.T) 
 	}
 }
 
-func TestCommerceTaskPromptDefinesIntentAndMandatorySkillLoad(t *testing.T) {
-	t.Parallel()
-
-	var prompt strings.Builder
-	appendCommerceManifestInstructions(&prompt, true)
-	for _, required := range []string{
-		"accept customer payments",
-		"one-time",
-		"monthly or yearly subscription",
-		"Customer Portal",
-		"pricing page that only displays information",
-		"newsletter subscription",
-		"ask the user",
-		`search_skills({"query":"zenith team commerce"})`,
-		`load_skill_reference({"skillKey":"zenith-platform","path":"commerce/procedure.md"})`,
-		"before any other tool call",
-		"commerce_account_status",
-		"must not ask the user whether Stripe is active",
-		"Use a sandbox-first workflow",
-		"exact canonical loopback site origin",
-		"website-owned authentication and session",
-		"zen commerce dev",
-		"Keep that command in the foreground",
-		"do not report the sandbox ready for testing after the command or Run exits",
-		"daemon-backed local signer",
-		"Zenith Team platform owns Stripe webhook delivery",
-		"must not introduce a third-party identity provider for Commerce",
-		"business decision",
-		"call ask_human exactly once",
-		"must not call mark_task_failed",
-		"separate live manifest",
-		"verificationDocument",
-		"verificationPath",
-		"For a loopback sandbox manifest",
-		"cannot be published until its local signing key is registered",
-		"keep the Run active",
-		"Only a non-loopback manifest may use the approval handoff",
-		"Do not claim payments are active",
-		"site-owned ES256 authority",
-	} {
-		if !strings.Contains(prompt.String(), required) {
-			t.Fatalf("Commerce prompt missing %q:\n%s", required, prompt.String())
-		}
-	}
-	for _, forbidden := range []string{
-		"Submit the final immutable draft",
-		"The Task is technically complete when the immutable draft was submitted",
-		"OIDC",
-		"Zenith Team-managed sandbox identity",
-		"boardly_sandbox",
-		"boardly_managed",
-		"configured webhook forwarding from Stripe to the local Zenith Team webhook",
-	} {
-		if strings.Contains(prompt.String(), forbidden) {
-			t.Fatalf(
-				"Commerce prompt contains universal publication requirement %q:\n%s",
-				forbidden,
-				prompt.String(),
-			)
-		}
-	}
-}
-
-func TestCommerceTaskPromptLoadsSkillBeforeAnyCommerceActionOrQuestion(t *testing.T) {
-	t.Parallel()
-
-	var prompt strings.Builder
-	appendCommerceManifestInstructions(&prompt, true)
-	value := prompt.String()
-	skillLoad := strings.Index(
-		value,
-		`load_skill_reference({"skillKey":"zenith-platform","path":"commerce/procedure.md"})`,
-	)
-	accountStatus := strings.Index(value, "Only after that load succeeds may you call commerce_account_status")
-	if skillLoad == -1 || accountStatus == -1 || skillLoad >= accountStatus {
-		t.Fatalf("Commerce skill load must precede account status: %s", value)
-	}
-	for _, forbidden := range []string{
-		`search_skills({"reference":`,
-		`load_skill_reference({"key":`,
-		`load_skill_reference({"reference":`,
-		`load_skill_reference({"skill_key":`,
-	} {
-		if strings.Contains(value, forbidden) {
-			t.Fatalf("Commerce prompt contains unsupported Skill argument %q: %s", forbidden, value)
-		}
-	}
-}
-
-func TestCommerceTaskPromptFailsClosedWithoutTools(t *testing.T) {
-	t.Parallel()
-
-	var prompt strings.Builder
-	appendCommerceManifestInstructions(&prompt, false)
-	for _, required := range []string{
-		"Zenith Team Commerce tools or platform Skill are unavailable",
-		"must not add a direct Stripe integration",
-		"report the blocker",
-	} {
-		if !strings.Contains(prompt.String(), required) {
-			t.Fatalf("unavailable Commerce prompt missing %q: %s", required, prompt.String())
-		}
-	}
-}
-
 func TestBuildRunSystemPromptCarriesTaskContractAndDependencies(t *testing.T) {
 	t.Parallel()
 
@@ -434,7 +326,7 @@ func TestTaskRunPromptDefinesDurableHumanInputExit(t *testing.T) {
 
 	var prompt strings.Builder
 	appendTaskRunPrompt(&prompt, RunTaskContext{
-		Key: "ENG-42", Title: "Add sandbox Checkout",
+		Key: "ENG-42", Title: "Add project search",
 	}, "/work/current")
 	value := prompt.String()
 	for _, required := range []string{
@@ -442,10 +334,6 @@ func TestTaskRunPromptDefinesDurableHumanInputExit(t *testing.T) {
 		"finish all independent work first",
 		"call ask_human exactly once",
 		"end the Run without reporting the Task complete or failed",
-		"follow the environment-specific instruction returned by commerce_manifest_submit",
-		"A loopback sandbox Run stays active",
-		"a non-loopback approval handoff resumes automatically",
-		"Missing Stripe setup, a deployment binding, or live owner approval is not a business failure",
 		"call mark_task_failed",
 	} {
 		if !strings.Contains(value, required) {
@@ -831,7 +719,7 @@ func TestApplyRunExecutionPolicyMakesSchedulesConnectorOnlyAndOneShot(t *testing
 	}
 }
 
-func TestDirectRunPromptExplainsTaskScopedWorkspaceAndCommerce(t *testing.T) {
+func TestDirectRunPromptExplainsTaskScopedWorkspace(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -855,7 +743,6 @@ func TestDirectRunPromptExplainsTaskScopedWorkspaceAndCommerce(t *testing.T) {
 			prompt := buildRunSystemPrompt(test.document, test.workspace, runMemoryContext{})
 			for _, required := range []string{
 				"direct Conversation uses the Company main workspace, not a Task worktree",
-				"Zenith Team Commerce CLI and manifest tools are available only inside the authoring Task Run",
 				"direct the user back to that Task",
 				"do not copy or merge Task files",
 				"do not install another copy of the zen CLI or emulate it",

@@ -8,7 +8,6 @@ import (
 
 	"boardly.dev/boardly/server/internal/approval"
 	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/commerce"
 	"boardly.dev/boardly/server/internal/events"
 	"boardly.dev/boardly/server/internal/execution"
 	"boardly.dev/boardly/server/internal/schedule"
@@ -175,28 +174,6 @@ func newCrashReportRetentionIssueHandler(logger *slog.Logger) func(telemetry.Ret
 			"component", "crash-report-retention",
 			"error_code", errorCode,
 			"operation", "purge_expired_crash_reports",
-		)
-	}
-}
-
-func newCommerceWebhookReconciliationIssueHandler(
-	logger *slog.Logger,
-	registry *telemetry.Registry,
-) func(commerce.WebhookReconciliationIssue) {
-	if logger == nil {
-		logger = slog.Default()
-	}
-	return func(issue commerce.WebhookReconciliationIssue) {
-		registry.ObserveCommerceWebhookReconciliation(string(issue))
-		message := "Commerce webhook reconciliation failed"
-		if issue == commerce.WebhookReconciliationIssueDeadLettered {
-			message = "Commerce webhook receipt dead-lettered"
-		}
-		logger.Warn(
-			message,
-			"component", "commerce-webhook-reconciler",
-			"error_code", string(issue),
-			"operation", "reconcile_webhook_receipts",
 		)
 	}
 }

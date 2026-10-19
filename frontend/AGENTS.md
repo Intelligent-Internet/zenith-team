@@ -114,5 +114,4 @@ Electron, unit, integration, snapshot, and end-to-end tests. Do not run
 `pnpm test`, `pnpm run test`, `pnpm --dir frontend test`, or equivalent frontend
 test commands. Validate changes
 with `pnpm lint`, `pnpm typecheck`, `pnpm build`, and relevant manual UI checks.
-This rule overrides general test-first guidance. The `test:commerce-kit` script
-runs server-owned tests under `server/`; it is not a frontend test suite.
+This rule overrides general test-first guidance.

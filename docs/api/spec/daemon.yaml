@@ -452,65 +452,6 @@ paths:
         '401': { $ref: './_common.yaml#/responses/Unauthorized' }
         '500': { $ref: './_common.yaml#/responses/InternalError' }
 
-  # /api/v1/daemon/companies/{companyId}/commerce/sites/{siteAlias}/local-signing-keys
-  daemon_companies_companyId_commerce_sites_siteAlias_local_signing_keys:
-    post:
-      tags: [daemon, commerce]
-      operationId: daemonRegisterLocalCommerceSigningKey
-      summary: Register the daemon-managed key for a local Commerce Site
-      description: |
-        Requires both the daemon user's ordinary bearer credential and the
-        exact live `brt_` proof for the Task Run starting Commerce development.
-        Zenith Team derives company, Task, and Run scope from that proof; none is
-        accepted from the JSON body. It matches a sandbox Site by exact Task,
-        alias, and loopback origin while locking the acting membership. A draft
-        Site records the key as pending and owner publication promotes it. A
-        later live Run of that same authoring Task may replace an active
-        memory-only development key after daemon restart while preserving the
-        normal retiring overlap. This endpoint never creates or publishes a
-        Site. Exact key replay is idempotent.
-      security:
-        - daemonToken: []
-      parameters:
-        - $ref: './_common.yaml#/parameters/companyId'
-        - name: X-Boardly-Run-Token
-          in: header
-          required: true
-          description: Exact live `brt_` proof for the authoring Task Run.
-          schema: { type: string, pattern: '^brt_[a-f0-9]{64}$' }
-        - name: siteAlias
-          in: path
-          required: true
-          schema: { type: string, minLength: 1, maxLength: 80 }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/schemas/DaemonCommerceSigningKeyRequest' }
-      responses:
-        '200':
-          description: Matched local Site and registered or replayed its signing key.
-          content:
-            application/json:
-              schema: { $ref: '#/schemas/DaemonCommerceSigningKey' }
-        '400': { $ref: './_common.yaml#/responses/BadRequest' }
-        '401':
-          description: The daemon bearer credential or Run proof is invalid.
-          content:
-            application/json:
-              schema: { $ref: './_common.yaml#/schemas/Error' }
-        '404': { $ref: './_common.yaml#/responses/NotFound' }
-        '409':
-          description: Site binding or signing-key state conflicts with the active manifest.
-          content:
-            application/json:
-              schema: { $ref: './_common.yaml#/schemas/Error' }
-        '413': { $ref: './_common.yaml#/responses/PayloadTooLarge' }
-        '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
-        '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
-        '503': { $ref: './_common.yaml#/responses/ServiceUnavailable' }
-
-
   # /api/v1/daemon/ws
   daemon_ws:
     get:
@@ -1659,40 +1600,6 @@ paths:
 
 
 schemas:
-  DaemonCommercePublicJWK:
-    type: object
-    additionalProperties: false
-    required: [kty, crv, x, y]
-    properties:
-      kty: { type: string, const: EC }
-      crv: { type: string, const: P-256 }
-      x: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
-      y: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
-
-  DaemonCommerceSigningKeyRequest:
-    type: object
-    additionalProperties: false
-    required: [schemaVersion, origin, publicJwk, fingerprint]
-    properties:
-      schemaVersion: { type: integer, enum: [1] }
-      origin:
-        type: string
-        format: uri
-        description: Exact loopback HTTP origin from the active sandbox manifest.
-      publicJwk: { $ref: '#/schemas/DaemonCommercePublicJWK' }
-      fingerprint: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
-
-  DaemonCommerceSigningKey:
-    type: object
-    additionalProperties: false
-    required: [schemaVersion, siteId, environment, keyId]
-    properties:
-      schemaVersion: { type: integer, enum: [1] }
-      siteId: { type: string, format: uuid }
-      environment: { type: string, const: sandbox }
-      keyId: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
-
-
   # ----------------------------------------------------------------- daemon
 
   Provider:
@@ -1847,7 +1754,7 @@ schemas:
         type: string
         description: |
           Claim responses only. A `brt_` run token verified by the server's
-          RunProofResolver for scoped MCP and Commerce operations.
+          RunProofResolver for scoped MCP operations.
       priorSessionId:
         type: string
         description: |

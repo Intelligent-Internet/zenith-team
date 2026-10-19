@@ -141,9 +141,8 @@ func WorkflowsSkill(catalog fs.FS) tools.PlatformBundle {
 // PlatformSkills returns the skills boardly-mcp serves from pinned content,
 // with the locks they came from: the zenith-workflows skill, built from every
 // workflows component that verified. A component that failed is left out and
-// named in the error, so boardly-mcp keeps serving zenith-platform and
-// Commerce instead of exiting. The skills returned are usable whenever the
-// slice is non-empty, error or not.
+// named in the error, so boardly-mcp keeps serving zenith-platform. The
+// skills returned are usable whenever the slice is non-empty, error or not.
 func PlatformSkills() ([]tools.PlatformBundle, []contentbundle.Lock, error) {
 	bundles, loadErr := Load()
 	catalog, locks, err := MergeWorkflowCatalog(bundles)

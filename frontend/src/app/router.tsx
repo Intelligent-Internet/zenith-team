@@ -133,27 +133,6 @@ const TermsOfServicePage = lazy(() =>
     }),
   ),
 );
-const CommerceAddendumPage = lazy(() =>
-  import("@/features/public-site/routes/commerce-addendum-page").then(
-    (module) => ({
-      default: module.CommerceAddendumPage,
-    }),
-  ),
-);
-const StripeConnectReturnPage = lazy(() =>
-  import("@/features/public-site/routes/stripe-connect-callback-page").then(
-    (module) => ({
-      default: module.StripeConnectReturnPage,
-    }),
-  ),
-);
-const StripeConnectRefreshPage = lazy(() =>
-  import("@/features/public-site/routes/stripe-connect-callback-page").then(
-    (module) => ({
-      default: module.StripeConnectRefreshPage,
-    }),
-  ),
-);
 const NotFoundPage = lazy(() =>
   import("@/app/routes/not-found").then((module) => ({
     default: module.NotFoundPage,
@@ -197,11 +176,6 @@ const CompanyPlanPage = lazy(() =>
 const ApprovalsPage = lazy(() =>
   import("@/app/routes/approvals").then((module) => ({
     default: module.ApprovalsPage,
-  })),
-);
-const RevenuePage = lazy(() =>
-  import("@/app/routes/revenue").then((module) => ({
-    default: module.RevenuePage,
   })),
 );
 const ScheduledTasksPage = lazy(() =>
@@ -779,18 +753,6 @@ function AppRoutes() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route
-          path="/legal/commerce-addendum"
-          element={<CommerceAddendumPage />}
-        />
-        <Route
-          path="/connect/stripe/return"
-          element={<StripeConnectReturnPage />}
-        />
-        <Route
-          path="/connect/stripe/refresh"
-          element={<StripeConnectRefreshPage />}
-        />
-        <Route
           path="/"
           element={
             <RootRoute isDesktopRuntime={isDesktopRuntime} session={session} />
@@ -847,7 +809,6 @@ function AppRoutes() {
             path="notifications"
             element={<SettingsTabRedirect tab="notifications" />}
           />
-          <Route path="revenue" element={<RevenuePage />} />
           <Route
             path="scheduled"
             element={

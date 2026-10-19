@@ -3,14 +3,13 @@
 
 -- name: CreateApproval :one
 INSERT INTO approvals (
-    company_id, type, commerce_manifest_id, rule_key, title, summary, preview_markdown, presentation,
+    company_id, type, rule_key, title, summary, preview_markdown, presentation,
     requested_by_agent_id, origin_run_id, request_key, task_id,
     conversation_id, origin_user_id, canonical_action,
     request_sha256, action_sha256, expires_at
 ) VALUES (
     sqlc.arg(company_id)::uuid,
     sqlc.arg(type)::text,
-    sqlc.narg(commerce_manifest_id)::uuid,
     sqlc.arg(rule_key)::text,
     sqlc.arg(title)::text,
     sqlc.narg(summary)::text,
@@ -31,6 +30,8 @@ ON CONFLICT (origin_run_id, request_key) DO NOTHING
 RETURNING *;
 
 -- name: GetApprovalByOriginRequestKey :one
+-- Request keys remain reserved by historical actions, even when their type is
+-- no longer exposed by the approval API.
 SELECT *
 FROM approvals
 WHERE origin_run_id = sqlc.arg(origin_run_id)::uuid
@@ -79,7 +80,8 @@ JOIN agents
   ON agents.company_id = approvals.company_id
  AND agents.id = approvals.requested_by_agent_id
 LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user_id
-WHERE approvals.company_id = sqlc.arg(company_id)::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = sqlc.arg(company_id)::uuid
   AND approvals.id = sqlc.arg(approval_id)::uuid
   AND (
       approvals.origin_user_id = sqlc.arg(actor_user_id)::uuid
@@ -96,8 +98,7 @@ WHERE approvals.company_id = sqlc.arg(company_id)::uuid
 
 -- name: GetApprovalProjectionForSystem :one
 -- The same projection with no reader filter, for frames and lifecycle writes
--- the server stages itself (their audience is decided by the router) and for
--- the Commerce publication, which has its own owner fence.
+-- the server stages itself (their audience is decided by the router).
 SELECT
     sqlc.embed(approvals),
     agents.name AS requesting_agent_name,
@@ -108,7 +109,8 @@ JOIN agents
   ON agents.company_id = approvals.company_id
  AND agents.id = approvals.requested_by_agent_id
 LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user_id
-WHERE approvals.company_id = sqlc.arg(company_id)::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = sqlc.arg(company_id)::uuid
   AND approvals.id = sqlc.arg(approval_id)::uuid;
 
 -- name: ListApprovalProjections :many
@@ -158,7 +160,8 @@ LEFT JOIN users AS decided_users ON decided_users.id = approvals.decided_by_user
 LEFT JOIN conversations AS origin_chat
   ON origin_chat.id = approvals.conversation_id
  AND origin_chat.company_id = approvals.company_id
-WHERE approvals.company_id = sqlc.arg(company_id)::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = sqlc.arg(company_id)::uuid
   AND (
       approvals.origin_user_id = sqlc.arg(actor_user_id)::uuid
       -- Task origin: read by the readers of the Task chat it was raised in,
@@ -207,16 +210,9 @@ LIMIT sqlc.arg(page_size)::integer;
 -- name: LockApprovalForResolution :one
 SELECT *
 FROM approvals
-WHERE company_id = sqlc.arg(company_id)::uuid
+WHERE type = 'company_plan_apply'
+  AND company_id = sqlc.arg(company_id)::uuid
   AND id = sqlc.arg(approval_id)::uuid
-FOR UPDATE;
-
--- name: LockCommerceManifestApproval :one
-SELECT *
-FROM approvals
-WHERE company_id = sqlc.arg(company_id)::uuid
-  AND type = 'commerce_manifest_publish'
-  AND commerce_manifest_id = sqlc.arg(commerce_manifest_id)::uuid
 FOR UPDATE;
 
 -- name: ResolveApproval :one
@@ -270,7 +266,8 @@ RETURNING *;
 WITH due AS (
     SELECT id
     FROM approvals
-    WHERE status = 'pending'
+    WHERE type = 'company_plan_apply'
+      AND status = 'pending'
       AND expires_at <= statement_timestamp()
     ORDER BY expires_at, id
     LIMIT sqlc.arg(batch_size)::integer
@@ -297,7 +294,8 @@ RETURNING approvals.*;
 SELECT approvals.company_id
 FROM approvals
 JOIN companies ON companies.id = approvals.company_id
-WHERE approvals.continuation_status = 'pending'
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.continuation_status = 'pending'
   AND approvals.continuation_next_attempt_at <= statement_timestamp()
   AND companies.deleting_at IS NULL
 ORDER BY approvals.continuation_next_attempt_at, approvals.id
@@ -308,7 +306,8 @@ LIMIT 1;
 -- PeekDueApprovalContinuationCompany).
 SELECT *
 FROM approvals
-WHERE company_id = sqlc.arg(company_id)::uuid
+WHERE type = 'company_plan_apply'
+  AND company_id = sqlc.arg(company_id)::uuid
   AND continuation_status = 'pending'
   AND continuation_next_attempt_at <= statement_timestamp()
 ORDER BY continuation_next_attempt_at, id
@@ -400,7 +399,8 @@ FROM approvals
 LEFT JOIN conversations AS origin_chat
   ON origin_chat.id = approvals.conversation_id
  AND origin_chat.company_id = approvals.company_id
-WHERE approvals.company_id = sqlc.arg(company_id)::uuid
+WHERE approvals.type = 'company_plan_apply'
+  AND approvals.company_id = sqlc.arg(company_id)::uuid
   AND approvals.created_at >= sqlc.arg(since)::timestamptz
   AND (
       NOT sqlc.arg(has_agent_id)::boolean

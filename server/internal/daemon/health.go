@@ -221,7 +221,7 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 // owns the single-instance lock. `zen daemon stop` and the desktop
 // supervisor read this port; both would start a replacement into a port they
 // cannot bind. Run calls the returned stop from its deferred cleanup, after
-// the drain and deregistration and before the commerce-dev clear.
+// the drain and deregistration.
 //
 // stop joins every handler admitted before it was called and reports
 // errHealthHandlersNotDrained when forced connection closure could not join
@@ -230,7 +230,6 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 // returns the same result each time.
 func (d *Daemon) startHealthServer(ln net.Listener, startedAt time.Time) func() error {
 	mux := http.NewServeMux()
-	localBaseURL := "http://" + ln.Addr().String()
 	mux.HandleFunc("/health", d.healthHandler(startedAt))
 	mux.HandleFunc(localPreviewPath, d.localPreviewHandler())
 	mux.HandleFunc(localConnectorConnectPath, d.localConnectorConnectHandler())
@@ -261,10 +260,6 @@ func (d *Daemon) startHealthServer(ln net.Listener, startedAt time.Time) func() 
 	mux.HandleFunc(localAppPreviewReleasePath, d.localAppPreviewControlHandler(appPreviewOperationRelease))
 	mux.HandleFunc(localAppPreviewRestartPath, d.localAppPreviewControlHandler(appPreviewOperationRestart))
 	mux.HandleFunc(localAppPreviewStopPath, d.localAppPreviewControlHandler(appPreviewOperationStop))
-	mux.HandleFunc(commerceDevLeaseCreatePath, d.commerceDevLeaseCreateHandler(localBaseURL))
-	mux.HandleFunc(commerceDevLeaseRenewPath, d.commerceDevLeaseRenewHandler())
-	mux.HandleFunc(commerceDevLeaseRevokePath, d.commerceDevLeaseRevokeHandler())
-	mux.HandleFunc(commerceDevSignPath, d.commerceDevSignHandler())
 	mux.HandleFunc(runchannel.Path, d.runChannelHandler())
 
 	handlers := newHealthHandlerTracker()

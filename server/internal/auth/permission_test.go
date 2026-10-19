@@ -45,7 +45,6 @@ func TestOwnerOnlyPermissionsArePinned(t *testing.T) {
 	t.Parallel()
 
 	want := []Permission{
-		PermissionCommerceManage,
 		PermissionCompanyDelete,
 		PermissionMailboxManage,
 		PermissionMembersOwnersManage,

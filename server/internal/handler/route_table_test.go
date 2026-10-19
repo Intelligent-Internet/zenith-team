@@ -15,7 +15,6 @@ import (
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/calendar"
 	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/commerce"
 	"boardly.dev/boardly/server/internal/company"
 	"boardly.dev/boardly/server/internal/conversation"
 	"boardly.dev/boardly/server/internal/daemonws"
@@ -104,7 +103,6 @@ func fullyWiredHandler() Handler {
 		MilestoneService:         &milestoneServiceStub{},
 		ReferenceService:         &referenceServiceStub{},
 		InvitationService:        &company.DefaultInvitationService{},
-		CommerceService:          routeTableCommerce{},
 		ProactiveModeService:     routeTableProactiveMode{},
 		CompanySearchService:     routeTableCompanySearch{},
 		AgentService:             &agentServiceStub{},
@@ -495,154 +493,6 @@ func (routeTableMessageContext) FetchMessageContext(
 	int,
 ) (conversation.MessageContextPage, error) {
 	return conversation.MessageContextPage{}, nil
-}
-
-type routeTableCommerce struct{}
-
-func (routeTableCommerce) Summary(
-	context.Context,
-	auth.UserPrincipal,
-) (commerce.Summary, error) {
-	return commerce.Summary{}, nil
-}
-
-func (routeTableCommerce) IntegrationReadiness(
-	context.Context,
-	auth.UserPrincipal,
-) (commerce.IntegrationReadiness, error) {
-	return commerce.IntegrationReadiness{}, nil
-}
-
-func (routeTableCommerce) AcceptTerms(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.AcceptTermsInput,
-) (commerce.AcceptanceResult, error) {
-	return commerce.AcceptanceResult{}, nil
-}
-
-func (routeTableCommerce) CreateAccountSession(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.Environment,
-) (commerce.AccountSession, error) {
-	return commerce.AccountSession{}, nil
-}
-
-func (routeTableCommerce) CreateOnboardingLink(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.Environment,
-) (commerce.OnboardingLink, error) {
-	return commerce.OnboardingLink{}, nil
-}
-
-func (routeTableCommerce) CreateDashboardLink(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.Environment,
-) (commerce.DashboardLink, error) {
-	return commerce.DashboardLink{}, nil
-}
-
-func (routeTableCommerce) SubmitManifest(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.TrustedManifestContext,
-	commerce.SubmitManifestInput,
-) (commerce.ManifestSubmission, error) {
-	return commerce.ManifestSubmission{}, nil
-}
-
-func (routeTableCommerce) ManifestStatus(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.ManifestStatusInput,
-) (commerce.ManifestStatus, error) {
-	return commerce.ManifestStatus{}, nil
-}
-
-func (routeTableCommerce) ListManifests(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.ManifestListOptions,
-) (commerce.ManifestPage, error) {
-	return commerce.ManifestPage{}, nil
-}
-
-func (routeTableCommerce) ApproveAndPublishManifest(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.ApproveManifestInput,
-) (commerce.ManifestStatus, error) {
-	return commerce.ManifestStatus{}, nil
-}
-
-func (routeTableCommerce) CreateSiteChallenge(
-	context.Context,
-	commerce.SiteChallengeRequest,
-) (commerce.SiteChallenge, error) {
-	return commerce.SiteChallenge{}, nil
-}
-
-func (routeTableCommerce) RegisterLocalSigningKey(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.TrustedLocalSigningKeyContext,
-	commerce.LocalSigningKeyRequest,
-) (commerce.LocalSigningKeyRegistration, error) {
-	return commerce.LocalSigningKeyRegistration{}, nil
-}
-
-func (routeTableCommerce) SyncSigningKeys(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.SyncSigningKeysRequest,
-) ([]commerce.SigningKeySummary, error) {
-	return []commerce.SigningKeySummary{}, nil
-}
-
-func (routeTableCommerce) RevokeSigningKey(
-	context.Context,
-	auth.UserPrincipal,
-	commerce.RevokeSigningKeyRequest,
-) (commerce.SigningKeySummary, error) {
-	return commerce.SigningKeySummary{}, nil
-}
-
-func (routeTableCommerce) CreateCheckout(
-	context.Context,
-	commerce.SiteSignedRequest,
-	commerce.CheckoutRequest,
-) (commerce.HostedRedirect, error) {
-	return commerce.HostedRedirect{}, nil
-}
-
-func (routeTableCommerce) CreatePortal(
-	context.Context,
-	commerce.SiteSignedRequest,
-	commerce.PortalRequest,
-) (commerce.HostedRedirect, error) {
-	return commerce.HostedRedirect{}, nil
-}
-
-func (routeTableCommerce) VerifyEntitlements(
-	context.Context,
-	commerce.SiteSignedRequest,
-) (commerce.EntitlementVerification, error) {
-	return commerce.EntitlementVerification{}, nil
-}
-
-func (routeTableCommerce) SessionJWKSet() (commerce.SessionJWKSet, error) {
-	return commerce.SessionJWKSet{}, nil
-}
-
-func (routeTableCommerce) ProcessWebhook(
-	context.Context,
-	[]byte,
-	string,
-) (commerce.WebhookReceiptResult, error) {
-	return commerce.WebhookReceiptResult{}, nil
 }
 
 type routeTableUsage struct{}
@@ -1243,25 +1093,6 @@ var wantRouteTable = []string{
 	"PUT /api/v1/daemon/companies/:companyId/runtimes/:runtimeId/connectors/discovery",
 	"POST /api/v1/daemon/companies/:companyId/runtimes/:runtimeId/connectors/discovery/reaffirm",
 	"PUT /api/v1/daemon/companies/:companyId/runtimes/:runtimeId/plugins/discovery",
-	"GET /api/v1/companies/:companyId/commerce/account-status",
-	"GET /api/v1/companies/:companyId/commerce/manifests",
-	"GET /api/v1/companies/:companyId/commerce/manifests/:manifestId",
-	"GET /api/v1/companies/:companyId/commerce/summary",
-	"GET /api/v1/site-commerce/jwks",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/account-session",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/dashboard-link",
-	"POST /api/v1/companies/:companyId/commerce/accounts/:environment/onboarding-link",
-	"POST /api/v1/companies/:companyId/commerce/manifests",
-	"POST /api/v1/companies/:companyId/commerce/manifests/:manifestId/approve-publish",
-	"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/:keyId/revoke",
-	"POST /api/v1/companies/:companyId/commerce/sites/:siteId/signing-keys/sync",
-	"POST /api/v1/companies/:companyId/commerce/terms-acceptances",
-	"POST /api/v1/daemon/companies/:companyId/commerce/sites/:siteAlias/local-signing-keys",
-	"POST /api/v1/site-commerce/challenges",
-	"POST /api/v1/site-commerce/checkout-sessions",
-	"POST /api/v1/site-commerce/entitlements/verify",
-	"POST /api/v1/site-commerce/portal-sessions",
-	"POST /api/v1/webhooks/stripe/commerce",
 }
 
 func (routeTableRuntime) ReportTools(context.Context, auth.UserPrincipal, agent.ToolObservationReport) error {

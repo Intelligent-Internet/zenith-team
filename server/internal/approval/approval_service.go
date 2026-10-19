@@ -628,13 +628,6 @@ func (s *DefaultApprovalService) resolve(
 		if err != nil {
 			return err
 		}
-		// Commerce publication owns its provider operation and recent-owner-auth
-		// fence. Its companion Approval is resolved only by that successful
-		// domain action; the generic Company Plan decision routes must never
-		// execute a Commerce payload through the Plan participant.
-		if current.Type != string(ApprovalTypeCompanyPlanApply) {
-			return ErrApprovalConflict
-		}
 		// Approving runs the frozen Company Plan action as the decider, with
 		// what companyPlanApplyScope asks for (ADR 0017). Rejecting and
 		// cancelling need only the decider's permission. Recipients and
@@ -940,9 +933,6 @@ func createApprovalInboxItems(
 	deepLink := requestChatDeepLink(row.RequestedByAgentID, row.ConversationID, row.TaskID) +
 		"&approvalId=" + row.ID.String()
 	body := "An agent needs approval to apply the Company Plan."
-	if row.Type == string(ApprovalTypeCommerceManifestPublish) && row.CommerceManifestID.Valid {
-		body = "Review and publish the exact payment setup proposed by the agent."
-	}
 	results := make([]inbox.CreateResult, 0, len(recipients))
 	for _, recipientID := range recipients {
 		result, err := inbox.CreateInTx(ctx, q, pending, inbox.CreateInput{
@@ -1004,8 +994,7 @@ func approvalProjectionForActor(
 }
 
 // approvalProjectionForSystem reads the Approval with no reader filter, for
-// frames and lifecycle writes the server stages itself and for the Commerce
-// publication; never for a person's read.
+// frames and lifecycle writes the server stages itself; never for a person's read.
 func approvalProjectionForSystem(
 	ctx context.Context,
 	q *generated.Queries,
@@ -1035,8 +1024,7 @@ func approvalFromProjection(
 ) Approval {
 	value := Approval{
 		ID: row.ID, CompanyID: row.CompanyID, Type: ApprovalType(row.Type),
-		SubjectID: util.NullUUIDPtr(row.CommerceManifestID),
-		Status:    ApprovalStatus(row.Status), Title: row.Title,
+		Status: ApprovalStatus(row.Status), Title: row.Title,
 		Summary: util.TextToPtr(row.Summary), PreviewMarkdown: row.PreviewMarkdown,
 		Presentation: json.RawMessage(row.Presentation),
 		RequestedByAgent: ActorRef{

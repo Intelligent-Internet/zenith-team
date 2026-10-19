@@ -30,12 +30,6 @@ export function PublicSiteFooter() {
             <Link className={publicFooterLinkClassName} to="/terms">
               Terms of Service
             </Link>
-            <Link
-              className={publicFooterLinkClassName}
-              to="/legal/commerce-addendum"
-            >
-              Commerce Addendum
-            </Link>
             <a
               className={publicFooterLinkClassName}
               href="mailto:support@ii.inc"

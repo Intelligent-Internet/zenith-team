@@ -899,10 +899,9 @@ playbooks for the Workflows page but are not references.
     {
       "key": "zenith-platform",
       "name": "Zenith platform",
-      "description": "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, presenting result files, founder Questions, Task failure, the Company and its Agents, Mail drafts, and the Zenith Team Commerce Gateway procedure for payment work. Not for the product code you are working on.",
+      "description": "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on.",
       "references": [
-        "commerce/procedure.md", "commerce/references/integration-workflow.md", "commerce/templates/…",
-        "references/commerce.md", "references/company.md", "references/conversations.md",
+        "references/company.md", "references/conversations.md",
         "references/mail.md", "references/outputs.md", "references/questions.md",
         "references/tasks.md"
       ]

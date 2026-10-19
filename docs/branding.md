@@ -19,9 +19,6 @@ installed applications, authenticated sessions, and updates. New installer
 downloads use the `Zenith-Team-` filename prefix.
 
 Public legal copy uses the new product name with unchanged substantive terms.
-The Commerce Addendum release and its server-pinned digest are updated together.
-Existing Commerce companies will be asked to accept this revision before the
-operations that require current terms can proceed.
 
 External branding, including OAuth consent screens, hosted email templates,
 and deployment domains, is managed in the corresponding provider configuration.

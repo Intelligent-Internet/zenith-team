@@ -91,13 +91,6 @@ func TestDaemonStopSignalsOnlyTheHealthVerifiedProcessInstance(t *testing.T) {
 	}
 	writeRecord(`{"schemaVersion":1,"pid":` + strconv.Itoa(os.Getpid()) +
 		`,"startedAt":"` + startedAt.Format(time.RFC3339Nano) + `"}`)
-	if err := os.WriteFile(
-		filepath.Join(home, "commerce-dev.json"),
-		[]byte("invalid legacy Commerce control that daemon stop must not read"),
-		0o600,
-	); err != nil {
-		t.Fatalf("seed unrelated Commerce control: %v", err)
-	}
 	previousSignal := signalDaemonProcess
 	t.Cleanup(func() { signalDaemonProcess = previousSignal })
 	var signaledPID int

@@ -71,29 +71,6 @@ func TestMailboxMetricsExposeOnlyClosedNonPIILabels(t *testing.T) {
 	}
 }
 
-func TestCommerceWebhookReconciliationMetricsUseClosedIssueLabels(t *testing.T) {
-	t.Parallel()
-
-	registry := NewRegistry()
-	registry.ObserveCommerceWebhookReconciliation("dead_lettered")
-	registry.ObserveCommerceWebhookReconciliation("provider-sensitive-value")
-
-	response := httptest.NewRecorder()
-	registry.Handler().ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/metrics", nil))
-	body := response.Body.String()
-	for _, expected := range []string{
-		`boardly_commerce_webhook_reconciliation_issues_total{issue="dead_lettered"} 1`,
-		`boardly_commerce_webhook_reconciliation_issues_total{issue="processing_failed"} 1`,
-	} {
-		if !strings.Contains(body, expected) {
-			t.Errorf("metrics missing %q:\n%s", expected, body)
-		}
-	}
-	if strings.Contains(body, "provider-sensitive-value") {
-		t.Fatal("Commerce webhook reconciliation metric exposed an unbounded label")
-	}
-}
-
 func TestRunMetricsExposeOnlyClosedBoundedLabels(t *testing.T) {
 	t.Parallel()
 

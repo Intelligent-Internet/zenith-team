@@ -289,7 +289,7 @@ func personLayout(t *testing.T) string {
 }
 
 // otherRunHome makes another Run's isolated home under the workspaces root,
-// as the daemon makes one for every Run, with its run.json and Commerce file.
+// as the daemon makes one for every Run, with its run.json.
 func otherRunHome(t *testing.T, workspacesRoot string) string {
 	t.Helper()
 	home := filepath.Join(
@@ -299,8 +299,7 @@ func otherRunHome(t *testing.T, workspacesRoot string) string {
 		t.Fatal(err)
 	}
 	for name, content := range map[string]string{
-		"run.json":          `{"capability":"another-run"}`,
-		"commerce-dev.json": `{"capability":"another-run-commerce"}`,
+		"run.json": `{"capability":"another-run"}`,
 	} {
 		if err := os.WriteFile(filepath.Join(home, name), []byte(content), 0o600); err != nil {
 			t.Fatal(err)
@@ -311,8 +310,8 @@ func otherRunHome(t *testing.T, workspacesRoot string) string {
 
 // Access TECH B3e: a whole Run on this Mac, through the real Claude launch
 // path, with its Run channel open. The Agent's shell reads its own run.json
-// but cannot read or list another Run's isolated home (its run.json and
-// Commerce file), so it cannot call through that Run's channel. It cannot
+// but cannot read or list another Run's isolated home, so it cannot call
+// through that Run's channel. It cannot
 // start launchctl, add a launchd agent or change the person's .zshrc, which
 // it still reads.
 func TestAgentShellCannotReachAnotherRunsChannelOnMacOS(t *testing.T) {
@@ -331,7 +330,6 @@ func TestAgentShellCannotReachAnotherRunsChannelOnMacOS(t *testing.T) {
 		d.recordCredentialIsolation(verdict)
 		checks := []struct{ ran, script string }{
 			{"read another Run's run.json", `cat "$1/run.json"`},
-			{"read another Run's Commerce file", `cat "$1/commerce-dev.json"`},
 			{"listed another Run's home", `ls "$1"`},
 			{"started launchctl", `/bin/launchctl version`},
 			{"added a launchd agent", `echo plist > "$2/Library/LaunchAgents/dev.zenith.test.plist"`},

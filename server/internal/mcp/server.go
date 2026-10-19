@@ -39,21 +39,6 @@ type TaskFailureTools interface {
 	) (tools.MarkTaskFailedResult, error)
 }
 
-type CommerceTools interface {
-	CommerceAccountStatus(
-		context.Context,
-		tools.CommerceAccountStatusInput,
-	) (tools.CommerceAccountStatusResult, error)
-	SubmitCommerceManifest(
-		context.Context,
-		tools.SubmitCommerceManifestInput,
-	) (tools.SubmitCommerceManifestResult, error)
-	CommerceManifestStatus(
-		context.Context,
-		tools.CommerceManifestStatusInput,
-	) (tools.CommerceManifestStatusResult, error)
-}
-
 type MilestoneTools interface {
 	AttestMilestones(
 		context.Context,
@@ -71,7 +56,6 @@ type optionalTools struct {
 	social      tools.SocialToolService
 	mail        MailTools
 	taskFailure TaskFailureTools
-	commerce    CommerceTools
 	milestones  MilestoneTools
 }
 
@@ -90,7 +74,6 @@ func newServer(
 	idempotent := true
 	var mailService MailTools
 	var taskFailureService TaskFailureTools
-	var commerceService CommerceTools
 	var milestoneService MilestoneTools
 	if len(optional) > 0 {
 		registerTaskResultTool(server, optional[0].taskResults, allowedTools)
@@ -102,57 +85,7 @@ func newServer(
 		registerSocialTools(server, optional[0].social, allowedTools)
 		mailService = optional[0].mail
 		taskFailureService = optional[0].taskFailure
-		commerceService = optional[0].commerce
 		milestoneService = optional[0].milestones
-	}
-
-	if commerceService != nil && toolExplicitlyAllowed(allowedTools, "commerce_account_status") {
-		mcpsdk.AddTool(server, &mcpsdk.Tool{
-			Name:  "commerce_account_status",
-			Title: "Get Company Commerce Account Status",
-			Description: "Read the current Company-scoped Stripe Connect readiness for sandbox and live. " +
-				"Use this before asking about Stripe setup; the result excludes provider IDs and credentials.",
-			Annotations: &mcpsdk.ToolAnnotations{
-				ReadOnlyHint: readOnly, IdempotentHint: idempotent, OpenWorldHint: &closedWorld,
-			},
-		}, func(ctx context.Context, _ *mcpsdk.CallToolRequest, input tools.CommerceAccountStatusInput) (*mcpsdk.CallToolResult, tools.CommerceAccountStatusResult, error) {
-			result, err := commerceService.CommerceAccountStatus(ctx, input)
-			return nil, result, err
-		})
-	}
-
-	if commerceService != nil && toolExplicitlyAllowed(allowedTools, "commerce_manifest_submit") {
-		mcpsdk.AddTool(server, &mcpsdk.Tool{
-			Name:        "commerce_manifest_submit",
-			Title:       "Submit Commerce Manifest Draft",
-			InputSchema: commerceManifestSubmitInputSchema(),
-			Description: "Submit the complete boardly-commerce.json manifest for this exact Task Run. " +
-				"This atomically creates an immutable draft and its owner Approval with no Stripe side effects. " +
-				"For a loopback sandbox, persist the returned proof and start zen commerce dev in this same Run so the daemon can register its local signing key; keep the Run active through owner publication and testing. " +
-				"Only non-loopback manifests use the immediate approval handoff and automatic continuation.",
-			Annotations: &mcpsdk.ToolAnnotations{
-				DestructiveHint: &nonDestructive,
-				IdempotentHint:  idempotent,
-				OpenWorldHint:   &closedWorld,
-			},
-		}, func(ctx context.Context, _ *mcpsdk.CallToolRequest, input tools.SubmitCommerceManifestInput) (*mcpsdk.CallToolResult, tools.SubmitCommerceManifestResult, error) {
-			result, err := commerceService.SubmitCommerceManifest(ctx, input)
-			return nil, result, err
-		})
-	}
-
-	if commerceService != nil && toolExplicitlyAllowed(allowedTools, "commerce_manifest_status") {
-		mcpsdk.AddTool(server, &mcpsdk.Tool{
-			Name:        "commerce_manifest_status",
-			Title:       "Get Commerce Manifest Status",
-			Description: "Get approval and catalog-apply status for a Commerce manifest created by this Task. A continuation Run for the same Task can read the original manifest.",
-			Annotations: &mcpsdk.ToolAnnotations{
-				ReadOnlyHint: readOnly, IdempotentHint: idempotent, OpenWorldHint: &closedWorld,
-			},
-		}, func(ctx context.Context, _ *mcpsdk.CallToolRequest, input tools.CommerceManifestStatusInput) (*mcpsdk.CallToolResult, tools.CommerceManifestStatusResult, error) {
-			result, err := commerceService.CommerceManifestStatus(ctx, input)
-			return nil, result, err
-		})
 	}
 
 	if taskFailureService != nil && toolExplicitlyAllowed(allowedTools, "mark_task_failed") {

@@ -92,14 +92,6 @@ export const privacyPolicy = {
       ],
     },
     {
-      id: "commerce-and-payments",
-      title: "Commerce, payments, and Stripe Connect",
-      paragraphs: [
-        "When an authorized Company owner enables Zenith Team Commerce, Stripe collects the legal-entity, representative, owner, identity-verification, tax, and bank-account information required to create and operate that Company's Stripe Connected Account. Stripe collects sensitive identity documents and bank-account details directly under its own agreements and privacy policy; Zenith Team does not ask you to enter those values into prompts, Tasks, or workspace resources.",
-        "Zenith Team receives and stores a limited provider projection needed to authorize and operate Commerce, such as the Connected Account identifier, country, capability and verification status, bounded requirement counts, payout readiness, safe balance summaries, payment-operation status, and reconciliation timestamps. Zenith Team may exchange customer, order, payment, subscription, refund, dispute, and payout information with Stripe when necessary to perform an approved Commerce action, prevent fraud, support customers, keep records, and comply with law.",
-      ],
-    },
-    {
       id: "international-transfers",
       title: "International data transfers",
       paragraphs: [

@@ -324,8 +324,7 @@ func ValidateSkill(ref SkillRef, bundle Skill) error {
 		bundle.Name != ref.Name || bundle.Description != ref.Description || bundle.SizeBytes != ref.SizeBytes {
 		return errors.New("skill identity differs from frozen reference")
 	}
-	if !skillKeyPattern.MatchString(bundle.Name) || len(bundle.Name) > 64 || !SafeSkillPath(bundle.Name) ||
-		bundle.Name == "boardly-commerce" {
+	if !skillKeyPattern.MatchString(bundle.Name) || len(bundle.Name) > 64 || !SafeSkillPath(bundle.Name) {
 		return errors.New("invalid skill key")
 	}
 	if !utf8.ValidString(bundle.Description) || utf8.RuneCountInString(bundle.Description) > 1024 ||

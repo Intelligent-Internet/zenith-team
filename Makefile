@@ -7,7 +7,7 @@ SHELL := /bin/bash
 GOFLAGS ?= -p=2
 export GOFLAGS
 
-.PHONY: help api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend boardly-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc-check go-shape lint typecheck test-commerce-kit build infra-up infra-down infra-reset go-tools go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff
+.PHONY: help api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend boardly-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc-check go-shape lint typecheck build infra-up infra-down infra-reset go-tools go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff
 
 .DEFAULT_GOAL := help
 
@@ -321,9 +321,6 @@ lint:
 typecheck:
 	cd frontend && pnpm typecheck
 
-test-commerce-kit:
-	cd frontend && pnpm test:commerce-kit
-
 build:
 	cd frontend && pnpm build
 
@@ -371,4 +368,4 @@ voice-gate:
 	cd voice-agent && uv run --frozen ruff format --check .
 	cd voice-agent && uv run --frozen python -m unittest -v
 
-gate: api-lint api-types-check voice-gate go-gate lint typecheck test-commerce-kit build
+gate: api-lint api-types-check voice-gate go-gate lint typecheck build

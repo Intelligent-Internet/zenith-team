@@ -20,10 +20,8 @@
     "electron:release:merge-upload": "node electron/scripts/merge-release-upload.cjs",
     "electron:release:prepare-upload": "node electron/scripts/prepare-release-upload.cjs",
     "electron:security:scan": "node electron/scripts/security-scan.cjs",
-    "test:commerce-kit": "vitest run --config ../server/internal/mcp/tools/testdata/commerce-kit.vitest.config.mjs",
     "lint": "pnpm check:dependencies && pnpm lint:format",
-    "typecheck": "tsc --noEmit && pnpm typecheck:commerce-kit",
-    "typecheck:commerce-kit": "tsc --noEmit --project ../server/internal/mcp/tools/testdata/tsconfig.commerce-kit.json",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "lint:format": "prettier --check package.json \"src/app/shell/**/*.{ts,tsx}\" \"src/features/{agent-setup,approvals,company-plan,notifications,project-canvas}/**/*.{ts,tsx}\" \"src/features/workflows/**/*.{ts,tsx,css}\" \"src/shared/canvas/**/*.{ts,tsx}\" \"src/features/whiteboards/**/*.{ts,tsx,css}\" src/state/slice/workflow-pins.ts src/state/slice/workflow-drafts.ts src/features/scheduled/model/schedule-seed.ts src/features/chat-panel/hooks/use-agent-realtime-chat.ts \"src/features/settings/{components/{computer-handover-dialog,daemon-settings-card,remove-runtime-dialog,rename-runtime-dialog,workflow-app-connect-panel},model/{runtime-management,settings-navigation},routes/{agent-settings-page,runtime-detail-page,settings-hub-page}}.{ts,tsx}\" \"src/shared/api/**/*.{ts,tsx}\" \"src/shared/permissions/**/*.{ts,tsx}\" \"src/shared/realtime/**/*.{ts,tsx}\" \"electron/main/{agent-discovery,agent-verification,app,daemon-environment,daemon-panel,daemon-runtime,desktop-auth-api,desktop-auth-store,ipc,realtime-request-policy,trusted-frame}.{cjs,mjs}\" \"electron/scripts/{build-boardly-binaries,make-signed-macos}.{cjs,mjs}\" electron/preload/index.cjs electron/shared/desktop-variant.cjs forge.config.cjs scripts/check-dependencies.mjs \"src/shared/{session,desktop}/**/*.{ts,tsx}\" \"src/features/chat-panel/{api,model}/agent-chat-*.ts\" electron/shared/desktop-bridge.types.ts",
     "check:dependencies": "node scripts/check-dependencies.mjs"
@@ -45,8 +43,6 @@
     "@reduxjs/toolkit": "^2.8.2",
     "@sentry/electron": "8.1.0",
     "@sentry/react": "11.4.0",
-    "@stripe/connect-js": "^3.4.6",
-    "@stripe/react-connect-js": "^3.4.4",
     "@tiptap/extension-code-block": "3.31.3",
     "@tiptap/extension-collaboration": "3.31.3",
     "@tiptap/extension-collaboration-caret": "3.31.3",
@@ -127,8 +123,7 @@
     "tailwindcss": "^4.1.12",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-svgr": "^4.3.0",
-    "vitest": "^4.1.9"
+    "vite-plugin-svgr": "^4.3.0"
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-darwin-arm64": "4.1.12"

@@ -281,7 +281,6 @@ export function convergeRealtimeCaches(
       { type: "Workflow" },
       { type: "Mailbox" },
       { type: "AgentMail" },
-      { type: "Commerce" },
     ]),
   );
 }

@@ -25,7 +25,6 @@ import (
 	"boardly.dev/boardly/server/internal/auth"
 	"boardly.dev/boardly/server/internal/calendar"
 	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/commerce"
 	"boardly.dev/boardly/server/internal/company"
 	"boardly.dev/boardly/server/internal/config"
 	"boardly.dev/boardly/server/internal/conversation"
@@ -159,41 +158,6 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	}
 	inboxPresenter := inbox.NewRealtimePresenter(bus)
 	registry := telemetry.NewRegistry()
-	commerceService, err := newCommerceService(
-		cfg.Commerce,
-		databaseStore,
-		bus,
-		inboxPresenter,
-	)
-	if err != nil {
-		return err
-	}
-	var commerceWebhookReconciler *commerce.WebhookReconciler
-	var commerceDevelopmentEventPoller *commerce.DevelopmentEventPoller
-	if commerceService != nil {
-		if err := ensureCommerceTermsCatalog(ctx, commerceService); err != nil {
-			return err
-		}
-		commerceWebhookReconciler, err = commerce.NewWebhookReconciler(
-			commerceService,
-			commerce.WebhookReconcilerOptions{
-				OnIssue: newCommerceWebhookReconciliationIssueHandler(logger, registry),
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("construct Commerce webhook reconciler: %w", err)
-		}
-		commerceDevelopmentEventPoller, err = newCommerceDevelopmentEventPoller(
-			cfg.Environment,
-			cfg.Commerce,
-			queries,
-			commerceService,
-			logger,
-		)
-		if err != nil {
-			return err
-		}
-	}
 	objectStore, err := storage.NewFromConfig(ctx, cfg.Storage)
 	if err != nil {
 		return fmt.Errorf("initialize object storage: %w", err)
@@ -869,7 +833,6 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		ScheduleService:          scheduleParts.service,
 		TaskReportService:        taskReportService,
 		TaskMergeService:         taskMergeService,
-		CommerceService:          handlerCommerceService(commerceService),
 		CrashReportService:       crashReportService,
 		RunService:               runService,
 		Queries:                  queries,
@@ -976,18 +939,6 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		}),
 		{name: "task-report-dispatch", run: taskReportDispatcher.Run},
 		{name: "task-merge-reconcile", run: taskMergeReconciler.Run},
-	}
-	if commerceWebhookReconciler != nil {
-		workers = append(workers, backgroundWorker{
-			name: "commerce-webhook-reconcile",
-			run:  commerceWebhookReconciler.Run,
-		})
-	}
-	if commerceDevelopmentEventPoller != nil {
-		workers = append(workers, backgroundWorker{
-			name: "commerce-development-event-fallback",
-			run:  commerceDevelopmentEventPoller.Run,
-		})
 	}
 	if publicationWorker != nil {
 		workers = append(workers, backgroundWorker{name: "output-publication", run: publicationWorker.Run})

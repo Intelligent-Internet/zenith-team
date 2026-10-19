@@ -89,7 +89,7 @@ narrows what the session may do. Every route says whether it accepts a Run:
 |---|---|
 | `person` (and every route that says nothing) | `403 human_actor_required`, before the session is checked |
 | `run` | The handler resolves the proof: it must be a running Run whose member is the caller (`401 run_token_invalid`), and the route reads or writes only what that Run may (`403 task_outside_run_scope`) |
-| `any` | Admitted without reading the proof. Only Company metadata reads: the Company list, one Company, the Agent list, one Agent and the Commerce account status |
+| `any` | Admitted without reading the proof. Only Company metadata reads: the Company list, one Company, the Agent list, one Agent |
 
 Deciding (approve, reject, cancel, answer, withdraw), Task edit and start,
 the dependency graph, Project create and every access change are `person`.

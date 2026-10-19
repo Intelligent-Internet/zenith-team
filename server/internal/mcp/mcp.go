@@ -75,14 +75,11 @@ func Run(ctx context.Context, getenv func(string) string) error {
 		toolExplicitlyAllowed(allowedTools, "artifact_edit")
 	outputEnabled := toolExplicitlyAllowed(allowedTools, "present_output")
 	var runContext tools.RunContext
-	commerceEnabled := toolExplicitlyAllowed(allowedTools, "commerce_account_status") ||
-		toolExplicitlyAllowed(allowedTools, "commerce_manifest_submit") ||
-		toolExplicitlyAllowed(allowedTools, "commerce_manifest_status")
 	if toolExplicitlyAllowed(allowedTools, "create_mail_drafts") ||
 		toolExplicitlyAllowed(
 			allowedTools,
 			"mark_task_failed",
-		) || toolExplicitlyAllowed(allowedTools, "finalize_task_results") || commerceEnabled || calendarEnabled || socialEnabled || wikiEnabled || pagesEnabled ||
+		) || toolExplicitlyAllowed(allowedTools, "finalize_task_results") || calendarEnabled || socialEnabled || wikiEnabled || pagesEnabled ||
 		milestonesEnabled || outputEnabled || artifactsEnabled || whiteboardsEnabled {
 		runContext, err = resolveRunContext(getenv)
 		if err != nil {
@@ -171,13 +168,6 @@ func Run(ctx context.Context, getenv func(string) string) error {
 			return fmt.Errorf("initialize Task failure tool: %w", err)
 		}
 	}
-	var commerceService *tools.DefaultCommerceToolService
-	if commerceEnabled {
-		commerceService, err = tools.NewCommerceToolService(api, runContext)
-		if err != nil {
-			return fmt.Errorf("initialize Commerce tools: %w", err)
-		}
-	}
 	var milestoneService *tools.DefaultMilestoneToolService
 	if milestonesEnabled {
 		milestoneService, err = tools.NewMilestoneToolService(api, runContext)
@@ -187,7 +177,7 @@ func Run(ctx context.Context, getenv func(string) string) error {
 	}
 	var skillService *tools.DefaultSkillService
 	snapshotDir, hasSnapshot := resolveSkillSnapshotDir(getenv)
-	if commerceEnabled || taskPlatformSkillsAvailable(allowedTools, getenv) {
+	if taskPlatformSkillsAvailable(allowedTools, getenv) {
 		loaded, openErr := openTaskSkills(snapshotDir, os.Stderr)
 		if openErr != nil {
 			return fmt.Errorf("configure Task platform Skills: %w", openErr)
@@ -216,7 +206,6 @@ func Run(ctx context.Context, getenv func(string) string) error {
 			taskResults: taskResultService,
 			social:      socialService,
 			taskFailure: taskFailureService,
-			commerce:    commerceService,
 			milestones:  milestoneService,
 		},
 	).Run(ctx, &mcpsdk.StdioTransport{})
@@ -234,7 +223,7 @@ var loadPlatformBundles = platformbundle.PlatformSkills
 // platform skills and the Run's frozen snapshot. A pinned bundle that fails
 // verification or loading is dropped and reported on diagnostics (the MCP
 // server's stderr) rather than taking down every skill tool: zenith-platform
-// and the Commerce procedure stay served, and the dropped key stays reserved.
+// stays served, and the dropped key stays reserved.
 func openTaskSkills(snapshotDir string, diagnostics io.Writer) (*tools.DefaultSkillService, error) {
 	bundles, locks, err := loadPlatformBundles()
 	if err != nil {

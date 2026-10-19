@@ -891,3 +891,20 @@ Rollback deletes the Whiteboard Artifacts (their Boards cascade) and restores
 000108's schema empty: the Board columns, access tables, views, indexes, the
 chat column and its triggers. The deleted Boards and Board channels do not come
 back.
+
+## Commerce retirement (000116)
+
+Stripe Commerce is no longer part of the server, CLI, MCP or frontend. Its
+historical migrations, tables and generated schema models remain so upgrades
+preserve provider records and past decisions. No active Commerce query or
+provider worker uses them. This migration cancels pending Commerce approvals
+and abandons pending continuations without resuming their Runs. Existing
+terminal decisions and delivered continuations remain unchanged. The current
+approval API serves only Company Plan actions.
+
+Inbox requests for retired approvals are marked read and archived, retaining
+their history without leaving an unread request for an unavailable action.
+
+Rollback leaves the cancelled requests and abandoned continuations terminal;
+reopening provider work requires a new review. This migration does not revoke
+credentials or change resources in Stripe.

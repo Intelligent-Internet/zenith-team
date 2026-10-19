@@ -48,8 +48,6 @@ const (
 	PermissionResultsReview              Permission = "results.review"
 	PermissionResultsPublish             Permission = "results.publish"
 	PermissionMailboxManage              Permission = "mailbox.manage"
-	PermissionCommerceRead               Permission = "commerce.read"
-	PermissionCommerceManage             Permission = "commerce.manage"
 )
 
 var (
@@ -59,7 +57,7 @@ var (
 )
 
 // grants is the one table. An owner holds every permission; an admin holds
-// everything except deleting the company, managing owners, managing commerce, using Mailbox
+// everything except deleting the company, managing owners, using Mailbox
 // and publishing results. A member holds conversations.discuss and
 // plugins.manage, and works through the other member-gated routes.
 // plugins.manage installs plugins and connects apps on the holder's own
@@ -95,8 +93,6 @@ var grants = []struct {
 	{PermissionResultsReview, ownerAndAdmin},
 	{PermissionResultsPublish, ownerOnly},
 	{PermissionMailboxManage, ownerOnly},
-	{PermissionCommerceRead, ownerAndAdmin},
-	{PermissionCommerceManage, ownerOnly},
 }
 
 // Valid reports whether r is one of the three catalog roles.

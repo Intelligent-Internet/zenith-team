@@ -142,13 +142,6 @@ server/internal/
 │                     optimistic review, and the durable send worker.
 │                     Email is user content, so this stays separate from
 │                     the notification Inbox.
-├── commerce/         Company Stripe Connect setup, immutable Task-authored
-│                     catalog manifests, Site/customer bindings, Site-owned
-│                     ES256 request authority, Checkout and Customer Portal
-│                     operations, webhook reconciliation, and entitlement
-│                     projections. Stripe remains behind infra/stripe and
-│                     public origin proof fetches behind infra/siteverify;
-│                     MCP only receives Run-scoped tools.
 ├── activity/         Company action history. Task, Conversation and Run
 │                     owners capture safe before/after snapshots in their
 │                     mutation transaction through ObserveInTx/RecordInTx.
@@ -251,8 +244,7 @@ server/internal/
 │                     bound folder (D31)
 ├── infra/            Technology adapters: cloudrun/ (application publication),
 │                     email/, storage/ (S3 objects and Cloudflare KV publication
-│                     route projections), validate/, stripe/, and the SSRF-safe
-│                     Commerce Site origin-proof adapter siteverify/.
+│                     route projections), and validate/.
 ├── config/           Env config. There is no internal/app: the composition
 │                     root is cmd/server (app.go, listeners.go, workers.go,
 │                     runtime_sweeper.go, redis.go, auth.go, lifecycle.go).
@@ -444,7 +436,7 @@ isolated database + fixture per caller.
   frontend test commands. Validate frontend
   changes with lint, typecheck, build, and relevant manual UI checks. This rule
   takes precedence over the general test-first rule below. Server-owned tests
-  remain in scope for backend work, including Commerce Kit tests under `server/`.
+  remain in scope for backend work.
 - RTK Query owns server state; plain Redux slices own UI-only state. The RTK
   layer uses `fakeBaseQuery` + per-endpoint `queryFn`, so the real transport is
   the axios client in `frontend/src/lib/api-client.ts` — RTK sees no URL and

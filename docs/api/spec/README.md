@@ -24,7 +24,6 @@ the contract and its guidance together when they disagree with code.
 | [mailbox.yaml](mailbox.yaml) | Company Email, inbound messages, and Agent Mail drafts and delivery |
 | [schedules.yaml](schedules.yaml) | Reviewed Schedule definitions and firing history |
 | [workflows.yaml](workflows.yaml) | The read-only Workflow catalog: cards, forms, brief templates and playbook references |
-| [commerce.yaml](commerce.yaml) | Commerce setup, manifests, Site authority, Checkout, and webhooks |
 | [activity-and-usage.yaml](activity-and-usage.yaml) | Activity, usage, and diagnostics |
 | [health.yaml](health.yaml) | Health, readiness, and operator probes |
 | [realtime.yaml](realtime.yaml) | Client WebSocket upgrade and typed event schemas |

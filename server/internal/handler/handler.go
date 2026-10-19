@@ -119,7 +119,6 @@ type Handler struct {
 	TaskCalendarService      task.CalendarService
 	TaskReportService        TaskReportService
 	TaskMergeService         TaskMergeService
-	CommerceService          CommerceService
 	SocialService            social.SocialService
 	// Daemon plane (wave 3): the run lifecycle service, the raw query set
 	// and transaction starter the daemon handlers use directly, the
@@ -139,12 +138,10 @@ type Handler struct {
 	// daemon plane's runtime-scoped routes: false admits a missing header
 	// with a warning log, true refuses it with 400 invalid_request before
 	// any database access.
-	RequireDaemonID              bool
-	HTTPMetrics                  middleware.HTTPObserver
-	ClientWebSocket              http.Handler
-	siteCommerceProofLimiter     *siteCommercePreAuthLimiter
-	siteCommerceChallengeLimiter *siteCommercePreAuthLimiter
-	router                       *gin.Engine
+	RequireDaemonID bool
+	HTTPMetrics     middleware.HTTPObserver
+	ClientWebSocket http.Handler
+	router          *gin.Engine
 }
 
 var _ http.Handler = (*Handler)(nil)
@@ -161,12 +158,6 @@ func New(h Handler) *Handler {
 
 	h.AllowedOrigins = slices.Clone(h.AllowedOrigins)
 	h.TrustedProxies = slices.Clone(h.TrustedProxies)
-	if h.siteCommerceProofLimiter == nil {
-		h.siteCommerceProofLimiter = newSiteCommerceProofLimiter()
-	}
-	if h.siteCommerceChallengeLimiter == nil {
-		h.siteCommerceChallengeLimiter = newSiteCommerceChallengeLimiter()
-	}
 	h.router = gin.New()
 	h.router.Use(
 		middleware.RequestID(),
@@ -261,7 +252,6 @@ func (h *Handler) registerRoutes(api *gin.RouterGroup) {
 	h.registerMailboxRoutes(api)
 	h.registerScheduleRoutes(api)
 	h.registerTaskReportRoutes(api)
-	h.registerCommerceRoutes(api)
 }
 
 // ServeHTTP implements http.Handler without exposing the mutable Gin engine to

@@ -24,7 +24,7 @@ export const ROLE_LABELS: Record<CompanyRole, string> = {
 /** One line per role for pickers and the roles explainer. */
 export const ROLE_DESCRIPTIONS: Record<CompanyRole, string> = {
   owner:
-    "Everything an Admin can do, plus deleting the company, managing owners, and revenue.",
+    "Everything an Admin can do, plus deleting the company, managing owners.",
   admin:
     "Manages people, agents, settings and the company plan. Can't delete the company or manage owners.",
   member:
@@ -92,8 +92,7 @@ export const ROLE_MATRIX: readonly {
     label: "Turn Proactive Mode on or off",
     permission: "company.proactive_mode.manage",
   },
-  { label: "See usage and revenue", permission: "usage.read" },
-  { label: "Manage revenue and payouts", permission: "commerce.manage" },
+  { label: "See usage", permission: "usage.read" },
   { label: "Use Mailbox and Agent Mail", permission: "mailbox.manage" },
   {
     label: "Manage owners",
