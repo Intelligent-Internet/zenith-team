@@ -1410,6 +1410,7 @@ type Huddle struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	EndedAt              pgtype.Timestamptz `json:"ended_at"`
 	SourceItemID         uuid.NullUUID      `json:"source_item_id"`
+	NotesMode            bool               `json:"notes_mode"`
 }
 
 type HuddleAiBudget struct {
@@ -1535,6 +1536,88 @@ type HuddleInvitation struct {
 	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type HuddleNote struct {
+	ID                  uuid.UUID          `json:"id"`
+	CompanyID           uuid.UUID          `json:"company_id"`
+	HuddleID            uuid.UUID          `json:"huddle_id"`
+	Revision            int64              `json:"revision"`
+	State               string             `json:"state"`
+	StartedByUserID     uuid.NullUUID      `json:"started_by_user_id"`
+	StopReason          string             `json:"stop_reason"`
+	ExpiresAt           pgtype.Timestamptz `json:"expires_at"`
+	RecapState          string             `json:"recap_state"`
+	Recap               []byte             `json:"recap"`
+	RecapRevision       int64              `json:"recap_revision"`
+	RecapEditedByUserID uuid.NullUUID      `json:"recap_edited_by_user_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	RecapAttempts       int32              `json:"recap_attempts"`
+	RecapLeaseUntil     pgtype.Timestamptz `json:"recap_lease_until"`
+	RecapToken          uuid.NullUUID      `json:"recap_token"`
+}
+
+type HuddleNotesAction struct {
+	ID                uuid.UUID          `json:"id"`
+	CompanyID         uuid.UUID          `json:"company_id"`
+	NotesID           uuid.UUID          `json:"notes_id"`
+	ActionIndex       int32              `json:"action_index"`
+	RecapRevision     int64              `json:"recap_revision"`
+	TaskID            uuid.NullUUID      `json:"task_id"`
+	SubmittedByUserID uuid.UUID          `json:"submitted_by_user_id"`
+	SubmissionHash    []byte             `json:"submission_hash"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type HuddleNotesInterval struct {
+	ID              uuid.UUID          `json:"id"`
+	CompanyID       uuid.UUID          `json:"company_id"`
+	NotesID         uuid.UUID          `json:"notes_id"`
+	RequestKey      uuid.UUID          `json:"request_key"`
+	CapabilityHash  []byte             `json:"capability_hash"`
+	State           string             `json:"state"`
+	LeaseExpiresAt  pgtype.Timestamptz `json:"lease_expires_at"`
+	DeadlineAt      pgtype.Timestamptz `json:"deadline_at"`
+	StartedAt       pgtype.Timestamptz `json:"started_at"`
+	EndedAt         pgtype.Timestamptz `json:"ended_at"`
+	Sequence        int64              `json:"sequence"`
+	BatchHash       []byte             `json:"batch_hash"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	StopRequestedAt pgtype.Timestamptz `json:"stop_requested_at"`
+	DrainUntil      pgtype.Timestamptz `json:"drain_until"`
+}
+
+type HuddleNotesPolicy struct {
+	CompanyID       uuid.UUID          `json:"company_id"`
+	Enabled         bool               `json:"enabled"`
+	RetentionDays   int32              `json:"retention_days"`
+	MonthlySeconds  int64              `json:"monthly_seconds"`
+	ReservedSeconds int64              `json:"reserved_seconds"`
+	PeriodStart     pgtype.Date        `json:"period_start"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	Revision        int64              `json:"revision"`
+}
+
+type HuddleNotesRecapRevision struct {
+	ID             uuid.UUID          `json:"id"`
+	CompanyID      uuid.UUID          `json:"company_id"`
+	NotesID        uuid.UUID          `json:"notes_id"`
+	Revision       int64              `json:"revision"`
+	Content        []byte             `json:"content"`
+	EditedByUserID uuid.NullUUID      `json:"edited_by_user_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type HuddleNotesSegment struct {
+	ID         uuid.UUID          `json:"id"`
+	CompanyID  uuid.UUID          `json:"company_id"`
+	IntervalID uuid.UUID          `json:"interval_id"`
+	Sequence   int64              `json:"sequence"`
+	Speaker    string             `json:"speaker"`
+	Content    string             `json:"content"`
+	StartMs    int64              `json:"start_ms"`
+	EndMs      int64              `json:"end_ms"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 }
 
 type HuddleTranscript struct {

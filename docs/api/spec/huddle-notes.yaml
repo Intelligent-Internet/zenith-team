@@ -1,0 +1,653 @@
+---
+paths:
+  notes:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: huddleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getHuddleNotes
+      tags:
+        - conversations
+      summary: getHuddleNotes
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesStatus"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            format: uuid
+    put:
+      operationId: setHuddleNotes
+      tags:
+        - conversations
+      summary: setHuddleNotes
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesStatus"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/SetHuddleNotes"
+  policy:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getHuddleNotesPolicy
+      tags:
+        - conversations
+      summary: getHuddleNotesPolicy
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesPolicy"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+    put:
+      operationId: setHuddleNotesPolicy
+      tags:
+        - conversations
+      summary: setHuddleNotesPolicy
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesPolicy"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/SetHuddleNotesPolicy"
+  claim:
+    parameters:
+      - name: attemptId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: claimHuddleNotes
+      tags:
+        - conversations
+      summary: claimHuddleNotes
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesLease"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+  append:
+    parameters:
+      - name: attemptId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: appendHuddleNotes
+      tags:
+        - conversations
+      summary: appendHuddleNotes
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesLease"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/HuddleNotesBatch"
+  recap:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: huddleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: editHuddleNotesRecap
+      tags:
+        - conversations
+      summary: editHuddleNotesRecap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/EditHuddleNotesRecap"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesStatus"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+  submit:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: huddleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: actionIndex
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 19
+    post:
+      operationId: submitHuddleNotes
+      tags:
+        - conversations
+      summary: submitHuddleNotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/schemas/SubmitHuddleNotes"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                "$ref": "#/schemas/HuddleNotesSubmission"
+        "400":
+          "$ref": "./_common.yaml#/responses/BadRequest"
+        "401":
+          "$ref": "./_common.yaml#/responses/Unauthorized"
+        "403":
+          "$ref": "./_common.yaml#/responses/Forbidden"
+        "404":
+          "$ref": "./_common.yaml#/responses/NotFound"
+        "500":
+          "$ref": "./_common.yaml#/responses/InternalError"
+        "409":
+          description: State or revision conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "./_common.yaml#/schemas/Error"
+schemas:
+  HuddleNotesSegment:
+    type: object
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+        format: uuid
+      intervalId:
+        type: string
+        format: uuid
+      speaker:
+        type: string
+      text:
+        type: string
+      startMs:
+        type: integer
+        format: int64
+      endMs:
+        type: integer
+        format: int64
+    required:
+      - id
+      - intervalId
+      - speaker
+      - text
+      - startMs
+      - endMs
+  HuddleNotesStatus:
+    type: object
+    additionalProperties: false
+    properties:
+      state:
+        type: string
+      revision:
+        type: integer
+        format: int64
+      canModerate:
+        type: boolean
+      available:
+        type: boolean
+        description: >-
+          Notes can be taken in this Huddle: Huddle AI was on when it started
+          and the Company policy allows notes with a non-zero monthly limit.
+      stopReason:
+        type: string
+      expiresAt:
+        type: string
+        format: date-time
+      segments:
+        type: array
+        items:
+          "$ref": "#/schemas/HuddleNotesSegment"
+      hasMore:
+        type: boolean
+      recap:
+        "$ref": "#/schemas/HuddleNotesRecap"
+      recapState:
+        type: string
+      recapRevision:
+        type: integer
+        format: int64
+      canEditRecap:
+        type: boolean
+      canConfigure:
+        type: boolean
+      nextCursor:
+        type: string
+        format: uuid
+      submittedActions:
+        type: array
+        items:
+          "$ref": "#/schemas/HuddleNotesSubmittedAction"
+    required:
+      - state
+      - revision
+      - canModerate
+      - available
+      - stopReason
+      - segments
+      - hasMore
+      - recapState
+      - recapRevision
+      - canEditRecap
+      - canConfigure
+      - submittedActions
+  HuddleNotesPolicy:
+    type: object
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+      retentionDays:
+        type: integer
+        format: int32
+      monthlySeconds:
+        type: integer
+        format: int64
+      reservedSeconds:
+        type: integer
+        format: int64
+      revision:
+        type: integer
+        format: int64
+    required:
+      - enabled
+      - retentionDays
+      - monthlySeconds
+      - reservedSeconds
+      - revision
+  SetHuddleNotes:
+    type: object
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+      requestKey:
+        type: string
+        format: uuid
+    required:
+      - enabled
+      - expectedRevision
+      - requestKey
+  SetHuddleNotesPolicy:
+    type: object
+    additionalProperties: false
+    properties:
+      enabled:
+        type: boolean
+      retentionDays:
+        type: integer
+        minimum: 1
+        maximum: 365
+      monthlySeconds:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 100000000
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+    required:
+      - enabled
+      - retentionDays
+      - monthlySeconds
+      - expectedRevision
+  HuddleNotesBatch:
+    type: object
+    additionalProperties: false
+    properties:
+      sequence:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 10000
+      speaker:
+        type: string
+        maxLength: 200
+      text:
+        type: string
+        maxLength: 16000
+      startMs:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 3600000
+      endMs:
+        type: integer
+        format: int64
+        minimum: 0
+        maximum: 3600000
+      ready:
+        type: boolean
+      finished:
+        type: boolean
+    required: []
+  HuddleNotesLease:
+    type: object
+    additionalProperties: false
+    properties:
+      capability:
+        type: string
+      roomName:
+        type: string
+      leaseExpiresAt:
+        type: string
+        format: date-time
+      deadlineAt:
+        type: string
+        format: date-time
+      identities:
+        type: array
+        items:
+          type: string
+      finished:
+        type: boolean
+      stopAfterMs:
+        type: integer
+        format: int64
+        minimum: 0
+        description:
+          Final audio cutoff relative to the interval start. Present only
+          during a bounded drain.
+    required:
+      - roomName
+      - leaseExpiresAt
+      - deadlineAt
+      - identities
+      - finished
+  HuddleNotesStatement:
+    type: object
+    additionalProperties: false
+    properties:
+      text:
+        type: string
+      sourceIds:
+        type: array
+        items:
+          type: string
+          format: uuid
+    required:
+      - text
+      - sourceIds
+  HuddleNotesRecap:
+    type: object
+    additionalProperties: false
+    properties:
+      summary:
+        type: string
+      decisions:
+        type: array
+        items:
+          "$ref": "#/schemas/HuddleNotesStatement"
+      actions:
+        type: array
+        items:
+          "$ref": "#/schemas/HuddleNotesStatement"
+      questions:
+        type: array
+        items:
+          "$ref": "#/schemas/HuddleNotesStatement"
+    required:
+      - summary
+      - decisions
+      - actions
+      - questions
+  EditHuddleNotesRecap:
+    type: object
+    additionalProperties: false
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+      recap:
+        "$ref": "#/schemas/HuddleNotesRecap"
+    required:
+      - expectedRevision
+      - recap
+  SubmitHuddleNotes:
+    type: object
+    additionalProperties: false
+    properties:
+      expectedRevision:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 9007199254740991
+      projectId:
+        type: string
+        format: uuid
+      agentId:
+        type: string
+        format: uuid
+      title:
+        type: string
+        minLength: 1
+        maxLength: 200
+      milestoneType:
+        "$ref": "./tasks.yaml#/schemas/TaskMilestoneTypeDto"
+      confirm:
+        type: boolean
+    required:
+      - expectedRevision
+      - projectId
+      - title
+      - milestoneType
+      - confirm
+  HuddleNotesSubmission:
+    type: object
+    additionalProperties: false
+    properties:
+      taskId:
+        type: string
+        format: uuid
+    required:
+      - taskId
+  HuddleNotesSubmittedAction:
+    type: object
+    additionalProperties: false
+    required:
+      - actionIndex
+      - taskId
+    properties:
+      actionIndex:
+        type: integer
+        format: int32
+      taskId:
+        type: string
+        format: uuid

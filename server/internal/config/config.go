@@ -36,6 +36,8 @@ type AttachmentConfig struct {
 }
 
 type LiveKitConfig struct {
+	NotesRecapKey    string
+	NotesRecapModel  string
 	AIEnabled        bool
 	AIWorkloadSecret string
 	URL              string
@@ -320,14 +322,17 @@ func Load(lookup LookupEnv) (Config, error) {
 	aiSecret := valueOrDefault(huddleLookup, "HUDDLE_AI_WORKLOAD_SECRET", "")
 	if aiEnabled && len(aiSecret) < 32 {
 		return Config{}, errors.New(
-			"HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when AI is enabled",
+			"HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when huddle AI is enabled",
 		)
 	}
 	liveKitConfig := LiveKitConfig{
-		AIEnabled: aiEnabled, AIWorkloadSecret: aiSecret,
-		URL:       liveKitHTTPURL(valueOrDefault(huddleLookup, "LIVEKIT_URL", "")),
-		APIKey:    valueOrDefault(huddleLookup, "LIVEKIT_API_KEY", ""),
-		APISecret: valueOrDefault(huddleLookup, "LIVEKIT_API_SECRET", ""),
+		NotesRecapKey:    valueOrDefault(huddleLookup, "HUDDLE_NOTES_RECAP_API_KEY", ""),
+		NotesRecapModel:  valueOrDefault(huddleLookup, "HUDDLE_NOTES_RECAP_MODEL", ""),
+		AIEnabled:        aiEnabled,
+		AIWorkloadSecret: aiSecret,
+		URL:              liveKitHTTPURL(valueOrDefault(huddleLookup, "LIVEKIT_URL", "")),
+		APIKey:           valueOrDefault(huddleLookup, "LIVEKIT_API_KEY", ""),
+		APISecret:        valueOrDefault(huddleLookup, "LIVEKIT_API_SECRET", ""),
 	}
 	if aiEnabled && (liveKitConfig.URL == "" || liveKitConfig.APIKey == "" || liveKitConfig.APISecret == "") {
 		return Config{}, errors.New("LiveKit configuration is required when huddle AI is enabled")
@@ -782,7 +787,7 @@ func withLegacyNames(lookup LookupEnv, legacy map[string]string) LookupEnv {
 func withoutHuddleSettings(lookup LookupEnv) LookupEnv {
 	return func(key string) (string, bool) {
 		switch key {
-		case "HUDDLE_AI_ENABLED", "HUDDLE_AI_WORKLOAD_SECRET", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET":
+		case "HUDDLE_NOTES_RECAP_API_KEY", "HUDDLE_NOTES_RECAP_MODEL", "HUDDLE_AI_ENABLED", "HUDDLE_AI_WORKLOAD_SECRET", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET":
 			return "", false
 		}
 		return lookup(key)

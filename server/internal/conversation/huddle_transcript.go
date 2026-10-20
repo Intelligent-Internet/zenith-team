@@ -50,6 +50,9 @@ func (s *DefaultHuddleAIService) AppendTranscript(ctx context.Context, id uuid.U
 	hash := sha256.Sum256(encoded)
 	var result HuddleTranscriptReceipt
 	err = s.withAttempt(ctx, id, func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+		if h.NotesMode {
+			return ErrHuddleNotesUnavailable
+		}
 		if err := checkHuddleAICapability(a, token); err != nil {
 			return err
 		}

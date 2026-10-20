@@ -2,6 +2,6 @@
 # Use --inspect=false: requests can contain credentials and transcript text.
 on_http_request:
   - expressions:
-      - "!(req.url.path.startsWith('/api/v1/internal/huddle-ai/') || req.url.path == '/api/v1/internal/livekit/webhook')"
+      - "!(req.url.path.startsWith('/api/v1/internal/huddle-ai/') || req.url.path.startsWith('/api/v1/internal/huddle-notes/') || req.url.path == '/api/v1/internal/livekit/webhook')"
     actions:
       - type: deny

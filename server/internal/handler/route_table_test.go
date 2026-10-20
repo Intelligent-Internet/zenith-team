@@ -125,6 +125,7 @@ func fullyWiredHandler() Handler {
 		HuddleService:            routeTableHuddleService{},
 		HuddleBudgetService:      &usage.DefaultHuddleBudgetService{},
 		HuddleAIService:          &conversation.DefaultHuddleAIService{},
+		HuddleNotesService:       &conversation.DefaultHuddleNotesService{},
 		MessageContextService:    routeTableMessageContext{},
 		ActivityFeed:             activityFeedStub{},
 		InboxService:             routeTableInbox{},
@@ -631,6 +632,15 @@ func (routeTableInbox) ReadConversation(
 // by pasting whatever the failure printed: an unexpected line is usually a real
 // new endpoint that wants review, and a missing line is usually a lost wire.
 var wantRouteTable = []string{
+	"POST /api/v1/companies/:companyId/huddles/:huddleId/notes/actions/:actionIndex/submit",
+	"PATCH /api/v1/companies/:companyId/huddles/:huddleId/notes/recap",
+	"GET /api/v1/companies/:companyId/huddles/notes-policy",
+	"PUT /api/v1/companies/:companyId/huddles/notes-policy",
+	"GET /api/v1/companies/:companyId/huddles/:huddleId/notes",
+	"PUT /api/v1/companies/:companyId/huddles/:huddleId/notes",
+	"POST /api/v1/internal/huddle-notes/:attemptId/claim",
+	"POST /api/v1/internal/huddle-notes/:attemptId/append",
+
 	"GET /api/v1/companies/:companyId/calendar/tasks",
 	"GET /api/v1/companies/:companyId/tasks/:taskId/schedule",
 	"PUT /api/v1/companies/:companyId/tasks/:taskId/schedule",

@@ -178,6 +178,23 @@ Claude uses a Run-owned additional directory, including for local workspaces.
 `skillSetHash` fences provider resume when a future Run's selection changes.
 See [Skills technical design](../docs/specs/skills/TECH.md).
 
+## Independent Huddle notes
+
+`conversation/huddle_notes*.go` owns independent capture policy, interval leases,
+transcript retention, recap revisions and source validation. Migration 117 and
+`huddle_notes.sql` persist these separately from invited-Agent transcripts.
+Migration 118 adds the fixed Stop-notes cutoff and bounded finalization lease;
+only that attempt may append pre-cutoff text before its deadline, then seal.
+Notes and voice invitations share `HUDDLE_AI_ENABLED`. Migration 119 enables
+untouched Company notes policies with 30-day retention and 100 monthly stream-hours;
+explicit administrator policies remain unchanged. Capture still requires Start notes.
+`handler/huddle_notes.go` exposes person controls and workload-authenticated
+claim/append boundaries; `cmd/server/huddle_notes_recap.go` supplies the optional
+Responses transport. `task/huddle_notes.go` creates an explicitly confirmed
+backlog Task in the same transaction as its duplicate-prevention receipt.
+The silent LiveKit worker in `voice-agent/notes.py` uses `notes:` dispatches;
+voice invitations retain their independent `helia:` identity and authority.
+
 ## Huddle context tools
 
 `conversation/huddle_card.go` creates one immutable source-discussion receipt per

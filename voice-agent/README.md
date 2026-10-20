@@ -484,3 +484,41 @@ by this smoke check.
 - Live provider credentials were not configured for this verification. Actual
   GPT-Live access, real people/microphones, and deployed drain behavior remain
   Phase 5 acceptance checks. Keep rollout disabled until those checks pass.
+
+## Independent AI notes
+
+The worker also accepts `notes:<attemptId>` dispatches. These are silent capture
+connections, separate from an invited conversational Agent. Deploy the updated
+worker before enabling the API feature; do not enable it against an old worker.
+
+API configuration (disabled by default):
+
+```dotenv
+HUDDLE_AI_ENABLED=true
+HUDDLE_AI_WORKLOAD_SECRET=... # same 32+ byte secret as the worker
+HUDDLE_NOTES_RECAP_API_KEY=... # optional, API-side Responses credential
+HUDDLE_NOTES_RECAP_MODEL=... # explicit model with Responses JSON output support
+```
+
+Normal Huddles/LiveKit configuration is also required. The worker uses its
+`OPENAI_API_KEY` for `gpt-live-transcribe`; this credential remains in the worker.
+`HUDDLE_AI_ENABLED` enables both conversational invitations and independent notes.
+Apply migrations through 119. Company notes policies default to enabled, with
+30-day retention and 100 audio-stream hours per month; administrators can adjust
+these limits in the advanced notes settings. Explicit existing policies are preserved. Start a
+**new** Huddle: existing calls preserve their original capture mode. The local
+ngrok policy includes the authenticated notes claim/append routes.
+
+Smoke-test human-only capture, voice invitation/removal while notes stay active,
+stop/restart, worker disconnect, call end, sourced recap editing and confirmed
+Task creation. Verify provider access and overlapping speakers with real audio.
+Automated tests use synthetic transcripts and do not establish audio quality.
+Migration 118 adds a bounded final flush for Stop notes. Deploy the updated API
+and worker together. The UI stays in “Saving final words” while the worker commits
+its in-memory tail and waits for persisted final text, for at most 20 seconds.
+Stop fixes the audio cutoff; retries cannot extend it or duplicate text. Silence
+padding supports very short tails without reading later microphone audio.
+Provider timeout or revoked access closes the attempt and reports incomplete
+finalization. Ending the whole call or losing a microphone track still fails
+closed and can lose its tail. No audio is written to disk or backfilled.
+See [TECH.md](../docs/specs/huddles/TECH.md) for quota and recap-size limits.

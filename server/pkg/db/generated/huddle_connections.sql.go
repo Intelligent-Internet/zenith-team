@@ -323,7 +323,7 @@ func (q *Queries) ListOpenHuddleConnections(ctx context.Context, arg ListOpenHud
 }
 
 const lockHuddleByChat = `-- name: LockHuddleByChat :one
-SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id FROM huddles WHERE company_id=$1 AND chat_conversation_id=$2 FOR UPDATE
+SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode FROM huddles WHERE company_id=$1 AND chat_conversation_id=$2 FOR UPDATE
 `
 
 type LockHuddleByChatParams struct {
@@ -349,6 +349,7 @@ func (q *Queries) LockHuddleByChat(ctx context.Context, arg LockHuddleByChatPara
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }

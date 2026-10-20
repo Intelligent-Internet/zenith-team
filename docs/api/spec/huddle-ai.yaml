@@ -686,6 +686,7 @@ schemas:
   HuddleAILease:
     type: object
     required:
+    - captureTranscript
     - allowCompanyContext
     - agent
     - huddleId
@@ -699,6 +700,7 @@ schemas:
     - completedSeq
     - pendingChat
     properties:
+      captureTranscript: { type: boolean }
       workNotices:
         type: array
         maxItems: 20

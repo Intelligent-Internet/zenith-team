@@ -9961,10 +9961,253 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/companies/{companyId}/huddles/{huddleId}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+            };
+            cookie?: never;
+        };
+        /** getHuddleNotes */
+        get: operations["getHuddleNotes"];
+        /** setHuddleNotes */
+        put: operations["setHuddleNotes"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/huddles/notes-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        /** getHuddleNotesPolicy */
+        get: operations["getHuddleNotesPolicy"];
+        /** setHuddleNotesPolicy */
+        put: operations["setHuddleNotesPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/huddle-notes/{attemptId}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** claimHuddleNotes */
+        post: operations["claimHuddleNotes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/huddle-notes/{attemptId}/append": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** appendHuddleNotes */
+        post: operations["appendHuddleNotes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/huddles/{huddleId}/notes/recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** editHuddleNotesRecap */
+        patch: operations["editHuddleNotesRecap"];
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/huddles/{huddleId}/notes/actions/{actionIndex}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+                actionIndex: number;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** submitHuddleNotes */
+        post: operations["submitHuddleNotes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        HuddleNotesSubmittedAction: {
+            /** Format: int32 */
+            actionIndex: number;
+            /** Format: uuid */
+            taskId: string;
+        };
+        HuddleNotesSubmission: {
+            /** Format: uuid */
+            taskId: string;
+        };
+        SubmitHuddleNotes: {
+            /** Format: int64 */
+            expectedRevision: number;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            agentId?: string;
+            title: string;
+            milestoneType: components["schemas"]["TaskMilestoneTypeDto"];
+            confirm: boolean;
+        };
+        EditHuddleNotesRecap: {
+            /** Format: int64 */
+            expectedRevision: number;
+            recap: components["schemas"]["HuddleNotesRecap"];
+        };
+        HuddleNotesRecap: {
+            summary: string;
+            decisions: components["schemas"]["HuddleNotesStatement"][];
+            actions: components["schemas"]["HuddleNotesStatement"][];
+            questions: components["schemas"]["HuddleNotesStatement"][];
+        };
+        HuddleNotesStatement: {
+            text: string;
+            sourceIds: string[];
+        };
+        HuddleNotesSegment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            intervalId: string;
+            speaker: string;
+            text: string;
+            /** Format: int64 */
+            startMs: number;
+            /** Format: int64 */
+            endMs: number;
+        };
+        HuddleNotesStatus: {
+            state: string;
+            /** Format: int64 */
+            revision: number;
+            canModerate: boolean;
+            /** @description Notes can be taken in this Huddle: Huddle AI was on when it started and the Company policy allows notes with a non-zero monthly limit. */
+            available: boolean;
+            stopReason: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            segments: components["schemas"]["HuddleNotesSegment"][];
+            hasMore: boolean;
+            recap?: components["schemas"]["HuddleNotesRecap"];
+            recapState: string;
+            /** Format: int64 */
+            recapRevision: number;
+            canEditRecap: boolean;
+            canConfigure: boolean;
+            /** Format: uuid */
+            nextCursor?: string;
+            submittedActions: components["schemas"]["HuddleNotesSubmittedAction"][];
+        };
+        HuddleNotesPolicy: {
+            enabled: boolean;
+            /** Format: int32 */
+            retentionDays: number;
+            /** Format: int64 */
+            monthlySeconds: number;
+            /** Format: int64 */
+            reservedSeconds: number;
+            /** Format: int64 */
+            revision: number;
+        };
+        SetHuddleNotes: {
+            enabled: boolean;
+            /** Format: int64 */
+            expectedRevision: number;
+            /** Format: uuid */
+            requestKey: string;
+        };
+        SetHuddleNotesPolicy: {
+            enabled: boolean;
+            retentionDays: number;
+            /** Format: int64 */
+            monthlySeconds: number;
+            /** Format: int64 */
+            expectedRevision: number;
+        };
+        HuddleNotesBatch: {
+            /** Format: int64 */
+            sequence?: number;
+            speaker?: string;
+            text?: string;
+            /** Format: int64 */
+            startMs?: number;
+            /** Format: int64 */
+            endMs?: number;
+            ready?: boolean;
+            finished?: boolean;
+        };
+        HuddleNotesLease: {
+            capability?: string;
+            roomName: string;
+            /** Format: date-time */
+            leaseExpiresAt: string;
+            /** Format: date-time */
+            deadlineAt: string;
+            identities: string[];
+            finished: boolean;
+            /**
+             * Format: int64
+             * @description Final audio cutoff relative to the interval start. Present only during a bounded drain.
+             */
+            stopAfterMs?: number;
+        };
         TaskCalendarSchedule: {
             /** Format: uuid */
             id: string;
@@ -12926,6 +13169,7 @@ export interface components {
             createdAt: string;
         };
         HuddleAILease: {
+            captureTranscript: boolean;
             /** @description Pending receipt-bound work notices, only with an active shared-context grant and an admitted human. Polling does not claim delivery. */
             workNotices?: components["schemas"]["HuddleWorkNotice"][];
             /** @description A committed at-most-once notification attempt. Absent for stale or already-claimed IDs. Never replay after a lost response. */
@@ -44515,6 +44759,321 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getHuddleNotes: {
+        parameters: {
+            query?: {
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    setHuddleNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetHuddleNotes"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    getHuddleNotesPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    setHuddleNotesPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetHuddleNotesPolicy"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    claimHuddleNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesLease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    appendHuddleNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HuddleNotesBatch"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesLease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    editHuddleNotesRecap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditHuddleNotesRecap"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    submitHuddleNotes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                huddleId: string;
+                actionIndex: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitHuddleNotes"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HuddleNotesSubmission"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description State or revision conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["InternalError"];
         };
     };

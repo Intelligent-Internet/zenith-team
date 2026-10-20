@@ -215,6 +215,32 @@ components:
         the route accepts a Run and the request carries a live Run proof of
         its person.
   schemas:
+    HuddleNotesSubmittedAction:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesSubmittedAction'
+    HuddleNotesSubmission:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesSubmission'
+    SubmitHuddleNotes:
+      $ref: './huddle-notes.yaml#/schemas/SubmitHuddleNotes'
+    EditHuddleNotesRecap:
+      $ref: './huddle-notes.yaml#/schemas/EditHuddleNotesRecap'
+    HuddleNotesRecap:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesRecap'
+    HuddleNotesStatement:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesStatement'
+    HuddleNotesSegment:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesSegment'
+    HuddleNotesStatus:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesStatus'
+    HuddleNotesPolicy:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesPolicy'
+    SetHuddleNotes:
+      $ref: './huddle-notes.yaml#/schemas/SetHuddleNotes'
+    SetHuddleNotesPolicy:
+      $ref: './huddle-notes.yaml#/schemas/SetHuddleNotesPolicy'
+    HuddleNotesBatch:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesBatch'
+    HuddleNotesLease:
+      $ref: './huddle-notes.yaml#/schemas/HuddleNotesLease'
     TaskCalendarSchedule:
       $ref: './tasks.yaml#/schemas/TaskCalendarSchedule'
     TaskCalendarOccurrence:
@@ -1388,3 +1414,15 @@ paths:
     $ref: './conversations.yaml#/paths/channelAgentActivity'
   /api/v1/companies/{companyId}/channels/{conversationId}/agent-invocations/{invocationId}/retry:
     $ref: './conversations.yaml#/paths/channelInvocationRetry'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/notes:
+    $ref: './huddle-notes.yaml#/paths/notes'
+  /api/v1/companies/{companyId}/huddles/notes-policy:
+    $ref: './huddle-notes.yaml#/paths/policy'
+  /api/v1/internal/huddle-notes/{attemptId}/claim:
+    $ref: './huddle-notes.yaml#/paths/claim'
+  /api/v1/internal/huddle-notes/{attemptId}/append:
+    $ref: './huddle-notes.yaml#/paths/append'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/notes/recap:
+    $ref: './huddle-notes.yaml#/paths/recap'
+  /api/v1/companies/{companyId}/huddles/{huddleId}/notes/actions/{actionIndex}/submit:
+    $ref: './huddle-notes.yaml#/paths/submit'

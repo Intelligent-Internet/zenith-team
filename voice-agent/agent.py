@@ -22,6 +22,7 @@ from mixer import MicrophoneMixer
 from profile_prompt import prompts
 from context_tools import ContextTools
 from transcript import TranscriptCollector
+from notes import notes_attempt, run_notes
 from work_notices import WorkNotices
 
 log = logging.getLogger("zenith.helia")
@@ -164,6 +165,10 @@ class HeliaModel(openai.realtime.GPTLiveModel):
 
 async def request(job: agents.JobRequest):
     try:
+        notes = notes_attempt(job.job.metadata)
+        if notes:
+            await job.accept(name="AI notes", identity="notes:" + notes)
+            return
         attempt = str(uuid.UUID(job.job.metadata))
     except ValueError:
         await job.reject()
@@ -172,6 +177,10 @@ async def request(job: agents.JobRequest):
 
 
 async def entrypoint(ctx: agents.JobContext):
+    notes = notes_attempt(ctx.job.metadata)
+    if notes:
+        await run_notes(ctx, notes)
+        return
     attempt = str(uuid.UUID(ctx.job.metadata))
     session_log = logging.LoggerAdapter(
         log,
@@ -204,6 +213,8 @@ async def entrypoint(ctx: agents.JobContext):
     try:
         # Duplicate dispatch, expired lease, and disabled calls fail before model construction.
         lease = await control.call("claim")
+        if not lease.get("captureTranscript", True):
+            transcript.complete = True
         profile = lease.get("agent")
         if (
             not profile

@@ -32,6 +32,7 @@ import (
 //
 //nolint:revive // AGENTS.md service-naming trio; bare Service is forbidden.
 type TaskService interface {
+	SubmitHuddleNotes(context.Context, auth.UserPrincipal, SubmitHuddleNotesInput) (HuddleNotesSubmission, error)
 	FinalizeResults(
 		context.Context,
 		auth.UserPrincipal,

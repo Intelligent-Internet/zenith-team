@@ -104,6 +104,7 @@ type HuddleAILease struct {
 	Agent                 voice.Profile      `json:"agent"`
 	PendingChat           []HuddleAIChatItem `json:"pendingChat"`
 	CompletedSeq          int64              `json:"completedSeq"`
+	CaptureTranscript     bool               `json:"captureTranscript"`
 	Capability            string             `json:"capability,omitempty"`
 	HuddleID              uuid.UUID          `json:"huddleId"`
 	RoomName              string             `json:"roomName"`
@@ -774,6 +775,7 @@ func (s *DefaultHuddleAIService) lease(h generated.Huddle, state generated.Huddl
 		identities = append(identities, "huddle:"+h.ID.String()+":user:"+id.String())
 	}
 	return HuddleAILease{
+		CaptureTranscript:   !h.NotesMode,
 		AllowCompanyContext: state.AllowCompanyContext,
 		Agent:               voice.FromSnapshot(state.AgentProfile), PendingChat: []HuddleAIChatItem{},
 		CompletedSeq: state.ChatCompletedSeq, HuddleID: h.ID, RoomName: h.RoomName.String,

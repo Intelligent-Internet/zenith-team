@@ -698,9 +698,11 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		return fmt.Errorf("construct huddle budget service: %w", err)
 	}
 	huddleMedia := newLiveKitRoomProvider(cfg.LiveKit)
+	var notesDispatcher conversation.HuddleNotesDispatcher
 	var huddleDispatcher conversation.HuddleAIDispatcher
 	if adapter, ok := huddleMedia.(liveKitRoomProviderAdapter); ok {
 		huddleDispatcher = adapter.provider
+		notesDispatcher = adapter.provider
 	}
 	huddleAIService, err := conversation.NewHuddleAIService(conversation.HuddleAIServiceOptions{
 		Bus:         bus,
@@ -712,11 +714,22 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct huddle AI service: %w", err)
 	}
+	huddleNotesService, err := conversation.NewHuddleNotesService(conversation.HuddleNotesServiceOptions{
+		Store:      databaseStore,
+		Bus:        bus,
+		Dispatcher: notesDispatcher,
+		Enabled:    cfg.LiveKit.AIEnabled,
+		Summarize:  notesRecapGenerator(cfg.LiveKit.NotesRecapKey, cfg.LiveKit.NotesRecapModel),
+	})
+	if err != nil {
+		return fmt.Errorf("construct huddle notes service: %w", err)
+	}
 	huddleService, err := conversation.NewHuddleService(conversation.HuddleServiceOptions{
-		Store:     databaseStore,
-		Bus:       bus,
-		Media:     huddleMedia,
-		Presenter: inbox.NewRealtimePresenter(bus),
+		Store:        databaseStore,
+		Bus:          bus,
+		Media:        huddleMedia,
+		NotesEnabled: cfg.LiveKit.AIEnabled,
+		Presenter:    inbox.NewRealtimePresenter(bus),
 	})
 	if err != nil {
 		return fmt.Errorf("construct Huddle service: %w", err)
@@ -815,6 +828,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		HuddleService:            huddleService,
 		HuddleBudgetService:      huddleBudgetService,
 		HuddleAIService:          huddleAIService,
+		HuddleNotesService:       huddleNotesService,
 		HuddleAIWorkloadSecret:   cfg.LiveKit.AIWorkloadSecret,
 		HuddleCallsEnabled:       huddleMedia != nil,
 		HuddleVoiceAgentsEnabled: cfg.LiveKit.AIEnabled,
@@ -897,7 +911,15 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 			}
 		}),
 		{name: "discussion-dispatch", run: discussionDispatcher.run},
+		repeating("huddle-notes-recaps", 5*time.Second, func(ctx context.Context) {
+			if err := huddleNotesService.GenerateRecaps(ctx); err != nil {
+				logger.ErrorContext(ctx, "huddle notes recap failed", "error", err)
+			}
+		}),
 		repeating("huddle-lifecycle", huddleLifecycleInterval, func(ctx context.Context) {
+			if err := huddleNotesService.Reconcile(ctx); err != nil {
+				logger.ErrorContext(ctx, "huddle notes reconciliation failed", "error", err)
+			}
 			if err := huddleAIService.Reconcile(ctx); err != nil {
 				logger.ErrorContext(ctx, "huddle AI reconciliation failed", "error", err)
 			}

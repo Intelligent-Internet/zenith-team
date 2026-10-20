@@ -26,6 +26,7 @@ import (
 const maxTaskBodyBytes = 512 << 10
 
 type TaskService interface {
+	SubmitHuddleNotes(context.Context, auth.UserPrincipal, task.SubmitHuddleNotesInput) (task.HuddleNotesSubmission, error)
 	FinalizeResults(
 		context.Context,
 		auth.UserPrincipal,

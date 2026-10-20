@@ -195,7 +195,7 @@ func (h *Handler) liveKitWebhook(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-	if event.Participant != nil && strings.HasPrefix(event.Participant.Identity, "helia:") {
+	if event.Participant != nil && (strings.HasPrefix(event.Participant.Identity, "helia:") || strings.HasPrefix(event.Participant.Identity, "notes:")) {
 		c.Status(http.StatusNoContent)
 		return
 	}

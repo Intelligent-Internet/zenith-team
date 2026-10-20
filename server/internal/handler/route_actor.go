@@ -119,6 +119,15 @@ var anyActorRoutes = []string{
 // every Project access route, Groups, Activity, Inbox, Team, sign-in, the daemon
 // plane and everything else no Run calls. Sorted by path, then method.
 var personActorRoutes = []string{
+	"POST /api/v1/companies/:companyId/huddles/:huddleId/notes/actions/:actionIndex/submit",
+	"PATCH /api/v1/companies/:companyId/huddles/:huddleId/notes/recap",
+	"GET /api/v1/companies/:companyId/huddles/notes-policy",
+	"PUT /api/v1/companies/:companyId/huddles/notes-policy",
+	"GET /api/v1/companies/:companyId/huddles/:huddleId/notes",
+	"PUT /api/v1/companies/:companyId/huddles/:huddleId/notes",
+	"POST /api/v1/internal/huddle-notes/:attemptId/claim",
+	"POST /api/v1/internal/huddle-notes/:attemptId/append",
+
 	// Calendar Task decisions and edits are the person's own; Agents create
 	// scheduled work through the Run-scoped Task create route.
 	"GET /api/v1/companies/:companyId/calendar/tasks",

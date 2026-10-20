@@ -1,3 +1,4 @@
+import { HuddleNotesPanel } from "@/features/huddles/huddle-notes-panel";
 import { useState } from "react";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import {
@@ -29,7 +30,7 @@ export function HuddleHistoryDialog({
   onClose: () => void;
 }) {
   const session = useSessionSnapshot();
-  const [view, setView] = useState<"chat" | "work">("chat");
+  const [view, setView] = useState<"chat" | "work" | "notes">("chat");
   const history = useGetHuddleHistoryInfiniteQuery(
     { companyId, conversationId, userId: session.userId ?? "" },
     {
@@ -76,6 +77,13 @@ export function HuddleHistoryDialog({
         <div className="huddle-history-tabs" aria-label="History view">
           <button
             type="button"
+            aria-pressed={view === "notes"}
+            onClick={() => setView("notes")}
+          >
+            AI notes
+          </button>
+          <button
+            type="button"
             aria-pressed={view === "chat"}
             onClick={() => setView("chat")}
           >
@@ -99,6 +107,8 @@ export function HuddleHistoryDialog({
             </div>
           ) : !authorized ? (
             <p role="status">Loading conversation…</p>
+          ) : view === "notes" ? (
+            <HuddleNotesPanel companyId={companyId} huddleId={call.id} />
           ) : view === "chat" ? (
             <>
               {history.hasNextPage && (

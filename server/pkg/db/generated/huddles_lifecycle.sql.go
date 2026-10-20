@@ -25,7 +25,7 @@ WHERE h.company_id=$1::uuid AND h.id=$2::uuid
     AND (SELECT max(c.ended_at) FROM huddle_connections c
       WHERE c.company_id=h.company_id AND c.huddle_id=h.id AND c.connected_at IS NOT NULL)
       <=now()-interval '10 seconds'))
-RETURNING h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id
+RETURNING h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id, h.notes_mode
 `
 
 type BeginExpiredHuddleClosureParams struct {
@@ -56,6 +56,7 @@ func (q *Queries) BeginExpiredHuddleClosure(ctx context.Context, arg BeginExpire
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
@@ -65,7 +66,7 @@ UPDATE huddles
 SET state='ended', ended_at=COALESCE(ended_at, now()), updated_at=now(), revision=revision+1
 WHERE company_id=$1::uuid AND room_name=$2::text
   AND state IN ('starting','open','ending')
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 type EndHuddleByRoomParams struct {
@@ -91,6 +92,7 @@ func (q *Queries) EndHuddleByRoom(ctx context.Context, arg EndHuddleByRoomParams
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
@@ -100,7 +102,7 @@ UPDATE huddles
 SET state='ended', ended_at=COALESCE(ended_at, now()), revision=revision+1, updated_at=now()
 WHERE room_name=$1::text
   AND state IN ('starting','open','ending')
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 func (q *Queries) EndHuddleByRoomAnyCompany(ctx context.Context, roomName string) (Huddle, error) {
@@ -121,6 +123,7 @@ func (q *Queries) EndHuddleByRoomAnyCompany(ctx context.Context, roomName string
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
@@ -130,7 +133,7 @@ UPDATE huddles
 SET state='ended', ended_at=COALESCE(ended_at, now()), updated_at=now(), revision=revision+1
 WHERE state='starting' AND room_name IS NULL
   AND (created_at<=now()-$1::interval OR deadline_at<=now())
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 // A Huddle whose media room was never created cannot be reached by the
@@ -160,6 +163,7 @@ func (q *Queries) EndStaleRoomlessHuddles(ctx context.Context, grace pgtype.Inte
 			&i.UpdatedAt,
 			&i.EndedAt,
 			&i.SourceItemID,
+			&i.NotesMode,
 		); err != nil {
 			return nil, err
 		}
@@ -172,7 +176,7 @@ func (q *Queries) EndStaleRoomlessHuddles(ctx context.Context, grace pgtype.Inte
 }
 
 const listLiveHuddles = `-- name: ListLiveHuddles :many
-SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id FROM huddles
+SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode FROM huddles
 WHERE state IN ('starting','open','ending')
   AND room_name IS NOT NULL
 ORDER BY created_at ASC, id ASC
@@ -202,6 +206,7 @@ func (q *Queries) ListLiveHuddles(ctx context.Context) ([]Huddle, error) {
 			&i.UpdatedAt,
 			&i.EndedAt,
 			&i.SourceItemID,
+			&i.NotesMode,
 		); err != nil {
 			return nil, err
 		}
@@ -214,7 +219,7 @@ func (q *Queries) ListLiveHuddles(ctx context.Context) ([]Huddle, error) {
 }
 
 const lockHuddle = `-- name: LockHuddle :one
-SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id FROM huddles
+SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode FROM huddles
 WHERE company_id=$1::uuid AND id=$2::uuid
 FOR UPDATE
 `
@@ -242,6 +247,7 @@ func (q *Queries) LockHuddle(ctx context.Context, arg LockHuddleParams) (Huddle,
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
@@ -251,7 +257,7 @@ UPDATE huddles
 SET state='open', updated_at=now(), revision=revision+1
 WHERE company_id=$1::uuid AND id=$2::uuid
   AND state='starting'
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 type OpenHuddleParams struct {
@@ -277,6 +283,7 @@ func (q *Queries) OpenHuddle(ctx context.Context, arg OpenHuddleParams) (Huddle,
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
@@ -286,7 +293,7 @@ UPDATE huddles
 SET room_name=$1::text, updated_at=now(), revision=revision+1
 WHERE company_id=$2::uuid AND id=$3::uuid
   AND room_name IS NULL AND state IN ('starting','open')
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 type SetHuddleRoomNameParams struct {
@@ -313,6 +320,7 @@ func (q *Queries) SetHuddleRoomName(ctx context.Context, arg SetHuddleRoomNamePa
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }

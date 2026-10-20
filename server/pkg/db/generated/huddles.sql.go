@@ -13,7 +13,7 @@ import (
 )
 
 const getActiveHuddleForSource = `-- name: GetActiveHuddleForSource :one
-SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id
+SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id, h.notes_mode
 FROM huddles h
 WHERE h.company_id=$1::uuid
   AND h.source_conversation_id=$2::uuid
@@ -45,12 +45,13 @@ func (q *Queries) GetActiveHuddleForSource(ctx context.Context, arg GetActiveHud
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
 
 const getHuddle = `-- name: GetHuddle :one
-SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id FROM huddles
+SELECT id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode FROM huddles
 WHERE company_id=$1::uuid AND id=$2::uuid
 `
 
@@ -77,13 +78,14 @@ func (q *Queries) GetHuddle(ctx context.Context, arg GetHuddleParams) (Huddle, e
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
 
 const getHuddleByRequestKey = `-- name: GetHuddleByRequestKey :one
 
-SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id
+SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id, h.notes_mode
 FROM huddles h
 WHERE h.company_id=$1::uuid
   AND h.started_by_user_id=$2::uuid
@@ -116,12 +118,13 @@ func (q *Queries) GetHuddleByRequestKey(ctx context.Context, arg GetHuddleByRequ
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }
 
 const getHuddleWithChat = `-- name: GetHuddleWithChat :one
-SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id, chat.kind AS chat_kind
+SELECT h.id, h.company_id, h.source_conversation_id, h.chat_conversation_id, h.started_by_user_id, h.request_key, h.state, h.revision, h.deadline_at, h.room_name, h.created_at, h.updated_at, h.ended_at, h.source_item_id, h.notes_mode, chat.kind AS chat_kind
 FROM huddles h
 JOIN conversations chat ON chat.company_id=h.company_id AND chat.id=h.chat_conversation_id
 WHERE h.company_id=$1::uuid AND h.id=$2::uuid
@@ -147,6 +150,7 @@ type GetHuddleWithChatRow struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	EndedAt              pgtype.Timestamptz `json:"ended_at"`
 	SourceItemID         uuid.NullUUID      `json:"source_item_id"`
+	NotesMode            bool               `json:"notes_mode"`
 	ChatKind             string             `json:"chat_kind"`
 }
 
@@ -168,6 +172,7 @@ func (q *Queries) GetHuddleWithChat(ctx context.Context, arg GetHuddleWithChatPa
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 		&i.ChatKind,
 	)
 	return i, err
@@ -183,7 +188,7 @@ VALUES(
     $3::uuid,$4::uuid,
     $5::uuid,$6::timestamptz
 )
-RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id
+RETURNING id, company_id, source_conversation_id, chat_conversation_id, started_by_user_id, request_key, state, revision, deadline_at, room_name, created_at, updated_at, ended_at, source_item_id, notes_mode
 `
 
 type InsertHuddleParams struct {
@@ -220,6 +225,7 @@ func (q *Queries) InsertHuddle(ctx context.Context, arg InsertHuddleParams) (Hud
 		&i.UpdatedAt,
 		&i.EndedAt,
 		&i.SourceItemID,
+		&i.NotesMode,
 	)
 	return i, err
 }

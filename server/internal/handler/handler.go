@@ -92,6 +92,7 @@ type Handler struct {
 	HuddleService            conversation.HuddleService
 	HuddleBudgetService      usage.HuddleBudgetService
 	HuddleAIService          conversation.HuddleAIService
+	HuddleNotesService       conversation.HuddleNotesService
 	HuddleAIWorkloadSecret   string
 	// HuddleCallsEnabled is true when LiveKit is configured. Without it there
 	// is no media, so calls cannot be started or joined and clients hide them.
@@ -209,6 +210,7 @@ func (h *Handler) registerRoutes(api *gin.RouterGroup) {
 	h.registerStudioEditorRoutes(api)
 	h.registerHuddleRoutes(api)
 	h.registerHuddleAIRoutes(api)
+	h.registerHuddleNotesRoutes(api)
 	h.registerDaemonRoutes(api)
 	h.registerConnectorDaemonRoutes(api)
 	h.registerPluginDaemonRoutes(api)

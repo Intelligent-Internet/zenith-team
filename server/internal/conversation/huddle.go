@@ -103,17 +103,19 @@ type HuddleMediaToken struct {
 var _ HuddleService = (*DefaultHuddleService)(nil)
 
 type HuddleServiceOptions struct {
-	Store     *db.Store
-	Bus       *events.Bus
-	Media     HuddleRoomProvider
-	Presenter inbox.Presenter
+	Store        *db.Store
+	Bus          *events.Bus
+	Media        HuddleRoomProvider
+	Presenter    inbox.Presenter
+	NotesEnabled bool
 }
 
 type DefaultHuddleService struct {
-	store     *db.Store
-	bus       *events.Bus
-	media     HuddleRoomProvider
-	presenter inbox.Presenter
+	store        *db.Store
+	bus          *events.Bus
+	media        HuddleRoomProvider
+	presenter    inbox.Presenter
+	notesEnabled bool
 }
 
 type JoinHuddleRequest struct {
@@ -174,7 +176,7 @@ func NewHuddleService(options HuddleServiceOptions) (*DefaultHuddleService, erro
 	if options.Bus == nil {
 		return nil, errors.New("Huddle event bus is required")
 	}
-	return &DefaultHuddleService{store: options.Store, bus: options.Bus, media: options.Media, presenter: options.Presenter}, nil
+	return &DefaultHuddleService{store: options.Store, bus: options.Bus, media: options.Media, presenter: options.Presenter, notesEnabled: options.NotesEnabled}, nil
 }
 
 func (s *DefaultHuddleService) Start(
@@ -253,6 +255,11 @@ func (s *DefaultHuddleService) Start(
 		})
 		if err != nil {
 			return err
+		}
+		if s.notesEnabled {
+			if err = q.SetHuddleNotesMode(ctx, generated.SetHuddleNotesModeParams{CompanyID: row.CompanyID, ID: row.ID}); err != nil {
+				return err
+			}
 		}
 		result.Huddle = huddleFromRow(row)
 		result.Created = true
@@ -620,7 +627,7 @@ func (s *DefaultHuddleService) ensureRoom(ctx context.Context, companyID uuid.UU
 		return huddle, nil
 	}
 	roomName := HuddleRoomName(huddle.ID)
-	if err := s.media.EnsureRoom(ctx, HuddleRoom{Name: roomName, ParticipantLimit: 9}); err != nil {
+	if err := s.media.EnsureRoom(ctx, HuddleRoom{Name: roomName, ParticipantLimit: 10}); err != nil {
 		return Huddle{}, err
 	}
 	var row generated.Huddle

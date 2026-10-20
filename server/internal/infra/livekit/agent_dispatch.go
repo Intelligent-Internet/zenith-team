@@ -91,3 +91,57 @@ func (p *HTTPRoomProvider) RemoveHuddleAI(ctx context.Context, room string, id u
 	}
 	return nil
 }
+
+// DispatchHuddleNotes schedules a silent service connection with independent authority.
+func (p *HTTPRoomProvider) DispatchHuddleNotes(ctx context.Context, room string, id uuid.UUID) error {
+	rows, err := p.listAgentDispatches(ctx, room)
+	if err != nil {
+		return err
+	}
+	metadata := "notes:" + id.String()
+	for _, row := range rows {
+		if row.Metadata == metadata {
+			return nil
+		}
+	}
+	_, err = p.callService(ctx, "AgentDispatchService", "CreateDispatch", room, map[string]any{"room": room, "agentName": "zenith-helia", "metadata": metadata})
+	return err
+}
+
+// RemoveHuddleNotes terminates only the notes connection, leaving voice and humans alone.
+func (p *HTTPRoomProvider) RemoveHuddleNotes(ctx context.Context, room string, id uuid.UUID) error {
+	ready, err := p.RoomReady(ctx, room)
+	if err != nil || !ready {
+		return err
+	}
+	rows, err := p.listAgentDispatches(ctx, room)
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if row.Metadata == "notes:"+id.String() {
+			if _, err = p.callService(ctx, "AgentDispatchService", "DeleteDispatch", room, map[string]any{"room": room, "dispatchId": row.ID}); err != nil {
+				return err
+			}
+		}
+	}
+	body, err := p.callService(ctx, "RoomService", "ListParticipants", room, map[string]any{"room": room})
+	if err != nil {
+		return err
+	}
+	var response struct {
+		Participants []struct {
+			Identity string `json:"identity"`
+		} `json:"participants"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return err
+	}
+	for _, participant := range response.Participants {
+		if participant.Identity == "notes:"+id.String() {
+			_, err = p.callService(ctx, "RoomService", "RemoveParticipant", room, map[string]any{"room": room, "identity": participant.Identity})
+			return err
+		}
+	}
+	return nil
+}

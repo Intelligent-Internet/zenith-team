@@ -581,6 +581,10 @@ func TestRevisionBindingRejectsRevisionsOutsideTheRange(t *testing.T) {
 	t.Parallel()
 
 	requests := map[string]any{
+		"submitHuddleNotesRequest":       &submitHuddleNotesRequest{ProjectID: "00000000-0000-0000-0000-000000000001", Title: "Do work", MilestoneType: "product", Confirm: true},
+		"editHuddleNotesRecapRequest":    &editHuddleNotesRecapRequest{},
+		"setHuddleNotesRequest":          &setHuddleNotesRequest{Enabled: new(bool), RequestKey: "00000000-0000-0000-0000-000000000001"},
+		"huddleNotesPolicyRequest":       &huddleNotesPolicyRequest{Enabled: new(bool), RetentionDays: 30},
 		"taskScheduleRequest":            &taskScheduleRequest{},
 		"taskOccurrenceRequest":          &taskOccurrenceRequest{OccurrenceAt: time.Now()},
 		"taskAssignmentRequest":          &taskAssignmentRequest{Accept: new(bool)},

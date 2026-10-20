@@ -33,6 +33,7 @@ import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-dir
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useHuddleRoom, type HuddleVideo } from "./use-huddle-room";
 import { useAudioLevel } from "./use-audio-level";
+import { HuddleNotesButton } from "./huddle-notes-panel";
 import { HuddleChatPanel } from "./huddle-chat-panel";
 import { HuddleWorkProposals } from "./huddle-work-proposals";
 import { HuddleDeviceMenu } from "./huddle-device-menu";
@@ -755,6 +756,9 @@ export function HuddleCallPanel({
           )}
         </div>
         <div className="flex items-center gap-[10px]">
+          {companyId && huddleId && (
+            <HuddleNotesButton companyId={companyId} huddleId={huddleId} />
+          )}
           {endingSoon && secondsLeft !== null && (
             <span className="huddle-deadline">
               <Clock3 size={14} />

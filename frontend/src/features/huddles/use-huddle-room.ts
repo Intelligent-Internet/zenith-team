@@ -241,16 +241,21 @@ export function useHuddleRoom(
     };
     const syncMembers = () => {
       setMembers(
-        [room.localParticipant, ...room.remoteParticipants.values()].map(
-          (participant) => ({
+        [room.localParticipant, ...room.remoteParticipants.values()]
+          .filter(
+            (participant) =>
+              !(
+                participant.isAgent && participant.identity.startsWith("notes:")
+              ),
+          )
+          .map((participant) => ({
             identity: participant.identity,
             name: participant.name || "Participant",
             local: participant === room.localParticipant,
             agent: participant.isAgent,
             speaking: participant.isSpeaking,
             micMuted: !participant.isMicrophoneEnabled,
-          }),
-        ),
+          })),
       );
     };
     let analysedTrack: LocalAudioTrack | undefined;
