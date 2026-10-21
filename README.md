@@ -23,8 +23,8 @@ It has two parts:
 - **The server** is written in Go. It owns the product state: companies,
   agents, tasks, conversations and run history.
 - **The daemon** runs on your own machine. It picks up work and runs it
-  through the Codex or Claude Code CLI you already use, then streams the
-  results back. Your provider sign-in never leaves your machine.
+  through the Codex CLI you already use, then streams the results back.
+  Your provider sign-in never leaves your machine.
 
 You use it from the web app or the desktop app.
 
@@ -123,7 +123,7 @@ Already run PostgreSQL, Redis and S3-compatible storage yourself? Run
 `cp server/.env.example server/.env`, point it at your services, and use
 `make server-local` instead of `make server`.
 
-To run agents, start a daemon. It needs `codex` or `claude` on your `PATH`:
+To run agents, start a daemon. It needs `codex` on your `PATH`:
 
 ```bash
 make zenith-team-mcp-dev   # build the agent tool server into .dev/bin
@@ -134,17 +134,16 @@ ZENITH_TEAM_MCP_EXECUTABLE="$PWD/../.dev/bin/zenith-team-mcp" go run ./cmd/zen d
 
 The full walkthrough is in [docs/quickstart.md](docs/quickstart.md).
 
-## Supported agent CLIs
+## Supported agent CLI
 
-Zenith Team runs agents through these two CLIs. Install and sign in to them
+Zenith Team runs agents through the Codex CLI. Install and sign in to it
 yourself; Zenith Team never holds your provider credentials.
 
 | Agent CLI | Command | How Zenith Team runs it |
 | --- | --- | --- |
-| Claude Code | `claude` | One process per turn, in stream-JSON mode |
 | Codex | `codex` | A `codex app-server` process, over JSON-RPC |
 
-Sessions, skills, models and usage for each are in
+Sessions, skills, models and usage are in
 [Providers](docs/content/docs/providers.mdx).
 
 ## Documentation
@@ -181,7 +180,7 @@ All product docs live in [docs/content/docs](docs/content/docs/); the
                │ claims runs, streams results back
 ┌──────────────┴────────────────────────────┐
 │ Your machine                              │
-│   zen daemon ──▶ codex / claude CLI       │
+│   zen daemon ──▶ codex CLI                │
 │   provider sign-in stays on this machine  │
 └───────────────────────────────────────────┘
 ```
