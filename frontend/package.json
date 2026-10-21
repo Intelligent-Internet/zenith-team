@@ -57,7 +57,7 @@
     "@tiptap/y-tiptap": "3.0.9",
     "@xmldom/xmldom": "0.9.10",
     "@xyflow/react": "^12.8.5",
-    "ai": "^5.0.81",
+    "ai": "^7.0.140",
     "axios": "^1.17.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
