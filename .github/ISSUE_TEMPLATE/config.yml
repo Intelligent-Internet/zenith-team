@@ -6,6 +6,9 @@ contact_links:
   - name: Ask a question
     url: https://github.com/Intelligent-Internet/zenith-team/discussions
     about: Get help with setup or usage, or share an idea, in GitHub Discussions.
+  - name: See the roadmap
+    url: https://github.com/Intelligent-Internet/zenith-team/blob/main/ROADMAP.md
+    about: What comes next, and where help is wanted. Check it before you request a feature.
   - name: Read the docs
     url: https://github.com/Intelligent-Internet/zenith-team/tree/main/docs/content/docs
     about: Guides and reference for using, hosting and building Zenith Team.

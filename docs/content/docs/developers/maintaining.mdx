@@ -73,7 +73,7 @@ The release workflow needs no secrets beyond its own GitHub token. Leave the rep
 - **Dependabot.** Each week Dependabot opens grouped update pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
 - **Nightly CI.** CI runs every lane plus the PostgreSQL integration suites each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
 - **Security workflow.** It also runs every Monday. Read the dependency audit summary on the run page: those findings do not fail the job.
-- **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles-in-boardly-plugins.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.
+- **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.
 - **Releases.** Cut them as described in [Releasing](/developers/releasing).
 
 ## Next steps

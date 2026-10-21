@@ -10,7 +10,7 @@ Zenith Team keeps two kinds of data:
 - **PostgreSQL** holds everything structured: companies, agents, tasks, conversations and run history.
 - **S3-compatible object storage** holds the bytes of uploaded files, such as chat attachments.
 
-Redis holds only short-lived realtime state. It needs no backup.
+Redis carries realtime updates and the queue that starts Schedules on time. PostgreSQL stays the source of truth for all of it, so Redis needs no backup.
 
 ## The bundled storage service
 

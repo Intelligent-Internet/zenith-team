@@ -35,6 +35,18 @@ body:
       required: false
 
   - type: dropdown
+    id: roadmap
+    attributes:
+      label: Is this on the roadmap?
+      description: See [ROADMAP.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/ROADMAP.md).
+      options:
+        - "Yes, it matches a roadmap item"
+        - "No, it is a new idea"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
     id: contribute
     attributes:
       label: Would you like to open a PR?

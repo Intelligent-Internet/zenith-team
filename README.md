@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/Intelligent-Internet/zenith-team)](https://github.com/Intelligent-Internet/zenith-team/releases/latest)
 
-[Docs](docs/README.md) · [Self-hosting](SELF_HOSTING.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Docs](docs/README.md) · [Self-hosting](SELF_HOSTING.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 
@@ -216,7 +216,8 @@ engineering rules.
 ## Contributing
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you
-open a pull request. Everyone taking part follows our
+open a pull request. The [roadmap](ROADMAP.md) shows what comes next and where
+help is wanted. Everyone taking part follows our
 [Code of Conduct](CODE_OF_CONDUCT.md). Questions go to
 [GitHub Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions);
 see [SUPPORT.md](SUPPORT.md).
