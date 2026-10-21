@@ -35,8 +35,10 @@ make dev
 ```
 
 `make dev` starts PostgreSQL, Redis and Silo in Docker, then runs the Go API
-on `:8788` and the web app on `:5173` in the same terminal. `Ctrl-C` stops the
-API and the web app; the containers keep running until `make infra-down`.
+on `:8788` and, once the API is ready, the desktop app, all in the same
+terminal. `make dev DEV_DESKTOP=false` runs the web app on `:5173` instead.
+`Ctrl-C` stops the API and the app; the containers keep running until
+`make infra-down`.
 
 Prefer one terminal per process? Run these instead:
 
@@ -66,8 +68,8 @@ curl -s http://127.0.0.1:8788/readyz    # PostgreSQL is reachable and its schema
 
 ## Run agents
 
-Agents run through a daemon on your machine. The desktop app starts its own
-(`cd frontend && pnpm electron:dev`). From a terminal:
+Agents run through a daemon on your machine. The desktop app that `make dev`
+opens starts its own. From a terminal:
 
 ```bash
 make zenith-team-mcp-dev   # build the agent tool server into .dev/bin
@@ -91,7 +93,7 @@ make infra-down    # stop the containers, keep your data
 make infra-reset   # stop them and delete all data
 ```
 
-Stop `make dev`, `make server` and `make frontend` with `Ctrl-C`.
+Stop `make dev`, `make server`, `make desktop` and `make frontend` with `Ctrl-C`.
 
 ## Check your change
 

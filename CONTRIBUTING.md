@@ -65,10 +65,13 @@ You need:
    make dev
    ```
 
-   This starts the Docker infrastructure, then runs the API and the web app in
-   the same terminal. Open <http://localhost:5173> and create an account.
+   This starts the Docker infrastructure, then runs the API and, once the API
+   is ready, the desktop app in the same terminal. Create an account in the
+   app. For the web app instead, run `make dev DEV_DESKTOP=false` and open
+   <http://localhost:5173>.
 
-5. To run agents, start a daemon in another terminal:
+5. The desktop app starts its own daemon to run agents. With the web app,
+   start one in another terminal:
 
    ```bash
    make zenith-team-mcp-dev   # build the agent tool server into .dev/bin
@@ -76,8 +79,6 @@ You need:
    go run ./cmd/zen auth login --server http://127.0.0.1:8788
    ZENITH_TEAM_MCP_EXECUTABLE="$PWD/../.dev/bin/zenith-team-mcp" go run ./cmd/zen daemon start
    ```
-
-   The desktop app starts its own daemon instead: `cd frontend && pnpm electron:dev`.
 
 The longer walkthrough is [docs/quickstart.md](docs/quickstart.md). Calls and
 voice agents are in [docs/huddles-local.md](docs/huddles-local.md).
@@ -268,11 +269,12 @@ Run these from the repository root. `make help` prints the same list.
 | Command | What it does |
 | --- | --- |
 | `make doctor` | Checks the tools you need |
-| `make dev` | Starts the infrastructure, then the API and the web app in one terminal |
+| `make dev` | Starts the infrastructure, then the API and the desktop app in one terminal (`DEV_DESKTOP=false`: the web app) |
 | `make infra-up` | Starts PostgreSQL, Redis and Silo (and LiveKit when `HUDDLES_ENABLED='true'`) |
 | `make server` | Runs the API on `:8788` with `docker/dev.env` and `docker/dev.local.env` |
 | `make server-local` | Runs the API with your own services from `server/.env` |
 | `make frontend` | Runs the web app on `:5173` |
+| `make desktop` | Runs the desktop app once the API from `make server` is ready |
 | `make zenith-team-mcp-dev` | Builds `zenith-team-mcp` into `.dev/bin` for a daemon you start yourself |
 | `make debug-app` | Starts the desktop app in debug mode |
 | `make infra-down` | Stops the infrastructure and keeps its data |

@@ -108,11 +108,13 @@ Use this to work on the code. Install the tools listed under
 ```bash
 cd frontend && pnpm install && cd ..   # once: frontend/ is its own pnpm workspace
 
-make dev         # PostgreSQL, Redis and Silo in Docker, then the API (:8788) and the web app (:5173)
+make dev         # PostgreSQL, Redis and Silo in Docker, then the API (:8788) and the desktop app
 ```
 
-Open <http://localhost:5173> and create an account. Prefer one terminal per
-process? Run `make infra-up`, `make server` and `make frontend` separately.
+The desktop app opens once the API is ready; create an account there. For the
+web app instead, run `make dev DEV_DESKTOP=false` and open
+<http://localhost:5173>. Prefer one terminal per process? Run `make infra-up`,
+`make server` and `make desktop` (or `make frontend`) separately.
 
 Already run PostgreSQL, Redis and S3-compatible storage yourself? Run
 `cp server/.env.example server/.env`, point it at your services, and use

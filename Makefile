@@ -7,7 +7,7 @@ SHELL := /bin/bash
 GOFLAGS ?= -p=2
 export GOFLAGS
 
-.PHONY: help doctor dev api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
+.PHONY: help doctor dev desktop api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
 
 .DEFAULT_GOAL := help
 
@@ -35,6 +35,9 @@ GOVULNCHECK_VERSION := v1.9.0
 
 # API origin the web and desktop clients target in local development.
 ZENITH_TEAM_WEB_API_URL ?= http://127.0.0.1:8788
+# `make dev` runs the desktop app; `make dev DEV_DESKTOP=false` runs the web
+# app on :5173 instead.
+DEV_DESKTOP ?= true
 
 help:
 	@echo "Self-hosting (Docker; guide: SELF_HOSTING.md):"
@@ -45,12 +48,13 @@ help:
 	@echo ""
 	@echo "Local development:"
 	@echo "  make doctor      Check the tools local development needs"
-	@echo "  make dev         Start infra, then the API and the web app in this terminal"
+	@echo "  make dev         Start infra, then the API and the desktop app in this terminal (DEV_DESKTOP=false: the web app)"
 	@echo "  Or run each in its own terminal:"
 	@echo "  make server-local Run the Go API with services configured in server/.env (:8788)"
 	@echo "  make infra-up    Start PostgreSQL 17 + Redis + Silo (+ LiveKit when HUDDLES_ENABLED='true')"
 	@echo "  make server      Run the Go API with docker/dev.env, then your docker/dev.local.env overrides"
 	@echo "  make frontend    Run the client app in frontend/ (own workspace)"
+	@echo "  make desktop     Run the desktop app once the API from make server is ready"
 	@echo "  make livekit-up | livekit-down | livekit-logs  Manage just the LiveKit media server (Huddles)"
 	@echo "  make voice-setup Create voice-agent/.env for the local stack    make voice-doctor  Check it before a call"
 	@echo "  make voice-start Run the local voice worker in this terminal (no background process)"
@@ -116,10 +120,11 @@ doctor:
 	[ -f server/.env ] || [ -f docker/dev.env ] || echo "  todo     no server env file found"; \
 	exit $$fail
 
-# Infra, the API and the web app in one terminal. Ctrl-C stops the API and
-# the web app; infra keeps running until `make infra-down`.
+# Infra, the API and the desktop app (or, with DEV_DESKTOP=false, the web app)
+# in one terminal. Ctrl-C stops the API and the app; infra keeps running until
+# `make infra-down`.
 dev: infra-up
-	@$(MAKE) --no-print-directory -j2 server frontend
+	@$(MAKE) --no-print-directory -j2 server $(if $(filter true,$(DEV_DESKTOP)),desktop,frontend)
 
 # Go API from source against `make infra-up`, including Redis and Silo.
 server:
@@ -136,6 +141,18 @@ server-local:
 # run `cd frontend && pnpm install` once before the first start.
 frontend:
 	cd frontend && pnpm dev
+
+# The desktop app against `make server`. It waits for the API to report ready so
+# the window never opens on a server that is still compiling; `pnpm
+# electron:dev` then serves the renderer from its own Vite on :5173.
+desktop:
+	@echo "Waiting for the API at $(ZENITH_TEAM_WEB_API_URL) before starting the desktop app"
+	@for i in $$(seq 600); do \
+		curl -fsS --max-time 2 -o /dev/null $(ZENITH_TEAM_WEB_API_URL)/readyz 2>/dev/null && exit 0; \
+		sleep 1; \
+	done; \
+	echo "The API did not report ready within ten minutes; not starting the desktop app."; exit 1
+	cd frontend && pnpm electron:dev
 
 # Desktop development stages zenith-team-mcp automatically. This target builds a
 # standalone copy at a stable, git-ignored path for a manually launched daemon
