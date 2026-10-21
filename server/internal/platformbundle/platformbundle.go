@@ -1,5 +1,5 @@
 // Package platformbundle holds the platform content zenith-team pins from
-// Intelligent-Internet/boardly-plugins (ADR 0016): one canonical USTAR tar and
+// Intelligent-Internet/zenith-team-plugins (ADR 0016): one canonical USTAR tar and
 // one lock per pinned plugin component, plus the harness files zenith-team owns
 // beside them, today the zenith-workflows SKILL.md. Every read verifies a tar
 // against its lock before any of its bytes are served, and the pin is

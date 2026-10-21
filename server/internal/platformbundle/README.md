@@ -1,7 +1,7 @@
 # Pinned platform content
 
 This directory pins the platform content zenith-team takes from
-[Intelligent-Internet/boardly-plugins](https://github.com/Intelligent-Internet/boardly-plugins)
+[Intelligent-Internet/zenith-team-plugins](https://github.com/Intelligent-Internet/zenith-team-plugins)
 ([ADR 0016](../../../docs/adr/0016-platform-content-bundles.md)).
 Each pinned component is two files, a canonical uncompressed USTAR tar and a
 lock, and both are committed, so no build, test or fresh clone needs a
@@ -14,7 +14,7 @@ Today one component is pinned: plugin `zenith-workflows`, component
 bytes with SHA256
 `fdc5b261668cc4b4218e6c1fe4cfbaf50f0f7ee0114218af8b9354f1ea092282`.
 `zenith-workflows.lock.json` is the source of truth: it also names the
-boardly-plugins commit, the manifest's SHA256, the content folder's git tree
+zenith-team-plugins commit, the manifest's SHA256, the content folder's git tree
 id, the tree hash over all 290 files and the retired keys. Where this file
 and the lock disagree, the lock wins.
 
@@ -23,7 +23,7 @@ Version 1.0.0 carries the catalog zenith-team held in
 files plus the harness below are byte-identical to that directory, and the
 skill's `ContentHash` is unchanged.
 
-The content lives in boardly-plugins, under
+The content lives in zenith-team-plugins, under
 `plugins/zenith-workflows/boardly/workflows/`, and is released there with a
 `zenith-workflows--vX.Y.Z` tag. Nothing reaches a Run until this repository
 bumps the pin.
@@ -76,7 +76,7 @@ the skill caps.
 Contributors do not need them: the tar and the lock are committed, so every
 build and test works offline.
 
-The import reads boardly-plugins with git, using your own GitHub credentials:
+The import reads zenith-team-plugins with git, using your own GitHub credentials:
 
 ```sh
 gh auth login && gh auth setup-git
@@ -91,7 +91,7 @@ make gate
 ```
 
 `bundle-bump` runs `bundlectl import`, which reads the tag (it must be on
-boardly-plugins' `main`), validates the plugin with the server's own rules
+zenith-team-plugins' `main`), validates the plugin with the server's own rules
 and rewrites the tar and the lock together. With `PLUGINS_REPO` set to a
 local checkout that has an `origin`, the tag must also be the one origin
 publishes, on origin's `main` as last fetched. `bundle-diff` shows which
@@ -134,7 +134,7 @@ make bundle-verify
 To try content from a plugins checkout before it is tagged:
 
 ```sh
-make bundle-local PLUGINS=../boardly-plugins
+make bundle-local PLUGINS=../zenith-team-plugins
 ```
 
 That writes a development pin (version `0.0.0-dev+<12-hex commit>`, with
@@ -149,7 +149,7 @@ To see every problem zenith-team would find in a plugins checkout, with the same
 parser and loader the server uses:
 
 ```sh
-make bundle-check PLUGINS=../boardly-plugins
+make bundle-check PLUGINS=../zenith-team-plugins
 ```
 
 It reads what a commit would carry, so files git ignores are left out, and

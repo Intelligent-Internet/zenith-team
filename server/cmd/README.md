@@ -43,7 +43,7 @@ script sets it).
   recovery. Usage needs no post-migration backfill; reports read immutable
   `run_usage` facts directly.
 - **`cmd/bundlectl`** — maintains the platform content pinned in
-  `internal/platformbundle` from Intelligent-Internet/boardly-plugins
+  `internal/platformbundle` from Intelligent-Internet/zenith-team-plugins
   (ADR 0016). `import --tag <plugin>--vX.Y.Z` reads a release tag on
   `main` with the maintainer's own git credentials (a local checkout with
   an origin must hold the tag origin publishes, on origin's `main`),

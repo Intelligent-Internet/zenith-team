@@ -110,7 +110,7 @@ func writePlugin(t *testing.T, root, name, version string, files map[string][]by
 	return dir
 }
 
-// fixtureRepo is a boardly-plugins repository in a temporary directory. Its
+// fixtureRepo is a zenith-team-plugins repository in a temporary directory. Its
 // git commands ignore the machine's configuration and carry their own
 // identity, so a signing or hook setting cannot leak in.
 type fixtureRepo struct {

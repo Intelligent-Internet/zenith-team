@@ -296,7 +296,7 @@ go-lint-fix: go-tools tools-prepare
 	cd server && $(GOLANGCI_LINT) run --fix ./...
 
 # --- Platform bundles (ADR 0016) ---------------------------------------------
-# zenith-team pins each boardly-plugins release it ships: Workflows use a tar and
+# zenith-team pins each zenith-team-plugins release it ships: Workflows use a tar and
 # lock in internal/platformbundle; managed Tools use a single metadata lock in
 # internal/daemon/tool_releases. bundlectl (server/cmd/bundlectl)
 # imports, verifies and diffs them with your own git credentials (for GitHub,

@@ -1,5 +1,5 @@
 // Command bundlectl maintains the platform content zenith-team pins from
-// Intelligent-Internet/boardly-plugins (ADR 0016): a tar and lock per Workflow
+// Intelligent-Internet/zenith-team-plugins (ADR 0016): a tar and lock per Workflow
 // component in internal/platformbundle, or a single JSON metadata lock per
 // managed Tool component in internal/daemon/tool_releases.
 //
