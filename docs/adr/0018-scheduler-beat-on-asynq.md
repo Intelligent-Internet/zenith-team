@@ -20,8 +20,7 @@ lock. It ran at boot and then every 15 seconds.
 Due time came from the database clock, and four guards stopped a double
 firing: a row lock that a second worker skips (`SKIP LOCKED`), a version
 check when the next time moves forward, the unique index on
-`(schedule_id, occurrence_at)` and the unique link from a Run to its firing
-(both in `server/migrations/000005_execution.up.sql`).
+`(schedule_id, occurrence_at)` and the unique link from a Run to its firing.
 
 A review of that beat found that it could stall or fall behind without
 anyone being told:
@@ -173,10 +172,9 @@ Redis and has its own cron-style Scheduler, should run the beat.
   pause their Schedules instead is a possible later change. Rolling back
   the wait-until-replaced change expires every waiting Schedule Run older
   than 2 hours on the first sweeper tick.
-- **Migrations are appended, never edited.** The schema changes are a new
-  migration, `000109_scheduler`: it makes the Run's firing link a plain
-  index so retries can share it, adds the `cancelled` firing state and adds
-  the missed-times count.
+- **The schema follows.** The Run's firing link is a plain index so
+  retries can share it, firings have a `cancelled` state, and each firing
+  counts the times it missed.
 - **Operators check their settings before deploying.** Redis needs AOF,
   a memory limit with the `noeviction` policy and a database index per
   environment, and the pod stop grace must cover the shutdown above.

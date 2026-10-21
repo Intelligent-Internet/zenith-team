@@ -214,21 +214,7 @@ on" is answered by the person, not by the product.
 An Artifact a Task Run presents stays the Task creator's, who reviews and
 shares it. The Run's authorizer, the assignee whose computer ran it, gets a
 `view` grant on it when they are not the creator, so nobody runs a Task and
-then cannot see its result. Migration `000060` gave an earlier Task Artifact
-the same grant only when its Run clearly ran that way: its authorizer
-registered the Run's runtime and is the Task's assignee. Before this ADR the
-authorizer could be anyone who started the Run, on someone else's computer, so
-those Artifacts keep the access they had.
+then cannot see its result.
 
-Migration `000059` derives the first bindings from the old `agents.runtime_id`
-for registrants who are still enabled active members, fills
-`tasks.assignee_user_id` from the executing Agent's binder, the creator, or
-the earliest owner, and cancels the pending Runs the new rule can never
-claim: those whose authorizer is not the runtime's owner, and queued or
-deferred Runs on a runtime that no binding of their Agent and authorizer
-names (an Agent that moved machines left them behind). The channel tags
-those Runs served close with `agent_unbound`; Runs already waiting for a
-local directory keep going. Agents whose registrant has left the Company become
-templates nobody has set up yet, which is the honest state. The down
-migration restores the shape only: extra bindings and cancelled Runs are
-lost, and a backup is the real rollback.
+Agents whose registrant has left the Company become templates nobody has set
+up yet, which is the honest state.

@@ -7,34 +7,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-func TestDiscussionSchemaUpgradeAndShape(t *testing.T) {
+func TestDiscussionSchemaShape(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	if err := runMigration(
-		ctx,
-		pool,
-		"migrate to pre-discussion",
-		func(m *migrate.Migrate) error { return m.Migrate(30) },
-	); err != nil {
+	if err := MigrateUp(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if err := runMigration(
-		ctx,
-		pool,
-		"migrate before group DMs",
-		func(m *migrate.Migrate) error { return m.Migrate(43) },
-	); err != nil {
-		t.Fatal(err)
-	}
 	dbtest.MustExec(
 		t,
 		ctx,
@@ -91,10 +77,6 @@ func TestDiscussionSchemaUpgradeAndShape(t *testing.T) {
 			f.UserA,
 		)
 	})
-	// Upgrade with retained pair and channel history already present.
-	if err := MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
 	for _, tc := range []struct {
 		name, code, sql string
 		args            []any
@@ -139,13 +121,5 @@ func TestDiscussionSchemaUpgradeAndShape(t *testing.T) {
 	}
 	if !internal {
 		t.Fatal("discussion Activity snapshot exposes private metadata")
-	}
-	var retained bool
-	if err := pool.QueryRow(ctx, `SELECT run_id=$2 FROM conversation_items WHERE id=$1`, f.MessageA, f.RunA).
-		Scan(&retained); err != nil {
-		t.Fatal(err)
-	}
-	if !retained {
-		t.Fatal("upgrade changed legacy Run attribution")
 	}
 }

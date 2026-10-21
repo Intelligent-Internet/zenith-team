@@ -14,7 +14,7 @@ import (
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// conversation_readers (migration 000086) restates, per chat kind, who reads
+// conversation_readers restates, per chat kind, who reads
 // a chat. Each kind already had its own rule before the view existed; this
 // fixture pins the view to them, person by person, so the files that now
 // follow the view open to exactly the people who read the chat:

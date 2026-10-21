@@ -8,7 +8,7 @@ import (
 func TestWorkBaselineDefinesTaskPlanOwnership(t *testing.T) {
 	t.Parallel()
 
-	contents, err := Files.ReadFile("000004_work.up.sql")
+	contents, err := Files.ReadFile("000003_work.up.sql")
 	if err != nil {
 		t.Fatalf("read work baseline: %v", err)
 	}

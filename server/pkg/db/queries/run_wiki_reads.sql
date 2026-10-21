@@ -16,7 +16,7 @@ WHERE runs.company_id = sqlc.arg(company_id)::uuid AND runs.id = sqlc.arg(run_id
 -- those pages are matches. Otherwise the words are OR-ed, so a natural-language
 -- question that no single page covers still finds the pages matching most of
 -- it. ts_rank weighs a title hit (A) over a summary (B) over a body hit (C),
--- the weights search_vector was built with (000118). total counts every
+-- the weights search_vector was built with. total counts every
 -- match; only result_limit rows are returned and only those pay for a
 -- snippet. No lexemes means no matches.
 WITH search_input AS MATERIALIZED (

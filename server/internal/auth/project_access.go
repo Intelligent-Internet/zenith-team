@@ -412,8 +412,8 @@ func RequireTaskPermission(
 
 // TaskChatProjectID returns the Project a Task chat belongs to. ok is false
 // for any other kind of chat, for a chat that does not exist, and for a Task
-// chat whose Task was deleted before migration 000086 and so recorded no
-// Project (ADR 0017's legacy pocket): no Project governs those, and the
+// chat whose Task was deleted before Task chats recorded their Project, so it
+// has none (ADR 0017's legacy pocket): no Project governs those, and the
 // caller applies its Company rule.
 func TaskChatProjectID(
 	ctx context.Context,

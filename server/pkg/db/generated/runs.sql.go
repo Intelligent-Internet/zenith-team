@@ -4082,10 +4082,11 @@ type SelectClaimableRunParams struct {
 // chat's Project (run_permission_held): its authorizer (by the first
 // arm also the machine's owner) holds project.read and project.tasks.execute
 // there. It is keyed on the chat, not on runs.task_id, which a Task delete
-// sets NULL; a Task chat with no Project (deleted before 000067) runs
-// nothing. The function reads the candidate's own row, one call per
-// candidate. Go binds the permissions and the default set; SQL names none of
-// them. Keep it identical in ListQueuedClaimCandidatesByRuntimes too.
+// sets NULL; a Task chat with no Project (its Task was deleted before Task
+// chats recorded their Project) runs nothing. The function reads the
+// candidate's own row, one call per candidate. Go binds the permissions and
+// the default set; SQL names none of them. Keep it identical in
+// ListQueuedClaimCandidatesByRuntimes too.
 // Scalar schedule lookups stay correlated to each candidate. EXISTS under
 // these OR arms can become hashed subplans that scan all schedule history.
 func (q *Queries) SelectClaimableRun(ctx context.Context, arg SelectClaimableRunParams) (Run, error) {

@@ -497,7 +497,7 @@ func TestInboxReadsProbeProjectAccessPerRow(t *testing.T) {
 	grantInboxProjectRead(t, ctx, pool, owner.CompanyID, readable, member.UserID)
 	// Forty Groups of forty more colleagues, each Group holding grants on
 	// every Project, so a scan of company_group_members or
-	// project_group_grants would show too (000101).
+	// project_group_grants would show too.
 	dbtest.SeedGroupColleagues(t, ctx, pool, owner.CompanyID, "inbox-group-colleague", 40)
 	mustInboxExec(t, ctx, pool, `ANALYZE`)
 

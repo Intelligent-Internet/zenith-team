@@ -35,7 +35,7 @@ role should be able to create Agents.
    another member's private connection — answers `404 runtime_not_found`
    like an unknown id, never a 403 that would confirm the registration.
 2. **The creator is recorded** (`agents.created_by_user_id`, attribution, no
-   FK, migration `000029`). Agents that predate the record have none.
+   FK). Agents that predate the record have none.
 3. **Configuration is the creator's and the `agents.manage` holders'** — the Company owners and admins of the permission catalog ([ADR 0012](0012-roles-assign-permissions-enforce.md)).
    Update, rebind, archive and restore are refused for anyone else with
    `403 agent_creator_required`. The rule is "only the agent's owner, or an

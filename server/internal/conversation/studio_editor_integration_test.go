@@ -5,7 +5,6 @@ package conversation
 import (
 	"context"
 	"errors"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
-	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
@@ -223,58 +221,6 @@ func TestStudioEditorAuthorityRecoveryAndCAS(t *testing.T) {
 	dbtest.MustExec(t, ctx, pool, `UPDATE runtimes SET removed_at=now() WHERE id=$1`, f.RuntimeA)
 	if _, err := service.ResolveContext(ctx, human, access); !errors.Is(err, ErrStudioEditorNotFound) {
 		t.Fatalf("runtime removal: %v", err)
-	}
-}
-
-func TestStudioOriginMigrationPreservesLegacyAndBlocksUnsafeRollback(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := db.MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	down, err := migrations.Files.ReadFile("000058_studio_mode.down.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	up, err := migrations.Files.ReadFile("000058_studio_mode.up.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, string(down))
-	description := strings.Repeat("漢", 3000)
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`INSERT INTO conversation_studio_projects(company_id,conversation_id,title,description) VALUES($1,$2,'Legacy',$3)`,
-		f.CompanyA,
-		f.DirectConversationA,
-		description,
-	)
-	dbtest.MustExec(t, ctx, pool, string(up))
-	var origin, protocol, got string
-	var revision int64
-	var account *uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT api_origin,creation_protocol,description,binding_revision,creation_account_id FROM conversation_studio_projects WHERE conversation_id=$1`, f.DirectConversationA).
-		Scan(&origin, &protocol, &got, &revision, &account); err != nil {
-		t.Fatal(err)
-	}
-	// Migration 000058 backfills legacy rows with the hosted Studio origin.
-	if origin != "https://api-agent.ii.inc" || protocol != "legacy_marker" || got != description || revision != 1 ||
-		account != nil {
-		t.Fatalf("legacy changed: %s %s %d %v", origin, protocol, revision, account)
-	}
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`UPDATE conversation_studio_projects SET api_origin='http://localhost:8000' WHERE conversation_id=$1`,
-		f.DirectConversationA,
-	)
-	if _, err := pool.Exec(ctx, string(down)); err == nil {
-		t.Fatal("unsafe rollback succeeded")
 	}
 }
 

@@ -79,9 +79,8 @@ const bookkeepingFields = new Set(["revision", "updatedAt"]);
 
 // Plain words for snapshot fields whose split name would not read well.
 // Every other field reads as its camelCase words without a trailing "Id".
-// Task snapshots recorded before migration 000059 name the executing Agent
-// assigneeAgentId; it reads "executed by" too, since the assignee is always
-// a member.
+// Older Task snapshots name the executing Agent assigneeAgentId; it reads
+// "executed by" too, since the assignee is always a member.
 const fieldLabels: Record<string, string> = {
   assigneeUserId: "assignee",
   assigneeAgentId: "executed by",

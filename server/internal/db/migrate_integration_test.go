@@ -4,21 +4,15 @@ package db
 
 import (
 	"context"
-	"errors"
 	"slices"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
-	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
-	"github.com/golang-migrate/migrate/v4"
 	migratedb "github.com/golang-migrate/migrate/v4/database"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -54,23 +48,6 @@ var expectedBusinessTables = []string{
 	"canvas_personal_views",
 	"canvas_templates",
 	"channel_invocations",
-	"commerce_accounts",
-	"commerce_customers",
-	"commerce_entitlements",
-	"commerce_gateway_operations",
-	"commerce_manifests",
-	"commerce_offers",
-	"commerce_operations",
-	"commerce_payments",
-	"commerce_rate_limits",
-	"commerce_site_challenges",
-	"commerce_site_signing_keys",
-	"commerce_sites",
-	"commerce_subscriptions",
-	"commerce_terms_acceptances",
-	"commerce_terms_catalog",
-	"commerce_webhook_account_leases",
-	"commerce_webhook_receipts",
 	"companies",
 	"company_group_members",
 	"company_groups",
@@ -103,7 +80,6 @@ var expectedBusinessTables = []string{
 	"conversation_user_states",
 	"conversations",
 	"crash_reports",
-	"deliverable_review_actions",
 	"deliverables",
 	"desktop_handoff_codes",
 	"discussion_artifacts",
@@ -175,7 +151,6 @@ var expectedBusinessTables = []string{
 	"review_threads",
 	"run_connector_selections",
 	"run_connector_snapshots",
-	"run_identity_mappings",
 	"run_skills",
 	"run_tokens",
 	"run_usage",
@@ -219,7 +194,6 @@ var removedBusinessTables = []string{
 	"output_access_history",
 	"goals",
 	"attachment_storage_authority",
-	"commerce_sandbox_authorization_codes",
 	"messages",
 	"run_messages",
 	"usage_backfill_state",
@@ -315,7 +289,6 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"projects":                           true,
 	"project_files":                      false,
 	"project_grants":                     true,
-	"run_identity_mappings":              false,
 	"activity_events":                    false,
 	"agent_skills":                       true,
 	"run_skills":                         false,
@@ -331,23 +304,6 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"assets":                             true,
 	"attachments":                        true,
 	"auth_sessions":                      true,
-	"commerce_accounts":                  true,
-	"commerce_customers":                 true,
-	"commerce_entitlements":              true,
-	"commerce_gateway_operations":        true,
-	"commerce_manifests":                 true,
-	"commerce_offers":                    true,
-	"commerce_operations":                true,
-	"commerce_payments":                  true,
-	"commerce_rate_limits":               true,
-	"commerce_site_challenges":           false,
-	"commerce_site_signing_keys":         true,
-	"commerce_sites":                     true,
-	"commerce_subscriptions":             true,
-	"commerce_terms_acceptances":         false,
-	"commerce_terms_catalog":             false,
-	"commerce_webhook_account_leases":    true,
-	"commerce_webhook_receipts":          true,
 	"company_initializations":            true,
 	"companies":                          true,
 	"company_mailboxes":                  true,
@@ -375,7 +331,6 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"conversations":                      true,
 	"conversation_user_states":           true,
 	"crash_reports":                      false,
-	"deliverable_review_actions":         true,
 	"deliverables":                       true,
 	"desktop_handoff_codes":              false,
 	"email_verification_flows":           true,
@@ -420,14 +375,14 @@ var retainedTableHasUpdatedAt = map[string]bool{
 	"tasks":                              true,
 	"users":                              true,
 
-	// 000101: a Group, its members (a membership is added or deleted, never
+	// A Group, its members (a membership is added or deleted, never
 	// changed) and its grants.
 	"company_groups":        true,
 	"company_group_members": false,
 	"project_group_grants":  true,
 }
 
-func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
+func TestMigrationUpBuildsTheSchemaAndDownRemovesIt(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -466,7 +421,6 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"conversation_items_content_search_idx",
 		// Wiki search reads the page row's current-content vector.
 		"wiki_pages_search_idx",
-		"commerce_webhook_account_leases_expiry_idx",
 		"oauth_login_flows_expiry_idx",
 		"company_resources_company_daemon_key",
 		"company_resources_tenant_order_idx",
@@ -503,7 +457,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"connector_catalog_items_company_provider_status_idx",
 		"connector_runtime_observations_company_provider_idx",
 		"plugin_runtime_observations_company_provider_runtime_idx",
-		// 000063: the Plugins list's duplicate probe and logo borrowing.
+		// The Plugins list's duplicate probe and logo borrowing.
 		"plugin_runtime_observations_company_provider_name_key_idx",
 		"plugin_runtime_observations_company_provider_website_host_idx",
 		"plugin_runtime_observations_company_provider_developer_idx",
@@ -518,10 +472,6 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"mailbox_messages_company_list_idx",
 		"mailbox_messages_retention_idx",
 		"mailbox_drafts_send_queue_idx",
-		"commerce_rate_limits_updated_idx",
-		"commerce_site_challenges_expiry_idx",
-		"commerce_site_challenges_consumed_idx",
-		"commerce_site_signing_keys_verification_idx",
 		"assets_company_created_idx",
 		"asset_versions_company_asset_version_idx",
 		"asset_versions_source_run_idx",
@@ -536,9 +486,8 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"output_publications_company_created_idx",
 		"output_publications_work_idx",
 		"deliverables_company_status_submitted_idx",
-		"deliverable_review_actions_company_status_idx",
 		"project_grants_user_idx",
-		// 000101: a Group name is unique per Company ignoring case; every
+		// A Group name is unique per Company ignoring case; every
 		// access read probes a person's Groups, and a Group change lists the
 		// Projects a Group reaches.
 		"company_groups_name_key",
@@ -547,7 +496,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"conversations_project_idx",
 		"inbox_items_recipient_project_idx",
 		"activity_events_project_created_idx",
-		// 000117: Collection deletes unfile revisions and drafts through these.
+		// Collection deletes unfile revisions and drafts through these.
 		"wiki_revisions_collection_idx",
 		"wiki_canvas_drafts_collection_idx",
 		"wiki_canvas_checkpoints_page_seq_idx",
@@ -581,7 +530,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"author_kind", "author_id", "item_key", "request_key", "content",
 			"parts", "content_sha256", "metadata", "created_at", "body", "revision", "send_fingerprint",
 			"thread_root_id", "edited_at", "deleted_at",
-			// 000053: a channel answer's invocation, a column so SQL never reads metadata.
+			// A channel answer's invocation, a column so SQL never reads metadata.
 			"invocation_id",
 		})
 	})
@@ -590,7 +539,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"id", "company_id", "recipient_user_id", "conversation_id", "kind",
 			"entity_type", "entity_id", "title", "body", "deep_link", "dedupe_key",
 			"discussion_grant_generation", "read_at", "archived_at", "created_at", "updated_at", "version",
-			// 000086: the Task chat's Project, so a non-reader never sees the row.
+			// The Task chat's Project, so a non-reader never sees the row.
 			"project_id",
 		})
 	})
@@ -604,7 +553,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"skipped_reason", "continuation_run_id", "continuation_prompt",
 			"continuation_status", "continuation_next_attempt_at",
 			"continuation_abandon_reason", "continuation_attempts", "created_at",
-			"updated_at", "version", "commerce_manifest_id",
+			"updated_at", "version",
 		})
 	})
 	t.Run("question columns", func(t *testing.T) {
@@ -712,11 +661,6 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"reviewed_by_user_id", "reviewed_at", "review_feedback", "created_at",
 			"updated_at", "version",
 		})
-		assertTableColumns(t, ctx, pool, "deliverable_review_actions", []string{
-			"id", "company_id", "deliverable_id", "inbox_item_id",
-			"recipient_user_id", "status", "resolved_at", "created_at",
-			"updated_at", "version",
-		})
 		assertTableColumns(t, ctx, pool, "output_publications", []string{
 			"custom_hostname", "route_binding_id", "route_pending",
 			"id", "company_id", "output_id", "output_item_id", "requested_by_user_id",
@@ -747,12 +691,12 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			// The Agent's own appearance: the client renders initials and its
 			// default palette when either is NULL.
 			"avatar_key", "accent_color",
-			// 000029: the member who created the Agent; with the agents.manage
+			// The member who created the Agent; with the agents.manage
 			// holders, the one who may configure it (ADR 0013).
 			"created_by_user_id",
-			// 000052: the Plugins the Agent turned off, the column its Run brief filters on.
+			// The Plugins the Agent turned off, the column its Run brief filters on.
 			"disabled_plugin_ids",
-			// 000059: the Agent is a template with a fixed provider, and no
+			// The Agent is a template with a fixed provider, and no
 			// machine of its own — a member binds it to one of theirs
 			// (agent_runtime_bindings, ADR 0014).
 			"provider",
@@ -783,37 +727,37 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"attempt", "parent_run_id", "force_fresh_session",
 			"wait_reason", "prepare_lease_expires_at", "fire_at", "task_scheduled",
 			"task_execution_generation",
-			// 000054: the Connector scope; its rows live in run_connector_selections
+			// The Connector scope; its rows live in run_connector_selections
 			// and run_connector_snapshots.
 			"connector_selection_mode", "connector_snapshot_frozen_at", "schedule_firing_id",
 			"transcript_through_seq",
 			"queued_at", "claimed_at", "started_at", "finished_at",
-			// 000026: the member whose permitted action asked for the Run,
+			// The member whose permitted action asked for the Run,
 			// rechecked by the claim against the runtime's current consent.
 			"execution_authorized_by_user_id",
-			// 000050-000052: facts SQL filters on, frozen with the Run: its source
+			// Facts SQL filters on, frozen with the Run: its source
 			// Task, its proven final answer item and its Studio access.
 			"source_task_id", "final_answer_item_key", "studio_enabled",
 		})
 	})
 	t.Run("runtime columns", func(t *testing.T) {
 		assertTableColumns(t, ctx, pool, "runtimes", []string{
-			// 000005: the daemon-registered row.
+			// The daemon-registered row.
 			"id", "company_id", "daemon_id", "name", "provider", "status",
 			"device_info", "metadata", "last_seen_at", "owner_user_id",
 			"created_at", "updated_at",
-			// 000012: the user-facing lifecycle. Typed unusable-reason columns
+			// The user-facing lifecycle. Typed unusable-reason columns
 			// (not metadata keys), the user's machine name, and the owner's
 			// soft removal — NULL means live, and registration clears it.
 			"unusable_reason_code", "unusable_reason_message", "custom_name",
 			"removed_at",
-			// 000022: the provider sign-in verdict.
+			// The provider sign-in verdict.
 			"provider_sign_in_state", "provider_sign_in_detail", "provider_sign_in_checked_at",
-			// 000049: the announced device name, out of metadata because SQL reads it.
+			// The announced device name, out of metadata because SQL reads it.
 			"device_name",
-			// 000059 dropped visibility: a runtime is always private, and
+			// No visibility column: a runtime is always private, and
 			// only its registrant can see or use it (ADR 0014).
-			// 000103: when another person took the machine over.
+			// When another person took the machine over.
 			"handed_over_at",
 		})
 	})
@@ -835,7 +779,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"source_agent_id", "recipient_agent_id", "completion_source",
 			"completed_at", "result_summary", "source_run_id", "request_key",
 			"batch_id", "superseded_at", "created_at",
-			// 000086: the reported Task's Project (ADR 0017).
+			// The reported Task's Project (ADR 0017).
 			"project_id",
 		})
 	})
@@ -859,7 +803,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"id", "user_id", "token_prefix", "token_hash", "expires_at", "last_used_at",
 			"revoked_at", "revocation_reason", "revoked_by_user_id", "rotated_from_session_id",
 			"client_metadata", "created_at", "updated_at", "rotation_id",
-			// 000098: a session is a person's or a daemon's.
+			// A session is a person's or a daemon's.
 			"client",
 		})
 	})
@@ -868,7 +812,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"id", "company_id", "actor_type", "actor_id", "action", "entity_type", "entity_id",
 			"agent_id", "task_id", "conversation_id", "details", "created_at",
 			"revision", "visibility", "visibility_user_id", "schema_version", "project_id",
-			// 000097: an Agent's row in a Run names the person it
+			// An Agent's row in a Run names the person it
 			// acted for and the Run.
 			"on_behalf_of_user_id", "run_id",
 		})
@@ -882,7 +826,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"number",
 			"title",
 			"description",
-			// 000059: the assignee is always a member and never NULL; the
+			// The assignee is always a member and never NULL; the
 			// Agent that does the work is executed_by_agent_id, NULL when
 			// the assignee does it themself (ADR 0014).
 			"status",
@@ -915,214 +859,11 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"workspace_generation",
 		})
 	})
-	seedPasswordResetRevokedSession(t, ctx, pool)
-
-	if err := MigrateDown(ctx, pool); err == nil || !strings.Contains(err.Error(), "backup") {
-		t.Fatalf("cutover downgrade = %v, want explicit backup restoration requirement", err)
+	// The baseline rolls all the way back and leaves no business table.
+	if err := MigrateDown(ctx, pool); err != nil {
+		t.Fatalf("MigrateDown() error = %v", err)
 	}
-	remaining := slices.DeleteFunc(
-		slices.Clone(expectedBusinessTables),
-		func(table string) bool {
-			// 000057 (project files), 000058 (Studio), 000059 (bindings) and
-			// 000086 (project access)
-			// come down with the rest of the ladder above the cutover
-			// refusal, taking their tables with them.
-			return table == "boards" || strings.HasPrefix(table, "board_") || table == "task_result_sets" ||
-				table == "task_result_items" ||
-				table == "page_suggestion_reviews" ||
-				table == "document_changes" || table == "document_writing_requests" || table == "output_documents" ||
-				strings.HasPrefix(table, "output_review_") ||
-				strings.HasPrefix(table, "canvas_") ||
-				strings.HasPrefix(table, "project_") ||
-				strings.HasPrefix(table, "review_") ||
-				table == "artifact_review_decisions" ||
-				strings.HasPrefix(table, "huddle") ||
-				strings.HasPrefix(table, "wiki_") ||
-				table == "channel_invocations" ||
-				table == "projects" ||
-				table == "project_files" ||
-				table == "company_invitations" ||
-				table == "agent_runtime_bindings" ||
-				table == "company_initializations" ||
-				table == "agent_skills" ||
-				table == "run_skills" ||
-				table == "message_skills" || table == "message_connectors" || table == "message_connector_bindings" ||
-				table == "skill_imports" ||
-				table == "skill_versions" ||
-				table == "company_groups" ||
-				table == "company_group_members" ||
-				table == "company_invitation_tokens" ||
-				table == "company_share_links" ||
-				table == "conversation_studio_projects" ||
-				table == "output_studio_canvases" ||
-				(table == "calendars" || strings.HasPrefix(table, "calendar_")) ||
-				table == "conversation_agents" ||
-				table == "conversation_channels" ||
-				table == "model_prices" ||
-				table == "task_schedules" ||
-				strings.HasPrefix(table, "analytics_") ||
-				table == "conversation_human_directs" ||
-				table == "conversation_members" ||
-				table == "conversation_message_pins" ||
-				table == "conversation_message_reactions" ||
-				table == "conversation_thread_states" ||
-				table == "conversation_model_settings" ||
-				table == "conversation_model_changes" ||
-				strings.HasPrefix(table, "social_") ||
-				(table == "output_grants" || table == "output_conversation_grants" || table == "discussion_artifacts") ||
-				table == "run_connector_selections" ||
-				table == "run_connector_snapshots" ||
-				table == "run_wiki_reads" ||
-				table == "run_wiki_writes"
-		},
-	)
-	assertBusinessTables(t, ctx, pool, remaining)
-}
-
-// The greenfield ladder has no legacy usage shape to restore: rolling the
-// usage migration back simply removes the immutable usage-fact table. This
-// proves a partial rollback to a pinned version and a subsequent MigrateUp both
-// preserve the clean-slate ladder.
-func TestUsageDownMigrationRemovesRunUsage(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
-	defer cancel()
-	if err := runMigration(
-		ctx,
-		pool,
-		"migrate to usage schema",
-		func(runner *migrate.Migrate) error { return runner.Migrate(13) },
-	); err != nil {
-		t.Fatalf("MigrateUp() error = %v", err)
-	}
-
-	runner, err := newMigrationRunner(ctx, pool)
-	if err != nil {
-		t.Fatalf("newMigrationRunner() error = %v", err)
-	}
-	// Target the schema immediately before the migration that creates
-	// run_usage. A relative Step would silently roll back only the newest
-	// unrelated migration as the migration ladder grows.
-	migrationErr := runner.Migrate(6)
-	sourceErr, databaseErr := runner.Close()
-	if err := errors.Join(migrationErr, sourceErr, databaseErr); err != nil {
-		t.Fatalf("roll back usage accounting migration: %v", err)
-	}
-
-	var exists bool
-	if err := pool.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT 1 FROM pg_catalog.pg_tables
-			WHERE schemaname='public' AND tablename='run_usage'
-		)`).Scan(&exists); err != nil {
-		t.Fatalf("check rolled-back run_usage table: %v", err)
-	}
-	if exists {
-		t.Error("table run_usage survived the usage rollback")
-	}
-
-	if err := MigrateUp(ctx, pool); err != nil {
-		t.Fatalf("MigrateUp() after usage rollback error = %v", err)
-	}
-	assertBusinessTables(t, ctx, pool, expectedBusinessTables)
-	var rebuiltRows int64
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM run_usage`).Scan(&rebuiltRows); err != nil {
-		t.Fatalf("read rebuilt run_usage: %v", err)
-	}
-	if rebuiltRows != 0 {
-		t.Fatalf("rebuilt run_usage rows = %d, want 0", rebuiltRows)
-	}
-}
-
-func TestOutputMigrationsUpgradeAndRollbackFromVersionEight(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx, cancel := context.WithTimeout(t.Context(), 90*time.Second)
-	defer cancel()
-	toBaseline := func(runner *migrate.Migrate) error { return runner.Migrate(8) }
-	if err := runMigration(ctx, pool, "migrate to version 8", toBaseline); err != nil {
-		t.Fatalf("migrate to version 8: %v", err)
-	}
-	assertTableDoesNotExist(t, ctx, pool, "outputs")
-	assertTableDoesNotExist(t, ctx, pool, "output_publications")
-
-	var inboxID string
-	if err := pool.QueryRow(ctx, `
-		WITH owner AS (
-			INSERT INTO users (email, display_name)
-			VALUES ('output-migration@zenith-team.test', 'Migration Owner') RETURNING id
-		), company AS (
-			INSERT INTO companies (name, slug, task_prefix)
-			VALUES ('Existing Company', 'output-migration', 'OUT') RETURNING id
-		)
-		INSERT INTO inbox_items (
-			company_id, recipient_user_id, kind, entity_type, entity_id, title, body, dedupe_key
-		)
-		SELECT company.id, owner.id, 'run_completed', 'company', company.id::text,
-			'Existing notification', 'Preserve this notification', 'migration-notification'
-		FROM company CROSS JOIN owner
-		RETURNING id::text`).Scan(&inboxID); err != nil {
-		t.Fatalf("seed version 8 inbox: %v", err)
-	}
-
-	for _, step := range []struct {
-		name      string
-		direction func(*migrate.Migrate) error
-		baseline  bool
-	}{
-		{name: "upgrade", direction: func(runner *migrate.Migrate) error { return runner.Migrate(13) }},
-		{name: "rollback", direction: toBaseline, baseline: true},
-		{name: "upgrade again", direction: func(runner *migrate.Migrate) error { return runner.Migrate(13) }},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatalf("%s: %v", step.name, err)
-		}
-		if step.baseline {
-			assertTableDoesNotExist(t, ctx, pool, "outputs")
-			assertTableDoesNotExist(t, ctx, pool, "output_publications")
-		} else {
-			assertBusinessTables(t, ctx, pool, businessTablesBeforeRunHistory())
-			var routePending bool
-			if err := pool.QueryRow(ctx, `
-				SELECT EXISTS (
-					SELECT 1 FROM output_publications
-					WHERE custom_hostname IS NOT NULL OR route_binding_id IS NOT NULL OR route_pending
-				)
-			`).Scan(&routePending); err != nil {
-				t.Fatalf("%s custom publication schema: %v", step.name, err)
-			}
-			if routePending {
-				t.Fatalf("%s created unexpected publication routes", step.name)
-			}
-		}
-		var body string
-		if err := pool.QueryRow(ctx, `SELECT body FROM inbox_items WHERE id = $1`, inboxID).
-			Scan(&body); err != nil {
-			t.Fatalf("%s existing inbox: %v", step.name, err)
-		}
-		if body != "Preserve this notification" {
-			t.Fatalf("%s inbox body = %q, want preserved notification", step.name, body)
-		}
-	}
-}
-
-func seedPasswordResetRevokedSession(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
-	t.Helper()
-	const userID = "01990d25-3d7a-7000-8000-000000000001"
-	if _, err := pool.Exec(ctx, `
-		INSERT INTO users (id, email, display_name)
-		VALUES ($1, 'migration-password-reset@zenith-team.test', 'Migration Password Reset')`, userID); err != nil {
-		t.Fatalf("insert migration password-reset User: %v", err)
-	}
-	if _, err := pool.Exec(ctx, `
-		INSERT INTO auth_sessions (
-			id, user_id, token_prefix, token_hash, expires_at, revoked_at, revocation_reason
-		) VALUES (
-			'01990d25-3d7a-7000-8000-000000000002', $1, 'migration-password-reset',
-			decode(repeat('01', 32), 'hex'), clock_timestamp() + interval '1 hour',
-			clock_timestamp(), 'password_reset'
-		)`, userID); err != nil {
-		t.Fatalf("insert password-reset-revoked auth session: %v", err)
-	}
+	assertBusinessTables(t, ctx, pool, nil)
 }
 
 func TestMigrationUpSerializesConcurrentReplicas(t *testing.T) {
@@ -1440,1287 +1181,5 @@ func TestMigrateUpMatchesReadinessSchemaVersion(t *testing.T) {
 			"migrated version %d != SchemaVersion %d",
 			version, SchemaVersion,
 		)
-	}
-}
-
-func TestWebAppMigrationPreservesExistingOutputsAcrossUpgradeAndRollback(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	toVersionTen := func(runner *migrate.Migrate) error { return runner.Migrate(10) }
-	if err := runMigration(ctx, pool, "migrate to version 10", toVersionTen); err != nil {
-		t.Fatal(err)
-	}
-	fixture := seedLegacyMigrationRun(t, ctx, pool)
-	var outputID string
-	if err := pool.QueryRow(ctx, `INSERT INTO outputs (company_id, run_id, title, summary, presentation_fingerprint)
-        VALUES ($1, $2, 'Existing output', 'Preserve this result', repeat('a', 64)) RETURNING id::text`, fixture.CompanyA, fixture.RunA).Scan(&outputID); err != nil {
-		t.Fatal(err)
-	}
-	for _, step := range []struct {
-		name      string
-		direction func(*migrate.Migrate) error
-		rollback  bool
-	}{
-		{name: "upgrade", direction: func(runner *migrate.Migrate) error { return runner.Migrate(13) }},
-		{name: "rollback", direction: toVersionTen, rollback: true},
-		{name: "upgrade again", direction: func(runner *migrate.Migrate) error { return runner.Migrate(13) }},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatal(err)
-		}
-		var summary string
-		if err := pool.QueryRow(ctx, `SELECT summary FROM outputs WHERE id = $1`, outputID).
-			Scan(&summary); err != nil ||
-			summary != "Preserve this result" {
-			t.Fatalf("%s preserved output = %q, %v", step.name, summary, err)
-		}
-		if step.rollback {
-			continue
-		}
-		var outputType string
-		if err := pool.QueryRow(ctx, `SELECT type FROM outputs WHERE id = $1`, outputID).
-			Scan(&outputType); err != nil ||
-			outputType != "files" {
-			t.Fatalf("%s output type = %q, %v", step.name, outputType, err)
-		}
-		if _, err := pool.Exec(ctx, `UPDATE outputs SET type = 'unknown' WHERE id = $1`, outputID); err == nil {
-			t.Fatal("invalid output type accepted")
-		}
-	}
-}
-
-// TestRuntimeOfflineInboxRollbackDropsOnlyItsOwnNotices pins the down
-// file that deletes inbox rows. 000013 widens
-// `inbox_items_kind_check`, so rolling it back over a database that ran a
-// stale sweep would fail on the ADD CONSTRAINT unless the new rows go first —
-// and only those rows: every other notification survives.
-func TestRuntimeOfflineInboxRollbackDropsOnlyItsOwnNotices(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	toVersionTwelve := func(runner *migrate.Migrate) error { return runner.Migrate(12) }
-	if err := runMigration(ctx, pool, "migrate to version 12", toVersionTwelve); err != nil {
-		t.Fatal(err)
-	}
-	fixture := seedLegacyMigrationRun(t, ctx, pool)
-	insertItem := func(kind, dedupeKey string) error {
-		_, err := pool.Exec(ctx, `
-			INSERT INTO inbox_items (
-				company_id, recipient_user_id, kind, entity_type, entity_id,
-				title, body, dedupe_key
-			) VALUES ($1, $2, $3, 'runtime', $4::text, 'Notice', 'Body', $5)`,
-			fixture.CompanyA, fixture.UserA, kind, fixture.RuntimeA, dedupeKey)
-		return err
-	}
-	// Before 000013 the kind is not in the vocabulary at all.
-	if err := insertItem("runtime_offline", "runtime:before"); err == nil {
-		t.Fatal("inbox_items accepted runtime_offline at version 12")
-	}
-	if err := insertItem("run_failed", "run:kept"); err != nil {
-		t.Fatalf("seed the notice that must survive: %v", err)
-	}
-
-	if err := runMigration(
-		ctx,
-		pool,
-		"upgrade",
-		func(runner *migrate.Migrate) error { return runner.Migrate(13) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	if err := insertItem("runtime_offline", "runtime:dropped"); err != nil {
-		t.Fatalf("insert runtime_offline after 000013: %v", err)
-	}
-
-	if err := runMigration(ctx, pool, "rollback", toVersionTwelve); err != nil {
-		t.Fatal(err)
-	}
-	rows, err := pool.Query(ctx, `SELECT kind FROM inbox_items ORDER BY dedupe_key`)
-	if err != nil {
-		t.Fatalf("read inbox items after the rollback: %v", err)
-	}
-	var kinds []string
-	for rows.Next() {
-		var kind string
-		if err := rows.Scan(&kind); err != nil {
-			rows.Close()
-			t.Fatalf("scan inbox kind: %v", err)
-		}
-		kinds = append(kinds, kind)
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		t.Fatalf("read inbox items after the rollback: %v", err)
-	}
-	if len(kinds) != 1 || kinds[0] != "run_failed" {
-		t.Fatalf("inbox kinds after the rollback = %v, want only run_failed", kinds)
-	}
-
-	if err := runMigration(ctx, pool, "upgrade again", (*migrate.Migrate).Up); err != nil {
-		t.Fatal(err)
-	}
-	if err := insertItem("runtime_offline", "runtime:again"); err != nil {
-		t.Fatalf("insert runtime_offline after the second upgrade: %v", err)
-	}
-}
-
-// businessTablesBeforeRunHistory lists the tables at version 13, the last
-// version before the Run history migrations. Migrations up to 13 never change,
-// so the list is written out instead of being derived from
-// expectedBusinessTables: a new migration never has to edit it. It still holds
-// goals and the department tables, which 000016 and 000017 remove.
-func businessTablesBeforeRunHistory() []string {
-	return []string{
-		"activity_events",
-		"agents",
-		"approvals",
-		"asset_versions",
-		"assets",
-		"attachments",
-		"auth_sessions",
-		"commerce_accounts",
-		"commerce_customers",
-		"commerce_entitlements",
-		"commerce_gateway_operations",
-		"commerce_manifests",
-		"commerce_offers",
-		"commerce_operations",
-		"commerce_payments",
-		"commerce_rate_limits",
-		"commerce_site_challenges",
-		"commerce_site_signing_keys",
-		"commerce_sites",
-		"commerce_subscriptions",
-		"commerce_terms_acceptances",
-		"commerce_terms_catalog",
-		"commerce_webhook_account_leases",
-		"commerce_webhook_receipts",
-		"companies",
-		"company_mailboxes",
-		"company_members",
-		"company_milestone_attestations",
-		"company_reference_documents",
-		"company_resources",
-		"connector_catalog_items",
-		"connector_discovery_generations",
-		"connector_policies",
-		"connector_runtime_observations",
-		"conversation_items",
-		"conversation_run_queue_attachments",
-		"conversation_run_queue_items",
-		"conversation_user_states",
-		"conversations",
-		"crash_reports",
-		"deliverable_review_actions",
-		"deliverables",
-		"department_capabilities",
-		"department_configs",
-		"desktop_handoff_codes",
-		"email_verification_flows",
-		"goals",
-		"inbox_items",
-		"mailbox_draft_deliveries",
-		"mailbox_draft_groups",
-		"mailbox_drafts",
-		"mailbox_message_attachments",
-		"mailbox_messages",
-		"mailbox_received_receipts",
-		"message_attachments",
-		"oauth_accounts",
-		"oauth_login_flows",
-		"output_items",
-		"output_publications",
-		"outputs",
-		"password_reset_flows",
-		"plugin_catalog_items",
-		"plugin_discovery_generations",
-		"plugin_runtime_observations",
-		"questions",
-		"run_tokens",
-		"run_usage",
-		"runs",
-		"runtimes",
-		"schedule_firings",
-		"schedule_sources",
-		"schedules",
-		"task_dependencies",
-		"task_merge_jobs",
-		"task_report_batches",
-		"task_report_events",
-		"tasks",
-		"users",
-	}
-}
-
-// The historical output and Inbox migrations predate UUID Run identities.
-func seedLegacyMigrationRun(t *testing.T, ctx context.Context, pool *pgxpool.Pool) struct {
-	CompanyA, UserA, RuntimeA uuid.UUID
-	RunA                      int64
-} {
-	t.Helper()
-	var fixture struct {
-		CompanyA, UserA, RuntimeA uuid.UUID
-		RunA                      int64
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO users (email, display_name) VALUES ('migration@example.test','Migration Owner') RETURNING id`).
-		Scan(&fixture.UserA); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO companies (name,slug,task_prefix) VALUES ('Migration Company','migration-company','MIG') RETURNING id`).
-		Scan(&fixture.CompanyA); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO runtimes (company_id,daemon_id,name,provider,owner_user_id) VALUES ($1,'migration-daemon','Migration Runtime','codex',$2) RETURNING id`, fixture.CompanyA, fixture.UserA).
-		Scan(&fixture.RuntimeA); err != nil {
-		t.Fatal(err)
-	}
-	var agentID, conversationID uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO agents (company_id,name,title,runtime_id) VALUES ($1,'Migration Agent','Agent',$2) RETURNING id`, fixture.CompanyA, fixture.RuntimeA).
-		Scan(&agentID); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO conversations (company_id,kind,created_by_user_id,agent_id) VALUES ($1,'direct',$2,$3) RETURNING id`, fixture.CompanyA, fixture.UserA, agentID).
-		Scan(&conversationID); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO runs (company_id,agent_id,conversation_id,runtime_id,status) VALUES ($1,$2,$3,$4,'completed') RETURNING id`, fixture.CompanyA, agentID, conversationID, fixture.RuntimeA).
-		Scan(&fixture.RunA); err != nil {
-		t.Fatal(err)
-	}
-	return fixture
-}
-
-func TestStudioMigrationUpDownPreservesExistingConversations(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	// Exercise Studio alone; later migrations retain Company-wide chat state.
-	toVersionTwentyThree := func(runner *migrate.Migrate) error { return runner.Migrate(23) }
-	toVersionTwentyTwo := func(runner *migrate.Migrate) error { return runner.Migrate(22) }
-	if err := runMigration(ctx, pool, "migrate to version 22", toVersionTwentyTwo); err != nil {
-		t.Fatal(err)
-	}
-	// Seeded by hand in the version-22 shape: the shared fixture writes what
-	// the head schema holds, and this database is deliberately behind it.
-	var companyID, conversationID uuid.UUID
-	if err := pool.QueryRow(ctx, `
-		INSERT INTO companies (name, slug, task_prefix)
-		VALUES ('Studio', 'studio-migration', 'STU') RETURNING id`).Scan(&companyID); err != nil {
-		t.Fatalf("seed Studio migration Company: %v", err)
-	}
-	if err := pool.QueryRow(ctx, `
-		INSERT INTO conversations (company_id, kind, title)
-		VALUES ($1, 'task', 'Existing conversation') RETURNING id`, companyID).
-		Scan(&conversationID); err != nil {
-		t.Fatalf("seed Studio migration Conversation: %v", err)
-	}
-	for _, step := range []struct {
-		name       string
-		direction  func(*migrate.Migrate) error
-		wantStudio bool
-	}{
-		{"upgrade", toVersionTwentyThree, true},
-		{"rollback", toVersionTwentyTwo, false},
-		{"upgrade again", toVersionTwentyThree, true},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatalf("%s: %v", step.name, err)
-		}
-		var hasCanvas, hasProject, hasFinal, keptConversation bool
-		if err := pool.QueryRow(ctx, `SELECT
-			to_regclass('output_studio_canvases') IS NOT NULL,
-			to_regclass('conversation_studio_projects') IS NOT NULL,
-			(SELECT pg_get_constraintdef(oid) LIKE '%final%' FROM pg_constraint
-			 WHERE conrelid = 'output_items'::regclass AND conname = 'output_items_role_check'),
-			EXISTS(SELECT 1 FROM conversations WHERE id=$1)`, conversationID).
-			Scan(&hasCanvas, &hasProject, &hasFinal, &keptConversation); err != nil {
-			t.Fatal(err)
-		}
-		if hasCanvas != step.wantStudio || hasProject != step.wantStudio || hasFinal != step.wantStudio ||
-			!keptConversation {
-			t.Fatalf(
-				"%s: canvas=%v project=%v final=%v conversation=%v, want Studio=%v with existing conversation retained",
-				step.name,
-				hasCanvas,
-				hasProject,
-				hasFinal,
-				keptConversation,
-				step.wantStudio,
-			)
-		}
-		if step.wantStudio {
-			dbtest.MustExec(
-				t,
-				ctx,
-				pool,
-				`INSERT INTO conversation_studio_projects(company_id,conversation_id,title)
-				VALUES($1,$2,'Campaign')`,
-				companyID,
-				conversationID,
-			)
-		}
-	}
-}
-
-func TestOutputAccessMigrationUpgradeAndRollback(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	toVersionThirtyFive := func(runner *migrate.Migrate) error { return runner.Migrate(35) }
-	if err := runMigration(ctx, pool, "migrate to version 35", toVersionThirtyFive); err != nil {
-		t.Fatal(err)
-	}
-	fixture := dbtest.SeedFixture(t, ctx, pool)
-	var outputID uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO outputs
-		(company_id, run_id, title, summary, presentation_fingerprint)
-		VALUES ($1, $2, 'Keep artifact', 'Keep files and access', repeat('a', 64)) RETURNING id`,
-		fixture.CompanyA, fixture.RunA).Scan(&outputID); err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role, status)
-		VALUES ($1, $2, 'member', 'active')`, fixture.CompanyA, fixture.UserB)
-	for _, step := range []struct {
-		name       string
-		direction  func(*migrate.Migrate) error
-		wantAccess bool
-	}{
-		{name: "upgrade", direction: func(runner *migrate.Migrate) error { return runner.Migrate(36) }, wantAccess: true},
-		{name: "rollback", direction: toVersionThirtyFive},
-		{name: "upgrade again", direction: func(runner *migrate.Migrate) error { return runner.Migrate(36) }, wantAccess: true},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatal(err)
-		}
-		assertTableDoesNotExist(t, ctx, pool, "output_comments")
-		assertTableDoesNotExist(t, ctx, pool, "output_access_history")
-		var title string
-		if err := pool.QueryRow(ctx, `SELECT title FROM outputs WHERE id=$1`, outputID).
-			Scan(&title); err != nil || title != "Keep artifact" {
-			t.Fatalf("%s artifact title = %q, error %v", step.name, title, err)
-		}
-		if !step.wantAccess {
-			assertTableDoesNotExist(t, ctx, pool, "output_grants")
-			assertTableDoesNotExist(t, ctx, pool, "output_conversation_grants")
-			assertTableDoesNotExist(t, ctx, pool, "discussion_artifacts")
-			continue
-		}
-		var ownerID uuid.UUID
-		var revision int64
-		var ownerLevel int
-		if err := pool.QueryRow(ctx, `SELECT outputs.owner_user_id, outputs.access_version, access.access_level
-			FROM outputs JOIN output_access AS access ON access.output_id=outputs.id
-			WHERE outputs.id=$1 AND access.user_id=$2`, outputID, fixture.UserA).
-			Scan(&ownerID, &revision, &ownerLevel); err != nil || ownerID != fixture.UserA || revision != 1 || ownerLevel != 3 {
-			t.Fatalf(
-				"%s owner = %v, revision = %d, level = %d, error %v",
-				step.name,
-				ownerID,
-				revision,
-				ownerLevel,
-				err,
-			)
-		}
-		for _, test := range []struct {
-			permission string
-			level      int
-		}{
-			{permission: "view", level: 1},
-			{permission: "manage", level: 3},
-		} {
-			dbtest.MustExec(t, ctx, pool, `INSERT INTO output_grants
-				(company_id, output_id, user_id, permission, granted_by_user_id)
-				VALUES ($1, $2, $3, $4, $5)
-				ON CONFLICT (company_id, output_id, user_id) DO UPDATE SET permission=EXCLUDED.permission`,
-				fixture.CompanyA, outputID, fixture.UserB, test.permission, fixture.UserA)
-			var level int
-			if err := pool.QueryRow(ctx, `SELECT access_level FROM output_access WHERE output_id=$1 AND user_id=$2`,
-				outputID, fixture.UserB).
-				Scan(&level); err != nil ||
-				level != test.level {
-				t.Fatalf("%s %s level = %d, error %v", step.name, test.permission, level, err)
-			}
-		}
-		if _, err := pool.Exec(
-			ctx,
-			`UPDATE output_grants SET permission='comment' WHERE output_id=$1`,
-			outputID,
-		); err == nil {
-			t.Fatal("unsupported permission accepted")
-		}
-	}
-}
-
-func TestHumanProjectPagePreventsDowngrade(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
-	fixture := dbtest.SeedFixture(t, ctx, pool)
-	var page uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages(company_id,project_id,slug,title,created_by_user_id)
-	 VALUES($1,$2,'human-project-page','Human working Page',$3) RETURNING id`, fixture.CompanyA, fixture.ProjectA, fixture.UserA).Scan(&page); err != nil {
-		t.Fatal(err)
-	}
-	// A human Page has no Overview designation, Run attribution or contribution.
-	err := runMigration(
-		ctx,
-		pool,
-		"downgrade project Pages",
-		func(runner *migrate.Migrate) error { return runner.Migrate(88) },
-	)
-	if err == nil || !strings.Contains(err.Error(), "restore a verified backup") {
-		t.Fatalf("downgrade = %v, want refusal preserving Project Page ownership", err)
-	}
-	var retained bool
-	if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM wiki_pages WHERE id=$1 AND project_id=$2)
-	 AND NOT EXISTS(SELECT 1 FROM company_wiki_pages WHERE id=$1)`, page, fixture.ProjectA).Scan(&retained); err != nil || !retained {
-		t.Fatalf("Project Page retains scope outside Company Wiki = %v, %v", retained, err)
-	}
-}
-
-func TestArtifactPolicyRemovalPreservesPublicLinks(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(
-		ctx,
-		pool,
-		"previous schema",
-		func(m *migrate.Migrate) error { return m.Migrate(91) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var outputID, token uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO outputs(company_id,run_id,title,summary,presentation_fingerprint,owner_user_id,visibility,public_token)
- VALUES($1,$2,'Shared report','Summary','public-policy-removal',$3,'public',gen_random_uuid()) RETURNING id,public_token`,
-		f.CompanyA, f.RunA, f.UserA).
-		Scan(&outputID, &token); err != nil {
-		t.Fatal(err)
-	}
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{
-		{"upgrade", 92},
-		{"rollback", 91},
-		{"reapply", 92},
-	} {
-		if err := runMigration(
-			ctx,
-			pool,
-			step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) },
-		); err != nil {
-			t.Fatal(err)
-		}
-		var gotToken uuid.UUID
-		var visibility string
-		if err := pool.QueryRow(ctx, `SELECT public_token,visibility FROM outputs WHERE id=$1`, outputID).
-			Scan(&gotToken, &visibility); err != nil || gotToken != token || visibility != "public" {
-			t.Fatalf(
-				"%s public link = %s, %q, %v; want %s, public",
-				step.name,
-				gotToken,
-				visibility,
-				err,
-				token,
-			)
-		}
-		if step.version == 92 {
-			assertTableOmitsColumns(
-				t,
-				ctx,
-				pool,
-				"companies",
-				[]string{"artifact_public_enabled", "artifact_policy_version"},
-			)
-		}
-	}
-}
-
-func TestPageMigrationPreservesPublishedWikiAcrossUpgradeAndRollback(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(
-		ctx,
-		pool,
-		"main schema",
-		func(m *migrate.Migrate) error { return m.Migrate(88) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var pageID, revisionID uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages(company_id,slug,title,created_by_user_id)
- VALUES($1,'existing-knowledge','Existing knowledge',$2) RETURNING id`, f.CompanyA, f.UserA).Scan(&pageID); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,author_user_id)
- VALUES($1,$2,3,'Existing knowledge','Keep this published content',$3) RETURNING id`, f.CompanyA, pageID, f.UserA).Scan(&revisionID); err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE wiki_pages SET current_revision_id=$2 WHERE id=$1`, pageID, revisionID)
-	for _, step := range []struct {
-		name      string
-		direction func(*migrate.Migrate) error
-		version   int
-	}{
-		{"upgrade", func(m *migrate.Migrate) error { return m.Migrate(89) }, 89},
-		{"rollback", func(m *migrate.Migrate) error { return m.Migrate(88) }, 88},
-		{"reapply", func(m *migrate.Migrate) error { return m.Migrate(89) }, 89},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatal(err)
-		}
-		var version int
-		var dirty bool
-		if err := pool.QueryRow(ctx, `SELECT version,dirty FROM schema_migrations`).
-			Scan(&version, &dirty); err != nil || version != step.version ||
-			dirty {
-			t.Fatalf(
-				"%s schema = %d, dirty %v, error %v; want %d clean",
-				step.name,
-				version,
-				dirty,
-				err,
-				step.version,
-			)
-		}
-		var preserved bool
-		if err := pool.QueryRow(ctx, `SELECT p.title='Existing knowledge' AND r.body='Keep this published content' AND r.number=3
-  FROM wiki_pages p JOIN wiki_revisions r ON r.id=p.current_revision_id WHERE p.id=$1 AND r.id=$2`, pageID, revisionID).
-			Scan(&preserved); err != nil ||
-			!preserved {
-			t.Fatalf("%s published Wiki preserved = %v, error %v", step.name, preserved, err)
-		}
-		if step.version == 88 {
-			assertTableDoesNotExist(t, ctx, pool, "review_threads")
-			assertTableDoesNotExist(t, ctx, pool, "project_presentations")
-			continue
-		}
-		if err := pool.QueryRow(ctx, `SELECT p.next_revision_number=4 AND r.published_at=r.created_at AND r.block_content='{}'::jsonb
-  FROM company_wiki_pages p JOIN wiki_revisions r ON r.id=p.current_revision_id WHERE p.id=$1`, pageID).
-			Scan(&preserved); err != nil ||
-			!preserved {
-			t.Fatalf(
-				"%s publication and revision counter preserved = %v, error %v",
-				step.name,
-				preserved,
-				err,
-			)
-		}
-		// Each part of the feature must arrive in this one upgrade.
-		if _, err := pool.Exec(ctx, `SELECT page_id FROM review_threads LIMIT 0;
-  SELECT title,summary,collection_id,restored_revision_id FROM wiki_canvas_drafts LIMIT 0;
-  SELECT overview_page_id FROM project_canvases LIMIT 0`); err != nil {
-			t.Fatalf("%s complete Page schema: %v", step.name, err)
-		}
-	}
-}
-
-func TestHuddleDefaultBudgetMigrationKeepsConfiguredBudgets(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(
-		ctx,
-		pool,
-		"main schema",
-		func(m *migrate.Migrate) error { return m.Migrate(89) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	// An owner's explicit zero is a choice, not a missing configuration.
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`INSERT INTO huddle_ai_budgets(company_id,monthly_limit_usd_ticks) VALUES($1,0)`,
-		f.CompanyB,
-	)
-	budget := func(step string, company uuid.UUID) (int64, bool) {
-		t.Helper()
-		var ticks int64
-		err := pool.QueryRow(ctx, `SELECT monthly_limit_usd_ticks FROM huddle_ai_budgets WHERE company_id=$1`, company).
-			Scan(&ticks)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, false
-		}
-		if err != nil {
-			t.Fatalf("%s budget: %v", step, err)
-		}
-		return ticks, true
-	}
-	for _, step := range []struct {
-		name      string
-		direction func(*migrate.Migrate) error
-		seeded    bool
-	}{
-		{"upgrade", func(m *migrate.Migrate) error { return m.Migrate(90) }, true},
-		{"rollback", func(m *migrate.Migrate) error { return m.Migrate(89) }, false},
-		{"reapply", func(m *migrate.Migrate) error { return m.Migrate(90) }, true},
-	} {
-		if err := runMigration(ctx, pool, step.name, step.direction); err != nil {
-			t.Fatal(err)
-		}
-		if ticks, ok := budget(step.name, f.CompanyA); ok != step.seeded || ok && ticks != 20_000_000_000 {
-			t.Fatalf(
-				"%s default budget = %d, present %v; want present %v at $2",
-				step.name,
-				ticks,
-				ok,
-				step.seeded,
-			)
-		}
-		if ticks, ok := budget(step.name, f.CompanyB); !ok || ticks != 0 {
-			t.Fatalf("%s configured zero budget = %d, present %v; want kept", step.name, ticks, ok)
-		}
-	}
-}
-
-// 000103 makes the person part of a runtime's identity, so one machine
-// can hold several people's rows. Rolling back must restore the old
-// (company, daemon, provider) key without deleting anyone's row, since a
-// delete would cascade into its Run history: the most recently seen row keeps
-// the daemon id and every other one moves to a daemon id of its own.
-func TestRuntimesPerPersonMigrationRollsBackWithoutLosingRows(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(ctx, pool, "main schema",
-		func(m *migrate.Migrate) error { return m.Migrate(103) }); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	mia := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, 'mia@example.com', 'Mia')`, mia)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, f.CompanyA, mia)
-	miasCodex := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `
-		INSERT INTO runtimes (id, company_id, daemon_id, name, provider, status, owner_user_id, last_seen_at, handed_over_at)
-		VALUES ($1, $2, $3, 'codex', 'codex', 'offline', $4, now() - interval '1 hour', now())`,
-		miasCodex, f.CompanyA, f.DaemonA, mia)
-
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{{"rollback", 102}, {"reapply", 103}} {
-		if err := runMigration(ctx, pool, step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) }); err != nil {
-			t.Fatalf("%s: %v", step.name, err)
-		}
-		daemons := map[uuid.UUID]string{}
-		rows, err := pool.Query(ctx, `SELECT id, daemon_id FROM runtimes WHERE id = ANY($1)`,
-			[]uuid.UUID{f.RuntimeA, miasCodex})
-		if err != nil {
-			t.Fatalf("%s: read runtimes: %v", step.name, err)
-		}
-		for rows.Next() {
-			var id uuid.UUID
-			var daemonID string
-			if err := rows.Scan(&id, &daemonID); err != nil {
-				t.Fatalf("%s: scan runtime: %v", step.name, err)
-			}
-			daemons[id] = daemonID
-		}
-		rows.Close()
-		if daemons[f.RuntimeA] != f.DaemonA || daemons[miasCodex] != f.DaemonA+":"+miasCodex.String() {
-			t.Fatalf("%s: daemon ids = %v; want the latest row on %s and the other moved aside",
-				step.name, daemons, f.DaemonA)
-		}
-		if step.version == 102 {
-			assertTableOmitsColumns(t, ctx, pool, "runtimes", []string{"handed_over_at"})
-			continue
-		}
-		// Reapplied, the identity takes a second person on the same machine.
-		dbtest.MustExec(t, ctx, pool, `
-			INSERT INTO runtimes (company_id, daemon_id, name, provider, status, owner_user_id)
-			VALUES ($1, $2, 'codex', 'codex', 'offline', $3)`, f.CompanyA, f.DaemonA, mia)
-	}
-}
-
-func TestArtifactSuggestionsMigrationBackfillsExistingOutputs(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(ctx, pool, "previous schema",
-		func(m *migrate.Migrate) error { return m.Migrate(103) }); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	// The delivery predates a handoff; its frozen generation must not follow
-	// the current Task when the new columns are populated.
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`UPDATE runs SET task_execution_generation=3,execution_authorized_by_user_id=$2 WHERE id=$1`,
-		f.RunA,
-		f.UserA,
-	)
-	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET execution_generation=4 WHERE id=$1`, f.TaskA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE projects SET visibility='restricted' WHERE id=$1`, f.ProjectA)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role)
-		VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
-	var directRun uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO runs
-		(company_id,agent_id,conversation_id,runtime_id,status,run_type)
-		VALUES($1,$2,$3,$4,'completed','direct_chat') RETURNING id`,
-		f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA).Scan(&directRun); err != nil {
-		t.Fatal(err)
-	}
-	for _, run := range []uuid.UUID{f.RunA, f.RunB, directRun} {
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO outputs
-			(company_id,run_id,title,summary,presentation_fingerprint,owner_user_id,visibility)
-			SELECT company_id,id,'Retained delivery','Original summary',repeat('a',64),
-			CASE WHEN company_id=$2 THEN $3::uuid ELSE $4::uuid END,'company'
-			FROM runs WHERE id=$1`, run, f.CompanyA, f.UserA, f.UserB)
-	}
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{{"upgrade", 104}, {"rollback", 103}, {"reapply", 104}} {
-		if err := runMigration(ctx, pool, step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) }); err != nil {
-			t.Fatalf("%s: %v", step.name, err)
-		}
-		var count int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM outputs
-			WHERE title='Retained delivery' AND summary='Original summary'`).Scan(&count); err != nil {
-			t.Fatal(err)
-		}
-		if count != 3 {
-			t.Fatalf("%s retained outputs = %d, want 3", step.name, count)
-		}
-		if step.version == 103 {
-			continue
-		}
-		var correct bool
-		if err := pool.QueryRow(ctx, `SELECT bool_and(
-			o.conversation_id IS NOT DISTINCT FROM r.conversation_id
-			AND o.task_id IS NOT DISTINCT FROM r.task_id
-			AND o.project_id IS NOT DISTINCT FROM c.project_id
-			AND o.task_execution_generation IS NOT DISTINCT FROM r.task_execution_generation
-			AND o.actor_type='agent' AND o.actor_agent_id IS NOT DISTINCT FROM r.agent_id
-			AND o.source_run_id IS NOT DISTINCT FROM r.id
-			AND o.on_behalf_of_user_id IS NOT DISTINCT FROM r.execution_authorized_by_user_id
-			AND o.source_run_completed=(r.status='completed')
-			AND o.actor_user_id IS NULL)
-			FROM outputs o JOIN runs r ON r.company_id=o.company_id AND r.id=o.run_id
-			JOIN conversations c ON c.company_id=r.company_id AND c.id=r.conversation_id`).Scan(&correct); err != nil {
-			t.Fatal(err)
-		}
-		if !correct {
-			t.Fatalf("%s frozen scope and attribution match source = false, want true", step.name)
-		}
-		var visible bool
-		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM output_access a
-			JOIN outputs o ON o.company_id=a.company_id AND o.id=a.output_id
-			WHERE o.run_id=$1 AND a.user_id=$2)`, f.RunA, f.UserB).Scan(&visible); err != nil {
-			t.Fatal(err)
-		}
-		if visible {
-			t.Fatalf("%s restricted Project output visible to non-reader = true, want false", step.name)
-		}
-	}
-}
-
-func TestDocumentAgentsMigrationPreservesDocumentHistory(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(ctx, pool, "previous schema",
-		func(m *migrate.Migrate) error { return m.Migrate(105) }); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var pageID uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages
-		(company_id,slug,title,created_by_user_id) VALUES($1,'migration-history','Existing document',$2)
-		RETURNING id`, f.CompanyA, f.UserA).Scan(&pageID); err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO document_changes
-		(company_id,page_id,sequence,actor_type,change_type,delta,checkpoint,label)
-		VALUES($1,$2,1,'system','initial',''::bytea,'existing snapshot'::bytea,'Before upgrade')`, f.CompanyA, pageID)
-	var originalReaders string
-	if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).
-		Scan(&originalReaders); err != nil {
-		t.Fatal(err)
-	}
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{{"upgrade", 106}, {"rollback", 105}, {"reapply", 106}} {
-		if err := runMigration(ctx, pool, step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) }); err != nil {
-			t.Fatalf("%s: %v", step.name, err)
-		}
-		var checkpoint, label string
-		if err := pool.QueryRow(ctx, `SELECT convert_from(checkpoint,'UTF8'),label
-			FROM document_changes WHERE company_id=$1 AND page_id=$2 AND sequence=1`,
-			f.CompanyA, pageID).Scan(&checkpoint, &label); err != nil {
-			t.Fatal(err)
-		}
-		if checkpoint != "existing snapshot" || label != "Before upgrade" {
-			t.Fatalf("%s history = %q, %q; want original snapshot and label", step.name, checkpoint, label)
-		}
-		if step.version == 105 {
-			assertTableDoesNotExist(t, ctx, pool, "document_writing_requests")
-			assertTableOmitsColumns(t, ctx, pool, "conversations", []string{"document_thread_id"})
-			var readers string
-			if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('conversation_readers'::regclass)`).
-				Scan(&readers); err != nil {
-				t.Fatal(err)
-			}
-			if readers != originalReaders {
-				t.Fatal("rollback changed the original conversation access view")
-			}
-			continue
-		}
-		var timestampPresent bool
-		if err := pool.QueryRow(ctx, `INSERT INTO document_writing_requests
-			(company_id,run_id,page_id,request_key,target,before_content,sequence)
-			VALUES($1,$2,$3,gen_random_uuid(),'{}','{}',0) RETURNING created_at IS NOT NULL`,
-			f.CompanyA, f.RunA, pageID).Scan(&timestampPresent); err != nil {
-			t.Fatalf("%s writing request: %v", step.name, err)
-		}
-		if !timestampPresent {
-			t.Fatalf("%s writing request timestamp = NULL, want database default", step.name)
-		}
-	}
-}
-
-func TestWhiteboardMigrationsPreserveExistingContent(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(
-		ctx,
-		pool,
-		"main schema",
-		func(m *migrate.Migrate) error { return m.Migrate(106) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var beforeAccess string
-	if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('attachment_access'::regclass)`).
-		Scan(&beforeAccess); err != nil {
-		t.Fatal(err)
-	}
-	var pageID uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages(company_id,slug,title,created_by_user_id)
- VALUES($1,'existing-whiteboard-context','Existing knowledge',$2) RETURNING id`, f.CompanyA, f.UserA).Scan(&pageID); err != nil {
-		t.Fatal(err)
-	}
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{
-		{"upgrade", 107},
-		{"rollback", 106},
-		{"reapply", 107},
-	} {
-		if err := runMigration(
-			ctx,
-			pool,
-			step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) },
-		); err != nil {
-			t.Fatal(err)
-		}
-		var version uint
-		var dirty bool
-		if err := pool.QueryRow(ctx, `SELECT version,dirty FROM schema_migrations`).
-			Scan(&version, &dirty); err != nil || version != step.version ||
-			dirty {
-			t.Fatalf(
-				"%s schema = %d, dirty %v, error %v; want %d clean",
-				step.name,
-				version,
-				dirty,
-				err,
-				step.version,
-			)
-		}
-		var title string
-		if err := pool.QueryRow(ctx, `SELECT title FROM wiki_pages WHERE id=$1 AND company_id=$2`, pageID, f.CompanyA).
-			Scan(&title); err != nil ||
-			title != "Existing knowledge" {
-			t.Fatalf("%s existing Wiki title = %q, error %v", step.name, title, err)
-		}
-		if step.version == 106 {
-			for _, table := range []string{"boards", "board_items", "board_files", "board_agent_access"} {
-				assertTableDoesNotExist(t, ctx, pool, table)
-			}
-			var afterAccess string
-			if err := pool.QueryRow(ctx, `SELECT pg_get_viewdef('attachment_access'::regclass)`).
-				Scan(&afterAccess); err != nil ||
-				afterAccess != beforeAccess {
-				t.Fatalf(
-					"rollback attachment access matches original = %v, error %v",
-					afterAccess == beforeAccess,
-					err,
-				)
-			}
-			continue
-		}
-		// The complete feature must arrive in one migration, including
-		// lifecycle fencing and file references.
-		if _, err := pool.Exec(
-			ctx,
-			`SELECT lifecycle_revision,attachment_id,created_by_agent_id,created_by_run_id,updated_by_agent_id,updated_by_run_id FROM board_items LIMIT 0;
- SELECT attachment_id,preview_attachment_id,width,height FROM board_files LIMIT 0;
- SELECT state,plain_text,text_revision FROM board_notes LIMIT 0`,
-		); err != nil {
-			t.Fatalf("%s complete Whiteboard schema: %v", step.name, err)
-		}
-		var boardID uuid.UUID
-		if err := pool.QueryRow(ctx, `INSERT INTO boards(company_id,title,created_by)
- VALUES($1,'Migration board',$2) RETURNING id`, f.CompanyA, f.UserA).Scan(&boardID); err != nil {
-			t.Fatal(err)
-		}
-		var lifecycle int64
-		if err := pool.QueryRow(ctx, `INSERT INTO board_items(company_id,board_id,type,x,y,width,height,created_by,updated_by)
- VALUES($1,$2,'sticky',0,0,200,100,$3,$3) RETURNING lifecycle_revision`, f.CompanyA, boardID, f.UserA).
-			Scan(&lifecycle); err != nil ||
-			lifecycle != 1 {
-			t.Fatalf("%s item lifecycle = %d, error %v; want 1", step.name, lifecycle, err)
-		}
-		assertStatementRejected(
-			t,
-			ctx,
-			pool,
-			"23503",
-			`INSERT INTO board_items(company_id,board_id,type,x,y,width,height,properties,created_by,updated_by)
- VALUES($1,$2,'image',0,0,100,100,jsonb_build_object('attachmentId',gen_random_uuid()),$3,$3)`,
-			f.CompanyA,
-			boardID,
-			f.UserA,
-		)
-		if _, err := pool.Exec(
-			ctx,
-			`INSERT INTO board_agent_access(company_id,board_id,agent_id,access) VALUES($1,$2,$3,'edit')`,
-			f.CompanyA,
-			boardID,
-			f.AgentA,
-		); err != nil {
-			t.Fatal(err)
-		}
-		key := uuid.New()
-		if _, err := pool.Exec(
-			ctx,
-			`INSERT INTO board_operations(company_id,board_id,actor_user_id,actor_run_id,request_key,request_hash,seq) VALUES($1,$2,$3,'00000000-0000-0000-0000-000000000000',$4,$5,0)`,
-			f.CompanyA,
-			boardID,
-			f.UserA,
-			key,
-			make([]byte, 32),
-		); err != nil {
-			t.Fatal(err)
-		}
-		assertStatementRejected(
-			t,
-			ctx,
-			pool,
-			"23505",
-			`INSERT INTO board_operations(company_id,board_id,actor_user_id,actor_run_id,request_key,request_hash,seq) VALUES($1,$2,$3,'00000000-0000-0000-0000-000000000000',$4,$5,0)`,
-			f.CompanyA,
-			boardID,
-			f.UserA,
-			key,
-			make([]byte, 32),
-		)
-		if _, err := pool.Exec(
-			ctx,
-			`INSERT INTO board_operations(company_id,board_id,actor_user_id,actor_run_id,request_key,request_hash,seq) VALUES($1,$2,$3,gen_random_uuid(),$4,$5,0)`,
-			f.CompanyA,
-			boardID,
-			f.UserA,
-			key,
-			make([]byte, 32),
-		); err != nil {
-			t.Fatal(err)
-		}
-
-	}
-}
-
-// 000113 makes a Whiteboard an Artifact: Boards made before have no Output
-// and go, a Board is the scene of a whiteboard Output under its ID, and the
-// Board's own access tables and chat column leave. Rollback removes the
-// Whiteboard Artifacts and brings 000112's schema back empty.
-func TestWhiteboardArtifactMigration(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(
-		ctx,
-		pool,
-		"000108",
-		func(m *migrate.Migrate) error { return m.Migrate(108) },
-	); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	// An old Board with its chat: deleting the chat leaves deferred
-	// discussion checks that must run before the chat table is altered.
-	dbtest.MustExec(t, ctx, pool, `WITH board AS (
-		INSERT INTO boards(company_id,title,created_by) VALUES($1,'Old board',$2) RETURNING id
-	), chat AS (
-		INSERT INTO conversations(company_id,kind,created_by_user_id,title,request_key,board_id)
-		SELECT $1,'channel',$2,'whiteboard',gen_random_uuid(),id FROM board RETURNING id
-	), detail AS (
-		INSERT INTO conversation_channels(company_id,conversation_id,create_fingerprint)
-		SELECT $1,id,decode(repeat('00',32),'hex') FROM chat RETURNING conversation_id
-	)
-	INSERT INTO conversation_members(company_id,conversation_id,user_id,source_type)
-	SELECT $1,conversation_id,$2,'channel' FROM detail`, f.CompanyA, f.UserA)
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{
-		{"upgrade", 113},
-		{"rollback", 112},
-		{"reapply", 113},
-	} {
-		if err := runMigration(
-			ctx,
-			pool,
-			step.name,
-			func(m *migrate.Migrate) error { return m.Migrate(step.version) },
-		); err != nil {
-			t.Fatal(err)
-		}
-		if step.version == 112 {
-			var whiteboards int
-			if err := pool.QueryRow(ctx, `SELECT count(*) FROM outputs WHERE type='whiteboard'`).
-				Scan(&whiteboards); err != nil {
-				t.Fatalf("rollback type check: %v", err)
-			}
-			if _, err := pool.Exec(ctx, `SELECT board_id FROM conversations LIMIT 0;
- SELECT title,visibility,public_token,created_by,archived_at FROM boards LIMIT 0;
- SELECT access FROM board_member_access LIMIT 0`); err != nil || whiteboards != 0 {
-				t.Fatalf("rollback schema: %v, %d Whiteboard Artifacts left", err, whiteboards)
-			}
-			continue
-		}
-		var boards int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM boards`).Scan(&boards); err != nil || boards != 0 {
-			t.Fatalf("%s Boards = %d, %v; want the ones without an Output gone", step.name, boards, err)
-		}
-		for _, table := range []string{"board_member_access", "board_agent_access", "board_favorites", "board_create_receipts"} {
-			assertTableDoesNotExist(t, ctx, pool, table)
-		}
-		var output uuid.UUID
-		if err := pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id)
- VALUES($1,'Plan','','','whiteboard',$2,'user',$2) RETURNING id`, f.CompanyA, f.UserA).
-			Scan(&output); err != nil {
-			t.Fatalf("%s whiteboard Output: %v", step.name, err)
-		}
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO boards(company_id,id) VALUES($1,$2)`, f.CompanyA, output)
-		assertStatementRejected(
-			t,
-			ctx,
-			pool,
-			"23503",
-			`INSERT INTO boards(company_id,id) VALUES($1,gen_random_uuid())`,
-			f.CompanyA,
-		)
-		var owner uuid.UUID
-		if err := pool.QueryRow(ctx, `SELECT user_id FROM output_access WHERE output_id=$1`, output).
-			Scan(&owner); err != nil ||
-			owner != f.UserA {
-			t.Fatalf("%s Whiteboard reader = %v, %v; want its owner", step.name, owner, err)
-		}
-		// The Whiteboard keeps a scene, so rolling back has deferred checks
-		// of its own to run before it alters the Board tables.
-		dbtest.MustExec(t, ctx, pool, `WITH parent AS (
-			INSERT INTO board_items(company_id,board_id,type,x,y,width,height,created_by,updated_by)
-			VALUES($1,$2,'frame',0,0,400,300,$3,$3) RETURNING id
-		)
-		INSERT INTO board_items(company_id,board_id,type,x,y,width,height,parent_frame_id,created_by,updated_by)
-		SELECT $1,$2,'sticky',10,10,200,100,id,$3,$3 FROM parent`, f.CompanyA, output, f.UserA)
-	}
-}
-
-// Retiring a feature must release its human-input waits without deleting the
-// decisions or provider records, or resuming an obsolete agent workflow.
-func TestCommerceRetirementPreservesHistoryAndStopsPendingWork(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := runMigration(ctx, pool, "previous schema", func(m *migrate.Migrate) error {
-		return m.Migrate(115)
-	}); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	var siteID uuid.UUID
-	if err := pool.QueryRow(ctx, `
-		WITH account AS (
-			INSERT INTO commerce_accounts(company_id, environment, created_by_user_id)
-			VALUES ($1, 'sandbox', $2) RETURNING id
-		)
-		INSERT INTO commerce_sites(company_id, commerce_account_id, environment,
-			site_alias, origin, verification_token_sha256, portal_return_path, created_by_user_id)
-		SELECT $1, id, 'sandbox', 'retired-site', 'https://example.test',
-			decode(repeat('ab', 32), 'hex'), '/account', $2 FROM account RETURNING id`,
-		f.CompanyA, f.UserA).Scan(&siteID); err != nil {
-		t.Fatal(err)
-	}
-	tests := []struct {
-		name, kind, status, continuation string
-		wantStatus, wantContinuation     string
-		wantRevision                     int64
-		id                               uuid.UUID
-	}{
-		{
-			name: "pending publication", kind: "commerce_manifest_publish", status: "pending",
-			wantStatus: "cancelled", wantContinuation: "abandoned", wantRevision: 2,
-		},
-		{
-			name:             "queued continuation",
-			kind:             "commerce_manifest_publish",
-			status:           "approved",
-			continuation:     "pending",
-			wantStatus:       "approved",
-			wantContinuation: "abandoned",
-			wantRevision:     2,
-		},
-		{
-			name:             "completed history",
-			kind:             "commerce_manifest_publish",
-			status:           "approved",
-			continuation:     "delivered",
-			wantStatus:       "approved",
-			wantContinuation: "delivered",
-			wantRevision:     1,
-		},
-		{
-			name: "current plan", kind: "company_plan_apply", status: "pending",
-			wantStatus: "pending", wantRevision: 1,
-		},
-	}
-	for i := range tests {
-		test := &tests[i]
-		var manifestID uuid.NullUUID
-		if test.kind == "commerce_manifest_publish" {
-			manifestID.Valid = true
-			if err := pool.QueryRow(ctx, `
-				INSERT INTO commerce_manifests(company_id, site_id, task_id, run_id,
-					request_key, schema_version, canonical_json, digest)
-				VALUES ($1, $2, $3, $4, gen_random_uuid(), 2, '{}',
-					decode(md5($5) || md5($5), 'hex')) RETURNING id`,
-				f.CompanyA, siteID, f.TaskA, f.RunA, test.name).Scan(&manifestID.UUID); err != nil {
-				t.Fatal(err)
-			}
-		}
-		if err := pool.QueryRow(ctx, `
-			INSERT INTO approvals(company_id, type, status, commerce_manifest_id, rule_key,
-				title, preview_markdown, requested_by_agent_id, origin_run_id, request_key,
-				task_id, conversation_id, canonical_action, request_sha256, action_sha256,
-				expires_at, continuation_status, continuation_prompt, continuation_next_attempt_at,
-				continuation_run_id)
-			VALUES ($1, $2, $3, $4, $2, $5, '', $6, $7, gen_random_uuid(), $8, $9,
-				'{}', decode(repeat('ab', 32), 'hex'), decode(repeat('ab', 32), 'hex'),
-				now() - interval '1 hour', NULLIF($10, ''), 'Resume work', now(),
-				CASE WHEN $10 = 'delivered' THEN $7::uuid END) RETURNING id`,
-			f.CompanyA, test.kind, test.status, manifestID, test.name, f.AgentA,
-			f.RunA, f.TaskA, f.ConversationA, test.continuation).Scan(&test.id); err != nil {
-			t.Fatal(err)
-		}
-		dbtest.MustExec(t, ctx, pool, `
-			INSERT INTO inbox_items(company_id, recipient_user_id, kind, entity_type,
-				entity_id, title, body, dedupe_key)
-			VALUES ($1, $2, 'approval_request', 'approval', $3, $4, '', $3)`,
-			f.CompanyA, f.UserA, test.id.String(), test.name)
-	}
-	for _, step := range []struct {
-		name    string
-		version uint
-	}{
-		{"upgrade", 116}, {"rollback", 115}, {"reapply", 116},
-	} {
-		if err := runMigration(ctx, pool, step.name, func(m *migrate.Migrate) error {
-			return m.Migrate(step.version)
-		}); err != nil {
-			t.Fatal(err)
-		}
-		for _, test := range tests {
-			var status, continuation, reason string
-			var revision int64
-			if err := pool.QueryRow(ctx, `SELECT status, COALESCE(continuation_status, ''),
-				COALESCE(continuation_abandon_reason, ''), version FROM approvals WHERE id = $1`, test.id).
-				Scan(&status, &continuation, &reason, &revision); err != nil {
-				t.Fatal(err)
-			}
-			if status != test.wantStatus || continuation != test.wantContinuation ||
-				revision != test.wantRevision {
-				t.Errorf(
-					"%s / %s = (%s, %s, %d), want (%s, %s, %d)",
-					step.name,
-					test.name,
-					status,
-					continuation,
-					revision,
-					test.wantStatus,
-					test.wantContinuation,
-					test.wantRevision,
-				)
-			}
-			if test.wantContinuation == "abandoned" && reason != "feature_removed" {
-				t.Errorf(
-					"%s / %s abandon reason = %q, want feature_removed",
-					step.name,
-					test.name,
-					reason,
-				)
-			}
-			var read, archived bool
-			var inboxRevision int64
-			if err := pool.QueryRow(ctx, `
-				SELECT read_at IS NOT NULL, archived_at IS NOT NULL, version
-				FROM inbox_items WHERE company_id = $1 AND entity_id = $2`,
-				f.CompanyA, test.id.String()).Scan(&read, &archived, &inboxRevision); err != nil {
-				t.Fatal(err)
-			}
-			retired := test.kind == "commerce_manifest_publish"
-			_, projectionErr := generated.New(pool).GetApprovalProjectionForSystem(ctx,
-				generated.GetApprovalProjectionForSystemParams{
-					CompanyID: f.CompanyA, ApprovalID: test.id,
-				})
-			if retired && !errors.Is(projectionErr, pgx.ErrNoRows) {
-				t.Errorf(
-					"%s / %s projection error = %v, want pgx.ErrNoRows",
-					step.name,
-					test.name,
-					projectionErr,
-				)
-			} else if !retired && projectionErr != nil {
-				t.Errorf("%s / %s projection error = %v, want nil", step.name, test.name, projectionErr)
-			}
-			wantInboxRevision := int64(1)
-			if retired {
-				wantInboxRevision = 2
-			}
-			if read != retired || archived != retired || inboxRevision != wantInboxRevision {
-				t.Errorf("%s / %s Inbox = (%t, %t, %d), want (%t, %t, %d)",
-					step.name, test.name, read, archived, inboxRevision,
-					retired, retired, wantInboxRevision)
-			}
-		}
-		var manifests int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM commerce_manifests WHERE site_id = $1`, siteID).
-			Scan(&manifests); err != nil || manifests != 3 {
-			t.Fatalf("%s preserved manifests = %d, %v; want 3", step.name, manifests, err)
-		}
 	}
 }

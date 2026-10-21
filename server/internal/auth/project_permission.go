@@ -12,8 +12,8 @@ import (
 // granted to a person, one project_grants row each. The closed set below is
 // mirrored by the project_grants_permission_check and
 // project_group_grants_permission_check CHECKs and pinned by a test.
-// "Review task results" (project.results.review) was removed by migration
-// 000102: nothing checked it.
+// "Review task results" (project.results.review) was removed: nothing
+// checked it.
 type ProjectPermission string
 
 const (
@@ -45,7 +45,7 @@ var ErrProjectPermissionUnknown = errors.New("unknown project permission")
 
 // ProjectPermissionUnknownError names the first permission a request asked
 // for that is not in the catalog, such as project.results.review, which
-// migration 000102 removed and a desktop built before it still sends.
+// was removed and an older desktop still sends.
 type ProjectPermissionUnknownError struct {
 	Name string
 }

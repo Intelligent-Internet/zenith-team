@@ -7,6 +7,8 @@ package db
 import (
 	"context"
 	"errors"
+	"io/fs"
+	"slices"
 	"strings"
 	"testing"
 
@@ -16,11 +18,15 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
-// normalizedBaselineSQL reads the named baseline migration files and returns
-// their combined text lowercased with all whitespace runs collapsed to single
-// spaces, so shape assertions are insensitive to statement formatting.
+// normalizedBaselineSQL reads the named migration files, or every up file when
+// none is named, and returns their combined text lowercased with all
+// whitespace runs collapsed to single spaces, so shape assertions are
+// insensitive to statement formatting.
 func normalizedBaselineSQL(t *testing.T, filenames ...string) string {
 	t.Helper()
+	if len(filenames) == 0 {
+		filenames = upMigrationFiles(t)
+	}
 	var builder strings.Builder
 	for _, filename := range filenames {
 		content, err := migrations.Files.ReadFile(filename)
@@ -31,6 +37,32 @@ func normalizedBaselineSQL(t *testing.T, filenames ...string) string {
 		builder.WriteByte('\n')
 	}
 	return strings.Join(strings.Fields(strings.ToLower(builder.String())), " ")
+}
+
+// upMigrationFiles lists every embedded up migration in version order.
+func upMigrationFiles(t *testing.T) []string {
+	t.Helper()
+	names, err := fs.Glob(migrations.Files, "*.up.sql")
+	if err != nil {
+		t.Fatalf("list migrations: %v", err)
+	}
+	slices.Sort(names)
+	return names
+}
+
+// upMigrationsSource returns every embedded up migration's text, in order.
+func upMigrationsSource(t *testing.T) string {
+	t.Helper()
+	var builder strings.Builder
+	for _, name := range upMigrationFiles(t) {
+		content, err := migrations.Files.ReadFile(name)
+		if err != nil {
+			t.Fatalf("read migration %s: %v", name, err)
+		}
+		builder.Write(content)
+		builder.WriteByte('\n')
+	}
+	return builder.String()
 }
 
 func assertStatementRejected(

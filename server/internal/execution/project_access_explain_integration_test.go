@@ -146,7 +146,7 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 		WHERE project.company_id = $1`, fixture.CompanyA, fixture.UserA)
 	// Forty Groups of forty more colleagues, each Group holding grants on
 	// every Project, so a scan of company_group_members or
-	// project_group_grants would show too (000101).
+	// project_group_grants would show too.
 	dbtest.SeedGroupColleagues(t, ctx, pool, fixture.CompanyA, "group-colleague", 40,
 		"project.tasks.write", "project.files.manage")
 	// One Wiki page every seeded Run read, for the page's Agent reads list.

@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// 000098: a person's session starts the daemon's own session for the
+// A person's session starts the daemon's own session for the
 // same person. It authenticates as a daemon session, keeps that through every
 // refresh, stays signed in when the person's session ends, and cannot start
 // another. A person's refresh stays a person's.

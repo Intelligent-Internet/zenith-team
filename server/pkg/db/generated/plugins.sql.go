@@ -84,8 +84,7 @@ WITH statement_clock AS MATERIALIZED (
     -- last '@') keyed like names; a curated slug that is an opaque app id,
     -- which says nothing; the developers keyed like names; or the website
     -- hosts, unless a code hosting or package site's. The keys are computed
-    -- as plugin_runtime_observations stores name_key and website_host, and as
-    -- migration 000063's backfill computes them.
+    -- as plugin_runtime_observations stores name_key and website_host.
     SELECT DISTINCT copies.native_id
     FROM keyed_items AS copy_keys
     JOIN keyed_items AS curated_keys

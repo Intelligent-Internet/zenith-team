@@ -249,7 +249,8 @@ type GetConversationProjectIDRow struct {
 
 // The Project a chat belongs to: set on every Task chat, kept after its Task
 // is deleted, NULL on every other kind and on a Task chat whose Task was
-// deleted before migration 000067 (the legacy pocket, ADR 0017).
+// deleted before Task chats recorded their Project (the legacy pocket, ADR
+// 0017).
 func (q *Queries) GetConversationProjectID(ctx context.Context, arg GetConversationProjectIDParams) (GetConversationProjectIDRow, error) {
 	row := q.db.QueryRow(ctx, getConversationProjectID, arg.CompanyID, arg.ConversationID)
 	var i GetConversationProjectIDRow
@@ -375,8 +376,8 @@ type ListPeopleProjectAccessPathsRow struct {
 // The stored paths of the given people on the given Projects, for a Group
 // change preview: one row per Project, person, source and permission, from
 // project_access_paths through a correlated lookup that names the Project and
-// the person (each arm keeps its index; see the note above
-// conversation_readers in 000086). group_id is the zero uuid on an own row.
+// the person (each arm keeps its index). group_id is the zero uuid on an own
+// row.
 func (q *Queries) ListPeopleProjectAccessPaths(ctx context.Context, arg ListPeopleProjectAccessPathsParams) ([]ListPeopleProjectAccessPathsRow, error) {
 	rows, err := q.db.Query(ctx, listPeopleProjectAccessPaths, arg.ProjectIds, arg.UserIds, arg.CompanyID)
 	if err != nil {
@@ -574,9 +575,9 @@ type ListProjectAccessReportRow struct {
 // archived, the active members with an enabled account who cannot read it
 // but either are the assignee of one of its open Tasks or authorized a Run
 // in one of its Task chats that started or last changed since the given
-// time. They are the people a restriction, or the 000067 cutover, left
-// outside work they were doing: a Run queued long ago that a revoke or the
-// cutover cancelled counts from when it ended.
+// time. They are the people a restriction, or the switch to Project access,
+// left outside work they were doing: a Run queued long ago that a revoke or
+// that switch cancelled counts from when it ended.
 // One row per Project and person, with why they are listed. It names no
 // Task, chat or Run: the report is for projects.manage holders, who may
 // not read these Projects.
@@ -1232,8 +1233,8 @@ type ResolvePeopleProjectAccessRow struct {
 // person named, with the same facts. The people's fenced own rows and Group
 // rows on the Projects are read once, as sets; the project_access via is a
 // correlated lookup that names the Project and the person, so each arm keeps
-// its index (see the note above conversation_readers in 000086). A person who
-// is not an active member with an enabled account holds no rows and no via.
+// its index. A person who is not an active member with an enabled account
+// holds no rows and no via.
 func (q *Queries) ResolvePeopleProjectAccess(ctx context.Context, arg ResolvePeopleProjectAccessParams) ([]ResolvePeopleProjectAccessRow, error) {
 	rows, err := q.db.Query(ctx, resolvePeopleProjectAccess,
 		arg.ManagementRoles,
@@ -1339,7 +1340,7 @@ type ResolveProjectAccessRow struct {
 }
 
 // Project access (ADR 0017). The rule lives in the project_access view and
-// the project_permission_held function (migration 000067); these statements
+// the project_permission_held function; these statements
 // read and change the rows behind them. Go binds every permission set and
 // role list (auth.CompanyProjectDefaultPermissions,
 // auth.ManagementProjectPermissions, auth.RolesWith(projects.manage)), so no

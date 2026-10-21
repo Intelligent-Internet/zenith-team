@@ -130,7 +130,7 @@ func TestResolveMemberProjectAccessReadsAnotherPerson(t *testing.T) {
 }
 
 // A person's access is the union of their own grant and each of their
-// Groups (000101). project_permission_held,
+// Groups. project_permission_held,
 // project_access, output_access, project_access_paths and
 // ResolveMemberProjectAccess must agree on every source: an own grant only,
 // a Group grant only, both, a Group membership older than the person's
@@ -433,8 +433,8 @@ func TestGroupAccessAgreesAcrossTheRule(t *testing.T) {
 // attachment_access and conversation_readers are UNION ALL views; a list query
 // reaches them through a correlated LATERAL lookup that names the row and the
 // person, and that lookup uses each arm's indexes instead of building the
-// person's whole readable set (see the note in 000086). A project_access
-// lookup finds a person's Group path the same way (000101): one probe of
+// person's whole readable set. A project_access lookup finds a person's
+// Group path the same way: one probe of
 // company_group_members_user_idx, then the project_group_grants key, per row.
 func TestProjectViewCorrelatedLookupsStayIndexed(t *testing.T) {
 	t.Parallel()

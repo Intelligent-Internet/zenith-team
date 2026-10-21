@@ -35,9 +35,7 @@ Departments are removed, not renamed:
 - The CEO Agent is the root of the reporting tree (`reportsTo` is null).
   The Run context freezes that as `isRoot`; planning authority and the
   `list_agents` tool follow it.
-- Appearance (`avatarKey`, `accentColor`) lives on the Agent. Migration
-  000017 copies it from the department configuration before dropping the
-  department tables, and it is irreversible like the Goal removal.
+- Appearance (`avatarKey`, `accentColor`) lives on the Agent.
 - The four starter Agents are provisioned as ordinary reports of the root at
   root creation, from templates. Nothing keys on their names.
 - Company Plans name Agents by id (`agent_id`, `format_version` 4);

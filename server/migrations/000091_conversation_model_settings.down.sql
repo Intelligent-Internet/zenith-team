@@ -1,2 +1,0 @@
-DROP TABLE conversation_model_changes;
-DROP TABLE conversation_model_settings;

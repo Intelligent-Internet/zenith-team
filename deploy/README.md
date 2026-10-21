@@ -331,7 +331,7 @@ Instagram and LinkedIn have implemented adapters but need their app credentials,
 provider product/permission access, and explicit enablement. Apps awaiting public
 review can only authorize permitted test accounts; keep public rollout X-only.
 
-The server applies migration `000034_social` through normal startup. Deploy the
+The server creates the social tables through normal startup. Deploy the
 server and updated desktop/daemon/MCP bundle together, then:
 
 1. Verify `/api/v1/me/social/platforms` reports X available for a signed-in user.
@@ -472,10 +472,7 @@ an older deployment may have additional migrations from `main` to apply before
 the feature migration. Preserve previously applied files and existing data;
 ordinary feature upgrades do not recreate PostgreSQL.
 
-Social migration `000034` upgrades version 33 by creating four tables and their
-indexes only. Calendar migration `000035` then adds custom recurrence fields with
-defaults that preserve existing event schedules. Calendar reminders continue to
-run inside the API process; no additional environment variables or workers are
+Calendar reminders run inside the API process; no additional environment variables or workers are
 required. Deploy the matching server, web bundle and Desktop/daemon/MCP
 bundle. Readiness requires the binary's exact embedded schema version, so do
 not assume older replicas remain ready after a schema upgrade or promise a
@@ -551,25 +548,13 @@ Current retention behavior, restated for operators:
   retain 30 days and contain no prompt, message, path, email, or tool
   payload.
 
-## Scheduler upgrade and operation
+## Scheduler operation
 
 The scheduler runs inside each API process; self-hosting adds no worker binary.
 Keep at least one API process running with CPU available for background work;
 request-only execution or scaling all replicas to zero stops both the timer
 and the repair sweep. The bundled Compose stack runs continuously. User machines
 need only outbound HTTPS/WSS to the API, never direct PostgreSQL or Redis access.
-
-Migration **000109** is the single Scheduler upgrade after main's schema 000108.
-It retains old Task, Schedule, firing, Run and message rows, backfills missing
-retry links and adds Calendar Task schedules and cancelled dispositions/missed
-counts. Existing Tasks remain accepted and unscheduled; planning dates never
-start them automatically. Main's earlier migrations are unchanged. If the
-deployment is older than 000108, review its other pending main migrations too.
-The down migration refuses a lossy conversion rather than clearing history.
-Back up first, stop old API writers,
-apply the migration once, then start the new replicas: old lifecycle writers
-do not understand the new cancellation/retry contract. Do not combine this
-upgrade with a mixed-version lifecycle rollout.
 
 `APP_SCHEDULE_WORKERS` defaults to 8 (1–64 and at most one third of the DB pool).
 `APP_SCHEDULE_SWEEP_SECONDS` defaults to 30 (10–60). The beat ticks every 10 s;

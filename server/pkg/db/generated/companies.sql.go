@@ -303,9 +303,6 @@ WITH company_runs AS MATERIALIZED (
 ), deleted_run_usage AS (
     DELETE FROM run_usage
     WHERE run_id IN (SELECT id FROM company_runs)
-), deleted_run_identity_mappings AS (
-    DELETE FROM run_identity_mappings
-    WHERE run_id IN (SELECT id FROM company_runs)
 )
 DELETE FROM activity_events
 WHERE company_id = $1::uuid

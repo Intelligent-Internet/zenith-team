@@ -135,7 +135,7 @@ func TestNormalizeProjectGrant(t *testing.T) {
 	}
 	for _, unknown := range []string{
 		"projects.manage",
-		// Removed by migration 000102: a grant naming it is refused.
+		// Removed from the catalog: a grant naming it is refused.
 		"project.results.review",
 	} {
 		_, err := NormalizeProjectGrant([]string{"project.read", unknown})
@@ -151,18 +151,14 @@ func TestNormalizeProjectGrant(t *testing.T) {
 }
 
 // The CHECKs are the database's copies of the catalog, one per grant table
-// (a person's grants, 000086, and a Group's, 000101); a permission added on
-// one side only would be refused at write time or never granted. A later
-// migration may redefine a CHECK (000102 removed project.results.review), so
-// the newest definition is the one compared.
+// (a person's grants and a Group's); a permission added on one side only
+// would be refused at write time or never granted. A later migration may
+// redefine a CHECK, so the newest definition is the one compared.
 func TestProjectGrantsCheckMatchesCatalog(t *testing.T) {
 	t.Parallel()
 
 	want := ProjectPermissionStrings(ProjectPermissions())
 	slices.Sort(want)
-	// Permissions a later migration removed from the catalog, its rows and
-	// both CHECKs (000102). Older migrations still name them.
-	retired := []string{"project.results.review"}
 	read := string(ProjectPermissionRead)
 	readColumn := "read_permission text GENERATED ALWAYS AS ('" + read + "') STORED NOT NULL"
 	ups, err := fs.Glob(migrations.Files, "*.up.sql")
@@ -171,8 +167,8 @@ func TestProjectGrantsCheckMatchesCatalog(t *testing.T) {
 	}
 	slices.Sort(ups)
 	for _, table := range []struct{ created, check string }{
-		{"000086_project_access.up.sql", "project_grants_permission_check"},
-		{"000101_groups.up.sql", "project_group_grants_permission_check"},
+		{"000003_work.up.sql", "project_grants_permission_check"},
+		{"000003_work.up.sql", "project_group_grants_permission_check"},
 	} {
 		definition := regexp.MustCompile(`(?s)CONSTRAINT ` + table.check + ` CHECK \(permission IN \((.*?)\)\)`)
 		newest, newestFile := "", ""
@@ -206,12 +202,9 @@ func TestProjectGrantsCheckMatchesCatalog(t *testing.T) {
 		}
 	}
 
-	// Beyond the CHECKs, the access migrations name a permission only where
-	// the catalog has it, or a project_permission_held call would match
-	// nobody, or where they deal with a retired one.
-	for _, file := range []string{
-		"000086_project_access.up.sql", "000101_groups.up.sql", "000102_remove_results_review.up.sql",
-	} {
+	// Beyond the CHECKs, the schema names a permission only where the catalog
+	// has it, or a project_permission_held call would match nobody.
+	for _, file := range ups {
 		raw, err := migrations.Files.ReadFile(file)
 		if err != nil {
 			t.Fatalf("read migration: %v", err)
@@ -221,31 +214,10 @@ func TestProjectGrantsCheckMatchesCatalog(t *testing.T) {
 			t.Errorf("%s names a Company permission; Go binds the management roles", file)
 		}
 		for _, literal := range regexp.MustCompile(`'(project\.[a-z.]+)'`).FindAllStringSubmatch(source, -1) {
-			if !ProjectPermission(literal[1]).Valid() && !slices.Contains(retired, literal[1]) {
+			if !ProjectPermission(literal[1]).Valid() {
 				t.Errorf("%s names %q, which is not in the Project catalog", file, literal[1])
 			}
 		}
-	}
-
-	// The owner backfill (000086) wrote the catalog of its day: today's
-	// catalog and the permissions retired since.
-	raw, err := migrations.Files.ReadFile("000086_project_access.up.sql")
-	if err != nil {
-		t.Fatalf("read migration: %v", err)
-	}
-	backfill := regexp.MustCompile(`(?s)CROSS JOIN \(VALUES(.*?)\) AS catalog`).FindStringSubmatch(string(raw))
-	if backfill == nil {
-		t.Fatal("migration declares no owner backfill catalog")
-	}
-	backfilled := []string{}
-	for _, literal := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(backfill[1], -1) {
-		backfilled = append(backfilled, literal[1])
-	}
-	slices.Sort(backfilled)
-	then := slices.Concat(want, retired)
-	slices.Sort(then)
-	if !slices.Equal(backfilled, then) {
-		t.Errorf("owner backfill = %v, want catalog and retired %v", backfilled, then)
 	}
 }
 

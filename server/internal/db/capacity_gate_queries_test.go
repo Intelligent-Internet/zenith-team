@@ -146,15 +146,11 @@ func capacityPredicate(t *testing.T, source, name string) string {
 func runStatusVocabulary(t *testing.T) []string {
 	t.Helper()
 
-	raw, err := os.ReadFile(filepath.Join("..", "..", "migrations", "000005_execution.up.sql"))
-	if err != nil {
-		t.Fatalf("read 000005_execution.up.sql: %v", err)
-	}
-	source := statementsOnly(string(raw))
+	source := statementsOnly(upMigrationsSource(t))
 	marker := "CONSTRAINT runs_status_check CHECK (status IN ("
 	start := strings.Index(source, marker)
 	if start < 0 {
-		t.Fatal("runs_status_check not found in 000005_execution.up.sql")
+		t.Fatal("runs_status_check not found in the migrations")
 	}
 	rest := source[start+len(marker):]
 	end := strings.Index(rest, "))")
