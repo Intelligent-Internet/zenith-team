@@ -1332,6 +1332,7 @@ func (r *scriptedRows) FieldDescriptions() []pgconn.FieldDescription { return ni
 func (r *scriptedRows) Values() ([]any, error)                       { return nil, nil }
 func (r *scriptedRows) RawValues() [][]byte                          { return nil }
 func (r *scriptedRows) Conn() *pgx.Conn                              { return nil }
+func (r *scriptedRows) TypeMap() *pgtype.Map                         { return nil }
 
 func (r *scriptedRows) Next() bool {
 	r.next++

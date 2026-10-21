@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
@@ -71,6 +72,7 @@ func (r *scriptedRows) CommandTag() pgconn.CommandTag                { return pg
 func (r *scriptedRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
 func (r *scriptedRows) RawValues() [][]byte                          { return nil }
 func (r *scriptedRows) Conn() *pgx.Conn                              { return nil }
+func (r *scriptedRows) TypeMap() *pgtype.Map                         { return nil }
 func (r *scriptedRows) Values() ([]any, error)                       { return nil, errors.New("not scripted") }
 
 func (r *scriptedRows) Next() bool {
