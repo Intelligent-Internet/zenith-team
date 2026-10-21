@@ -10,7 +10,7 @@
 # leave them empty for a self-hosted build.
 
 # The static build is the same on every platform, so it runs natively.
-FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
+FROM --platform=$BUILDPLATFORM node:25-bookworm-slim AS build
 WORKDIR /src/frontend
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 # The production bundle needs more than Node's default heap.
