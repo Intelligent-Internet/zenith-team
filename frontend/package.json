@@ -121,7 +121,7 @@
     "tailwindcss": "^4.1.12",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-svgr": "^4.3.0"
+    "vite-plugin-svgr": "^5.2.0"
   },
   "optionalDependencies": {
     "@tailwindcss/oxide-darwin-arm64": "4.1.12"
