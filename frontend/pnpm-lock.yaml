@@ -237,8 +237,8 @@ importers:
         specifier: ^7.11.2
         version: 7.11.2(encoding@0.1.13)(esbuild@0.25.12)(lightningcss@1.32.0)
       '@electron-forge/maker-dmg':
-        specifier: ^7.11.2
-        version: 7.11.2
+        specifier: ^8.0.1
+        version: 8.0.1
       '@electron-forge/maker-squirrel':
         specifier: ^7.11.2
         version: 7.11.2
@@ -484,9 +484,9 @@ packages:
     resolution: {integrity: sha512-DNuGxgICA8RisFlq1zfu1jUAPGsB/8DDM0pJd/iWlpMYtgDvJS4jc/QZVfnMDQopWIVlFaiYwsLzPApqkA9j1g==}
     engines: {node: '>= 22.13.0'}
 
-  '@electron-forge/maker-dmg@7.11.2':
-    resolution: {integrity: sha512-vh8/mnu3xyMbRcz3S0TV1rB7ZyGhMK60Yz2f2R+Zmj1EbAivLEq5UAvzHdB+kLttr0Dpjp2FIX4TcZ9neD4Y9g==}
-    engines: {node: '>= 16.4.0'}
+  '@electron-forge/maker-dmg@8.0.1':
+    resolution: {integrity: sha512-/FtNihspOpY+SKzyUClCsSgc+W4BJdHttA+eZh7mMs6DFNjJzO8xgJwOjLuHi1oVahrpRsw8UVRejs1wrk7YBw==}
+    engines: {node: '>= 22.13.0'}
 
   '@electron-forge/maker-squirrel@7.11.2':
     resolution: {integrity: sha512-4CILo57ZDEQH1mJxjhYCSXuv+WaU7oPq67KqiTLEUOEzmiPg9u9/z7FXE34H/Tn5aKWN3dy+ngAETzv6iERCGg==}
@@ -4653,8 +4653,8 @@ packages:
     resolution: {integrity: sha512-avsJQhyd+680gKXyG/sQc0nXaC6rBkPOfyHYcFb9+hdkqQkR9bdnkJ0AMZhke0oesPqIO+mFFJ+IdBc7mst4IA==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
 
-  nan@2.28.0:
-    resolution: {integrity: sha512-fTsDz99OTq2sVePhGdp4qQhggZFtKr64ZNVyVajRKtMOkJxYekplBh577PiJB12v/D3s2E5cGtOI45LWp6rnLQ==}
+  nan@2.30.0:
+    resolution: {integrity: sha512-P5mokDkSvCGBz6mZDD/2l+w9QoICRXdCyZ9ONGmTePr40oihJg3Kpn0YU3twKd6PJnwSlLBWNQeOT6yWEV2c4A==}
 
   nanoid@3.3.15:
     resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
@@ -6389,15 +6389,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron-forge/maker-dmg@7.11.2':
+  '@electron-forge/maker-dmg@8.0.1':
     dependencies:
-      '@electron-forge/maker-base': 7.11.2
-      '@electron-forge/shared-types': 7.11.2
-      fs-extra: 10.1.0
+      '@electron-forge/maker-base': 8.0.1
+      '@electron-forge/shared-types': 8.0.1
     optionalDependencies:
       electron-installer-dmg: 5.0.1
     transitivePeerDependencies:
-      - bluebird
       - supports-color
 
   '@electron-forge/maker-squirrel@7.11.2':
@@ -10483,7 +10481,7 @@ snapshots:
 
   macos-alias@0.2.12:
     dependencies:
-      nan: 2.28.0
+      nan: 2.30.0
     optional: true
 
   magic-string@0.30.21:
@@ -11075,7 +11073,7 @@ snapshots:
 
   mute-stream@1.0.0: {}
 
-  nan@2.28.0:
+  nan@2.30.0:
     optional: true
 
   nanoid@3.3.15: {}
