@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:0.10.9 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
 FROM python:3.13-slim
 ENV PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1
 COPY --from=uv /uv /uvx /bin/
