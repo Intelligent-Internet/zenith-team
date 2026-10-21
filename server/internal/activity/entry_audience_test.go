@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
@@ -31,6 +32,7 @@ func (r *idRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
 func (r *idRows) Values() ([]any, error)                       { return nil, errors.New("not scripted") }
 func (r *idRows) RawValues() [][]byte                          { return nil }
 func (r *idRows) Conn() *pgx.Conn                              { return nil }
+func (r *idRows) TypeMap() *pgtype.Map                         { return nil }
 
 func (r *idRows) Next() bool {
 	r.next++
