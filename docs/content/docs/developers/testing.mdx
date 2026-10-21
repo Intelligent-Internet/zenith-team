@@ -1,6 +1,6 @@
 ---
 title: Testing
-description: What each Make target checks, how the unit and PostgreSQL integration suites differ, and what CI and the security workflow run.
+description: What each Make target checks, how the unit and PostgreSQL integration suites differ, what CI and the nightly run check, and the local git hooks.
 ---
 
 Run every command on this page from the repository root. `make help` lists all targets. Setup is in [Contributing](/developers/contributing).
@@ -91,7 +91,7 @@ A Go unit test, `TestOpenAPISpecMatchesRouteTable`, also fails `make go-unit` wh
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every pull request, on every push to `main`, every night, and by hand.
+`.github/workflows/ci.yml` runs on every pull request, on every push to `main`, and by hand.
 
 ### Which lanes run
 
@@ -100,42 +100,44 @@ A first job, `changes`, looks at the changed files and picks the lanes. Each lan
 | Lane | Runs when these change | What it runs |
 | --- | --- | --- |
 | `server` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-fmt-check`; `make go-lint` (on a pull request, only findings new since its merge base fail); `make go-unit`, which includes the unit tests with `-race` and the pinned sqlc drift check; and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
-| `server-windows` | `server/**`, or the pinned platform content and `.gitattributes` | On Windows: the platform-content tests, a few `zenith-team-mcp` tests, and a build of `zenith-team-mcp` |
-| `server-macos` | `server/internal/daemon/**` | On macOS: the daemon's sandbox tests, which keep agents away from sign-in files and other runs' folders |
 | `frontend` | `frontend/**`, `docs/api/spec/**`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | `make lint typecheck`, `make api-lint api-types-check`, the production build (`make build`) and the Electron security scan |
 | `voice` | `voice-agent/**` | `ruff check`, `ruff format --check`, the Python tests, and a Docker build |
 | `selfhost` | `deploy/**`, a Dockerfile, `LICENSE`, `THIRD_PARTY_NOTICES.md` | Builds both images, runs `make selfhost-env`, boots the Compose stack, and checks that `/readyz` and the web app answer |
-| `server-integration` | Nightly and manual runs only | `make go-integration` |
+| `workflows` | `.github/**` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows |
 
-A change to `ci.yml` itself runs every lane. A change to the `Makefile` runs every lane except `server-macos`.
-
-### Nightly and manual runs
-
-Every night, CI runs every lane plus `server-integration`, so drift that no single change touched still shows up within a day. A failed nightly run opens an issue titled **Nightly CI failed**, or comments on the open one.
-
-You can also start the CI workflow by hand from the Actions tab. A manual run runs every lane, and runs the integration suites unless you clear **run_integration**.
+A change to the `Makefile` runs every lane except `workflows`. A manual run from the Actions tab runs every lane.
 
 ### The required check
 
-**`ci-gate`** is the one required check. It compares every lane with what the `changes` job picked: a picked lane must succeed, and a lane that was not picked must be skipped. Anything else, including a lane that failed, was cancelled, or is missing from its table, fails the gate.
+**`ci-gate`** is the one required check. It fails when any lane failed or was cancelled; a lane that did not need to run is skipped.
 
 Pull requests from forks run with a read-only token and no secrets.
 
-### Pull request titles
+### Nightly
 
-`.github/workflows/pr-title.yml` checks that a pull request title is a Conventional Commit, such as `fix(daemon): retry the first claim`, because titles become the squash-merge commit message. The allowed types are `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert` and `security`. Add `!` before the colon for a breaking change, and leave off the trailing period.
+`.github/workflows/nightly.yml` runs every night and by hand:
 
-## Security workflow
+| Job | What it runs |
+| --- | --- |
+| `integration` | `make go-integration`: every PostgreSQL suite with `-race` |
+| `windows` | On Windows: the platform-content tests, a few `zenith-team-mcp` tests, and a build of `zenith-team-mcp`, proving the pinned content survives a CRLF checkout |
+| `macos` | On macOS: the daemon's sandbox tests, which keep agents away from sign-in files and other runs' folders |
 
-`.github/workflows/security.yml` runs on every pull request, on pushes to `main`, every Monday, and on demand.
+### Secrets and dependencies
 
-| Job | What it runs | Blocks a pull request |
-| --- | --- | --- |
-| `secrets` | `gitleaks` over the checked-out tree, with `.gitleaks.toml` | Yes |
-| `workflows` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows | Yes |
-| `dependencies` | `govulncheck` for Go and `pnpm audit --prod` (high and above) for the frontend. Findings go to the job summary. | No: Dependabot opens the upgrade pull requests |
+GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts and security updates track vulnerable dependencies. Dependabot also checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week, skipping versions younger than a week. Tag releases run `govulncheck` and fail on a known vulnerability (see [Releasing](/developers/releasing)).
 
-Dependabot checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week. It skips versions younger than a week.
+## Local git hooks
+
+Run `make hooks` once per clone. It points git at `.githooks/`:
+
+| Hook | Checks |
+| --- | --- |
+| `commit-msg` | The subject is a Conventional Commit, such as `fix(daemon): retry the first claim`, with no trailing period and at most 72 characters. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`, `security`. Add `!` before the colon for a breaking change. |
+| `pre-push` | Branch names follow `type/short-name`, such as `fix/daemon-first-claim`. |
+| `pre-commit` | Scans the staged changes for secrets with `gitleaks` and `.gitleaks.toml`, when [gitleaks](https://github.com/gitleaks/gitleaks) is installed. |
+
+Pull request titles follow the same Conventional Commit form, because they become the squash-merge commit message.
 
 ## Next steps
 

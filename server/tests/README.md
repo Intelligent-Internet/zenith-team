@@ -63,11 +63,12 @@ for the complete tagged suite with `-race` (plus build, vet, and the shape
 checks). The root Makefile exports `GOFLAGS=-p=2` to bound concurrent migration
 and connection load on the one shared server.
 
-**CI gates on `make go-unit` alone.** The `server-integration` job in
-`.github/workflows/ci.yml` is dispatch-only: it does not run on pull requests or
-on pushes to `main`. Nothing on the merge path exercises PostgreSQL, Silo, or
-Redis, so run `make go-integration` yourself — or dispatch the CI workflow by
-hand — before merging changes to migrations, sqlc queries, or fixtures.
+**CI gates on `make go-unit` alone.** The `integration` job in
+`.github/workflows/nightly.yml` runs every night and by hand, never on pull
+requests or pushes to `main`. Nothing on the merge path exercises PostgreSQL,
+Silo, or Redis, so run `make go-integration` yourself — or start the Nightly
+workflow by hand — before merging changes to migrations, sqlc queries, or
+fixtures.
 
 Beyond the tag, a raw `go test` still never starts PostgreSQL implicitly: a
 tagged test that does run without `ZENITH_TEAM_TEST_DATABASE_URL` skips, and CI (or

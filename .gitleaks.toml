@@ -1,4 +1,5 @@
-# Secret scanning for Zenith Team (security.yml runs `gitleaks dir`).
+# Secret scanning for Zenith Team. The pre-commit hook in .githooks/ runs
+# `gitleaks git --pre-commit --staged` with this file when gitleaks is installed.
 # The default rules apply everywhere; the allowlists below cover only values
 # that are synthetic by design. Never allowlist a real credential: rotate it.
 

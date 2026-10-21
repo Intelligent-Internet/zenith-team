@@ -24,13 +24,14 @@ Add a branch ruleset for `main` that:
 - requires a review from code owners,
 - requires these status checks to pass:
   - `ci-gate`, from the CI workflow. It is the one check that stands for every CI lane.
-  - `secrets` and `workflows`, from the Security workflow.
   - `DCO`, from the DCO app (next step).
 - blocks force pushes and deletion.
 
-Do not require the individual CI lanes. They skip when their folders did not change, and `ci-gate` already fails when a lane that ran did not pass. The Security workflow's `dependencies` job only reports, so do not require it either.
+Do not require the individual CI lanes. They skip when their folders did not change, and `ci-gate` already fails when a lane that ran did not pass.
 
-The PR title workflow checks that pull request titles are Conventional Commits. Requiring its check (`conventional-title`) is optional but keeps squash-merge commit messages clean.
+When you squash-merge, make sure the title is a Conventional Commit: it becomes the commit message on `main`. Contributors check their own commit messages and branch names with the local hooks (`make hooks`).
+
+Keep **secret scanning** and **push protection** on under **Settings → Code security**, together with **Dependabot alerts** and **Dependabot security updates**. They are the project's secret and dependency checks; no workflow repeats them.
 
 ### Sign-off
 
@@ -71,8 +72,8 @@ The release workflow needs no secrets beyond its own GitHub token. Leave the rep
 
 - **Triage.** Label new issues, and answer or close questions that belong in Discussions.
 - **Dependabot.** Each week Dependabot opens grouped update pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
-- **Nightly CI.** CI runs every lane plus the PostgreSQL integration suites each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
-- **Security workflow.** It also runs every Monday. Read the dependency audit summary on the run page: those findings do not fail the job.
+- **Nightly.** The Nightly workflow runs the PostgreSQL integration suites and the Windows and macOS checks each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
+- **Security alerts.** Review secret-scanning and Dependabot alerts under the **Security** tab. Close a test fixture as "used in tests"; rotate anything real.
 - **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.
 - **Releases.** Cut them as described in [Releasing](/developers/releasing).
 

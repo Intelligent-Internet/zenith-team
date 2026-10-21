@@ -1,8 +1,7 @@
-# Parallel verification for the Go server, the client app in frontend/ (its
-# own pnpm workspace), the voice worker, and the self-hosted images. Each lane
-# runs when the files it reads change; the nightly run and manual runs cover
-# everything. ci-gate is the one required check. Fork pull requests run here
-# with a read-only token and no secrets.
+# Checks every pull request and every push to main. Each lane runs when the
+# files it reads change; a manual run checks everything. ci-gate is the one
+# required check. Slow, platform-specific suites live in nightly.yml. Fork
+# pull requests run here with a read-only token and no secrets.
 name: CI
 
 on:
@@ -10,31 +9,19 @@ on:
   push:
     branches:
       - main
-  # Nightly: every lane plus the PostgreSQL integration suites, so drift that
-  # no single change touched still surfaces within a day.
-  schedule:
-    - cron: "23 3 * * *"
   workflow_dispatch:
-    inputs:
-      run_integration:
-        description: "Run the -tags=integration suites (PostgreSQL container)"
-        type: boolean
-        default: true
 
 concurrency:
-  # One group per pull request, per pushed ref, per schedule: a fork branch
-  # named main never shares a group with pushes to main.
+  # One group per pull request or pushed ref, so a fork branch named main
+  # never shares a group with pushes to main.
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  # Cancel superseded runs on pull requests only. Runs for pushes to main must
-  # complete: back-to-back merges cancelling each other leaves the earlier
-  # commit unverified.
+  # Cancel superseded runs on pull requests only; every push to main is checked.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  # Decides which lanes run. ci-gate checks each lane against these outputs.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -42,13 +29,11 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      server: ${{ steps.filter.outputs.server == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      platform_content: ${{ steps.filter.outputs.platform_content == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      daemon: ${{ steps.filter.outputs.daemon == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
-      integration: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_integration) }}
+      server: ${{ steps.filter.outputs.server == 'true' || github.event_name == 'workflow_dispatch' }}
+      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+      voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name == 'workflow_dispatch' }}
+      selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name == 'workflow_dispatch' }}
+      workflows: ${{ steps.filter.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       # Pull requests are diffed through the API; pushes need the checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,58 +42,34 @@ jobs:
           persist-credentials: false
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
-        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        if: github.event_name != 'workflow_dispatch'
         with:
-          # Each lane lists every file its checks read, including shared
-          # inputs outside its folder, so a change to one of those alone
-          # still runs the lane. This workflow and the Makefile run them all.
+          # Each lane lists the files its checks read, shared inputs included.
           filters: |
             server:
               - "server/**"
-              # openapi_contract_test and error_codes_test read these.
               - "docs/api/**"
-              # env_template_test reads these.
               - "deploy/production.env.example"
               - "deploy/docker-compose.production.yml"
               - "Makefile"
-              - ".github/workflows/ci.yml"
             frontend:
               - "frontend/**"
               - "docs/api/spec/**"
-              # Packaged into the desktop app.
               - "LICENSE"
               - "THIRD_PARTY_NOTICES.md"
               - "Makefile"
-              - ".github/workflows/ci.yml"
-            # The pinned platform content and the attributes that keep it
-            # byte-exact (ADR 0016).
-            platform_content:
-              - "server/internal/platformbundle/**"
-              - "server/internal/contentbundle/**"
-              - "server/internal/daemon/tool_releases/**"
-              - "server/internal/daemon/studio_skill.md"
-              - "server/internal/daemon/studio_runtime.md"
-              - "server/internal/mcp/tools/builtin/**"
-              - "server/internal/mcp/tools/platform_skills.go"
-              - ".gitattributes"
-              - ".github/workflows/ci.yml"
-            # The macOS sandbox that keeps sign-in files away from agents.
-            daemon:
-              - "server/internal/daemon/**"
-              - ".github/workflows/ci.yml"
             voice:
               - "voice-agent/**"
               - "Makefile"
-              - ".github/workflows/ci.yml"
             selfhost:
               - "deploy/**"
               - "server/Dockerfile*"
               - "frontend/Dockerfile*"
-              # Copied into both images.
               - "LICENSE"
               - "THIRD_PARTY_NOTICES.md"
               - "Makefile"
-              - ".github/workflows/ci.yml"
+            workflows:
+              - ".github/**"
 
   server:
     needs: changes
@@ -146,93 +107,6 @@ jobs:
           GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/zen
           GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/mcp
           GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/mcp
-
-  # Proves on Windows that the pinned platform content (ADR 0016) reaches a
-  # build byte for byte. The checkout keeps Git for Windows' core.autocrlf
-  # true. Unless .gitattributes holds, that turns the harness SKILL.md and
-  # zenith-platform's files into CRLF, whose frontmatter zenith-team-mcp
-  # refuses, and a converted tar fails Decode's sha256 check.
-  server-windows:
-    needs: changes
-    if: needs.changes.outputs.platform_content == 'true' || needs.changes.outputs.server == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: server
-    steps:
-      # The runner image already defaults to true; setting it again keeps an
-      # image change from quietly turning this job into a no-op.
-      - run: git config --global core.autocrlf true
-        working-directory: .
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache-dependency-path: server/go.sum
-      # The whole package: its tests read the embedded pin, the harness and
-      # testdata/format1.tar, whose bytes are what this job proves.
-      - run: go run ./cmd/bundlectl prepare
-      - run: go test -count=1 ./internal/platformbundle/ ./internal/contentbundle/
-      # zenith-team-mcp's own open path over the real pin, and the
-      # platform-skill loader over the compiled zenith-platform. A -run
-      # pattern that matches nothing passes as "no tests to run", so a renamed
-      # test would quietly prove nothing; the grep refuses that.
-      - shell: bash
-        run: |
-          go test -count=1 -run 'TestOpenTaskSkills' ./internal/mcp/ | tee "$RUNNER_TEMP/mcp.log"
-          go test -count=1 -run 'TestOpenTaskSkillService|TestPlatformSkills' ./internal/mcp/tools/ | tee "$RUNNER_TEMP/tools.log"
-          ! grep -q 'no tests to run' "$RUNNER_TEMP/mcp.log" "$RUNNER_TEMP/tools.log"
-      - run: go build ./cmd/mcp
-      # cmd/zen still needs Windows-specific terminal handling, so it is not
-      # built here.
-
-  # The daemon's macOS sandbox: agents must not read the person's sign-in
-  # files or reach another run's folders. These tests compile only on macOS.
-  server-macos:
-    needs: changes
-    if: needs.changes.outputs.daemon == 'true'
-    runs-on: macos-15
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: server
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache-dependency-path: server/go.sum
-      - run: go run ./cmd/bundlectl prepare
-      - run: go build ./cmd/zen ./cmd/mcp
-      - name: Sandbox tests
-        run: |
-          go test -count=1 -v \
-            -run 'OnMacOS|TestProbeEnforcesOnlyWhenTheSandboxHidesTheSessionFile|TestConnectorOnlyCodexLaunchRunsUnderTheWriteFence|TestUnixAppPreviewBackend' \
-            ./internal/daemon/ | tee "$RUNNER_TEMP/sandbox.log"
-          ! grep -q 'no tests to run' "$RUNNER_TEMP/sandbox.log"
-
-  server-integration:
-    needs: changes
-    if: needs.changes.outputs.integration == 'true'
-    runs-on: ubuntu-latest
-    # Every PostgreSQL suite with the race detector, on one shared container.
-    timeout-minutes: 60
-    env:
-      TEST_REQUIRE_DOCKER: "1"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache-dependency-path: server/go.sum
-      - run: make go-integration
 
   frontend:
     needs: changes
@@ -320,69 +194,41 @@ jobs:
         if: always()
         run: docker compose -f deploy/docker-compose.production.yml down --volumes
 
-  # The one required status check. Fail-closed: a lane the changes job
-  # selected must succeed, a lane it did not select must be skipped, and a
-  # job missing from the table below fails the gate.
+  # Lints the workflows themselves: syntax and shell (actionlint) and
+  # security patterns such as injection and over-broad tokens (zizmor).
+  workflows:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache: false
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - run: actionlint
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.10.9"
+      - run: uvx zizmor@1.30.1 --min-severity medium .github/workflows
+
+  # The one required status check: fails when any lane failed or was
+  # cancelled; lanes that did not need to run are skipped.
   ci-gate:
     if: always()
-    needs: [changes, server, server-windows, server-macos, server-integration, frontend, voice, selfhost]
+    needs: [changes, server, frontend, voice, selfhost, workflows]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check every lane against its scope
+      - name: Require every lane to pass or be skipped
         env:
-          NEEDS: ${{ toJSON(needs) }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          scope() { jq -r --arg k "$1" '.changes.outputs[$k] // "false"' <<<"$NEEDS"; }
-          either() { if [ "$(scope "$1")" = true ] || [ "$(scope "$2")" = true ]; then echo true; else echo false; fi; }
-          declare -A selected=(
-            [changes]=true
-            [server]="$(scope server)"
-            [server-windows]="$(either platform_content server)"
-            [server-macos]="$(scope daemon)"
-            [server-integration]="$(scope integration)"
-            [frontend]="$(scope frontend)"
-            [voice]="$(scope voice)"
-            [selfhost]="$(scope selfhost)"
-          )
-          fail=0
-          while read -r job; do
-            if [ -z "${selected[$job]+set}" ]; then
-              echo "::error::$job is not in ci-gate's scope table"
-              fail=1
-              continue
-            fi
-            result="$(jq -r --arg j "$job" '.[$j].result' <<<"$NEEDS")"
-            if [ "${selected[$job]}" = true ]; then want=success; else want=skipped; fi
-            if [ "$result" = "$want" ]; then
-              echo "$job: $result"
-            else
-              echo "::error::$job: $result (expected $want)"
-              fail=1
-            fi
-          done < <(jq -r 'keys[]' <<<"$NEEDS")
-          exit "$fail"
-
-  # A failed nightly opens one tracking issue, or comments on the open one.
-  nightly-report:
-    needs: ci-gate
-    if: always() && github.event_name == 'schedule' && needs.ci-gate.result == 'failure'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      issues: write
-    steps:
-      - name: Open or update the nightly failure issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          title="Nightly CI failed"
-          number="$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
-            --jq ".[] | select(.title == \"$title\") | .number" | head -1)"
-          if [ -n "$number" ]; then
-            gh issue comment "$number" --body "Failed again: $RUN_URL"
-          else
-            gh issue create --title "$title" --body "The nightly run failed: $RUN_URL"
-          fi
+          echo "$RESULTS"
+          case " $RESULTS " in
+            *" failure "*|*" cancelled "*) exit 1 ;;
+          esac
