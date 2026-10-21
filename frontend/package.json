@@ -115,7 +115,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
-    "electron": "^43.7.9",
+    "electron": "^44.7.2",
     "esbuild": "0.25.12",
     "openapi-typescript": "7.13.0",
     "tailwindcss": "^4.1.12",
