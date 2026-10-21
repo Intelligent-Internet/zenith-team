@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -72,14 +74,39 @@ func bindJSON(r io.Reader, destination any, allowUnknownFields bool) error {
 }
 
 // ConfigureValidator points a validator at JSON field names, so a failure is
-// reported as `localPath` — what the caller sent — rather than `LocalPath`.
+// reported as `localPath` — what the caller sent — rather than `LocalPath`,
+// and pins the `uuid` tag to the canonical lowercase form.
 //
 // It decorates an existing instance rather than constructing one because the
 // instance it configures is gin's, binding.Validator.Engine(). There is one
 // validator in the process and every `binding:"…"` tag is read by the same
-// rules. It registers no rules of its own.
+// rules.
 func ConfigureValidator(v *validator.Validate) {
 	v.RegisterTagNameFunc(jsonFieldName)
+	// The library's own `uuid` tag accepts uppercase since v10.30.5; the wire
+	// contract is the lowercase form the server mints.
+	if err := v.RegisterValidation("uuid", canonicalUUID); err != nil {
+		panic(fmt.Sprintf("util: register uuid validation: %v", err))
+	}
+}
+
+var canonicalUUIDPattern = regexp.MustCompile(
+	`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`,
+)
+
+// canonicalUUID reads a string field, or a value with a String method, as the
+// library's tag did.
+func canonicalUUID(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	if field.Kind() == reflect.String {
+		return canonicalUUIDPattern.MatchString(field.String())
+	}
+	if field.CanInterface() {
+		if stringer, ok := field.Interface().(fmt.Stringer); ok {
+			return canonicalUUIDPattern.MatchString(stringer.String())
+		}
+	}
+	return false
 }
 
 func jsonFieldName(field reflect.StructField) string {
