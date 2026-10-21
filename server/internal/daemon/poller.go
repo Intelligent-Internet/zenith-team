@@ -171,7 +171,11 @@ func (d *Daemon) runBatchPoller(
 		// A Run freezes the apps whose discovery the cloud holds fresh when
 		// it is claimed; renew a stale Runtime's first. Fail-open: the claim
 		// goes ahead either way.
-		if err := d.connectors.ensureFreshForClaim(pollerCtx, runtimeIDs); err != nil && pollerCtx.Err() == nil {
+		if err := d.connectors.ensureFreshForClaim(
+			pollerCtx,
+			runtimeIDs,
+		); err != nil &&
+			pollerCtx.Err() == nil {
 			d.logger.Warn("connector discovery not confirmed before claim", "error", err)
 		}
 
@@ -303,7 +307,7 @@ func waitForRunSlot(
 
 // newRunSlotSemaphore returns a buffered channel pre-populated with stable
 // slot indices [0, n). Receive to acquire, send the same slot back to
-// release; the index is exposed to spawned runs as BOARDLY_RUN_SLOT.
+// release; the index is exposed to spawned runs as ZENITH_TEAM_RUN_SLOT.
 func newRunSlotSemaphore(maxConcurrentRuns int) chan int {
 	sem := make(chan int, maxConcurrentRuns)
 	for i := range maxConcurrentRuns {

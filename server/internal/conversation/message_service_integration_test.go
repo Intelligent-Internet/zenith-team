@@ -10,11 +10,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestSendImmediateMessageLinksReadyAttachments(t *testing.T) {
@@ -418,7 +418,7 @@ func generatedListDirectConversationSummaryBasesBulkParams(
 
 // Onboarding hands the CEO Agent its opening brief, which the founder never
 // typed. The Run must still start and carry the words, but the transcript must
-// stay empty of a message the founder would not recognise as their own.
+// stay empty of a message the founder would not recognize as their own.
 func TestSuppressedSendStartsTheRunWithoutWritingATranscriptMessage(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)

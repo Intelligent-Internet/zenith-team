@@ -6,8 +6,8 @@ function createDesktopRuntimeEnv(env = process.env) {
 
 function mergeDesktopRuntimeEnv(generatedEnv, env) {
   const explicitEnvironment =
-    typeof env?.BOARDLY_DESKTOP_ENV === "string"
-      ? env.BOARDLY_DESKTOP_ENV.trim().toLowerCase()
+    typeof env?.ZENITH_TEAM_DESKTOP_ENV === "string"
+      ? env.ZENITH_TEAM_DESKTOP_ENV.trim().toLowerCase()
       : "";
 
   if (explicitEnvironment === "local") {

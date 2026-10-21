@@ -40,8 +40,8 @@ export type ApiErrorBody = {
 type ApiErrorResponseData = Record<string, unknown> | string | null | undefined;
 
 type RefreshableRequestConfig = InternalAxiosRequestConfig & {
-  _boardlyAuthReplay?: boolean;
-  _boardlyReadRetry?: boolean;
+  _zenithTeamAuthReplay?: boolean;
+  _zenithTeamReadRetry?: boolean;
 };
 
 type ApiClientRequestConfig = Omit<
@@ -49,9 +49,9 @@ type ApiClientRequestConfig = Omit<
   "baseURL" | "method" | "url"
 >;
 
-export const BOARDLY_API_ROUTE_UNAVAILABLE_MESSAGE =
+export const ZENITH_TEAM_API_ROUTE_UNAVAILABLE_MESSAGE =
   "Zenith Team could not be reached. Check your connection and try again.";
-export const BOARDLY_API_TIMEOUT_MESSAGE =
+export const ZENITH_TEAM_API_TIMEOUT_MESSAGE =
   "Zenith Team took too long to respond. Check the API and try again.";
 
 export function resolveApiRequestTimeoutMs(configuredTimeout?: string) {
@@ -102,7 +102,7 @@ function defaultApiOrigin() {
 function isUnsafeLoopbackOverride(rawApiUrl: string) {
   if (
     typeof window === "undefined" ||
-    window.location.protocol === "boardly-app:" ||
+    window.location.protocol === "zenith-team-app:" ||
     isLocalHostname(window.location.hostname)
   ) {
     return false;
@@ -131,7 +131,7 @@ export function normalizeApiBaseUrl(rawApiUrl: string) {
   return `${trimmedApiUrl}/api/v1`;
 }
 
-export function resolveBoardlyApiBaseUrl(configuredApiUrl?: string) {
+export function resolveZenithTeamApiBaseUrl(configuredApiUrl?: string) {
   const configured = configuredApiUrl?.trim();
   const apiOrigin =
     configured && !isUnsafeLoopbackOverride(configured)
@@ -201,7 +201,7 @@ function shouldRetryIdempotentRead(
   config: RefreshableRequestConfig,
 ) {
   if (
-    config._boardlyReadRetry ||
+    config._zenithTeamReadRetry ||
     !isIdempotentRead(config) ||
     isCanceledApiRequest(error)
   ) {
@@ -225,14 +225,14 @@ function isApiRequestTimeoutError(error: AxiosError<ApiErrorResponseData>) {
 function getApiTimeoutMessage(
   error: AxiosError<ApiErrorResponseData>,
 ): string | null {
-  return isApiRequestTimeoutError(error) ? BOARDLY_API_TIMEOUT_MESSAGE : null;
+  return isApiRequestTimeoutError(error) ? ZENITH_TEAM_API_TIMEOUT_MESSAGE : null;
 }
 
 function getApiRouteUnavailableMessage(
   error: AxiosError<ApiErrorResponseData>,
 ): string | null {
   return isApiRouteUnavailableError(error)
-    ? BOARDLY_API_ROUTE_UNAVAILABLE_MESSAGE
+    ? ZENITH_TEAM_API_ROUTE_UNAVAILABLE_MESSAGE
     : null;
 }
 
@@ -313,10 +313,10 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export const BOARDLY_API_BASE_URL = resolveBoardlyApiBaseUrl(
+export const ZENITH_TEAM_API_BASE_URL = resolveZenithTeamApiBaseUrl(
   import.meta.env.VITE_API_URL,
 );
-export const BOARDLY_API_REQUEST_TIMEOUT_MS = resolveApiRequestTimeoutMs(
+export const ZENITH_TEAM_API_REQUEST_TIMEOUT_MS = resolveApiRequestTimeoutMs(
   import.meta.env.VITE_API_TIMEOUT_MS,
 );
 
@@ -339,15 +339,15 @@ function serializeQueryParams(params: Record<string, unknown>): string {
 }
 
 const rawApiClient = axios.create({
-  baseURL: BOARDLY_API_BASE_URL,
+  baseURL: ZENITH_TEAM_API_BASE_URL,
   paramsSerializer: serializeQueryParams,
-  timeout: BOARDLY_API_REQUEST_TIMEOUT_MS,
+  timeout: ZENITH_TEAM_API_REQUEST_TIMEOUT_MS,
   withCredentials: true,
 });
 
 const refreshApiClient = axios.create({
-  baseURL: BOARDLY_API_BASE_URL,
-  timeout: BOARDLY_API_REQUEST_TIMEOUT_MS,
+  baseURL: ZENITH_TEAM_API_BASE_URL,
+  timeout: ZENITH_TEAM_API_REQUEST_TIMEOUT_MS,
   withCredentials: true,
 });
 
@@ -358,11 +358,11 @@ export function refreshAuthSession(): Promise<
   SessionRotation | DesktopSessionRotation
 > {
   const desktopBridge =
-    typeof window === "undefined" ? undefined : window.boardlyDesktop;
+    typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
   const accessTokenBeforeRefresh = getStoredAccessToken();
   if (desktopBridge?.refreshAuthSession && accessTokenBeforeRefresh !== null) {
     refreshRequest ??= desktopBridge
-      .refreshAuthSession(BOARDLY_API_BASE_URL)
+      .refreshAuthSession(ZENITH_TEAM_API_BASE_URL)
       .then((result) => {
         if (!result.ok) {
           // A rejected credential or a missing saved session is lost for
@@ -453,8 +453,8 @@ export function resolveCookieCsrfToken(
     path === "/auth/password-reset/request" ||
     path === "/auth/password-reset/confirm" ||
     path === "/auth/google/web/start";
-  const accessCSRF = readCookie(cookies, "boardly_csrf");
-  const refreshCSRF = readCookie(cookies, "boardly_refresh_csrf");
+  const accessCSRF = readCookie(cookies, "zenith_team_csrf");
+  const refreshCSRF = readCookie(cookies, "zenith_team_refresh_csrf");
 
   return usesRefreshCookie
     ? refreshCSRF
@@ -508,14 +508,14 @@ rawApiClient.interceptors.response.use(
     const publicRoute = isPublicRoute(currentPath);
 
     if (originalConfig && shouldRetryIdempotentRead(error, originalConfig)) {
-      originalConfig._boardlyReadRetry = true;
+      originalConfig._zenithTeamReadRetry = true;
       return rawApiClient(originalConfig);
     }
 
     if (
       error.response?.status !== 401 ||
       !originalConfig ||
-      originalConfig._boardlyAuthReplay ||
+      originalConfig._zenithTeamAuthReplay ||
       publicRoute
     ) {
       return Promise.reject(toApiClientError(error));
@@ -524,7 +524,7 @@ rawApiClient.interceptors.response.use(
     const accessTokenBeforeRefresh = getStoredAccessToken();
     try {
       await refreshAuthSession();
-      originalConfig._boardlyAuthReplay = true;
+      originalConfig._zenithTeamAuthReplay = true;
       return rawApiClient(originalConfig);
     } catch (refreshError) {
       if (
@@ -533,7 +533,7 @@ rawApiClient.interceptors.response.use(
       ) {
         clearStoredAccessToken();
         if (typeof window !== "undefined" && !publicRoute) {
-          window.location.replace(window.boardlyDesktop ? "#/login" : "/login");
+          window.location.replace(window.zenithTeamDesktop ? "#/login" : "/login");
         }
       }
       // A failed refresh may mean the API is unreachable, not that the

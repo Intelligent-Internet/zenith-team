@@ -1,18 +1,18 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "./boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "./zenith-team-api";
 import type { components, operations } from "./generated/api.generated";
 
 export type MessageConnectorScope = { companyId: string } & NonNullable<
   operations["listMessageConnectors"]["parameters"]["query"]
 >;
-export const messageConnectorApi = boardlyApi.injectEndpoints({
+export const messageConnectorApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     messageConnectors: builder.query<
       components["schemas"]["MessageConnectorCollection"],
       MessageConnectorScope
     >({
       queryFn: ({ companyId, ...params }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["MessageConnectorCollection"]>(
               `/companies/${encodeURIComponent(companyId)}/message-connectors`,

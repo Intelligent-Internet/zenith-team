@@ -67,7 +67,7 @@ remain runtime prerequisites.
 Run `make go-shape`, `make go-sqlc-check`, the affected package tests, and
 `make gate`. `bundlectl` tests cover offline cache reuse, corrupted cache and
 downloads, invalid package identity, traversal, colliding sources and changed
-skill files. The opt-in `BOARDLY_TEST_MANAGED_NPM=1` test
+skill files. The opt-in `ZENITH_TEAM_TEST_MANAGED_NPM=1` test
 `TestPublishedStudioNPMInstallation` installs the real CLI, verifies its export,
 renders a two-minute MP4 with audio and checks repeat preparation and repair.
 It uses no person's credentials or paid media generation.

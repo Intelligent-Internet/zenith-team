@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 type skillGitHubLocation struct {
@@ -137,7 +137,12 @@ func (s *DefaultSkillService) PreviewGitHub(
 		ctx,
 		principal,
 		agentID,
-		skillImportSource{Type: "github", URL: strings.TrimSpace(input.URL), Commit: commit.SHA, ReplaceSkillID: input.ReplaceSkillID},
+		skillImportSource{
+			Type:           "github",
+			URL:            strings.TrimSpace(input.URL),
+			Commit:         commit.SHA,
+			ReplaceSkillID: input.ReplaceSkillID,
+		},
 		items,
 	)
 }

@@ -75,8 +75,8 @@ var jsonBlockPattern = regexp.MustCompile("(?s)```json\n(.*?)```")
 var specPropertyPattern = regexp.MustCompile(`(?m)^\s+(\w+):\s*(?:$|\{)`)
 
 // resourceDocuments returns the prose files that carry payload examples.
-// conventions/errors/overview/realtime/client-migration describe rules and
-// migrations rather than one resource's wire shape.
+// conventions (with its Client integration section), errors, overview and
+// realtime describe rules rather than one resource's wire shape.
 func resourceDocuments(t *testing.T) []string {
 	t.Helper()
 

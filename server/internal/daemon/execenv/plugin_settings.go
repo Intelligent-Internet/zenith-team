@@ -33,7 +33,7 @@ func prepareClaudePluginSettings(envRoot, base string, disabled []string) (strin
 		return "", fmt.Errorf("encode run plugin settings: %w", err)
 	}
 	path := filepath.Join(envRoot, "claude-plugin-settings.json")
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return "", fmt.Errorf("write run plugin settings: %w", err)
 	}
 	return path, nil

@@ -9,9 +9,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // This file is the only place in the package that names a generated query or
@@ -23,7 +23,12 @@ import (
 // bind access lineage before any bytes become downloadable. Existing names a
 // reservation already bound to that parent. The returned input's private request
 // key must be used for Initiate, and must not be exposed through the public API.
-func ReserveInTx(ctx context.Context, q *generated.Queries, input InitiateInput, existing *uuid.UUID) (InitiateInput, uuid.UUID, error) {
+func ReserveInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	input InitiateInput,
+	existing *uuid.UUID,
+) (InitiateInput, uuid.UUID, error) {
 	if existing == nil {
 		input.RequestKey = uuid.New()
 	} else {
@@ -41,8 +46,13 @@ func ReserveInTx(ctx context.Context, q *generated.Queries, input InitiateInput,
 		return InitiateInput{}, uuid.Nil, err
 	}
 	result, err := initiatePendingAttachment(ctx, q, pendingAttachmentCreate{
-		RequestKey: normalized.RequestKey, CompanyID: normalized.CompanyID, UploadedByUserID: normalized.UploadedByUserID,
-		Filename: normalized.Filename, ContentType: normalized.ContentType, SizeBytes: normalized.SizeBytes, PendingTTL: defaultPendingTTL,
+		RequestKey:       normalized.RequestKey,
+		CompanyID:        normalized.CompanyID,
+		UploadedByUserID: normalized.UploadedByUserID,
+		Filename:         normalized.Filename,
+		ContentType:      normalized.ContentType,
+		SizeBytes:        normalized.SizeBytes,
+		PendingTTL:       defaultPendingTTL,
 	})
 	if err != nil {
 		return InitiateInput{}, uuid.Nil, safeRepositoryError(ctx, err)

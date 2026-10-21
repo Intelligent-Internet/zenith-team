@@ -10,8 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 var errInvalidTaskResultCursor = errors.New("invalid Task results cursor")

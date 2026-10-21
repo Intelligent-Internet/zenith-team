@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
-// A person grant preview (D31 revision, 2026-10-08) answers what the save
+// A person grant preview answers what the save
 // would do, so the app asks first only when a change stops Runs or takes the
 // Project away. It counts Runs as the Group preview does, keeps what the
 // person's Groups give, and refuses what the save refuses.
@@ -108,7 +108,7 @@ type accessRowNames struct {
 	action, projectTitle, groupName string
 }
 
-// Access rows keep the names of their time (D31 revision, 2026-10-08): a
+// Access rows keep the names of their time: a
 // grant row carries the Project's title, and a Group's row on a Project also
 // the Group's name, as they were when the change was made, so the row still
 // reads after the Group is deleted or the Project renamed or archived.

@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/email"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type ProviderRateLimitError struct {

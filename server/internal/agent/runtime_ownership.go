@@ -22,9 +22,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RuntimeAccess is the viewer's server-derived standing on an Agent through

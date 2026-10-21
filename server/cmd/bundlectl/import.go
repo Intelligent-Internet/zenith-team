@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // importOptions are the flags of bundlectl import.
@@ -222,7 +222,7 @@ func importDev(ctx context.Context, options importOptions, stdout, stderr io.Wri
 }
 
 // sameFiles reports whether a plugin read from disk carries exactly the
-// Boardly files of the commit read beside it.
+// Zenith Team files of the commit read beside it.
 func sameFiles(disk, commit pluginSource) bool {
 	if commit.identity.ContentTreeID == "" || !bytes.Equal(disk.manifestRaw, commit.manifestRaw) ||
 		!bytes.Equal(disk.retiredRaw, commit.retiredRaw) || len(disk.files) != len(commit.files) {

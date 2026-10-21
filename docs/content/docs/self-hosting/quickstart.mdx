@@ -1,0 +1,193 @@
+---
+title: Self-hosting quickstart
+description: Run your own Zenith Team server with Docker, create your account, and connect a computer that runs agents.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This guide runs a complete Zenith Team server on one machine with Docker Compose. The stack has five parts: the web app, the API server, PostgreSQL, Redis, and S3-compatible file storage.
+
+Agents do not run on this server. They run on the computers your members connect, through the `codex` or `claude` CLI on each computer. The last step of this guide connects the first one.
+
+## What you need
+
+On the server:
+
+- **Docker** with Compose v2 (the `docker compose` command)
+- **`openssl`**, to generate secrets
+- **`make`** and **`git`**
+
+On each computer that runs agents:
+
+- the **Codex CLI** (`codex`) or **Claude Code** (`claude`), installed and signed in
+- the **`zen`** CLI (step 5 shows where to get it)
+
+## 1. Get the code and create the settings file
+
+```bash
+git clone https://github.com/Intelligent-Internet/zenith-team.git
+cd zenith-team
+make selfhost-env
+```
+
+To run a release instead of the newest code on `main`, check out its tag before `make selfhost-env`, for example `git checkout v1.2.3`. The [releases page](https://github.com/Intelligent-Internet/zenith-team/releases) lists them.
+
+`make selfhost-env` copies `deploy/production.env.example` to `deploy/.env`. It fills the three required secrets with random values:
+
+- `APP_POSTGRES_PASSWORD`
+- `AUTH_CSRF_SECRET`
+- `STORAGE_S3_SECRET_ACCESS_KEY`
+
+It also sets the file mode to `600`, so only your user can read it. It never overwrites an existing `deploy/.env`.
+
+## 2. Review `deploy/.env`
+
+Open `deploy/.env` and read it once. For a first run on your own machine, you can leave everything else as it is:
+
+- The defaults serve Zenith Team at **http://localhost:8080**, on this machine only.
+- Optional features, such as email and Google sign-in, stay off while their values are empty.
+
+Never commit this file. Every setting is explained in [Environment variables](/self-hosting/environment-variables).
+
+## 3. Start the stack
+
+```bash
+make selfhost-up
+```
+
+This builds the server and web images from your checkout and starts them with PostgreSQL, Redis and the storage service. It creates the storage bucket and waits until the server reports healthy. On its first start, the server sets up the database itself. The first build takes a while.
+
+To check on it:
+
+```bash
+make selfhost-status                       # server should be "healthy"
+curl -fsS http://localhost:8788/readyz     # {"status":"ready"}
+```
+
+`make selfhost-logs` follows the logs of every container.
+
+### Use the prebuilt images
+
+Each release also publishes ready-made images to GitHub Container Registry:
+
+- `ghcr.io/intelligent-internet/zenith-team-server`
+- `ghcr.io/intelligent-internet/zenith-team-web`
+
+Each one is tagged with the version (`1.2.3`), the minor line (`1.2`) and `latest`. To use them, set both in `deploy/.env`:
+
+```dotenv
+APP_SERVER_IMAGE=ghcr.io/intelligent-internet/zenith-team-server:1.2.3
+APP_WEB_IMAGE=ghcr.io/intelligent-internet/zenith-team-web:1.2.3
+```
+
+`make selfhost-up` always builds from source, so pull and start with Compose instead:
+
+```bash
+docker compose -f deploy/docker-compose.production.yml pull server web
+docker compose -f deploy/docker-compose.production.yml up -d --wait
+```
+
+Pin a version rather than `latest`, so you choose when to upgrade. Keep your checkout on the same release tag, so the Compose file matches the images.
+
+## 4. Create your account and company
+
+Open **http://localhost:8080** and create an account with your email and a password. Email is not set up yet, so sign-up finishes at once, with no code to type. Onboarding then asks a few questions and creates your [Company](/companies).
+
+<Callout type="info">
+Use exactly `http://localhost:8080`. The server only accepts browser requests from the addresses listed in `AUTH_WEB_ORIGINS`. `http://127.0.0.1:8080` counts as a different address, and the server refuses it with `origin is not allowed`.
+</Callout>
+
+The last onboarding screen sets up your CEO Agent. It needs a connected computer, so connect one now.
+
+## 5. Connect a computer that runs agents
+
+Each computer that runs agents runs the **daemon**: a background process that picks up work from the server and runs it with that computer's own `codex` or `claude` CLI. [Daemon and runtimes](/daemon-and-runtimes) explains it in full.
+
+On that computer:
+
+1. **Sign in to your agent CLI.** Install the Codex CLI or Claude Code and sign in with the vendor's own login. Zenith Team never holds these credentials. See [Providers](/providers#sign-in-and-credentials).
+
+2. **Get `zen` and `zenith-team-mcp`.** Download them, or build them.
+
+   - **Download.** Each [GitHub Release](https://github.com/Intelligent-Internet/zenith-team/releases) has one archive per system, such as `zenith-team_v1.2.3_darwin_arm64.tar.gz`, plus a `checksums.txt`. The Linux and macOS archives hold both binaries. `zen` does not build for Windows yet, so the Windows archive holds only `zenith-team-mcp`.
+   - **Build.** You need Go 1.26. From your checkout:
+
+     ```bash
+     make tools-prepare      # fetch the pinned build assets once
+     cd server
+     go build -o ../.dev/bin/zen ./cmd/zen
+     go build -o ../.dev/bin/zenith-team-mcp ./cmd/mcp
+     ```
+
+   Put both binaries on your `PATH`.
+
+3. **Sign in and start the daemon.**
+
+   ```bash
+   zen auth login --server http://localhost:8080
+   export ZENITH_TEAM_MCP_EXECUTABLE="$(command -v zenith-team-mcp)"
+   zen daemon start
+   ```
+
+`zen auth login` asks for the email and password you just signed up with. It saves the server address, so later commands use it too. On the server machine itself you can leave out `--server`: the CLI's built-in default is `http://localhost:8080`.
+
+`ZENITH_TEAM_MCP_EXECUTABLE` gives agents the Zenith Team tools, such as saving an output. Set it in the shell you start the daemon from. Without it, agents still run, but without those tools.
+
+`zen daemon start` runs in the background. It refuses to start when neither `codex` nor `claude` is on your `PATH`. `zen daemon status` shows whether it is up.
+
+Back in the browser, choose **Refresh** on the CEO Agent setup screen. Your computer appears under **Registered runtimes**. From here, the general [Quickstart](/quickstart#3-meet-your-ceo-agent) takes you to your first finished task.
+
+### Computers on other machines
+
+By default the server only listens on this machine. To connect computers elsewhere, or to let other people open the web app, put the server behind HTTPS first: see [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls). Then sign in from each computer with your HTTPS address:
+
+```bash
+zen auth login --server https://zenith.example.com
+```
+
+The desktop app starts its own daemon, so it needs no `zen` setup. For now you build it from source, with your server's HTTPS address built in. See [Desktop app](/desktop-app).
+
+## Stop and start
+
+```bash
+make selfhost-down   # stop the stack; your data stays
+make selfhost-up     # start it again
+```
+
+`make selfhost-down` removes the containers but keeps the three data volumes: `postgres-data` (the database), `storage-data` (uploaded files) and `redis-data`. Everything is still there on the next `make selfhost-up`.
+
+<Callout type="warning">
+`docker compose -f deploy/docker-compose.production.yml down --volumes` also deletes the data volumes. Your companies, conversations and files are gone for good. Take a [backup](/self-hosting/storage#back-up-and-restore) first.
+</Callout>
+
+## Ports
+
+| Port | Setting | What it serves |
+| --- | --- | --- |
+| `8080` | `APP_WEB_PORT` | The web app. It also passes `/api` requests, including WebSockets, to the server. |
+| `8788` | `APP_HTTP_PORT` | The API server directly, with `/healthz`, `/readyz` and `/metrics`. |
+
+Both ports bind to `127.0.0.1`, so only this machine can reach them. Docker publishes ports past the host firewall, so a firewall rule would not protect them. [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls) shows the safe way to open the server up.
+
+If you change `APP_WEB_PORT`, change the port in `AUTH_WEB_ORIGINS` and `AUTH_WEB_APP_ORIGIN` too.
+
+## If something does not work
+
+| Symptom | Check first |
+| --- | --- |
+| `make selfhost-up` says `deploy/.env` is missing | Run `make selfhost-env` first. |
+| `make selfhost-env` says the file already exists | It never overwrites. Edit `deploy/.env`, or move it away and run it again. |
+| Compose stops with `... is required` | A required secret in `deploy/.env` is empty. |
+| The server never becomes healthy | Run `make selfhost-logs`. A bad setting stops the server, and the error names the variable. |
+| Sign-up or sign-in fails with `origin is not allowed` | The address in your browser bar is not in `AUTH_WEB_ORIGINS`. |
+| **Registered runtimes** stays empty | Run `zen daemon status` on that computer, and check that `codex` or `claude` is installed there. See [Daemon and runtimes](/daemon-and-runtimes#troubleshooting-an-offline-runtime). |
+
+More fixes are in [Troubleshooting](/troubleshooting).
+
+## Next steps
+
+- **[Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls)**: serve Zenith Team over HTTPS to other machines.
+- **[Sign-in setup](/self-hosting/auth-setup)**: email codes, password reset and Google sign-in.
+- **[Environment variables](/self-hosting/environment-variables)**: every setting in `deploy/.env`.
+- **[Security model](/self-hosting/security-model)**: what the server protects, and the hardening checklist.
+- **[Privacy and network](/self-hosting/privacy-and-network)**: what the server and the apps send, and to whom.

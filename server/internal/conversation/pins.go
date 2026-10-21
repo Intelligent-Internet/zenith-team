@@ -4,20 +4,29 @@ import (
 	"context"
 	"fmt"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (s *DefaultConversationService) ListPins(ctx context.Context, principal auth.UserPrincipal) ([]UserState, error) {
-	rows, err := s.store.Queries().ListPinnedConversationStatesForActiveMember(ctx, generated.ListPinnedConversationStatesForActiveMemberParams{ActorUserID: principal.UserID, CompanyID: principal.CompanyID})
+	rows, err := s.store.Queries().
+		ListPinnedConversationStatesForActiveMember(ctx, generated.ListPinnedConversationStatesForActiveMemberParams{ActorUserID: principal.UserID, CompanyID: principal.CompanyID})
 	if err != nil {
 		return nil, fmt.Errorf("list personal chat pins: %w", err)
 	}
 	states := make([]UserState, len(rows))
 	for index, row := range rows {
-		states[index] = UserState{ConversationID: row.ConversationID, CompanyID: row.CompanyID, UserID: principal.UserID, PinnedAt: util.TimestampToTime(row.PinnedAt), UpdatedAt: row.UpdatedAt.Time.UTC(), Revision: row.Version}
+		states[index] = UserState{
+			ConversationID: row.ConversationID,
+			CompanyID:      row.CompanyID,
+			UserID:         principal.UserID,
+			PinnedAt:       util.TimestampToTime(row.PinnedAt),
+			UpdatedAt:      row.UpdatedAt.Time.UTC(),
+			Revision:       row.Version,
+		}
 	}
 	return states, nil
 }
@@ -31,8 +40,18 @@ func taskChatUserState(row generated.ConversationUserState) UserState {
 }
 
 // Caller holds the company/member and Conversation mutation locks.
-func updateTaskChatState(ctx context.Context, q *generated.Queries, actorID uuid.UUID, conversation generated.Conversation, input UpdateUserStateInput) (UserState, bool, error) {
-	params := generated.GetTaskConversationUserStateParams{ActorUserID: actorID, CompanyID: conversation.CompanyID, ConversationID: conversation.ID}
+func updateTaskChatState(
+	ctx context.Context,
+	q *generated.Queries,
+	actorID uuid.UUID,
+	conversation generated.Conversation,
+	input UpdateUserStateInput,
+) (UserState, bool, error) {
+	params := generated.GetTaskConversationUserStateParams{
+		ActorUserID:    actorID,
+		CompanyID:      conversation.CompanyID,
+		ConversationID: conversation.ID,
+	}
 	if err := q.EnsureTaskConversationUserState(ctx, generated.EnsureTaskConversationUserStateParams{
 		ActorUserID: actorID, CompanyID: conversation.CompanyID, ConversationID: conversation.ID,
 	}); err != nil {
@@ -70,10 +89,14 @@ func updateTaskChatState(ctx context.Context, q *generated.Queries, actorID uuid
 }
 
 // ListStates returns saved personal filing state; absent chats have neither flag set.
-func (s *DefaultConversationService) ListStates(ctx context.Context, principal auth.UserPrincipal) ([]UserState, error) {
-	rows, err := s.store.Queries().ListConversationStatesForActiveMember(ctx, generated.ListConversationStatesForActiveMemberParams{
-		ActorUserID: principal.UserID, CompanyID: principal.CompanyID,
-	})
+func (s *DefaultConversationService) ListStates(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+) ([]UserState, error) {
+	rows, err := s.store.Queries().
+		ListConversationStatesForActiveMember(ctx, generated.ListConversationStatesForActiveMemberParams{
+			ActorUserID: principal.UserID, CompanyID: principal.CompanyID,
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list personal chat states: %w", err)
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 type attachmentAuthorityFixture struct {
@@ -33,8 +33,8 @@ func seedAttachmentAuthority(t *testing.T, ctx context.Context, pool *pgxpool.Po
 		INSERT INTO users(id,email,display_name) VALUES
 			($1,$3,'Attachment Owner'),($2,$4,'Attachment Member')`,
 		fixture.ownerID, fixture.memberID,
-		fixture.ownerID.String()+"@attachments.boardly.test",
-		fixture.memberID.String()+"@attachments.boardly.test")
+		fixture.ownerID.String()+"@attachments.zenith-team.test",
+		fixture.memberID.String()+"@attachments.zenith-team.test")
 	mustAttachmentExec(t, ctx, pool, `
 		INSERT INTO companies(id,name,slug,task_prefix)
 		VALUES ($1,'Attachment Company',$2,'ATT')`,

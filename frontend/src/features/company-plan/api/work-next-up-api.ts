@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { runService } from "@/shared/api/run.service";
 import type { RunDto } from "@/shared/api/types";
 
@@ -6,7 +9,7 @@ export function workActiveRunsTag(companyId: string) {
   return { type: "Run" as const, id: `${companyId}:active-tasks` };
 }
 
-export const workNextUpApi = boardlyApi.injectEndpoints({
+export const workNextUpApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkActiveRuns: builder.query<RunDto[], string>({
       providesTags: (_result, _error, companyId) => [
@@ -14,7 +17,7 @@ export const workNextUpApi = boardlyApi.injectEndpoints({
         workActiveRunsTag(companyId),
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const runs = await runService.listAllRuns(companyId, {
             active: true,
           });

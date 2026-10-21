@@ -6,7 +6,7 @@ import {
   WorkspaceAppearanceProvider,
   useWorkspaceAppearance,
 } from "@/app/appearance/workspace-appearance-provider";
-import { logoutBoardlySession } from "@/features/auth/model/logout";
+import { logoutZenithTeamSession } from "@/features/auth/model/logout";
 import { OnboardingCompanyForm } from "@/features/onboarding/company/components/onboarding-company-form";
 import { OnboardingConnectionsPanel } from "@/features/onboarding/company/components/onboarding-connections-panel";
 import { OnboardingInitializationPanel } from "@/features/onboarding/company/components/onboarding-initialization-panel";
@@ -101,14 +101,14 @@ function OnboardingContent({
   return (
     <main
       ref={scrollRef}
-      className="boardly-workspace-theme workspace-onboarding"
-      data-boardly-theme={preferences.themeId}
+      className="zenith-team-workspace-theme workspace-onboarding"
+      data-zenith-team-theme={preferences.themeId}
       data-desktop-mac={desktopMac || undefined}
       aria-label="Zenith Team onboarding"
     >
       <AppTitlebar
         className="workspace-onboarding__titlebar"
-        onLogout={logoutBoardlySession}
+        onLogout={logoutZenithTeamSession}
         profileContentClassName="!h-[156px] !w-[min(280px,calc(100vw-24px))]"
         profileSurfaceClassName="workspace-profile-menu"
         showProfileFacts={false}

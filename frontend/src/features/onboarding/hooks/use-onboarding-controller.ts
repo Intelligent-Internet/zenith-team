@@ -23,7 +23,7 @@ import {
 import { markTutorialTourEligible } from "@/features/tutorial-tour/model/tutorial-tour-storage";
 import { companyService } from "@/shared/api/company.service";
 import { attachmentService } from "@/shared/api/attachment.service";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import { useAppDispatch } from "@/state";
 import {
   readStorageItem,
@@ -89,7 +89,7 @@ export function useOnboardingController(
   // A new Company draft must not reuse or overwrite the active Company's
   // unfinished setup, including its retry slug.
   const draftKey = `${onboardingDraftKey(session)}${creatingCompany ? ":new-company" : ""}`;
-  const seedKey = `boardly:onboarding:seed:${session.email}${creatingCompany ? ":new-company" : ""}`;
+  const seedKey = `zenith-team:onboarding:seed:${session.email}${creatingCompany ? ":new-company" : ""}`;
   const sessionInitializationKey = `${getSessionInitializationKey(session)}|${creatingCompany}`;
   const screen = useMemo(
     () =>
@@ -277,7 +277,7 @@ export function useOnboardingController(
       // for the agent screen, and a founder should not watch their files
       // disappear mid-transfer.
       await uploadReferenceFiles(result.company.id);
-      dispatch(boardlyApi.util.invalidateTags(["Company"]));
+      dispatch(zenithTeamApi.util.invalidateTags(["Company"]));
       if (creatingCompany) removeStorageItem("session", draftKey);
       const destination = getCompanyOnboardingDestination(result);
       if (destination === "agent_setup") {

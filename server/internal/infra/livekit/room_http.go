@@ -49,7 +49,11 @@ func (p *HTTPRoomProvider) IssueParticipantToken(_ context.Context, roomName, id
 }
 
 func (p *HTTPRoomProvider) EnsureRoom(ctx context.Context, room Room) error {
-	_, err := p.call(ctx, "CreateRoom", map[string]any{"name": room.Name, "max_participants": room.ParticipantLimit})
+	_, err := p.call(
+		ctx,
+		"CreateRoom",
+		map[string]any{"name": room.Name, "max_participants": room.ParticipantLimit},
+	)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return err
 	}
@@ -107,7 +111,12 @@ func (p *HTTPRoomProvider) callService(ctx context.Context, service, method, roo
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/twirp/livekit."+service+"/"+method, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		p.baseURL+"/twirp/livekit."+service+"/"+method,
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +132,12 @@ func (p *HTTPRoomProvider) callService(ctx context.Context, service, method, roo
 		return nil, err
 	}
 	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("LiveKit %s failed with status %d: %s", method, resp.StatusCode, strings.TrimSpace(string(responseBody)))
+		return nil, fmt.Errorf(
+			"LiveKit %s failed with status %d: %s",
+			method,
+			resp.StatusCode,
+			strings.TrimSpace(string(responseBody)),
+		)
 	}
 	return responseBody, nil
 }

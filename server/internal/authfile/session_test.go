@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// D31: the daemon's own session is minted with the person's bearer and
+// The daemon's own session is minted with the person's bearer and
 // comes back for the same API URL; a 401 is ErrSessionRejected, so the
 // caller replaces the file instead of retrying it.
 func TestMintDaemonSessionUsesThePersonsBearer(t *testing.T) {

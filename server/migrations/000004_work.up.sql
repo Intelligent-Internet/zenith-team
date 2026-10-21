@@ -228,7 +228,7 @@ CREATE TABLE conversation_items (
     -- content against the row already stored under the same item_key and so
     -- tell a harmless replay from an attempt to rewrite committed history. It
     -- feeds no chain — runs.transcript_sha256 and the digest the daemon echoed
-    -- back are gone, and ADR 0005 says not to bring them back.
+    -- back are gone on purpose and should not come back.
     content_sha256 bytea,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     -- No updated_at: an item is immutable. Nothing in the query set updates

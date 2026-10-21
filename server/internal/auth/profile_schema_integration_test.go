@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // Two column-level guarantees the profile code relies on and cannot restate.

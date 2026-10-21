@@ -84,7 +84,18 @@ func runApprovalList(cmd *cobra.Command, _ []string) error {
 	}
 	rows := make([][]string, 0, len(page.Items))
 	for _, item := range page.Items {
-		rows = append(rows, []string{item.ID, item.Kind, item.Status, truncate(item.Title, 48), dashIfEmpty(item.RequestedByAgent.Name), stringOrDash(item.TaskID), item.ExpiresAt})
+		rows = append(
+			rows,
+			[]string{
+				item.ID,
+				item.Kind,
+				item.Status,
+				truncate(item.Title, 48),
+				dashIfEmpty(item.RequestedByAgent.Name),
+				stringOrDash(item.TaskID),
+				item.ExpiresAt,
+			},
+		)
 	}
 	printTable(cmd.OutOrStdout(), []string{"ID", "KIND", "STATUS", "TITLE", "AGENT", "TASK", "EXPIRES"}, rows)
 	noteCursor(cmd, page.NextCursor)
@@ -121,13 +132,18 @@ func runApprovalDecision(cmd *cobra.Command, args []string, decision string) err
 	ctx, cancel := apiContext()
 	defer cancel()
 	path := client.companyPath("approvals", approvalID)
-	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	revision, err := resolveRevision(ctx, cmd, client, path)
 	if err != nil {
 		return err
 	}
 	note, _ := cmd.Flags().GetString("note")
 	var raw json.RawMessage
-	if err := client.post(ctx, path+"/"+decision, map[string]any{"expectedRevision": revision, "decisionNote": note}, &raw); err != nil {
+	if err := client.post(
+		ctx,
+		path+"/"+decision,
+		map[string]any{"expectedRevision": revision, "decisionNote": note},
+		&raw,
+	); err != nil {
 		return err
 	}
 	return printResult(cmd, raw, nil)

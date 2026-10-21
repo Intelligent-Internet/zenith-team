@@ -1,7 +1,7 @@
 import { useUpdateWorkspaceTaskMutation } from "@/shared/api/task-api";
 import { TaskScheduling } from "@/features/calendar/task-scheduling";
 import { TaskAssigneeField, TaskExecutorField } from "./task-assignment-fields";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { TaskProjectLabel } from "./project-controls";
 import {
   Bot,
@@ -53,7 +53,7 @@ export function TaskProperties({
       return true;
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(
+        getZenithTeamQueryErrorMessage(
           error,
           "Task could not be updated. Refresh and try again.",
         ),

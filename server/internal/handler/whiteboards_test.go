@@ -13,11 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type boardHTTPStub struct {

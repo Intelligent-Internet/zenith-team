@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (s *DefaultPageService) ReviewPageChange(
@@ -60,7 +60,8 @@ func ReviewPageChangeInTx(
 	request PageChangeDecision,
 ) (PageEditResult, []events.Event, error) {
 	project, pageID, id, in := request.ProjectID, request.PageID, request.ChangeID, request.Input
-	if in.RequestKey == uuid.Nil || len(in.Fingerprint) != 64 || len(in.Indexes) > 10000 || len(in.Feedback) > 4000 {
+	if in.RequestKey == uuid.Nil || len(in.Fingerprint) != 64 || len(in.Indexes) > 10000 ||
+		len(in.Feedback) > 4000 {
 		return PageEditResult{}, nil, ErrInvalid
 	}
 	switch in.Action {

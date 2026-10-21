@@ -11,12 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestEnqueueRejectsTaskConversationMismatchWithoutAdvancingGeneration(t *testing.T) {
@@ -223,8 +223,8 @@ func TestEnqueueFreezesTriggerPromptIntoRunContext(t *testing.T) {
 // and has since day one — but nothing ever wrote it, so a user's configured
 // model and instructions never reached the provider. The enqueue kernel now
 // freezes the agent's execution identity into the context in the SAME
-// transaction that creates the run (ADR 0003, extending ADR 0001's frozen
-// prompt): a later agent edit must not change what an already-enqueued run
+// transaction that creates the run, as it already freezes the prompt: a
+// later agent edit must not change what an already-enqueued run
 // executes with, and a claim must serve the enqueue-time brief.
 func TestEnqueueFreezesAgentBriefIntoRunContext(t *testing.T) {
 	pool, _ := dbtest.StartPostgres(t)
@@ -375,19 +375,46 @@ func TestTaskStartCreatesMissingOverviewForMember(t *testing.T) {
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
 	// Preserve an owner, then start the existing Project's Task as an ordinary member.
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'owner')`, f.CompanyA, f.UserB)
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_members SET role='member' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'owner')`,
+		f.CompanyA,
+		f.UserB,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE company_members SET role='member' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserA,
+	)
 	store, _ := db.NewStore(pool)
 	var pending []events.Event
 	var run generated.Run
 	if err := store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		var err error
-		run, err = EnqueueRunInTx(ctx, q, &pending, RunTrigger{CompanyID: f.CompanyA, ConversationID: f.ConversationA, AgentID: f.AgentA, TaskID: util.NullUUIDFromPtr(&f.TaskA), Source: RunSourceMessage, AuthorizedByUserID: f.UserA})
+		run, err = EnqueueRunInTx(
+			ctx,
+			q,
+			&pending,
+			RunTrigger{
+				CompanyID:          f.CompanyA,
+				ConversationID:     f.ConversationA,
+				AgentID:            f.AgentA,
+				TaskID:             util.NullUUIDFromPtr(&f.TaskA),
+				Source:             RunSourceMessage,
+				AuthorizedByUserID: f.UserA,
+			},
+		)
 		return err
 	}); err != nil {
 		t.Fatal(err)
 	}
-	first, err := store.Queries().GetProjectOverviewVersion(ctx, generated.GetProjectOverviewVersionParams{CompanyID: f.CompanyA, ProjectID: f.ProjectA})
+	first, err := store.Queries().
+		GetProjectOverviewVersion(ctx, generated.GetProjectOverviewVersionParams{CompanyID: f.CompanyA, ProjectID: f.ProjectA})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -410,7 +437,8 @@ func TestTaskStartCreatesMissingOverviewForMember(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	again, err := store.Queries().GetProjectOverviewVersion(ctx, generated.GetProjectOverviewVersionParams{CompanyID: f.CompanyA, ProjectID: f.ProjectA})
+	again, err := store.Queries().
+		GetProjectOverviewVersion(ctx, generated.GetProjectOverviewVersionParams{CompanyID: f.CompanyA, ProjectID: f.ProjectA})
 	if err != nil || again.ID != first.ID {
 		t.Fatalf("overview was replaced: %+v, %v", again, err)
 	}

@@ -477,7 +477,7 @@
   color: var(--workspace-native-text);
 }
 /* The composer shell is the boundary; typing does not frame the inner field. */
-html[data-boardly-workspace-theme] .discussion-composer textarea:focus {
+html[data-zenith-team-workspace-theme] .discussion-composer textarea:focus {
   outline: none;
 }
 .discussion-composer textarea::placeholder {

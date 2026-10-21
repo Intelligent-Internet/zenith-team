@@ -25,7 +25,7 @@ GET /api/v1/ws?company_id=<uuid>
 ```
 
 Authentication rides the HTTP upgrade — there is no in-band auth frame. The
-request carries either the `boardly_access` cookie or
+request carries either the `zenith_team_access` cookie or
 `Authorization: Bearer <accessToken>`.
 
 `company_id` is **required**. A missing or malformed value is `422`; a company
@@ -161,8 +161,8 @@ Conversation/Run recovery.
 Exact head equality is necessary but does not prove complete coverage: if an
 earlier frame was lost and the final frame arrived, a head-only check can
 still match. Keep live observed heads separate from verified REST scan
-coverage. The existing frontend shortcut and Planned correction are specified
-in [Conversation TECH §11.2](../specs/conversations/TECH.md#112-verified-scan-coverage-cv-c8).
+coverage. The current frontend still takes a head-only shortcut; correcting it
+is Planned.
 
 ### Transport limits
 
@@ -558,7 +558,7 @@ A preview frame is local rendering scratch:
 {
   "type": "run.preview.delta",
   "companyId": "0197f4a1-9d33-7c55-b0a2-51c7e8d90f42",
-  "runId": "4821",
+  "runId": "0197f4d2-8e10-7c41-9a3b-2f6e1d5c7b80",
   "conversationId": "0197f4c9-0a12-7e88-b3f7-77d2e5a01c64",
   "itemKey": "assistant-7",
   "channel": "text",
@@ -590,14 +590,14 @@ Reset discards all preview scratch. It does not affect committed transcript
 items or the durable cursor used for catch-up.
 
 The matching post-commit `run.message_created` seals that item and is authoritative
-even if a late local preview arrives. This direct path saves cloud throughput
+even if a late local preview arrives. This direct path saves server throughput
 without weakening multi-client consistency because every eligible client still
 receives the full completed item over the client WebSocket.
 
 ## The daemon plane
 
 `GET /api/v1/daemon/ws`, authenticated by the daemon bearer before upgrade.
-Identity is pinned at connect from `X-Boardly-Daemon-ID`, `?runtime_ids=`,
+Identity is pinned at connect from `X-Zenith-Team-Daemon-ID`, `?runtime_ids=`,
 `X-Client-Version` and `X-Client-Capabilities`. The pinned runtime scope is
 the requested `runtime_ids` narrowed to the caller's own runtimes: registered
 by the signed-in member, from this daemon, in one of their companies, and not

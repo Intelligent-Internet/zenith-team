@@ -1,7 +1,7 @@
 export { activityService } from "@/shared/api/activity.service";
 export { attachmentService } from "@/shared/api/attachment.service";
 export { authService } from "@/shared/api/auth.service";
-export { boardlyApi } from "@/shared/api/boardly-api";
+export { zenithTeamApi } from "@/shared/api/zenith-team-api";
 export { cockpitService } from "@/shared/api/cockpit.service";
 export { companyService } from "@/shared/api/company.service";
 export { companySearchService } from "@/shared/api/company-search.service";

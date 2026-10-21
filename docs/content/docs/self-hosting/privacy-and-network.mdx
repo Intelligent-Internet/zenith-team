@@ -1,0 +1,70 @@
+---
+title: Privacy and network
+description: What a self-hosted Zenith Team server, the apps and connected computers send over the network, and to whom.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+**The Zenith Team server sends no telemetry.** It does not report usage, errors or anything else to the Zenith Team maintainers, and the web app has no analytics. Every outside call on this page happens only because you turned a feature on, or because a person's own tools make it.
+
+## The server
+
+The server talks to its own PostgreSQL, Redis and file storage. Everything else is off until you configure it:
+
+| Service | When the server calls it | Turned on by |
+| --- | --- | --- |
+| Resend (`api.resend.com`) | Sending sign-up codes, password resets and invitations; reading company mailbox email | `AUTH_EMAIL_*`, `MAILBOX_*` |
+| Google | Google sign-in | `GOOGLE_WEB_*`, `GOOGLE_DESKTOP_*` |
+| X, Facebook, Instagram, LinkedIn | A member connects a personal social account, or posts from an agent chat | `SOCIAL_*` |
+| Google Cloud (Cloud Build, Cloud Run, Cloud Storage) | Publishing an agent's app | `GCP_PROJECT_ID` |
+| Cloudflare API | Giving a published app a custom address | `CLOUDFLARE_*` |
+| LiveKit | Huddles (voice and video calls) | `LIVEKIT_*` |
+| GitHub (`api.github.com`, `codeload.github.com`) | A member adds a skill from a public GitHub repository | Using that feature |
+
+Settings for each are in [Environment variables](/self-hosting/environment-variables).
+
+### Metrics stay local
+
+The server serves Prometheus metrics at `/metrics` on its API port, and live connection counts at `/health/realtime`. Nothing pushes them anywhere. The API port binds to `127.0.0.1` by default, so only this machine can read them. If you collect metrics, point your own Prometheus at it.
+
+Server logs stay on the server. They never contain tokens, provider credentials, file keys or local file paths.
+
+## Zenith Studio
+
+Zenith Studio is a separate, hosted service for making media. Its API is at `https://api-agent.ii.inc`. It is off unless you set `ZENITH_STUDIO_API_URL`.
+
+When it is on, the server only hands that address to connected computers and apps. The server itself does not call Studio. The Studio CLI runs on each member's computer, with a sign-in kept on that computer, and the app's Studio editor talks to Studio from the browser.
+
+## Computers that run agents
+
+- **Provider CLIs talk to their vendors.** Claude Code talks to Anthropic and Codex talks to OpenAI, under each person's own account. Zenith Team does not see or relay that traffic. Each vendor's own terms apply.
+- **The daemon talks to your Zenith Team server.** It sends conversations, run status and usage. Code, files and workspaces stay on the computer. See [the data and execution boundary](/how-zenith-team-works#the-data-and-execution-boundary).
+- **Agents can reach what their CLI can reach.** Web search, plugins and connectors are features of the provider CLI and of what the person set up on that computer.
+- **When Studio is on**, the daemon installs the Zenith Studio CLI with the computer's own `npm`, so it downloads from the npm registry. Each download is checked against a pinned checksum.
+
+## The web and desktop apps
+
+- **Google Fonts.** The app loads two fonts, Geist Mono and Geist Pixel, from Google Fonts (`fonts.googleapis.com` and `fonts.gstatic.com`) each time it starts. This happens in `frontend/src/app/bootstrap.tsx`. Google sees the address of each person who opens the app. To avoid it, serve those fonts yourself and change that file in your build.
+- **Link previews.** When a chat message holds a link, the app fetches that public page's title and image to show a preview card. The browser fetches it directly, without cookies. The desktop app fetches it on the person's own computer.
+- **Huddles.** Calls connect to the LiveKit server you configured. The optional AI voice worker uses your OpenAI project. If you set `HUDDLE_NOTES_RECAP_API_KEY` and `HUDDLE_NOTES_RECAP_MODEL`, the server sends Huddle notes transcripts to the OpenAI Responses API (`api.openai.com`) to write recaps.
+
+### Desktop crash reports
+
+Off unless the build turned them on with `ZENITH_TEAM_DESKTOP_CRASH_REPORTS_ENABLED=true` and a Sentry DSN (`ZENITH_TEAM_DESKTOP_SENTRY_DSN`) or another crash service's address (`ZENITH_TEAM_DESKTOP_CRASH_REPORT_SUBMIT_URL`). Reports then go only to the service you named. The app strips user identity, request bodies, cookies and query strings before it sends a JavaScript error. Native crash dumps are binary and can contain process memory. See [Desktop app](/desktop-app#crash-reports).
+
+### Desktop updates
+
+The desktop app checks for updates by itself only when its build includes an update feed. Without one, **Check for Updates** just opens a web page in the browser. See [Desktop app](/desktop-app#updates).
+
+## When you build from source
+
+Building needs the usual package registries: the Go module proxy, the npm registry, PyPI for the voice worker, and Docker Hub or GHCR for base images. On top of that, `make tools-prepare` (`bundlectl prepare`) downloads a few pinned packages from `registry.npmjs.org` and checks each against its pinned checksum. The desktop build and the release builds run the same step. After the first run, a local cache lets it work offline.
+
+<Callout type="info">
+Found a network call this page does not list? That is a bug in this page, or in the code. Please [open an issue](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose).
+</Callout>
+
+## Next steps
+
+- **[Security model](/self-hosting/security-model)**: what the server protects, and the hardening checklist.
+- **[Environment variables](/self-hosting/environment-variables)**: the setting behind each feature above.

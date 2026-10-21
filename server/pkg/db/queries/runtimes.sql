@@ -2,7 +2,7 @@
 --.
 
 -- Registration is an upsert on the (company, daemon, provider, owner)
--- identity: a runtime is one person's use of one machine (D33), so a second
+-- identity: a runtime is one person's use of one machine, so a second
 -- person signing in on the same computer inserts rows of their own and never
 -- moves anyone else's. The unusable-reason columns are replaced wholesale
 -- like metadata: a registration without a reason clears it. custom_name is
@@ -61,7 +61,7 @@ WHERE company_id = sqlc.arg(company_id)::uuid
   AND removed_at IS NULL
 ORDER BY owner_user_id;
 
--- One person at a time (D33): a registration takes every other person's live
+-- One person at a time: a registration takes every other person's live
 -- rows on the same machine offline and marks them handed over, in the
 -- registration's own transaction. Their bindings, queued Runs, names and
 -- discovery stay on their rows for when they sign back in. A row already
@@ -172,7 +172,7 @@ RETURNING *;
 
 -- applyToMachine: every LIVE runtime the same person registered from the
 -- same daemon in the company, in one statement so the siblings flip
--- together. Another person's rows on the same computer are theirs (D33) and
+-- together. Another person's rows on the same computer are theirs and
 -- keep their own name. Removed rows are excluded like everywhere else:
 -- renaming one would store a name no read serves, and its id would ride
 -- along in the statement's returned rows and from there into

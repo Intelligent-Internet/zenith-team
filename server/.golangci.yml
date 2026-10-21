@@ -1,4 +1,4 @@
-# golangci-lint v2 configuration for the Boardly Go server (version pinned in
+# golangci-lint v2 configuration for the Zenith Team Go server (version pinned in
 # the root Makefile). Style baseline: Google Go Style Guide + CodeReviewComments.
 #   make go-fmt        -> golangci-lint fmt          (gofumpt + goimports, rewrites)
 #   make go-fmt-check  -> golangci-lint fmt --diff   (exit 1 if unformatted)
@@ -24,14 +24,14 @@ formatters:
   enable:
     - gofumpt # strict superset of gofmt
     - goimports # import management + stdlib / third-party / local grouping
-    - golines # wrap lines past max-len; the baseline was migrated 2026-08-11
+    - golines # wrap lines past max-len
   settings:
     gofumpt:
-      module-path: boardly.dev/boardly/server
+      module-path: github.com/Intelligent-Internet/zenith-team/server
       extra-rules: true
     goimports:
       local-prefixes:
-        - boardly.dev/boardly/server # our imports grouped last
+        - github.com/Intelligent-Internet/zenith-team/server # our imports grouped last
     # Applies to the whole tree. tab-len 8 matches how Go renders a tab, so
     # max-len is measured the way the code actually reads.
     golines:
@@ -153,6 +153,13 @@ linters:
         # Go test helpers idiomatically take *testing.T first, which conflicts
         # with context-as-argument. Doc-comment rules do not apply to tests.
         text: "(context.Context should be the first parameter|should have comment|should have a package comment|should be of the form)"
+      # AGENTS.md names every service with the XService / DefaultXService /
+      # NewXService trio and forbids a bare Service, so a package's main
+      # service repeats the package name (calendar.CalendarService). Only
+      # stutter findings on names ending in Service are excluded.
+      - linters:
+          - revive
+        text: "exported: type name will be used as \\w+\\.\\w+Service by other packages, and that stutters"
 
       # ---------------------------------------------------------------------
       # STAGED DEBT — pre-existing violations, excluded so `make go-lint` is a

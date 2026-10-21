@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
 )
 
 // maxCrashReportBodyBytes bounds the submission body well above the 16 KiB

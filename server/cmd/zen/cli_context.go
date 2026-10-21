@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
-	"boardly.dev/boardly/server/internal/runchannel"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 // executionMode says who is holding the binary.
@@ -17,7 +17,7 @@ import (
 // Operator mode is a person at a terminal: credentials come from the
 // authfile written by `zen auth login`, and the Company comes from a flag,
 // the environment or the saved config. Agent mode is a provider process the
-// daemon launched for one Run: run.json in BOARDLY_HOME names the Run, the
+// daemon launched for one Run: run.json in ZENITH_TEAM_HOME names the Run, the
 // daemon's Run channel carries every product call, and no flag or variable
 // can move the command to another Company, Agent, Conversation or Task.
 // The two never fall back to each other — an Agent shell that lost its
@@ -66,7 +66,7 @@ func usagef(format string, args ...any) error {
 // authority; the Run environment variables only prevent a silent slide
 // into Operator mode when that file is missing.
 func resolveCommandContext() commandContext {
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	var control runchannel.RunControlConfig
 	if err == nil {
 		control, err = runchannel.LoadRunControlConfig(home)
@@ -75,14 +75,19 @@ func resolveCommandContext() commandContext {
 		return commandContext{mode: modeAgent, run: control}
 	}
 	if !runchannel.IsRunControlUnavailable(err) {
-		return commandContext{mode: modeAgent, channelErr: &modeError{msg: "Run channel is unavailable: " + err.Error()}}
+		return commandContext{
+			mode:       modeAgent,
+			channelErr: &modeError{msg: "Run channel is unavailable: " + err.Error()},
+		}
 	}
-	if runID := strings.TrimSpace(os.Getenv("BOARDLY_RUN_ID")); runID != "" ||
-		strings.TrimSpace(os.Getenv("BOARDLY_RUN_TOKEN")) != "" {
+	if runID := strings.TrimSpace(os.Getenv("ZENITH_TEAM_RUN_ID")); runID != "" ||
+		strings.TrimSpace(os.Getenv("ZENITH_TEAM_RUN_TOKEN")) != "" {
 		return commandContext{
 			mode: modeAgent,
-			channelErr: &modeError{msg: "this shell belongs to a Zenith Team Run but the daemon left no run.json in BOARDLY_HOME; " +
-				"the Run channel is unavailable and Operator credentials are never used here"},
+			channelErr: &modeError{
+				msg: "this shell belongs to a Zenith Team Run but the daemon left no run.json in ZENITH_TEAM_HOME; " +
+					"the Run channel is unavailable and Operator credentials are never used here",
+			},
 		}
 	}
 	return commandContext{mode: modeOperator}
@@ -128,7 +133,7 @@ func resolveCompanyID(cmd *cobra.Command, context commandContext) (string, error
 	}
 	companyID := flagValue
 	if companyID == "" {
-		companyID = strings.TrimSpace(os.Getenv("BOARDLY_COMPANY_ID"))
+		companyID = strings.TrimSpace(os.Getenv("ZENITH_TEAM_COMPANY_ID"))
 	}
 	if companyID == "" {
 		saved, err := daemonpkg.LoadCLIConfig()
@@ -139,7 +144,7 @@ func resolveCompanyID(cmd *cobra.Command, context commandContext) (string, error
 	}
 	if companyID == "" {
 		return "", usagef(
-			"no company selected: pass --company, set BOARDLY_COMPANY_ID, or run `zen company use <id>`",
+			"no company selected: pass --company, set ZENITH_TEAM_COMPANY_ID, or run `zen company use <id>`",
 		)
 	}
 	if _, err := uuid.Parse(companyID); err != nil {
@@ -157,8 +162,8 @@ func companySource(cmd *cobra.Command, context commandContext) string {
 	if value, _ := cmd.Flags().GetString("company"); strings.TrimSpace(value) != "" {
 		return "--company flag"
 	}
-	if strings.TrimSpace(os.Getenv("BOARDLY_COMPANY_ID")) != "" {
-		return "BOARDLY_COMPANY_ID"
+	if strings.TrimSpace(os.Getenv("ZENITH_TEAM_COMPANY_ID")) != "" {
+		return "ZENITH_TEAM_COMPANY_ID"
 	}
 	if saved, err := daemonpkg.LoadCLIConfig(); err == nil && saved.CompanyID != "" {
 		return "config.json company_id"

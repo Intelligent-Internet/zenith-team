@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // A Run composes through the same fences and receipts as its edits: a

@@ -11,7 +11,7 @@ func TestLoadLocalStorageUsesSiloDefaults(t *testing.T) {
 
 	cfg, err := Load(mapLookup(map[string]string{
 		"APP_REDIS_URL":    "redis://localhost:6379/0",
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"AUTH_CSRF_SECRET": "01234567890123456789012345678901",
 		"STORAGE_DRIVER":   "local",
 	}))
@@ -19,8 +19,8 @@ func TestLoadLocalStorageUsesSiloDefaults(t *testing.T) {
 		t.Fatalf("Load() error = %v", err)
 	}
 	want := StorageConfig{
-		Bucket: "boardly-attachments", Region: "us-east-1", Endpoint: "http://localhost:9000",
-		AccessKeyID: "boardly", SecretAccessKey: "boardly-development-secret", UsePathStyle: true,
+		Bucket: "zenith-team-attachments", Region: "us-east-1", Endpoint: "http://localhost:9000",
+		AccessKeyID: "zenith-team", SecretAccessKey: "zenith-team-development-secret", UsePathStyle: true,
 	}
 	if !reflect.DeepEqual(cfg.Storage, want) {
 		t.Fatal("local storage configuration does not match the Docker Silo defaults")
@@ -32,7 +32,7 @@ func TestLoadLocalStorageAllowsExplicitS3Overrides(t *testing.T) {
 
 	cfg, err := Load(mapLookup(map[string]string{
 		"APP_REDIS_URL":                "redis://localhost:6379/0",
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"AUTH_CSRF_SECRET":             "01234567890123456789012345678901",
 		"STORAGE_DRIVER":               "local",
 		"STORAGE_S3_BUCKET":            "custom-attachments",
@@ -85,7 +85,7 @@ func TestLoadRejectsInvalidStorageModeConfiguration(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			test.values["APP_DATABASE_URL"] = "postgres://boardly:boardly@localhost/boardly"
+			test.values["APP_DATABASE_URL"] = "postgres://zenith_team:zenith_team@localhost/zenith_team"
 			_, err := Load(configuredLookup(test.values))
 			if err == nil || !strings.Contains(err.Error(), test.want) {
 				t.Fatalf("Load() error = %v, want %q", err, test.want)

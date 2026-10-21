@@ -11,12 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ModelSettings are the next Run's choices, independent of the Agent defaults.
@@ -226,11 +226,14 @@ func (s *DefaultConversationService) UpdateModelSettings(
 			return ErrConflict
 		}
 		if util.PtrToText(current.Model) != util.PtrToText(in.Model) {
-			count, err := q.InsertConversationModelChange(ctx, generated.InsertConversationModelChangeParams{
-				CompanyID: target.CompanyID, ConversationID: id, AgentID: in.AgentID,
-				ChangedByUserID: p.UserID,
-				PreviousModel:   util.PtrToText(current.Model), Model: util.PtrToText(in.Model),
-			})
+			count, err := q.InsertConversationModelChange(
+				ctx,
+				generated.InsertConversationModelChangeParams{
+					CompanyID: target.CompanyID, ConversationID: id, AgentID: in.AgentID,
+					ChangedByUserID: p.UserID,
+					PreviousModel:   util.PtrToText(current.Model), Model: util.PtrToText(in.Model),
+				},
+			)
 			if err != nil {
 				return fmt.Errorf("record chat model change: %w", err)
 			}

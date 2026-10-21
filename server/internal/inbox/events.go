@@ -12,7 +12,7 @@ package inbox
 import (
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // Topic carries an item and the recipient's fresh counts, so the badge moves

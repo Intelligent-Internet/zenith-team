@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/mcp/companyplan"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/companyplan"
 )
 
 // ListAgentsInput has no fields: the Company is the authenticated user's

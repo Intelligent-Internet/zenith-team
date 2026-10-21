@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { Button } from "@/shared/ui/core/button";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import {
   useGetHuddleAIQuery,
   useGetHuddleBudgetQuery,
@@ -48,7 +48,7 @@ export function useHeliaStatus(companyId: string, huddleId: string) {
   // the call; a roster change can also move the agent between states.
   useEffect(() => {
     if (!companyId || !huddleId) return undefined;
-    const removeRealtime = boardlyRealtimeClient.onEvent((event) => {
+    const removeRealtime = zenithTeamRealtimeClient.onEvent((event) => {
       if (
         event.companyId === companyId &&
         (event.type === "huddle.status_changed" ||
@@ -57,7 +57,7 @@ export function useHeliaStatus(companyId: string, huddleId: string) {
       )
         void refetch();
     });
-    const removeRecovery = boardlyRealtimeClient.onRecovery(
+    const removeRecovery = zenithTeamRealtimeClient.onRecovery(
       () => void refetch(),
     );
     return () => {
@@ -117,7 +117,7 @@ export function HuddleBudgetSettings({ companyId }: { companyId: string }) {
       setAmount("");
       setSaved(`Monthly budget saved: $${Number(amount).toFixed(2)}.`);
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     }
     void query.refetch();
   }

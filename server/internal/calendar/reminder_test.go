@@ -21,7 +21,16 @@ func TestNextReminderTime(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := nextReminderTime(Event{StartLocal: tt.start, EndLocal: tt.end, TimeZone: tt.zone, Recurrence: tt.repeat, ReminderMinutes: &lead}, after)
+			got, err := nextReminderTime(
+				Event{
+					StartLocal:      tt.start,
+					EndLocal:        tt.end,
+					TimeZone:        tt.zone,
+					Recurrence:      tt.repeat,
+					ReminderMinutes: &lead,
+				},
+				after,
+			)
 			if err != nil {
 				t.Fatal(err)
 			}

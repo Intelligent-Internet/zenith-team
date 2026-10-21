@@ -43,7 +43,7 @@ paths:
       # OpenAPI has no native WebSocket frame channel, so authored event
       # schemas hang off the upgrade operation as an extension. They are also
       # exported from openapi.yaml components so client generators retain them.
-      x-boardly-events:
+      x-zenith-team-events:
         - $ref: '#/schemas/ProjectRealtimeEvent'
         - $ref: '#/schemas/ProjectAccessChangedRealtimeEvent'
         - $ref: '#/schemas/WikiPageRealtimeEvent'
@@ -556,8 +556,7 @@ schemas:
       offline, was garbage-collected, a machine was renamed, a runtime was
       removed, or a runtime's tool state changed. A `deregister` also reaches
       a person whose runtimes went offline because someone else signed in on
-      the same computer (D33). Delivered to the
-      registrant (ADR 0014), except `stale_sweep` and `runtime_gc`, which
+      the same computer. Delivered to the registrant (ADR 0014), except `stale_sweep` and `runtime_gc`, which
       name no machine and go to the whole Company. A refetch signal — the
       roster is a join across daemons and runtimes with no single row to
       carry — so a client re-reads runtimes (and agents on `update`, whose

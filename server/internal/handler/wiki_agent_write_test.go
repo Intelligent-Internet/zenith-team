@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 type wikiAgentWriteServiceStub struct {
@@ -33,7 +33,9 @@ func (s *wikiAgentWriteServiceStub) Write(
 	s.runs = append(s.runs, runID)
 	s.users = append(s.users, principal.UserID)
 	return wiki.AgentWriteResponse{
-		Pages:      []wiki.AgentWriteResult{{Key: "a", PageID: uuid.New(), Title: "A", Revision: 1, Status: wiki.AgentWriteCreated}},
+		Pages: []wiki.AgentWriteResult{
+			{Key: "a", PageID: uuid.New(), Title: "A", Revision: 1, Status: wiki.AgentWriteCreated},
+		},
 		Warnings:   []string{},
 		TotalPages: 1,
 	}, s.err
@@ -100,9 +102,23 @@ func TestWikiAgentWriteAdmitsOnlyTheRunsOwnProof(t *testing.T) {
 			runID, token := fixture.runID, wikiAgentRunToken
 			tc.mutate(&fixture, &runID, &token)
 			service := &wikiAgentWriteServiceStub{}
-			result := fixture.post(fixture.writeHandler(service), runID, token, uuid.NewString(), "application/json", []byte(validWikiAgentWrite))
-			if result.Code != tc.status || (tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
-				t.Fatalf("write = %d %s, want %d %s", result.Code, result.Body.String(), tc.status, tc.code)
+			result := fixture.post(
+				fixture.writeHandler(service),
+				runID,
+				token,
+				uuid.NewString(),
+				"application/json",
+				[]byte(validWikiAgentWrite),
+			)
+			if result.Code != tc.status ||
+				(tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
+				t.Fatalf(
+					"write = %d %s, want %d %s",
+					result.Code,
+					result.Body.String(),
+					tc.status,
+					tc.code,
+				)
 			}
 			if tc.status != http.StatusOK && len(service.calls) != 0 {
 				t.Fatal("a refused request reached the service")
@@ -116,7 +132,14 @@ func TestWikiAgentWritePassesTheRunAndThePagesToTheService(t *testing.T) {
 	fixture := newWikiAgentFixture("direct")
 	service := &wikiAgentWriteServiceStub{}
 	h := fixture.writeHandler(service)
-	result := fixture.post(h, fixture.runID, wikiAgentRunToken, uuid.NewString(), "application/json", []byte(validWikiAgentWrite))
+	result := fixture.post(
+		h,
+		fixture.runID,
+		wikiAgentRunToken,
+		uuid.NewString(),
+		"application/json",
+		[]byte(validWikiAgentWrite),
+	)
 	if result.Code != http.StatusOK {
 		t.Fatalf("write = %d %s", result.Code, result.Body.String())
 	}
@@ -128,8 +151,12 @@ func TestWikiAgentWritePassesTheRunAndThePagesToTheService(t *testing.T) {
 		Warnings   []string         `json:"warnings"`
 		TotalPages int              `json:"totalPages"`
 	}
-	if err := json.Unmarshal(result.Body.Bytes(), &body); err != nil || len(body.Pages) != 1 || body.TotalPages != 1 ||
-		body.Pages[0]["status"] != "created" || body.Pages[0]["pageId"] == nil || body.Warnings == nil {
+	if err := json.Unmarshal(
+		result.Body.Bytes(),
+		&body,
+	); err != nil || len(body.Pages) != 1 || body.TotalPages != 1 ||
+		body.Pages[0]["status"] != "created" || body.Pages[0]["pageId"] == nil ||
+		body.Warnings == nil {
 		t.Fatalf("response = %s, %v", result.Body.String(), err)
 	}
 	if len(service.calls) != 1 || service.runs[0] != fixture.runID || service.users[0] != fixture.principal.UserID {
@@ -149,7 +176,10 @@ func TestWikiAgentWriteRefusesMalformedRequestsBeforeTheService(t *testing.T) {
 	service := &wikiAgentWriteServiceStub{}
 	h := fixture.writeHandler(service)
 	key := uuid.NewString()
-	thirteen := `{"pages":[` + strings.TrimSuffix(strings.Repeat(`{"key":"a","title":"T","markdown":"x"},`, 13), ",") + `]}`
+	thirteen := `{"pages":[` + strings.TrimSuffix(
+		strings.Repeat(`{"key":"a","title":"T","markdown":"x"},`, 13),
+		",",
+	) + `]}`
 	for _, tc := range []struct {
 		name        string
 		key         string
@@ -164,9 +194,23 @@ func TestWikiAgentWriteRefusesMalformedRequestsBeforeTheService(t *testing.T) {
 		{"body over the cap", key, "application/json", `{"pages":[{"key":"a","title":"T","markdown":"` + strings.Repeat("x", maxWikiAgentWriteBytes) + `"}]}`, http.StatusRequestEntityTooLarge, "request_too_large"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			result := fixture.post(h, fixture.runID, wikiAgentRunToken, tc.key, tc.contentType, []byte(tc.body))
-			if result.Code != tc.status || (tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
-				t.Fatalf("write = %d %s, want %d %s", result.Code, result.Body.String(), tc.status, tc.code)
+			result := fixture.post(
+				h,
+				fixture.runID,
+				wikiAgentRunToken,
+				tc.key,
+				tc.contentType,
+				[]byte(tc.body),
+			)
+			if result.Code != tc.status ||
+				(tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
+				t.Fatalf(
+					"write = %d %s, want %d %s",
+					result.Code,
+					result.Body.String(),
+					tc.status,
+					tc.code,
+				)
 			}
 		})
 	}

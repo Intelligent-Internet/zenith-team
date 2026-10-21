@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
 )
 
 // registerPlatformSkillRoutes serves the platform skills — the release-owned

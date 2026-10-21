@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // sessionOnlyLogo reports whether a logo loads only inside a signed-in
@@ -21,7 +21,7 @@ import (
 // /backend-api/estuary/content URLs alike, answers 403 to anyone else, while
 // files.openai.com serves logos to everyone (measured 2026-09-25). Codex
 // reports only such a URL for its first-party apps (Gmail, Google Calendar,
-// GitHub, Outlook and others). This is the server's one test of it (D26).
+// GitHub, Outlook and others). This is the server's one test of it.
 func sessionOnlyLogo(logo string) bool {
 	parsed, err := url.Parse(logo)
 	return err == nil && strings.EqualFold(parsed.Hostname(), "chatgpt.com")
@@ -50,7 +50,7 @@ func preferLoadableLogo(candidates ...*string) *string {
 }
 
 // appLogoFallbacks holds the loadable logos an app may show in place of a
-// missing or session-only one of its own (D26).
+// missing or session-only one of its own.
 type appLogoFallbacks struct {
 	bundles []pluginLogoBundle
 	byName  map[string][]nameLender
@@ -343,7 +343,7 @@ func pluginNameWords(name string) []string {
 	})
 }
 
-// choosePluginLogos fills in logos a client can load (D26). A Plugin without
+// choosePluginLogos fills in logos a client can load. A Plugin without
 // one (a Claude Plugin reports none) borrows a Codex logo by name, else by its
 // website's host, else by its developer, from a Plugin whose name agrees;
 // publishers holds each Plugin's, in the order of plugins. A claude_plugin app that reports none borrows by name.
@@ -428,7 +428,7 @@ func pluginAppNeedsLogo(app PluginDetailApp) bool {
 }
 
 // chooseConnectorLogos gives each Codex app on a Connector page whose own
-// logo is missing or session-only a loadable one when there is one (D26):
+// logo is missing or session-only a loadable one when there is one:
 // the logo of a Plugin installed on the selected Runtime that bundles it,
 // else one borrowed by name.
 func chooseConnectorLogos(

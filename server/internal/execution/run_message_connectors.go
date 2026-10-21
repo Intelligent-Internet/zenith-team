@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Freeze the send's exact contract on each Run before it enters the queue.

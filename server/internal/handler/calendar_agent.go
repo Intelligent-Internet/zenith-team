@@ -4,20 +4,21 @@ import (
 	"net/http"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type calendarCommandRequest struct {
-	Action           string                `json:"action" binding:"required,oneof=create update delete respond cancel complete reopen"`
-	EventID          string                `json:"eventId" binding:"omitempty,uuid"`
+	Action           string                `json:"action"           binding:"required,oneof=create update delete respond cancel complete reopen"`
+	EventID          string                `json:"eventId"          binding:"omitempty,uuid"`
 	ExpectedRevision *int64                `json:"expectedRevision" binding:"omitempty,revision"`
 	Input            *calendarInputRequest `json:"input"`
-	ResponseStatus   string                `json:"responseStatus" binding:"omitempty,oneof=accepted tentative declined"`
-	OccurrenceDate   string                `json:"occurrenceDate" binding:"omitempty,datetime=2006-01-02"`
+	ResponseStatus   string                `json:"responseStatus"   binding:"omitempty,oneof=accepted tentative declined"`
+	OccurrenceDate   string                `json:"occurrenceDate"   binding:"omitempty,datetime=2006-01-02"`
 }
 
 func (h *Handler) calendarRunContext(c *gin.Context) (auth.UserPrincipal, calendar.RunContext, bool) {
@@ -32,7 +33,9 @@ func (h *Handler) calendarRunContext(c *gin.Context) (auth.UserPrincipal, calend
 		writeCalendarError(c, err)
 		return p, calendar.RunContext{}, false
 	}
-	if !runProofBearer(p, origin) || origin.ConversationID != conversation || origin.ConversationKind != "direct" || origin.OriginUserID == nil || *origin.OriginUserID != p.UserID {
+	if !runProofBearer(p, origin) || origin.ConversationID != conversation || origin.ConversationKind != "direct" ||
+		origin.OriginUserID == nil ||
+		*origin.OriginUserID != p.UserID {
 		writeCalendarError(c, execution.ErrRunProofInvalid)
 		return p, calendar.RunContext{}, false
 	}
@@ -84,7 +87,12 @@ func (h *Handler) writeAgentCalendar(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	command := calendar.Command{Action: request.Action, EventID: request.EventID, ResponseStatus: request.ResponseStatus, OccurrenceDate: request.OccurrenceDate}
+	command := calendar.Command{
+		Action:         request.Action,
+		EventID:        request.EventID,
+		ResponseStatus: request.ResponseStatus,
+		OccurrenceDate: request.OccurrenceDate,
+	}
 	if request.ExpectedRevision != nil {
 		command.ExpectedRevision = *request.ExpectedRevision
 	}

@@ -10,9 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 // executeDesktopSessionCLI runs `zen desktop-session <args>` from the root,
@@ -29,22 +29,22 @@ func executeDesktopSessionCLI(t *testing.T, input string, args ...string) (strin
 	return out.String(), err
 }
 
-// desktopShell is the desktop app's environment: its own BOARDLY_HOME and
+// desktopShell is the desktop app's environment: its own ZENITH_TEAM_HOME and
 // no Run.
 func desktopShell(t *testing.T) {
 	t.Helper()
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 }
 
-// The desktop installs the daemon's own session (D31) into daemon-auth.json,
+// The desktop installs the daemon's own session into daemon-auth.json,
 // never into the CLI's auth.json, and the command never prints the refresh
 // token back.
 func TestDesktopSessionInstallWritesTheDaemonSession(t *testing.T) {
 	desktopShell(t)
 	input := `{
-		"apiBaseUrl":"https://api.boardly.test/api/v1",
+		"apiBaseUrl":"https://api.zenith-team.test/api/v1",
 		"accessToken":"access-daemon",
 		"accessExpiresAt":"2026-08-19T13:30:00Z",
 		"refreshToken":"refresh-daemon",
@@ -89,7 +89,7 @@ func TestDesktopSessionInstallWritesTheDaemonSession(t *testing.T) {
 }
 
 // read and ensure printed the session the desktop shared with the daemon;
-// with the desktop holding its own session they are gone (D31).
+// with the desktop holding its own session they are gone.
 func TestDesktopSessionReadAndEnsureAreGone(t *testing.T) {
 	desktopShell(t)
 	for _, action := range []string{"read", "ensure"} {
@@ -176,7 +176,7 @@ func TestDesktopSessionClearSignsTheDaemonSessionOut(t *testing.T) {
 func TestDesktopSessionInstallRejectsUnknownFields(t *testing.T) {
 	desktopShell(t)
 	input := `{
-		"apiBaseUrl":"https://api.boardly.test/api/v1",
+		"apiBaseUrl":"https://api.zenith-team.test/api/v1",
 		"accessToken":"access-desktop",
 		"refreshToken":"refresh-desktop",
 		"secretCopy":"must-not-be-ignored"
@@ -188,7 +188,7 @@ func TestDesktopSessionInstallRejectsUnknownFields(t *testing.T) {
 }
 
 // An Agent shell must never reach the session file through this command,
-// whichever sign of a Run it carries: run.json in its BOARDLY_HOME, or only
+// whichever sign of a Run it carries: run.json in its ZENITH_TEAM_HOME, or only
 // one of the Run variables.
 func TestDesktopSessionRefusesInsideARun(t *testing.T) {
 	tests := []struct {
@@ -196,7 +196,7 @@ func TestDesktopSessionRefusesInsideARun(t *testing.T) {
 		shell func(t *testing.T)
 	}{
 		{
-			name: "run.json in BOARDLY_HOME",
+			name: "run.json in ZENITH_TEAM_HOME",
 			shell: func(t *testing.T) {
 				t.Helper()
 				channel := newFakeRunChannel(t, func(runchannel.Request) (int, string) {
@@ -204,24 +204,24 @@ func TestDesktopSessionRefusesInsideARun(t *testing.T) {
 					return http.StatusInternalServerError, `{}`
 				})
 				seedAgentShell(t, channel, testRunTaskID, nil)
-				t.Setenv("BOARDLY_RUN_ID", "")
-				t.Setenv("BOARDLY_RUN_TOKEN", "")
+				t.Setenv("ZENITH_TEAM_RUN_ID", "")
+				t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 			},
 		},
 		{
-			name: "BOARDLY_RUN_ID set",
+			name: "ZENITH_TEAM_RUN_ID set",
 			shell: func(t *testing.T) {
 				t.Helper()
 				desktopShell(t)
-				t.Setenv("BOARDLY_RUN_ID", testRunID)
+				t.Setenv("ZENITH_TEAM_RUN_ID", testRunID)
 			},
 		},
 		{
-			name: "BOARDLY_RUN_TOKEN set",
+			name: "ZENITH_TEAM_RUN_TOKEN set",
 			shell: func(t *testing.T) {
 				t.Helper()
 				desktopShell(t)
-				t.Setenv("BOARDLY_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
+				t.Setenv("ZENITH_TEAM_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
 			},
 		},
 	}
@@ -234,13 +234,13 @@ func TestDesktopSessionRefusesInsideARun(t *testing.T) {
 			}
 			if err := authfile.Save(path, authfile.Credential{
 				Version:      authfile.CurrentVersion,
-				APIBaseURL:   "https://api.boardly.test/api/v1",
+				APIBaseURL:   "https://api.zenith-team.test/api/v1",
 				AccessToken:  "access-desktop",
 				RefreshToken: "refresh-desktop",
 			}); err != nil {
 				t.Fatalf("save credential: %v", err)
 			}
-			replacement := `{"apiBaseUrl":"https://api.boardly.test/api/v1",` +
+			replacement := `{"apiBaseUrl":"https://api.zenith-team.test/api/v1",` +
 				`"accessToken":"access-agent","refreshToken":"refresh-agent"}`
 
 			for _, action := range []string{"install", "clear"} {

@@ -11,16 +11,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var (
@@ -58,10 +58,15 @@ type InitializationServiceOptions struct {
 
 func NewInitializationService(options InitializationServiceOptions) (*DefaultInitializationService, error) {
 	if options.Store == nil || options.Bus == nil || options.Runtimes == nil || options.TaskMessageRuns == nil {
-		return nil, errors.New("initialization store, bus, runtime service and Task Message Run preparer are required")
+		return nil, errors.New(
+			"initialization store, bus, runtime service and Task Message Run preparer are required",
+		)
 	}
 	return &DefaultInitializationService{
-		store: options.Store, bus: options.Bus, runtimes: options.Runtimes, taskMessageRuns: options.TaskMessageRuns,
+		store:           options.Store,
+		bus:             options.Bus,
+		runtimes:        options.Runtimes,
+		taskMessageRuns: options.TaskMessageRuns,
 	}, nil
 }
 
@@ -101,7 +106,11 @@ func (s *DefaultInitializationService) Get(ctx context.Context, p auth.UserPrinc
 	return readInitialization(ctx, s.store.Queries(), row)
 }
 
-func readInitialization(ctx context.Context, q *generated.Queries, row generated.CompanyInitialization) (Initialization, error) {
+func readInitialization(
+	ctx context.Context,
+	q *generated.Queries,
+	row generated.CompanyInitialization,
+) (Initialization, error) {
 	state := Initialization{Phase: "not_started", Status: "awaiting_model", ConversationID: &row.ConversationID}
 	if !row.ResearchRunID.Valid {
 		return state, nil
@@ -119,7 +128,10 @@ func readInitialization(ctx context.Context, q *generated.Queries, row generated
 		return Initialization{}, fmt.Errorf("count initialization pages: %w", err)
 	}
 	state.PagesWritten = int(pages)
-	overview, err := q.GetInitializationOverviewPage(ctx, generated.GetInitializationOverviewPageParams{CompanyID: row.CompanyID, Key: researchOverviewKey})
+	overview, err := q.GetInitializationOverviewPage(
+		ctx,
+		generated.GetInitializationOverviewPageParams{CompanyID: row.CompanyID, Key: researchOverviewKey},
+	)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return Initialization{}, fmt.Errorf("read initialization overview page: %w", err)
 	}
@@ -147,7 +159,11 @@ func readInitialization(ctx context.Context, q *generated.Queries, row generated
 // reload: an existing research Run is returned as it is, and only a failed one
 // restarts, and only on Retry. The company lock serializes receipt creation and
 // the Run enqueue with membership changes and other callers.
-func (s *DefaultInitializationService) Advance(ctx context.Context, p auth.UserPrincipal, in InitializationInput) (Initialization, error) {
+func (s *DefaultInitializationService) Advance(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	in InitializationInput,
+) (Initialization, error) {
 	return s.advance(ctx, p.CompanyID, p.UserID, in, &p)
 }
 
@@ -158,9 +174,10 @@ func (s *DefaultInitializationService) Reconcile(ctx context.Context) error {
 	const pageSize = 100
 	s.reconcileMu.Lock()
 	defer s.reconcileMu.Unlock()
-	rows, err := s.store.Queries().ListPendingCompanyInitializations(ctx, generated.ListPendingCompanyInitializationsParams{
-		AfterCompanyID: s.reconcileAfter, RowLimit: pageSize,
-	})
+	rows, err := s.store.Queries().
+		ListPendingCompanyInitializations(ctx, generated.ListPendingCompanyInitializationsParams{
+			AfterCompanyID: s.reconcileAfter, RowLimit: pageSize,
+		})
 	if err != nil {
 		return fmt.Errorf("list pending initializations: %w", err)
 	}
@@ -175,8 +192,10 @@ func (s *DefaultInitializationService) Reconcile(ctx context.Context) error {
 		}
 		s.reconcileAfter = row.CompanyID
 		_, err := s.advance(ctx, row.CompanyID, row.CreatedByUserID, InitializationInput{}, nil)
-		if err == nil || errors.Is(err, pgx.ErrNoRows) || errors.Is(err, ErrNotFound) || errors.Is(err, ErrForbidden) ||
-			errors.Is(err, execution.ErrRunAgentNotBound) || errors.Is(err, execution.ErrRunAgentArchived) ||
+		if err == nil || errors.Is(err, pgx.ErrNoRows) || errors.Is(err, ErrNotFound) ||
+			errors.Is(err, ErrForbidden) ||
+			errors.Is(err, execution.ErrRunAgentNotBound) ||
+			errors.Is(err, execution.ErrRunAgentArchived) ||
 			errors.Is(err, conversation.ErrNotFound) {
 			continue
 		}
@@ -206,7 +225,13 @@ func (s *DefaultInitializationService) advance(
 		if _, err := q.LockCompanyForMembershipMutation(ctx, companyID); err != nil {
 			return err
 		}
-		if _, err := authorizeMembershipActor(ctx, q, companyID, actorUserID, auth.PermissionAgentsManage); err != nil {
+		if _, err := authorizeMembershipActor(
+			ctx,
+			q,
+			companyID,
+			actorUserID,
+			auth.PermissionAgentsManage,
+		); err != nil {
 			return err
 		}
 		row, err := q.GetCompanyInitialization(ctx, companyID)
@@ -224,7 +249,11 @@ func (s *DefaultInitializationService) advance(
 			if in.ConversationID == uuid.Nil {
 				return ErrInitializationConflict
 			}
-			row = generated.CompanyInitialization{CompanyID: companyID, CreatedByUserID: actorUserID, ConversationID: in.ConversationID}
+			row = generated.CompanyInitialization{
+				CompanyID:       companyID,
+				CreatedByUserID: actorUserID,
+				ConversationID:  in.ConversationID,
+			}
 		} else {
 			result, err = readInitialization(ctx, q, row)
 			if err != nil {
@@ -244,7 +273,14 @@ func (s *DefaultInitializationService) advance(
 				return nil
 			}
 		}
-		target, err := q.GetInitializationTarget(ctx, generated.GetInitializationTargetParams{ActorUserID: actorUserID, CompanyID: companyID, ConversationID: row.ConversationID})
+		target, err := q.GetInitializationTarget(
+			ctx,
+			generated.GetInitializationTargetParams{
+				ActorUserID:    actorUserID,
+				CompanyID:      companyID,
+				ConversationID: row.ConversationID,
+			},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return execution.ErrRunAgentNotBound
 		}
@@ -258,7 +294,14 @@ func (s *DefaultInitializationService) advance(
 			// The receipt is recorded before the model is known, so a reload
 			// resumes the same step.
 			if fresh {
-				if err := q.InsertCompanyInitialization(ctx, generated.InsertCompanyInitializationParams{CompanyID: companyID, CreatedByUserID: actorUserID, ConversationID: row.ConversationID}); err != nil {
+				if err := q.InsertCompanyInitialization(
+					ctx,
+					generated.InsertCompanyInitializationParams{
+						CompanyID:       companyID,
+						CreatedByUserID: actorUserID,
+						ConversationID:  row.ConversationID,
+					},
+				); err != nil {
 					return err
 				}
 			}
@@ -277,9 +320,15 @@ func (s *DefaultInitializationService) advance(
 			return err
 		}
 		run, err := conversation.MaterializeInitializationRunInTx(ctx, q, &pending, execution.RunTrigger{
-			CompanyID: companyID, ConversationID: row.ConversationID, AgentID: target.AgentID, AuthorizedByUserID: actorUserID, ForceFreshSession: true,
-			Source: execution.RunSourceCompanyResearch, ResearchModel: model, ResearchThinkingLevel: level,
-			TriggerPrompt: "Research this company in the background and write what you learn into the Company Wiki as a small set of linked pages, starting with the company-overview page. Use the company description, website, reference documents and available authorized Gmail, Drive and GitHub sources.",
+			CompanyID:             companyID,
+			ConversationID:        row.ConversationID,
+			AgentID:               target.AgentID,
+			AuthorizedByUserID:    actorUserID,
+			ForceFreshSession:     true,
+			Source:                execution.RunSourceCompanyResearch,
+			ResearchModel:         model,
+			ResearchThinkingLevel: level,
+			TriggerPrompt:         "Research this company in the background and write what you learn into the Company Wiki as a small set of linked pages, starting with the company-overview page. Use the company description, website, reference documents and available authorized Gmail, Drive and GitHub sources.",
 		})
 		if err != nil {
 			return err
@@ -287,9 +336,20 @@ func (s *DefaultInitializationService) advance(
 		queued = &run
 		id := uuid.NullUUID{UUID: run.ID, Valid: true}
 		if fresh {
-			err = q.InsertCompanyInitialization(ctx, generated.InsertCompanyInitializationParams{CompanyID: companyID, CreatedByUserID: actorUserID, ConversationID: row.ConversationID, ResearchRunID: id})
+			err = q.InsertCompanyInitialization(
+				ctx,
+				generated.InsertCompanyInitializationParams{
+					CompanyID:       companyID,
+					CreatedByUserID: actorUserID,
+					ConversationID:  row.ConversationID,
+					ResearchRunID:   id,
+				},
+			)
 		} else {
-			err = q.SetInitializationResearchRun(ctx, generated.SetInitializationResearchRunParams{CompanyID: companyID, ResearchRunID: id})
+			err = q.SetInitializationResearchRun(
+				ctx,
+				generated.SetInitializationResearchRunParams{CompanyID: companyID, ResearchRunID: id},
+			)
 			if err == nil && result.RunID != nil {
 				// The retry answers the failure notice: archive it so the
 				// Inbox does not keep saying the research could not finish.
@@ -337,7 +397,14 @@ func (s *DefaultInitializationService) settleInTx(
 	if err := q.CompleteCompanyInitialization(ctx, row.CompanyID); err != nil {
 		return err
 	}
-	promotion, err := conversation.ResumeInitializationQueueInTx(ctx, q, pending, s.taskMessageRuns, row.CompanyID, row.ConversationID)
+	promotion, err := conversation.ResumeInitializationQueueInTx(
+		ctx,
+		q,
+		pending,
+		s.taskMessageRuns,
+		row.CompanyID,
+		row.ConversationID,
+	)
 	if err != nil || promotion.RunID == nil {
 		return err
 	}

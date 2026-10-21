@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // Project access refusals (ADR 0017), shared by every surface inside a

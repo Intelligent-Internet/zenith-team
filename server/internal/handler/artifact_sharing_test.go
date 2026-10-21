@@ -11,12 +11,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 func TestArtifactSharingMutationsRequireHumanActor(t *testing.T) {
@@ -48,7 +48,7 @@ func TestArtifactSharingMutationsRequireHumanActor(t *testing.T) {
 			)
 			request.Header.Set("Authorization", "Bearer access-token")
 			request.Header.Set("Content-Type", "application/json")
-			request.Header.Set("X-Boardly-Run-Token", "run-proof")
+			request.Header.Set("X-Zenith-Team-Run-Token", "run-proof")
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 			if response.Code != http.StatusForbidden ||
@@ -132,9 +132,23 @@ func TestArtifactVisibilityRejectsRemovedPrivateMutation(t *testing.T) {
 	t.Parallel()
 	response := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(response)
-	c.Request = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(`{"visibility":"private","expectedRevision":1}`))
+	c.Request = httptest.NewRequest(
+		http.MethodPut,
+		"/",
+		strings.NewReader(`{"visibility":"private","expectedRevision":1}`),
+	)
 	c.Request.Header.Set("Content-Type", "application/json")
-	c.Request = c.Request.WithContext(auth.WithUserPrincipal(c.Request.Context(), auth.UserPrincipal{UserID: uuid.New(), CompanyID: uuid.New(), SessionID: uuid.New(), AuthKind: auth.TokenKindSession}))
+	c.Request = c.Request.WithContext(
+		auth.WithUserPrincipal(
+			c.Request.Context(),
+			auth.UserPrincipal{
+				UserID:    uuid.New(),
+				CompanyID: uuid.New(),
+				SessionID: uuid.New(),
+				AuthKind:  auth.TokenKindSession,
+			},
+		),
+	)
 	c.Params = gin.Params{{Key: "artifactId", Value: uuid.NewString()}}
 	h := Handler{}
 	h.setArtifactVisibility(c)

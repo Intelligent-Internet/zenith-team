@@ -164,7 +164,7 @@ function formatChangeValue(
   return JSON.stringify(value, null, 2);
 }
 
-// An access row's change (Access DESIGN 23): a plus over the permissions
+// An access row's change: a plus over the permissions
 // it gave and a minus over those it took away, each with its icon and
 // today's name; a visibility change as "Everyone → Limited"; the people a
 // Group's row counts, those the roster names and "+N" for the rest. No ids.

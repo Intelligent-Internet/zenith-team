@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestToolReportRequiresDaemonIdentityEvenDuringLegacyHeaderRollout(t *testing.T) {
@@ -50,7 +50,7 @@ func TestToolReportBoundaryAcceptsInstallationAndAgentProfiles(t *testing.T) {
 	}
 }
 
-// D31: the daemon's own session reads its person's bindings on one of its
+// The daemon's own session reads its person's bindings on one of its
 // runtimes on the daemon plane, through the same runtime fence as every
 // runtime-scoped daemon route; a runtime of another daemon or another person
 // is the plain 404 and lists nothing.
@@ -109,7 +109,7 @@ func TestDaemonRuntimeBindingsListsThePersonsBindingsOnItsOwnRuntime(t *testing.
 			c.Request = httptest.NewRequest(
 				http.MethodGet, "/api/v1/daemon/runtimes/"+runtimeID.String()+"/agent-bindings", nil,
 			)
-			c.Request.Header.Set("X-Boardly-Daemon-ID", test.daemonID)
+			c.Request.Header.Set("X-Zenith-Team-Daemon-ID", test.daemonID)
 			c.Request = c.Request.WithContext(auth.WithUserPrincipal(c.Request.Context(), principal))
 			c.Params = gin.Params{{Key: "runtimeId", Value: runtimeID.String()}}
 			handler.daemonRuntimeBindings(c)

@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 func TestArtifactToolsRequireChannelAndExplicitAllowlist(t *testing.T) {

@@ -6,12 +6,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// IA-FR4: a completion the uploading Run proved names that Run's Agent, the
-// member it works for and the Run (D31); without one it names the member.
+// A completion the uploading Run proved names that Run's Agent, the
+// member it works for and the Run; without one it names the member.
 func TestCompletedEffectNamesTheRunThatUploaded(t *testing.T) {
 	t.Parallel()
 	uploader := uuid.Must(uuid.NewV7())

@@ -13,7 +13,7 @@ import { runDeliverablesApi } from "@/features/run-deliverables/api/run-delivera
 import store from "@/state/store";
 
 export const NOTIFICATIONS_ROUTE = "/settings/notifications";
-const INTERNAL_ORIGIN = "https://boardly.internal";
+const INTERNAL_ORIGIN = "https://zenith-team.internal";
 const MAX_INTERNAL_PATH_LENGTH = 1_024;
 
 export function sanitizeNotificationPath(
@@ -302,7 +302,7 @@ function hasRequiredNotificationTarget(
   }
   if (kind === "invitation_renewal")
     return url.pathname === "/team" && !url.search;
-  // Someone can now see a Project through a Group (Access TECH D3): the
+  // Someone can now see a Project through a Group: the
   // notice opens that Project's access on the Team page.
   if (kind === "project_access_granted") {
     return (

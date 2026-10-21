@@ -6,20 +6,26 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 // publishedWikiFixture keeps the existing published-reader scenarios focused:
 // fixtures explicitly edit the canonical draft and publish it before reading.
-type publishedWikiFixture struct{ *wiki.DefaultWikiService }
-type updatePageInput struct {
-	ExpectedRevision     int64
-	Title, Body, Summary string
-	CollectionID         *uuid.UUID
-}
+type (
+	publishedWikiFixture struct{ *wiki.DefaultWikiService }
+	updatePageInput      struct {
+		ExpectedRevision     int64
+		Title, Body, Summary string
+		CollectionID         *uuid.UUID
+	}
+)
 
-func (s *publishedWikiFixture) CreatePage(ctx context.Context, p auth.UserPrincipal, in wiki.CreatePageInput) (wiki.PageResponse, error) {
+func (s *publishedWikiFixture) CreatePage(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	in wiki.CreatePageInput,
+) (wiki.PageResponse, error) {
 	page, err := s.DefaultWikiService.CreatePage(ctx, p, in)
 	if err != nil {
 		return page, err
@@ -28,10 +34,20 @@ func (s *publishedWikiFixture) CreatePage(ctx context.Context, p auth.UserPrinci
 	if err != nil {
 		return page, err
 	}
-	return s.PublishPage(ctx, p, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: doc.Sequence})
+	return s.PublishPage(
+		ctx,
+		p,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: doc.Sequence},
+	)
 }
 
-func (s *publishedWikiFixture) UpdatePage(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, in updatePageInput) (wiki.PageResponse, error) {
+func (s *publishedWikiFixture) UpdatePage(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	in updatePageInput,
+) (wiki.PageResponse, error) {
 	page, err := s.GetPage(ctx, p, id)
 	if err != nil {
 		return page, err
@@ -43,7 +59,17 @@ func (s *publishedWikiFixture) UpdatePage(ctx context.Context, p auth.UserPrinci
 	if err != nil {
 		return wiki.PageResponse{}, err
 	}
-	doc, err = s.UpdateDraftMetadata(ctx, p, id, wiki.DraftMetadataInput{ExpectedSequence: doc.Sequence, Title: in.Title, Summary: in.Summary, CollectionID: in.CollectionID})
+	doc, err = s.UpdateDraftMetadata(
+		ctx,
+		p,
+		id,
+		wiki.DraftMetadataInput{
+			ExpectedSequence: doc.Sequence,
+			Title:            in.Title,
+			Summary:          in.Summary,
+			CollectionID:     in.CollectionID,
+		},
+	)
 	if err != nil {
 		return wiki.PageResponse{}, err
 	}
@@ -69,7 +95,14 @@ func (s *publishedWikiFixture) UpdatePage(ctx context.Context, p auth.UserPrinci
 		ops = append(ops, wiki.BlockOperation{Type: "insert", Content: &root.Content[i]})
 	}
 	for _, node := range old.Content {
-		ops = append(ops, wiki.BlockOperation{Type: "remove", BlockID: node.Attrs["blockId"].(string), ExpectedHash: wiki.BlockHash(node)})
+		ops = append(
+			ops,
+			wiki.BlockOperation{
+				Type:         "remove",
+				BlockID:      node.Attrs["blockId"].(string),
+				ExpectedHash: wiki.BlockHash(node),
+			},
+		)
 	}
 	update, _, err := wiki.ApplyBlockOperations(doc.State, ops)
 	if err != nil {
@@ -79,17 +112,38 @@ func (s *publishedWikiFixture) UpdatePage(ctx context.Context, p auth.UserPrinci
 	if err != nil {
 		return wiki.PageResponse{}, err
 	}
-	return s.PublishPage(ctx, p, id, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: doc.Sequence})
+	return s.PublishPage(
+		ctx,
+		p,
+		id,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: doc.Sequence},
+	)
 }
 
-func (s *publishedWikiFixture) RestoreRevision(ctx context.Context, p auth.UserPrincipal, id, revision uuid.UUID, expected int64) (wiki.PageResponse, error) {
+func (s *publishedWikiFixture) RestoreRevision(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id, revision uuid.UUID,
+	expected int64,
+) (wiki.PageResponse, error) {
 	doc, err := s.ReadDocument(ctx, p, id, wiki.DocumentReadInput{Since: -1})
 	if err != nil {
 		return wiki.PageResponse{}, err
 	}
-	doc, err = s.DefaultWikiService.RestoreRevision(ctx, p, id, revision, wiki.RestoreRevisionInput{ExpectedRevision: expected, ExpectedSequence: doc.Sequence})
+	doc, err = s.DefaultWikiService.RestoreRevision(
+		ctx,
+		p,
+		id,
+		revision,
+		wiki.RestoreRevisionInput{ExpectedRevision: expected, ExpectedSequence: doc.Sequence},
+	)
 	if err != nil {
 		return wiki.PageResponse{}, err
 	}
-	return s.PublishPage(ctx, p, id, wiki.PublishPageInput{ExpectedRevision: expected, ExpectedSequence: doc.Sequence})
+	return s.PublishPage(
+		ctx,
+		p,
+		id,
+		wiki.PublishPageInput{ExpectedRevision: expected, ExpectedSequence: doc.Sequence},
+	)
 }

@@ -12,7 +12,7 @@ actions. Reading a catalog and asking for a refresh are any active member's,
 for a Runtime they registered: the computer is theirs (ADR 0014), so neither
 needs a Company permission. Plugin install and uninstall take
 `plugins.manage`, which every role holds because they reach only the
-caller's own computer (D28, 2026-09-29); resolving and accepting a Connector
+caller's own computer; resolving and accepting a Connector
 contract set Company policy and stay `connectors.manage` (owners and
 admins). A Runtime publishes replacement discovery snapshots through the
 daemon bearer plane:
@@ -27,7 +27,7 @@ Each snapshot carries a UUID generation, a canonical manifest digest, and an
 observation time. Exact generation replays are harmless and renew nothing;
 incompatible reuse is `connector_discovery_conflict` or
 `plugin_discovery_conflict`. Like every runtime-scoped daemon route, all
-three require `X-Boardly-Daemon-ID` to match the runtime's `daemonId`; a
+three require `X-Zenith-Team-Daemon-ID` to match the runtime's `daemonId`; a
 mismatch is `404 runtime_not_found` (see
 [daemon.md](daemon.md#authentication-and-transport)).
 
@@ -62,18 +62,18 @@ the items as sent, so each Runtime republishes its Codex catalog once after
 the daemon update.
 
 A plugin discovery snapshot holds at most 10,000 items, with `catalogRank`
-0–9,999. It was 5,000 before D26: Codex's catalog has passed 5,000, and an
-older server refuses a larger snapshot with `422 validation_failed`.
-A connector discovery snapshot holds at most 10,000 items in an 8 MiB body
-(it was 5,000 items and 2 MiB until 2026-09-26). Codex's hosted app
-directory held 4,568 apps that day, about 1.8 MB, and grows by hundreds a
-week; an older server refuses a larger snapshot.
+0–9,999. The limit used to be 5,000. Codex's catalog has passed 5,000, and
+an older server refuses a larger snapshot with `422 validation_failed`.
+A connector discovery snapshot holds at most 10,000 items in an 8 MiB body.
+The limit used to be 5,000 items and 2 MiB, and an older server refuses a
+larger snapshot. Codex's hosted app directory has held over 4,500 apps
+(about 1.8 MB) and grows by hundreds a week.
 
 A Connector is an executable provider integration with an exact source/native
 identity and reviewed tool contract. A Plugin is an installable provider
 package and may name Connector identities it contributes. Provider is always
 `codex` or `claude`; no provider-native configuration or secret crosses the
-cloud interface.
+server interface.
 
 List query parameters use snake_case. In particular the Connector review
 filter is `review_required=true`. It also lists Connectors that lost their
@@ -157,8 +157,8 @@ GET /api/v1/companies/{companyId}/plugins/{pluginId}?runtime_id=<uuid>
 ```
 
 `getPlugin` serves the Settings plugin page. Like the list, it is a member
-read of one of the caller's own Runtimes (ADR 0014, since 2026-09-28; it
-required `plugins.manage` before). `runtime_id` is optional and means what
+read of one of the caller's own Runtimes (ADR 0014; an older server
+required `plugins.manage`). `runtime_id` is optional and means what
 it means on the list: one of the caller's Runtimes, or else the caller's
 default Runtime, the one carrying a binding of an active Agent. It never
 falls back to a different computer. The
@@ -188,7 +188,7 @@ response is `PluginDetailResponseV1`:
 - `stale` is the catalog's own flag: the Runtime was not seen recently, has
   no plugin snapshot, or its plugin discovery is older than ten minutes.
   Plugin discovery has no keepalive, so it is usually `true` on a
-  long-running daemon. Since 2026-09-26 the Settings plugin page does not
+  long-running daemon. The Settings plugin page does not
   read it; it shows `plugin.observedAt` as "Synced … ago" and says it shows
   the last report only when the Runtime is offline (`runtime.online`) or, on
   Desktop, the live read failed.
@@ -223,7 +223,7 @@ read is not part of this API and is never stored.
 
 `POST /companies/{companyId}/plugins/refresh` and
 `POST /companies/{companyId}/connectors/refresh` take `{"schemaVersion":1}`
-and act on the caller's default Runtime. The cloud cannot reach the machine,
+and act on the caller's default Runtime. The server cannot reach the machine,
 so the answer for a Runtime of the caller's is `503 plugin_action_unavailable`
 or `503 connector_action_unavailable`; with no Runtime of the caller's it is
 the provider-unavailable `409`. Zenith Team Desktop refreshes by asking its

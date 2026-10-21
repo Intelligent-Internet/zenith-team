@@ -10,7 +10,7 @@ endpoint.
 `spec/openapi.yaml` is the machine-readable source of truth. The TypeScript client
 types are generated from it, and tests diff it against the server. When prose
 and the spec disagree, fix the prose; when either disagrees with served code,
-**the code wins** and both documents must be corrected. Feature specs label
+**the code wins** and both documents must be corrected. These docs label
 future behavior Planned instead of presenting it as already served.
 
 ```bash
@@ -24,9 +24,8 @@ make api-types-check # verify generation is reproducible and current
 The accepted desktop screens and their implemented contracts are mapped in
 [Desktop design support](design-support.md), including provider-dependent limits.
 
-The [Agent Run history consumer contract](run-tracking-history.md) and served
-[OpenAPI](spec/openapi.yaml) describe UUID IDs, source revisions and the Company
-Activity log. Deployment requires the [cutover](run-history-cutover.md).
+[runs.md](runs.md) and [activity-and-usage.md](activity-and-usage.md) describe
+UUID Run IDs, source revisions, Agent Run history and the Company Activity log.
 
 ## How the spec is laid out
 
@@ -90,7 +89,7 @@ enforce that:
 | `make api-types-check` | The committed TypeScript contract differs from a clean regeneration |
 
 An operation contracted **before** it is served carries
-`x-boardly-status: planned`. The gate allows it to have no route and reports it
+`x-zenith-team-status: planned`. The gate allows it to have no route and reports it
 as awaiting implementation, so the backlog stays visible instead of silent. The
 marker is removed in the commit that serves the route; an operation that stays
 `planned` indefinitely is drift wearing a nicer name.
@@ -132,8 +131,9 @@ Two composites read on the same paint must not both carry the same entity — th
 duplication couples one entity to two cache slots, which is what
 [conventions.md](conventions.md#composites) forbids.
 
-The budgets are recorded per resource and summarized in
-[client-migration.md](client-migration.md).
+The budgets are recorded per resource, in each file's call budget section. How
+the frontend client consumes the API is in
+[conventions.md](conventions.md#client-integration).
 
 ## Where things are
 
@@ -146,11 +146,17 @@ The budgets are recorded per resource and summarized in
 | [companies.md](companies.md) | Companies, members, profile, search, resources |
 | [agents.md](agents.md) | Agents, the reporting tree, appearance, starter agents |
 | [tasks.md](tasks.md) | Company plan, tasks, dependencies |
+| [projects.md](projects.md) | Projects, per-person grants, access report |
+| [groups.md](groups.md) | Groups of members that receive Project grants together |
 | [conversations.md](conversations.md) | Task/direct privacy, messages, transcript recovery, attachments, run queue |
 | [runs.md](runs.md) | Runs, transcript heads, runtimes, input snapshot boundaries |
-| [workspaces.md](workspaces.md) | Cloud Task workspace versus local files, Resource references, execution environments, and the planned managed-only boundary |
+| [workspaces.md](workspaces.md) | Server-side Task workspace versus local files, Resource references, execution environments, and the planned managed-only boundary |
 | [approvals.md](approvals.md) | Human-in-the-loop approvals and mid-run questions |
 | [inbox.md](inbox.md) | Inbox items and counts |
 | [activity-and-usage.md](activity-and-usage.md) | Activity feed, usage reports |
+| [schedules.md](schedules.md) | One-shot and recurring scheduled work |
+| [mailbox.md](mailbox.md) | Company Email and Agent Mail drafts |
+| [wiki.md](wiki.md) | The Company Wiki and Agent access to it |
+| [connectors-and-plugins.md](connectors-and-plugins.md) | Company policy over provider Connectors and Plugins |
+| [design-support.md](design-support.md) | Desktop screens mapped to their API contracts |
 | [daemon.md](daemon.md) | The daemon plane — not for client use |
-| [client-migration.md](client-migration.md) | The completed client integration and its current invariants |

@@ -107,7 +107,7 @@ Creates the bare tenant: the company row and the caller's owner membership.
 | `taskPrefix` | body | yes | `^[A-Z][A-Z0-9]{1,9}$` — the prefix in `NWR-42` |
 | `businessContext` | body | no | At most 32768 bytes; `""` is accepted |
 
-Reserved slugs: `admin`, `agents`, `api`, `app`, `auth`, `boardly`, `callback`,
+Reserved slugs: `admin`, `agents`, `api`, `app`, `auth`, `zenith-team`, `callback`,
 `companies`, `dashboard`, `download`, `healthz`, `login`, `logout`, `metrics`,
 `new`, `oauth`, `onboarding`, `projects`, `readyz`, `runs`, `settings`,
 `signup`, `tasks`, `usage`, `v1`, `ws`, `www`.
@@ -228,7 +228,7 @@ Company. A successful delete leaves no tombstone; replay returns
 This operation does not claim control over content held by external providers,
 and it does not remotely delete provider-native configuration, authored
 workspace files, unmerged work, or other local files on connected computers.
-Those files are not a cloud backup of the deleted Company.
+Those files are not a server-side backup of the deleted Company.
 
 | Status | Code | When |
 |---|---|---|
@@ -561,10 +561,10 @@ does, and every active member may read it.
       "actor": {
         "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
         "kind": "user",
-        "name": "Duong Phung",
+        "name": "Alex Rivera",
         "avatarUrl": null
       },
-      "email": "duong@northwind.example",
+      "email": "alex@northwind.example",
       "role": "member",
       "accountDisabled": true,
       "createdAt": "2026-07-19T14:22:40.551002Z",
@@ -795,8 +795,8 @@ execute in that folder. Without a binding, the daemon selects managed main
 or a Task worktree; neither directory layout is an OS sandbox guarantee.
 See [Bind a directory](#bind-a-directory-to-this-company).
 
-The [managed-only workspace spec](../specs/workspaces/PRD.md) plans to retire
-this execution override. It does not change the served API in this revision.
+A Planned managed-only workspace release would retire
+this execution override. The served API does not change yet.
 GitHub/repository references are not supported. The current behavior and
 transition are separated in [workspaces.md](workspaces.md).
 
@@ -839,7 +839,7 @@ resource row itself moves.
       "id": "0197f5b0-4000-7000-8000-000000000006",
       "companyId": "0197f590-10b8-7cc0-a6c6-160ed7a18b2c",
       "resourceType": "local_directory",
-      "resourceRef": { "daemonId": "mbp-14-duong", "daemonName": "MacBook Pro" },
+      "resourceRef": { "daemonId": "mbp-14-alex", "daemonName": "MacBook Pro" },
       "daemonStatus": "online",
       "daemonLastSeenAt": "2026-08-16T09:40:51.220913Z",
       "label": "Repository",
@@ -899,7 +899,7 @@ resource row itself moves.
 
 ```
 POST /api/v1/companies/{companyId}/resources
-{ "daemonId": "mbp-14-duong",
+{ "daemonId": "mbp-14-alex",
   "localPath": "/Users/alex/code/acme",
   "label": "Repository",
   "position": 2 }
@@ -936,14 +936,14 @@ such flow.
   "id": "0197f5b0-4000-7000-8000-000000000006",
   "companyId": "0197f590-10b8-7cc0-a6c6-160ed7a18b2c",
   "resourceType": "local_directory",
-  "resourceRef": { "daemonId": "mbp-14-duong", "daemonName": "MacBook Pro" },
+  "resourceRef": { "daemonId": "mbp-14-alex", "daemonName": "MacBook Pro" },
   "label": "Repository",
   "position": 2,
   "metadata": {},
   "createdBy": {
     "id": "0197f58e-2b41-7a90-9f3d-0c1a6e77b501",
     "kind": "user",
-    "name": "Duong Phung",
+    "name": "Alex Rivera",
     "avatarUrl": null
   },
   "daemonStatus": "online",
@@ -992,7 +992,7 @@ carries in `items` and `resource.updated` carries on the socket.
   "id": "0197f5b0-4000-7000-8000-000000000006",
   "companyId": "0197f590-10b8-7cc0-a6c6-160ed7a18b2c",
   "resourceType": "local_directory",
-  "resourceRef": { "daemonId": "mbp-14-duong", "daemonName": "MacBook Pro" },
+  "resourceRef": { "daemonId": "mbp-14-alex", "daemonName": "MacBook Pro" },
   "daemonStatus": "online",
   "daemonLastSeenAt": "2026-08-16T09:40:51.220913Z",
   "label": "Repository",
@@ -1056,7 +1056,7 @@ event.
   "id": "0197f5b0-4000-7000-8000-000000000006",
   "companyId": "0197f590-10b8-7cc0-a6c6-160ed7a18b2c",
   "resourceType": "local_directory",
-  "resourceRef": { "daemonId": "mbp-14-duong", "daemonName": "MacBook Pro" },
+  "resourceRef": { "daemonId": "mbp-14-alex", "daemonName": "MacBook Pro" },
   "daemonStatus": "offline",
   "daemonLastSeenAt": "2026-08-15T22:14:03.881204Z",
   "label": "Monorepo",
@@ -1206,7 +1206,7 @@ Roles assign, permissions enforce: an owner holds every permission, an
 admin holds every permission except `company.delete`,
 `members.owners.manage` and `results.publish`, and a
 member holds `conversations.discuss` and `plugins.manage` (installing
-plugins and connecting apps on their own computer, D28). A company keeps at least one active
+plugins and connecting apps on their own computer). A company keeps at least one active
 owner; nobody is invited as owner.
 
 ## Change a member's role

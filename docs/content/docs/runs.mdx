@@ -40,7 +40,7 @@ Deleting a task does not change an in-flight run's lane. The conversation outliv
 
 While a run executes, the provider streams two kinds of output:
 
-- **Streaming deltas** — partial text as the model produces it. These stay on your machine: the cloud never receives them, and the desktop app may render them as a local live preview.
+- **Streaming deltas** — partial text as the model produces it. These stay on your machine: the server never receives them, and the desktop app may render them as a local live preview.
 - **Committed items** — completed messages, reasoning, tool calls, and tool results. Each one is appended durably, in order, to the conversation's single item sequence the moment it completes, and reaches your browser live.
 
 A committed message always wins. The preview is disposable and never a recovery source; anything worth keeping arrives as a committed item, and a run that is cancelled or fails keeps every item it had already committed — the words you read are never taken back.

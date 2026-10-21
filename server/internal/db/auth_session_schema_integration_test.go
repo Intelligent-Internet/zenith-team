@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// D31 (000098): every session written before the migration is a person's;
+// 000098: every session written before the migration is a person's;
 // afterwards a session is a person's or a daemon's and nothing else. Rolling
 // back ends every live daemon session first, because without the column it
 // would read as its person's own, and leaves every other session as it was.

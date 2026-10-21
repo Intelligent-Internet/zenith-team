@@ -10,11 +10,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -59,7 +59,7 @@ func (s *DefaultConversationService) CreateChannel(
 	if err != nil {
 		return ChannelReceipt{}, err
 	}
-	for attempt := 0; attempt < 3; attempt++ {
+	for range 3 {
 		var result ChannelReceipt
 		var pending []events.Event
 		err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
@@ -140,7 +140,7 @@ func (s *DefaultConversationService) CreateChannel(
 				return err
 			}
 			for _, userID := range append([]uuid.UUID{p.UserID}, input.MemberUserIDs...) {
-				if _, err = grantDiscussionHuman(
+				if err = grantDiscussionHuman(
 					ctx,
 					q,
 					discussionGrant{
@@ -453,7 +453,7 @@ func changeChannelMember(
 		if input.Access.MemberCount >= 50 {
 			return ErrDiscussionLimit
 		}
-		if _, err = grantDiscussionHuman(
+		if err = grantDiscussionHuman(
 			ctx,
 			q,
 			discussionGrant{
@@ -633,7 +633,7 @@ func (s *DefaultConversationService) SetChannelArchived(
 			if !input.Archived {
 				action = "channel_restored"
 				if row.MemberCount == 0 {
-					if _, err := grantDiscussionHuman(
+					if err := grantDiscussionHuman(
 						ctx,
 						q,
 						discussionGrant{

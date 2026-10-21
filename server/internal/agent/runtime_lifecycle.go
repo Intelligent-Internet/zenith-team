@@ -19,17 +19,17 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RuntimeStaleThreshold marks runtimes offline when no heartbeat arrives for
-// this long. Boardly phase 1 writes last_seen_at on every daemon heartbeat
+// this long. Zenith Team phase 1 writes last_seen_at on every daemon heartbeat
 // (~15s) with no Redis liveness lane, so the DB stale window is the only
 // authority; 150s tolerates several missed beats while keeping detection
 // latency for a genuinely-dead runtime under threshold + sweep interval
@@ -82,9 +82,9 @@ type RuntimeRegistration struct {
 // restarted daemon registers before it beats, so every runtime that comes
 // back online here resolves its runtime_offline Inbox items in the same
 // transaction. Waiting for the first heartbeat would leave the notice open
-// on exactly the path DR-AC21 describes.
+// on exactly this path.
 //
-// A runtime is one person's use of one machine (D33): the registrant's rows
+// A runtime is one person's use of one machine: the registrant's rows
 // are keyed by their own identity, so registering never moves anyone else's
 // row or setup. The machine is one person's at a time, though, so anyone
 // else's live rows on it are handed over first (runtime_handover.go), and
@@ -226,7 +226,7 @@ func upsertRuntimeParams(
 }
 
 // RuntimeDeregistration is one daemon's deregister batch. DaemonID is the
-// machine identity the daemon registered with (X-Boardly-Daemon-ID on the
+// machine identity the daemon registered with (X-Zenith-Team-Daemon-ID on the
 // wire): when set, a runtime registered by another daemon is skipped like an
 // unknown id. Empty means no daemon match — the transport's rollout policy
 // decides whether a daemon that sent no id is admitted, and this domain then
@@ -487,7 +487,7 @@ func (s *DefaultRuntimeService) MarkStaleRuntimesOffline(ctx context.Context) (i
 
 // runtimeOfflineAudience answers, for the runtimes about to be demoted, how
 // much work each is holding and who would be told. Runtimes with nothing in
-// flight get no audience at all: DR-FR18 notifies only when the demotion
+// flight get no audience at all: the notice goes out only when the demotion
 // costs a run.
 func runtimeOfflineAudience(
 	ctx context.Context,
@@ -526,11 +526,11 @@ func (s *DefaultRuntimeService) publishPending(ctx context.Context, pending []ev
 // runtime's company, touch last_seen_at, and — when the beat brought an
 // offline runtime back — resolve whatever runtime_offline Inbox items the
 // sweep raised about it and publish the agent.status availability
-// recomputation. Boardly phase 1 has no Redis liveness lane, so this DB write
+// recomputation. Zenith Team phase 1 has no Redis liveness lane, so this DB write
 // is the liveness authority the sweeper trusts.
 //
 // daemonID is the machine identity the daemon registered with
-// (X-Boardly-Daemon-ID on the wire). Empty means unfenced — the transport's
+// (X-Zenith-Team-Daemon-ID on the wire). Empty means unfenced — the transport's
 // rollout policy decides whether a daemon that sent no id is admitted, and
 // membership is then the only gate.
 //

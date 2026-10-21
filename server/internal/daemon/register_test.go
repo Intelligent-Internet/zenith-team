@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // registerRecorder is a server that accepts registrations and remembers the
@@ -158,7 +158,7 @@ func stubVersionProbeByPath(d *Daemon, answers map[string]func() (string, error)
 	d.probes.retryDelay = time.Millisecond
 }
 
-// DR-AC19: a machine whose codex is below the minimum registers a Codex
+// A machine whose codex is below the minimum registers a Codex
 // runtime offline with the reason, the Claude runtime is unaffected, and
 // /health (what `daemon status` renders) carries the identical message. The
 // daemon then keeps heartbeating the unusable runtime but never claims for

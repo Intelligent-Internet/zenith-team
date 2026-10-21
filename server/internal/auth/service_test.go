@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 // storelessService builds a DefaultAuthService over a store that owns no

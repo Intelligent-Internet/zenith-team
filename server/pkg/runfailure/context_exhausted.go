@@ -16,7 +16,7 @@ import "strings"
 // two are computed independently, so a run's real terminal condition must be
 // read from this field rather than inferred from that flag.
 //
-// Captured from Claude Code 2.1.220 (the version GH #6402 reports) by resuming
+// Captured from Claude Code 2.1.220 by resuming
 // a saturated transcript against an endpoint returning the provider's 400
 // prompt-too-long shape; the frames are fixtured verbatim in
 // pkg/agent/testdata/claude-code-2.1.220-context-exhausted-resume.jsonl. Auto-
@@ -81,8 +81,8 @@ const contextExhaustedOutputMaxLen = 320
 // predicate only ever sees output a caller believed was a SUCCESS, so a match
 // costs a real run and a healthy session.
 //
-// Leaving it out costs nothing on the evidence we have: in the 2.1.220 and
-// 2.1.221 frames captured for GH #6402 the bare form arrives with is_error set,
+// Leaving it out costs nothing on the evidence we have: in the captured
+// 2.1.220 and 2.1.221 frames the bare form arrives with is_error set,
 // which routes it through /fail, where Classify's rule 1 has always mapped
 // "prompt is too long" to context_overflow. That is a statement about those
 // captures, not about every build — if a frame ever carries the bare sentence

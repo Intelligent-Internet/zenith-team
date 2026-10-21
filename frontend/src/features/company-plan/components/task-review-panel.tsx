@@ -1,5 +1,5 @@
 import type { DesktopTaskReview } from "../../../../electron/shared/desktop-bridge.types";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import {
   type ReactNode,
   useCallback,
@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -71,7 +71,7 @@ type ReviewState =
   | { kind: "error"; message: string }
   // No diff can be shown for the Run — its retained workspace is gone, or
   // it ran before this version kept a record — but the Task still needs a
-  // way forward (TK-AC7: a re-review or repair path, never a silent done).
+  // way forward: a re-review or repair path, never a silent done.
   | { kind: "unavailable"; message: string }
   | { kind: "ready"; review: DesktopTaskReview; binding: ReviewBinding }
   | { kind: "blocked"; review: DesktopTaskReview; binding: ReviewBinding };
@@ -236,7 +236,7 @@ export function TaskReviewPanel({
     } catch (error) {
       commitState({
         kind: "error",
-        message: getBoardlyQueryErrorMessage(
+        message: getZenithTeamQueryErrorMessage(
           error,
           "Task review is unavailable.",
         ),
@@ -288,7 +288,7 @@ export function TaskReviewPanel({
         status: "done",
       });
       dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { id: companyId, type: "Run" },
           { id: companyId, type: "Task" },
         ]),
@@ -297,7 +297,10 @@ export function TaskReviewPanel({
       onClose();
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(error, "Task could not be marked as done."),
+        getZenithTeamQueryErrorMessage(
+          error,
+          "Task could not be marked as done.",
+        ),
       );
     } finally {
       setIsMarkingDone(false);
@@ -319,7 +322,7 @@ export function TaskReviewPanel({
         throw new Error(merge.reason);
       }
       dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { id: state.binding.companyId, type: "Run" },
           { id: state.binding.companyId, type: "Task" },
         ]),
@@ -328,7 +331,7 @@ export function TaskReviewPanel({
       onClose();
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(error, "Task could not be merged."),
+        getZenithTeamQueryErrorMessage(error, "Task could not be merged."),
       );
     } finally {
       setIsAccepting(false);
@@ -348,7 +351,7 @@ export function TaskReviewPanel({
         requestKey: generateUuidV7(),
       });
       dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { id: latest.conversationId, type: "Message" },
           { id: companyId, type: "Run" },
           { id: companyId, type: "Task" },
@@ -358,7 +361,7 @@ export function TaskReviewPanel({
       onOpenChat();
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(
+        getZenithTeamQueryErrorMessage(
           error,
           "Conflict resolution could not be started.",
         ),

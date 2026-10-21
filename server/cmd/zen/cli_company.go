@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 func newCompanyCmd() *cobra.Command {

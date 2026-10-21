@@ -134,7 +134,7 @@ func TestClaudeHandleAssistantServerToolUsePreservesMixedContent(t *testing.T) {
 				{Type: "text", Text: "I will search."},
 				{
 					Type: "server_tool_use", ID: "search-1", Name: "web_search",
-					Input: mustMarshal(t, map[string]any{"query": "Boardly"}),
+					Input: mustMarshal(t, map[string]any{"query": "Zenith Team"}),
 				},
 			},
 		}),
@@ -152,7 +152,7 @@ func TestClaudeHandleAssistantServerToolUsePreservesMixedContent(t *testing.T) {
 		t.Fatalf("item = %#v", item)
 	}
 	call, ok := item.Parts[1].(ToolCallPart)
-	if !ok || call.CallID != "search-1" || call.Name != "web_search" || call.Input["query"] != "Boardly" {
+	if !ok || call.CallID != "search-1" || call.Name != "web_search" || call.Input["query"] != "Zenith Team" {
 		t.Fatalf("tool call = %#v", item.Parts[1])
 	}
 }
@@ -171,7 +171,7 @@ func TestClaudeHandleAssistantWebSearchResultCompletesServerTool(t *testing.T) {
 				{
 					Type: "web_search_tool_result", ToolUseID: "search-1",
 					Content: mustMarshal(t, []any{map[string]any{
-						"type": "web_search_result", "title": "Boardly",
+						"type": "web_search_result", "title": "Zenith Team",
 					}}),
 				},
 			},
@@ -191,7 +191,7 @@ func TestClaudeHandleAssistantWebSearchResultCompletesServerTool(t *testing.T) {
 	}
 	result, ok := item.Parts[0].(ToolResultPart)
 	if !ok || result.CallID != "search-1" || result.Name != "web_search" ||
-		result.Status != ToolResultStatusCompleted || !strings.Contains(result.Output, "Boardly") {
+		result.Status != ToolResultStatusCompleted || !strings.Contains(result.Output, "Zenith Team") {
 		t.Fatalf("tool result = %#v", item.Parts[0])
 	}
 }
@@ -229,7 +229,7 @@ func TestClaudeHandleAssistantMCPToolUseAndResult(t *testing.T) {
 	use := claudeSDKMessage{Type: "assistant", Message: mustMarshal(t, claudeMessageContent{
 		ID: "mcp-use-message", Role: "assistant", Content: []claudeContentBlock{{
 			Type: "mcp_tool_use", ID: "mcp-1", ServerName: "github", Name: "search",
-			Input: mustMarshal(t, map[string]any{"query": "Boardly"}),
+			Input: mustMarshal(t, map[string]any{"query": "Zenith Team"}),
 		}},
 	})}
 	result := claudeSDKMessage{Type: "assistant", Message: mustMarshal(t, claudeMessageContent{
@@ -1004,8 +1004,8 @@ func TestBuildClaudeArgsUsesStrictMCPForManagedConfig(t *testing.T) {
 func TestBuildClaudeArgsUsesPrivateSystemPromptFile(t *testing.T) {
 	t.Parallel()
 
-	const brief = "the entire boardly runtime brief"
-	const promptPath = "/private/boardly/system-prompt.txt"
+	const brief = "the entire zenith-team runtime brief"
+	const promptPath = "/private/zenith-team/system-prompt.txt"
 	args := buildClaudeArgs(
 		ExecOptions{SystemPrompt: brief},
 		promptPath,
@@ -1034,7 +1034,7 @@ func TestBuildClaudeArgsOmitsEmptySystemPrompt(t *testing.T) {
 func TestBuildClaudeArgsBlocksSystemPromptOverrides(t *testing.T) {
 	t.Parallel()
 
-	const promptPath = "/private/boardly/system-prompt.txt"
+	const promptPath = "/private/zenith-team/system-prompt.txt"
 	args := buildClaudeArgs(ExecOptions{CustomArgs: []string{
 		"--system-prompt", "unsafe-inline",
 		"--system-prompt-file=/tmp/unsafe-system.txt",
@@ -1346,12 +1346,12 @@ func TestMergeEnvFiltersClaudeCodeVars(t *testing.T) {
 		"CLAUDE_CODE_GIT_BASH_PATH=C:\\Program Files\\Git\\bin\\bash.exe",
 		"CLAUDE_CODE_USE_BEDROCK=1",
 		"CLAUDE_CODE_TMPDIR=/custom/tmp",
-		"BOARDLY_LLM_API_KEY=daemon-secret",
-		"BOARDLY_SERVER_URL=https://daemon.example",
+		"ZENITH_TEAM_LLM_API_KEY=daemon-secret",
+		"ZENITH_TEAM_SERVER_URL=https://daemon.example",
 	}, map[string]string{
-		"FOO":                "bar",
-		"BOARDLY_SERVER_URL": "https://run.example",
-		"BOARDLY_TOKEN":      "bat_run",
+		"FOO":                    "bar",
+		"ZENITH_TEAM_SERVER_URL": "https://run.example",
+		"ZENITH_TEAM_TOKEN":      "bat_run",
 	})
 
 	// Internal runtime/session markers must be stripped so the child does not
@@ -1362,8 +1362,8 @@ func TestMergeEnvFiltersClaudeCodeVars(t *testing.T) {
 		"CLAUDE_CODE_EXECPATH=/opt/claude",
 		"CLAUDE_CODE_SESSION_ID=abc123",
 		"CLAUDE_CODE_SSE_PORT=9999",
-		"BOARDLY_LLM_API_KEY=daemon-secret",
-		"BOARDLY_SERVER_URL=https://daemon.example",
+		"ZENITH_TEAM_LLM_API_KEY=daemon-secret",
+		"ZENITH_TEAM_SERVER_URL=https://daemon.example",
 	}
 	for _, entry := range env {
 		for _, banned := range filteredOut {
@@ -1400,8 +1400,8 @@ func TestMergeEnvFiltersClaudeCodeVars(t *testing.T) {
 	if !found["FOO=bar"] {
 		t.Fatalf("expected extra env var to be appended, got %v", env)
 	}
-	if !found["BOARDLY_SERVER_URL=https://run.example"] || !found["BOARDLY_TOKEN=bat_run"] {
-		t.Fatalf("expected explicit run BOARDLY_* values to be appended, got %v", env)
+	if !found["ZENITH_TEAM_SERVER_URL=https://run.example"] || !found["ZENITH_TEAM_TOKEN=bat_run"] {
+		t.Fatalf("expected explicit run ZENITH_TEAM_* values to be appended, got %v", env)
 	}
 }
 
@@ -1843,7 +1843,7 @@ func TestClaudeExecuteDeliversSystemPromptFromPrivateFileAndCleansItUp(t *testin
 		t.Skip("shell-script fixture is POSIX-only")
 	}
 
-	const brief = "private Boardly runtime brief\nwith a second line"
+	const brief = "private Zenith Team runtime brief\nwith a second line"
 	tempDir := t.TempDir()
 	capturePath := filepath.Join(tempDir, "system-prompt-capture")
 	fakePath := filepath.Join(tempDir, "claude")
@@ -2359,7 +2359,7 @@ func TestBuildClaudeArgsExtraArgsBeforeCustomArgsAndFiltersBoth(t *testing.T) {
 
 func TestBuildClaudeArgsManagedSkillSettingsWins(t *testing.T) {
 	args := buildClaudeArgs(ExecOptions{
-		ClaudeSettingsPath: "/tmp/boardly-claude-settings.json",
+		ClaudeSettingsPath: "/tmp/zenith-team-claude-settings.json",
 		ExtraArgs:          []string{"--settings", "/tmp/default.json"},
 		CustomArgs:         []string{"--settings=/tmp/agent.json", "--max-turns", "7"},
 	}, "", slog.Default())
@@ -2367,7 +2367,7 @@ func TestBuildClaudeArgsManagedSkillSettingsWins(t *testing.T) {
 	if strings.Contains(joined, "default.json") || strings.Contains(joined, "agent.json") {
 		t.Fatalf("competing settings args were not filtered: %v", args)
 	}
-	if !strings.Contains(joined, "--settings /tmp/boardly-claude-settings.json") {
+	if !strings.Contains(joined, "--settings /tmp/zenith-team-claude-settings.json") {
 		t.Fatalf("managed settings missing: %v", args)
 	}
 	if !strings.Contains(joined, "--max-turns 7") {

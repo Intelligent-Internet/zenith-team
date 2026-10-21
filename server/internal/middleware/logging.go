@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // The two logging middlewares live together because they are one story: the

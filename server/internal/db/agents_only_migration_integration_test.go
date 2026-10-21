@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // The agents-only cutover (000017) moves the appearance a department
@@ -64,7 +64,12 @@ func TestAgentsOnlyMigrationMovesAppearanceOntoAgents(t *testing.T) {
 			taskID, companyID, conversationID, engineeringID, rootID)
 	})
 
-	if err := runMigration(ctx, pool, "migrate to version 17", func(runner *migrate.Migrate) error { return runner.Migrate(17) }); err != nil {
+	if err := runMigration(
+		ctx,
+		pool,
+		"migrate to version 17",
+		func(runner *migrate.Migrate) error { return runner.Migrate(17) },
+	); err != nil {
 		t.Fatalf("upgrade from version 16: %v", err)
 	}
 	for _, table := range []string{"department_configs", "department_capabilities"} {

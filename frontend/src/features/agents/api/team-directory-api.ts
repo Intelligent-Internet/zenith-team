@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type {
   components as ApiComponents,
   operations as ApiOperations,
@@ -47,7 +47,7 @@ export function removeMember(
   }
 }
 
-const teamDirectoryApi = boardlyApi.injectEndpoints({
+const teamDirectoryApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     removeCompanyMember: builder.mutation<
       void,
@@ -58,7 +58,7 @@ const teamDirectoryApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Company" },
       ],
       queryFn: ({ companyId, userId, body }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(
               `/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`,
@@ -74,7 +74,7 @@ const teamDirectoryApi = boardlyApi.injectEndpoints({
       invalidatesTags: (_result, error, { companyId }) =>
         error ? [] : [{ id: companyId, type: "Member" }],
       queryFn: ({ companyId, userId, body }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<ActiveCompanyMember>(
               `/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}`,
@@ -107,7 +107,7 @@ const teamDirectoryApi = boardlyApi.injectEndpoints({
               { id: companyId, type: "Company" },
             ],
       queryFn: ({ companyId, userId, body }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<ActiveCompanyMemberPage>(
               `/companies/${encodeURIComponent(companyId)}/members/${encodeURIComponent(userId)}/transfer-ownership`,
@@ -133,7 +133,7 @@ const teamDirectoryApi = boardlyApi.injectEndpoints({
       { companyId: string; body: MembershipMutation }
     >({
       queryFn: ({ companyId, body }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<void>(
               `/companies/${encodeURIComponent(companyId)}/leave`,
@@ -147,7 +147,7 @@ const teamDirectoryApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Member" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ActiveCompanyMemberPage>(
               `/companies/${encodeURIComponent(companyId)}/members`,

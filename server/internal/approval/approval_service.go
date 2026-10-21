@@ -16,14 +16,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const maxCompanyPlanActionBytes = 16 << 20
@@ -61,8 +61,8 @@ type CompanyPlanActor struct {
 	TaskProjectID uuid.NullUUID
 	// Run is set when a Run applies the plan it raised for Principal without
 	// waiting for a decision (Proactive Mode). Every row the apply writes
-	// then names the Run's Agent, Principal and the Run (D31), and every
-	// Task it creates names the Agent beside Principal (IA-FR5). It is nil
+	// then names the Run's Agent, Principal and the Run, and every
+	// Task it creates names the Agent beside Principal. It is nil
 	// when a person approved the plan, and for a raise.
 	Run *execution.RunOrigin
 }
@@ -107,8 +107,6 @@ type CompanyPlanActionParticipant interface {
 // The Approval prefix is the subject, not the package: QuestionService is its
 // sibling here, and AGENTS.md pins every service to the trio XService /
 // DefaultXService / NewXService and forbids a bare Service.
-//
-//nolint:revive // Approval, not the package: QuestionService is the sibling.
 type ApprovalService interface {
 	RequestCompanyPlanApply(
 		context.Context,
@@ -219,7 +217,12 @@ func (s *DefaultApprovalService) RequestCompanyPlanApply(
 			if !bytes.Equal(existing.RequestSha256, requestDigest) {
 				return ErrApprovalConflict
 			}
-			result, err = approvalProjectionForActor(ctx, q, existing, humanInputProjectionActor(principal, origin))
+			result, err = approvalProjectionForActor(
+				ctx,
+				q,
+				existing,
+				humanInputProjectionActor(principal, origin),
+			)
 			return err
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
@@ -233,7 +236,13 @@ func (s *DefaultApprovalService) RequestCompanyPlanApply(
 			}
 			if len(deciders) == 0 {
 				noResolver = true
-				notice, err := endRunWithoutResolverInTx(ctx, q, &pending, origin.CompanyID, origin.RunID)
+				notice, err := endRunWithoutResolverInTx(
+					ctx,
+					q,
+					&pending,
+					origin.CompanyID,
+					origin.RunID,
+				)
 				inboxResults = append(inboxResults, notice)
 				return err
 			}
@@ -281,7 +290,12 @@ func (s *DefaultApprovalService) RequestCompanyPlanApply(
 			if !bytes.Equal(existing.RequestSha256, requestDigest) {
 				return ErrApprovalConflict
 			}
-			result, err = approvalProjectionForActor(ctx, q, existing, humanInputProjectionActor(principal, origin))
+			result, err = approvalProjectionForActor(
+				ctx,
+				q,
+				existing,
+				humanInputProjectionActor(principal, origin),
+			)
 			return err
 		}
 		if err != nil {
@@ -816,7 +830,8 @@ func normalizeApprovalRequest(
 		return nil, nil, ErrApprovalInvalidInput
 	}
 	if origin.TaskID == nil {
-		if origin.OriginUserID == nil || (origin.ConversationKind != "channel_agent" && *origin.OriginUserID != principal.UserID) {
+		if origin.OriginUserID == nil ||
+			(origin.ConversationKind != "channel_agent" && *origin.OriginUserID != principal.UserID) {
 			return nil, nil, ErrApprovalForbidden
 		}
 	}
@@ -913,10 +928,13 @@ func createApprovalInboxItems(
 	recipients := deciders
 	if !scoped {
 		var err error
-		recipients, err = q.ListActiveCompanyMemberIDsByRoles(ctx, generated.ListActiveCompanyMemberIDsByRolesParams{
-			CompanyID: row.CompanyID,
-			Roles:     auth.RolesWith(auth.PermissionApprovalsResolve),
-		})
+		recipients, err = q.ListActiveCompanyMemberIDsByRoles(
+			ctx,
+			generated.ListActiveCompanyMemberIDsByRolesParams{
+				CompanyID: row.CompanyID,
+				Roles:     auth.RolesWith(auth.PermissionApprovalsResolve),
+			},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("list Approval resolvers: %w", err)
 		}
@@ -1074,7 +1092,12 @@ func stageApprovalEvent(
 
 // stageApprovalFrames stamps the Project audience of Approval and Question
 // frames and adds them to the transaction's batch.
-func stageApprovalFrames(ctx context.Context, q *generated.Queries, pending *[]events.Event, staged ...events.Event) error {
+func stageApprovalFrames(
+	ctx context.Context,
+	q *generated.Queries,
+	pending *[]events.Event,
+	staged ...events.Event,
+) error {
 	if err := auth.StampProjectAudiencesInTx(ctx, q, staged); err != nil {
 		return err
 	}

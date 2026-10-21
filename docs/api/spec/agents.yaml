@@ -646,7 +646,7 @@ paths:
         compiled or pinned into this release, so it names exactly what ships; it is identical for every Company and
         carries no Company data. The keys are reserved — a custom skill can
         never shadow them — and they cannot be switched off: the Agent's
-        `disabledBuiltIns` switches gate the `boardly-mcp` tool groups, not
+        `disabledBuiltIns` switches gate the `zenith-team-mcp` tool groups, not
         the procedures.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'

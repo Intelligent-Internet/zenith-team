@@ -29,7 +29,10 @@ func TestHTTPRoomProviderCallsRoomService(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := provider.EnsureRoom(context.Background(), Room{Name: "huddle-room", ParticipantLimit: 9}); err != nil {
+	if err := provider.EnsureRoom(
+		context.Background(),
+		Room{Name: "huddle-room", ParticipantLimit: 9},
+	); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -83,7 +86,11 @@ func TestHTTPRoomProviderReadyRoomsBatchesListRooms(t *testing.T) {
 
 func TestHTTPRoomProviderRejectsProviderErrors(t *testing.T) {
 	issuer, _ := NewTokenIssuer(TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute})
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { http.Error(w, "bad room", http.StatusBadRequest) }))
+	server := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "bad room", http.StatusBadRequest) },
+		),
+	)
 	defer server.Close()
 	provider, _ := NewHTTPRoomProvider(server.URL, issuer, server.Client())
 	err := provider.DeleteRoom(context.Background(), "room")

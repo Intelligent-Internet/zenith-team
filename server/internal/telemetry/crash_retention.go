@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (

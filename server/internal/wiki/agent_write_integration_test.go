@@ -10,10 +10,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 type agentWriteHarness struct {
@@ -43,9 +43,23 @@ func startAgentWrite(t *testing.T) agentWriteHarness {
 	}
 	addMember := func(email, role string) auth.UserPrincipal {
 		id := dbtest.NewUUID(t)
-		dbtest.MustExec(t, ctx, h.pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`, id, email)
-		dbtest.MustExec(t, ctx, h.pool,
-			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`, h.fixture.CompanyA, id, role)
+		dbtest.MustExec(
+			t,
+			ctx,
+			h.pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
+			id,
+			email,
+		)
+		dbtest.MustExec(
+			t,
+			ctx,
+			h.pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
+			h.fixture.CompanyA,
+			id,
+			role,
+		)
 		return auth.UserPrincipal{UserID: id, CompanyID: h.fixture.CompanyA, Role: auth.CompanyRole(role)}
 	}
 	harness := agentWriteHarness{
@@ -79,7 +93,11 @@ func page(key, title, markdown string) wiki.AgentWritePageInput {
 	return wiki.AgentWritePageInput{Key: key, Title: title, Summary: title + " summary", Markdown: markdown}
 }
 
-func (h agentWriteHarness) write(t *testing.T, run uuid.UUID, pages ...wiki.AgentWritePageInput) wiki.AgentWriteResponse {
+func (h agentWriteHarness) write(
+	t *testing.T,
+	run uuid.UUID,
+	pages ...wiki.AgentWritePageInput,
+) wiki.AgentWriteResponse {
 	t.Helper()
 	result, err := h.writes.Write(t.Context(), h.owner, run, wiki.AgentWriteInput{Pages: pages})
 	if err != nil {
@@ -90,7 +108,11 @@ func (h agentWriteHarness) write(t *testing.T, run uuid.UUID, pages ...wiki.Agen
 
 func (h agentWriteHarness) outgoing(t *testing.T, id uuid.UUID) []uuid.UUID {
 	t.Helper()
-	rows, err := h.pool.Query(t.Context(), `SELECT to_page_id FROM wiki_links WHERE from_page_id = $1 ORDER BY to_page_id`, id)
+	rows, err := h.pool.Query(
+		t.Context(),
+		`SELECT to_page_id FROM wiki_links WHERE from_page_id = $1 ORDER BY to_page_id`,
+		id,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +131,8 @@ func (h agentWriteHarness) outgoing(t *testing.T, id uuid.UUID) []uuid.UUID {
 func (h agentWriteHarness) pageCount(t *testing.T) int {
 	t.Helper()
 	var count int
-	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM wiki_pages WHERE company_id = $1`, h.fixture.CompanyA).Scan(&count); err != nil {
+	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM wiki_pages WHERE company_id = $1`, h.fixture.CompanyA).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	return count
@@ -129,8 +152,14 @@ func TestAgentWritePublishesLinkedPagesAndRecordsEdgesToSameBatchPages(t *testin
 	h.eventNames()
 
 	// The hub is listed first and links to pages that come later in the batch.
-	result := h.write(t, h.research,
-		page("company-overview", "Company overview", "# Overview\n\nSee [[products]] and [[customers|our customers]].\n\n## Sources\n- site"),
+	result := h.write(
+		t,
+		h.research,
+		page(
+			"company-overview",
+			"Company overview",
+			"# Overview\n\nSee [[products]] and [[customers|our customers]].\n\n## Sources\n- site",
+		),
 		page("products", "Products", "Back to [[company-overview]]. Pricing is TBD."),
 		page("customers", "Customers", "Back to [[company-overview]] and [[products]]. Also [[nowhere]]."),
 	)
@@ -173,10 +202,18 @@ func TestAgentWritePublishesLinkedPagesAndRecordsEdgesToSameBatchPages(t *testin
 		t.Fatalf("placeholder survived: %q", read.Content)
 	}
 	page, err := h.service.GetPage(ctx, h.owner, hub)
-	if err != nil || page.CreatedByUserID != h.fixture.UserA || page.LastAuthorUserID != h.fixture.UserA || page.Status != "active" {
+	if err != nil || page.CreatedByUserID != h.fixture.UserA || page.LastAuthorUserID != h.fixture.UserA ||
+		page.Status != "active" {
 		t.Fatalf("hub = %+v, %v", page, err)
 	}
-	if found, err := h.reads.Search(ctx, h.owner, h.research, "pricing", 5); err != nil || found.Total != 1 || found.Items[0].PageID != products {
+	if found, err := h.reads.Search(
+		ctx,
+		h.owner,
+		h.research,
+		"pricing",
+		5,
+	); err != nil || found.Total != 1 ||
+		found.Items[0].PageID != products {
 		t.Fatalf("search = %+v, %v", found, err)
 	}
 	// The Company collection, then one page event per page, after the commit.
@@ -189,17 +226,27 @@ func TestAgentWritePublishesLinkedPagesAndRecordsEdgesToSameBatchPages(t *testin
 		}
 	}
 	var count int
-	if err := h.pool.QueryRow(ctx, `SELECT count(*) FROM run_wiki_writes WHERE run_id = $1`, h.research).Scan(&count); err != nil || count != 3 {
+	if err := h.pool.QueryRow(ctx, `SELECT count(*) FROM run_wiki_writes WHERE run_id = $1`, h.research).
+		Scan(&count); err != nil ||
+		count != 3 {
 		t.Fatalf("run_wiki_writes = %d, %v", count, err)
 	}
 }
 
 func TestAgentWriteResolvesLinksToPagesOfEarlierCalls(t *testing.T) {
 	h := startAgentWrite(t)
-	first := h.write(t, h.research, page("company-overview", "Company overview", "Hub. See [[products]] and [[open-questions]]."))
+	first := h.write(
+		t,
+		h.research,
+		page("company-overview", "Company overview", "Hub. See [[products]] and [[open-questions]]."),
+	)
 	hub := byKey(first)["company-overview"]
 	if len(first.Warnings) != 2 || h.outgoing(t, hub.PageID) != nil {
-		t.Fatalf("first call = %+v, links %v; want two warnings and no edges yet", first, h.outgoing(t, hub.PageID))
+		t.Fatalf(
+			"first call = %+v, links %v; want two warnings and no edges yet",
+			first,
+			h.outgoing(t, hub.PageID),
+		)
 	}
 
 	// A later call writes the pages the hub named; the hub is relinked.
@@ -209,7 +256,8 @@ func TestAgentWriteResolvesLinksToPagesOfEarlierCalls(t *testing.T) {
 		page("open-questions", "Open questions", "Back to [[company-overview]]."),
 	)
 	items := byKey(second)
-	if len(second.Pages) != 3 || items["company-overview"].Status != wiki.AgentWriteUpdated || items["company-overview"].Revision != 2 {
+	if len(second.Pages) != 3 || items["company-overview"].Status != wiki.AgentWriteUpdated ||
+		items["company-overview"].Revision != 2 {
 		t.Fatalf("second call = %+v, want the hub updated to revision 2", second)
 	}
 	if len(second.Warnings) != 0 || second.TotalPages != 3 {
@@ -240,7 +288,8 @@ func TestAgentWriteUpsertsByKeyAndReplayIsIdempotent(t *testing.T) {
 
 	replay := h.write(t, h.research, batch...)
 	for _, item := range replay.Pages {
-		if item.Status != wiki.AgentWriteUnchanged || item.Revision != 1 || item.PageID != byKey(created)[item.Key].PageID {
+		if item.Status != wiki.AgentWriteUnchanged || item.Revision != 1 ||
+			item.PageID != byKey(created)[item.Key].PageID {
 			t.Fatalf("replay item = %+v, want unchanged revision 1", item)
 		}
 	}
@@ -252,7 +301,9 @@ func TestAgentWriteUpsertsByKeyAndReplayIsIdempotent(t *testing.T) {
 	batch[1].Markdown = "Back to [[company-overview]]. New pricing details."
 	updated := h.write(t, h.research, batch[1])
 	item := updated.Pages[0]
-	if item.Status != wiki.AgentWriteUpdated || item.Revision != 2 || item.PageID != byKey(created)["products"].PageID || updated.TotalPages != 2 {
+	if item.Status != wiki.AgentWriteUpdated || item.Revision != 2 ||
+		item.PageID != byKey(created)["products"].PageID ||
+		updated.TotalPages != 2 {
 		t.Fatalf("update = %+v", updated)
 	}
 	if got := h.outgoing(t, item.PageID); len(got) != 1 {
@@ -261,7 +312,14 @@ func TestAgentWriteUpsertsByKeyAndReplayIsIdempotent(t *testing.T) {
 	if names := h.eventNames(); len(names) != 1 || names[0] != wiki.EventPageUpdated {
 		t.Fatalf("events = %v", names)
 	}
-	if found, err := h.reads.Search(ctx, h.owner, h.research, "pricing", 5); err != nil || found.Total != 1 || found.Items[0].Revision != 2 {
+	if found, err := h.reads.Search(
+		ctx,
+		h.owner,
+		h.research,
+		"pricing",
+		5,
+	); err != nil || found.Total != 1 ||
+		found.Items[0].Revision != 2 {
 		t.Fatalf("search after update = %+v, %v", found, err)
 	}
 }
@@ -276,7 +334,9 @@ func TestAgentWriteFilesNewPagesInTheCompanyCollection(t *testing.T) {
 	}
 	var name string
 	if err := h.pool.QueryRow(t.Context(), `SELECT c.name FROM wiki_pages p JOIN wiki_collections c ON c.id = p.collection_id
-		WHERE p.company_id = $1`, h.fixture.CompanyA).Scan(&name); err != nil || name != "Company" {
+		WHERE p.company_id = $1`, h.fixture.CompanyA).
+		Scan(&name); err != nil ||
+		name != "Company" {
 		t.Fatalf("overview collection = %q, %v; want Company", name, err)
 	}
 
@@ -309,7 +369,11 @@ func TestAgentWriteReusesAPersonsCompanyCollection(t *testing.T) {
 func TestAgentWriteNeverTouchesPagesItDidNotCreate(t *testing.T) {
 	h := startAgentWrite(t)
 	ctx := t.Context()
-	human, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "company-overview", Body: "Human text", Summary: "s"})
+	human, err := h.service.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "company-overview", Body: "Human text", Summary: "s"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +382,12 @@ func TestAgentWriteNeverTouchesPagesItDidNotCreate(t *testing.T) {
 	if result.Pages[0].PageID == human.ID || result.Pages[0].Status != wiki.AgentWriteCreated {
 		t.Fatalf("write reused a person's page: %+v", result)
 	}
-	if got, err := h.service.GetPage(ctx, h.owner, human.ID); err != nil || got.Body != "Human text" || got.Revision != human.Revision {
+	if got, err := h.service.GetPage(
+		ctx,
+		h.owner,
+		human.ID,
+	); err != nil || got.Body != "Human text" ||
+		got.Revision != human.Revision {
 		t.Fatalf("person's page changed: %+v, %v", got, err)
 	}
 
@@ -348,15 +417,31 @@ func TestAgentWriteRefusesAnyRunThatIsNotTheLiveResearchRunOfTheCaller(t *testin
 		run       uuid.UUID
 		want      error
 	}{
-		"task run":            {h.owner, h.fixture.RunA, wiki.ErrAgentWriteForbidden},
-		"direct chat run":     {h.owner, h.newRun(t, "human_input", "running", h.fixture.UserA), wiki.ErrAgentWriteForbidden},
-		"finished research":   {h.owner, h.newRun(t, "company_research", "completed", h.fixture.UserA), wiki.ErrAgentWriteForbidden},
-		"queued research":     {h.owner, h.newRun(t, "company_research", "queued", h.fixture.UserA), wiki.ErrAgentWriteForbidden},
-		"another authorizer":  {h.admin, h.research, wiki.ErrAgentWriteForbidden},
-		"run without founder": {h.owner, h.newRun(t, "company_research", "running", h.admin.UserID), wiki.ErrAgentWriteForbidden},
-		"unknown run":         {h.owner, uuid.New(), wiki.ErrRunNotFound},
-		"run of another co":   {h.owner, h.fixture.RunB, wiki.ErrRunNotFound},
-		"nil run":             {h.owner, uuid.Nil, wiki.ErrRunNotFound},
+		"task run": {h.owner, h.fixture.RunA, wiki.ErrAgentWriteForbidden},
+		"direct chat run": {
+			h.owner,
+			h.newRun(t, "human_input", "running", h.fixture.UserA),
+			wiki.ErrAgentWriteForbidden,
+		},
+		"finished research": {
+			h.owner,
+			h.newRun(t, "company_research", "completed", h.fixture.UserA),
+			wiki.ErrAgentWriteForbidden,
+		},
+		"queued research": {
+			h.owner,
+			h.newRun(t, "company_research", "queued", h.fixture.UserA),
+			wiki.ErrAgentWriteForbidden,
+		},
+		"another authorizer": {h.admin, h.research, wiki.ErrAgentWriteForbidden},
+		"run without founder": {
+			h.owner,
+			h.newRun(t, "company_research", "running", h.admin.UserID),
+			wiki.ErrAgentWriteForbidden,
+		},
+		"unknown run":       {h.owner, uuid.New(), wiki.ErrRunNotFound},
+		"run of another co": {h.owner, h.fixture.RunB, wiki.ErrRunNotFound},
+		"nil run":           {h.owner, uuid.Nil, wiki.ErrRunNotFound},
 	}
 	for name, test := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -372,7 +457,11 @@ func TestAgentWriteRefusesAnyRunThatIsNotTheLiveResearchRunOfTheCaller(t *testin
 		t.Fatalf("member Write() = %v, want ErrPageForbidden", err)
 	}
 	// An outsider named against the Company is not a member at all.
-	outsider := auth.UserPrincipal{UserID: h.fixture.UserB, CompanyID: h.fixture.CompanyA, Role: auth.CompanyRoleOwner}
+	outsider := auth.UserPrincipal{
+		UserID:    h.fixture.UserB,
+		CompanyID: h.fixture.CompanyA,
+		Role:      auth.CompanyRoleOwner,
+	}
 	if _, err := h.writes.Write(ctx, outsider, h.research, input); !errors.Is(err, wiki.ErrPageNotFound) {
 		t.Fatalf("outsider Write() = %v, want ErrPageNotFound", err)
 	}
@@ -381,9 +470,13 @@ func TestAgentWriteRefusesAnyRunThatIsNotTheLiveResearchRunOfTheCaller(t *testin
 	}
 
 	// The Agent's Wiki switch is enforced by the server.
-	dbtest.MustExec(t, ctx, h.pool,
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
 		`UPDATE agents SET settings = jsonb_build_object('capabilities', jsonb_build_object('disabledBuiltIns', jsonb_build_array('wiki'))) WHERE id = $1`,
-		h.fixture.AgentA)
+		h.fixture.AgentA,
+	)
 	if _, err := h.writes.Write(ctx, h.owner, h.research, input); !errors.Is(err, wiki.ErrAgentAccessDisabled) {
 		t.Fatalf("switched-off Write() = %v, want ErrAgentAccessDisabled", err)
 	}
@@ -399,17 +492,37 @@ func TestAgentWriteEnforcesThePerRunPageCap(t *testing.T) {
 			n := batch*wiki.MaxAgentWritePagesPerCall + i
 			pages = append(pages, page(fmt.Sprintf("p-%d", n), fmt.Sprintf("Page %d", n), "text"))
 		}
-		if result := h.write(t, h.research, pages...); result.TotalPages != batch*wiki.MaxAgentWritePagesPerCall+len(pages) {
+		if result := h.write(
+			t,
+			h.research,
+			pages...); result.TotalPages != batch*wiki.MaxAgentWritePagesPerCall+len(
+			pages,
+		) {
 			t.Fatalf("total = %d", result.TotalPages)
 		}
 	}
 	before := h.pageCount(t)
-	_, err := h.writes.Write(ctx, h.owner, h.research, wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{page("one-more", "One more", "x")}})
+	_, err := h.writes.Write(
+		ctx,
+		h.owner,
+		h.research,
+		wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{page("one-more", "One more", "x")}},
+	)
 	if !errors.Is(err, wiki.ErrAgentWriteLimit) || h.pageCount(t) != before {
-		t.Fatalf("41st page = %v (pages %d -> %d), want ErrAgentWriteLimit and no page", err, before, h.pageCount(t))
+		t.Fatalf(
+			"41st page = %v (pages %d -> %d), want ErrAgentWriteLimit and no page",
+			err,
+			before,
+			h.pageCount(t),
+		)
 	}
 	// Updating a page it already owns is still allowed at the cap.
-	if _, err := h.writes.Write(ctx, h.owner, h.research, wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{page("p-0", "Page 0", "changed")}}); err != nil {
+	if _, err := h.writes.Write(
+		ctx,
+		h.owner,
+		h.research,
+		wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{page("p-0", "Page 0", "changed")}},
+	); err != nil {
 		t.Fatalf("update at the cap = %v", err)
 	}
 }
@@ -418,15 +531,22 @@ func TestAgentWriteRollsBackTheWholeBatchOnFailure(t *testing.T) {
 	h := startAgentWrite(t)
 	before := h.pageCount(t)
 	// The second page cites an Artifact nobody can open, which publishing refuses.
-	_, err := h.writes.Write(t.Context(), h.owner, h.research, wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{
-		page("good", "Good", "fine"),
-		page("bad", "Bad", "cites [[artifact:"+uuid.NewString()+"]]"),
-	}})
+	_, err := h.writes.Write(
+		t.Context(),
+		h.owner,
+		h.research,
+		wiki.AgentWriteInput{Pages: []wiki.AgentWritePageInput{
+			page("good", "Good", "fine"),
+			page("bad", "Bad", "cites [[artifact:"+uuid.NewString()+"]]"),
+		}},
+	)
 	if !errors.Is(err, wiki.ErrArtifactRefUnavailable) {
 		t.Fatalf("Write() = %v, want ErrArtifactRefUnavailable", err)
 	}
 	var owned int
-	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM run_wiki_writes WHERE run_id = $1`, h.research).Scan(&owned); err != nil || owned != 0 || h.pageCount(t) != before {
+	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM run_wiki_writes WHERE run_id = $1`, h.research).
+		Scan(&owned); err != nil || owned != 0 ||
+		h.pageCount(t) != before {
 		t.Fatalf("failed batch left %d writes, pages %d -> %d (%v)", owned, before, h.pageCount(t), err)
 	}
 	if names := h.eventNames(); len(names) != 0 {
@@ -457,7 +577,10 @@ func (h agentWriteHarness) personDraft(t *testing.T, pageID uuid.UUID, title str
 		t.Fatal(err)
 	}
 	saved, err := s.UpdateDraftMetadata(t.Context(), h.owner, pageID, wiki.DraftMetadataInput{
-		ExpectedSequence: draft.Sequence, Title: title, Summary: current.Summary, CollectionID: current.CollectionID,
+		ExpectedSequence: draft.Sequence,
+		Title:            title,
+		Summary:          current.Summary,
+		CollectionID:     current.CollectionID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -488,7 +611,8 @@ func TestAgentWriteManualRetryUpdatesTheEarlierAttemptsPages(t *testing.T) {
 
 	second := h.write(t, retry, page("company-overview", "Company overview", "Hub, researched again."))
 	got := byKey(second)["company-overview"]
-	if got.PageID != byKey(first)["company-overview"].PageID || got.Status != wiki.AgentWriteUpdated || h.pageCount(t) != pages {
+	if got.PageID != byKey(first)["company-overview"].PageID || got.Status != wiki.AgentWriteUpdated ||
+		h.pageCount(t) != pages {
 		t.Fatalf("retry wrote a copy instead of updating: %+v, pages %d -> %d", second, pages, h.pageCount(t))
 	}
 }
@@ -501,11 +625,13 @@ func TestAgentWriteLeavesAPageWithAnUnpublishedPersonDraft(t *testing.T) {
 	h.personDraft(t, hub.PageID, "Our company, being edited")
 
 	rewrite := h.write(t, h.research, page("company-overview", "Company overview", "Agent rewrite."))
-	if len(rewrite.Pages) != 0 || len(rewrite.Warnings) != 1 || !strings.Contains(rewrite.Warnings[0], "edited by a person") {
+	if len(rewrite.Pages) != 0 || len(rewrite.Warnings) != 1 ||
+		!strings.Contains(rewrite.Warnings[0], "edited by a person") {
 		t.Fatalf("rewrite = %+v", rewrite)
 	}
 	draft, err := h.service.ReadDocument(t.Context(), h.owner, hub.PageID, wiki.DocumentReadInput{Since: -1})
-	if err != nil || draft.Title != "Our company, being edited" || strings.Contains(draft.Markdown, "Agent rewrite") {
+	if err != nil || draft.Title != "Our company, being edited" ||
+		strings.Contains(draft.Markdown, "Agent rewrite") {
 		t.Fatalf("the person's draft was overwritten: %+v, %v", draft, err)
 	}
 }
@@ -520,15 +646,23 @@ func TestAgentWriteAttributesThePageToTheAgentAndDropsARepeatedTitle(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.LastAuthorUserID != h.owner.UserID || got.LastAuthorAgentID == nil || *got.LastAuthorAgentID != h.fixture.AgentA ||
-		got.LastAuthorAgentName == nil || *got.LastAuthorAgentName == "" {
-		t.Fatalf("author = user %s agent %v %v, want the Agent for the founder", got.LastAuthorUserID, got.LastAuthorAgentID, got.LastAuthorAgentName)
+	if got.LastAuthorUserID != h.owner.UserID || got.LastAuthorAgentID == nil ||
+		*got.LastAuthorAgentID != h.fixture.AgentA ||
+		got.LastAuthorAgentName == nil ||
+		*got.LastAuthorAgentName == "" {
+		t.Fatalf(
+			"author = user %s agent %v %v, want the Agent for the founder",
+			got.LastAuthorUserID,
+			got.LastAuthorAgentID,
+			got.LastAuthorAgentName,
+		)
 	}
 	if strings.Contains(got.Body, "# Company overview") || !strings.Contains(got.Body, "## Summary") {
 		t.Fatalf("body = %q, want the repeated title heading dropped", got.Body)
 	}
 	revisions, err := h.service.ListRevisions(t.Context(), h.owner, hub.PageID, 0, 10)
-	if err != nil || len(revisions.Items) == 0 || revisions.Items[0].AuthorAgentID == nil || *revisions.Items[0].AuthorAgentID != h.fixture.AgentA {
+	if err != nil || len(revisions.Items) == 0 || revisions.Items[0].AuthorAgentID == nil ||
+		*revisions.Items[0].AuthorAgentID != h.fixture.AgentA {
 		t.Fatalf("revisions = %+v, %v", revisions, err)
 	}
 }
@@ -548,7 +682,8 @@ func TestAgentWriteRetryChildOwnsTheLineagePagesAndSharesTheCap(t *testing.T) {
 		page("customers", "Customers", "See [[products]] and [[company-overview]]."),
 	)
 	items := byKey(second)
-	if items["products"].PageID != byKey(first)["products"].PageID || items["products"].Status != wiki.AgentWriteUpdated {
+	if items["products"].PageID != byKey(first)["products"].PageID ||
+		items["products"].Status != wiki.AgentWriteUpdated {
 		t.Fatalf("child duplicated or missed the parent's page: %+v", second)
 	}
 	if items["customers"].Status != wiki.AgentWriteCreated || second.TotalPages != 3 || h.pageCount(t) != pages+1 {
@@ -560,7 +695,6 @@ func TestAgentWriteRetryChildOwnsTheLineagePagesAndSharesTheCap(t *testing.T) {
 	if got := h.outgoing(t, items["customers"].PageID); len(got) != 2 {
 		t.Fatalf("customers links = %v, want 2", got)
 	}
-
 }
 
 func TestAgentWriteLeavesAPageAPersonEdited(t *testing.T) {
@@ -595,7 +729,12 @@ func TestAgentWriteLeavesAPageAPersonEdited(t *testing.T) {
 		!strings.Contains(relink.Warnings[0], "later") {
 		t.Fatalf("relink = %+v", relink)
 	}
-	if got, err = h.service.GetPage(t.Context(), h.owner, later.PageID); err != nil || got.Title != "Later, edited" || strings.Contains(got.Body, "FAQ") {
+	if got, err = h.service.GetPage(
+		t.Context(),
+		h.owner,
+		later.PageID,
+	); err != nil || got.Title != "Later, edited" ||
+		strings.Contains(got.Body, "FAQ") {
 		t.Fatalf("relink overwrote a person's edit: %+v, %v", got, err)
 	}
 }

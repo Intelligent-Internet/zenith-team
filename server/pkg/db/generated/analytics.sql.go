@@ -32,7 +32,7 @@ WHERE r.company_id = $1::uuid
       WHERE visible_runtime.id = $8::uuid
         AND visible_runtime.company_id = r.company_id
         AND visible_runtime.owner_user_id = $5::uuid)))
-  -- A live Run has no usage facts yet (#442): the provider comes from its
+  -- A live Run has no usage facts yet: the provider comes from its
   -- runtime and the model from the model frozen into its context; a default
   -- the daemon resolves later stays unknown.
   AND ($9::text = '' OR EXISTS (
@@ -492,7 +492,7 @@ type ListAnalyticsGroupsRow struct {
 // task, run_type, runtime). Each row is the group key and the standard
 // metric set as JSON.
 //
-// Totals count every finished Run in the window and filters (D20); scope
+// Totals count every finished Run in the window and filters; scope
 // 'mine' binds authorizer_user_id to the caller. Project access (ADR 0017)
 // decides only names: a Project's or Task's id and title show only when the
 // viewer reads that Project. Runs of any other Project group into one

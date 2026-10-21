@@ -1,5 +1,5 @@
 import { agentBindingService } from "@/shared/api/agent-binding.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { AgentBindingPage, AgentDto } from "@/shared/api/types";
 
 type CompanyArguments = { companyId: string };
@@ -11,7 +11,7 @@ type UnbindArguments = CompanyArguments & { agentId: string };
 // connectors that are read off the runtime it now names (ADR 0014). The
 // mutations therefore invalidate those four tags rather than patching each
 // screen by hand.
-export const agentBindingApi = boardlyApi.injectEndpoints({
+export const agentBindingApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listMyAgentBindings: builder.query<
       AgentBindingPage,
@@ -21,7 +21,7 @@ export const agentBindingApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "AgentBinding" },
       ],
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentBindingService.listMyBindings(companyId, { runtimeId }),
           "The agents you have set up could not be loaded.",
         ),
@@ -39,7 +39,7 @@ export const agentBindingApi = boardlyApi.injectEndpoints({
               { id: companyId, type: "Task" },
             ],
       queryFn: ({ companyId, agentId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentBindingService.bindAgent(companyId, agentId, runtimeId),
           "The agent could not be set up on that computer.",
         ),
@@ -57,7 +57,7 @@ export const agentBindingApi = boardlyApi.injectEndpoints({
               { id: companyId, type: "Task" },
             ],
       queryFn: ({ companyId, agentId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentBindingService.unbindAgent(companyId, agentId),
           "The agent could not be removed from your computer.",
         ),

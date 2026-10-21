@@ -29,7 +29,7 @@
   flex: 1;
 }
 
-.boardly-workspace-theme .assets-page-search input {
+.zenith-team-workspace-theme .assets-page-search input {
   width: 100%;
   height: 100%;
   padding: 0 12px 0 36px;
@@ -59,12 +59,12 @@
   width: 36px;
 }
 
-.boardly-workspace-theme .assets-page-search input::placeholder {
+.zenith-team-workspace-theme .assets-page-search input::placeholder {
   color: var(--workspace-native-text-muted);
   opacity: 1;
 }
 
-.boardly-workspace-theme .assets-page-search input:focus-visible {
+.zenith-team-workspace-theme .assets-page-search input:focus-visible {
   box-shadow: none;
   border-color: var(--workspace-native-accent);
 }
@@ -209,13 +209,13 @@
   flex: 1;
   min-width: 0;
 }
-.boardly-workspace-theme .assets-file-grid-item {
+.zenith-team-workspace-theme .assets-file-grid-item {
   background: var(--workspace-panel-bg);
   border: 1px solid var(--workspace-divider);
   border-radius: 8px;
 }
-.boardly-workspace-theme .assets-file-grid-item:hover,
-.boardly-workspace-theme .assets-file-grid-item:focus-visible {
+.zenith-team-workspace-theme .assets-file-grid-item:hover,
+.zenith-team-workspace-theme .assets-file-grid-item:focus-visible {
   border-color: var(--workspace-native-accent);
 }
 .assets-detail-controls-primary {

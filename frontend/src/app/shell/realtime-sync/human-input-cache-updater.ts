@@ -1,12 +1,12 @@
 import { approvalsApi } from "@/features/approvals/api/approvals-api";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import type {
   ApprovalDto,
   ApprovalListQuery,
   QuestionDto,
   QuestionListQuery,
 } from "@/shared/api/types";
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {
   removeVersioned,
   replaceVersioned,
@@ -28,7 +28,7 @@ const questionEvents = new Set([
 // cache is written from the payload and only the counted rollup is re-read.
 export function applyHumanInputCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   if (approvalEvents.has(event.type)) {
     if (isCompanyEntity(event.payload, context.companyId)) {
@@ -107,7 +107,7 @@ function updateApproval(context: RealtimeSyncContext, approval: ApprovalDto) {
   // Delayed invalidation waits for that response before taking a fresh snapshot.
   if (pendingRead)
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Approval", id: context.companyId },
         { type: "Approval", id: `${context.companyId}:item:${approval.id}` },
       ]),
@@ -146,7 +146,7 @@ function updateQuestion(context: RealtimeSyncContext, question: QuestionDto) {
   }
   if (pendingRead)
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Question", id: context.companyId },
       ]),
     );

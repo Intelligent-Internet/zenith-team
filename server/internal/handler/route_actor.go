@@ -1,10 +1,10 @@
 package handler
 
-import "boardly.dev/boardly/server/internal/middleware"
+import "github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 
 // routeActorTypes is RunProofPolicy's table: every mounted route, keyed by
-// method and full path, says whether it accepts a Run (IA-FR1). A Run is the
-// member's own session plus a live X-Boardly-Run-Token proof. On a person
+// method and full path, says whether it accepts a Run. A Run is the
+// member's own session plus a live X-Zenith-Team-Run-Token proof. On a person
 // route the proof is refused with 403 human_actor_required before
 // authentication and before the handler. TestEveryRouteDeclaresItsActorType
 // fails on a mounted route with no entry and on an entry with no route, so a
@@ -33,7 +33,7 @@ func routeActorTypeTable() map[string]middleware.RouteActorType {
 
 // runActorRoutes accept a Run. Each handler resolves the proof and checks
 // its bearer is the Run's authorizer (runProofBearer); a request without a
-// proof is the member's own. These are the calls the Run channel, boardly-mcp
+// proof is the member's own. These are the calls the Run channel, zenith-team-mcp
 // and the daemon make for a Run.
 var runActorRoutes = []string{
 	// Whiteboards: read (view and context), compose and edit, exactly the
@@ -94,21 +94,21 @@ var runActorRoutes = []string{
 	// must carry the proof (artifactRunOrigin): the daemon completes the
 	// artifact_inspect and artifact_fetch tools with them. Every Run reads
 	// exactly the Artifacts its Authorizer reads, with no chat-audience
-	// limit, a Task Run's included (D31, ReadArtifactForRun).
+	// limit, a Task Run's included (ReadArtifactForRun).
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId",
 	"GET /api/v1/companies/:companyId/runs/:runId/agent-artifacts/:artifactId/items/:ordinal/download",
 }
 
 // anyActorRoutes accept a Run without reading its proof. They hold Company
-// metadata and no Project content, and the Run channel or boardly-mcp reads
+// metadata and no Project content, and the Run channel or zenith-team-mcp reads
 // them.
 var anyActorRoutes = []string{
-	// The Companies the member belongs to; boardly-mcp lists them to find the
+	// The Companies the member belongs to; zenith-team-mcp lists them to find the
 	// Run's own.
 	"GET /api/v1/companies",
 	// The Company's name and settings; `zen company get`.
 	"GET /api/v1/companies/:companyId",
-	// The Agent roster; `zen agent list` and boardly-mcp's Agent lookup.
+	// The Agent roster; `zen agent list` and zenith-team-mcp's Agent lookup.
 	"GET /api/v1/companies/:companyId/agents",
 	// One Agent; `zen agent get`.
 	"GET /api/v1/companies/:companyId/agents/:agentId",

@@ -15,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
-	"boardly.dev/boardly/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
@@ -72,12 +72,12 @@ func acquireMigrationGate(ctx context.Context, pool *pgxpool.Pool) (*SessionAdvi
 		pool.Config().ConnConfig.Database,
 		"public",
 		migratepostgres.DefaultMigrationsTable,
-		"boardly_migration_gate",
+		"zenith_team_migration_gate",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("generate migration gate lock ID: %w", err)
 	}
-	lockKey := "boardly/migrations/startup/" + lockID
+	lockKey := "zenith-team/migrations/startup/" + lockID
 
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()

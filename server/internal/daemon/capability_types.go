@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // The discovery transport caps, mirrored by the server's body limits on the

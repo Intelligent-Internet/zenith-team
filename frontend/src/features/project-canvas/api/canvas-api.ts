@@ -1,7 +1,7 @@
 import { canvasPath, type CanvasScope } from "./canvas-scope";
 import { apiClient } from "@/lib/api-client";
 import type { QueryReturnValue } from "@reduxjs/toolkit/query";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { RootState } from "@/state/store";
 import {
   notifyCanvasMutation,
@@ -14,7 +14,10 @@ import {
   writeDocumentCache,
   removeDocumentCache,
 } from "../documents/document-cache";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import { wikiTags } from "@/shared/api/wiki-tags";
 
@@ -82,8 +85,8 @@ function failedReviewTags(state: RootState, scope: CanvasScope) {
   return canvasApi.util
     .selectInvalidatedBy(state, reviewTags(scope))
     .flatMap(({ queryCacheKey, endpointName, originalArgs }) => {
-      const query = state.boardlyApi.queries[queryCacheKey];
-      const status = (query?.error as BoardlyApiError | undefined)?.status;
+      const query = state.zenithTeamApi.queries[queryCacheKey];
+      const status = (query?.error as ZenithTeamApiError | undefined)?.status;
       if (
         query?.status !== "rejected" ||
         (status && status < 500 && status !== 408 && status !== 429)
@@ -105,18 +108,18 @@ function failedReviewTags(state: RootState, scope: CanvasScope) {
     });
 }
 
-export const canvasApi = boardlyApi.injectEndpoints({
+export const canvasApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getCanvas: builder.query<CanvasSnapshot, CanvasScope>({
       async queryFn(
         scope,
         { getState, signal },
-      ): Promise<QueryReturnValue<CanvasSnapshot, BoardlyApiError, {}>> {
+      ): Promise<QueryReturnValue<CanvasSnapshot, ZenithTeamApiError, {}>> {
         const current = canvasApi.endpoints.getCanvas.select(scope)(
           getState() as RootState,
         ).data;
         const full = fullSnapshots.delete(scopeKey(scope));
-        const result = await executeBoardlyQuery(
+        const result = await executeZenithTeamQuery(
           () =>
             apiClient.get<CanvasSnapshot>(canvasPath(scope), {
               params: { after_seq: full ? 0 : (current?.sequence ?? 0) },
@@ -172,7 +175,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
           ];
           if (tags.length) dispatch(canvasApi.util.invalidateTags(tags));
         } catch (failure) {
-          const { error } = failure as { error: BoardlyApiError };
+          const { error } = failure as { error: ZenithTeamApiError };
           if (error?.status && [401, 403, 404].includes(error.status)) {
             dispatch(
               canvasApi.util.updateQueryData("getCanvas", scope, (draft) => {
@@ -235,7 +238,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { command: CanvasCommand }
     >({
       queryFn: ({ command, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["CanvasResult"]>(
               `${canvasPath(scope)}/operations`,
@@ -261,7 +264,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { before?: string }
     >({
       queryFn: (scope, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasTimelinePage"]>(
               `${canvasPath(scope)}/timeline`,
@@ -280,7 +283,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { artifactId: string }
     >({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasHistory"]>(
               `${canvasPath(scope)}/artifacts/${scope.artifactId}/history`,
@@ -301,7 +304,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { versionId: string }
     >({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasThreadList"]>(
               `${canvasPath(scope)}/versions/${scope.versionId}/threads`,
@@ -336,7 +339,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
         args,
         { signal, getState },
       ): Promise<
-        QueryReturnValue<Schema["CanvasDocument"], BoardlyApiError, {}>
+        QueryReturnValue<Schema["CanvasDocument"], ZenithTeamApiError, {}>
       > {
         const { versionId, blockId, preview, ...scope } = args;
         const key = `${readSessionSnapshot().userId}:${scopeKey(scope)}:projection:${versionId}:${blockId ?? ""}:${!!preview}`;
@@ -344,7 +347,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
           canvasApi.endpoints.canvasDocument.select(args)(
             getState() as RootState,
           ).data ?? (await readDocumentCache<Schema["CanvasDocument"]>(key));
-        const result = await executeBoardlyQuery(
+        const result = await executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasDocument"]>(
               `${canvasPath(scope)}/versions/${versionId}/document`,
@@ -406,7 +409,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
     }),
     canvasLibrary: builder.query<Schema["CanvasLibrary"], CanvasScope>({
       queryFn: (scope, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasLibrary"]>(
               `${canvasPath(scope)}/library`,
@@ -423,7 +426,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { query: string }
     >({
       queryFn: ({ query, ...scope }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasSearch"]>(
               `${canvasPath(scope)}/search`,
@@ -438,7 +441,7 @@ export const canvasApi = boardlyApi.injectEndpoints({
       CanvasScope & { versionId: string }
     >({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasBody"]>(
               `${canvasPath(scope)}/versions/${scope.versionId}/body`,

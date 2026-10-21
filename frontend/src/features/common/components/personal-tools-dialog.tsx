@@ -31,7 +31,7 @@ export function PersonalToolsDialog({
       }}
     >
       <Dialog.Portal
-        container={document.querySelector(".boardly-workspace-theme")}
+        container={document.querySelector(".zenith-team-workspace-theme")}
       >
         <Dialog.Overlay
           className={cn(

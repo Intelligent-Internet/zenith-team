@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // seedRun inserts one Run of the seeded Company A into conversationID and
@@ -106,7 +106,11 @@ func TestResolveMessageTargetFencesTenantAndDirectCreator(t *testing.T) {
 			ResolveMessageTargetForActiveUser(ctx, generated.ResolveMessageTargetForActiveUserParams{
 				ActorUserID: fixture.UserB, TargetKind: kind, TargetID: id,
 			}); !errors.Is(err, pgx.ErrNoRows) {
-			t.Fatalf("ResolveMessageTargetForActiveUser(%s, non-reader) error = %v, want pgx.ErrNoRows", kind, err)
+			t.Fatalf(
+				"ResolveMessageTargetForActiveUser(%s, non-reader) error = %v, want pgx.ErrNoRows",
+				kind,
+				err,
+			)
 		}
 	}
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, fixture.UserB)

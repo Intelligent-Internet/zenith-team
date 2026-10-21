@@ -978,7 +978,7 @@ func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRe
 
 const lockWikiCollectionsExclusive = `-- name: LockWikiCollectionsExclusive :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/wiki-collections/v1/' || $1::uuid::text,
+    'zenith-team/wiki-collections/v1/' || $1::uuid::text,
     0
 ))
 `
@@ -994,7 +994,7 @@ func (q *Queries) LockWikiCollectionsExclusive(ctx context.Context, companyID uu
 
 const lockWikiCollectionsShared = `-- name: LockWikiCollectionsShared :exec
 SELECT pg_advisory_xact_lock_shared(hashtextextended(
-    'boardly/wiki-collections/v1/' || $1::uuid::text,
+    'zenith-team/wiki-collections/v1/' || $1::uuid::text,
     0
 ))
 `

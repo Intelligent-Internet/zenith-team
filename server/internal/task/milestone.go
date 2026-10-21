@@ -1,6 +1,6 @@
 package task
 
-import taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
+import taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
 
 // MilestoneCatalogVersion identifies the current planning catalog version.
 const MilestoneCatalogVersion = taskmilestone.CatalogVersion

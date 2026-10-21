@@ -13,7 +13,7 @@ import (
 
 func TestLocalDirectoryResourcePathTypesRedactFmtGoStringAndSlog(t *testing.T) {
 	t.Parallel()
-	const path = "/Users/owner/private/boardly-secret"
+	const path = "/Users/owner/private/zenith-team-secret"
 	resourceID, companyID, ownerID := uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())
 	now := time.Date(2026, time.July, 12, 1, 2, 3, 0, time.UTC)
 	input := CreateLocalDirectoryResourceInput{Path: path, Label: "Workspace", Position: 1}

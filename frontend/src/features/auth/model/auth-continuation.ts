@@ -7,7 +7,7 @@ import {
   writeStorageJson,
 } from "@/shared/lib/browser-storage";
 
-const AUTH_CONTINUATION_STORAGE_KEY = "boardly.auth-continuation.v1";
+const AUTH_CONTINUATION_STORAGE_KEY = "zenith-team.auth-continuation.v1";
 const AUTH_CONTINUATION_TTL_MS = 10 * 60 * 1_000;
 
 type AuthContinuation = {

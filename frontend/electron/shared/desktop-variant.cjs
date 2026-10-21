@@ -1,68 +1,71 @@
 const DESKTOP_ENVIRONMENTS = new Set(["dev", "local", "prod"]);
 
+// Cloud builds (dev, prod) take their API origin from the release env, so a
+// build never points at a server its maker did not choose.
+const DESKTOP_ORIGIN_ENV_KEYS = {
+  dev: "ZENITH_TEAM_DESKTOP_DEV_ORIGIN",
+  prod: "ZENITH_TEAM_DESKTOP_PROD_ORIGIN",
+};
+const DESKTOP_RELEASES_URL =
+  "https://github.com/Intelligent-Internet/zenith-team/releases";
+
 const DESKTOP_VARIANTS = {
   dev: {
-    apiOrigin: "https://api-dev.example.com",
-    studioApiOrigin: "https://studio-dev.example.com",
-    appBundleId: "com.ii.boardly.dev",
+    apiOrigin: null,
+    appBundleId: "com.ii.zenith-team.dev",
     appName: "Zenith Team Dev",
     appUserModelId: {
-      darwin: "com.ii.boardly.dev",
-      default: "com.ii.boardly.dev",
-      win32: "com.squirrel.boardlydev.BoardlyDev",
+      darwin: "com.ii.zenith-team.dev",
+      default: "com.ii.zenith-team.dev",
+      win32: "com.squirrel.zenithteamdev.ZenithTeamDev",
     },
     artifactEnvironment: "dev",
-    deepLinkProtocol: "boardly-dev",
+    deepLinkProtocol: "zenith-team-dev",
     daemonHealthPort: 19715,
     environment: "dev",
-    executableName: "Boardly Dev",
-    gcsPrefix: "boardly-dev",
-    manualUpdateUrl: "https://dev.example.com",
+    executableName: "Zenith Team Dev",
+    manualUpdateUrl: DESKTOP_RELEASES_URL,
     oauthLoopbackPort: 42814,
-    squirrelName: "boardlydev",
-    userDataDirectoryName: "Boardly Dev",
+    squirrelName: "zenithteamdev",
+    userDataDirectoryName: "Zenith Team Dev",
   },
   local: {
     apiOrigin: "http://127.0.0.1:8788",
-    studioApiOrigin: "https://api-agent.ii.inc",
-    appBundleId: "com.ii.boardly.local",
+    appBundleId: "com.ii.zenith-team.local",
     appName: "Zenith Team",
     appUserModelId: {
-      darwin: "com.ii.boardly.local",
-      default: "com.ii.boardly.local",
-      win32: "com.squirrel.boardlylocal.BoardlyLocal",
+      darwin: "com.ii.zenith-team.local",
+      default: "com.ii.zenith-team.local",
+      win32: "com.squirrel.zenithteamlocal.ZenithTeamLocal",
     },
     artifactEnvironment: "local",
-    deepLinkProtocol: "boardly",
+    deepLinkProtocol: "zenith-team",
     daemonHealthPort: 19716,
     environment: "local",
-    executableName: "Boardly",
-    gcsPrefix: null,
+    executableName: "Zenith Team",
     manualUpdateUrl: "http://127.0.0.1:5173",
     oauthLoopbackPort: 42813,
-    squirrelName: "boardlylocal",
-    userDataDirectoryName: "Boardly Local",
+    squirrelName: "zenithteamlocal",
+    userDataDirectoryName: "Zenith Team Local",
   },
   prod: {
-    apiOrigin: "https://api.example.com",
-    studioApiOrigin: "https://api-agent.ii.inc",
-    appBundleId: "com.ii.boardly",
+    apiOrigin: null,
+    appBundleId: "com.ii.zenith-team",
     appName: "Zenith Team",
     appUserModelId: {
-      darwin: "com.ii.boardly",
-      default: "com.ii.boardly",
-      win32: "com.squirrel.boardly.Boardly",
+      darwin: "com.ii.zenith-team",
+      default: "com.ii.zenith-team",
+      win32: "com.squirrel.zenithteam.ZenithTeam",
     },
     artifactEnvironment: "prod",
-    deepLinkProtocol: "boardly",
+    deepLinkProtocol: "zenith-team",
     daemonHealthPort: 19714,
     environment: "prod",
-    executableName: "Boardly",
-    gcsPrefix: "boardly",
-    manualUpdateUrl: "https://app.example.com",
+    executableName: "Zenith Team",
+    manualUpdateUrl: DESKTOP_RELEASES_URL,
     oauthLoopbackPort: 42813,
-    squirrelName: "boardly",
-    userDataDirectoryName: "Boardly",
+    squirrelName: "zenithteam",
+    userDataDirectoryName: "Zenith Team",
   },
 };
 
@@ -75,11 +78,16 @@ function normalizeDesktopEnvironment(value, fallback = "prod") {
 
 function getDesktopVariant(env = process.env, { fallback = "prod" } = {}) {
   const environment = normalizeDesktopEnvironment(
-    env?.BOARDLY_DESKTOP_ENV,
+    env?.ZENITH_TEAM_DESKTOP_ENV,
     fallback,
   );
+  const variant = DESKTOP_VARIANTS[environment];
+  const originKey = DESKTOP_ORIGIN_ENV_KEYS[environment];
+  const configuredOrigin = originKey ? env?.[originKey]?.trim() : "";
 
-  return DESKTOP_VARIANTS[environment];
+  return configuredOrigin
+    ? { ...variant, apiOrigin: configuredOrigin }
+    : variant;
 }
 
 function getDesktopAppUserModelId(variant, platform = process.platform) {

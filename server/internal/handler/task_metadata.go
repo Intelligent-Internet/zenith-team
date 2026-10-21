@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 func parseTaskLabels(raw json.RawMessage) ([]string, error) {

@@ -1,9 +1,9 @@
-// Package mcp composes boardly-mcp, the MCP stdio server the desktop app
+// Package mcp composes zenith-team-mcp, the MCP stdio server the desktop app
 // ships beside the daemon: it opens the Run channel named by run.json in the
-// Run's isolated BOARDLY_HOME, wires that channel into the Run-scoped tools,
+// Run's isolated ZENITH_TEAM_HOME, wires that channel into the Run-scoped tools,
 // and serves them over stdio. It holds no credential: every server call is a
-// channel request the daemon forwards with its own session and the Run proof
-// (Access TECH B3b). cmd/mcp/main.go is a thin shell over Run. Beyond its own
+// channel request the daemon forwards with its own session and the Run
+// proof. cmd/mcp/main.go is a thin shell over Run. Beyond its own
 // tree it imports only the Run channel wire internal/runchannel, the shared
 // credential store internal/authfile (linked through apiclient for the
 // daemon's output presenter, never called here), the pinned platform content
@@ -24,25 +24,25 @@ import (
 	"github.com/google/uuid"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/platformbundle"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
-// Run serves the Boardly MCP tools over stdio until ctx is canceled or the
+// Run serves the Zenith Team MCP tools over stdio until ctx is canceled or the
 // transport closes. It runs only inside a Run: without run.json in its
-// BOARDLY_HOME it has no way to reach the server and refuses to start.
+// ZENITH_TEAM_HOME it has no way to reach the server and refuses to start.
 func Run(ctx context.Context, getenv func(string) string) error {
 	if getenv == nil {
 		return errors.New("Zenith Team run environment reader is unavailable")
 	}
-	control, err := runchannel.LoadRunControlConfig(strings.TrimSpace(getenv("BOARDLY_HOME")))
+	control, err := runchannel.LoadRunControlConfig(strings.TrimSpace(getenv("ZENITH_TEAM_HOME")))
 	if err != nil {
 		return fmt.Errorf("open the Zenith Team Run channel: %w", err)
 	}
 	api := apiclient.NewRunChannel(control)
-	companyID := strings.TrimSpace(getenv("BOARDLY_COMPANY_ID"))
+	companyID := strings.TrimSpace(getenv("ZENITH_TEAM_COMPANY_ID"))
 	planRoot, err := resolveCompanyPlanRoot(getenv)
 	if err != nil {
 		return fmt.Errorf("resolve Zenith Team MCP workspace: %w", err)
@@ -92,7 +92,7 @@ func Run(ctx context.Context, getenv func(string) string) error {
 	// files, supervises app commands, and reads saved Artifacts with the Run
 	// proof into the workspace). They ride the same Run channel, named by
 	// run.json, never an endpoint or capability handed over in the
-	// environment (Access TECH B3b).
+	// environment.
 	var artifactService tools.ArtifactChannelService
 	if artifactsEnabled {
 		artifactService, err = tools.NewArtifactChannelService(
@@ -228,19 +228,19 @@ var loadPlatformBundles = platformbundle.PlatformSkills
 func openTaskSkills(snapshotDir string, diagnostics io.Writer) (*tools.DefaultSkillService, error) {
 	bundles, locks, err := loadPlatformBundles()
 	if err != nil {
-		fmt.Fprintf(diagnostics, "boardly-mcp: dropped pinned platform content: %s\n", oneLine(err))
+		fmt.Fprintf(diagnostics, "zenith-team-mcp: dropped pinned platform content: %s\n", oneLine(err))
 	}
 	for _, lock := range locks {
-		fmt.Fprintf(diagnostics, "boardly-mcp: platform bundle %s %s (%s) sha256 %s\n",
+		fmt.Fprintf(diagnostics, "zenith-team-mcp: platform bundle %s %s (%s) sha256 %s\n",
 			lock.Plugin, lock.Version, lock.Component, lock.Artifact.SHA256)
 	}
 	return tools.OpenTaskSkillService(snapshotDir, bundles, func(key string, err error) {
-		fmt.Fprintf(diagnostics, "boardly-mcp: dropped platform skill %s: %s\n", key, oneLine(err))
+		fmt.Fprintf(diagnostics, "zenith-team-mcp: dropped platform skill %s: %s\n", key, oneLine(err))
 	})
 }
 
 // oneLine keeps a joined error on one diagnostics line, so every line
-// boardly-mcp writes carries its "boardly-mcp:" prefix.
+// zenith-team-mcp writes carries its "zenith-team-mcp:" prefix.
 func oneLine(err error) string {
 	return strings.ReplaceAll(err.Error(), "\n", "; ")
 }
@@ -253,7 +253,7 @@ func taskPlatformSkillsAvailable(
 		!toolExplicitlyAllowed(allowedTools, "load_skill_reference") {
 		return false
 	}
-	runID := strings.TrimSpace(getenv("BOARDLY_MCP_RUN_ID"))
+	runID := strings.TrimSpace(getenv("ZENITH_TEAM_MCP_RUN_ID"))
 	parsed, err := uuid.Parse(runID)
 	return err == nil && parsed != uuid.Nil && parsed.String() == runID
 }
@@ -263,11 +263,11 @@ func resolveRunContext(getenv func(string) string) (tools.RunContext, error) {
 		return tools.RunContext{}, errors.New("Zenith Team run environment reader is unavailable")
 	}
 	runContext := tools.RunContext{
-		CompanyID:      strings.TrimSpace(getenv("BOARDLY_MCP_COMPANY_ID")),
-		ConversationID: strings.TrimSpace(getenv("BOARDLY_MCP_CONVERSATION_ID")),
-		TaskID:         strings.TrimSpace(getenv("BOARDLY_MCP_TASK_ID")),
-		RunID:          strings.TrimSpace(getenv("BOARDLY_MCP_RUN_ID")),
-		AgentID:        strings.TrimSpace(getenv("BOARDLY_MCP_AGENT_ID")),
+		CompanyID:      strings.TrimSpace(getenv("ZENITH_TEAM_MCP_COMPANY_ID")),
+		ConversationID: strings.TrimSpace(getenv("ZENITH_TEAM_MCP_CONVERSATION_ID")),
+		TaskID:         strings.TrimSpace(getenv("ZENITH_TEAM_MCP_TASK_ID")),
+		RunID:          strings.TrimSpace(getenv("ZENITH_TEAM_MCP_RUN_ID")),
+		AgentID:        strings.TrimSpace(getenv("ZENITH_TEAM_MCP_AGENT_ID")),
 	}
 	for name, value := range map[string]string{
 		"company":      runContext.CompanyID,
@@ -287,15 +287,15 @@ func resolveRunContext(getenv func(string) string) (tools.RunContext, error) {
 }
 
 // resolveCompanyPlanRoot is the directory the Company Plan draft and export
-// live in: the per-Run scratch the daemon hands over as BOARDLY_MCP_PLAN_ROOT
-// (Runs TECH §11.2 — a Run's temporary artifacts stay out of cwd, so the
+// live in: the per-Run scratch the daemon hands over as ZENITH_TEAM_MCP_PLAN_ROOT
+// (a Run's temporary artifacts stay out of cwd, so the
 // repository the Agent works in never reads dirty because of them). The
 // process cwd is only the fallback for a hand-started MCP process. Whether
 // the directory is real is NewCompanyPlanServiceForWorkspace's judgment,
 // made once for both sources.
 func resolveCompanyPlanRoot(getenv func(string) string) (string, error) {
 	if getenv != nil {
-		if value := strings.TrimSpace(getenv("BOARDLY_MCP_PLAN_ROOT")); value != "" {
+		if value := strings.TrimSpace(getenv("ZENITH_TEAM_MCP_PLAN_ROOT")); value != "" {
 			return value, nil
 		}
 	}
@@ -306,7 +306,7 @@ func resolveSkillSnapshotDir(getenv func(string) string) (string, bool) {
 	if getenv == nil {
 		return "", false
 	}
-	value := getenv("BOARDLY_SKILL_SNAPSHOT_DIR")
+	value := getenv("ZENITH_TEAM_SKILL_SNAPSHOT_DIR")
 	if value == "" || !filepath.IsAbs(value) || filepath.Clean(value) != value {
 		return "", false
 	}
@@ -321,7 +321,7 @@ func allowedToolsFromEnvironment(getenv func(string) string) map[string]struct{}
 	if getenv == nil {
 		return nil
 	}
-	raw := strings.TrimSpace(getenv("BOARDLY_MCP_ALLOWED_TOOLS"))
+	raw := strings.TrimSpace(getenv("ZENITH_TEAM_MCP_ALLOWED_TOOLS"))
 	if raw == "" {
 		return nil
 	}

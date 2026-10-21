@@ -1,12 +1,14 @@
 package handler
 
 import (
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"net/http"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 type advanceInitializationRequest struct {
@@ -19,7 +21,12 @@ func (h *Handler) registerInitializationRoutes(group *gin.RouterGroup) {
 	if h.AuthService == nil || h.CompanyService == nil || h.InitializationService == nil {
 		return
 	}
-	routes := group.Group("/companies/:companyId/initialization", middleware.RequireUserAuth(h.AuthService), middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionAgentsManage), middleware.RequireHumanActor())
+	routes := group.Group(
+		"/companies/:companyId/initialization",
+		middleware.RequireUserAuth(h.AuthService),
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionAgentsManage),
+		middleware.RequireHumanActor(),
+	)
 	routes.GET("", h.getInitialization)
 	routes.POST("", h.advanceInitialization)
 }
@@ -41,6 +48,7 @@ func (h *Handler) getInitialization(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) advanceInitialization(c *gin.Context) {
 	request, err := bindRequest[advanceInitializationRequest](c, 8<<10)
 	if err != nil {
@@ -68,8 +76,18 @@ func (h *Handler) advanceInitialization(c *gin.Context) {
 }
 
 var initializationErrorMappings = []errorMapping{
-	{company.ErrInitializationConflict, http.StatusConflict, "Initialization cannot advance; refresh and retry", "initialization_conflict"},
-	{company.ErrInitializationModel, http.StatusConflict, "Luna is not available on this Codex runtime. Refresh model discovery and try again.", "initialization_model_unavailable"},
+	{
+		company.ErrInitializationConflict,
+		http.StatusConflict,
+		"Initialization cannot advance; refresh and retry",
+		"initialization_conflict",
+	},
+	{
+		company.ErrInitializationModel,
+		http.StatusConflict,
+		"Luna is not available on this Codex runtime. Refresh model discovery and try again.",
+		"initialization_model_unavailable",
+	},
 }
 
 func writeInitializationError(c *gin.Context, err error) {

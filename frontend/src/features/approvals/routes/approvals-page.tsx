@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useSearchParams } from "react-router";
 import { useAppDispatch } from "@/state/store";
 import { RefreshCcw } from "@/shared/ui/icons";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 
 import { readSessionSnapshot } from "@/shared/session/session";
 import { useCan } from "@/shared/permissions";
@@ -81,7 +81,7 @@ function ApprovalsAndQuestionsPage() {
           <RefreshButton
             onRefresh={() =>
               dispatch(
-                boardlyApi.util.invalidateTags(
+                zenithTeamApi.util.invalidateTags(
                   activeTab === "approvals"
                     ? [
                         { type: "Approval", id: companyId },
@@ -123,7 +123,7 @@ function QuestionsPage() {
         <RefreshButton
           onRefresh={() =>
             dispatch(
-              boardlyApi.util.invalidateTags([
+              zenithTeamApi.util.invalidateTags([
                 { type: "Question", id: companyId },
               ]),
             )

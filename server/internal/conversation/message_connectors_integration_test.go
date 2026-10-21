@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent/connectorselection"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/connectorselection"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func seedMessageConnector(t *testing.T, f channelInvocationFixture) uuid.UUID {

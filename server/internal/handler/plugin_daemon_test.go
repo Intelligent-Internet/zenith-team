@@ -12,10 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -34,7 +34,9 @@ func pluginDiscoveryTestHandler(service agent.PluginService) http.Handler {
 	h := &Handler{
 		Queries: db.New(&daemonRuntimeAccessDBTX{
 			runtime: db.Runtime{
-				ID: pluginDiscoveryTestRuntimeID, CompanyID: pluginDiscoveryTestCompanyID, DaemonID: "daemon-a",
+				ID:        pluginDiscoveryTestRuntimeID,
+				CompanyID: pluginDiscoveryTestCompanyID,
+				DaemonID:  "daemon-a",
 				// ADR 0014: only the registrant's daemon reaches its runtime.
 				OwnerUserID: uuid.NullUUID{UUID: daemonTestPrincipal().UserID, Valid: true},
 			},
@@ -60,7 +62,7 @@ func putPluginDiscovery(handler http.Handler, item string) *httptest.ResponseRec
 		bytes.NewBufferString(body),
 	)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("X-Boardly-Daemon-ID", "daemon-a")
+	request.Header.Set("X-Zenith-Team-Daemon-ID", "daemon-a")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
@@ -119,7 +121,7 @@ func TestPublishPluginDiscoveryBoundsThePresentationFields(t *testing.T) {
 		"four prompts":          `"defaultPrompts":["a","b","c","d"]`,
 		"empty prompt":          `"defaultPrompts":[""]`,
 		"long prompt":           `"defaultPrompts":[` + quoted(strings.Repeat("p", 129)) + `]`,
-		"short brand colour":    `"brandColor":"#FFF"`,
+		"short brand color":     `"brandColor":"#FFF"`,
 		"long description":      `"longDescription":` + quoted(strings.Repeat("d", 4001)),
 		"long developer":        `"developerName":` + quoted(strings.Repeat("n", 121)),
 		"long website":          `"websiteUrl":` + quoted("https://example.test/"+strings.Repeat("w", 2048)),

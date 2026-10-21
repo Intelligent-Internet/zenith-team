@@ -13,14 +13,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var _ approval.CompanyPlanActionParticipant = (*DefaultPlanService)(nil)
@@ -160,7 +160,7 @@ func (s *DefaultPlanService) PrepareCompanyPlanApply(
 		return approval.PreparedCompanyPlanAction{}, fmt.Errorf("encode canonical Company Plan action: %w", err)
 	}
 	digest := sha256.Sum256(canonical)
-	presentation, err := json.Marshal(CompanyPlanApprovalPresentation{
+	presentation, err := json.Marshal(PlanApprovalPresentation{
 		Kind: "company_plan", CompanySlug: locked.slug,
 		DraftDigest: fmt.Sprintf("%x", digest), TotalChanges: len(changes),
 		Changes: changes, Plan: artifact.Desired,
@@ -299,7 +299,6 @@ func applyDesiredPlan(
 		ctx,
 		q,
 		principal.CompanyID,
-		principal.UserID,
 		tasks,
 		desiredTasks,
 		dependencies,
@@ -619,13 +618,13 @@ type planApplier struct {
 	run *execution.RunOrigin
 }
 
-// actor is who every row the apply writes names (D31).
+// actor is who every row the apply writes names.
 func (applier planApplier) actor() events.Actor {
 	return approval.CompanyPlanActor{Principal: applier.principal, Run: applier.run}.Actor()
 }
 
 // creatorAgentID is the Agent a Task the apply creates names beside the
-// applier: the Run's Agent when a Run applies it (IA-FR5), none otherwise.
+// applier: the Run's Agent when a Run applies it, none otherwise.
 func (applier planApplier) creatorAgentID() uuid.NullUUID {
 	if applier.run == nil {
 		return uuid.NullUUID{}
@@ -673,7 +672,6 @@ func lockChangedPlanTaskRunFences(
 	ctx context.Context,
 	q *generated.Queries,
 	companyID uuid.UUID,
-	actorUserID uuid.UUID,
 	tasks map[string]persistedTask,
 	desiredTasks map[string]desiredTask,
 	dependencies map[string]persistedDependency,

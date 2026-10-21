@@ -790,23 +790,6 @@ func (q *Queries) GetLatestConversationRunForSummary(ctx context.Context, arg Ge
 	return i, err
 }
 
-const getStudioRunOrigin = `-- name: GetStudioRunOrigin :one
-SELECT COALESCE(context->>'studioApiOrigin', 'https://api-agent.ii.inc')::text AS api_origin
-FROM runs WHERE id = $1 AND company_id = $2
-`
-
-type GetStudioRunOriginParams struct {
-	ID        uuid.UUID `json:"id"`
-	CompanyID uuid.UUID `json:"company_id"`
-}
-
-func (q *Queries) GetStudioRunOrigin(ctx context.Context, arg GetStudioRunOriginParams) (string, error) {
-	row := q.db.QueryRow(ctx, getStudioRunOrigin, arg.ID, arg.CompanyID)
-	var api_origin string
-	err := row.Scan(&api_origin)
-	return api_origin, err
-}
-
 const getTaskConversationUserState = `-- name: GetTaskConversationUserState :one
 SELECT state.company_id, state.conversation_id, state.user_id, state.pinned_at, state.created_at, state.updated_at, state.version, state.grant_generation, state.hidden_at, state.hidden_through_seq, state.notification_level, state.main_read_seq, state.manual_unread_seq, state.unread_count, state.archived_at FROM conversation_user_states AS state
 JOIN conversations ON conversations.id=state.conversation_id AND conversations.company_id=state.company_id

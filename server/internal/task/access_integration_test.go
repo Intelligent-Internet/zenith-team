@@ -15,11 +15,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // seedProjectOutsider adds an active member of CompanyA with the given
@@ -84,37 +84,71 @@ func TestTasksAreInvisibleOutsideTheirProject(t *testing.T) {
 			t.Errorf("%s: List() = %d Tasks, %v; want none", name, len(page.Tasks), err)
 		}
 		projectID := fixture.ProjectA
-		if _, err := service.List(ctx, principal, ListOptions{ProjectID: &projectID}, nil); !errors.Is(err, auth.ErrProjectNotVisible) {
+		if _, err := service.List(
+			ctx,
+			principal,
+			ListOptions{ProjectID: &projectID},
+			nil,
+		); !errors.Is(
+			err,
+			auth.ErrProjectNotVisible,
+		) {
 			t.Errorf("%s: List(projectId) error = %v, want ErrProjectNotVisible", name, err)
 		}
-		if _, err := service.ListDependencies(ctx, principal, fixture.TaskA, nil); !errors.Is(err, ErrNotFound) {
+		if _, err := service.ListDependencies(
+			ctx,
+			principal,
+			fixture.TaskA,
+			nil,
+		); !errors.Is(
+			err,
+			ErrNotFound,
+		) {
 			t.Errorf("%s: ListDependencies() error = %v, want ErrNotFound", name, err)
 		}
-		graph, err := service.ListDependencyGraph(ctx, principal, DependencyGraphOptions{})
+		graph, err := service.ListDependencyGraph(ctx, principal)
 		if err != nil || len(graph.Dependencies) != 0 || len(graph.Tasks) != 0 {
 			t.Errorf("%s: ListDependencyGraph() = %+v, %v; want empty", name, graph, err)
 		}
-		if _, err := service.Workspace(ctx, principal, fixture.TaskA, WorkspaceOptions{MessageLimit: 10}, nil); !errors.Is(err, ErrNotFound) {
+		if _, err := service.Workspace(
+			ctx,
+			principal,
+			fixture.TaskA,
+			WorkspaceOptions{MessageLimit: 10},
+			nil,
+		); !errors.Is(
+			err,
+			ErrNotFound,
+		) {
 			t.Errorf("%s: Workspace() error = %v, want not found", name, err)
 		}
 	}
 
 	// A list filtered by a Project that does not exist answers the same.
 	missing := dbtest.NewUUID(t)
-	if _, err := service.List(ctx, owner, ListOptions{ProjectID: &missing}, nil); !errors.Is(err, auth.ErrProjectNotVisible) {
+	if _, err := service.List(
+		ctx,
+		owner,
+		ListOptions{ProjectID: &missing},
+		nil,
+	); !errors.Is(
+		err,
+		auth.ErrProjectNotVisible,
+	) {
 		t.Errorf("List(missing projectId) error = %v, want ErrProjectNotVisible", err)
 	}
 
 	// The owner reads everything, with their permissions on the Task.
 	value, err := service.Get(ctx, owner, fixture.TaskA, nil)
-	if err != nil || value.Access == nil || !slices.Contains(value.Access.Permissions, auth.ProjectPermissionTasksExecute) {
+	if err != nil || value.Access == nil ||
+		!slices.Contains(value.Access.Permissions, auth.ProjectPermissionTasksExecute) {
 		t.Fatalf("owner Get() = access %+v, %v; want every permission", value.Access, err)
 	}
 	dependencies, err := service.ListDependencies(ctx, owner, fixture.TaskA, nil)
 	if err != nil || len(dependencies.Blocks) != 1 {
 		t.Fatalf("owner ListDependencies() = %+v, %v; want the dependent", dependencies, err)
 	}
-	graph, err := service.ListDependencyGraph(ctx, owner, DependencyGraphOptions{})
+	graph, err := service.ListDependencyGraph(ctx, owner)
 	if err != nil || len(graph.Dependencies) != 1 {
 		t.Fatalf("owner ListDependencyGraph() = %+v, %v; want one edge", graph, err)
 	}
@@ -128,7 +162,9 @@ func TestTasksAreInvisibleOutsideTheirProject(t *testing.T) {
 		t.Fatalf("member Get() on a Company Project = %+v, %v; want the default set", value.Access, err)
 	}
 	value, err = service.Get(ctx, admin, fixture.TaskA, nil)
-	want := sortedPermissions(append(auth.CompanyProjectDefaultPermissions(), auth.ManagementProjectPermissions()...))
+	want := sortedPermissions(
+		append(auth.CompanyProjectDefaultPermissions(), auth.ManagementProjectPermissions()...),
+	)
 	if err != nil || value.Access == nil || !slices.Equal(value.Access.Permissions, want) {
 		t.Fatalf("admin Get() on a Company Project = %+v, %v; want %v", value.Access, err, want)
 	}
@@ -191,7 +227,15 @@ func TestTaskWritesNeedProjectTasksWrite(t *testing.T) {
 	}
 	title := "Renamed"
 	update := UpdateInput{ExpectedRevision: current.Revision, Title: &title}
-	if _, err := service.Update(ctx, reader, created.Task.ID, update); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.Update(
+		ctx,
+		reader,
+		created.Task.ID,
+		update,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("reader Update() error = %v, want ErrProjectPermissionRequired", err)
 	}
 	if _, err := service.Update(ctx, outsider, created.Task.ID, update); !errors.Is(err, ErrNotFound) {
@@ -252,7 +296,8 @@ func TestTaskAssigneeMustReadTheProject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Update() error = %v", err)
 	}
-	if updated.Task.Assignee.ID != member || !slices.Equal(updated.AssigneeOutsideProject, []uuid.UUID{created.Task.ID}) {
+	if updated.Task.Assignee.ID != member ||
+		!slices.Equal(updated.AssigneeOutsideProject, []uuid.UUID{created.Task.ID}) {
 		t.Fatalf("Update() = assignee %s outside %v; want %s kept and listed", updated.Task.Assignee.ID,
 			updated.AssigneeOutsideProject, member)
 	}
@@ -303,7 +348,8 @@ func TestTaskRunNeedsProjectTasksExecute(t *testing.T) {
 	countRuns := func(taskID uuid.UUID) int {
 		t.Helper()
 		var count int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE task_id = $1`, taskID).Scan(&count); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE task_id = $1`, taskID).
+			Scan(&count); err != nil {
 			t.Fatal(err)
 		}
 		return count
@@ -334,7 +380,12 @@ func TestTaskRunNeedsProjectTasksExecute(t *testing.T) {
 	if err != nil || created.RunID != nil {
 		t.Fatalf("Create(assigned to member) = %+v, %v; want no Run", created.RunID, err)
 	}
-	_, err = service.StartExecution(ctx, member, created.Task.ID, StartExecutionInput{ExpectedRevision: created.Task.Revision})
+	_, err = service.StartExecution(
+		ctx,
+		member,
+		created.Task.ID,
+		StartExecutionInput{ExpectedRevision: created.Task.Revision},
+	)
 	assertRefusal("StartExecution()", err)
 	if count := countRuns(created.Task.ID); count != 0 {
 		t.Fatalf("a refused start enqueued %d Run(s)", count)
@@ -355,13 +406,28 @@ func TestTaskRunNeedsProjectTasksExecute(t *testing.T) {
 	})
 	assertRefusal("Update(handoff onto the caller)", err)
 	after, err = service.Get(ctx, owner, created.Task.ID, nil)
-	if err != nil || after.Assignee.ID != memberID || after.Revision != created.Task.Revision || countRuns(created.Task.ID) != 0 {
+	if err != nil || after.Assignee.ID != memberID || after.Revision != created.Task.Revision ||
+		countRuns(created.Task.ID) != 0 {
 		t.Fatalf("a refused handoff changed the Task: assignee %s revision %d runs %d, %v",
 			after.Assignee.ID, after.Revision, countRuns(created.Task.ID), err)
 	}
 
-	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, memberID, "project.tasks.write", "project.tasks.execute")
-	started, err := service.StartExecution(ctx, member, created.Task.ID, StartExecutionInput{ExpectedRevision: created.Task.Revision})
+	dbtest.GrantProject(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.ProjectA,
+		memberID,
+		"project.tasks.write",
+		"project.tasks.execute",
+	)
+	started, err := service.StartExecution(
+		ctx,
+		member,
+		created.Task.ID,
+		StartExecutionInput{ExpectedRevision: created.Task.Revision},
+	)
 	if err != nil || started.RunID == nil {
 		t.Fatalf("StartExecution() with execute = %+v, %v; want a Run", started.RunID, err)
 	}
@@ -391,7 +457,7 @@ func TestTaskReadinessSaysWhenTheAssigneeCannotRunIt(t *testing.T) {
 		t.Fatalf("Create(assigned to member) = %+v, %v; want no Run", created.RunID, err)
 	}
 	queries := generated.New(pool)
-	readiness := func(name string, want string) {
+	readiness := func(name, want string) {
 		t.Helper()
 		reads := map[string]Response{}
 		for who, principal := range map[string]auth.UserPrincipal{"assignee": member, "owner": owner} {
@@ -404,13 +470,19 @@ func TestTaskReadinessSaysWhenTheAssigneeCannotRunIt(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%s: List() as %s error = %v", name, who, err)
 			}
-			index := slices.IndexFunc(page.Tasks, func(task Response) bool { return task.ID == created.Task.ID })
+			index := slices.IndexFunc(
+				page.Tasks,
+				func(task Response) bool { return task.ID == created.Task.ID },
+			)
 			if index < 0 {
 				t.Fatalf("%s: %s's list misses the Task", name, who)
 			}
 			reads["listed for "+who] = page.Tasks[index]
 		}
-		system, err := queries.GetTaskProjectionForSystem(ctx, systemProjectionParams(fixture.CompanyA, created.Task.ID))
+		system, err := queries.GetTaskProjectionForSystem(
+			ctx,
+			systemProjectionParams(fixture.CompanyA, created.Task.ID),
+		)
 		if err != nil {
 			t.Fatalf("%s: system projection error = %v", name, err)
 		}
@@ -423,7 +495,13 @@ func TestTaskReadinessSaysWhenTheAssigneeCannotRunIt(t *testing.T) {
 			t.Fatalf("%s: HoldsProjectPermission() error = %v", name, err)
 		}
 		if wantHeld := want != "assignee_cannot_run" && want != "assignee_inactive"; held != wantHeld {
-			t.Fatalf("%s: project_permission_held = %t; the projection's reason %q says %t", name, held, want, wantHeld)
+			t.Fatalf(
+				"%s: project_permission_held = %t; the projection's reason %q says %t",
+				name,
+				held,
+				want,
+				wantHeld,
+			)
 		}
 		for where, value := range reads {
 			got := ""
@@ -485,7 +563,10 @@ func TestTaskReadinessSaysWhenTheAssigneeCannotRunIt(t *testing.T) {
 	// A disabled account is no longer an active member: the Task needs
 	// another assignee, which no grant can change.
 	dbtest.MustExec(t, ctx, pool, `UPDATE users SET disabled_at = now() WHERE id = $1`, memberID)
-	system, err := queries.GetTaskProjectionForSystem(ctx, systemProjectionParams(fixture.CompanyA, created.Task.ID))
+	system, err := queries.GetTaskProjectionForSystem(
+		ctx,
+		systemProjectionParams(fixture.CompanyA, created.Task.ID),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,7 +580,7 @@ func TestTaskReadinessSaysWhenTheAssigneeCannotRunIt(t *testing.T) {
 	}
 }
 
-// A Group's grant counts like a person's (Access TECH D2). A member who reads
+// A Group's grant counts like a person's. A member who reads
 // a Project only through a Group can be its Tasks' assignee, sees them with
 // the Group's permissions, and the readiness arm counts the Group's execute,
 // as project_permission_held does. A membership older than the member's
@@ -622,8 +703,16 @@ func TestTaskWriteStatementsFenceTheProjectPermission(t *testing.T) {
 	}
 	target := current
 	target.Title = "Fenced title"
-	_, err = updateTask(ctx, queries, target, current.Revision, &pending, events.UserActor(readerID.String()), false,
-		personWriteFence(readerID, auth.ProjectPermissionTasksWrite))
+	_, err = updateTask(
+		ctx,
+		queries,
+		target,
+		current.Revision,
+		&pending,
+		events.UserActor(readerID.String()),
+		false,
+		personWriteFence(readerID, auth.ProjectPermissionTasksWrite),
+	)
 	if !errors.Is(err, auth.ErrProjectPermissionRequired) {
 		t.Fatalf("update without tasks.write error = %v, want ErrProjectPermissionRequired", err)
 	}
@@ -632,8 +721,16 @@ func TestTaskWriteStatementsFenceTheProjectPermission(t *testing.T) {
 	if err != nil || after.Title != current.Title || after.Revision != current.Revision {
 		t.Fatalf("the fenced update changed the Task: %q revision %d, %v", after.Title, after.Revision, err)
 	}
-	if _, err := updateTask(ctx, queries, target, current.Revision, &pending, events.UserActor(owner.UserID.String()), false,
-		personWriteFence(owner.UserID, auth.ProjectPermissionTasksWrite)); err != nil {
+	if _, err := updateTask(
+		ctx,
+		queries,
+		target,
+		current.Revision,
+		&pending,
+		events.UserActor(owner.UserID.String()),
+		false,
+		personWriteFence(owner.UserID, auth.ProjectPermissionTasksWrite),
+	); err != nil {
 		t.Fatalf("update with tasks.write error = %v", err)
 	}
 }
@@ -655,7 +752,11 @@ func TestTaskReferenceResolvesAmongReadableTasks(t *testing.T) {
 	create := func(projectID uuid.UUID, key string) uuid.UUID {
 		t.Helper()
 		created, err := service.Create(ctx, owner, CreateInput{
-			ProjectID: projectID, Key: key, Title: key, MilestoneType: MilestoneTypeProduct, Status: StatusTodo,
+			ProjectID:     projectID,
+			Key:           key,
+			Title:         key,
+			MilestoneType: MilestoneTypeProduct,
+			Status:        StatusTodo,
 		})
 		if err != nil {
 			t.Fatalf("Create(%s) error = %v", key, err)
@@ -777,7 +878,8 @@ func TestTaskListUsesIndexes(t *testing.T) {
 		WHERE dependent.company_id = $1 AND dependent.key LIKE 'bulk_task_%' AND dependent.number % 20 = 0`,
 		fixture.CompanyA)
 	var oneTask uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT id FROM tasks WHERE project_id = $1 LIMIT 1`, readable).Scan(&oneTask); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT id FROM tasks WHERE project_id = $1 LIMIT 1`, readable).
+		Scan(&oneTask); err != nil {
 		t.Fatal(err)
 	}
 	dbtest.MustExec(t, ctx, pool, `ANALYZE`)
@@ -833,9 +935,13 @@ func TestTaskListUsesIndexes(t *testing.T) {
 	// The dependency graph joins project_access on the edge's Project and
 	// reads the caller's grants by index. Like the whole list, it reads the
 	// Company's edges, so its Task joins are the planner's choice.
-	graph, err := listDependencyGraph(ctx, queries, member, DependencyGraphOptions{})
+	graph, err := listDependencyGraph(ctx, queries, member)
 	if err != nil || len(graph.Dependencies) != 20 {
-		t.Fatalf("dependency graph = %d edges, %v; want the readable Project's 20", len(graph.Dependencies), err)
+		t.Fatalf(
+			"dependency graph = %d edges, %v; want the readable Project's 20",
+			len(graph.Dependencies),
+			err,
+		)
 	}
 	assertIndexed("the dependency graph", grants...)
 }

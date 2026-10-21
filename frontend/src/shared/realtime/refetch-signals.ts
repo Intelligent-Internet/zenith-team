@@ -1,4 +1,4 @@
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 
 type RefetchReason = "focus" | "visible" | "online" | "recovery";
 
@@ -24,7 +24,7 @@ export function subscribeToRefetchSignals(
   window.addEventListener("focus", onFocus);
   window.addEventListener("online", onOnline);
   document.addEventListener("visibilitychange", onVisibilityChange);
-  const removeRecovery = boardlyRealtimeClient.onRecovery(() =>
+  const removeRecovery = zenithTeamRealtimeClient.onRecovery(() =>
     schedule("recovery"),
   );
 

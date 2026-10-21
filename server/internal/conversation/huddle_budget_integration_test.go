@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/usage"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestHuddleBudgetReservation(t *testing.T) {
@@ -25,7 +25,11 @@ func TestHuddleBudgetReservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +37,13 @@ func TestHuddleBudgetReservation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	input := usage.ReserveHuddleBudgetInput{CompanyID: f.a.CompanyID, HuddleID: huddle.Huddle.ID, Deadline: time.Now().Add(10 * time.Minute), TicksPerSecond: 100, AdditionalTicks: 1000}
+	input := usage.ReserveHuddleBudgetInput{
+		CompanyID:       f.a.CompanyID,
+		HuddleID:        huddle.Huddle.ID,
+		Deadline:        time.Now().Add(10 * time.Minute),
+		TicksPerSecond:  100,
+		AdditionalTicks: 1000,
+	}
 	reserve := func() (generated.HuddleAiBudgetReservation, error) {
 		var result generated.HuddleAiBudgetReservation
 		err := f.store.WithinTx(f.ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
@@ -46,14 +56,19 @@ func TestHuddleBudgetReservation(t *testing.T) {
 	if _, err := reserve(); !errors.Is(err, usage.ErrHuddleBudgetExhausted) {
 		t.Fatalf("unconfigured reserve error = %v", err)
 	}
-	if _, err := budgetService.Configure(f.ctx, f.a, usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 4000}); err != nil {
+	if _, err := budgetService.Configure(
+		f.ctx,
+		f.a,
+		usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 4000},
+	); err != nil {
 		t.Fatal(err)
 	}
 	first, err := reserve()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.ReservedUsdTicks != 4000 || time.Until(first.DeadlineAt.Time) > 30*time.Second || time.Until(first.DeadlineAt.Time) < 25*time.Second {
+	if first.ReservedUsdTicks != 4000 || time.Until(first.DeadlineAt.Time) > 30*time.Second ||
+		time.Until(first.DeadlineAt.Time) < 25*time.Second {
 		t.Fatalf("partial reservation = %+v, want 4000 ticks and 30 seconds", first)
 	}
 	second, err := reserve()
@@ -67,7 +82,11 @@ func TestHuddleBudgetReservation(t *testing.T) {
 	if report.SpentUSDTicks != "0" || report.ReservedUSDTicks != "4000" {
 		t.Fatalf("initial spend/hold = %+v", report)
 	}
-	if _, err := budgetService.Configure(f.ctx, f.a, usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 0, ExpectedRevision: 1}); err != nil {
+	if _, err := budgetService.Configure(
+		f.ctx,
+		f.a,
+		usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 0, ExpectedRevision: 1},
+	); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := reserve(); !errors.Is(err, usage.ErrHuddleBudgetExhausted) {
@@ -75,7 +94,11 @@ func TestHuddleBudgetReservation(t *testing.T) {
 	}
 	spend := usage.RecordHuddleSpendInput{CompanyID: f.a.CompanyID, HuddleID: huddle.Huddle.ID, SpentUSDTicks: 1500}
 	record := func() error {
-		return f.store.WithinTx(f.ctx, pgx.TxOptions{}, func(q *generated.Queries) error { return usage.RecordHuddleSpendInTx(f.ctx, q, spend) })
+		return f.store.WithinTx(
+			f.ctx,
+			pgx.TxOptions{},
+			func(q *generated.Queries) error { return usage.RecordHuddleSpendInTx(f.ctx, q, spend) },
+		)
 	}
 	if err := record(); err != nil {
 		t.Fatal(err)
@@ -114,7 +137,11 @@ func TestHuddleBudgetConcurrentRooms(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := budgets.Configure(f.ctx, f.a, usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 10000}); err != nil {
+	if _, err := budgets.Configure(
+		f.ctx,
+		f.a,
+		usage.ConfigureHuddleBudgetInput{MonthlyLimitUSDTicks: 10000},
+	); err != nil {
 		t.Fatal(err)
 	}
 	huddles, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus})
@@ -123,11 +150,20 @@ func TestHuddleBudgetConcurrentRooms(t *testing.T) {
 	}
 	var ids []uuid.UUID
 	for _, peer := range []uuid.UUID{f.b.UserID, f.c.UserID} {
-		direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}})
+		direct, err := f.conversations.CreateHumanDirect(
+			f.ctx,
+			f.a,
+			CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
-		huddle, err := huddles.Start(f.ctx, f.a, direct.Conversation.ID, StartHuddleRequest{RequestKey: uuid.New()})
+		huddle, err := huddles.Start(
+			f.ctx,
+			f.a,
+			direct.Conversation.ID,
+			StartHuddleRequest{RequestKey: uuid.New()},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -137,7 +173,16 @@ func TestHuddleBudgetConcurrentRooms(t *testing.T) {
 	for _, id := range ids {
 		go func() {
 			err := f.store.WithinTx(f.ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-				_, err := usage.ReserveHuddleBudgetInTx(f.ctx, q, usage.ReserveHuddleBudgetInput{CompanyID: f.a.CompanyID, HuddleID: id, Deadline: time.Now().Add(time.Hour), TicksPerSecond: 100})
+				_, err := usage.ReserveHuddleBudgetInTx(
+					f.ctx,
+					q,
+					usage.ReserveHuddleBudgetInput{
+						CompanyID:      f.a.CompanyID,
+						HuddleID:       id,
+						Deadline:       time.Now().Add(time.Hour),
+						TicksPerSecond: 100,
+					},
+				)
 				return err
 			})
 			results <- err

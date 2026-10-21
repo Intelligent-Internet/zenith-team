@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // seedTerminalRun inserts one terminal direct-chat Run with the session and
@@ -61,9 +61,12 @@ func TestGetLastRunSessionForConversationReportsTheSessionWatermark(t *testing.T
 	queries := generated.New(pool)
 	lookup := func(t *testing.T) generated.GetLastRunSessionForConversationRow {
 		t.Helper()
-		row, err := queries.GetLastRunSessionForConversation(ctx, generated.GetLastRunSessionForConversationParams{
-			ConversationID: fixture.DirectConversationA, AgentID: fixture.AgentA,
-		})
+		row, err := queries.GetLastRunSessionForConversation(
+			ctx,
+			generated.GetLastRunSessionForConversationParams{
+				ConversationID: fixture.DirectConversationA, AgentID: fixture.AgentA,
+			},
+		)
 		if err != nil {
 			t.Fatalf("GetLastRunSessionForConversation() error = %v", err)
 		}
@@ -71,25 +74,78 @@ func TestGetLastRunSessionForConversationReportsTheSessionWatermark(t *testing.T
 	}
 
 	completed := seedTerminalRun(t, ctx, pool, fixture, "completed", "sess-completed", 5, 4*time.Minute)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, completed, 1, "user_message", "user", fixture.UserA, "first")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		completed,
+		1,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"first",
+	)
 	if row := lookup(t); row.SessionID.String != "sess-completed" || row.ThroughSeq != 5 {
-		t.Fatalf("after a completed Run: session %q, through_seq %d; want sess-completed through 5 (its transcript head)", row.SessionID.String, row.ThroughSeq)
+		t.Fatalf(
+			"after a completed Run: session %q, through_seq %d; want sess-completed through 5 (its transcript head)",
+			row.SessionID.String,
+			row.ThroughSeq,
+		)
 	}
 
 	failedBeforeExecution := seedTerminalRun(t, ctx, pool, fixture, "failed", "", 0, 3*time.Minute)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, failedBeforeExecution, 6, "user_message", "user", fixture.UserA, "second")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		failedBeforeExecution,
+		6,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"second",
+	)
 	if row := lookup(t); row.SessionID.Valid || row.ThroughSeq != 6 {
-		t.Fatalf("after a Run that failed before execution: session %q (valid=%v), through_seq %d; want no session and its trigger seq 6", row.SessionID.String, row.SessionID.Valid, row.ThroughSeq)
+		t.Fatalf(
+			"after a Run that failed before execution: session %q (valid=%v), through_seq %d; want no session and its trigger seq 6",
+			row.SessionID.String,
+			row.SessionID.Valid,
+			row.ThroughSeq,
+		)
 	}
 
 	cancelled := seedTerminalRun(t, ctx, pool, fixture, "cancelled", "sess-cancelled", 9, 2*time.Minute)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, cancelled, 7, "user_message", "user", fixture.UserA, "third")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		cancelled,
+		7,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"third",
+	)
 	if row := lookup(t); row.SessionID.Valid || row.ThroughSeq != 6 {
-		t.Fatalf("after a cancelled Run: session %q, through_seq %d; want the cancelled Run skipped", row.SessionID.String, row.ThroughSeq)
+		t.Fatalf(
+			"after a cancelled Run: session %q, through_seq %d; want the cancelled Run skipped",
+			row.SessionID.String,
+			row.ThroughSeq,
+		)
 	}
 
 	seedTerminalRun(t, ctx, pool, fixture, "failed", "", 0, time.Minute)
 	if row := lookup(t); row.SessionID.Valid || row.ThroughSeq != 0 {
-		t.Fatalf("after a retry child with no trigger and no items: session %q, through_seq %d; want 0, which over-inlines rather than omits", row.SessionID.String, row.ThroughSeq)
+		t.Fatalf(
+			"after a retry child with no trigger and no items: session %q, through_seq %d; want 0, which over-inlines rather than omits",
+			row.SessionID.String,
+			row.ThroughSeq,
+		)
 	}
 }

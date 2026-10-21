@@ -38,7 +38,7 @@ type Action struct {
 }
 
 type ActionFields struct {
-	ProjectKey    *string           `yaml:"project_key,omitempty" json:"projectKey,omitempty"`
+	ProjectKey    *string           `yaml:"project_key,omitempty"    json:"projectKey,omitempty"`
 	Title         *string           `yaml:"title,omitempty"          json:"title,omitempty"`
 	Description   *string           `yaml:"description,omitempty"    json:"description,omitempty"`
 	Priority      *string           `yaml:"priority,omitempty"       json:"priority,omitempty"`
@@ -327,11 +327,12 @@ func ApplyActions(current Document, transaction ActionDocument) (Document, error
 				continue
 			}
 			var err error
-			if action.Entity == "project" {
+			switch {
+			case action.Entity == "project":
 				err = applyProjectAction(&plan, action)
-			} else if operation == "cancel" {
+			case operation == "cancel":
 				err = cancelAction(&plan, action)
-			} else {
+			default:
 				err = applyAction(&plan, action)
 			}
 			if err != nil {
@@ -487,7 +488,12 @@ func cancelAction(plan *FlatPlan, action Action) error {
 }
 
 func unflatten(company string, plan FlatPlan) Document {
-	document := Document{Projects: []Project{}, FormatVersion: FormatVersion, Company: company, Tasks: make([]Task, 0, len(plan.Tasks))}
+	document := Document{
+		Projects:      []Project{},
+		FormatVersion: FormatVersion,
+		Company:       company,
+		Tasks:         make([]Task, 0, len(plan.Tasks)),
+	}
 	for _, key := range sortedKeys(plan.Projects) {
 		document.Projects = append(document.Projects, plan.Projects[key])
 	}

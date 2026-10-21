@@ -12,7 +12,7 @@ package attachment
 import (
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // Topic is the attachment family. Every fact this domain publishes travels on

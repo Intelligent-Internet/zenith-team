@@ -12,11 +12,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/migrations"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type editorTestRelay struct{ conn *editorTestConnection }
@@ -115,7 +115,7 @@ func TestStudioEditorAuthorityRecoveryAndCAS(t *testing.T) {
 			RuntimeID:            f.RuntimeA,
 			DaemonID:             f.DaemonA,
 			ConnectionGeneration: uuid.New(),
-			Origin:               "https://api-agent.ii.inc",
+			Origin:               "https://studio.example",
 			StudioAccountID:      uuid.New(),
 			VerifiedAt:           time.Now(),
 			CreationProtocol:     "receiptV1",
@@ -261,6 +261,7 @@ func TestStudioOriginMigrationPreservesLegacyAndBlocksUnsafeRollback(t *testing.
 		Scan(&origin, &protocol, &got, &revision, &account); err != nil {
 		t.Fatal(err)
 	}
+	// Migration 000058 backfills legacy rows with the hosted Studio origin.
 	if origin != "https://api-agent.ii.inc" || protocol != "legacy_marker" || got != description || revision != 1 ||
 		account != nil {
 		t.Fatalf("legacy changed: %s %s %d %v", origin, protocol, revision, account)
@@ -307,7 +308,7 @@ func TestStudioEditorProfileComesFromAuthorizedConversation(t *testing.T) {
 			RuntimeID:            f.RuntimeA,
 			DaemonID:             f.DaemonA,
 			ConnectionGeneration: uuid.New(),
-			Origin:               "https://api-agent.ii.inc",
+			Origin:               "https://studio.example",
 			StudioAccountID:      uuid.New(),
 			VerifiedAt:           time.Now(),
 			CreationProtocol:     "receiptV1",

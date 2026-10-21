@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The receipt is the wire shape the remove route answers: four camelCase

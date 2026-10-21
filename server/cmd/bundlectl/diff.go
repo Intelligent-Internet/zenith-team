@@ -16,10 +16,10 @@ import (
 	"strconv"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
-// harnessRoot holds the files boardly owns beside the pins, such as the
+// harnessRoot holds the files zenith-team owns beside the pins, such as the
 // zenith-workflows SKILL.md laid over the Workflow catalog.
 const harnessRoot = "harness/"
 

@@ -92,7 +92,7 @@ export function RuntimeCapabilitiesPanel({
       : [];
   const isMcp = section === "mcp";
   const Icon = isMcp ? Plug : section === "skills" ? BookOpen : Puzzle;
-  // Local plugin logos come through the desktop app's boardly-plugin-icon
+  // Local plugin logos come through the desktop app's zenith-team-plugin-icon
   // scheme, so they are only asked for while the runtime is online.
   const iconContext: LocalPluginIconContext | undefined =
     shouldUseDesktopHashRouter() && plugins.currentData?.runtime?.online
@@ -309,7 +309,7 @@ export function RuntimeCapabilitiesPanel({
       ) : null}
       {/* The Plugins settings page installs plugins and connects apps on
           the viewer's own computer (ADR 0014). It takes plugins.manage,
-          which every role holds since D28; the check hides the link if
+          which every role holds; the check hides the link if
           that grant ever narrows. */}
       {!agentName && canManagePlugins ? (
         <Link

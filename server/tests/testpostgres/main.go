@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 const ryukDisabledEnv = "TESTCONTAINERS_RYUK_DISABLED"
@@ -98,12 +98,12 @@ func startDatabaseServer(ctx context.Context) (databaseServer, error) {
 	startCtx, startCancel := context.WithTimeout(ctx, 90*time.Second)
 	defer startCancel()
 	container, err := tcpostgres.Run(startCtx, "postgres:17-alpine",
-		tcpostgres.WithDatabase("boardly"),
-		tcpostgres.WithUsername("boardly"),
-		tcpostgres.WithPassword("boardly"),
+		tcpostgres.WithDatabase("zenith-team"),
+		tcpostgres.WithUsername("zenith-team"),
+		tcpostgres.WithPassword("zenith-team"),
 		tcpostgres.BasicWaitStrategies(),
 		testcontainers.WithCmd("postgres", "-c", "fsync=off", "-c", "max_connections=300"),
-		testcontainers.WithLabels(map[string]string{"boardly.test.service": "postgres"}),
+		testcontainers.WithLabels(map[string]string{"zenith-team.test.service": "postgres"}),
 	)
 	restoreErr := restoreRyuk()
 	if err != nil {

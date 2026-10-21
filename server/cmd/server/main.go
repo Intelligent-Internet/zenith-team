@@ -1,4 +1,4 @@
-// Command server is the Boardly cloud API process.
+// Command server is the Zenith Team cloud API process.
 package main
 
 import (
@@ -8,8 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"boardly.dev/boardly/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
 )
+
+// version is the release version, set at build time with
+// -ldflags "-X main.version=1.2.3".
+var version = "dev"
 
 func main() {
 	os.Exit(mainExitCode())
@@ -23,6 +27,7 @@ func mainExitCode() int {
 		panic(err)
 	}
 	slog.SetDefault(bootstrapLogger)
+	slog.Info("Zenith Team server starting", "version", version)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

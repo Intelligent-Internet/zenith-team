@@ -85,7 +85,7 @@ func (s *DefaultQuestionService) AskHuman(
 	}
 	requestKey := uuid.NewSHA1(
 		uuid.NameSpaceURL,
-		append([]byte("boardly:human-question:"), canonical...),
+		append([]byte("zenith-team:human-question:"), canonical...),
 	).String()
 	path := fmt.Sprintf("/companies/%s/questions", url.PathEscape(s.companyID))
 	// The endpoint answers with the bare Question for both first ask and

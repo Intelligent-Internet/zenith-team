@@ -120,7 +120,8 @@ func newAgentCmd() *cobra.Command {
 		String("model", "", "model identifier for the copy; pass an empty string for the runtime default")
 	copyCmd.Flags().
 		String("thinking-level", "", "reasoning/effort level for the copy; pass an empty string for the runtime default")
-	copyCmd.Flags().String("avatar-key", "", "Fold look for the copy (fold-<palette>); pass an empty string to let the id choose")
+	copyCmd.Flags().
+		String("avatar-key", "", "Fold look for the copy (fold-<palette>); pass an empty string to let the id choose")
 	copyCmd.Flags().
 		String("accent-color", "", "accent color for the copy as #RRGGBB; pass an empty string for the default palette")
 	copyCmd.Flags().Int32("max-concurrent-runs", 0, "task-lane run cap, 1-10 (default: the source cap)")

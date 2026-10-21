@@ -13,11 +13,11 @@ import (
 	"context"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // Topic carries the Agent lifecycle family: the committed Agent projection on

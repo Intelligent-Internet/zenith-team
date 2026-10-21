@@ -1,5 +1,5 @@
 import {
-  BOARDLY_API_BASE_URL,
+  ZENITH_TEAM_API_BASE_URL,
   isAuthenticationFailure,
   refreshAuthSession,
 } from "@/lib/api-client";
@@ -25,33 +25,34 @@ const AUTH_REFUSAL_CLOSE_CODES = new Set([
   4003, // forbidden
 ]);
 
-export type BoardlyRealtimeStatus =
+export type ZenithTeamRealtimeStatus =
   "idle" | "connecting" | "ready" | "reconnecting" | "terminal";
 
-export type BoardlyRealtimeSnapshot = {
+export type ZenithTeamRealtimeSnapshot = {
   activeCompanyId?: string;
-  status: BoardlyRealtimeStatus;
+  status: ZenithTeamRealtimeStatus;
 };
 
-export type BoardlyRealtimeActorType =
+export type ZenithTeamRealtimeActorType =
   ApiComponents["schemas"]["RealtimeEnvelope"]["actorType"];
 
-export type BoardlyRealtimeEvent = ApiComponents["schemas"]["RealtimeEnvelope"];
+export type ZenithTeamRealtimeEvent =
+  ApiComponents["schemas"]["RealtimeEnvelope"];
 
-export type BoardlyRunMessagePayload =
+export type ZenithTeamRunMessagePayload =
   ApiComponents["schemas"]["RunMessagePayload"];
 
-export type BoardlyTerminalRunLifecyclePayload =
+export type ZenithTeamTerminalRunLifecyclePayload =
   ApiComponents["schemas"]["TerminalRunLifecyclePayload"];
 
-export type BoardlyRunMessageRealtimeEvent =
+export type ZenithTeamRunMessageRealtimeEvent =
   ApiComponents["schemas"]["RunMessageRealtimeEvent"];
 
-export type BoardlyTerminalRunRealtimeEvent =
+export type ZenithTeamTerminalRunRealtimeEvent =
   ApiComponents["schemas"]["TerminalRunRealtimeEvent"];
 
 export function realtimeEventConversationId(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): string | undefined {
   const ref = recordValue(event.payload.ref);
   const conversation = recordValue(event.payload.conversation);
@@ -63,9 +64,9 @@ export function realtimeEventConversationId(
   );
 }
 
-type RealtimeEventHandler = (event: BoardlyRealtimeEvent) => void;
+type RealtimeEventHandler = (event: ZenithTeamRealtimeEvent) => void;
 type RealtimeAuthenticationFailureHandler = () => void;
-type RealtimeStatusHandler = (snapshot: BoardlyRealtimeSnapshot) => void;
+type RealtimeStatusHandler = (snapshot: ZenithTeamRealtimeSnapshot) => void;
 type RealtimeRecoveryHandler = (reason: string) => void;
 
 type ReadyWaiter = {
@@ -74,9 +75,9 @@ type ReadyWaiter = {
   timer: ReturnType<typeof setTimeout>;
 };
 
-export function resolveBoardlyRealtimeUrl(
+export function resolveZenithTeamRealtimeUrl(
   companyId: string,
-  apiBaseUrl = BOARDLY_API_BASE_URL,
+  apiBaseUrl = ZENITH_TEAM_API_BASE_URL,
 ): string {
   const normalizedCompanyId = companyId.trim();
   if (!normalizedCompanyId) {
@@ -100,9 +101,9 @@ export function resolveBoardlyRealtimeUrl(
   return url.toString();
 }
 
-export function parseBoardlyRealtimeEvent(
+export function parseZenithTeamRealtimeEvent(
   source: string,
-): BoardlyRealtimeEvent | undefined {
+): ZenithTeamRealtimeEvent | undefined {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
@@ -142,7 +143,7 @@ export function parseBoardlyRealtimeEvent(
   return { actorId, actorType, companyId, createdAt, eventId, payload, type };
 }
 
-class BoardlyRealtimeClient {
+class ZenithTeamRealtimeClient {
   private activeCompanyId: string | undefined;
   private authRefreshAttempted = false;
   private authRefreshPending = false;
@@ -155,7 +156,7 @@ class BoardlyRealtimeClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private running = false;
   private socket: WebSocket | null = null;
-  private status: BoardlyRealtimeStatus = "idle";
+  private status: ZenithTeamRealtimeStatus = "idle";
   private readonly eventHandlers = new Set<RealtimeEventHandler>();
   private readonly authenticationFailureHandlers =
     new Set<RealtimeAuthenticationFailureHandler>();
@@ -165,7 +166,7 @@ class BoardlyRealtimeClient {
   private readonly recoveryHandlers = new Set<RealtimeRecoveryHandler>();
   private readonly statusHandlers = new Set<RealtimeStatusHandler>();
 
-  getSnapshot(): BoardlyRealtimeSnapshot {
+  getSnapshot(): ZenithTeamRealtimeSnapshot {
     return {
       status: this.status,
       ...(this.activeCompanyId
@@ -316,7 +317,7 @@ class BoardlyRealtimeClient {
     let opened = false;
     let socket: WebSocket;
     try {
-      socket = new WebSocket(resolveBoardlyRealtimeUrl(companyId));
+      socket = new WebSocket(resolveZenithTeamRealtimeUrl(companyId));
     } catch {
       this.handleRetryableFailure(false);
       return;
@@ -356,7 +357,7 @@ class BoardlyRealtimeClient {
       if (!this.isCurrent(socket, generation)) return;
       const event =
         typeof message.data === "string"
-          ? parseBoardlyRealtimeEvent(message.data)
+          ? parseZenithTeamRealtimeEvent(message.data)
           : undefined;
       if (!event) {
         // A single invalid frame is dropped, not fatal: an installed client
@@ -398,7 +399,7 @@ class BoardlyRealtimeClient {
     };
   }
 
-  private handleEvent(event: BoardlyRealtimeEvent): void {
+  private handleEvent(event: ZenithTeamRealtimeEvent): void {
     if (this.hasSeenEvent(event.eventId)) return;
     this.eventHandlers.forEach((handler) => handler(event));
   }
@@ -493,7 +494,7 @@ class BoardlyRealtimeClient {
     this.setStatus("terminal");
   }
 
-  private setStatus(status: BoardlyRealtimeStatus): void {
+  private setStatus(status: ZenithTeamRealtimeStatus): void {
     if (this.status === status) return;
     this.status = status;
     const snapshot = this.getSnapshot();
@@ -566,7 +567,9 @@ function nullableStringValue(value: unknown): string | null | undefined {
   return stringValue(value);
 }
 
-function actorTypeValue(value: unknown): BoardlyRealtimeActorType | undefined {
+function actorTypeValue(
+  value: unknown,
+): ZenithTeamRealtimeActorType | undefined {
   return value === "user" || value === "agent" || value === "system"
     ? value
     : undefined;
@@ -590,4 +593,4 @@ function closeSocket(
   }
 }
 
-export const boardlyRealtimeClient = new BoardlyRealtimeClient();
+export const zenithTeamRealtimeClient = new ZenithTeamRealtimeClient();

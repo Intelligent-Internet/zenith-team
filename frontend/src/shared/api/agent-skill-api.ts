@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "./boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "./zenith-team-api";
 import type { components, operations } from "./generated/api.generated";
 
 export type MessageSkillScope = { companyId: string } & NonNullable<
@@ -20,14 +20,14 @@ const mutationTags = (scope: Scope) => [
   { type: "Agent" as const, id: scope.companyId },
 ];
 
-export const agentSkillApi = boardlyApi.injectEndpoints({
+export const agentSkillApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     messageSkills: builder.query<
       Schemas["MessageSkillCollection"],
       MessageSkillScope
     >({
       queryFn: ({ companyId, ...params }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schemas["MessageSkillCollection"]>(
               `/companies/${encodeURIComponent(companyId)}/message-skills`,
@@ -54,7 +54,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
         });
       },
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schemas["AgentSkillCollection"]>(
               `${base(scope)}/skills`,
@@ -70,7 +70,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
       queryFn: ({ file, ...scope }) => {
         const body = new FormData();
         body.append("file", file);
-        return executeBoardlyQuery(
+        return executeZenithTeamQuery(
           () =>
             apiClient.post<AgentSkillPreview>(
               `${base(scope)}/skill-imports/upload`,
@@ -88,7 +88,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
       Scope & { input: Schemas["AgentSkillGitHubRequest"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<AgentSkillPreview>(
               `${base(scope)}/skill-imports/github`,
@@ -105,7 +105,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
       Scope & { input: Schemas["AgentSkillInstallRequest"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schemas["AgentSkillCollection"]>(
               `${base(scope)}/skills`,
@@ -147,7 +147,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: ({ skillId, input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<AgentSkill>(
               `${base(scope)}/skills/${encodeURIComponent(skillId)}`,
@@ -165,7 +165,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
       Scope & { skillId: string; expectedRevision: number }
     >({
       queryFn: ({ skillId, expectedRevision, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(
               `${base(scope)}/skills/${encodeURIComponent(skillId)}`,
@@ -180,7 +180,7 @@ export const agentSkillApi = boardlyApi.injectEndpoints({
       Scope & { skillId: string; path: string; versionId?: string }
     >({
       queryFn: ({ skillId, path, versionId, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schemas["AgentSkillReference"]>(
               `${base(scope)}/skills/${encodeURIComponent(skillId)}/reference`,

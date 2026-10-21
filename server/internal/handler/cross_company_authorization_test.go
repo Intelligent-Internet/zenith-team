@@ -31,14 +31,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/mailbox"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
 )
 
 var (
@@ -767,7 +767,7 @@ func TestProjectRoutesAnswerFromProjectAccess(t *testing.T) {
 		},
 		{
 			// A reader without project.grants.manage sees the grants but
-			// changes none, a Group's included (Access TECH D4).
+			// changes none, a Group's included.
 			name: "reader without access management", role: auth.CompanyRoleMember, visible: true,
 			access: auth.ProjectAccess{
 				Via: auth.ProjectAccessViaGrant, Permissions: []auth.ProjectPermission{auth.ProjectPermissionRead},
@@ -931,7 +931,7 @@ func TestProjectRoutesAnswerFromProjectAccess(t *testing.T) {
 		request := httptest.NewRequest(http.MethodGet,
 			"/api/v1/companies/"+crossCompanyA.String()+"/projects?view=manage", nil)
 		request.Header.Set("Authorization", "Bearer access-token")
-		request.Header.Set("X-Boardly-Run-Token", "run-proof")
+		request.Header.Set("X-Zenith-Team-Run-Token", "run-proof")
 		response := httptest.NewRecorder()
 		h.ServeHTTP(response, request)
 		assertErrorResponse(t, response, http.StatusForbidden, "human_actor_required")

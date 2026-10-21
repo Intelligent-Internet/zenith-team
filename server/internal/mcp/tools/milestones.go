@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
+	taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
 )
 
 // AttestMilestonesToolName is the one tool that records a founder's statement

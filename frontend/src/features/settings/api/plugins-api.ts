@@ -4,7 +4,7 @@ import {
   refreshDesktopPlugins,
   uninstallDesktopPlugin,
 } from "@/shared/desktop/desktop-environment.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { pluginService } from "@/shared/api/plugin.service";
 import type {
   PluginCatalogRequest,
@@ -47,7 +47,7 @@ type PluginRefreshArguments = {
   force?: boolean;
 };
 
-export const pluginsApi = boardlyApi.injectEndpoints({
+export const pluginsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listAllPlugins: builder.query<
       PluginCatalogResponseV1,
@@ -57,7 +57,7 @@ export const pluginsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Plugin" },
       ],
       queryFn: ({ companyId, ...request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => pluginService.listAllPlugins(companyId, request),
           "Plugins could not be loaded.",
           { retry: true },
@@ -69,7 +69,7 @@ export const pluginsApi = boardlyApi.injectEndpoints({
           { id: companyId, type: "Plugin" },
         ],
         queryFn: ({ companyId, ...request }) =>
-          executeBoardlyQuery(
+          executeZenithTeamQuery(
             () => pluginService.listPlugins(companyId, request),
             "Plugins could not be loaded.",
             { retry: true },
@@ -83,7 +83,7 @@ export const pluginsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Plugin" },
       ],
       queryFn: ({ companyId, pluginId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => pluginService.getPlugin(companyId, pluginId, runtimeId),
           "The plugin could not be loaded.",
         ),

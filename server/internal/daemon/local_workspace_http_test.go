@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
 )
 
 func TestLocalWorkspaceFilePreviewHandlerReadsBoundedManagedRunFile(t *testing.T) {
@@ -82,7 +82,12 @@ func TestLocalWorkspaceFileResolveHandlerUsesRunWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	response := serveLocalWorkspaceRequest(t, d.localWorkspaceFileResolveHandler(), string(request), "Bearer local-capability")
+	response := serveLocalWorkspaceRequest(
+		t,
+		d.localWorkspaceFileResolveHandler(),
+		string(request),
+		"Bearer local-capability",
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("resolve status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -108,10 +113,20 @@ func TestLocalWorkspaceFileResolveHandlerUsesRunWorkspace(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		response := serveLocalWorkspaceRequest(t, d.localWorkspaceFileResolveHandler(), string(request), "Bearer local-capability")
+		response := serveLocalWorkspaceRequest(
+			t,
+			d.localWorkspaceFileResolveHandler(),
+			string(request),
+			"Bearer local-capability",
+		)
 		if response.Code == http.StatusOK || strings.Contains(response.Body.String(), outside) ||
 			strings.Contains(response.Body.String(), "private") {
-			t.Fatalf("outside path %q resolved: status = %d, body = %s", path, response.Code, response.Body.String())
+			t.Fatalf(
+				"outside path %q resolved: status = %d, body = %s",
+				path,
+				response.Code,
+				response.Body.String(),
+			)
 		}
 	}
 
@@ -126,9 +141,18 @@ func TestLocalWorkspaceFileResolveHandlerUsesRunWorkspace(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		response := serveLocalWorkspaceRequest(t, d.localWorkspaceFileResolveHandler(), string(request), "Bearer local-capability")
+		response := serveLocalWorkspaceRequest(
+			t,
+			d.localWorkspaceFileResolveHandler(),
+			string(request),
+			"Bearer local-capability",
+		)
 		if response.Code != http.StatusNotFound || strings.Contains(response.Body.String(), outside) {
-			t.Fatalf("symlink escape resolved: status = %d, body = %s", response.Code, response.Body.String())
+			t.Fatalf(
+				"symlink escape resolved: status = %d, body = %s",
+				response.Code,
+				response.Body.String(),
+			)
 		}
 	}
 }
@@ -253,7 +277,9 @@ func TestLocalWorkspaceFileExportStreamsOpenedDescriptorAfterPathReplacement(t *
 	request := httptest.NewRequest(
 		http.MethodPost,
 		"http://127.0.0.1:19714/v1/workspace-files/export",
-		bytes.NewBufferString(`{"schemaVersion":1,"runId":"00000000-0000-4000-8000-000000001505","path":"result.txt"}`),
+		bytes.NewBufferString(
+			`{"schemaVersion":1,"runId":"00000000-0000-4000-8000-000000001505","path":"result.txt"}`,
+		),
 	)
 	request.RemoteAddr = "127.0.0.1:1234"
 	request.Header.Set("Authorization", "Bearer local-capability")
@@ -367,22 +393,34 @@ func TestLocalTaskReviewHandlersReviewAndAcceptThroughWorkspaceManager(t *testin
 			if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 				t.Errorf("decode manual merge claim: %v", err)
 			}
-			if request.TaskID != taskMergeTaskID || request.RunID != uuid.MustParse("00000000-0000-4000-8000-000000001504") ||
-				request.ExpectedRevision != 11 || request.ExpectedExecutionGeneration != 3 {
+			if request.TaskID != taskMergeTaskID ||
+				request.RunID != uuid.MustParse("00000000-0000-4000-8000-000000001504") ||
+				request.ExpectedRevision != 11 ||
+				request.ExpectedExecutionGeneration != 3 {
 				t.Errorf("manual merge claim request = %+v", request)
 			}
 			contextDocument, err := json.Marshal(RunContext{
-				ExecutionProfile: RunExecutionProfileContext{Project: &RunProjectContext{ID: taskMergeTaskID}, Task: &RunTaskContext{
-					ConversationID: conversationID,
-				}},
+				ExecutionProfile: RunExecutionProfileContext{
+					Project: &RunProjectContext{ID: taskMergeTaskID},
+					Task: &RunTaskContext{
+						ConversationID: conversationID,
+					},
+				},
 			})
 			if err != nil {
 				t.Errorf("encode manual merge context: %v", err)
 			}
 			_ = json.NewEncoder(w).Encode(TaskMergeClaim{
-				JobID: taskMergeJobID, CompanyID: companyID, TaskID: taskMergeTaskID,
-				RunID: uuid.MustParse("00000000-0000-4000-8000-000000001504"), TaskExecutionGeneration: 3, Attempt: 1,
-				ConversationID: conversationID, Context: contextDocument,
+				JobID:     taskMergeJobID,
+				CompanyID: companyID,
+				TaskID:    taskMergeTaskID,
+				RunID: uuid.MustParse(
+					"00000000-0000-4000-8000-000000001504",
+				),
+				TaskExecutionGeneration: 3,
+				Attempt:                 1,
+				ConversationID:          conversationID,
+				Context:                 contextDocument,
 			})
 		case "/api/v1/daemon/runtimes/" + taskMergeRuntimeID + "/task-merges/" + taskMergeJobID + "/lease":
 			leaseCalls++
@@ -624,7 +662,17 @@ func TestLocalTaskReviewPrepareReviewsAnInPlaceRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	runInPlaceTestGit(t, localDir, "add", "-A")
-	runInPlaceTestGit(t, localDir, "-c", "user.name=Test", "-c", "user.email=test@boardly.local", "commit", "-m", "Initial commit")
+	runInPlaceTestGit(
+		t,
+		localDir,
+		"-c",
+		"user.name=Test",
+		"-c",
+		"user.email=test@zenith-team.local",
+		"commit",
+		"-m",
+		"Initial commit",
+	)
 
 	if err := d.workspaces.RecordInPlaceRunStart(t.Context(), runID, workspace.InPlaceRunIdentity{
 		CompanyID: companyID, ConversationID: conversationID, TaskID: taskMergeTaskID,
@@ -635,7 +683,17 @@ func TestLocalTaskReviewPrepareReviewsAnInPlaceRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	runInPlaceTestGit(t, localDir, "add", "-A")
-	runInPlaceTestGit(t, localDir, "-c", "user.name=Test", "-c", "user.email=test@boardly.local", "commit", "-m", "Build")
+	runInPlaceTestGit(
+		t,
+		localDir,
+		"-c",
+		"user.name=Test",
+		"-c",
+		"user.email=test@zenith-team.local",
+		"commit",
+		"-m",
+		"Build",
+	)
 	if err := d.workspaces.CompleteInPlaceRun(t.Context(), runID); err != nil {
 		t.Fatalf("CompleteInPlaceRun() error = %v", err)
 	}

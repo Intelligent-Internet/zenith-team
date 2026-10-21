@@ -10,7 +10,7 @@ import {
   useGetCompanyInitializationQuery,
 } from "@/features/onboarding/api/initialization-api";
 import { lunaModelId } from "@/features/onboarding/model/research-model";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { useCan } from "@/shared/permissions";
 
 const pollIntervalMs = 5000;
@@ -89,7 +89,7 @@ export function useCompanyResearchRetry(companyId: string) {
         request: { retry: true, modelDiscoveryId: discovery.requestId },
       }).unwrap();
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     }
   };
 

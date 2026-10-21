@@ -76,12 +76,24 @@ func AddDiscussionMember(
 ) {
 	t.Helper()
 	WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
-		MustExecTx(t, ctx, tx,
+		MustExecTx(
+			t,
+			ctx,
+			tx,
 			`INSERT INTO conversation_members(company_id,conversation_id,user_id,source_type) VALUES($1,$2,$3,'channel')`,
-			companyID, conversationID, userID)
-		MustExecTx(t, ctx, tx,
+			companyID,
+			conversationID,
+			userID,
+		)
+		MustExecTx(
+			t,
+			ctx,
+			tx,
 			`INSERT INTO conversation_user_states(company_id,conversation_id,user_id,grant_generation) VALUES($1,$2,$3,1)`,
-			companyID, conversationID, userID)
+			companyID,
+			conversationID,
+			userID,
+		)
 	})
 }
 
@@ -96,13 +108,25 @@ func SeedHumanDirect(
 	t.Helper()
 	var id uuid.UUID
 	WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
-		if err := tx.QueryRow(ctx,
+		if err := tx.QueryRow(
+			ctx,
 			`INSERT INTO conversations(company_id,kind,created_by_user_id) VALUES($1,'human_direct',$2) RETURNING id`,
-			companyID, firstID).Scan(&id); err != nil {
+			companyID,
+			firstID,
+		).Scan(&id); err != nil {
 			t.Fatal(err)
 		}
-		MustExecTx(t, ctx, tx, `INSERT INTO conversation_human_directs(company_id,conversation_id,user_low_id,user_high_id)
-			VALUES($1,$2,LEAST($3::uuid,$4::uuid),GREATEST($3::uuid,$4::uuid))`, companyID, id, firstID, secondID)
+		MustExecTx(
+			t,
+			ctx,
+			tx,
+			`INSERT INTO conversation_human_directs(company_id,conversation_id,user_low_id,user_high_id)
+			VALUES($1,$2,LEAST($3::uuid,$4::uuid),GREATEST($3::uuid,$4::uuid))`,
+			companyID,
+			id,
+			firstID,
+			secondID,
+		)
 		MustExecTx(t, ctx, tx, `INSERT INTO conversation_members(company_id,conversation_id,user_id,source_type)
 			VALUES($1,$2,$3,'human_direct'),($1,$2,$4,'human_direct')`, companyID, id, firstID, secondID)
 	})

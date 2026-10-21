@@ -11,12 +11,12 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
 	"github.com/google/uuid"
 )
 
-// This wire index is consumed by the sealed boardly-mcp binary. Keep the
+// This wire index is consumed by the sealed zenith-team-mcp binary. Keep the
 // producer independent of its business-tool dependencies; the round-trip test
 // exercises the real MCP reader against the released Skill bytes.
 type runSkillIndex struct {

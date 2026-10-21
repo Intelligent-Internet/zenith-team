@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 type huddleHTTPStub struct {
@@ -39,10 +39,21 @@ func (s huddleHTTPStub) Join(
 func (s huddleHTTPStub) ConfirmConnected(context.Context, uuid.UUID, uuid.UUID) (conversation.JoinHuddleResult, error) {
 	return conversation.JoinHuddleResult{}, nil
 }
-func (s huddleHTTPStub) ConfirmConnectedByIdentity(context.Context, uuid.UUID, string, string) (conversation.JoinHuddleResult, error) {
+
+func (s huddleHTTPStub) ConfirmConnectedByIdentity(
+	context.Context,
+	uuid.UUID,
+	string,
+	string,
+) (conversation.JoinHuddleResult, error) {
 	return conversation.JoinHuddleResult{}, nil
 }
-func (s huddleHTTPStub) ConfirmConnectedByIdentityAnyCompany(context.Context, string, string) (conversation.JoinHuddleResult, error) {
+
+func (s huddleHTTPStub) ConfirmConnectedByIdentityAnyCompany(
+	context.Context,
+	string,
+	string,
+) (conversation.JoinHuddleResult, error) {
 	return conversation.JoinHuddleResult{}, nil
 }
 func (s huddleHTTPStub) EndFromMedia(context.Context, uuid.UUID, string) error { return nil }
@@ -51,34 +62,66 @@ func (s huddleHTTPStub) ReconcileMediaRooms(context.Context) (int, error)      {
 func (s huddleHTTPStub) EndParticipantFromMedia(context.Context, uuid.UUID, string, string) error {
 	return nil
 }
+
 func (s huddleHTTPStub) EndParticipantFromMediaAnyCompany(context.Context, string, string) error {
 	return nil
 }
-func (s huddleHTTPStub) Invite(context.Context, auth.UserPrincipal, uuid.UUID, conversation.InviteHuddleRequest) (conversation.HuddleInvitation, error) {
-	return conversation.HuddleInvitation{}, nil
-}
-func (s huddleHTTPStub) RespondInvitation(context.Context, auth.UserPrincipal, uuid.UUID, conversation.RespondHuddleInvitationRequest) (conversation.HuddleInvitation, error) {
+
+func (s huddleHTTPStub) Invite(
+	context.Context,
+	auth.UserPrincipal,
+	uuid.UUID,
+	conversation.InviteHuddleRequest,
+) (conversation.HuddleInvitation, error) {
 	return conversation.HuddleInvitation{}, nil
 }
 
-func (s huddleHTTPStub) Leave(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID) (conversation.JoinHuddleResult, error) {
+func (s huddleHTTPStub) RespondInvitation(
+	context.Context,
+	auth.UserPrincipal,
+	uuid.UUID,
+	conversation.RespondHuddleInvitationRequest,
+) (conversation.HuddleInvitation, error) {
+	return conversation.HuddleInvitation{}, nil
+}
+
+func (s huddleHTTPStub) Leave(
+	context.Context,
+	auth.UserPrincipal,
+	uuid.UUID,
+	uuid.UUID,
+) (conversation.JoinHuddleResult, error) {
 	return conversation.JoinHuddleResult{}, nil
 }
 
 func (s huddleHTTPStub) SweepExpiredReservations(context.Context, time.Time) (int, error) {
 	return 0, nil
 }
+
 func (s huddleHTTPStub) SweepExpiredInvitations(context.Context, time.Time) (int, error) {
 	return 0, nil
 }
-func (s huddleHTTPStub) ListPendingInvitations(context.Context, auth.UserPrincipal) ([]conversation.HuddleInvitation, error) {
+
+func (s huddleHTTPStub) ListPendingInvitations(
+	context.Context,
+	auth.UserPrincipal,
+) ([]conversation.HuddleInvitation, error) {
 	return nil, nil
 }
-func (s huddleHTTPStub) ListInvitationHistory(context.Context, auth.UserPrincipal) ([]conversation.HuddleInvitation, error) {
+
+func (s huddleHTTPStub) ListInvitationHistory(
+	context.Context,
+	auth.UserPrincipal,
+) ([]conversation.HuddleInvitation, error) {
 	return nil, nil
 }
 func (s huddleHTTPStub) DeliverMissedInvitations(context.Context) (int, error) { return 0, nil }
-func (s huddleHTTPStub) ListConnections(context.Context, auth.UserPrincipal, uuid.UUID) ([]conversation.HuddleConnection, error) {
+
+func (s huddleHTTPStub) ListConnections(
+	context.Context,
+	auth.UserPrincipal,
+	uuid.UUID,
+) ([]conversation.HuddleConnection, error) {
 	return nil, nil
 }
 
@@ -92,8 +135,10 @@ func TestStartHuddleHTTP(t *testing.T) {
 		gotSourceID uuid.UUID,
 		request conversation.StartHuddleRequest,
 	) (conversation.StartHuddleResult, error) {
-		if got.UserID != principal.UserID || got.CompanyID != principal.CompanyID || got.Role != principal.Role ||
-			gotSourceID != sourceID || request.RequestKey != requestKey {
+		if got.UserID != principal.UserID || got.CompanyID != principal.CompanyID ||
+			got.Role != principal.Role ||
+			gotSourceID != sourceID ||
+			request.RequestKey != requestKey {
 			t.Fatalf("Start() input = %+v %v %+v", got, gotSourceID, request)
 		}
 		return conversation.StartHuddleResult{
@@ -118,7 +163,8 @@ func TestStartHuddleHTTP(t *testing.T) {
 		path,
 		[]byte(`{"requestKey":"`+requestKey.String()+`"}`),
 	)
-	if response.Code != http.StatusCreated || !strings.Contains(response.Body.String(), `"id":"`+huddleID.String()+`"`) {
+	if response.Code != http.StatusCreated ||
+		!strings.Contains(response.Body.String(), `"id":"`+huddleID.String()+`"`) {
 		t.Fatalf("response = %d %s", response.Code, response.Body)
 	}
 }
@@ -153,7 +199,8 @@ func TestStartHuddleHTTPRejectsInvalidBodyAndMapsErrors(t *testing.T) {
 		path,
 		[]byte(`{"requestKey":"`+uuid.NewString()+`"}`),
 	)
-	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), `"huddle_request_conflict"`) {
+	if response.Code != http.StatusConflict ||
+		!strings.Contains(response.Body.String(), `"huddle_request_conflict"`) {
 		t.Fatalf("mapped response = %d %s", response.Code, response.Body)
 	}
 }
@@ -162,17 +209,31 @@ func TestReserveHuddleConnectionHTTP(t *testing.T) {
 	t.Parallel()
 	principal := auth.UserPrincipal{UserID: uuid.New(), CompanyID: uuid.New(), Role: auth.CompanyRoleMember}
 	huddleID, requestKey, connectionID := uuid.New(), uuid.New(), uuid.New()
-	service := huddleHTTPStub{join: func(got auth.UserPrincipal, gotHuddleID uuid.UUID, request conversation.JoinHuddleRequest) (conversation.JoinHuddleResult, error) {
-		if got.UserID != principal.UserID || gotHuddleID != huddleID || request.RequestKey != requestKey {
-			t.Fatalf("Join() input = %+v %v %+v", got, gotHuddleID, request)
-		}
-		return conversation.JoinHuddleResult{
-			Huddle:     conversation.Huddle{ID: huddleID, CompanyID: principal.CompanyID},
-			Connection: conversation.HuddleConnection{ID: connectionID, HuddleID: huddleID, UserID: principal.UserID, Status: "reserved", Revision: 1},
-		}, nil
-	}}
+	service := huddleHTTPStub{
+		join: func(got auth.UserPrincipal, gotHuddleID uuid.UUID, request conversation.JoinHuddleRequest) (conversation.JoinHuddleResult, error) {
+			if got.UserID != principal.UserID || gotHuddleID != huddleID ||
+				request.RequestKey != requestKey {
+				t.Fatalf("Join() input = %+v %v %+v", got, gotHuddleID, request)
+			}
+			return conversation.JoinHuddleResult{
+				Huddle: conversation.Huddle{ID: huddleID, CompanyID: principal.CompanyID},
+				Connection: conversation.HuddleConnection{
+					ID:       connectionID,
+					HuddleID: huddleID,
+					UserID:   principal.UserID,
+					Status:   "reserved",
+					Revision: 1,
+				},
+			}, nil
+		},
+	}
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/huddles/" + huddleID.String() + "/connections"
-	response := serveBearerJSON(huddleHTTPHandler(principal, service), http.MethodPost, path, []byte(`{"requestKey":"`+requestKey.String()+`"}`))
+	response := serveBearerJSON(
+		huddleHTTPHandler(principal, service),
+		http.MethodPost,
+		path,
+		[]byte(`{"requestKey":"`+requestKey.String()+`"}`),
+	)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"status":"reserved"`) ||
 		!strings.Contains(response.Body.String(), connectionID.String()) {
 		t.Fatalf("response = %d %s", response.Code, response.Body)
@@ -183,12 +244,20 @@ func TestReserveHuddleConnectionHTTPReportsAlreadyConnected(t *testing.T) {
 	t.Parallel()
 	principal := auth.UserPrincipal{UserID: uuid.New(), CompanyID: uuid.New(), Role: auth.CompanyRoleMember}
 	huddleID := uuid.New()
-	service := huddleHTTPStub{join: func(auth.UserPrincipal, uuid.UUID, conversation.JoinHuddleRequest) (conversation.JoinHuddleResult, error) {
-		return conversation.JoinHuddleResult{}, conversation.ErrHuddleAlreadyConnected
-	}}
+	service := huddleHTTPStub{
+		join: func(auth.UserPrincipal, uuid.UUID, conversation.JoinHuddleRequest) (conversation.JoinHuddleResult, error) {
+			return conversation.JoinHuddleResult{}, conversation.ErrHuddleAlreadyConnected
+		},
+	}
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/huddles/" + huddleID.String() + "/connections"
-	response := serveBearerJSON(huddleHTTPHandler(principal, service), http.MethodPost, path, []byte(`{"requestKey":"`+uuid.NewString()+`"}`))
-	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), `"huddle_already_connected"`) {
+	response := serveBearerJSON(
+		huddleHTTPHandler(principal, service),
+		http.MethodPost,
+		path,
+		[]byte(`{"requestKey":"`+uuid.NewString()+`"}`),
+	)
+	if response.Code != http.StatusConflict ||
+		!strings.Contains(response.Body.String(), `"huddle_already_connected"`) {
 		t.Fatalf("response = %d %s", response.Code, response.Body)
 	}
 }
@@ -229,7 +298,8 @@ func TestHuddleCallsNeedLiveKit(t *testing.T) {
 		base + "/huddles/" + uuid.NewString() + "/connections",
 	} {
 		response := serveBearerJSON(handler, http.MethodPost, path, body)
-		if response.Code != http.StatusServiceUnavailable || !strings.Contains(response.Body.String(), `"huddle_not_configured"`) {
+		if response.Code != http.StatusServiceUnavailable ||
+			!strings.Contains(response.Body.String(), `"huddle_not_configured"`) {
 			t.Fatalf("%s response = %d %s", path, response.Code, response.Body)
 		}
 	}

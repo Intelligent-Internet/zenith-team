@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/activity"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
 )
 
 func TestActivityRevisionFiltersAndCursorStayWithinTheirSubject(t *testing.T) {
@@ -36,7 +37,11 @@ func TestActivityRevisionFiltersAndCursorStayWithinTheirSubject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cursor := encodeActivityCursor(c, options, &activity.Cursor{ID: uuid.New(), CreatedAt: time.Now().UTC(), Revision: 7})
+	cursor := encodeActivityCursor(
+		c,
+		options,
+		&activity.Cursor{ID: uuid.New(), CreatedAt: time.Now().UTC(), Revision: 7},
+	)
 	if _, err := parseActivityQuery(runQueryContext(query + "&cursor=" + cursor)); err != nil {
 		t.Fatalf("same filters: %v", err)
 	}

@@ -138,7 +138,7 @@ func TestClientRoundTripsOneCallThroughTheChannel(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != AuthorizationScheme+" "+testCapability {
 			t.Errorf("Authorization = %q, want the Run capability", got)
 		}
-		if r.Header.Get("X-Boardly-Run-Token") != "" {
+		if r.Header.Get("X-Zenith-Team-Run-Token") != "" {
 			t.Error("the client sent the Run token; only the daemon's forward carries it")
 		}
 		var request Request

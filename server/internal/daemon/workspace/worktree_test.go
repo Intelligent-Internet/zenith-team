@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"boardly.dev/boardly/server/internal/daemon/repocache"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,10 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
+
 	"github.com/google/uuid"
 )
 
-var testMetadataKey = []byte("boardly-workspace-test-authentication-key-v1")
+var testMetadataKey = []byte("zenith-team-workspace-test-authentication-key-v1")
 
 type fakeGitRunner struct {
 	mu    sync.Mutex
@@ -117,7 +118,11 @@ func TestScratchConversationWorkspaceIsReusedAcrossRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 	conversationID := "01900000-0000-7000-8000-0000000000a4"
-	firstRunID, secondRunID := uuid.MustParse("00000000-0000-4000-8000-000000001071"), uuid.MustParse("00000000-0000-4000-8000-000000001072")
+	firstRunID, secondRunID := uuid.MustParse(
+		"00000000-0000-4000-8000-000000001071",
+	), uuid.MustParse(
+		"00000000-0000-4000-8000-000000001072",
+	)
 	first, err := manager.AcquireScratch(conversationID, firstRunID)
 	if err != nil {
 		t.Fatal(err)
@@ -168,7 +173,11 @@ func TestScopedScratchRefreshPreservesPreviousRunBranchAndFiles(t *testing.T) {
 
 	manager, root := newTaskMergeTestManager(t)
 	conversationID := "01900000-0000-4000-8000-0000000000e1"
-	firstRunID, secondRunID := uuid.MustParse("00000000-0000-4000-8000-000000001601"), uuid.MustParse("00000000-0000-4000-8000-000000001602")
+	firstRunID, secondRunID := uuid.MustParse(
+		"00000000-0000-4000-8000-000000001601",
+	), uuid.MustParse(
+		"00000000-0000-4000-8000-000000001602",
+	)
 	first, err := manager.AcquireScopedScratch(
 		t.Context(),
 		taskMergeTestCompanyID,
@@ -240,7 +249,11 @@ func TestScopedScratchRefreshFallsBackToMainWhenPreviousBranchIsMissing(t *testi
 
 	manager, root := newTaskMergeTestManager(t)
 	conversationID := "01900000-0000-4000-8000-0000000000e2"
-	firstRunID, secondRunID := uuid.MustParse("00000000-0000-4000-8000-000000001611"), uuid.MustParse("00000000-0000-4000-8000-000000001612")
+	firstRunID, secondRunID := uuid.MustParse(
+		"00000000-0000-4000-8000-000000001611",
+	), uuid.MustParse(
+		"00000000-0000-4000-8000-000000001612",
+	)
 	first, err := manager.AcquireScopedScratch(
 		t.Context(),
 		taskMergeTestCompanyID,
@@ -313,7 +326,10 @@ func TestIsolatedScratchUsesOneWorkspacePerRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	conversationID := "01900000-0000-7000-8000-0000000000a5"
-	first, err := manager.AcquireIsolatedScratch(conversationID, uuid.MustParse("00000000-0000-4000-8000-000000001201"))
+	first, err := manager.AcquireIsolatedScratch(
+		conversationID,
+		uuid.MustParse("00000000-0000-4000-8000-000000001201"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,11 +339,17 @@ func TestIsolatedScratchUsesOneWorkspacePerRun(t *testing.T) {
 	if err := manager.MarkCompleted(first.Root); err != nil {
 		t.Fatal(err)
 	}
-	if reused, err := manager.AcquireIsolatedScratch(conversationID, uuid.MustParse("00000000-0000-4000-8000-000000001201")); err == nil {
+	if reused, err := manager.AcquireIsolatedScratch(
+		conversationID,
+		uuid.MustParse("00000000-0000-4000-8000-000000001201"),
+	); err == nil {
 		_ = manager.MarkOrphaned(reused.Root)
 		t.Fatalf("same scheduled Run reacquired its prior workspace: %+v", reused)
 	}
-	second, err := manager.AcquireIsolatedScratch(conversationID, uuid.MustParse("00000000-0000-4000-8000-000000001202"))
+	second, err := manager.AcquireIsolatedScratch(
+		conversationID,
+		uuid.MustParse("00000000-0000-4000-8000-000000001202"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -424,7 +446,10 @@ func TestAcquireRejectsConversationAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := manager.AcquireScratch(conversationID, uuid.MustParse("00000000-0000-4000-8000-000000001118")); err == nil {
+	if _, err := manager.AcquireScratch(
+		conversationID,
+		uuid.MustParse("00000000-0000-4000-8000-000000001118"),
+	); err == nil {
 		t.Fatal("concurrent acquire of an in-use conversation succeeded")
 	}
 	if err := manager.MarkOrphaned(acquired.Root); err != nil {
@@ -1034,7 +1059,7 @@ func TestWorktreeReconcilePreservesInterruptedGitIdentityForSafeCleanup(t *testi
 	entry := metadata{
 		Version: legacyMetadataVersion, Kind: metadataKindManaged,
 		ConversationID: conversationID, LastRunID: "01900000-0000-7000-8000-000000000065",
-		CacheName: filepath.Base(cachePath), Branch: "boardly/interrupted",
+		CacheName: filepath.Base(cachePath), Branch: "zenith-team/interrupted",
 		State: workspacePreparing, CreatedAt: now,
 	}
 	if err := manager.writeMetadata(path, entry); err != nil {
@@ -1055,7 +1080,7 @@ func TestWorktreeReconcilePreservesInterruptedGitIdentityForSafeCleanup(t *testi
 	for _, want := range []string{
 		"worktree remove --force " + workDir,
 		"worktree prune --expire now",
-		"update-ref -d refs/heads/boardly/interrupted",
+		"update-ref -d refs/heads/zenith-team/interrupted",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("Git cleanup missing %q from:\n%s", want, joined)
@@ -1085,7 +1110,7 @@ func TestWorktreeReconcileCleansMetadataOnlyInterruptedGitIdentity(t *testing.T)
 	if err := manager.writeMetadata(path, metadata{
 		Version: legacyMetadataVersion, Kind: metadataKindManaged,
 		ConversationID: conversationID, LastRunID: "01900000-0000-7000-8000-000000000067",
-		CacheName: filepath.Base(cachePath), Branch: "boardly/interrupted-before-add",
+		CacheName: filepath.Base(cachePath), Branch: "zenith-team/interrupted-before-add",
 		State: workspacePreparing, CreatedAt: now,
 	}); err != nil {
 		t.Fatal(err)
@@ -1107,7 +1132,7 @@ func TestWorktreeReconcileCleansMetadataOnlyInterruptedGitIdentity(t *testing.T)
 	}
 	for _, want := range []string{
 		"worktree prune --expire now",
-		"update-ref -d refs/heads/boardly/interrupted-before-add",
+		"update-ref -d refs/heads/zenith-team/interrupted-before-add",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("Git cleanup missing %q from:\n%s", want, joined)
@@ -1340,7 +1365,11 @@ func TestScopedScratchCreatesMemoryDirectories(t *testing.T) {
 	companyID := "01900000-0000-7000-8000-0000000000c2"
 	conversationID := "01900000-0000-7000-8000-0000000000c3"
 	acquired, err := manager.AcquireScopedScratch(
-		context.Background(), companyID, "engineering", conversationID, uuid.MustParse("00000000-0000-4000-8000-000000001201"),
+		context.Background(),
+		companyID,
+		"engineering",
+		conversationID,
+		uuid.MustParse("00000000-0000-4000-8000-000000001201"),
 		0,
 	)
 	if err != nil {
@@ -1361,7 +1390,14 @@ func TestScopedScratchCreatesMemoryDirectories(t *testing.T) {
 
 func TestProjectWorkspaceIsolation(t *testing.T) {
 	root := t.TempDir()
-	manager, err := NewManager(root, t.TempDir(), testMetadataKey, repocache.OSRunner{}, Retention{Completed: 24 * time.Hour, Orphaned: 72 * time.Hour}, time.Now)
+	manager, err := NewManager(
+		root,
+		t.TempDir(),
+		testMetadataKey,
+		repocache.OSRunner{},
+		Retention{Completed: 24 * time.Hour, Orphaned: 72 * time.Hour},
+		time.Now,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1370,11 +1406,21 @@ func TestProjectWorkspaceIsolation(t *testing.T) {
 	for index, id := range projects {
 		scope := "projects/" + id
 		conversationID, runID := uuid.NewString(), uuid.New()
-		acquired, err := manager.AcquireScopedScratch(context.Background(), companyID, scope, conversationID, runID, 0)
+		acquired, err := manager.AcquireScopedScratch(
+			context.Background(),
+			companyID,
+			scope,
+			conversationID,
+			runID,
+			0,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.HasPrefix(acquired.WorkDir, filepath.Join(root, companyID, "projects", id)+string(filepath.Separator)) {
+		if !strings.HasPrefix(
+			acquired.WorkDir,
+			filepath.Join(root, companyID, "projects", id)+string(filepath.Separator),
+		) {
 			t.Fatalf("wrong project workdir: %+v", acquired)
 		}
 		main, err := manager.ResolveMain(context.Background(), companyID, scope)
@@ -1385,13 +1431,26 @@ func TestProjectWorkspaceIsolation(t *testing.T) {
 			t.Fatal(err)
 		}
 		if index == 0 {
-			if err := os.WriteFile(filepath.Join(acquired.WorkDir, "website.txt"), []byte("website"), 0600); err != nil {
+			if err := os.WriteFile(
+				filepath.Join(acquired.WorkDir, "website.txt"),
+				[]byte("website"),
+				0o600,
+			); err != nil {
 				t.Fatal(err)
 			}
 			if err := manager.MarkCompleted(acquired.Root); err != nil {
 				t.Fatal(err)
 			}
-			result, err := manager.MergeTask(context.Background(), TaskMergeInput{CompanyID: companyID, Scope: scope, ConversationID: conversationID, RunID: runID, LeaseFence: func(context.Context) error { return nil }})
+			result, err := manager.MergeTask(
+				context.Background(),
+				TaskMergeInput{
+					CompanyID:      companyID,
+					Scope:          scope,
+					ConversationID: conversationID,
+					RunID:          runID,
+					LeaseFence:     func(context.Context) error { return nil },
+				},
+			)
 			if err != nil || result.ResultCode != "" {
 				t.Fatalf("Project merge=%+v,%v", result, err)
 			}
@@ -1509,8 +1568,8 @@ func TestScopedScratchPreparesAFreshRootForANewWorkspaceGeneration(t *testing.T)
 }
 
 // GC never collects a superseded root: its files are the only copy of work
-// nobody merged, and nothing has recorded what should happen to them
-// (workspaces TECH §11.4). Neither the completed nor the orphan retention
+// nobody merged, and nothing has recorded what should happen to them.
+// Neither the completed nor the orphan retention
 // clock applies, and reconciliation does not orphan it.
 func TestWorktreeGCKeepsSupersededGenerationPastRetention(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
@@ -1823,8 +1882,8 @@ func TestScopedScratchRejectsARootRenamedToAnotherGeneration(t *testing.T) {
 }
 
 // A Task worktree's own folder in its Project main's repository (its HEAD,
-// index and their logs) is the one place there its Run may write (Access
-// TECH B3f). The manager names it on every acquire, as Git itself finds it.
+// index and their logs) is the one place there its Run may write. The
+// manager names it on every acquire, as Git itself finds it.
 // The worktree's .git file is the Run's to change, so the folder is checked
 // both ways: a .git file pointed at another worktree's folder, at the main's
 // own repository, or made a link names nothing, and so does a folder whose

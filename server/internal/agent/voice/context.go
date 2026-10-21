@@ -20,7 +20,7 @@ type ContextRequest struct {
 	// AuthorizerUserID is the person who switched Company context on, the
 	// voice assistant's Authorizer. The Huddle service sets it from the
 	// assistant's state, never the model. The reads use that person's access
-	// by the delegate rule (D31); everyone in the call hears the answer. The
+	// by the delegate rule; everyone in the call hears the answer. The
 	// zero value reads nothing.
 	AuthorizerUserID uuid.UUID
 }

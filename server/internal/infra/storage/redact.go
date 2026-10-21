@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 func (S3) Format(state fmt.State, _ rune) { redact.TypeFormat(state, "storage.S3") }

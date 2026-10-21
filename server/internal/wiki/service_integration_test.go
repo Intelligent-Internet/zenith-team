@@ -8,17 +8,18 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 // wikiHarness is one migrated database with a Wiki service, the bus it
@@ -50,7 +51,11 @@ func startWiki(t *testing.T) wikiHarness {
 		t.Fatal(err)
 	}
 	received := []events.Event{}
+	// Concurrent publishes deliver from several goroutines.
+	var receivedMu sync.Mutex
 	if err := bus.Subscribe(wiki.TopicWiki, func(_ context.Context, event events.Event) error {
+		receivedMu.Lock()
+		defer receivedMu.Unlock()
 		received = append(received, event)
 		return nil
 	}); err != nil {
@@ -120,7 +125,7 @@ func TestDeleteCollectionPreservesPagesHistoryAndLinks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Neighbours the delete must leave alone: a sibling collection with a page,
+	// Neighbors the delete must leave alone: a sibling collection with a page,
 	// an Unfiled page, and another Company's collection with a page.
 	keeper, err := h.service.CreateCollection(ctx, h.owner, "Keeper")
 	if err != nil {
@@ -200,7 +205,7 @@ func TestDeleteCollectionPreservesPagesHistoryAndLinks(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !equalCollectionID(after.CollectionID, want.collection) || after.Revision != want.page.Revision {
-			t.Fatalf("neighbour page %q changed: before=%+v after=%+v", want.page.Title, want.page, after)
+			t.Fatalf("neighbor page %q changed: before=%+v after=%+v", want.page.Title, want.page, after)
 		}
 	}
 	foreignCollections, err := h.service.ListCollections(ctx, h.foreign)
@@ -219,7 +224,10 @@ func TestDeleteCollectionPreservesPagesHistoryAndLinks(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if after.CollectionID != nil || after.Revision != before.Revision+1 || *after.CurrentRevisionID != *before.CurrentRevisionID || after.Body != before.Body || after.Status != before.Status {
+		if after.CollectionID != nil || after.Revision != before.Revision+1 ||
+			*after.CurrentRevisionID != *before.CurrentRevisionID ||
+			after.Body != before.Body ||
+			after.Status != before.Status {
 			t.Fatalf("page changed unexpectedly: before=%+v after=%+v", before, after)
 		}
 		history, err := h.service.ListRevisions(ctx, h.owner, before.ID, 0, 50)
@@ -239,7 +247,9 @@ func TestDeleteCollectionPreservesPagesHistoryAndLinks(t *testing.T) {
 		t.Fatalf("stale page save = %v", err)
 	}
 	var linkCount int
-	if err := h.pool.QueryRow(ctx, "SELECT count(*) FROM wiki_links WHERE company_id=$1 AND from_page_id=$2 AND to_page_id=$3", h.owner.CompanyID, page.ID, target.ID).Scan(&linkCount); err != nil || linkCount != 1 {
+	if err := h.pool.QueryRow(ctx, "SELECT count(*) FROM wiki_links WHERE company_id=$1 AND from_page_id=$2 AND to_page_id=$3", h.owner.CompanyID, page.ID, target.ID).
+		Scan(&linkCount); err != nil ||
+		linkCount != 1 {
 		t.Fatalf("links = %d, %v", linkCount, err)
 	}
 	if _, err := h.service.CreateCollection(ctx, h.owner, collection.Name); err != nil {
@@ -327,7 +337,9 @@ func TestPagesKeepCompanyScopeHistoryAndOptimisticWrites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if page.Revision != 1 || page.ContentRevision != 1 || page.Body != "A shared starting point." || page.CollectionID == nil || *page.CollectionID != collection.ID {
+	if page.Revision != 1 || page.ContentRevision != 1 || page.Body != "A shared starting point." ||
+		page.CollectionID == nil ||
+		*page.CollectionID != collection.ID {
 		t.Fatalf("created = %+v", page)
 	}
 	if names := h.eventNames(); !slices.Contains(names, wiki.EventPageCreated) {
@@ -361,7 +373,8 @@ func TestPagesKeepCompanyScopeHistoryAndOptimisticWrites(t *testing.T) {
 		t.Fatalf("stale save = %v", err)
 	}
 	versions, err := service.ListRevisions(ctx, owner, page.ID, 0, 50)
-	if err != nil || len(versions.Items) != 2 || versions.Items[0].Body != "Updated handbook." || versions.Items[1].Body != "A shared starting point." {
+	if err != nil || len(versions.Items) != 2 || versions.Items[0].Body != "Updated handbook." ||
+		versions.Items[1].Body != "A shared starting point." {
 		t.Fatalf("versions = %+v, %v", versions, err)
 	}
 	linked, err := service.CreatePage(ctx, owner, wiki.CreatePageInput{Title: "How we work", Body: "Team process."})
@@ -413,7 +426,7 @@ func TestPagesKeepCompanyScopeHistoryAndOptimisticWrites(t *testing.T) {
 	}
 }
 
-// WK-FR5: credentials never become Company knowledge, while contact details
+// Credentials never become Company knowledge, while contact details
 // and headings that merely name a secret stay verbatim in the revision.
 func TestPagesKeepProseAndRedactCredentials(t *testing.T) {
 	h := startWiki(t)
@@ -426,7 +439,8 @@ func TestPagesKeepProseAndRedactCredentials(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "Contact hr@acme.com.\n\nPassword: rotate every 90 days.\n\nOld key [redacted:aws-key]."
-	if page.Title != "Access for hr@acme.com" || page.Summary != "Password: rotate every 90 days." || page.Body != want {
+	if page.Title != "Access for hr@acme.com" || page.Summary != "Password: rotate every 90 days." ||
+		page.Body != want {
 		t.Fatalf("stored title=%q summary=%q body=%q", page.Title, page.Summary, page.Body)
 	}
 	collection, err := h.service.CreateCollection(t.Context(), h.owner, "Contact ops@acme.com")
@@ -746,8 +760,10 @@ func TestArchiveAndRestoreHideAndReturnAPage(t *testing.T) {
 		t.Fatalf("restore an active page = %v", err)
 	}
 	archived, err := h.service.ArchivePage(ctx, h.owner, target.ID, target.Revision)
-	if err != nil || archived.Status != "archived" || archived.ArchivedAt == nil || archived.Revision != target.Revision+1 ||
-		archived.ContentRevision != target.ContentRevision || archived.Body != "Retired." {
+	if err != nil || archived.Status != "archived" || archived.ArchivedAt == nil ||
+		archived.Revision != target.Revision+1 ||
+		archived.ContentRevision != target.ContentRevision ||
+		archived.Body != "Retired." {
 		t.Fatalf("archived = %+v, %v", archived, err)
 	}
 	if names := h.eventNames(); !slices.Equal(names, []string{wiki.EventPageArchived}) {
@@ -787,7 +803,8 @@ func TestArchiveAndRestoreHideAndReturnAPage(t *testing.T) {
 	}
 
 	restored, err := h.service.RestorePage(ctx, h.owner, target.ID, archived.Revision)
-	if err != nil || restored.Status != "active" || restored.ArchivedAt != nil || restored.Revision != archived.Revision+1 {
+	if err != nil || restored.Status != "active" || restored.ArchivedAt != nil ||
+		restored.Revision != archived.Revision+1 {
 		t.Fatalf("restored = %+v, %v", restored, err)
 	}
 	if names := h.eventNames(); !slices.Equal(names, []string{wiki.EventPageRestored}) {
@@ -888,7 +905,8 @@ func TestRestoreRevisionPublishesANewRevision(t *testing.T) {
 		t.Fatalf("restore revision published %v", names)
 	}
 	history, err = h.service.ListRevisions(ctx, h.owner, page.ID, 0, 50)
-	if err != nil || history.Total != 3 || history.Items[0].Number != 3 || history.Items[1].Body != "Fifteen days." {
+	if err != nil || history.Total != 3 || history.Items[0].Number != 3 ||
+		history.Items[1].Body != "Fifteen days." {
 		t.Fatalf("history after restore = %+v, %v", history, err)
 	}
 }
@@ -926,7 +944,10 @@ func TestCollectionsAndLinksStayInsideTheCompany(t *testing.T) {
 		t.Fatalf("foreign backlinks = %+v, %v", backlinks, err)
 	}
 	if _, err := h.service.UpdatePage(ctx, h.owner, page.ID, updatePageInput{
-		ExpectedRevision: page.Revision, Title: page.Title, Body: page.Body, CollectionID: &foreignCollection.ID,
+		ExpectedRevision: page.Revision,
+		Title:            page.Title,
+		Body:             page.Body,
+		CollectionID:     &foreignCollection.ID,
 	}); !errors.Is(err, wiki.ErrCollectionNotFound) {
 		t.Fatalf("move into foreign collection = %v", err)
 	}
@@ -995,7 +1016,11 @@ func TestSearchRanksTitleThenSummaryThenBodyAndBrowsingStaysNewestFirst(t *testi
 	ctx := t.Context()
 	create := func(title, summary, body string) wiki.PageResponse {
 		t.Helper()
-		page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: title, Summary: summary, Body: body})
+		page, err := h.service.CreatePage(
+			ctx,
+			h.owner,
+			wiki.CreatePageInput{Title: title, Summary: summary, Body: body},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1027,10 +1052,30 @@ func TestSearchRanksTitleThenSummaryThenBodyAndBrowsingStaysNewestFirst(t *testi
 		return titles
 	}
 	// The two title hits tie on rank and fall back to the newer one (the draft).
-	if got, want := titles("onboarding"), []string{draft.Title, "Onboarding", "Handbook", "Policies"}; !slices.Equal(got, want) {
+	if got, want := titles(
+		"onboarding",
+	), []string{
+		draft.Title,
+		"Onboarding",
+		"Handbook",
+		"Policies",
+	}; !slices.Equal(
+		got,
+		want,
+	) {
 		t.Fatalf("search = %v, want %v", got, want)
 	}
-	if got, want := titles(""), []string{"Policies", draft.Title, "Handbook", "Onboarding"}; !slices.Equal(got, want) {
+	if got, want := titles(
+		"",
+	), []string{
+		"Policies",
+		draft.Title,
+		"Handbook",
+		"Onboarding",
+	}; !slices.Equal(
+		got,
+		want,
+	) {
 		t.Fatalf("browse = %v, want newest first %v", got, want)
 	}
 }

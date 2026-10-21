@@ -379,9 +379,9 @@ function bufferFromPayloadBytes(bytes) {
 }
 
 function sanitizeResourceFilename(value) {
-  const basename = path.basename(normalizeText(value, 180) || "boardly-resource");
+  const basename = path.basename(normalizeText(value, 180) || "zenith-team-resource");
   const sanitized = basename.replace(/[^\w .()[\]-]+/g, "_").trim();
-  return sanitized || "boardly-resource";
+  return sanitized || "zenith-team-resource";
 }
 
 function normalizeIdentifier(value) {

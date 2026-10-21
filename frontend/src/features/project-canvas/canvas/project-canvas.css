@@ -851,7 +851,7 @@
   box-shadow: 0 24px 90px #00000035;
   animation: pc-fade-in 180ms ease-out;
 }
-body:has(.boardly-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
+body:has(.zenith-team-workspace-theme[data-desktop-mac="true"]) .pc-dialog {
   --pc-window-top: var(--workspace-header-height, 48px);
 }
 .pc-dialog-heading {

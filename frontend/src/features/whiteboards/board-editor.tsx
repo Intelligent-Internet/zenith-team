@@ -24,7 +24,7 @@ import "@xyflow/react/dist/style.css";
 import { Trash2, LockKeyhole } from "@/shared/ui/icons";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { toast } from "@/shared/ui/sonner";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { normalizeDrawing } from "@/shared/canvas/freehand";
 import { downloadDocument } from "@/features/project-canvas/documents/document-export";
@@ -89,7 +89,7 @@ import { BoardStyleToolbar } from "./board-style-toolbar";
 import { hasTextBackground, textBackground } from "./board-text";
 const nodeTypes = { whiteboard: BoardNode };
 const errorMessage = (error: unknown) =>
-  toast.error(getBoardlyQueryErrorMessage(error));
+  toast.error(getZenithTeamQueryErrorMessage(error));
 // A clean note session that is no longer shown is released after this delay,
 // so panning back soon reuses it.
 const noteReleaseDelay = 30_000;
@@ -1387,7 +1387,7 @@ function EditorSurface({
         ) : (
           <div className="wb-message" role="alert">
             <h2>This Whiteboard is unavailable</h2>
-            <p>{getBoardlyQueryErrorMessage(query.error)}</p>
+            <p>{getZenithTeamQueryErrorMessage(query.error)}</p>
             <p>Unsaved local drafts are retained for this account.</p>
             <button onClick={() => void query.refetch()}>Retry</button>
           </div>

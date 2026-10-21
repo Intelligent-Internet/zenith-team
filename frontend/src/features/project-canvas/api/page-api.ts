@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { CanvasArtifact, CanvasScope } from "./canvas-api";
 import { watchCanvasChanges, watchDocumentChanges } from "./canvas-sync";
@@ -30,11 +33,11 @@ const suggestionDetailTag = (scope: PageScope) => ({
   id: `${scope.companyId}:${scope.projectId}:page:${scope.pageId}:suggestions`,
 });
 
-export const pageApi = boardlyApi.injectEndpoints({
+export const pageApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     projectOverview: builder.query<Overview, CanvasScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Overview>(`${projectPath(scope)}/overview`),
           "The Project overview could not be loaded.",
         ),
@@ -61,7 +64,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       CanvasScope & { input: Schema["OverviewInput"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Overview>(`${projectPath(scope)}/overview`, input),
           "The overview could not be updated.",
@@ -76,7 +79,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       CanvasScope & { taskId?: string }
     >({
       queryFn: ({ taskId, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<CanvasArtifact[]>(`${projectPath(scope)}/pages`, {
               params: { taskId },
@@ -106,7 +109,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       CanvasScope & { input: Schema["PageCreateInput"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["PageCreateResult"]>(
               `${projectPath(scope)}/pages`,
@@ -121,7 +124,7 @@ export const pageApi = boardlyApi.injectEndpoints({
     }),
     projectPage: builder.query<Page, PageScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Page>(pagePath(scope)),
           "This Page is unavailable or your access has changed.",
         ),
@@ -155,7 +158,7 @@ export const pageApi = boardlyApi.injectEndpoints({
     }),
     pageThreads: builder.query<Schema["CanvasThreadList"], PageScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["CanvasThreadList"]>(
               `${pagePath(scope)}/threads`,
@@ -189,7 +192,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       PageScope & { input: Schema["PageMetadataInput"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.patch<Page>(pagePath(scope), input),
           "The Page settings could not be saved.",
         ),
@@ -200,7 +203,7 @@ export const pageApi = boardlyApi.injectEndpoints({
     }),
     previewPresentation: builder.mutation<Presentation, PageScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Presentation>(
               `${pagePath(scope)}/presentation-preview`,
@@ -213,7 +216,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       PageScope & { input: Schema["PresentationInput"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Presentation>(
               `${pagePath(scope)}/presentations`,
@@ -228,7 +231,7 @@ export const pageApi = boardlyApi.injectEndpoints({
     }),
     pagePresentations: builder.query<PresentationEntry[], PageScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<PresentationEntry[]>(
               `${pagePath(scope)}/presentations`,
@@ -240,7 +243,7 @@ export const pageApi = boardlyApi.injectEndpoints({
     }),
     projectPresentations: builder.query<PresentationEntry[], CanvasScope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<PresentationEntry[]>(
               `${projectPath(scope)}/presentations`,
@@ -255,7 +258,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       CanvasScope & { id: string }
     >({
       queryFn: ({ id, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Presentation>(presentationPath(scope, id)),
           "This presentation is unavailable or your access has changed.",
         ),
@@ -267,7 +270,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       PageScope & { cursor?: string }
     >({
       queryFn: ({ cursor, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["PageChangeFeed"]>(
               `${pagePath(scope)}/changes`,
@@ -310,7 +313,7 @@ export const pageApi = boardlyApi.injectEndpoints({
           ).unwrap();
           // Every comparison depends on the other proposals and the current document.
           dispatch(
-            boardlyApi.util.invalidateTags([suggestionDetailTag(scope)]),
+            zenithTeamApi.util.invalidateTags([suggestionDetailTag(scope)]),
           );
         };
         const watcher = watchCanvasChanges(scope, {
@@ -332,7 +335,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       PageScope & { id: string }
     >({
       queryFn: ({ id, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["PageChangeDetail"]>(
               `${pagePath(scope)}/changes/${encodeURIComponent(id)}`,
@@ -350,7 +353,7 @@ export const pageApi = boardlyApi.injectEndpoints({
       PageScope & { id: string; input: Schema["PageChangeReviewInput"] }
     >({
       queryFn: ({ id, input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["PageEditResult"]>(
               `${pagePath(scope)}/changes/${encodeURIComponent(id)}`,

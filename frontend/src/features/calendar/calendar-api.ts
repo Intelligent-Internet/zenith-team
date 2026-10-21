@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 export type CalendarOccurrence = components["schemas"]["CalendarOccurrence"] & {
@@ -16,11 +16,11 @@ const path = (companyId?: string | null) =>
   companyId
     ? `/companies/${encodeURIComponent(companyId)}/calendar`
     : "/me/calendar";
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (build) => ({
     calendarCatalog: build.query<CalendarCatalog, string | undefined>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<CalendarCatalog>(`${path(companyId)}/catalog`),
           "Could not load calendars and members.",
         ),
@@ -31,7 +31,7 @@ const api = boardlyApi.injectEndpoints({
       { from: string; to: string; companyId?: string }
     >({
       queryFn: ({ companyId, ...params }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Occurrences>(`${path(companyId)}/events`, { params }),
           "Could not load your calendar.",
@@ -43,7 +43,7 @@ const api = boardlyApi.injectEndpoints({
       { id?: string; input: CalendarInput; companyId?: string | null }
     >({
       queryFn: ({ id, input, companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             id
               ? apiClient.put<CalendarEvent>(
@@ -63,7 +63,7 @@ const api = boardlyApi.injectEndpoints({
       { id: string; revision: number; companyId?: string | null }
     >({
       queryFn: ({ id, revision, companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(`${path(companyId)}/events/${id}`, {
               params: { expected_revision: revision },
@@ -77,7 +77,7 @@ const api = boardlyApi.injectEndpoints({
       { id: string; input: OccurrenceInput; companyId?: string | null }
     >({
       queryFn: ({ id, input, companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<void>(
               `${path(companyId)}/events/${id}/occurrences`,
@@ -92,7 +92,7 @@ const api = boardlyApi.injectEndpoints({
       { id: string; input: ResponseInput; companyId?: string | null }
     >({
       queryFn: ({ id, input, companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<void>(
               `${path(companyId)}/events/${id}/response`,

@@ -126,7 +126,7 @@ FOR SHARE OF connector_catalog_items, connector_policies;
 -- name: InsertSchedule :one
 WITH request_lock AS MATERIALIZED (
     SELECT pg_advisory_xact_lock(hashtextextended(
-        'boardly/schedule-create/v1/' ||
+        'zenith-team/schedule-create/v1/' ||
         sqlc.arg(company_id)::uuid::text || '/' ||
         sqlc.arg(creator_user_id)::uuid::text || '/' ||
         sqlc.arg(request_key)::uuid::text,

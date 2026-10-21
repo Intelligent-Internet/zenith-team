@@ -12,11 +12,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type UpdateProfileInput struct {
@@ -98,7 +98,9 @@ func (s *DefaultCompanyService) UpdateProfile(
 			avatar = *canonical.avatarAttachmentID
 			if avatar.Valid {
 				upload, err := tx.LockCompanyAvatarUpload(ctx, generated.LockCompanyAvatarUploadParams{
-					CompanyID: principal.CompanyID, ActorUserID: principal.UserID, AttachmentID: avatar.UUID,
+					CompanyID:    principal.CompanyID,
+					ActorUserID:  principal.UserID,
+					AttachmentID: avatar.UUID,
 				})
 				if errors.Is(err, pgx.ErrNoRows) {
 					return ErrInvalidInput
@@ -107,7 +109,10 @@ func (s *DefaultCompanyService) UpdateProfile(
 					return fmt.Errorf("lock company avatar upload: %w", err)
 				}
 				if !validProfileImage(upload.ContentType, upload.SizeBytes) {
-					return fmt.Errorf("%w: avatar must be a PNG, JPEG or WebP image up to 5 MB", ErrInvalidInput)
+					return fmt.Errorf(
+						"%w: avatar must be a PNG, JPEG or WebP image up to 5 MB",
+						ErrInvalidInput,
+					)
 				}
 			}
 		}

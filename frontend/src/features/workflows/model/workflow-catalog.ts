@@ -301,8 +301,8 @@ export function isActionableWorkflowAppState(state: WorkflowAppState) {
 
 /**
  * What the viewer may do about an app on their own computer: connect,
- * install or manage it (`plugins.manage`, which every role holds since the
- * 2026-09-29 owner decision), and review its changed tools, which the
+ * install or manage it (`plugins.manage`, which every role holds), and
+ * review its changed tools, which the
  * Company accepts for everyone (`connectors.manage`).
  */
 export type WorkflowAppAccess = { connect: boolean; review: boolean };

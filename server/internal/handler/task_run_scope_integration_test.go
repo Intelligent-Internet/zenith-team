@@ -20,14 +20,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The reads a Run sends through its channel carry its proof beside its
@@ -96,7 +96,7 @@ func TestRunProofReadsFollowTheAuthorizersProjectAccess(t *testing.T) {
 }
 
 // The server alone keeps the Company Plan export to the root Agent's direct
-// chat (IA-FR12, IA-AC11). The root Agent's Run there, with its Company Plan
+// chat. The root Agent's Run there, with its Company Plan
 // tools on, lists every Task its person reads, a colleague's Task included,
 // and reads that Task and its dependencies; a Task in a Project the person
 // cannot read stays out. With planning switched off, in a Task Run, tagged in
@@ -199,7 +199,7 @@ func TestPlannerProofReadsEveryTaskItsPersonReads(t *testing.T) {
 	ownOnly("the root Agent with planning switched off", planner, fixture.TaskA)
 }
 
-// IA-FR7, IA-AC6 (D31): the daemon's own session reads Tasks only as a live
+// The daemon's own session reads Tasks only as a live
 // Run of its person, through the real services and database. With no proof
 // it is 403 run_proof_required, never the person; with its person's live
 // proof it reads exactly what that Run reads beside the person's session;
@@ -311,7 +311,9 @@ func newRunScopeHarness(t *testing.T) *runScopeHarness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runs := execution.NewRunService(execution.RunServiceOptions{Queries: store.Queries(), Transactor: store, Bus: bus})
+	runs := execution.NewRunService(
+		execution.RunServiceOptions{Queries: store.Queries(), Transactor: store, Bus: bus},
+	)
 	server := httptest.NewServer(New(Handler{
 		AuthService:      authService,
 		CompanyService:   companies,
@@ -342,7 +344,7 @@ func (h *runScopeHarness) session(userID uuid.UUID) string {
 	return token
 }
 
-// daemonSession starts a person's daemon session (D31) and returns its
+// daemonSession starts a person's daemon session and returns its
 // access token.
 func (h *runScopeHarness) daemonSession(userID uuid.UUID) string {
 	h.t.Helper()
@@ -411,7 +413,9 @@ func (h *runScopeHarness) liveRun(
 	}
 	digest := sha256.Sum256([]byte(proof))
 	if _, err := h.store.Queries().CreateRunToken(h.ctx, generated.CreateRunTokenParams{
-		RunID: runID, TokenHash: digest[:], ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+		RunID:     runID,
+		TokenHash: digest[:],
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 	}); err != nil {
 		h.t.Fatal(err)
 	}

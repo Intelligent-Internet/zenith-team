@@ -12,11 +12,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestConversationTranscriptRouteReturnsRunIdentityAcrossOneStream(t *testing.T) {
@@ -43,15 +43,23 @@ func TestConversationTranscriptRouteReturnsRunIdentityAcrossOneStream(t *testing
 				t.Fatalf("Transcript input = %+v / %s / %+v", gotPrincipal, gotConversationID, options)
 			}
 			return conversation.TranscriptPage{
-				Items: []conversation.TranscriptEntry{{
-					ID: entryID, RunID: uuid.MustParse("00000000-0000-4000-8000-000000000004"), Seq: 64, ItemKey: "agent-64",
-					Role: protocol.RunItemRoleAgent,
-					Parts: []protocol.RunTranscriptPart{
-						protocol.RunTextPart{Type: protocol.RunTextPartTypeText, Text: "done"},
+				Items: []conversation.TranscriptEntry{
+					{
+						ID:      entryID,
+						RunID:   uuid.MustParse("00000000-0000-4000-8000-000000000004"),
+						Seq:     64,
+						ItemKey: "agent-64",
+						Role:    protocol.RunItemRoleAgent,
+						Parts: []protocol.RunTranscriptPart{
+							protocol.RunTextPart{
+								Type: protocol.RunTextPartTypeText,
+								Text: "done",
+							},
+						},
+						ItemDigest: "1111111111111111111111111111111111111111111111111111111111111111",
+						CreatedAt:  time.Date(2026, time.August, 26, 1, 2, 3, 0, time.UTC),
 					},
-					ItemDigest: "1111111111111111111111111111111111111111111111111111111111111111",
-					CreatedAt:  time.Date(2026, time.August, 26, 1, 2, 3, 0, time.UTC),
-				}},
+				},
 				ThroughSeq: 64,
 			}, nil
 		},
@@ -78,8 +86,10 @@ func TestConversationTranscriptRouteReturnsRunIdentityAcrossOneStream(t *testing
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode Conversation transcript: %v", err)
 	}
-	if len(body.Items) != 1 || body.Items[0].RunID != uuid.MustParse("00000000-0000-4000-8000-000000000004") || body.Items[0].Seq != 64 ||
-		body.ThroughSeq != 64 || body.HasMore {
+	if len(body.Items) != 1 || body.Items[0].RunID != uuid.MustParse("00000000-0000-4000-8000-000000000004") ||
+		body.Items[0].Seq != 64 ||
+		body.ThroughSeq != 64 ||
+		body.HasMore {
 		t.Fatalf("Conversation transcript response = %+v", body)
 	}
 }

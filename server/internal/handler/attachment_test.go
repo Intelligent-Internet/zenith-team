@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 var (
@@ -41,7 +41,7 @@ func TestAttachmentInitiateStreamsStrictMultipartAndReturnsPublicResponse(t *tes
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			content := []byte("Boardly attachment content")
+			content := []byte("Zenith Team attachment content")
 			service := &attachmentServiceStub{
 				initiate: func(_ context.Context, input attachment.InitiateInput, source io.Reader) (attachment.InitiateResult, error) {
 					if input.RequestKey != attachmentHTTPRequestKey ||
@@ -162,7 +162,7 @@ func TestAttachmentInitiateRejectsTrailingPartAfterTheObjectWasAccepted(t *testi
 func TestAttachmentInitiateRejectsMalformedTrailingPartAfterTheObjectWasAccepted(t *testing.T) {
 	t.Parallel()
 
-	const boundary = "boardly-boundary"
+	const boundary = "zenith-team-boundary"
 	raw := fmt.Sprintf(
 		"--%[1]s\r\nContent-Disposition: form-data; name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n%s\r\n"+
 			"--%[1]s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"ignored.bin\"\r\nContent-Type: application/octet-stream\r\n\r\nabc\r\n"+
@@ -429,7 +429,7 @@ func TestAttachmentDownloadUsesExactQueryAndStreamsCanonicalHeaders(t *testing.T
 			}
 			return attachment.DownloadResult{Attachment: func() attachment.Response {
 				response := readyAttachmentHTTPResponse()
-				response.Filename = "Boardly kế hoạch.pdf"
+				response.Filename = "Zenith Team kế hoạch.pdf"
 				response.ContentType = "application/pdf"
 				response.SizeBytes = int64(len("download body"))
 				return response
@@ -452,7 +452,7 @@ func TestAttachmentDownloadUsesExactQueryAndStreamsCanonicalHeaders(t *testing.T
 		"Cache-Control":          "private, no-store",
 		"Content-Type":           "application/pdf",
 		"Content-Length":         fmt.Sprint(len("download body")),
-		"Content-Disposition":    "attachment; filename=\"download\"; filename*=UTF-8''Boardly%20k%E1%BA%BF%20ho%E1%BA%A1ch.pdf",
+		"Content-Disposition":    "attachment; filename=\"download\"; filename*=UTF-8''Zenith%20Team%20k%E1%BA%BF%20ho%E1%BA%A1ch.pdf",
 		"X-Content-Type-Options": "nosniff",
 	} {
 		if got := response.Header().Get(name); got != want {

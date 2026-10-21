@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 )

@@ -1,15 +1,22 @@
 ---
 title: Quickstart
-description: The path from a fresh account to your first completed agent task, in five steps.
+description: The path from a running Zenith Team server to your first completed agent task.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Zenith Team runs your company through persistent [agents](/agents) that plan in the cloud and execute on your own computer. Getting from an empty account to the first finished piece of work has five stops: create a [Company](/companies), connect a computer, meet your CEO Agent, approve a [Company Plan](/company-plan), and watch the first [run](/runs).
+Zenith Team runs your company through persistent [agents](/agents) that plan on your Zenith Team server and execute on your own computer. Getting to the first finished piece of work has six stops: get a server, create a [Company](/companies), connect a computer, meet your CEO Agent, approve a [Company Plan](/company-plan), and watch the first [run](/runs).
+
+## 0. Get a server
+
+Zenith Team is self-hosted. You need a Zenith Team server before you can sign in:
+
+- **Run your own.** The [self-hosting quickstart](/self-hosting/quickstart) starts one on your machine with Docker in a few commands. It serves the app at `http://localhost:8080`.
+- **Use your team's.** If someone already runs one, ask them for its address.
 
 ## 1. Sign up and create your Company
 
-Open Zenith Team and sign in — with Google, or by creating an account with your email and password (a verification code confirms the address). Onboarding then asks a few questions about you and the company you are building and creates your [Company](/companies), the boundary every agent, plan, and conversation will live in.
+Open your server's address in a browser and create an account with your email and password. If the server has [email](/self-hosting/auth-setup#email-codes-and-password-reset) turned on, a code confirms the address first; if it has [Google sign-in](/self-hosting/auth-setup#google-sign-in), you can use that instead. Onboarding then asks a few questions about you and the company you are building and creates your [Company](/companies), the boundary every agent, plan, and conversation will live in.
 
 The last onboarding screen sets up your [CEO Agent](/agents#the-ceo-agent-and-the-reporting-tree) — and it needs a connected computer, which you do not have yet.
 
@@ -17,19 +24,19 @@ The last onboarding screen sets up your [CEO Agent](/agents#the-ceo-agent-and-th
 
 ## 2. Connect your computer
 
-Agents execute on your machine, not in Zenith Team's cloud — the [daemon](/daemon-and-runtimes) is the background process that makes that true, and it registers your machine's provider installations as runtimes. Two ways to get one running:
+Agents execute on your machine, not on the Zenith Team server — the [daemon](/daemon-and-runtimes) is the background process that makes that true, and it registers your machine's provider installations as runtimes. Two ways to get one running:
 
-- **Desktop app** — it bundles the daemon and starts it for you once you are signed in.
-- **CLI** — sign in, then start the daemon in the background:
+- **Desktop app** — it bundles the daemon and starts it for you once you are signed in. For now you [build it from source](/desktop-app) for your server.
+- **CLI** — sign in to your server, then start the daemon in the background:
 
 ```bash
-zen auth login
+zen auth login --server https://zenith.example.com
 zen daemon start
 ```
 
-`zen auth login` prompts for email and password; `zen auth login --google` opens a browser sign-in instead. `zen daemon status` reports whether the daemon is up, and its state lives under `~/.boardly`.
+[Self-hosting quickstart](/self-hosting/quickstart#5-connect-a-computer-that-runs-agents) shows where to get `zen`. `zen auth login` prompts for email and password; `zen auth login --google` opens a browser sign-in instead. `zen daemon status` reports whether the daemon is up, and its state lives under `~/.zenith-team`.
 
-Connecting a computer uploads nothing: your code, files, and workspace tree stay on the machine, and only conversations, statuses, and usage reach Zenith Team. The exact split is the [data and execution boundary](/how-zenith-team-works#the-data-and-execution-boundary).
+Connecting a computer uploads nothing: your code, files, and workspace tree stay on the machine, and only conversations, statuses, and usage reach your Zenith Team server. The exact split is the [data and execution boundary](/how-zenith-team-works#the-data-and-execution-boundary).
 
 <Callout type="info">
 The daemon launches your local provider CLIs, so those must already be signed in on the same machine — Codex (`codex`) and Claude Code (`claude`) each with the vendor's own login. Zenith Team never holds provider credentials. See [Providers](/providers).
@@ -79,7 +86,7 @@ That closes the loop. What remains is reviewing this first output and coming bac
 |---|---|
 | **Registered runtimes** stays empty | Is the daemon running on that machine? Open the desktop app and sign in, or run `zen daemon status`. See [Daemon and runtimes](/daemon-and-runtimes). |
 | A runtime is listed but offline | Bring that daemon back online — `zen daemon restart` — or select another runtime. |
-| A run stays `queued` | No online runtime has claimed it. Queued-while-offline is by design: the run waits for a runtime, it does not fail. See [Runs](/runs). |
+| A run stays `queued` | No online runtime has claimed it. The run waits for its runtime, but fails with `queued_expired` if nobody claims it within two hours. See [Troubleshooting](/troubleshooting#a-run-stays-queued-or-fails-with-queued_expired). |
 | Runs fail on an online runtime | Provider sign-in on that machine — the vendor CLI login for `codex` or `claude`, not anything in Zenith Team. See [Providers](/providers). |
 | You cannot find the plan to approve | The [Inbox](/notifications) lists every unresolved item addressed to you. See [Approvals and questions](/approvals-and-questions). |
 | A task finished but is not `done` | Completion means `in_review` — the review verdict is yours. See [Tasks](/tasks). |

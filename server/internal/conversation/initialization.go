@@ -4,25 +4,39 @@ import (
 	"context"
 	"errors"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // MaterializeInitializationRunInTx starts the platform-authored company research turn without
 // inventing a user message. Company initialization owns the receipt and tx.
-func MaterializeInitializationRunInTx(ctx context.Context, q *generated.Queries, pending *[]events.Event, in execution.RunTrigger) (generated.Run, error) {
-	row, err := q.LockConversationForActiveUserMutation(ctx, generated.LockConversationForActiveUserMutationParams{ActorUserID: in.AuthorizedByUserID, CompanyID: in.CompanyID, ConversationID: in.ConversationID})
+func MaterializeInitializationRunInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	pending *[]events.Event,
+	in execution.RunTrigger,
+) (generated.Run, error) {
+	row, err := q.LockConversationForActiveUserMutation(
+		ctx,
+		generated.LockConversationForActiveUserMutationParams{
+			ActorUserID:    in.AuthorizedByUserID,
+			CompanyID:      in.CompanyID,
+			ConversationID: in.ConversationID,
+		},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return generated.Run{}, ErrNotFound
 	}
 	if err != nil {
 		return generated.Run{}, err
 	}
-	if row.Kind != "direct" || !row.AgentID.Valid || row.AgentID.UUID != in.AgentID || row.CreatedByUserID.UUID != in.AuthorizedByUserID {
+	if row.Kind != "direct" || !row.AgentID.Valid || row.AgentID.UUID != in.AgentID ||
+		row.CreatedByUserID.UUID != in.AuthorizedByUserID {
 		return generated.Run{}, ErrConflict
 	}
 	if in.Source != execution.RunSourceCompanyResearch {
@@ -36,7 +50,15 @@ func MaterializeInitializationRunInTx(ctx context.Context, q *generated.Queries,
 	if err != nil {
 		return generated.Run{}, err
 	}
-	_, err = bumpConversationProjection(ctx, q, in.ConversationID, in.CompanyID, pending, events.SystemActor(), before)
+	_, err = bumpConversationProjection(
+		ctx,
+		q,
+		in.ConversationID,
+		in.CompanyID,
+		pending,
+		events.SystemActor(),
+		before,
+	)
 	return run, err
 }
 

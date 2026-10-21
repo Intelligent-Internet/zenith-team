@@ -19,9 +19,9 @@ import (
 	"syscall"
 	"time"
 
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 // databaseURLVariable matches the server's own configuration so an operator

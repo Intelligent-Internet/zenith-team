@@ -23,7 +23,7 @@ func TestCompanyUserRedisPipelinePreservesPartialResultsAndScope(t *testing.T) {
 	relay := NewShardedStreamRelay(remoteHub, client, client, ShardedStreamRelayConfig{Shards: 2})
 	firstUser := "a"
 	secondUser := ""
-	for n := 0; n < 100; n++ {
+	for n := range 100 {
 		candidate := fmt.Sprintf("user-%d", n)
 		if relay.shardFor(ScopeCompanyUser, candidate) != relay.shardFor(ScopeCompanyUser, firstUser) {
 			secondUser = candidate

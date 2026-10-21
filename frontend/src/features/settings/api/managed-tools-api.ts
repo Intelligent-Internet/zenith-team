@@ -3,9 +3,9 @@ import type {
   DesktopToolValue,
 } from "../../../../electron/shared/desktop-bridge.types";
 import { operateDesktopTool } from "@/shared/desktop/desktop-environment.service";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 
-export const managedToolsApi = boardlyApi.injectEndpoints({
+export const managedToolsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     operateManagedTool: builder.mutation<
       DesktopToolValue,

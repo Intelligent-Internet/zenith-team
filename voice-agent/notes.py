@@ -40,7 +40,7 @@ class NotesControl:
         )
         self.token = (
             os.environ.get("HUDDLE_AI_WORKLOAD_SECRET")
-            or os.environ["BOARDLY_HUDDLE_AI_WORKLOAD_SECRET"]
+            or os.environ["ZENITH_TEAM_HUDDLE_AI_WORKLOAD_SECRET"]
         )
         self.http = httpx.AsyncClient(timeout=4, follow_redirects=False)
         self.lock = asyncio.Lock()

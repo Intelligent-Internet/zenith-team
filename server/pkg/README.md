@@ -1,9 +1,8 @@
 # `server/pkg`
 
 The shared contract layer: what the cloud server and the machine-side
-binaries (`zen`, `boardly-mcp`) must agree on. The layout follows the
-reference architecture, which is also why the data layer lives here rather
-than in `internal/`.
+binaries (`zen`, `zenith-team-mcp`) must agree on, which is why the data
+layer lives here rather than in `internal/`.
 
 | Package | What it is |
 | --- | --- |
@@ -19,7 +18,7 @@ Two rules, both held by convention and review (there are no depguard rules):
   it that way — the daemon-side binaries depend on these packages staying
   free of server wiring.
 - **Provider adapters stay pure.** `pkg/agent` imports no HTTP stack, no
-  PostgreSQL, and no Boardly business domain; it speaks only the provider
+  PostgreSQL, and no Zenith Team business domain; it speaks only the provider
   CLIs and its own execution-event contract.
 
 Layout and the full map live in [`CODEMAP.md`](../CODEMAP.md).

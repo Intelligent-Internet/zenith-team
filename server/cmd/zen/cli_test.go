@@ -13,8 +13,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // executeCLI runs a freshly built command the way a user would, capturing
@@ -47,7 +47,7 @@ func bearerSession(accessToken, refreshToken string, accessTTL time.Duration) ma
 }
 
 func TestRunLoginPersistsRenewableSession(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	var verified string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -69,7 +69,18 @@ func TestRunLoginPersistsRenewableSession(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	out, err := executeCLI(t, newRootCmd, "auth", "login", "--server", srv.URL, "--email", "user@example.com", "--password", "hunter22")
+	out, err := executeCLI(
+		t,
+		newRootCmd,
+		"auth",
+		"login",
+		"--server",
+		srv.URL,
+		"--email",
+		"user@example.com",
+		"--password",
+		"hunter22",
+	)
 	if err != nil {
 		t.Fatalf("login: %v", err)
 	}
@@ -107,7 +118,7 @@ func TestRunLoginPersistsRenewableSession(t *testing.T) {
 	if cfg.ServerURL != srv.URL {
 		t.Fatalf("config = %+v, want the server URL", cfg)
 	}
-	configPath, err := daemon.BoardlyHome()
+	configPath, err := daemon.ZenithTeamHome()
 	if err != nil {
 		t.Fatalf("home: %v", err)
 	}
@@ -127,7 +138,7 @@ func TestRunLoginPersistsRenewableSession(t *testing.T) {
 }
 
 func TestRunLoginRejectsSessionTheServerWillNotAccept(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/auth/login":
@@ -142,7 +153,18 @@ func TestRunLoginRejectsSessionTheServerWillNotAccept(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if _, err := executeCLI(t, newRootCmd, "auth", "login", "--server", srv.URL, "--email", "user@example.com", "--password", "hunter22"); err == nil {
+	if _, err := executeCLI(
+		t,
+		newRootCmd,
+		"auth",
+		"login",
+		"--server",
+		srv.URL,
+		"--email",
+		"user@example.com",
+		"--password",
+		"hunter22",
+	); err == nil {
 		t.Fatal("login accepted a session the server rejected")
 	}
 	path, err := daemon.CredentialPath()
@@ -155,21 +177,32 @@ func TestRunLoginRejectsSessionTheServerWillNotAccept(t *testing.T) {
 }
 
 func TestRunLoginSurfacesAPIError(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]any{"detail": "invalid credentials"})
 	}))
 	defer srv.Close()
 
-	_, err := executeCLI(t, newRootCmd, "auth", "login", "--server", srv.URL, "--email", "user@example.com", "--password", "wrong")
+	_, err := executeCLI(
+		t,
+		newRootCmd,
+		"auth",
+		"login",
+		"--server",
+		srv.URL,
+		"--email",
+		"user@example.com",
+		"--password",
+		"wrong",
+	)
 	if err == nil || !strings.Contains(err.Error(), "invalid credentials") {
 		t.Fatalf("login error = %v, want the server detail", err)
 	}
 }
 
 func TestRequireSessionGuidesAnUnauthenticatedStart(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	err := requireSession()
 	if err == nil || !strings.Contains(err.Error(), "zen auth login") {
 		t.Fatalf("requireSession() error = %v, want guidance to run zen auth login", err)
@@ -185,7 +218,7 @@ func TestRequireSessionGuidesAnUnauthenticatedStart(t *testing.T) {
 // complete with the verifier, and persist the same bearer session shape the
 // password login yields.
 func TestRunBrowserLoginCompletesTheDesktopOAuthFlow(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	restore := openBrowser
 	openBrowser = func(string) {}
 	t.Cleanup(func() { openBrowser = restore })
@@ -253,7 +286,7 @@ func TestRunBrowserLoginCompletesTheDesktopOAuthFlow(t *testing.T) {
 }
 
 func TestRunCodeLoginRedeemsAHandoffCode(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/auth/desktop/handoff/complete":
@@ -273,7 +306,16 @@ func TestRunCodeLoginRedeemsAHandoffCode(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	if _, err := executeCLI(t, newRootCmd, "auth", "login", "--server", srv.URL, "--code", "handoff-1"); err != nil {
+	if _, err := executeCLI(
+		t,
+		newRootCmd,
+		"auth",
+		"login",
+		"--server",
+		srv.URL,
+		"--code",
+		"handoff-1",
+	); err != nil {
 		t.Fatalf("code login: %v", err)
 	}
 	path, err := daemon.CredentialPath()

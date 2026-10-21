@@ -25,7 +25,7 @@ OPENER = build_opener(ProxyHandler({}))
 
 
 # Old names still accepted for these settings.
-LEGACY = {"HUDDLE_AI_WORKLOAD_SECRET": "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET"}
+LEGACY = {"HUDDLE_AI_WORKLOAD_SECRET": "ZENITH_TEAM_HUDDLE_AI_WORKLOAD_SECRET"}
 
 
 def read_env(path):

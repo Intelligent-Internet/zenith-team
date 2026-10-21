@@ -20,7 +20,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 const (
@@ -61,8 +61,8 @@ type appPreviewManifest struct {
 	Commands      []appPreviewCommand `json:"commands"`
 	// Hidden are the folders the presenting Run's sandbox hid: a Run tagged
 	// in a chat hides its person's private folders, and so does every launch
-	// of its app (Access TECH B7b). Empty for every other Run, and in a
-	// registration written before B7b.
+	// of its app. Empty for every other Run, and in a
+	// registration written before this field existed.
 	Hidden []string `json:"hidden,omitempty"`
 }
 
@@ -185,10 +185,10 @@ func defaultAppPreviewSettings() appPreviewSettings {
 }
 
 // appPreviewIsolation decides the sandbox for one launch of a preview's
-// commands (Access TECH B3e): the sandbox to start them in, or nil to start
+// commands: the sandbox to start them in, or nil to start
 // them without one, and release, which the supervisor calls once every
 // process the launch started has stopped. hidden are the folders the
-// presenting Run's sandbox hid (B7b). A launch without the sandbox holds the
+// presenting Run's sandbox hid. A launch without the sandbox holds the
 // computer's report at not_enforced until release
 // (Daemon.appPreviewIsolation).
 type appPreviewIsolation func(workingDirectories, hidden []string) (sandbox *agent.Sandbox, release func())

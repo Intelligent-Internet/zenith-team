@@ -79,7 +79,7 @@ func startCodexRPCSessionWithLimit(
 		session.scanDone <- scanner.Err()
 	}()
 	if _, err := session.request(ctx, "initialize", map[string]any{
-		"clientInfo":   map[string]any{"name": "boardly-daemon", "version": "1"},
+		"clientInfo":   map[string]any{"name": "zenith-team-daemon", "version": "1"},
 		"capabilities": map[string]any{"experimentalApi": true},
 	}); err != nil {
 		session.close()
@@ -145,7 +145,7 @@ func (s *codexRPCSession) requestAll(
 		if !ok {
 			continue
 		}
-		result, err, ok := decodeCodexRPCResponse(message)
+		result, ok, err := decodeCodexRPCResponse(message)
 		if !ok {
 			continue
 		}
@@ -157,7 +157,7 @@ func (s *codexRPCSession) requestAll(
 
 // decodeCodexRPCResponse reads one response frame; ok is false for a frame
 // that is not a response, which the caller skips.
-func decodeCodexRPCResponse(message []byte) (json.RawMessage, error, bool) {
+func decodeCodexRPCResponse(message []byte) (json.RawMessage, bool, error) {
 	var response struct {
 		Result json.RawMessage `json:"result"`
 		Error  *struct {
@@ -166,19 +166,19 @@ func decodeCodexRPCResponse(message []byte) (json.RawMessage, error, bool) {
 		} `json:"error"`
 	}
 	if json.Unmarshal(message, &response) != nil {
-		return nil, nil, false
+		return nil, false, nil
 	}
 	if response.Error != nil {
 		if strings.Contains(strings.ToLower(response.Error.Message), "managed") ||
 			strings.Contains(strings.ToLower(response.Error.Message), "requirement") {
-			return nil, errCodexCapabilityManaged, true
+			return nil, true, errCodexCapabilityManaged
 		}
-		return nil, &codexRPCError{code: response.Error.Code}, true
+		return nil, true, &codexRPCError{code: response.Error.Code}
 	}
 	if len(response.Result) == 0 {
-		return nil, errors.New("Codex app-server response is missing a result"), true
+		return nil, true, errors.New("Codex app-server response is missing a result")
 	}
-	return append(json.RawMessage(nil), response.Result...), nil, true
+	return append(json.RawMessage(nil), response.Result...), true, nil
 }
 
 func (s *codexRPCSession) nextMessage(ctx context.Context) ([]byte, error) {

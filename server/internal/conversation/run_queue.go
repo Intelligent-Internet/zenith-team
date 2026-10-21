@@ -9,15 +9,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const runQueueRemovalReasonUser = "user_deleted"
@@ -53,7 +53,12 @@ func FinalizeRunConversationInTx(
 	if q == nil || pending == nil || taskMessageRuns == nil {
 		return QueuePromotion{}, ErrInvalidInput
 	}
-	if err := canvas.CompleteDocumentAgentInTx(ctx, q, pending, canvas.DocumentAgentCompletion{Run: run, Body: finalOutput}); err != nil {
+	if err := canvas.CompleteDocumentAgentInTx(
+		ctx,
+		q,
+		pending,
+		canvas.DocumentAgentCompletion{Run: run, Body: finalOutput},
+	); err != nil {
 		return QueuePromotion{}, err
 	}
 	beforeHistory, err := activity.ObserveInTx(ctx, q, Topic, run.ConversationID)
@@ -423,9 +428,12 @@ func PromoteRunQueueInTx(
 		!util.ValidUUID(conversationID) {
 		return QueuePromotion{}, ErrInvalidInput
 	}
-	preparing, err := q.IsConversationInitializationPending(ctx, generated.IsConversationInitializationPendingParams{
-		CompanyID: companyID, ConversationID: conversationID,
-	})
+	preparing, err := q.IsConversationInitializationPending(
+		ctx,
+		generated.IsConversationInitializationPendingParams{
+			CompanyID: companyID, ConversationID: conversationID,
+		},
+	)
 	if err != nil {
 		return QueuePromotion{}, fmt.Errorf("check Run queue initialization guard: %w", err)
 	}
@@ -684,7 +692,14 @@ func resolveRunQueuePromotionTarget(
 	}
 	if resolved.DocumentThreadID != nil {
 		for _, permission := range []auth.ProjectPermission{auth.ProjectPermissionRead, auth.ProjectPermissionTasksWrite, auth.ProjectPermissionTasksExecute} {
-			allowed, err := auth.HoldsProjectPermission(ctx, q, item.CompanyID, *resolved.ProjectID, item.InitiatedByUserID, permission)
+			allowed, err := auth.HoldsProjectPermission(
+				ctx,
+				q,
+				item.CompanyID,
+				*resolved.ProjectID,
+				item.InitiatedByUserID,
+				permission,
+			)
 			if err != nil {
 				return resolvedConversationTarget{}, nil, err
 			}
@@ -692,7 +707,16 @@ func resolveRunQueuePromotionTarget(
 				return resolvedConversationTarget{}, nil, ErrConflict
 			}
 		}
-		if _, err := q.GetDocumentAgentContext(ctx, generated.GetDocumentAgentContextParams{CompanyID: item.CompanyID, ConversationID: item.ConversationID}); errors.Is(err, pgx.ErrNoRows) {
+		if _, err := q.GetDocumentAgentContext(
+			ctx,
+			generated.GetDocumentAgentContextParams{
+				CompanyID:      item.CompanyID,
+				ConversationID: item.ConversationID,
+			},
+		); errors.Is(
+			err,
+			pgx.ErrNoRows,
+		) {
 			return resolvedConversationTarget{}, nil, ErrConflict
 		} else if err != nil {
 			return resolvedConversationTarget{}, nil, err
@@ -712,7 +736,12 @@ func resolveRunQueuePromotionTarget(
 				fmt.Errorf("lock promoted Run queue Task: %w", err)
 		}
 		taskRow = &row
-		resolved, err = resolveMessageTarget(ctx, q, item.InitiatedByUserID, MessageTarget{Kind: TargetTask, ID: row.ID})
+		resolved, err = resolveMessageTarget(
+			ctx,
+			q,
+			item.InitiatedByUserID,
+			MessageTarget{Kind: TargetTask, ID: row.ID},
+		)
 		if err != nil {
 			return resolvedConversationTarget{}, nil, err
 		}
@@ -1044,7 +1073,12 @@ func stageRunQueueConversationUpdate(
 	resolved resolvedConversationTarget,
 ) error {
 	bumped, err := bumpConversationProjection(
-		ctx, q, resolved.ConversationID, resolved.CompanyID, pending, events.UserActor(principal.UserID.String()),
+		ctx,
+		q,
+		resolved.ConversationID,
+		resolved.CompanyID,
+		pending,
+		events.UserActor(principal.UserID.String()),
 	)
 	if err != nil {
 		return err

@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// Migration 000063 adds the keys the Plugins list matches Codex Plugins by
-// (D26): a name without case, spaces or punctuation and a website's host
+// Migration 000063 adds the keys the Plugins list matches Codex Plugins by:
+// a name without case, spaces or punctuation and a website's host
 // without "www.", stored on each observation, and curated_duplicate, which it
 // backfills for the observations already stored. Down restores 000062's
 // case-insensitive name index.

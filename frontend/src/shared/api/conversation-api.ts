@@ -1,5 +1,8 @@
 import type { BaseQueryApi } from "@reduxjs/toolkit/query";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { conversationService } from "@/shared/api/conversation.service";
 import { companySearchService } from "@/shared/api/company-search.service";
 import type {
@@ -13,11 +16,11 @@ import type {
   RenameDirectConversationRequest,
 } from "@/shared/api/types";
 
-export const conversationApi = boardlyApi.injectEndpoints({
+export const conversationApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkspaceConversationStates: builder.query({
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.listStates(companyId),
           "Chat filing states could not be loaded.",
         ),
@@ -27,7 +30,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
     }),
     listWorkspaceChatConversations: builder.query({
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.listDirectConversations(companyId, true),
           "Chats could not be loaded.",
         ),
@@ -37,7 +40,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
     }),
     listWorkspaceConversationPins: builder.query({
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.listPins(companyId),
           "Pinned chats could not be loaded.",
         ),
@@ -50,7 +53,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
       { companyId: string; agentId: string; requestKey: string }
     >({
       queryFn: ({ companyId, agentId, requestKey }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             conversationService.createDirectConversation(companyId, {
               agentId,
@@ -71,7 +74,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, conversationId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             conversationService.renameDirectConversation(
               companyId,
@@ -133,7 +136,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         { companyId, agentId, requestKey, messageKey, content },
         { dispatch },
       ) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const conversation =
             await conversationService.createDirectConversation(companyId, {
               agentId,
@@ -155,7 +158,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Conversation" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.listDirectConversations(companyId),
           "Conversations could not be loaded.",
         ),
@@ -165,7 +168,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         { id: conversationId, type: "Conversation" },
       ],
       queryFn: (conversationId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.getConversationState(conversationId),
           "Chat state could not be loaded.",
         ),
@@ -175,7 +178,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
       { companyId: string; request: CompanySearchRequest }
     >({
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companySearchService.search(companyId, request),
           "Chats could not be searched.",
         ),
@@ -189,7 +192,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         { id: conversationId, type: "Message" },
       ],
       queryFn: ({ conversationId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.loadLatestMessages(conversationId),
           "Messages could not be loaded.",
         ),
@@ -210,7 +213,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         { id: conversationId, type: "Message" },
       ],
       queryFn: (conversationId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.listMessages(conversationId),
           "Messages could not be loaded.",
         ),
@@ -225,7 +228,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         conversationId: string;
         request: SendConversationMessageRequest;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             conversationService.postMessage(
               argument.conversationId,
@@ -306,7 +309,7 @@ export const conversationApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: (argument) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             conversationService.updateConversationState(
               argument.conversationId,

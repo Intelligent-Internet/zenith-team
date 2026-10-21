@@ -24,7 +24,7 @@ export function WorkspaceModalPortal({ children }: { children: ReactNode }) {
   }, []);
 
   return createPortal(
-    <div className="boardly-workspace-theme workspace-modal-portal">
+    <div className="zenith-team-workspace-theme workspace-modal-portal">
       {children}
     </div>,
     document.body,

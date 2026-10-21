@@ -13,11 +13,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/email"
-	"boardly.dev/boardly/server/internal/mailbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestAgentMailCreateBindsLiveRunReplaysAndPreservesConversationVisibility(t *testing.T) {
@@ -30,7 +30,7 @@ func TestAgentMailCreateBindsLiveRunReplaysAndPreservesConversationVisibility(t 
 		RunID: test.fixture.RunA, AgentID: test.fixture.AgentA, RequestKey: uuid.Must(uuid.NewV7()),
 	}
 	input := []mailbox.DraftInput{{
-		Subject: "Lead follow-up", Text: "Hello from Boardly",
+		Subject: "Lead follow-up", Text: "Hello from Zenith Team",
 		Deliveries: []mailbox.DraftDeliveryInput{
 			{To: []string{"lead-a@example.com"}},
 			{To: []string{"lead-b@example.com"}, CC: []string{"owner@example.com"}},
@@ -47,7 +47,7 @@ func TestAgentMailCreateBindsLiveRunReplaysAndPreservesConversationVisibility(t 
 		created.Drafts[0].FromName != "Schema A" {
 		t.Fatalf("created group = %#v", created)
 	}
-	// IA-FR4: the Run writes the drafts for its member (D31), so the frame,
+	// The Run writes the drafts for its member, so the frame,
 	// and the Activity row it becomes, names the Agent, the member and the
 	// Run.
 	drafted := events.RunActor(
@@ -117,9 +117,21 @@ func TestAgentMailCreateBindsLiveRunReplaysAndPreservesConversationVisibility(t 
 		`DELETE FROM project_grants WHERE project_id = $1 AND user_id = $2 AND permission <> 'project.read'`,
 		test.fixture.ProjectA, test.fixture.UserB)
 	draft := created.Drafts[0]
-	if _, err := service.UpdateDraft(test.ctx, test.memberA, test.fixture.ConversationA, draft.ID, mailbox.UpdateDraftInput{
-		ExpectedRevision: draft.Revision, Subject: "Changed", Text: "Changed", Deliveries: input[0].Deliveries,
-	}); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.UpdateDraft(
+		test.ctx,
+		test.memberA,
+		test.fixture.ConversationA,
+		draft.ID,
+		mailbox.UpdateDraftInput{
+			ExpectedRevision: draft.Revision,
+			Subject:          "Changed",
+			Text:             "Changed",
+			Deliveries:       input[0].Deliveries,
+		},
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("UpdateDraft(reader) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	if err := service.DeleteDraft(

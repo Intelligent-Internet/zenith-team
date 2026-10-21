@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type studioConsumed struct {
@@ -218,6 +218,10 @@ func (s *studioControl) bridge(
 	}
 	tools := s.daemon.tools
 	release, _ := findToolRelease("zenith-studio")
+	if tools.apiOrigin(release) == "" {
+		// Studio is off on this server.
+		return nil, studioBridgeError("unsupported")
+	}
 	tools.mu.Lock()
 	installed, ok := tools.installed[release.ID()]
 	tools.mu.Unlock()

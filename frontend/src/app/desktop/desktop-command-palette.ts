@@ -1,4 +1,4 @@
-const desktopCommandPaletteOpenEvent = "boardly:desktop-command-palette-open";
+const desktopCommandPaletteOpenEvent = "zenith-team:desktop-command-palette-open";
 
 export function openDesktopCommandPalette(): void {
   window.dispatchEvent(new Event(desktopCommandPaletteOpenEvent));

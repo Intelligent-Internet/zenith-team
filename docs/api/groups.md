@@ -7,7 +7,7 @@ holds Project grants, and every member holds them too. A person's access on
 a Project is the union of their own grant, each of their Groups, the
 Company-visible floor and the management permissions of their role, so
 leaving a Group never takes what their own grant gives. See
-[OpenAPI](spec/groups.yaml) and Access TECH Part D.
+[OpenAPI](spec/groups.yaml).
 
 | Method | Path under `/api/v1/companies/{companyId}` | Purpose | Needs |
 | --- | --- | --- | --- |

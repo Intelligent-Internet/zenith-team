@@ -9,7 +9,7 @@ import {
   sendWithAgentSetup,
 } from "@/features/agents/model/agent-binding";
 import { TaskHandoffDialog } from "@/features/company-plan/components/task-handoff-dialog";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 
 import type {
   AgentDto,
@@ -145,10 +145,10 @@ export function useTaskHandoff(companyId: string): {
   return { dialog, saving: mutation.isLoading, submitTaskChange };
 }
 
-// The mutation rejects with the BoardlyApiError itself, whose `code` is the
+// The mutation rejects with the ZenithTeamApiError itself, whose `code` is the
 // API's; there is no `data` wrapper around it.
 function errorCode(caught: unknown): string {
-  return (caught as BoardlyApiError | undefined)?.code ?? "";
+  return (caught as ZenithTeamApiError | undefined)?.code ?? "";
 }
 
 function handoffConfirmationRequired(caught: unknown): boolean {
@@ -167,7 +167,7 @@ function closesHandoff(caught: unknown): boolean {
 // Confirming cancels whatever is live, so a body that does not say reads as
 // live: the dialog warns too much rather than too little.
 function handoffRunLive(caught: unknown): boolean {
-  const body = (caught as BoardlyApiError | undefined)?.body as
+  const body = (caught as ZenithTeamApiError | undefined)?.body as
     Partial<TaskHandoffConfirmationErrorDto> | null | undefined;
   return body?.runLive !== false;
 }
@@ -199,6 +199,6 @@ function taskChangeErrorMessage(caught: unknown): string {
     case "company_permission_required":
       return "Only the task's assignee, or a company owner or admin, can hand it over.";
   }
-  const message = (caught as BoardlyApiError | undefined)?.message?.trim();
+  const message = (caught as ZenithTeamApiError | undefined)?.message?.trim();
   return message || "The task could not be changed. Please try again.";
 }

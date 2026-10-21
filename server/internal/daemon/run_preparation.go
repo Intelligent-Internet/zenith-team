@@ -3,7 +3,7 @@ package daemon
 import (
 	"errors"
 
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // runPreparationPhase is runfailure's vocabulary: the sentence a person

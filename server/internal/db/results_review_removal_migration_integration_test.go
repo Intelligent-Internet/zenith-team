@@ -10,10 +10,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// 000102 (D31 revision, 2026-10-07) removes project.results.review: every
+// 000102 removes project.results.review: every
 // person's and Group's row holding it goes, every other row stays, each
 // Project that lost a row advances its access revision, and neither grant
 // table accepts the permission again. Rolling back lets the tables store it
@@ -77,11 +77,23 @@ func TestResultsReviewRemovalDeletesTheRowsAndRefusesNewOnes(t *testing.T) {
 	member := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
 		member, "reviewer@removal.example.com")
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
-		f.CompanyA, member)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		f.CompanyA,
+		member,
+	)
 	untouched := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'quiet', 'Quiet')`,
-		untouched, f.CompanyA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'quiet', 'Quiet')`,
+		untouched,
+		f.CompanyA,
+	)
 	dbtest.GrantProject(t, ctx, pool, f.CompanyA, untouched, member)
 	dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, member, "project.tasks.write", review)
 	finance := dbtest.SeedGroup(t, ctx, pool, f.CompanyA, "Finance")
@@ -104,7 +116,16 @@ func TestResultsReviewRemovalDeletesTheRowsAndRefusesNewOnes(t *testing.T) {
 	if got := personGrants(f.ProjectA, f.UserA); !slices.Equal(got, nine) {
 		t.Errorf("owner's grant after 000102 = %v, want %v", got, nine)
 	}
-	if got, want := personGrants(f.ProjectA, member), []string{"project.read", "project.tasks.write"}; !slices.Equal(got, want) {
+	if got, want := personGrants(
+		f.ProjectA,
+		member,
+	), []string{
+		"project.read",
+		"project.tasks.write",
+	}; !slices.Equal(
+		got,
+		want,
+	) {
 		t.Errorf("member's grant after 000102 = %v, want %v", got, want)
 	}
 	if got, want := personGrants(untouched, member),
@@ -136,9 +157,17 @@ func TestResultsReviewRemovalDeletesTheRowsAndRefusesNewOnes(t *testing.T) {
 	dbtest.AssertStatementRejected(t, ctx, pool, "23514",
 		`INSERT INTO project_grants (company_id, project_id, user_id, permission) VALUES ($1, $2, $3, $4)`,
 		f.CompanyA, f.ProjectA, member, review)
-	dbtest.AssertStatementRejected(t, ctx, pool, "23514",
+	dbtest.AssertStatementRejected(
+		t,
+		ctx,
+		pool,
+		"23514",
 		`INSERT INTO project_group_grants (company_id, project_id, group_id, permission) VALUES ($1, $2, $3, $4)`,
-		f.CompanyA, f.ProjectA, finance, review)
+		f.CompanyA,
+		f.ProjectA,
+		finance,
+		review,
+	)
 
 	migrateTo(101)
 	if got := personGrants(f.ProjectA, f.UserA); slices.Contains(got, review) {
@@ -148,7 +177,16 @@ func TestResultsReviewRemovalDeletesTheRowsAndRefusesNewOnes(t *testing.T) {
 	dbtest.GrantGroupProject(t, ctx, pool, f.CompanyA, f.ProjectA, finance, review)
 
 	migrateTo(102)
-	if got, want := personGrants(f.ProjectA, member), []string{"project.read", "project.tasks.write"}; !slices.Equal(got, want) {
+	if got, want := personGrants(
+		f.ProjectA,
+		member,
+	), []string{
+		"project.read",
+		"project.tasks.write",
+	}; !slices.Equal(
+		got,
+		want,
+	) {
 		t.Errorf("member's grant after migrating up again = %v, want %v", got, want)
 	}
 	if got, want := groupGrants(f.ProjectA, finance),

@@ -14,9 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
-	"boardly.dev/boardly/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
 )
 
 // runCommand runs bundlectl in-process and returns what it printed and its

@@ -14,13 +14,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // Every Task route answers from Project access (ADR 0017), through the real
@@ -73,7 +73,9 @@ func TestTaskRoutesAnswerFromProjectAccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	deliverables, err := execution.NewDeliverableService(execution.DeliverableServiceOptions{Store: store, Bus: bus})
+	deliverables, err := execution.NewDeliverableService(
+		execution.DeliverableServiceOptions{Store: store, Bus: bus},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +91,14 @@ func TestTaskRoutesAnswerFromProjectAccess(t *testing.T) {
 	signIn := func(email string, role auth.CompanyRole, grants ...string) string {
 		t.Helper()
 		userID := dbtest.NewUUID(t)
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`, userID, email)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
+			userID,
+			email,
+		)
 		dbtest.MustExec(t, ctx, pool,
 			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
 			fixture.CompanyA, userID, string(role))
@@ -157,7 +166,7 @@ func TestTaskRoutesAnswerFromProjectAccess(t *testing.T) {
 		{http.MethodPost, taskPath + "/runs", start},
 		{http.MethodGet, "/tasks?project_id=" + fixture.ProjectA.String(), ""},
 		// A create names the Project, so a Project the caller cannot read
-		// answers as the filtered list does (Access TECH D14).
+		// answers as the filtered list does.
 		{http.MethodPost, "/tasks", create},
 	}
 	for _, scenario := range []struct {
@@ -200,7 +209,15 @@ func TestTaskRoutesAnswerFromProjectAccess(t *testing.T) {
 			}
 			status, code, body := call(scenario.token, route.method, route.path, route.body)
 			if status != want.status || (want.code != "" && code != want.code) {
-				t.Errorf("%s: %s = %d %s, want %d %s", scenario.name, key, status, body, want.status, want.code)
+				t.Errorf(
+					"%s: %s = %d %s, want %d %s",
+					scenario.name,
+					key,
+					status,
+					body,
+					want.status,
+					want.code,
+				)
 			}
 		}
 		// The Company-wide reads leave the hidden Task out instead of
@@ -209,7 +226,13 @@ func TestTaskRoutesAnswerFromProjectAccess(t *testing.T) {
 			for _, path := range []string{"/tasks", "/task-dependencies"} {
 				status, _, body := call(scenario.token, http.MethodGet, path, "")
 				if status != http.StatusOK || strings.Contains(body, fixture.TaskA.String()) {
-					t.Errorf("%s: GET %s = %d %s; want 200 without the hidden Task", scenario.name, path, status, body)
+					t.Errorf(
+						"%s: GET %s = %d %s; want 200 without the hidden Task",
+						scenario.name,
+						path,
+						status,
+						body,
+					)
 				}
 			}
 		}

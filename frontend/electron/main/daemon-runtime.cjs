@@ -41,8 +41,8 @@ function createDesktopDaemonRuntime({
   autoStart = true,
   autoStop = false,
   binaryPath,
-  boardlyHomeDirectory,
-  boardlyMCPExecutable,
+  zenithTeamHomeDirectory,
+  zenithTeamMCPExecutable,
   desktopSessionPath,
   environment = process.env,
   expectedVersion,
@@ -51,26 +51,26 @@ function createDesktopDaemonRuntime({
   pollIntervalMs = 1_000,
   prepareLaunch = async () => ({ ok: true }),
   probeHealth,
-  readComputerHolder = () => readComputerHolderFile(boardlyHomeDirectory),
+  readComputerHolder = () => readComputerHolderFile(zenithTeamHomeDirectory),
   readStoredSession,
   runDaemonCommand = executeDaemonCommand,
   serverUrl,
   stopDaemon: requestStopOverride,
   wait = delay,
   writeComputerHolder = (userId) =>
-    writeComputerHolderFile(boardlyHomeDirectory, userId),
+    writeComputerHolderFile(zenithTeamHomeDirectory, userId),
 }) {
   const normalizedServerUrl = normalizeServerUrl(serverUrl);
-  // BOARDLY_DESKTOP_SESSION_PATH names the app's own session store, so the
-  // daemon keeps every Run away from it (D31). The daemon never reads it.
+  // ZENITH_TEAM_DESKTOP_SESSION_PATH names the app's own session store, so the
+  // daemon keeps every Run away from it. The daemon never reads it.
   const daemonEnv = stringEnvironment(
     daemonEnvironment(environment, {
-      BOARDLY_DESKTOP_SESSION_PATH: desktopSessionPath,
-      BOARDLY_HEALTH_PORT: String(healthPort),
-      BOARDLY_HOME: boardlyHomeDirectory,
-      BOARDLY_LAUNCHED_BY: "desktop",
-      BOARDLY_MCP_EXECUTABLE: boardlyMCPExecutable,
-      BOARDLY_SERVER_URL: normalizedServerUrl,
+      ZENITH_TEAM_DESKTOP_SESSION_PATH: desktopSessionPath,
+      ZENITH_TEAM_HEALTH_PORT: String(healthPort),
+      ZENITH_TEAM_HOME: zenithTeamHomeDirectory,
+      ZENITH_TEAM_LAUNCHED_BY: "desktop",
+      ZENITH_TEAM_MCP_EXECUTABLE: zenithTeamMCPExecutable,
+      ZENITH_TEAM_SERVER_URL: normalizedServerUrl,
     }),
   );
   const readHealth = probeHealth ?? (() => fetchDaemonHealth({ healthPort }));
@@ -225,7 +225,7 @@ function createDesktopDaemonRuntime({
   async function launch() {
     const owner = authenticatedOwner;
     update("starting");
-    // The daemon runs on its own session (D31): the app gives it one before
+    // The daemon runs on its own session: the app gives it one before
     // every launch that finds none, and a launch without one cannot sign in.
     let prepared;
     try {
@@ -682,7 +682,7 @@ async function fetchDaemonHealth({
 }
 
 // requestDaemonStop stops the owned daemon through the CLI's own stop path:
-// `zen daemon stop` under the desktop BOARDLY_HOME and health port
+// `zen daemon stop` under the desktop ZENITH_TEAM_HOME and health port
 // verifies the health-reported pid against the process record and signals
 // exactly that process, then waits a short while for that process to exit.
 // It returns before the exit when the daemon is still draining runs, so the
@@ -728,17 +728,17 @@ async function waitForDaemonExit(readHealth, wait) {
   throw new Error("Desktop daemon did not stop");
 }
 
-function computerHolderPath(boardlyHomeDirectory) {
-  return path.join(boardlyHomeDirectory, COMPUTER_HOLDER_FILE_NAME);
+function computerHolderPath(zenithTeamHomeDirectory) {
+  return path.join(zenithTeamHomeDirectory, COMPUTER_HOLDER_FILE_NAME);
 }
 
 // readComputerHolderFile returns the user id the agent service last ran
 // for, or null when the record is missing, unreadable or malformed.
-async function readComputerHolderFile(boardlyHomeDirectory) {
-  if (!boardlyHomeDirectory) return null;
+async function readComputerHolderFile(zenithTeamHomeDirectory) {
+  if (!zenithTeamHomeDirectory) return null;
   try {
     const raw = await readFile(
-      computerHolderPath(boardlyHomeDirectory),
+      computerHolderPath(zenithTeamHomeDirectory),
       "utf8",
     );
     if (Buffer.byteLength(raw, "utf8") > COMPUTER_HOLDER_MAX_BYTES) {
@@ -755,11 +755,11 @@ async function readComputerHolderFile(boardlyHomeDirectory) {
 
 // writeComputerHolderFile replaces the record with one rename, so a reader
 // sees the previous holder or the new one and never half a file.
-async function writeComputerHolderFile(boardlyHomeDirectory, userId) {
-  if (!boardlyHomeDirectory) return;
-  const target = computerHolderPath(boardlyHomeDirectory);
+async function writeComputerHolderFile(zenithTeamHomeDirectory, userId) {
+  if (!zenithTeamHomeDirectory) return;
+  const target = computerHolderPath(zenithTeamHomeDirectory);
   const temporary = `${target}.${randomUUID()}.tmp`;
-  await mkdir(boardlyHomeDirectory, { mode: 0o700, recursive: true });
+  await mkdir(zenithTeamHomeDirectory, { mode: 0o700, recursive: true });
   try {
     await writeFile(temporary, `${JSON.stringify({ userId })}\n`, {
       encoding: "utf8",

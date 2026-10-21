@@ -5,9 +5,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type editDiscussionRequest struct {
@@ -15,9 +15,9 @@ type editDiscussionRequest struct {
 	Body             conversation.DiscussionBody `json:"body"             binding:"required"`
 }
 type updateDiscussionThreadRequest struct {
-	ReadThroughSeq   *int64          `json:"readThroughSeq" binding:"omitempty,min=0,max=9007199254740991"`
-	ManualUnreadSeq  *int64          `json:"manualUnreadSeq" binding:"omitempty,min=0,max=9007199254740991"`
-	GrantGeneration  int64           `json:"grantGeneration" binding:"min=0,max=9007199254740991"`
+	ReadThroughSeq   *int64          `json:"readThroughSeq"   binding:"omitempty,min=0,max=9007199254740991"`
+	ManualUnreadSeq  *int64          `json:"manualUnreadSeq"  binding:"omitempty,min=0,max=9007199254740991"`
+	GrantGeneration  int64           `json:"grantGeneration"  binding:"min=0,max=9007199254740991"`
 	ExpectedRevision optional[int64] `json:"expectedRevision" binding:"omitnil,required"`
 	Follow           string          `json:"follow"           binding:"omitempty,oneof=following unfollowed"`
 }
@@ -217,7 +217,9 @@ func (h *Handler) updateDiscussionThreadState(c *gin.Context) {
 		conversation.DiscussionThreadStateInput{
 			ExpectedRevision: body.ExpectedRevision.value,
 			Follow:           body.Follow,
-			ReadThroughSeq:   body.ReadThroughSeq, ManualUnreadSeq: body.ManualUnreadSeq, GrantGeneration: body.GrantGeneration,
+			ReadThroughSeq:   body.ReadThroughSeq,
+			ManualUnreadSeq:  body.ManualUnreadSeq,
+			GrantGeneration:  body.GrantGeneration,
 		},
 	)
 	if err != nil {
@@ -228,10 +230,10 @@ func (h *Handler) updateDiscussionThreadState(c *gin.Context) {
 }
 
 type discussionReadRequest struct {
-	ReadThroughSeq   *int64 `json:"readThroughSeq" binding:"omitempty,min=0,max=9007199254740991"`
-	ManualUnreadSeq  *int64 `json:"manualUnreadSeq" binding:"omitempty,min=0,max=9007199254740991"`
+	ReadThroughSeq   *int64 `json:"readThroughSeq"   binding:"omitempty,min=0,max=9007199254740991"`
+	ManualUnreadSeq  *int64 `json:"manualUnreadSeq"  binding:"omitempty,min=0,max=9007199254740991"`
 	ExpectedRevision *int64 `json:"expectedRevision" binding:"omitempty,min=0,max=9007199254740991"`
-	GrantGeneration  int64  `json:"grantGeneration" binding:"required,revision"`
+	GrantGeneration  int64  `json:"grantGeneration"  binding:"required,revision"`
 }
 
 func (h *Handler) updateDiscussionReadState(c *gin.Context) {
@@ -244,7 +246,17 @@ func (h *Handler) updateDiscussionReadState(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.DiscussionService.UpdateReadState(c.Request.Context(), p, id, conversation.DiscussionReadInput{ReadThroughSeq: body.ReadThroughSeq, ManualUnreadSeq: body.ManualUnreadSeq, ExpectedRevision: body.ExpectedRevision, GrantGeneration: body.GrantGeneration})
+	result, err := h.DiscussionService.UpdateReadState(
+		c.Request.Context(),
+		p,
+		id,
+		conversation.DiscussionReadInput{
+			ReadThroughSeq:   body.ReadThroughSeq,
+			ManualUnreadSeq:  body.ManualUnreadSeq,
+			ExpectedRevision: body.ExpectedRevision,
+			GrantGeneration:  body.GrantGeneration,
+		},
+	)
 	if err != nil {
 		writeDiscussionError(c, err)
 		return

@@ -1,0 +1,234 @@
+---
+title: Environment variables
+description: Every setting in deploy/.env for a self-hosted Zenith Team server, with its default and what it does.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+All configuration lives in `deploy/.env`. There are no config files. `make selfhost-env` creates the file from `deploy/production.env.example`, and Docker Compose passes every value in it to the server.
+
+The server checks every setting when it starts. A bad value stops it with an error that names the variable. An empty value means the same as no value.
+
+After you edit `deploy/.env`, run `make selfhost-up` again (or `docker compose -f deploy/docker-compose.production.yml up -d` when you use the prebuilt images). Compose recreates the containers whose settings changed.
+
+## Minimum production config
+
+A server that other people reach over the internet needs only the generated secrets and its HTTPS address:
+
+```dotenv
+# Filled in by make selfhost-env. Keep these secret.
+APP_POSTGRES_PASSWORD=<generated>
+AUTH_CSRF_SECRET=<generated>
+STORAGE_S3_SECRET_ACCESS_KEY=<generated>
+
+# Where people open Zenith Team. Keep zenith-team-app://renderer for the desktop app.
+AUTH_WEB_ORIGINS=https://zenith.example.com,zenith-team-app://renderer
+AUTH_WEB_APP_ORIGIN=https://zenith.example.com
+```
+
+Then put a TLS proxy in front, as [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls) shows. Most servers also want [email](/self-hosting/auth-setup#email-codes-and-password-reset), so people can reset a forgotten password.
+
+## How to read the tables
+
+- **Default** is what the Compose stack uses when you leave the value empty. A dash means there is no default.
+- **Secret** marks a value to keep out of git, chat and logs. Store it in a password manager or secret manager.
+- Several features turn on as soon as **any** of their values is set, and then need **all** of their values. Each section says which.
+
+## Required
+
+The stack refuses to start without these. `make selfhost-env` generates all three.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `APP_POSTGRES_PASSWORD` | – | **Secret.** Password of the bundled PostgreSQL. Read by Compose, not by the server. PostgreSQL stores it when the database is first created, so changing it later does not change the existing database's password. |
+| `AUTH_CSRF_SECRET` | – | **Secret.** At least 32 bytes. Signs sign-in sessions, CSRF tokens and the tokens of running agent runs. Changing it signs everyone out. Outside `APP_ENVIRONMENT=local`, the server refuses a placeholder value copied from a template. |
+| `STORAGE_S3_SECRET_ACCESS_KEY` | – | **Secret.** Password of the bundled storage service, or your own S3 secret key when `STORAGE_S3_ENDPOINT` points elsewhere. |
+
+## Where people open Zenith Team
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `AUTH_WEB_ORIGINS` | `http://localhost:8080,zenith-team-app://renderer` | The exact browser addresses allowed to use the server, comma separated. A request from any other address is refused with `origin is not allowed`. Plain `http://` works only for `localhost` and other loopback addresses. Any `https://` address turns on Secure cookies. Keep `zenith-team-app://renderer` so the desktop app can sign in. |
+| `AUTH_WEB_APP_ORIGIN` | `http://localhost:8080` | The web app's own address. It must be one of `AUTH_WEB_ORIGINS`, written exactly, with no path or trailing slash. Used in email links, invitation links and Google sign-in. |
+| `APP_BIND_ADDRESS` | `127.0.0.1` | The host address Docker publishes the ports on. Read by Compose. `127.0.0.1` keeps them private to this machine. |
+| `APP_WEB_PORT` | `8080` | Host port of the web app. Read by Compose. Change the port in `AUTH_WEB_ORIGINS` and `AUTH_WEB_APP_ORIGIN` to match. |
+| `APP_HTTP_PORT` | `8788` | Host port of the API server, for health checks and metrics. Read by Compose. |
+| `ZENITH_TEAM_TRUSTED_PROXIES` | empty | Proxy address ranges, as CIDRs such as `10.0.0.0/8`, whose `X-Forwarded-Host` and `X-Forwarded-For` headers the server trusts. Empty trusts nobody. Invalid entries are skipped with a warning. See [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls#trusted-proxies). |
+
+## Server process
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `APP_NAME` | `Zenith Team API` | The server's name. |
+| `APP_ENVIRONMENT` | `production` | `local`, `staging` or `production`. Outside `local`, template secrets and the `local` storage preset are refused. |
+| `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. Logs are one JSON object per line. |
+| `APP_SERVER_IMAGE` | `zenith-team-server:latest` | The server image. Read by Compose. The default is the image `make selfhost-up` builds. Set it to a published image to skip the build, for example `ghcr.io/intelligent-internet/zenith-team-server:1.2.3`. |
+| `APP_WEB_IMAGE` | `zenith-team-web:latest` | The web app image. Read by Compose. Published as `ghcr.io/intelligent-internet/zenith-team-web`. |
+| `APP_DATABASE_URL` | the bundled PostgreSQL | Connection URL of your own PostgreSQL, such as `postgresql://zenith_team:password@db.example.com:5432/zenith_team`. |
+| `APP_REDIS_URL` | `redis://redis:6379/0` | Connection URL of your own Redis. Redis holds only short-lived realtime state. |
+| `AUTH_DESKTOP_HANDOFF_CODE_TTL_SECONDS` | `60` | How long a desktop sign-in handoff code stays valid. Between 10 and 300 seconds. |
+
+To use your own PostgreSQL or Redis, set the URL and remove the matching bundled service and the server's `depends_on` entry from `deploy/docker-compose.production.yml`.
+
+## File storage
+
+Details and backups are in [File storage](/self-hosting/storage).
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `STORAGE_S3_ENDPOINT` | `http://storage:9000` | The S3 endpoint. The default is the bundled storage service. |
+| `STORAGE_S3_REGION` | `us-east-1` | The bucket's region. |
+| `STORAGE_S3_BUCKET` | `zenith-team-attachments` | The bucket. The stack creates it on the bundled service. On your own service, create it yourself. |
+| `STORAGE_S3_ACCESS_KEY_ID` | `zenith-team` | The access key. Set it together with `STORAGE_S3_SECRET_ACCESS_KEY`. |
+| `STORAGE_S3_USE_PATH_STYLE` | `true` | Put the bucket in the URL path instead of the hostname. The bundled service needs `true`. |
+| `ATTACHMENT_ABANDONED_READY_GRACE_SECONDS` | `86400` | How long an uploaded file that was never attached to anything is kept before cleanup. Between 1 hour and 30 days. |
+
+## Email: sign-up codes, password reset, invitations
+
+Off while all of these are empty, and then sign-up finishes without a code. Setting **any** of them turns email on, and then the provider, API key, verification secret and both required template IDs must all be set. `AUTH_WEB_APP_ORIGIN` must be set too. Setup steps are in [Sign-in setup](/self-hosting/auth-setup#email-codes-and-password-reset).
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `AUTH_EMAIL_PROVIDER` | empty | `resend`, the only provider. |
+| `AUTH_RESEND_API_KEY` | empty | **Secret.** Your Resend API key. |
+| `AUTH_EMAIL_VERIFICATION_SECRET` | empty | **Secret.** At least 32 bytes (`openssl rand -hex 32`). Protects sign-up codes. Changing it cancels codes already sent. |
+| `AUTH_EMAIL_VERIFICATION_TEMPLATE_ID` | empty | Required when email is on. Resend template for the sign-up code. |
+| `AUTH_PASSWORD_RESET_TEMPLATE_ID` | empty | Required when email is on. Resend template for the password reset link. |
+| `AUTH_INVITATION_TEMPLATE_ID` | empty | Optional. Resend template for member invitations. Empty keeps invitation emails off. |
+| `AUTH_EMAIL_VERIFICATION_TTL_SECONDS` | `600` | How long a sign-up code works. Between 60 and 1800 seconds. |
+| `AUTH_EMAIL_VERIFICATION_RESEND_COOLDOWN_SECONDS` | `60` | Wait before a new code can be sent. Between 10 and 600 seconds, and shorter than the code lifetime. |
+| `AUTH_EMAIL_PROVIDER_TIMEOUT_SECONDS` | `10` | Timeout for calls to Resend. Between 1 and 30 seconds. |
+| `AUTH_PASSWORD_RESET_TTL_SECONDS` | `1800` | How long a reset link works. Between 300 and 86400 seconds. |
+| `AUTH_PASSWORD_RESET_RESEND_COOLDOWN_SECONDS` | `60` | Wait before a new reset link can be sent. Between 10 and 600 seconds, and shorter than the link lifetime. |
+
+## Google sign-in
+
+Off while all are empty. The web group (ID, secret, redirect URI) and the desktop group (ID, secret) each turn on separately, and each needs all of its values. See [Sign-in setup](/self-hosting/auth-setup#google-sign-in).
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `GOOGLE_WEB_CLIENT_ID` | empty | Client ID of your Google "Web application" client. |
+| `GOOGLE_WEB_CLIENT_SECRET` | empty | **Secret.** That client's secret. |
+| `GOOGLE_WEB_REDIRECT_URI` | empty | Exactly your web address followed by `/api/v1/auth/google/web/callback`. HTTPS, except for a loopback address during a local trial. |
+| `GOOGLE_DESKTOP_CLIENT_ID` | empty | Client ID of a separate Google "Desktop app" client. Must differ from the web client ID. |
+| `GOOGLE_DESKTOP_CLIENT_SECRET` | empty | **Secret.** That client's secret. |
+
+## Company mailbox
+
+Gives each company a mailbox that receives email. It uses its own Resend team and API key, separate from sign-in email. Setting **any** value turns it on, and then `MAILBOX_RESEND_API_KEY` and `MAILBOX_DOMAIN` are required. To receive mail, register `https://zenith.example.com/api/v1/webhooks/resend/mailbox` in Resend for `email.received`, and verify the domain's MX record.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `MAILBOX_RESEND_API_KEY` | empty | **Secret.** API key of the dedicated Resend team. |
+| `MAILBOX_RESEND_WEBHOOK_SECRET` | empty | **Secret.** The `whsec_` signing secret of the receiving webhook. While empty, the server starts but does not accept incoming mail. |
+| `MAILBOX_DOMAIN` | empty | The receiving domain, lowercase, such as `mail.example.com`. |
+| `MAILBOX_REQUESTS_PER_SECOND` | `4` | Calls per second to Resend. Between 1 and 5. |
+| `MAILBOX_PROVIDER_TIMEOUT_SECONDS` | `10` | Timeout for calls to Resend. Between 1 and 30 seconds. |
+
+## Huddles: voice rooms
+
+Voice rooms use a LiveKit server. They stay off while the three LiveKit values are empty. The AI voice worker lives in `voice-agent/` and is not part of the Compose stack.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `HUDDLES_ENABLED` | `true` | `false` turns Huddles off even when LiveKit is configured. |
+| `LIVEKIT_URL` | empty | Your LiveKit server, such as `wss://your-project.livekit.cloud`. |
+| `LIVEKIT_API_KEY` | empty | LiveKit API key. |
+| `LIVEKIT_API_SECRET` | empty | **Secret.** LiveKit API secret. |
+| `HUDDLE_AI_ENABLED` | `false` | Turns on the AI voice worker. Needs the three LiveKit values and the workload secret. |
+| `HUDDLE_AI_WORKLOAD_SECRET` | empty | **Secret.** At least 32 bytes, shared with the voice worker. |
+| `HUDDLE_NOTES_RECAP_API_KEY` | empty | **Secret.** OpenAI key the server uses to write recaps of Huddle notes. Recaps stay off unless this and the model are set. |
+| `HUDDLE_NOTES_RECAP_MODEL` | empty | OpenAI model for those recaps; it must support JSON output. |
+
+## Zenith Studio
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `ZENITH_STUDIO_API_URL` | empty | The Zenith Studio API address. Empty keeps the Studio tools off. |
+
+## Publish outputs to Google Cloud Run
+
+Lets agents publish apps to Google Cloud Run. `GCP_PROJECT_ID` turns it on, and then both service accounts are required. The server uses Google Application Default Credentials, which you inject into the server container yourself.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `GCP_PROJECT_ID` | empty | Your Google Cloud project. Empty keeps publishing off. |
+| `GCP_REGION` | `us-central1` | Region for storage, builds and Cloud Run. |
+| `GCP_SOURCE_BUCKET` | `<project>-app-sources` | Bucket for prepared source archives. |
+| `GCP_ARTIFACT_REGISTRY` | `<region>-docker.pkg.dev/<project>/user-apps` | Where built app images go. |
+| `GCP_SERVICE_ACCOUNT_EMAIL` | empty | Service account that runs the builds. |
+| `CLOUD_RUN_SERVICE_ACCOUNT` | empty | Service account the published apps run as. Give it no access to Zenith Team data. |
+| `CLOUD_RUN_MAX_INSTANCES` | `10` | Between 1 and 100. |
+| `CLOUD_RUN_MIN_INSTANCES` | `0` | No more than the maximum. |
+| `CLOUD_RUN_MEMORY` | `512Mi` | Memory per instance, in `Mi` or `Gi`. |
+| `CLOUD_RUN_CPU` | `1` | `1`, `2`, `4` or `8`. |
+
+## Custom URLs for published outputs (Cloudflare)
+
+Gives published outputs names like `my-app.apps.example.com` through a Cloudflare Worker and Workers KV. Set all four together. `deploy/README.md` describes the Worker.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `CLOUDFLARE_API_TOKEN` | empty | **Secret.** Token with Workers KV write access to the namespace. |
+| `CLOUDFLARE_ACCOUNT_ID` | empty | Your Cloudflare account ID. |
+| `CLOUDFLARE_KV_NAMESPACE_ID` | empty | A KV namespace used only by this server. |
+| `CLOUDFLARE_BASE_DOMAIN` | empty | The hostname suffix, such as `apps.example.com`. No scheme, wildcard or path. |
+
+## Personal social accounts
+
+Lets members connect X, Facebook, Instagram or LinkedIn accounts and post from agent chats. Use your own provider apps. Once any client ID or secret is set, `SOCIAL_TOKEN_ENCRYPTION_KEY` and `SOCIAL_CALLBACK_ORIGIN` are required. Each provider app registers the callback `https://zenith.example.com/api/v1/social/oauth/<platform>/callback`.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `SOCIAL_ENABLED_PLATFORMS` | `x` | Comma separated: `x`, `facebook`, `instagram`, `linkedin`. Turn a platform on only when its app is ready. |
+| `SOCIAL_CALLBACK_ORIGIN` | empty | Your public HTTPS address, with no path. |
+| `SOCIAL_TOKEN_ENCRYPTION_KEY` | empty | **Secret.** Base64 of exactly 32 bytes (`openssl rand -base64 32`). Encrypts stored account grants. Keep it stable: changing it means every member reconnects. |
+| `SOCIAL_X_CLIENT_ID` | empty | X app client ID. |
+| `SOCIAL_X_CLIENT_SECRET` | empty | **Secret.** X app client secret. |
+| `SOCIAL_FACEBOOK_CLIENT_ID` | empty | Facebook app ID. |
+| `SOCIAL_FACEBOOK_CLIENT_SECRET` | empty | **Secret.** Facebook app secret. |
+| `SOCIAL_INSTAGRAM_CLIENT_ID` | empty | Instagram app ID. |
+| `SOCIAL_INSTAGRAM_CLIENT_SECRET` | empty | **Secret.** Instagram app secret. |
+| `SOCIAL_LINKEDIN_CLIENT_ID` | empty | LinkedIn app client ID. |
+| `SOCIAL_LINKEDIN_CLIENT_SECRET` | empty | **Secret.** LinkedIn app client secret. |
+| `SOCIAL_META_GRAPH_VERSION` | `v23.0` | Graph API version for the Facebook and Instagram apps. |
+
+Posting images to Facebook or Instagram needs file storage at a public HTTPS address. See [File storage](/self-hosting/storage#share-links).
+
+## Advanced tuning
+
+The defaults suit a single server. Change these only for a reason.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `APP_HTTP_ADDR` | `:8788` | The server's listen address inside its container. Leave it: the Compose port mapping and health check expect port 8788. |
+| `APP_SHUTDOWN_TIMEOUT_SECONDS` | `15` | How long the server lets running requests finish when it stops. Keep it below the container's 30-second stop grace period. |
+| `APP_API_REPLICAS` | `1` | Number of server copies. Above 1, `APP_REDIS_URL` is required and every copy must use the same storage. |
+| `APP_DATABASE_MAX_CONNS` | `25` | Most PostgreSQL connections. |
+| `APP_SCHEDULE_WORKERS` | `8` | Schedule workers; at most one third of `APP_DATABASE_MAX_CONNS`. Set in the Compose file. |
+| `APP_SCHEDULE_SWEEP_SECONDS` | `30` | How often the scheduler sweeps for due work, 10 to 60 seconds. Set in the Compose file. |
+| `APP_DATABASE_MIN_CONNS` | `5` | Fewest PostgreSQL connections kept open. No more than the maximum. |
+| `APP_DATABASE_MAX_CONN_LIFETIME_SECONDS` | `3600` | When an open connection is replaced. |
+| `APP_DATABASE_MAX_CONN_IDLE_TIME_SECONDS` | `1800` | When an idle connection is closed. |
+| `APP_DATABASE_HEALTH_CHECK_PERIOD_SECONDS` | `60` | How often idle connections are checked. |
+| `APP_REALTIME_METRICS_TOKEN` | empty | **Secret.** Bearer token for reading the live connection counters at `/health/realtime`. While empty, only loopback connections to the server process can read them, which in Docker means from inside the server container. |
+| `APP_DAEMON_ID_REQUIRED` | `false` | `true` refuses daemon requests that do not name their machine. `false` lets them through with a warning in the log. |
+| `APP_STUDIO_RECEIPT_NAMESPACE` | empty | A fixed UUID, not all zeros, that keeps Zenith Studio receipt IDs stable after a restore. |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Lifetime of a sign-in access token (15 minutes). |
+| `AUTH_REFRESH_TOKEN_TTL_SECONDS` | `604800` | Lifetime of a refresh token (7 days). Must be longer than the access token. |
+| `AUTH_COOKIE_SECURE` | derived | Secure cookies. Always `true` when any HTTPS origin is listed, and cannot be set to `false` then. |
+| `GOOGLE_OAUTH_FLOW_TTL_SECONDS` | `600` | How long a Google sign-in may take. Between 60 and 900 seconds. |
+| `GOOGLE_OAUTH_PROVIDER_TIMEOUT_SECONDS` | `10` | Timeout for calls to Google. Between 1 and 30 seconds. |
+| `STORAGE_DRIVER` | `s3` | `s3`, or `local` for local development only (`APP_ENVIRONMENT=local`). |
+| `STORAGE_S3_SESSION_TOKEN` | empty | **Secret.** Only for temporary S3 credentials. |
+
+## Keeping the template and the code in sync
+
+`deploy/production.env.example` lists every setting the server reads. A test, `server/internal/config/env_template_test.go`, keeps it that way. It runs in `make go-unit` and fails when:
+
+- the server reads a setting that the template does not list, or
+- the template lists a setting that nothing reads.
+
+Six settings are read by Compose, not by the server: `APP_BIND_ADDRESS`, `APP_HTTP_PORT`, `APP_POSTGRES_PASSWORD`, `APP_SERVER_IMAGE`, `APP_WEB_IMAGE` and `APP_WEB_PORT`. The test checks that the Compose file uses them.
+
+If you add a setting to the server, add it to the template in the same change, and to this page.

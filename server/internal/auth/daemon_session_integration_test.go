@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// D31 (000098): a person's session starts the daemon's own session for the
+// 000098: a person's session starts the daemon's own session for the
 // same person. It authenticates as a daemon session, keeps that through every
 // refresh, stays signed in when the person's session ends, and cannot start
 // another. A person's refresh stays a person's.
@@ -32,7 +32,7 @@ func TestDaemonSessionKeepsItsClientAndCannotStartAnother(t *testing.T) {
 		t.Fatalf("IssueRefresh() error = %v", err)
 	}
 	user, personSession, err := createUserWithSession(ctx, store, NewUser{
-		Email: "daemon-session@boardly.test", PasswordHash: "stored", DisplayName: "Mia",
+		Email: "daemon-session@zenith-team.test", PasswordHash: "stored", DisplayName: "Mia",
 	}, NewSession{
 		TokenPrefix: personRefresh.Prefix, TokenHash: personRefresh.Hash,
 		ExpiresAt: personRefresh.ExpiresAt, ClientMetadata: []byte(`{"client":"desktop"}`),

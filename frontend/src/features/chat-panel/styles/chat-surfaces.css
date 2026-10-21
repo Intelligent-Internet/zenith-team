@@ -55,7 +55,7 @@
     z-index: 1;
   }
 
-  .conversation-chat .boardly-light-surface:not(.bg-brand-primary) {
+  .conversation-chat .zenith-team-light-surface:not(.bg-brand-primary) {
     background: rgba(255, 255, 255, 0.08) !important;
     border-color: rgba(255, 255, 255, 0.14) !important;
     color: rgba(255, 255, 255, 0.9) !important;
@@ -64,13 +64,13 @@
       0 8px 18px rgba(0, 0, 0, 0.12) !important;
   }
 
-  .conversation-chat .boardly-light-surface:not(.bg-brand-primary):hover {
+  .conversation-chat .zenith-team-light-surface:not(.bg-brand-primary):hover {
     background: rgba(255, 255, 255, 0.12) !important;
     border-color: rgba(255, 255, 255, 0.26) !important;
   }
 
   .conversation-chat
-    .boardly-light-surface:not(.bg-brand-primary)
+    .zenith-team-light-surface:not(.bg-brand-primary)
     > span:first-child {
     background: rgba(255, 255, 255, 0.08) !important;
     border-color: rgba(255, 255, 255, 0.18) !important;

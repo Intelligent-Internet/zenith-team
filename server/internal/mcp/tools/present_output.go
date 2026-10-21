@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
 )
 
 const (
@@ -104,8 +104,8 @@ type AppPreviewRegistrar interface {
 // FileGuard refuses a workspace file, given its real path, that the service
 // must not read for the Run. The daemon reads outside the Run's sandbox, so
 // its guard refuses what the sandbox denies the Run: the sign-in files,
-// every Run's isolated home (Access TECH B3e) and, for a Run tagged in a
-// chat, the folders its sandbox hides (B7b). Nil refuses nothing.
+// every Run's isolated home and, for a Run tagged in a chat, the folders its
+// sandbox hides. Nil refuses nothing.
 type FileGuard func(realPath string) error
 
 // PresentOutputService is the complete exported output-presentation surface.
@@ -507,7 +507,7 @@ func openPresentedWorkspaceFile(
 		_ = source.Close()
 		return nil, apiclient.AttachmentUpload{}, errors.New("workspace file changed while it was opened")
 	}
-	staging, err := os.CreateTemp("", "boardly-present-output-*")
+	staging, err := os.CreateTemp("", "zenith-team-present-output-*")
 	if err != nil {
 		_ = source.Close()
 		return nil, apiclient.AttachmentUpload{}, errors.New("workspace file could not be staged")

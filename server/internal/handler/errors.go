@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -200,7 +200,7 @@ var boundaryErrorResponses = map[boundaryErrorKey]boundaryErrorResponse{
 	},
 	boundaryErrorDaemonIDRequired: {
 		http.StatusBadRequest,
-		"X-Boardly-Daemon-ID header is required",
+		"X-Zenith-Team-Daemon-ID header is required",
 		"invalid_request",
 	},
 	boundaryErrorHeartbeatFailed: {
@@ -250,7 +250,11 @@ var boundaryErrorResponses = map[boundaryErrorKey]boundaryErrorResponse{
 		"run cannot wait for a local directory",
 		"run_wait_unavailable",
 	},
-	boundaryErrorRunStudioAuthWait: {http.StatusConflict, "run cannot wait for Studio sign-in", "run_wait_unavailable"},
+	boundaryErrorRunStudioAuthWait: {
+		http.StatusConflict,
+		"run cannot wait for Studio sign-in",
+		"run_wait_unavailable",
+	},
 	boundaryErrorRunSessionPinFailed: {
 		http.StatusInternalServerError,
 		"failed to pin run session",

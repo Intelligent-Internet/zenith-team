@@ -13,10 +13,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // publishTestProviderPlugins publishes one complete Plugin generation for a
@@ -102,7 +102,7 @@ func joinTestCompany(
 	t.Helper()
 	userID := uuid.Must(uuid.NewV7())
 	mustAgentExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Colleague')`,
-		userID, userID.String()+"@boardly.test")
+		userID, userID.String()+"@zenith-team.test")
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
 		fixture.companyID, userID, string(role))
@@ -418,7 +418,7 @@ func publishForeignTestPlugin(
 
 // A Claude Plugin reports no logo: the catalog, its page and Workflow
 // readiness borrow the logo of a Codex Plugin with the same case-insensitive
-// name in the Company, else of a Codex app, else none (D26).
+// name in the Company, else of a Codex app, else none.
 func TestClaudePluginsBorrowCodexLogosByName(t *testing.T) {
 	pool, store := startAgentPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -705,7 +705,7 @@ func TestReadAppReadinessCarriesAppLogos(t *testing.T) {
 	observe(member, memberRuntime, "member-daemon")
 	bound := readTestReadiness(t, ctx, service, member, fixture.rootAgentID, "gmail", "github", "typeform")
 	// The Connector and Plugin come with the logos: every member installs
-	// and connects on their own computer (owner decision, 2026-09-29).
+	// and connects on their own computer.
 	if bound.Apps[0].Connector == nil || bound.Apps[0].Connector.NativeID != testGmailID ||
 		!reflect.DeepEqual(bound.Apps[0].IconURL, testText("https://cdn.test/gmail-app.png")) ||
 		bound.Apps[1].Plugin == nil || bound.Apps[1].Plugin.NativeID != testGitHubPlugin ||
@@ -720,7 +720,7 @@ func TestReadAppReadinessCarriesAppLogos(t *testing.T) {
 // list and read, and Workflow readiness show such an app a loadable logo
 // instead: an installed Plugin's that bundles it (one named like the app
 // first), else a Codex Plugin's of the same name; with neither, the app keeps
-// its own (D26).
+// its own.
 func TestSessionOnlyAppLogosYieldToLoadableOnes(t *testing.T) {
 	pool, store := startAgentPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -933,7 +933,7 @@ func TestSessionOnlyAppLogosBorrowOnlyFromTheViewersOwnRuntimes(t *testing.T) {
 	}
 }
 
-// A Plugin without a loadable logo borrows a Codex Plugin's (D26): by name,
+// A Plugin without a loadable logo borrows a Codex Plugin's: by name,
 // ignoring case, spaces and punctuation; else by its website's host, when one
 // Plugin with a loadable logo has that host and it is not a code hosting or
 // package site; else by its developer, when one such Plugin has that

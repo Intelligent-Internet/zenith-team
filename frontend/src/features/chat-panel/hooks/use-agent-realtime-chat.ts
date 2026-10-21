@@ -45,7 +45,7 @@ import {
 } from "@/features/chat-panel/hooks/use-conversation-run-queue";
 import { CEO_CHAT_TEAM_ID, type ChatTeamId } from "@/shared/chat/chat-team";
 import type { ChatMessage } from "@/shared/chat/types";
-import { boardlyApi, conversationService, runService } from "@/shared/api";
+import { zenithTeamApi, conversationService, runService } from "@/shared/api";
 import { requireActiveCompanyId } from "@/shared/api/active-company";
 import type { TaskWorkspaceResponse } from "@/shared/api/task.service";
 import type {
@@ -337,7 +337,7 @@ export function useAgentRealtimeChat({
       // A row already committed for this Run — by its message id, or by the
       // Run itself when a chat opens or reconnects while the Run is live —
       // is the bubble to keep streaming into. Appending beside it would
-      // show the agent's words twice (CV-FR9: the committed item supersedes
+      // show the agent's words twice (the committed item supersedes
       // scratch). A row bound to another live key stays that key's.
       const storedEnvelope = adoptableStoredEnvelope(
         storedMessageIndexRef.current,
@@ -1662,7 +1662,7 @@ export function useAgentRealtimeChat({
         }
         if (failure.status === 404 || failure.status === 409) {
           dispatch(
-            boardlyApi.util.invalidateTags([
+            zenithTeamApi.util.invalidateTags([
               "Conversation",
               "Message",
               "Run",

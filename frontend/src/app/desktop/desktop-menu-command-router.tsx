@@ -665,7 +665,7 @@ function focusedMessageRoute(
 
 function useReducedTransparency() {
   const readPreference = () =>
-    document.documentElement.dataset.boardlyReducedTransparency === "true";
+    document.documentElement.dataset.zenithTeamReducedTransparency === "true";
   const [reducedTransparency, setReducedTransparency] =
     useState(readPreference);
 
@@ -675,7 +675,7 @@ function useReducedTransparency() {
       setReducedTransparency(readPreference());
     });
     observer.observe(documentElement, {
-      attributeFilter: ["data-boardly-reduced-transparency"],
+      attributeFilter: ["data-zenith-team-reduced-transparency"],
       attributes: true,
     });
     return () => observer.disconnect();

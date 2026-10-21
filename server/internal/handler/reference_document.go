@@ -7,10 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 const maxReferenceDocumentBodyBytes = 8 << 10

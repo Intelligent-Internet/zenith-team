@@ -20,12 +20,12 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/text/unicode/norm"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/internal/runchannel"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // isRunTerminal mirrors the server-side terminal statuses.
@@ -138,7 +138,7 @@ func decodeRunContext(run Run, log *slog.Logger) RunContext {
 // daemon, when the run carries one. A Task Run ignores it, and so does a
 // tagged Run: a channel answer never draws on its person's local folders,
 // which no Project access governs, so it never works in its person's own
-// folder (Access TECH B7).
+// folder.
 func localDirectoryFor(doc RunContext, daemonID string) *RunResourceContext {
 	if doc.ExecutionProfile.Task != nil || isTaggedRun(doc) {
 		return nil
@@ -710,14 +710,13 @@ func (d *Daemon) effectiveRunPrepareTimeout() time.Duration {
 
 // isBlockedEnvKey returns true if the key must never be overridden in an
 // agent child environment — daemon-internal variables and critical system
-// paths. The BOARDLY_ prefix block is what makes the codex-memory and
+// paths. The reserved-namespace block is what makes the codex-memory and
 // multi-agent escape hatches operator-only.
 func isBlockedEnvKey(key string) bool {
-	upper := strings.ToUpper(key)
-	if strings.HasPrefix(upper, "BOARDLY_") {
+	if agent.IsReservedEnvKey(key) {
 		return true
 	}
-	switch upper {
+	switch strings.ToUpper(key) {
 	case "HOME", "PATH", "USER", "SHELL", "TERM", "TMPDIR", "TMP", "TEMP", "CODEX_HOME":
 		return true
 	}
@@ -750,9 +749,9 @@ func configureCodexRunShellEnvironment(
 }
 
 type runCLIEnvironment struct {
-	boardlyHome string
-	// channel reports that run.json is in boardlyHome: the Run channel is
-	// open, so zen and boardly-mcp can reach the server through it.
+	zenithTeamHome string
+	// channel reports that run.json is in zenithTeamHome: the Run channel is
+	// open, so zen and zenith-team-mcp can reach the server through it.
 	channel bool
 	// outputChannel is the Run channel when it can also complete the
 	// present_output MCP tool (the Run has an output presenter), else nil.
@@ -769,51 +768,51 @@ func (e runCLIEnvironment) channelHome() string {
 	if !e.channel {
 		return ""
 	}
-	return e.boardlyHome
+	return e.zenithTeamHome
 }
 
-func boardlyExecutableName() string {
+func zenithTeamExecutableName() string {
 	if runtime.GOOS == "windows" {
 		return "zen.exe"
 	}
 	return "zen"
 }
 
-func pinBoardlyExecutable(sourcePath string) (*os.File, func() error, error) {
-	directory, err := os.MkdirTemp("", "boardly-daemon-cli-")
+func pinZenithTeamExecutable(sourcePath string) (*os.File, func() error, error) {
+	directory, err := os.MkdirTemp("", "zenith-team-daemon-cli-")
 	if err != nil {
-		return nil, nil, fmt.Errorf("create pinned boardly executable directory: %w", err)
+		return nil, nil, fmt.Errorf("create pinned zenith-team executable directory: %w", err)
 	}
 	removeDirectory := func() error {
 		if err := os.RemoveAll(directory); err != nil {
-			return fmt.Errorf("remove pinned boardly executable directory: %w", err)
+			return fmt.Errorf("remove pinned zenith-team executable directory: %w", err)
 		}
 		return nil
 	}
 	source, err := os.Open(sourcePath)
 	if err != nil {
 		return nil, nil, errors.Join(
-			fmt.Errorf("open boardly executable: %w", err),
+			fmt.Errorf("open zenith-team executable: %w", err),
 			removeDirectory(),
 		)
 	}
-	if err := copyBoardlyExecutable(source, directory); err != nil {
+	if err := copyZenithTeamExecutable(source, directory); err != nil {
 		closeErr := source.Close()
 		if closeErr != nil {
-			closeErr = fmt.Errorf("close boardly executable: %w", closeErr)
+			closeErr = fmt.Errorf("close zenith-team executable: %w", closeErr)
 		}
 		return nil, nil, errors.Join(err, closeErr, removeDirectory())
 	}
 	if err := source.Close(); err != nil {
 		return nil, nil, errors.Join(
-			fmt.Errorf("close boardly executable: %w", err),
+			fmt.Errorf("close zenith-team executable: %w", err),
 			removeDirectory(),
 		)
 	}
-	pinned, err := os.Open(filepath.Join(directory, boardlyExecutableName()))
+	pinned, err := os.Open(filepath.Join(directory, zenithTeamExecutableName()))
 	if err != nil {
 		return nil, nil, errors.Join(
-			fmt.Errorf("open pinned boardly executable: %w", err),
+			fmt.Errorf("open pinned zenith-team executable: %w", err),
 			removeDirectory(),
 		)
 	}
@@ -827,7 +826,7 @@ func pinBoardlyExecutable(sourcePath string) (*os.File, func() error, error) {
 			if err := pinned.Close(); err != nil {
 				cleanupErrors = append(
 					cleanupErrors,
-					fmt.Errorf("close pinned boardly executable: %w", err),
+					fmt.Errorf("close pinned zenith-team executable: %w", err),
 				)
 			}
 			if err := removeDirectory(); err != nil {
@@ -840,21 +839,21 @@ func pinBoardlyExecutable(sourcePath string) (*os.File, func() error, error) {
 	return pinned, cleanup, nil
 }
 
-func copyBoardlyExecutable(source *os.File, directory string) error {
+func copyZenithTeamExecutable(source *os.File, directory string) error {
 	if source == nil {
-		return errors.New("pinned boardly executable is unavailable")
+		return errors.New("pinned zenith-team executable is unavailable")
 	}
 	info, err := source.Stat()
 	if err != nil {
-		return fmt.Errorf("stat boardly executable: %w", err)
+		return fmt.Errorf("stat zenith-team executable: %w", err)
 	}
 	if !info.Mode().IsRegular() {
-		return errors.New("boardly executable is not a regular file")
+		return errors.New("zenith-team executable is not a regular file")
 	}
-	destination := filepath.Join(directory, boardlyExecutableName())
+	destination := filepath.Join(directory, zenithTeamExecutableName())
 	output, err := os.OpenFile(destination, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o500)
 	if err != nil {
-		return fmt.Errorf("create run-local boardly executable: %w", err)
+		return fmt.Errorf("create run-local zenith-team executable: %w", err)
 	}
 	failed := true
 	defer func() {
@@ -865,24 +864,24 @@ func copyBoardlyExecutable(source *os.File, directory string) error {
 	}()
 	copied, err := io.Copy(output, io.NewSectionReader(source, 0, info.Size()))
 	if err != nil {
-		return fmt.Errorf("copy run-local boardly executable: %w", err)
+		return fmt.Errorf("copy run-local zenith-team executable: %w", err)
 	}
 	if copied != info.Size() {
 		return fmt.Errorf(
-			"copy run-local boardly executable: copied %d bytes, want %d",
+			"copy run-local zenith-team executable: copied %d bytes, want %d",
 			copied,
 			info.Size(),
 		)
 	}
 	if err := output.Sync(); err != nil {
-		return fmt.Errorf("sync run-local boardly executable: %w", err)
+		return fmt.Errorf("sync run-local zenith-team executable: %w", err)
 	}
 	if err := output.Close(); err != nil {
-		return fmt.Errorf("close run-local boardly executable: %w", err)
+		return fmt.Errorf("close run-local zenith-team executable: %w", err)
 	}
 	if runtime.GOOS != "windows" {
 		if err := os.Chmod(destination, 0o500); err != nil {
-			return fmt.Errorf("secure run-local boardly executable: %w", err)
+			return fmt.Errorf("secure run-local zenith-team executable: %w", err)
 		}
 	}
 	failed = false
@@ -904,16 +903,16 @@ func (d *Daemon) prepareRunCLIEnvironment(
 	launch execenv.SeatbeltOptions,
 ) (runCLIEnvironment, error) {
 	// The sandbox denies every Run's home by this name and opens only the
-	// Run's own (Access TECH B3e).
+	// Run's own.
 	home, err := os.MkdirTemp(envRoot, execenv.RunHomePrefix)
 	if err != nil {
-		return runCLIEnvironment{}, fmt.Errorf("create isolated boardly home: %w", err)
+		return runCLIEnvironment{}, fmt.Errorf("create isolated zenith-team home: %w", err)
 	}
 	var (
 		executableDirectory string
 		revokeChannel       func() error
 	)
-	prepared := runCLIEnvironment{boardlyHome: home}
+	prepared := runCLIEnvironment{zenithTeamHome: home}
 	prepared.cleanup = func() error {
 		var cleanupErrors []error
 		if revokeChannel != nil {
@@ -923,12 +922,12 @@ func (d *Daemon) prepareRunCLIEnvironment(
 			if err := os.RemoveAll(executableDirectory); err != nil {
 				cleanupErrors = append(
 					cleanupErrors,
-					fmt.Errorf("remove run-local boardly executable: %w", err),
+					fmt.Errorf("remove run-local zenith-team executable: %w", err),
 				)
 			}
 		}
 		if err := os.RemoveAll(home); err != nil {
-			cleanupErrors = append(cleanupErrors, fmt.Errorf("remove isolated boardly home: %w", err))
+			cleanupErrors = append(cleanupErrors, fmt.Errorf("remove isolated zenith-team home: %w", err))
 		}
 		return errors.Join(cleanupErrors...)
 	}
@@ -938,12 +937,12 @@ func (d *Daemon) prepareRunCLIEnvironment(
 	if len(runCLICommands(run, doc)) == 0 {
 		return prepared, nil
 	}
-	executableDirectory, err = os.MkdirTemp(envRoot, ".boardly-bin-")
+	executableDirectory, err = os.MkdirTemp(envRoot, ".zenith-team-bin-")
 	if err != nil {
 		return fail(fmt.Errorf("create run-local zen executable directory: %w", err))
 	}
 	prepared.executableDirectory = executableDirectory
-	if err := copyBoardlyExecutable(d.boardlyExecutable, executableDirectory); err != nil {
+	if err := copyZenithTeamExecutable(d.zenithTeamExecutable, executableDirectory); err != nil {
 		return fail(err)
 	}
 	if runchannel.ValidEndpoint(d.localPlaneEndpoint) {
@@ -981,18 +980,18 @@ func pathWithRunCLI(pathValue, executableDirectory string) string {
 	return executableDirectory + string(os.PathListSeparator) + pathValue
 }
 
-// boardlyMcpConfig merges the agent's saved MCP config with the daemon's own
-// boardly-mcp stdio server entry (when BOARDLY_MCP_EXECUTABLE is set).
-// boardly-mcp gets the Run's isolated BOARDLY_HOME, whose run.json opens the
+// zenithTeamMcpConfig merges the agent's saved MCP config with the daemon's own
+// zenith-team-mcp stdio server entry (when ZENITH_TEAM_MCP_EXECUTABLE is set).
+// zenith-team-mcp gets the Run's isolated ZENITH_TEAM_HOME, whose run.json opens the
 // Run channel, and no credential: neither the person's bearer, nor the path
 // to it, nor the Run token. The daemon adds the session and the proof to
-// every call it forwards (Access TECH B3b). channelHome is that isolated
+// every call it forwards. channelHome is that isolated
 // home when it holds run.json, and empty when the Run has no channel; then
-// boardly-mcp could not reach the server, so no boardly server entry is added
+// zenith-team-mcp could not reach the server, so no zenith-team server entry is added
 // at all. outputChannel is that same channel when it can complete
 // present_output, artifact_inspect and artifact_fetch, the calls the daemon
 // completes itself; without it those tools are not offered.
-func (d *Daemon) boardlyMcpConfig(
+func (d *Daemon) zenithTeamMcpConfig(
 	agentConfig json.RawMessage,
 	run Run,
 	allowedTools []string,
@@ -1005,7 +1004,8 @@ func (d *Daemon) boardlyMcpConfig(
 		allowedTools = slices.DeleteFunc(
 			slices.Clone(allowedTools),
 			func(name string) bool {
-				return name == "present_output" || name == "artifact_inspect" || name == "artifact_fetch"
+				return name == "present_output" || name == "artifact_inspect" ||
+					name == "artifact_fetch"
 			},
 		)
 	}
@@ -1015,7 +1015,7 @@ func (d *Daemon) boardlyMcpConfig(
 	if channelHome == "" {
 		if d.logger != nil {
 			d.logger.Warn(
-				"Run channel unavailable; boardly-mcp is not configured for this Run",
+				"Run channel unavailable; zenith-team-mcp is not configured for this Run",
 				"run",
 				run.ID,
 			)
@@ -1034,40 +1034,39 @@ func (d *Daemon) boardlyMcpConfig(
 		} else {
 			// The agent runs anyway, but without the MCP servers its operator
 			// explicitly configured — that must never happen silently.
-			slog.Warn("agent MCP config unparseable; running with the boardly server only",
+			slog.Warn("agent MCP config unparseable; running with the zenith-team server only",
 				"error", err)
 		}
 	}
 	env := map[string]string{
-		"BOARDLY_HOME":                channelHome,
-		"BOARDLY_COMPANY_ID":          run.CompanyID,
-		"BOARDLY_MCP_COMPANY_ID":      run.CompanyID,
-		"BOARDLY_MCP_CONVERSATION_ID": run.ConversationID,
-		"BOARDLY_MCP_TASK_ID":         run.TaskID,
-		"BOARDLY_MCP_RUN_ID":          run.ID.String(),
-		"BOARDLY_MCP_AGENT_ID":        run.AgentID,
-		"BOARDLY_MCP_ALLOWED_TOOLS":   strings.Join(allowedTools, ","),
+		"ZENITH_TEAM_HOME":                channelHome,
+		"ZENITH_TEAM_COMPANY_ID":          run.CompanyID,
+		"ZENITH_TEAM_MCP_COMPANY_ID":      run.CompanyID,
+		"ZENITH_TEAM_MCP_CONVERSATION_ID": run.ConversationID,
+		"ZENITH_TEAM_MCP_TASK_ID":         run.TaskID,
+		"ZENITH_TEAM_MCP_RUN_ID":          run.ID.String(),
+		"ZENITH_TEAM_MCP_AGENT_ID":        run.AgentID,
+		"ZENITH_TEAM_MCP_ALLOWED_TOOLS":   strings.Join(allowedTools, ","),
 	}
 	// present_output, artifact_inspect and artifact_fetch ride the Run
-	// channel boardly-mcp already opens through run.json in channelHome, so
-	// neither its endpoint nor its capability travels in the environment
-	// (Access TECH B3b).
+	// channel zenith-team-mcp already opens through run.json in channelHome, so
+	// neither its endpoint nor its capability travels in the environment.
 	if snapshotDir != "" {
-		env["BOARDLY_SKILL_SNAPSHOT_DIR"] = snapshotDir
+		env["ZENITH_TEAM_SKILL_SNAPSHOT_DIR"] = snapshotDir
 	}
 	if planRoot != "" {
-		env["BOARDLY_MCP_PLAN_ROOT"] = planRoot
+		env["ZENITH_TEAM_MCP_PLAN_ROOT"] = planRoot
 	}
-	servers[boardlyMCPServerName] = map[string]any{
+	servers[zenithTeamMCPServerName] = map[string]any{
 		"command": d.cfg.MCPExecutable,
 		"args":    []string{},
 		"env":     env,
 	}
 	merged, err := json.Marshal(map[string]any{"mcpServers": servers})
 	if err != nil {
-		// Returning the raw agent config drops the boardly server entry — loud,
+		// Returning the raw agent config drops the zenith-team server entry — loud,
 		// because the agent then cannot call back as its run.
-		slog.Warn("merge MCP config failed; boardly-mcp entry dropped", "error", err)
+		slog.Warn("merge MCP config failed; zenith-team-mcp entry dropped", "error", err)
 		return agentConfig
 	}
 	return merged
@@ -1110,14 +1109,14 @@ func mergeRunMCPConfig(
 // runAgentEnvironment builds the extra environment for the agent process.
 func runAgentEnvironment(run Run, agentName, token, serverURL string, healthPort, slot int) map[string]string {
 	return map[string]string{
-		"BOARDLY_RUN_TOKEN":   token,
-		"BOARDLY_SERVER_URL":  serverURL,
-		"BOARDLY_DAEMON_PORT": strconv.Itoa(healthPort),
-		"BOARDLY_COMPANY_ID":  run.CompanyID,
-		"BOARDLY_AGENT_NAME":  agentName,
-		"BOARDLY_AGENT_ID":    run.AgentID,
-		"BOARDLY_RUN_ID":      run.ID.String(),
-		"BOARDLY_RUN_SLOT":    strconv.Itoa(slot),
+		"ZENITH_TEAM_RUN_TOKEN":   token,
+		"ZENITH_TEAM_SERVER_URL":  serverURL,
+		"ZENITH_TEAM_DAEMON_PORT": strconv.Itoa(healthPort),
+		"ZENITH_TEAM_COMPANY_ID":  run.CompanyID,
+		"ZENITH_TEAM_AGENT_NAME":  agentName,
+		"ZENITH_TEAM_AGENT_ID":    run.AgentID,
+		"ZENITH_TEAM_RUN_ID":      run.ID.String(),
+		"ZENITH_TEAM_RUN_SLOT":    strconv.Itoa(slot),
 	}
 }
 
@@ -1211,8 +1210,8 @@ func (d *Daemon) doRun(
 		}
 	}
 	if isTaggedRun(doc) {
-		// A tagged Run starts a new provider session on purpose (Access TECH
-		// B7). Its new folder has none to resume, and a resumed session would
+		// A tagged Run starts a new provider session on purpose. Its new folder
+		// has none to resume, and a resumed session would
 		// carry what earlier Runs of the chat read, perhaps for another person
 		// who tagged the Agent there, into this answer. The prompt carries the
 		// chat's frozen history instead, with no notice of a lost session.
@@ -1284,7 +1283,7 @@ func (d *Daemon) doRun(
 		workDir  string
 		localDir bool
 		// gitDir is a Task worktree's own folder in its Project main's
-		// repository, the one place there its Run writes (Access TECH B3f).
+		// repository, the one place there its Run writes.
 		gitDir string
 	)
 	if resource := localDirectoryFor(doc, d.cfg.DaemonID); !restrictedTools && resource != nil {
@@ -1468,7 +1467,7 @@ func (d *Daemon) doRun(
 	// One decision for the whole launch, so the provider's own sandbox
 	// settings and the wrapper always agree. A Run without the sandbox keeps
 	// the computer's report at not_enforced until it returns, after its
-	// provider has ended (Access TECH B3d).
+	// provider has ended.
 	sandboxed, isolationDone := d.startLaunchIsolation()
 	defer isolationDone()
 	env, err := execenv.Prepare(execenv.Options{
@@ -1520,7 +1519,7 @@ func (d *Daemon) doRun(
 	// isolated home and provider homes; its workdir, for a direct chat the
 	// Company main; its Task worktree's own folder in the Project main's
 	// repository; its Agent's Studio sign-in folder). A tagged Run may open
-	// nothing else in its hidden folders (Access TECH B3f, B7b). Its sandbox
+	// nothing else in its hidden folders. Its sandbox
 	// is built from these, and the daemon reads files for the Run only where
 	// they allow, sandboxed or not.
 	launch := execenv.SeatbeltOptions{
@@ -1548,13 +1547,13 @@ func (d *Daemon) doRun(
 	}
 	var sandbox *agent.Sandbox
 	if sandboxed {
-		// The sandbox opens this Run's isolated home and no other Run's
-		// (Access TECH B3e), so it is built once the home exists. A Run whose
+		// The sandbox opens this Run's isolated home and no other Run's,
+		// so it is built once the home exists. A Run whose
 		// own folder lies inside a denied path, or a tagged Run whose hidden
 		// folder holds the person's home or the temporary folder, fails here
 		// rather than starting unprotected on a computer that reports
 		// enforced.
-		launch.RunHome = cliEnvironment.boardlyHome
+		launch.RunHome = cliEnvironment.zenithTeamHome
 		launch.WritableRoots = env.SandboxWritableRoots
 		sandbox, err = d.launchSandbox(launch)
 		if err != nil {
@@ -1586,12 +1585,12 @@ func (d *Daemon) doRun(
 	presentation := runStreamPresentation{workDir: workDir, presenter: generatedImagePresenter, launch: launch}
 	agentEnv := runAgentEnvironment(run, agentName, token, d.cfg.ServerBaseURL, d.cfg.HealthPort, slot)
 	if restrictedTools {
-		delete(agentEnv, "BOARDLY_RUN_TOKEN")
+		delete(agentEnv, "ZENITH_TEAM_RUN_TOKEN")
 	}
 	if env.CodexHome != "" {
 		agentEnv["CODEX_HOME"] = env.CodexHome
 	}
-	agentEnv["BOARDLY_HOME"] = cliEnvironment.boardlyHome
+	agentEnv["ZENITH_TEAM_HOME"] = cliEnvironment.zenithTeamHome
 	if cliEnvironment.executableDirectory != "" {
 		agentEnv["PATH"] = pathWithRunCLI(os.Getenv("PATH"), cliEnvironment.executableDirectory)
 	}
@@ -1658,8 +1657,7 @@ func (d *Daemon) doRun(
 		Model:                   model,
 		SystemPrompt: buildRunSystemPromptWithCLI(doc, workDir, runMemoryContext{
 			// A tagged Run's fresh scratch holds no memory, and it is said
-			// outright rather than left to that folder's contents (Access
-			// TECH B7).
+			// outright rather than left to that folder's contents.
 			WorkspaceMemory:      !scheduled && !isTaggedRun(doc) && workspaceMemoryAvailable(workDir),
 			CompanyReadDirs:      companyContext.MemoryReadDirs,
 			CompanyReferenceRoot: filepath.Join(envRoot, companyReferenceDirectory),
@@ -1680,10 +1678,10 @@ func (d *Daemon) doRun(
 		ResumeExpected:            run.PriorSessionID != "",
 		ResumeContinuityNotice:    turn.continuityNotice,
 		ExtraArgs:                 defaultArgsForProvider(d.cfg, providerName),
-		McpConfig: d.boardlyMcpConfig(
+		McpConfig: d.zenithTeamMcpConfig(
 			managedMCPConfig,
 			run,
-			boardlyMCPToolsForRun(doc),
+			zenithTeamMCPToolsForRun(doc),
 			skillSnapshotDir,
 			planRoot,
 			cliEnvironment.channelHome(),
@@ -1882,7 +1880,7 @@ func (d *Daemon) acquireManagedRunWorkspace(
 	// scratch folder, so nothing an earlier Run left there becomes their
 	// input. A channel answer never draws on its person's Company main or
 	// private Memory, which no Project access governs, so a tagged Run must
-	// not read files from it (Access TECH B7).
+	// not read files from it.
 	if runToolPolicy(doc) != "" || isTaggedRun(doc) {
 		return d.workspaces.AcquireIsolatedScratch(run.ConversationID, run.ID)
 	}
@@ -1961,7 +1959,7 @@ const companyWorkspaceScope = "company"
 // runUsesMainWorkspace reports whether a managed run executes directly in the
 // durable Company main workspace: every conversation run that is not a Task
 // worktree run, an isolated Schedule occurrence or a tagged Run, which starts
-// in its own scratch (Access TECH B7). A local_directory resource binding
+// in its own scratch. A local_directory resource binding
 // still wins for unrestricted Runs — the caller checks it first.
 func runUsesMainWorkspace(doc RunContext) bool {
 	return runToolPolicy(doc) == "" && !isTaggedRun(doc) && doc.ExecutionProfile.Task == nil
@@ -2017,7 +2015,7 @@ func (d *Daemon) companyRunContext(
 	}
 	// A tagged Run works in its own scratch, and a channel answer never draws
 	// on its person's private Memory, so it gets the Company's business
-	// context folder read-only and no memory (Access TECH B7). It reads the
+	// context folder read-only and no memory. It reads the
 	// main only when it is already there: a Company with no main has no saved
 	// business context.
 	if isTaggedRun(doc) {
@@ -2370,8 +2368,8 @@ func workspaceMemoryAvailable(workDir string) bool {
 
 // ensureRunCompanyPlanRoot creates the Run-environment directory that owns
 // the Company Plan draft and export, so neither lands in the directory the
-// Agent works in (Runs TECH §11.2: a Run's temporary artifacts stay out of
-// cwd; WS-FR10: acceptance excludes daemon-generated files).
+// Agent works in (a Run's temporary artifacts stay out of cwd, and
+// acceptance excludes daemon-generated files).
 func ensureRunCompanyPlanRoot(envRoot string) (string, error) {
 	planRoot := filepath.Join(envRoot, "company-plan")
 	if err := os.MkdirAll(planRoot, 0o700); err != nil {

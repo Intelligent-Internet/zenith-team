@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // runConversationActorIsWellFormed decides whether an actor names a kind these
@@ -90,7 +90,16 @@ func BumpAndStageRunConversationUpdates(
 		return fmt.Errorf("bump Run Conversation projections: %w", err)
 	}
 	for _, row := range rows {
-		if err := activity.RecordInTx(ctx, tx, pending, runConversationActor(actorKind, actorID), EventConversationUpdated, beforeStates[row.ID], Topic, row.ID); err != nil {
+		if err := activity.RecordInTx(
+			ctx,
+			tx,
+			pending,
+			runConversationActor(actorKind, actorID),
+			EventConversationUpdated,
+			beforeStates[row.ID],
+			Topic,
+			row.ID,
+		); err != nil {
 			return err
 		}
 	}

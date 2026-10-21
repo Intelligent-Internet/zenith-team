@@ -48,12 +48,12 @@ export type DesktopReleaseManifest = {
 };
 
 type DesktopDownloadEnv = {
-  VITE_BOARDLY_DESKTOP_MAC_ARM64_URL?: string;
-  VITE_BOARDLY_DESKTOP_MAC_X64_URL?: string;
-  VITE_BOARDLY_DESKTOP_RELEASE_MANIFEST_URL?: string;
-  VITE_BOARDLY_DESKTOP_WINDOWS_URL?: string;
-  VITE_BOARDLY_DESKTOP_LINUX_URL?: string;
-  VITE_BOARDLY_DESKTOP_ENV?: string;
+  VITE_ZENITH_TEAM_DESKTOP_MAC_ARM64_URL?: string;
+  VITE_ZENITH_TEAM_DESKTOP_MAC_X64_URL?: string;
+  VITE_ZENITH_TEAM_DESKTOP_RELEASE_MANIFEST_URL?: string;
+  VITE_ZENITH_TEAM_DESKTOP_WINDOWS_URL?: string;
+  VITE_ZENITH_TEAM_DESKTOP_LINUX_URL?: string;
+  VITE_ZENITH_TEAM_DESKTOP_ENV?: string;
 };
 
 type NavigatorLike = {
@@ -69,8 +69,6 @@ type NavigatorLike = {
 
 const PLATFORM_ORDER: DesktopPlatform[] = ["macos", "windows", "linux"];
 const DEFAULT_DESKTOP_DOWNLOAD_ENVIRONMENT = "dev";
-const DEFAULT_RELEASE_MANIFEST_URL =
-  "https://storage.googleapis.com/my-public-bucket/boardly-dev/latest.json";
 
 export function normalizeDesktopEnvironmentName(
   value: string | undefined,
@@ -231,7 +229,7 @@ export function getDesktopDownloadTarget({
   return resolveDesktopDownloadTarget({
     platform: detectDesktopPlatform(navigatorLike),
     environment: normalizeDesktopEnvironmentName(
-      downloadEnv.VITE_BOARDLY_DESKTOP_ENV ??
+      downloadEnv.VITE_ZENITH_TEAM_DESKTOP_ENV ??
         DEFAULT_DESKTOP_DOWNLOAD_ENVIRONMENT,
     ),
     urls,
@@ -247,7 +245,7 @@ export function getDesktopDownloadOptions({
 } = {}): DesktopDownloadOption[] {
   const downloadEnv = env ?? (import.meta.env as unknown as DesktopDownloadEnv);
   const environment = normalizeDesktopEnvironmentName(
-    downloadEnv.VITE_BOARDLY_DESKTOP_ENV ??
+    downloadEnv.VITE_ZENITH_TEAM_DESKTOP_ENV ??
       DEFAULT_DESKTOP_DOWNLOAD_ENVIRONMENT,
   );
   const urls = resolveDesktopDownloadUrls({ env: downloadEnv, manifest });
@@ -356,9 +354,10 @@ export function getDesktopReleaseManifestUrl({
 } = {}) {
   const downloadEnv = env ?? (import.meta.env as unknown as DesktopDownloadEnv);
 
+  // No built-in channel: a build without a manifest leaves the download
+  // buttons disabled rather than pointing at someone else's releases.
   return normalizeUrl(
-    downloadEnv.VITE_BOARDLY_DESKTOP_RELEASE_MANIFEST_URL ??
-      DEFAULT_RELEASE_MANIFEST_URL,
+    downloadEnv.VITE_ZENITH_TEAM_DESKTOP_RELEASE_MANIFEST_URL,
   );
 }
 
@@ -370,16 +369,16 @@ function resolveDesktopDownloadUrls({
   manifest?: DesktopReleaseManifest | null;
 }) {
   const macosArm64 =
-    normalizeUrl(env.VITE_BOARDLY_DESKTOP_MAC_ARM64_URL) ??
+    normalizeUrl(env.VITE_ZENITH_TEAM_DESKTOP_MAC_ARM64_URL) ??
     getManifestDownloadUrl(manifest, "macos", "arm64");
   const macosX64 =
-    normalizeUrl(env.VITE_BOARDLY_DESKTOP_MAC_X64_URL) ??
+    normalizeUrl(env.VITE_ZENITH_TEAM_DESKTOP_MAC_X64_URL) ??
     getManifestDownloadUrl(manifest, "macos", "x64");
   const windows =
-    normalizeUrl(env.VITE_BOARDLY_DESKTOP_WINDOWS_URL) ??
+    normalizeUrl(env.VITE_ZENITH_TEAM_DESKTOP_WINDOWS_URL) ??
     getManifestDownloadUrl(manifest, "windows", "x64");
   const linux =
-    normalizeUrl(env.VITE_BOARDLY_DESKTOP_LINUX_URL) ??
+    normalizeUrl(env.VITE_ZENITH_TEAM_DESKTOP_LINUX_URL) ??
     getManifestDownloadUrl(manifest, "linux", "x64");
 
   return {

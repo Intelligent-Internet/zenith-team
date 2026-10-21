@@ -100,7 +100,7 @@ export function CalendarEventDialog({
     >
       <Popover.Anchor virtualRef={virtualRef} />
       <Popover.Portal
-        container={document.querySelector(".boardly-workspace-theme")}
+        container={document.querySelector(".zenith-team-workspace-theme")}
       >
         <Popover.Content
           ref={setContent}

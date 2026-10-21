@@ -258,7 +258,7 @@ func TestNormalizePluginObservationRejectsInvalidPresentation(t *testing.T) {
 		"claude prompt": {ConnectorProviderClaude, func(item *PluginObservationInput) {
 			item.DefaultPrompts = []string{"Try it"}
 		}},
-		"claude brand colour": {ConnectorProviderClaude, func(item *PluginObservationInput) {
+		"claude brand color": {ConnectorProviderClaude, func(item *PluginObservationInput) {
 			item.BrandColor = "#FFFFFF"
 		}},
 		"claude developer": {ConnectorProviderClaude, func(item *PluginObservationInput) {
@@ -300,13 +300,13 @@ func TestNormalizePluginObservationRejectsInvalidPresentation(t *testing.T) {
 		"invalid UTF-8 description": {ConnectorProviderCodex, func(item *PluginObservationInput) {
 			item.LongDescription = "bad \xff byte"
 		}},
-		"short brand colour": {ConnectorProviderCodex, func(item *PluginObservationInput) {
+		"short brand color": {ConnectorProviderCodex, func(item *PluginObservationInput) {
 			item.BrandColor = "#FFF"
 		}},
-		"brand colour without hash": {ConnectorProviderCodex, func(item *PluginObservationInput) {
+		"brand color without hash": {ConnectorProviderCodex, func(item *PluginObservationInput) {
 			item.BrandColor = "EA4335A"
 		}},
-		"non-hex brand colour": {ConnectorProviderCodex, func(item *PluginObservationInput) {
+		"non-hex brand color": {ConnectorProviderCodex, func(item *PluginObservationInput) {
 			item.BrandColor = "#GG4335"
 		}},
 		"long developer": {ConnectorProviderCodex, func(item *PluginObservationInput) {

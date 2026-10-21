@@ -573,7 +573,7 @@ type InsertOutputRow struct {
 }
 
 // The owner is the Task's creator, the Authorizer of a tagged Run (the
-// person who tagged the Agent, D31), or the Direct or Schedule
+// person who tagged the Agent), or the Direct or Schedule
 // Conversation's creator. A tagged Run's Output starts private to that
 // person, who shares it into the chat if they choose; the Agent's creator
 // gets nothing. A Task Run executes on its authorizer's own computer (ADR

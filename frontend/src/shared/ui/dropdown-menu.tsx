@@ -28,7 +28,7 @@ type DropdownMenuSubContentProps = ComponentProps<
 >;
 
 const menuContentClassName =
-  "boardly-light-overlay !rounded-[var(--workspace-radius-overlay,12px)] !border !border-[var(--workspace-divider,var(--border-subtle))] !bg-[var(--workspace-overlay-bg,#f8f5ec)] !p-1 !text-[var(--workspace-native-text,var(--text-primary))] !shadow-[var(--workspace-overlay-shadow,0_18px_46px_rgba(15,35,63,0.18),inset_0_1px_0_rgba(255,255,255,0.78))]";
+  "zenith-team-light-overlay !rounded-[var(--workspace-radius-overlay,12px)] !border !border-[var(--workspace-divider,var(--border-subtle))] !bg-[var(--workspace-overlay-bg,#f8f5ec)] !p-1 !text-[var(--workspace-native-text,var(--text-primary))] !shadow-[var(--workspace-overlay-shadow,0_18px_46px_rgba(15,35,63,0.18),inset_0_1px_0_rgba(255,255,255,0.78))]";
 
 function DropdownMenuContent({
   className,

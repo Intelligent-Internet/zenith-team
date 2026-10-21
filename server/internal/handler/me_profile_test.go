@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 func TestMeProfileAvatarIsOptionalAndBoundToCaller(t *testing.T) {
@@ -43,9 +43,19 @@ func TestMeProfileAvatarIsOptionalAndBoundToCaller(t *testing.T) {
 				return auth.User{ID: userID, AvatarURL: input.AvatarDataURL}, nil
 			}
 			body := `{"expectedRevision":1,"displayName":"Member","biography":"","phoneCountryIso2":null,"phoneNumber":null` + test.field + `}`
-			response := serveBearerJSON(New(Handler{AuthService: service}), http.MethodPatch, "/api/v1/me/profile", []byte(body))
+			response := serveBearerJSON(
+				New(Handler{AuthService: service}),
+				http.MethodPatch,
+				"/api/v1/me/profile",
+				[]byte(body),
+			)
 			if response.Code != test.wantStatus {
-				t.Fatalf("status = %d, want %d: %s", response.Code, test.wantStatus, response.Body.String())
+				t.Fatalf(
+					"status = %d, want %d: %s",
+					response.Code,
+					test.wantStatus,
+					response.Body.String(),
+				)
 			}
 			if test.wantStatus != http.StatusOK && calls != 0 {
 				t.Fatal("invalid request reached service")
@@ -69,7 +79,7 @@ func TestMeProfileRouteReturnsAcknowledgedUser(t *testing.T) {
 			t.Errorf("UpdateProfile(%s, %#v)", gotUserID, input)
 		}
 		return auth.User{
-			ID: userID, Email: "founder@boardly.test", DisplayName: "Sam Lee",
+			ID: userID, Email: "founder@zenith-team.test", DisplayName: "Sam Lee",
 			Biography:        "Preferred context",
 			PhoneCountryISO2: stringPointer("VN"), PhoneNumber: stringPointer("912345678"),
 			CreatedAt: createdAt, UpdatedAt: updatedAt, Version: 4,
@@ -92,7 +102,7 @@ func TestMeProfileRouteReturnsAcknowledgedUser(t *testing.T) {
 	}
 	want := map[string]any{
 		"id":               userID.String(),
-		"email":            "founder@boardly.test",
+		"email":            "founder@zenith-team.test",
 		"emailVerifiedAt":  nil,
 		"hasPassword":      false,
 		"linkedProviders":  []any{},
@@ -121,7 +131,7 @@ func TestMeRouteReturnsTheBareUser(t *testing.T) {
 			t.Fatalf("CurrentUser user ID = %s", gotUserID)
 		}
 		return auth.User{
-			ID: userID, Email: "founder@boardly.test", DisplayName: "Founder",
+			ID: userID, Email: "founder@zenith-team.test", DisplayName: "Founder",
 			CreatedAt: now, UpdatedAt: now, Version: 3,
 		}, nil
 	}
@@ -151,7 +161,7 @@ func TestMeProfileRouteReturnsCurrentProjectionOnConflict(t *testing.T) {
 	service.updateProfile = func(context.Context, uuid.UUID, auth.UpdateProfileInput) (auth.User, error) {
 		return auth.User{}, &auth.ProfileRevisionConflictError{
 			Current: auth.User{
-				ID: userID, Email: "founder@boardly.test", DisplayName: "Latest",
+				ID: userID, Email: "founder@zenith-team.test", DisplayName: "Latest",
 				Biography:        "Latest biography",
 				PhoneCountryISO2: stringPointer("US"), PhoneNumber: stringPointer("4155552671"),
 				CreatedAt: now, UpdatedAt: now, Version: 7,
@@ -200,7 +210,7 @@ func TestMeProfileRouteRejectsUnauthorizedMalformedAndInvalidRequests(t *testing
 		http.MethodPatch,
 		"/api/v1/me/profile",
 		[]byte(
-			`{"expectedRevision":1,"displayName":"Quy","biography":"","phoneCountryIso2":null,"phoneNumber":null}`,
+			`{"expectedRevision":1,"displayName":"Sam","biography":"","phoneCountryIso2":null,"phoneNumber":null}`,
 		),
 	)
 	assertErrorResponse(t, response, http.StatusUnauthorized, "session_invalid")
@@ -213,11 +223,11 @@ func TestMeProfileRouteRejectsUnauthorizedMalformedAndInvalidRequests(t *testing
 	}
 	handler := New(Handler{AuthService: service})
 	for _, body := range []string{
-		`{"expectedRevision":1,"displayName":"Quy","biography":"","phoneCountryIso2":null,"phoneNumber":null,"phoneExtension":"123"}`,
-		`{"expectedRevision":1,"displayName":"Quy","phoneCountryIso2":null,"phoneNumber":null}`,
-		`{"expectedRevision":1,"displayName":"Quy","biography":""}`,
-		`{"expectedRevision":1,"expectedRevision":1,"displayName":"Quy","biography":""}`,
-		`{"expectedRevision":"one","displayName":"Quy","biography":""}`,
+		`{"expectedRevision":1,"displayName":"Sam","biography":"","phoneCountryIso2":null,"phoneNumber":null,"phoneExtension":"123"}`,
+		`{"expectedRevision":1,"displayName":"Sam","phoneCountryIso2":null,"phoneNumber":null}`,
+		`{"expectedRevision":1,"displayName":"Sam","biography":""}`,
+		`{"expectedRevision":1,"expectedRevision":1,"displayName":"Sam","biography":""}`,
+		`{"expectedRevision":"one","displayName":"Sam","biography":""}`,
 	} {
 		response = serveBearerJSON(handler, http.MethodPatch, "/api/v1/me/profile", []byte(body))
 		assertErrorResponse(t, response, http.StatusBadRequest, "invalid_request")
@@ -269,15 +279,15 @@ func TestMeProfileCookieMutationRequiresBoundCSRF(t *testing.T) {
 		http.MethodPatch,
 		"/api/v1/me/profile",
 		strings.NewReader(
-			`{"expectedRevision":1,"displayName":"Quy","biography":"","phoneCountryIso2":null,"phoneNumber":null}`,
+			`{"expectedRevision":1,"displayName":"Sam","biography":"","phoneCountryIso2":null,"phoneNumber":null}`,
 		),
 	)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Origin", "https://app.boardly.test")
+	request.Header.Set("Origin", "https://app.zenith-team.test")
 	request.AddCookie(&http.Cookie{Name: middleware.AuthCookieName, Value: accessToken})
 	response := httptest.NewRecorder()
 	New(Handler{
-		AuthService: service, CSRF: protector, AllowedOrigins: []string{"https://app.boardly.test"},
+		AuthService: service, CSRF: protector, AllowedOrigins: []string{"https://app.zenith-team.test"},
 	}).ServeHTTP(response, request)
 	assertErrorResponse(t, response, http.StatusForbidden, "csrf_invalid")
 }

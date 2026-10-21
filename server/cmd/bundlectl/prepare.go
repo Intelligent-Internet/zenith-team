@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // prepare is the build-time network boundary. Committed pins contain only

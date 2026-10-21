@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // errReportStop ends a scripted run once the statement under test recorded
@@ -64,10 +64,26 @@ func TestPendingReportReadsBindTheAskingMember(t *testing.T) {
 	database := &reportDBTX{}
 	queries := generated.New(database)
 
-	if _, _, err := readablePendingReports(context.Background(), queries, principal, agentID); !errors.Is(err, errReportStop) {
+	if _, _, err := readablePendingReports(
+		context.Background(),
+		queries,
+		principal,
+		agentID,
+	); !errors.Is(
+		err,
+		errReportStop,
+	) {
 		t.Fatalf("readablePendingReports() error = %v, want the scripted stop", err)
 	}
-	if _, err := lockReadablePendingReports(context.Background(), queries, principal, agentID); !errors.Is(err, errReportStop) {
+	if _, err := lockReadablePendingReports(
+		context.Background(),
+		queries,
+		principal,
+		agentID,
+	); !errors.Is(
+		err,
+		errReportStop,
+	) {
 		t.Fatalf("lockReadablePendingReports() error = %v, want the scripted stop", err)
 	}
 	for _, name := range []string{
@@ -79,7 +95,13 @@ func TestPendingReportReadsBindTheAskingMember(t *testing.T) {
 			continue
 		}
 		if !slices.Contains(args, any(principal.UserID)) || !slices.Contains(args, any(agentID)) {
-			t.Errorf("%s args = %v, want the reader %s and the Agent %s", name, args, principal.UserID, agentID)
+			t.Errorf(
+				"%s args = %v, want the reader %s and the Agent %s",
+				name,
+				args,
+				principal.UserID,
+				agentID,
+			)
 		}
 	}
 }

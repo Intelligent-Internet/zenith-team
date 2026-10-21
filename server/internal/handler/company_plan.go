@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 type CompanyPlanService interface {

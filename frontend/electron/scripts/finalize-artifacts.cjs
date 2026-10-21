@@ -12,7 +12,7 @@ const {
 } = require("../shared/desktop-variant.cjs");
 
 const defaultDesktopEnvironment = normalizeDesktopEnvironment(
-  process.env.BOARDLY_DESKTOP_ENV,
+  process.env.ZENITH_TEAM_DESKTOP_ENV,
 );
 loadElectronEnvFiles({
   files: defaultDesktopEnvironment === "dev" ? DEV_ENV_FILES : PROD_ENV_FILES,
@@ -85,7 +85,7 @@ function renameArtifact(
   const filename = path.basename(artifactPath);
   const extension = path.extname(filename);
   const desktopVariant = getDesktopVariant({
-    BOARDLY_DESKTOP_ENV: desktopEnvironmentName,
+    ZENITH_TEAM_DESKTOP_ENV: desktopEnvironmentName,
   });
   const artifactMetadata = getArtifactMetadata(
     artifactPath,
@@ -143,7 +143,7 @@ function getArtifactMetadata(
   extension,
   {
     appName = getDesktopVariant({
-      BOARDLY_DESKTOP_ENV: defaultDesktopEnvironment,
+      ZENITH_TEAM_DESKTOP_ENV: defaultDesktopEnvironment,
     }).appName,
     makeDirPath = getMakeDir(),
     packageVersionValue = getPackageVersion(),

@@ -299,9 +299,8 @@ paths:
       description: >-
         Any active member, for their own default Runtime (ADR 0014): the
         computer is the caller's, so no Company permission is needed.
-        Install and uninstall take `plugins.manage`, which every role holds
-        (D28). The cloud cannot reach
-        the machine, so a Runtime of the caller's answers
+        Install and uninstall take `plugins.manage`, which every role holds.
+        The cloud cannot reach the machine, so a Runtime of the caller's answers
         `503 plugin_action_unavailable`; Zenith Team Desktop asks its own
         daemon to publish a new snapshot instead. With no Runtime of the
         caller's, `409 plugin_provider_unavailable`.

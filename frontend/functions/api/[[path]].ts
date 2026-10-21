@@ -1,17 +1,17 @@
 import {
-  type BoardlyProxyEnv,
-  proxyBoardlyRequest,
-} from "../_shared/boardly-proxy";
+  type ZenithTeamProxyEnv,
+  proxyZenithTeamRequest,
+} from "../_shared/zenith-team-proxy";
 
 type PagesFunctionContext = {
-  env: BoardlyProxyEnv;
+  env: ZenithTeamProxyEnv;
   request: Request;
 };
 
 export function onRequest(context: PagesFunctionContext): Promise<Response> {
-  return proxyBoardlyRequest(
+  return proxyZenithTeamRequest(
     context.request,
-    context.env.BOARDLY_API_ORIGIN,
-    "Boardly API",
+    context.env.ZENITH_TEAM_API_ORIGIN,
+    "Zenith Team API",
   );
 }

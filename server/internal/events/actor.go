@@ -16,7 +16,7 @@ const (
 // Actor is who committed the fact. The zero value is invalid, so staging
 // makes every producer say user, agent, or system out loud.
 //
-// An Agent acting in a Run has three identities (D31): the Agent (ID), the
+// An Agent acting in a Run has three identities: the Agent (ID), the
 // person it acts for, the Run's Authorizer (OnBehalfOf), and the Run itself
 // (RunID). Activity stores all three, so a row says "Agent A for Mia" and
 // links the Run. A user or system actor carries neither extra field.

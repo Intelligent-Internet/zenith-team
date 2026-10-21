@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // SkillBundleCache is the content-addressed on-disk bundle cache at

@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The activity feed's ordering and scoping, asserted against the queries that
@@ -79,12 +79,16 @@ func TestActivityQueriesOrderAndScopeTheFeed(t *testing.T) {
 
 	// The feed over-fetches one row before deciding whether a continuation
 	// exists. Exactly limit rows is a complete page, not proof of another one.
-	complete, next, err := NewFeed(queries).List(ctx, fixture.CompanyA, ListOptions{UserID: fixture.UserA, Limit: 3})
+	complete, next, err := NewFeed(
+		queries,
+	).List(ctx, fixture.CompanyA, ListOptions{UserID: fixture.UserA, Limit: 3})
 	if err != nil || len(complete) != 3 || next != nil {
 		t.Fatalf("complete activity page = %d rows, cursor %v, %v; want 3, nil, nil",
 			len(complete), next, err)
 	}
-	firstPage, next, err := NewFeed(queries).List(ctx, fixture.CompanyA, ListOptions{UserID: fixture.UserA, Limit: 2})
+	firstPage, next, err := NewFeed(
+		queries,
+	).List(ctx, fixture.CompanyA, ListOptions{UserID: fixture.UserA, Limit: 2})
 	if err != nil || len(firstPage) != 2 || next == nil {
 		t.Fatalf("first activity page = %d rows, cursor %v, %v; want 2, non-nil, nil",
 			len(firstPage), next, err)

@@ -6,9 +6,9 @@ import { activityToActivityEvent } from "@/shared/api/adapters";
 import { conversationService } from "@/shared/api/conversation.service";
 import type { ConversationDisplayItemSummary } from "@/shared/api/types";
 
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import type { RealtimeSyncContext } from "@/app/shell/realtime-sync/realtime-sync-context";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import { realtimeEventConversationId } from "@/shared/realtime/realtime-client.service";
 
 type ActivityEntry = ApiComponents["schemas"]["ActivityEntry"];
@@ -18,14 +18,14 @@ type MessageUpdatedPayload = ApiComponents["schemas"]["MessageUpdatedPayload"];
 
 export function applyConversationCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   switch (event.type) {
     case "conversation.discussion_changed": {
       const conversationId = realtimeEventConversationId(event);
       if (conversationId) {
         context.dispatch(
-          boardlyApi.util.invalidateTags([
+          zenithTeamApi.util.invalidateTags([
             { type: "Artifact", id: `${context.companyId}:${conversationId}` },
           ]),
         );
@@ -84,12 +84,12 @@ export function applyConversationCacheEvent(
 
 function invalidateConversationProjection(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   const conversationId = realtimeEventConversationId(event);
   if (!conversationId) return;
   context.dispatch(
-    boardlyApi.util.invalidateTags([
+    zenithTeamApi.util.invalidateTags([
       { id: conversationId, type: "Conversation" },
       { id: context.companyId, type: "TaskReport" },
     ]),
@@ -191,7 +191,9 @@ function updateCachedAttachments(
 
 function refetchMessages(context: RealtimeSyncContext, conversationId: string) {
   context.dispatch(
-    boardlyApi.util.invalidateTags([{ id: conversationId, type: "Message" }]),
+    zenithTeamApi.util.invalidateTags([
+      { id: conversationId, type: "Message" },
+    ]),
   );
 }
 

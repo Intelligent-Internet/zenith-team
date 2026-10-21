@@ -27,6 +27,7 @@ func (m *lifecycleHuddleMedia) ReadyRooms(_ context.Context, names []string) (ma
 	}
 	return ready, nil
 }
+
 func (m *lifecycleHuddleMedia) DeleteRoom(_ context.Context, name string) error {
 	m.deleted++
 	if err := m.deleteErrs[name]; err != nil {
@@ -34,6 +35,7 @@ func (m *lifecycleHuddleMedia) DeleteRoom(_ context.Context, name string) error 
 	}
 	return m.deleteErr
 }
+
 func (*lifecycleHuddleMedia) IssueParticipantToken(context.Context, string, string) (HuddleMediaToken, error) {
 	return HuddleMediaToken{URL: "ws://test", Token: "test"}, nil
 }
@@ -61,15 +63,29 @@ func TestHuddleLifecycleClosure(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+			direct, err := f.conversations.CreateHumanDirect(
+				f.ctx,
+				f.a,
+				CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
-			started, err := service.Start(f.ctx, f.a, direct.Conversation.ID, StartHuddleRequest{RequestKey: uuid.New()})
+			started, err := service.Start(
+				f.ctx,
+				f.a,
+				direct.Conversation.ID,
+				StartHuddleRequest{RequestKey: uuid.New()},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
-			joined, err := service.Join(f.ctx, f.a, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()})
+			joined, err := service.Join(
+				f.ctx,
+				f.a,
+				started.Huddle.ID,
+				JoinHuddleRequest{RequestKey: uuid.New()},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -77,26 +93,49 @@ func TestHuddleLifecycleClosure(t *testing.T) {
 				t.Fatal(err)
 			}
 			if tc.leave {
-				if _, err := service.Leave(f.ctx, f.a, started.Huddle.ID, joined.Connection.ID); err != nil {
+				if _, err := service.Leave(
+					f.ctx,
+					f.a,
+					started.Huddle.ID,
+					joined.Connection.ID,
+				); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if tc.leaveAge > 0 {
-				if _, err := f.pool.Exec(f.ctx, `UPDATE huddle_connections SET ended_at=now()-($2::int * interval '1 second') WHERE id=$1`, joined.Connection.ID, tc.leaveAge); err != nil {
+				if _, err := f.pool.Exec(
+					f.ctx,
+					`UPDATE huddle_connections SET ended_at=now()-($2::int * interval '1 second') WHERE id=$1`,
+					joined.Connection.ID,
+					tc.leaveAge,
+				); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if tc.reconnect {
-				joined, err = service.Join(f.ctx, f.a, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()})
+				joined, err = service.Join(
+					f.ctx,
+					f.a,
+					started.Huddle.ID,
+					JoinHuddleRequest{RequestKey: uuid.New()},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
-				if _, err := service.ConfirmConnected(f.ctx, f.a.CompanyID, joined.Connection.ID); err != nil {
+				if _, err := service.ConfirmConnected(
+					f.ctx,
+					f.a.CompanyID,
+					joined.Connection.ID,
+				); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if tc.deadline {
-				if _, err := f.pool.Exec(f.ctx, `UPDATE huddles SET deadline_at=now()-interval '1 second' WHERE id=$1`, started.Huddle.ID); err != nil {
+				if _, err := f.pool.Exec(
+					f.ctx,
+					`UPDATE huddles SET deadline_at=now()-interval '1 second' WHERE id=$1`,
+					started.Huddle.ID,
+				); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -118,7 +157,11 @@ func TestHuddleLifecycleDeletionRetryFencesAdmission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,19 +173,45 @@ func TestHuddleLifecycleDeletionRetryFencesAdmission(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.pool.Exec(f.ctx, `UPDATE huddles SET deadline_at=now()-interval '1 second' WHERE id=$1`, started.Huddle.ID); err != nil {
+	if _, err := f.pool.Exec(
+		f.ctx,
+		`UPDATE huddles SET deadline_at=now()-interval '1 second' WHERE id=$1`,
+		started.Huddle.ID,
+	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.ConfirmConnected(f.ctx, f.a.CompanyID, reserved.Connection.ID); !errors.Is(err, ErrHuddleUnavailable) {
+	if _, err := service.ConfirmConnected(
+		f.ctx,
+		f.a.CompanyID,
+		reserved.Connection.ID,
+	); !errors.Is(
+		err,
+		ErrHuddleUnavailable,
+	) {
 		t.Fatalf("expired confirmation error = %v, want unavailable", err)
 	}
 	if _, err := service.ReconcileMediaRooms(f.ctx); !errors.Is(err, media.deleteErr) {
 		t.Fatalf("reconcile error = %v, want %v", err, media.deleteErr)
 	}
-	if _, err := service.Join(f.ctx, f.a, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleUnavailable) {
+	if _, err := service.Join(
+		f.ctx,
+		f.a,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleUnavailable,
+	) {
 		t.Fatalf("join error = %v, want unavailable", err)
 	}
-	if _, err := service.ConfirmConnected(f.ctx, f.a.CompanyID, reserved.Connection.ID); !errors.Is(err, ErrHuddleUnavailable) {
+	if _, err := service.ConfirmConnected(
+		f.ctx,
+		f.a.CompanyID,
+		reserved.Connection.ID,
+	); !errors.Is(
+		err,
+		ErrHuddleUnavailable,
+	) {
 		t.Fatalf("late confirmation error = %v, want unavailable", err)
 	}
 	media.deleteErr = nil
@@ -163,15 +232,28 @@ func TestHuddleLifecycleEndsAbandonedRoomlessHuddle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Start(f.ctx, f.a, direct.Conversation.ID, StartHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleUnavailable) {
+	if _, err := service.Start(
+		f.ctx,
+		f.a,
+		direct.Conversation.ID,
+		StartHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleUnavailable,
+	) {
 		t.Fatalf("start error = %v, want unavailable", err)
 	}
 	var stuckID uuid.UUID
-	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM huddles WHERE source_conversation_id=$1 AND state='starting' AND room_name IS NULL`, direct.Conversation.ID).Scan(&stuckID); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM huddles WHERE source_conversation_id=$1 AND state='starting' AND room_name IS NULL`, direct.Conversation.ID).
+		Scan(&stuckID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,7 +261,11 @@ func TestHuddleLifecycleEndsAbandonedRoomlessHuddle(t *testing.T) {
 	if err != nil || closed != 0 {
 		t.Fatalf("within grace closed = %d, error = %v, want 0, nil", closed, err)
 	}
-	if _, err := f.pool.Exec(f.ctx, `UPDATE huddles SET created_at=now()-interval '3 minutes' WHERE id=$1`, stuckID); err != nil {
+	if _, err := f.pool.Exec(
+		f.ctx,
+		`UPDATE huddles SET created_at=now()-interval '3 minutes' WHERE id=$1`,
+		stuckID,
+	); err != nil {
 		t.Fatal(err)
 	}
 	closed, err = service.ReconcileMediaRooms(f.ctx)
@@ -211,7 +297,11 @@ func TestHuddleLifecycleClosesHuddleNobodyJoined(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +314,11 @@ func TestHuddleLifecycleClosesHuddleNobodyJoined(t *testing.T) {
 	if err != nil || closed != 0 {
 		t.Fatalf("within grace closed = %d, error = %v, want 0, nil", closed, err)
 	}
-	if _, err := f.pool.Exec(f.ctx, `UPDATE huddles SET created_at=now()-interval '3 minutes' WHERE id=$1`, started.Huddle.ID); err != nil {
+	if _, err := f.pool.Exec(
+		f.ctx,
+		`UPDATE huddles SET created_at=now()-interval '3 minutes' WHERE id=$1`,
+		started.Huddle.ID,
+	); err != nil {
 		t.Fatal(err)
 	}
 	closed, err = service.ReconcileMediaRooms(f.ctx)
@@ -232,7 +326,8 @@ func TestHuddleLifecycleClosesHuddleNobodyJoined(t *testing.T) {
 		t.Fatalf("after grace closed/deleted = %d/%d, error = %v, want 1/1, nil", closed, media.deleted, err)
 	}
 	var state, invitation string
-	if err := f.pool.QueryRow(f.ctx, `SELECT h.state, i.status FROM huddles h JOIN huddle_invitations i ON i.huddle_id=h.id WHERE h.id=$1`, started.Huddle.ID).Scan(&state, &invitation); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT h.state, i.status FROM huddles h JOIN huddle_invitations i ON i.huddle_id=h.id WHERE h.id=$1`, started.Huddle.ID).
+		Scan(&state, &invitation); err != nil {
 		t.Fatal(err)
 	}
 	if state != string(HuddleStateEnded) || invitation != "revoked" {
@@ -249,11 +344,20 @@ func TestHuddleLifecycleFailureDoesNotBlockOtherRooms(t *testing.T) {
 	}
 	var huddles []Huddle
 	for _, peer := range []uuid.UUID{f.b.UserID, f.c.UserID} {
-		direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}})
+		direct, err := f.conversations.CreateHumanDirect(
+			f.ctx,
+			f.a,
+			CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
-		started, err := service.Start(f.ctx, f.a, direct.Conversation.ID, StartHuddleRequest{RequestKey: uuid.New()})
+		started, err := service.Start(
+			f.ctx,
+			f.a,
+			direct.Conversation.ID,
+			StartHuddleRequest{RequestKey: uuid.New()},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,7 +377,8 @@ func TestHuddleLifecycleFailureDoesNotBlockOtherRooms(t *testing.T) {
 		t.Fatalf("room readiness calls = %d, want one batch for both rooms", media.readyCalls)
 	}
 	var state string
-	if err := f.pool.QueryRow(f.ctx, `SELECT state FROM huddles WHERE id=$1`, huddles[1].ID).Scan(&state); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT state FROM huddles WHERE id=$1`, huddles[1].ID).
+		Scan(&state); err != nil {
 		t.Fatal(err)
 	}
 	if state != string(HuddleStateEnded) {

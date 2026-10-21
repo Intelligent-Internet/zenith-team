@@ -1,0 +1,83 @@
+---
+title: Maintaining
+description: The one-time repository setup and the regular chores that keep the Zenith Team repository healthy, for maintainers.
+---
+
+This page is for maintainers with admin access to the GitHub repository. The first part is a one-time checklist. The second part is the regular work.
+
+## One-time setup
+
+### Teams
+
+Create the two teams that [`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) names, and give both write access to the repository:
+
+- `@Intelligent-Internet/zenith-team-maintainers`, which owns everything except the paths below
+- `@Intelligent-Internet/zenith-team-security`, which owns the security-sensitive paths (sign-in, configuration, middleware, the agent sandbox, provider adapters, migrations, `frontend/electron/`, `.github/`, `.gitleaks.toml` and `SECURITY.md`)
+
+GitHub ignores a CODEOWNERS line whose team does not exist or has no write access.
+
+### Protect `main`
+
+Add a branch ruleset for `main` that:
+
+- requires a pull request before merging,
+- requires a review from code owners,
+- requires these status checks to pass:
+  - `ci-gate`, from the CI workflow. It is the one check that stands for every CI lane.
+  - `secrets` and `workflows`, from the Security workflow.
+  - `DCO`, from the DCO app (next step).
+- blocks force pushes and deletion.
+
+Do not require the individual CI lanes. They skip when their folders did not change, and `ci-gate` already fails when a lane that ran did not pass. The Security workflow's `dependencies` job only reports, so do not require it either.
+
+The PR title workflow checks that pull request titles are Conventional Commits. Requiring its check (`conventional-title`) is optional but keeps squash-merge commit messages clean.
+
+### Sign-off
+
+Install the [DCO GitHub App](https://github.com/apps/dco) on the repository. It checks that every commit in a pull request carries a `Signed-off-by` line. [CONTRIBUTING.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/CONTRIBUTING.md#sign-off-every-commit-dco) tells contributors how to add it.
+
+### Security reports and Discussions
+
+- Turn on **Private vulnerability reporting** under **Settings → Code security**. [SECURITY.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SECURITY.md) and the issue chooser send reporters there.
+- Turn on **Discussions** under **Settings → General → Features**. SUPPORT.md, CONTRIBUTING.md and the issue chooser link to it.
+
+### Labels
+
+Create the labels that `.github/release.yml` uses to sort the release notes. The issue templates use some of them too.
+
+| Label | Release notes section |
+| --- | --- |
+| `breaking` | Breaking changes |
+| `enhancement`, `feature` | New features |
+| `bug`, `fix` | Fixes |
+| `security` | Security |
+| `documentation` | Documentation |
+| `skip-changelog` | Left out of the notes |
+
+Pull requests with no matching label land under **Other changes**.
+
+### Releases
+
+Only maintainers should be able to push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once. Add a tag ruleset for `v*` that only maintainers can bypass.
+
+The release workflow needs no secrets beyond its own GitHub token. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+
+### Actions
+
+- Under **Settings → Actions → General**, keep the default workflow token read-only. Each workflow asks for the extra permissions it needs.
+- Require approval before workflows run for first-time contributors from forks.
+
+## Regular work
+
+- **Triage.** Label new issues, and answer or close questions that belong in Discussions.
+- **Dependabot.** Each week Dependabot opens grouped update pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
+- **Nightly CI.** CI runs every lane plus the PostgreSQL integration suites each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
+- **Security workflow.** It also runs every Monday. Read the dependency audit summary on the run page: those findings do not fail the job.
+- **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles-in-boardly-plugins.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.
+- **Releases.** Cut them as described in [Releasing](/developers/releasing).
+
+## Next steps
+
+- **[Releasing](/developers/releasing)**: cut a release from a tag.
+- **[Testing](/developers/testing)**: what each CI lane runs.
+- **[Community](/community)**: how decisions are made and how people become maintainers.

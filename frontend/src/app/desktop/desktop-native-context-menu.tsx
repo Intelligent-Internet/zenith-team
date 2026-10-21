@@ -5,7 +5,7 @@ import {
   showDesktopContextMenu,
 } from "@/shared/desktop/desktop-environment.service";
 
-const DESKTOP_CONTEXT_SELECTOR = "[data-boardly-desktop-context-kind]";
+const DESKTOP_CONTEXT_SELECTOR = "[data-zenith-team-desktop-context-kind]";
 
 export function DesktopNativeContextMenuController() {
   useEffect(() => {
@@ -56,35 +56,35 @@ export function createDesktopContextMenuPayloadFromDataset(
   dataset: Partial<Record<DesktopContextDatasetKey, string>>,
   event: Pick<MouseEvent, "clientX" | "clientY">,
 ): DesktopContextMenuPayload | null {
-  const kind = dataset.boardlyDesktopContextKind;
+  const kind = dataset.zenithTeamDesktopContextKind;
   if (!isDesktopContextKind(kind)) {
     return null;
   }
 
-  const label = dataset.boardlyDesktopContextLabel?.trim();
+  const label = dataset.zenithTeamDesktopContextLabel?.trim();
   if (!label) {
     return null;
   }
 
   return {
-    copyText: dataset.boardlyDesktopContextCopy,
-    detailText: dataset.boardlyDesktopContextDetail,
+    copyText: dataset.zenithTeamDesktopContextCopy,
+    detailText: dataset.zenithTeamDesktopContextDetail,
     kind,
     label,
-    routePath: dataset.boardlyDesktopContextRoute,
-    shareUrl: dataset.boardlyDesktopContextShareUrl,
+    routePath: dataset.zenithTeamDesktopContextRoute,
+    shareUrl: dataset.zenithTeamDesktopContextShareUrl,
     x: event.clientX,
     y: event.clientY,
   };
 }
 
 type DesktopContextDatasetKey =
-  | "boardlyDesktopContextCopy"
-  | "boardlyDesktopContextDetail"
-  | "boardlyDesktopContextKind"
-  | "boardlyDesktopContextLabel"
-  | "boardlyDesktopContextRoute"
-  | "boardlyDesktopContextShareUrl";
+  | "zenithTeamDesktopContextCopy"
+  | "zenithTeamDesktopContextDetail"
+  | "zenithTeamDesktopContextKind"
+  | "zenithTeamDesktopContextLabel"
+  | "zenithTeamDesktopContextRoute"
+  | "zenithTeamDesktopContextShareUrl";
 
 function isDesktopContextKind(
   value: string | undefined,

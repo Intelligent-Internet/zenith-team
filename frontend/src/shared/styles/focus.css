@@ -7,7 +7,7 @@
    next is not a control and gets no ring either. The exclusions sit in
    :where() so the rule keeps its old specificity and every override of it
    still wins. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(button, a, input, textarea, select, [tabindex]):where(
     :not([role^="menuitem"], :is(aside, article, section, main)[tabindex="-1"])
   ):focus-visible {
@@ -16,7 +16,7 @@ html[data-boardly-workspace-theme]
 }
 
 /* Text fields use their existing border; compound fields own the outer border. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     input:where(
       :not(

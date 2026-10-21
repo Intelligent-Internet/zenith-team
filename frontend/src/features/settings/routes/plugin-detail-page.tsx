@@ -57,7 +57,7 @@ import {
   useMinuteClock,
 } from "@/features/settings/model/plugin-sync";
 import { readPluginCatalogHref } from "@/features/settings/model/settings-navigation";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type {
   PluginAgentUse,
   PluginDetailApp,
@@ -208,7 +208,7 @@ function PluginDetailContent({
   const providerName = provider ? providerLabel(provider) : "";
   // Every member reads which of their computer's apps wait for review (a
   // member read), so an app Runs can't use never reads as fine; accepting
-  // the changed tools stays with connectors.manage (D28).
+  // the changed tools stays with connectors.manage.
   const reviewsQuery = useListConnectorReviewsQuery(
     { companyId, provider, runtimeId: runtime?.id },
     {
@@ -391,7 +391,7 @@ function PluginDetailContent({
     setAppNotice(undefined);
   }, [watchedAppConnected]);
 
-  const error = query.error as BoardlyApiError | undefined;
+  const error = query.error as ZenithTeamApiError | undefined;
   if (error?.code === "plugin_not_found" || error?.status === 404) {
     return (
       <PluginPageState

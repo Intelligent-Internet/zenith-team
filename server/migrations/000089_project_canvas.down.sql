@@ -169,7 +169,7 @@ WHERE NOT EXISTS (
 );
 DROP VIEW project_attachment_scopes;
 
--- Consolidated unshipped Project canvas and collaborative document schema.
+-- Project canvas and collaborative document schema.
 
 -- Output documents
 DROP TABLE canvas_document_imports;

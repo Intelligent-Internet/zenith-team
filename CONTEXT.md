@@ -1,4 +1,4 @@
-# Boardly domain language
+# Zenith Team domain language
 
 The glossary lives in
 [`docs/content/docs/concepts.mdx`](docs/content/docs/concepts.mdx)

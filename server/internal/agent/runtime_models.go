@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (
@@ -129,7 +129,7 @@ func (s *DefaultRuntimeService) GetModelDiscovery(
 	runtimeID uuid.UUID,
 	requestID uuid.UUID,
 ) (ModelDiscoveryRequest, error) {
-	// A cached catalogue is machine state: only the registrant reads it.
+	// A cached catalog is machine state: only the registrant reads it.
 	if _, err := s.runtimeForCompany(ctx, principal, runtimeID); err != nil {
 		return ModelDiscoveryRequest{}, err
 	}

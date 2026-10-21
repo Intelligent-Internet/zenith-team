@@ -31,10 +31,19 @@ func TestCheckMinVersionReportsTheParsedVersionNotTheCLIBanner(t *testing.T) {
 			err := CheckMinVersion(tc.provider, tc.raw)
 			var tooOld *BelowMinimumError
 			if !errors.As(err, &tooOld) {
-				t.Fatalf("CheckMinVersion(%q, %q) = %v, want a BelowMinimumError", tc.provider, tc.raw, err)
+				t.Fatalf(
+					"CheckMinVersion(%q, %q) = %v, want a BelowMinimumError",
+					tc.provider,
+					tc.raw,
+					err,
+				)
 			}
 			if tooOld.Detected != tc.want {
-				t.Fatalf("Detected = %q, want the parsed version %q (never the CLI banner)", tooOld.Detected, tc.want)
+				t.Fatalf(
+					"Detected = %q, want the parsed version %q (never the CLI banner)",
+					tooOld.Detected,
+					tc.want,
+				)
 			}
 			// The sentence a person reads must name the version once.
 			if message := tooOld.Error(); strings.Contains(message, "codex-cli") ||

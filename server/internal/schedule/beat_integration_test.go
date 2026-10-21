@@ -13,7 +13,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestScheduleAsynqTwoReplicasAndRedisLoss(t *testing.T) {
@@ -50,7 +50,7 @@ func TestScheduleAsynqTwoReplicasAndRedisLoss(t *testing.T) {
 	principal := companyPrincipal(f.UserA, f.CompanyA)
 	base := createDueSchedule(t, ctx, pool, svc, principal, f.AgentA)
 	count := 2
-	if os.Getenv("BOARDLY_SCHEDULE_LOAD_TEST") == "1" {
+	if os.Getenv("ZENITH_TEAM_SCHEDULE_LOAD_TEST") == "1" {
 		count = 1000
 	}
 	seedScheduleBurst(t, ctx, pool, base.Schedule, count)

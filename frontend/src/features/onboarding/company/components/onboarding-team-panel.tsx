@@ -13,7 +13,7 @@ import {
   AGENT_NAME_MAX_LENGTH,
   AGENT_TITLE_MAX_LENGTH,
 } from "@/features/agents/model/agent-draft";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { AgentDto } from "@/shared/api/types";
 
 import {
@@ -91,7 +91,7 @@ export function OnboardingTeamPanel({
   const displayedAgents = root
     ? [...agents.slice(0, 2), root, ...agents.slice(2)]
     : agents;
-  const storageKey = `boardly:onboarding:team:${companyId}`;
+  const storageKey = `zenith-team:onboarding:team:${companyId}`;
   const [drafts, setDrafts] = useState<Record<string, TeamDraft>>(() => {
     try {
       return JSON.parse(readStorageItem("session", storageKey) || "{}") ?? {};
@@ -211,7 +211,7 @@ export function OnboardingTeamPanel({
       removeStorageItem("session", storageKey);
     } catch (caught) {
       setError(
-        `Could not finish saving ${savingName}. ${getBoardlyQueryErrorMessage(caught)} Your other saved choices are kept.`,
+        `Could not finish saving ${savingName}. ${getZenithTeamQueryErrorMessage(caught)} Your other saved choices are kept.`,
       );
     } finally {
       setSaving(false);
@@ -228,7 +228,7 @@ export function OnboardingTeamPanel({
       <div className="onboarding-connections__state" role="status">
         {roster.isError ? (
           <>
-            <p>{getBoardlyQueryErrorMessage(roster.error)}</p>
+            <p>{getZenithTeamQueryErrorMessage(roster.error)}</p>
             <button type="button" onClick={() => void roster.refetch()}>
               Try again
             </button>

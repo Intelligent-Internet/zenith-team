@@ -17,9 +17,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 type AnalyticsScope string
@@ -225,15 +225,30 @@ type AnalyticsBudgetInput struct {
 	Enabled              bool
 }
 
-var ErrAnalyticsBusy = errors.New("analytics query timed out")
-var ErrTaskUsageNotFound = errors.New("task usage task not found")
+var (
+	ErrAnalyticsBusy     = errors.New("analytics query timed out")
+	ErrTaskUsageNotFound = errors.New("task usage task not found")
+)
 
 func ParseAnalyticsQuery(rawQuery, endpoint string) (AnalyticsQuery, error) {
 	values, err := url.ParseQuery(rawQuery)
 	if err != nil {
 		return AnalyticsQuery{}, ErrInvalidInput
 	}
-	allowed := map[string]bool{"scope": true, "start_at": true, "end_at": true, "time_zone": true, "provider": true, "model": true, "agent_id": true, "member_id": true, "project_id": true, "task_id": true, "run_type": true, "runtime_id": true}
+	allowed := map[string]bool{
+		"scope":      true,
+		"start_at":   true,
+		"end_at":     true,
+		"time_zone":  true,
+		"provider":   true,
+		"model":      true,
+		"agent_id":   true,
+		"member_id":  true,
+		"project_id": true,
+		"task_id":    true,
+		"run_type":   true,
+		"runtime_id": true,
+	}
 	switch endpoint {
 	case "summary", "failures", "heatmap":
 	case "series":
@@ -251,7 +266,18 @@ func ParseAnalyticsQuery(rawQuery, endpoint string) (AnalyticsQuery, error) {
 			return AnalyticsQuery{}, ErrInvalidInput
 		}
 	}
-	q := AnalyticsQuery{Scope: AnalyticsScope(values.Get("scope")), TimeZone: values.Get("time_zone"), Provider: values.Get("provider"), Model: values.Get("model"), RunType: values.Get("run_type"), Metric: values.Get("metric"), Bucket: Bucket(values.Get("bucket")), By: values.Get("by"), Sort: values.Get("sort"), Cursor: values.Get("cursor")}
+	q := AnalyticsQuery{
+		Scope:    AnalyticsScope(values.Get("scope")),
+		TimeZone: values.Get("time_zone"),
+		Provider: values.Get("provider"),
+		Model:    values.Get("model"),
+		RunType:  values.Get("run_type"),
+		Metric:   values.Get("metric"),
+		Bucket:   Bucket(values.Get("bucket")),
+		By:       values.Get("by"),
+		Sort:     values.Get("sort"),
+		Cursor:   values.Get("cursor"),
+	}
 	q.StartAt, err = time.Parse(time.RFC3339Nano, values.Get("start_at"))
 	if err != nil {
 		return q, ErrInvalidInput
@@ -269,12 +295,16 @@ func ParseAnalyticsQuery(rawQuery, endpoint string) (AnalyticsQuery, error) {
 			*target = &id
 		}
 	}
-	if endpoint == "series" && (!oneOf(q.Metric, "cost", "tokens", "runs", "run_time", "failures") || !oneOf(string(q.Bucket), "day", "week", "month")) {
+	if endpoint == "series" &&
+		(!oneOf(q.Metric, "cost", "tokens", "runs", "run_time", "failures") || !oneOf(string(q.Bucket), "day", "week", "month")) {
 		return q, ErrInvalidInput
 	}
 	if endpoint == "breakdown" {
 		q.Limit, err = strconv.Atoi(values.Get("limit"))
-		if err != nil || q.Limit < 1 || q.Limit > 100 || !oneOf(q.By, "agent", "model", "member", "project", "task", "run_type", "runtime") || !oneOf(q.Sort, "tokens", "cost", "runs", "run_time", "failures") || (q.Scope == AnalyticsScopeMine && q.By == "member") {
+		if err != nil || q.Limit < 1 || q.Limit > 100 ||
+			!oneOf(q.By, "agent", "model", "member", "project", "task", "run_type", "runtime") ||
+			!oneOf(q.Sort, "tokens", "cost", "runs", "run_time", "failures") ||
+			(q.Scope == AnalyticsScopeMine && q.By == "member") {
 			return q, ErrInvalidInput
 		}
 	}
@@ -295,10 +325,17 @@ func oneOf(value string, values ...string) bool {
 
 func validateAnalyticsQuery(q AnalyticsQuery) error {
 	loc, err := time.LoadLocation(q.TimeZone)
-	if err != nil || q.TimeZone == "" || q.TimeZone == "Local" || !oneOf(string(q.Scope), "company", "mine") || !q.EndAt.After(q.StartAt) || !isExactLocalMidnight(q.StartAt, loc) || !isExactLocalMidnight(q.EndAt, loc) || q.EndAt.After(q.StartAt.In(loc).AddDate(0, 0, 367)) {
+	if err != nil || q.TimeZone == "" || q.TimeZone == "Local" || !oneOf(string(q.Scope), "company", "mine") ||
+		!q.EndAt.After(q.StartAt) ||
+		!isExactLocalMidnight(q.StartAt, loc) ||
+		!isExactLocalMidnight(q.EndAt, loc) ||
+		q.EndAt.After(q.StartAt.In(loc).AddDate(0, 0, 367)) {
 		return ErrInvalidInput
 	}
-	if q.Provider != "" && !oneOf(q.Provider, "claude", "codex") || q.RunType != "" && !oneOf(q.RunType, "task", "direct_chat", "channel_agent", "schedule") || len(q.Model) > 255 || q.Scope == AnalyticsScopeMine && q.MemberID != nil {
+	if q.Provider != "" && !oneOf(q.Provider, "claude", "codex") ||
+		q.RunType != "" && !oneOf(q.RunType, "task", "direct_chat", "channel_agent", "schedule") ||
+		len(q.Model) > 255 ||
+		q.Scope == AnalyticsScopeMine && q.MemberID != nil {
 		return ErrInvalidInput
 	}
 	return nil
@@ -325,7 +362,12 @@ func analyticsComparison(q AnalyticsQuery, now time.Time) (time.Time, time.Time,
 // snapshot. A project_id or task_id filter must name work the caller reads
 // (ADR 0017): totals of one hidden Project or Task would reveal it, so such a
 // filter answers like a missing one.
-func (s *DefaultUsageService) analyticsRead(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery, read func(*generated.Queries) error) error {
+func (s *DefaultUsageService) analyticsRead(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+	read func(*generated.Queries) error,
+) error {
 	if err := validateAnalyticsQuery(q); err != nil {
 		return err
 	}
@@ -335,22 +377,27 @@ func (s *DefaultUsageService) analyticsRead(ctx context.Context, p auth.UserPrin
 	if q.Scope == AnalyticsScopeCompany && !p.Can(auth.PermissionUsageRead) {
 		return ErrForbidden
 	}
-	err := s.store.WithinRawTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx generated.DBTX, queries *generated.Queries) error {
-		if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5s'"); err != nil {
-			return err
-		}
-		var active bool
-		if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM company_members m JOIN companies c ON c.id=m.company_id WHERE m.company_id=$1 AND m.user_id=$2 AND m.status='active' AND c.deleting_at IS NULL AND ($3::boolean=false OR m.role=ANY($4::text[])))`, p.CompanyID, p.UserID, q.Scope == AnalyticsScopeCompany, auth.RolesWith(auth.PermissionUsageRead)).Scan(&active); err != nil {
-			return err
-		}
-		if !active {
-			return ErrForbidden
-		}
-		if err := analyticsFilterReadable(ctx, queries, p, q); err != nil {
-			return err
-		}
-		return read(queries)
-	})
+	err := s.store.WithinRawTx(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(tx generated.DBTX, queries *generated.Queries) error {
+			if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5s'"); err != nil {
+				return err
+			}
+			var active bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM company_members m JOIN companies c ON c.id=m.company_id WHERE m.company_id=$1 AND m.user_id=$2 AND m.status='active' AND c.deleting_at IS NULL AND ($3::boolean=false OR m.role=ANY($4::text[])))`, p.CompanyID, p.UserID, q.Scope == AnalyticsScopeCompany, auth.RolesWith(auth.PermissionUsageRead)).
+				Scan(&active); err != nil {
+				return err
+			}
+			if !active {
+				return ErrForbidden
+			}
+			if err := analyticsFilterReadable(ctx, queries, p, q); err != nil {
+				return err
+			}
+			return read(queries)
+		},
+	)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "57014" {
 		return ErrAnalyticsBusy
@@ -367,7 +414,12 @@ func (s *DefaultUsageService) analyticsRead(ctx context.Context, p auth.UserPrin
 // auth.ErrTaskNotVisible (404 task_not_found) for a Task, the same answers as
 // for one that does not exist. The management bridge reads no work, so it
 // does not open a Project's numbers either.
-func analyticsFilterReadable(ctx context.Context, queries *generated.Queries, p auth.UserPrincipal, q AnalyticsQuery) error {
+func analyticsFilterReadable(
+	ctx context.Context,
+	queries *generated.Queries,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) error {
 	if q.ProjectID != nil {
 		access, err := auth.ResolveProjectAccess(ctx, queries, p, *q.ProjectID)
 		if err != nil {
@@ -378,20 +430,38 @@ func analyticsFilterReadable(ctx context.Context, queries *generated.Queries, p 
 		}
 	}
 	if q.TaskID != nil {
-		if _, err := auth.RequireTaskPermission(ctx, queries, p, *q.TaskID, auth.ProjectPermissionRead); err != nil {
+		if _, err := auth.RequireTaskPermission(
+			ctx,
+			queries,
+			p,
+			*q.TaskID,
+			auth.ProjectPermissionRead,
+		); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *DefaultUsageService) GetAnalyticsSummary(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery) (AnalyticsSummary, error) {
+func (s *DefaultUsageService) GetAnalyticsSummary(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) (AnalyticsSummary, error) {
 	if err := validateAnalyticsQuery(q); err != nil {
 		return AnalyticsSummary{}, err
 	}
 	q.By = ""
 	a, b, cutoff := analyticsComparison(q, time.Now())
-	result := AnalyticsSummary{Scope: q.Scope, TimeZone: q.TimeZone, PeriodStartAt: q.StartAt, PeriodEndAt: q.EndAt, ComparisonStartAt: a, ComparisonEndAt: b, AsOf: time.Now().UTC()}
+	result := AnalyticsSummary{
+		Scope:             q.Scope,
+		TimeZone:          q.TimeZone,
+		PeriodStartAt:     q.StartAt,
+		PeriodEndAt:       q.EndAt,
+		ComparisonStartAt: a,
+		ComparisonEndAt:   b,
+		AsOf:              time.Now().UTC(),
+	}
 	err := s.analyticsRead(ctx, p, q, func(queries *generated.Queries) error {
 		var err error
 		result.Current, err = analyticsTotals(ctx, queries, p, q, q.StartAt, cutoff)
@@ -417,10 +487,15 @@ func (s *DefaultUsageService) GetAnalyticsSummary(ctx context.Context, p auth.Us
 	return result, err
 }
 
-func (s *DefaultUsageService) GetAnalyticsSeries(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery) (AnalyticsSeries, error) {
+func (s *DefaultUsageService) GetAnalyticsSeries(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) (AnalyticsSeries, error) {
 	q.By = ""
 	result := AnalyticsSeries{Scope: q.Scope, Metric: q.Metric, Bucket: q.Bucket, Points: []AnalyticsSeriesPoint{}}
-	if !oneOf(q.Metric, "cost", "tokens", "runs", "run_time", "failures") || !oneOf(string(q.Bucket), "day", "week", "month") {
+	if !oneOf(q.Metric, "cost", "tokens", "runs", "run_time", "failures") ||
+		!oneOf(string(q.Bucket), "day", "week", "month") {
 		return result, ErrInvalidInput
 	}
 	err := s.analyticsRead(ctx, p, q, func(queries *generated.Queries) error {
@@ -439,9 +514,10 @@ func (s *DefaultUsageService) GetAnalyticsSeries(ctx context.Context, p auth.Use
 		}
 		loc, _ := time.LoadLocation(q.TimeZone)
 		start := q.StartAt.In(loc)
-		if q.Bucket == "week" {
+		switch q.Bucket {
+		case "week":
 			start = start.AddDate(0, 0, -(int(start.Weekday())+6)%7)
-		} else if q.Bucket == "month" {
+		case "month":
 			start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, loc)
 		}
 		for start.Before(q.EndAt) {
@@ -457,7 +533,14 @@ func (s *DefaultUsageService) GetAnalyticsSeries(ctx context.Context, p auth.Use
 			if b.After(q.EndAt) {
 				b = q.EndAt
 			}
-			result.Points = append(result.Points, AnalyticsSeriesPoint{StartAt: a.UTC(), EndAt: b.UTC(), Parts: analyticsParts(m, q.Metric)})
+			result.Points = append(
+				result.Points,
+				AnalyticsSeriesPoint{
+					StartAt: a.UTC(),
+					EndAt:   b.UTC(),
+					Parts:   analyticsParts(m, q.Metric),
+				},
+			)
 			start = end
 		}
 		return nil
@@ -465,7 +548,11 @@ func (s *DefaultUsageService) GetAnalyticsSeries(ctx context.Context, p auth.Use
 	return result, err
 }
 
-func (s *DefaultUsageService) GetAnalyticsHeatmap(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery) (AnalyticsHeatmap, error) {
+func (s *DefaultUsageService) GetAnalyticsHeatmap(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) (AnalyticsHeatmap, error) {
 	q.By = ""
 	result := AnalyticsHeatmap{Scope: string(q.Scope), Cells: make([]AnalyticsHeatmapCell, 0, 168)}
 	// Dense output makes the client a pure renderer and keeps empty weekday/hour
@@ -490,11 +577,17 @@ func (s *DefaultUsageService) GetAnalyticsHeatmap(ctx context.Context, p auth.Us
 				CostUsdTicks: analyticsHeatmapCost(m.Cost),
 			}
 		}
-		for weekday := 0; weekday < 7; weekday++ {
-			for hour := 0; hour < 24; hour++ {
+		for weekday := range 7 {
+			for hour := range 24 {
 				cell, ok := values[[2]int{weekday, hour}]
 				if !ok {
-					cell = AnalyticsHeatmapCell{Weekday: weekday, Hour: hour, Runs: "0", Tokens: "0", CostUsdTicks: "0"}
+					cell = AnalyticsHeatmapCell{
+						Weekday:      weekday,
+						Hour:         hour,
+						Runs:         "0",
+						Tokens:       "0",
+						CostUsdTicks: "0",
+					}
 				}
 				result.Cells = append(result.Cells, cell)
 			}
@@ -516,7 +609,29 @@ func nextAnalyticsBucket(start time.Time, bucket Bucket) time.Time {
 }
 
 func emptyAnalyticsMetrics() AnalyticsMetrics {
-	return AnalyticsMetrics{Tokens: AnalyticsTokens{Input: "0", Output: "0", CacheRead: "0", CacheWrite: "0"}, Cost: AnalyticsCost{CoverageState: CostCoverageMissing, PlanCoveredTokens: "0", CostedFactCount: "0", UncostedFactCount: "0", UnpricedModels: []AnalyticsModel{}}, Runs: AnalyticsRuns{Total: "0", Completed: "0", Failed: "0", Cancelled: "0", Task: "0", DirectChat: "0", ChannelAgent: "0", Schedule: "0", WithoutUsage: "0", WithoutTiming: "0", Retries: "0"}}
+	return AnalyticsMetrics{
+		Tokens: AnalyticsTokens{Input: "0", Output: "0", CacheRead: "0", CacheWrite: "0"},
+		Cost: AnalyticsCost{
+			CoverageState:     CostCoverageMissing,
+			PlanCoveredTokens: "0",
+			CostedFactCount:   "0",
+			UncostedFactCount: "0",
+			UnpricedModels:    []AnalyticsModel{},
+		},
+		Runs: AnalyticsRuns{
+			Total:         "0",
+			Completed:     "0",
+			Failed:        "0",
+			Cancelled:     "0",
+			Task:          "0",
+			DirectChat:    "0",
+			ChannelAgent:  "0",
+			Schedule:      "0",
+			WithoutUsage:  "0",
+			WithoutTiming: "0",
+			Retries:       "0",
+		},
+	}
 }
 
 func stringPointer(s string) *string { return &s }
@@ -525,20 +640,36 @@ func analyticsParts(m AnalyticsMetrics, metric string) map[string]*string {
 	case "cost":
 		return map[string]*string{"reported": m.Cost.ReportedUsdTicks, "estimated": m.Cost.EstimatedUsdTicks}
 	case "runs":
-		return map[string]*string{"completed": stringPointer(m.Runs.Completed), "failed": stringPointer(m.Runs.Failed), "cancelled": stringPointer(m.Runs.Cancelled)}
+		return map[string]*string{
+			"completed": stringPointer(m.Runs.Completed),
+			"failed":    stringPointer(m.Runs.Failed),
+			"cancelled": stringPointer(m.Runs.Cancelled),
+		}
 	case "run_time":
 		return map[string]*string{"runTimeMs": m.Time.RunTimeMs}
 	case "failures":
-		return map[string]*string{"failed": stringPointer(m.Runs.Failed), "succeeded": stringPointer(m.Runs.Completed)}
+		return map[string]*string{
+			"failed":    stringPointer(m.Runs.Failed),
+			"succeeded": stringPointer(m.Runs.Completed),
+		}
 	default:
-		return map[string]*string{"input": stringPointer(m.Tokens.Input), "output": stringPointer(m.Tokens.Output), "cacheRead": stringPointer(m.Tokens.CacheRead), "cacheWrite": stringPointer(m.Tokens.CacheWrite)}
+		return map[string]*string{
+			"input":      stringPointer(m.Tokens.Input),
+			"output":     stringPointer(m.Tokens.Output),
+			"cacheRead":  stringPointer(m.Tokens.CacheRead),
+			"cacheWrite": stringPointer(m.Tokens.CacheWrite),
+		}
 	}
 }
 
 // GetAnalyticsBreakdown lists one dimension's rows. Every row of a Project
 // the caller does not read, by Project or by Task, is one unnamed row
 // (synthetic other_work) so the rows still add up to total.
-func (s *DefaultUsageService) GetAnalyticsBreakdown(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery) (AnalyticsBreakdown, error) {
+func (s *DefaultUsageService) GetAnalyticsBreakdown(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) (AnalyticsBreakdown, error) {
 	result := AnalyticsBreakdown{By: q.By, Rows: []AnalyticsBreakdownRow{}}
 	if q.Scope == AnalyticsScopeMine && q.By == "member" {
 		return result, ErrInvalidInput
@@ -578,13 +709,30 @@ func (s *DefaultUsageService) GetAnalyticsBreakdown(ctx context.Context, p auth.
 	return result, err
 }
 
-func (s *DefaultUsageService) GetAnalyticsFailures(ctx context.Context, p auth.UserPrincipal, q AnalyticsQuery) (AnalyticsFailures, error) {
+func (s *DefaultUsageService) GetAnalyticsFailures(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	q AnalyticsQuery,
+) (AnalyticsFailures, error) {
 	q.By = ""
-	result := AnalyticsFailures{Agents: []AnalyticsFailureAgent{}, ByClass: map[string]string{}, ByCode: map[string]string{}}
+	result := AnalyticsFailures{
+		Agents:  []AnalyticsFailureAgent{},
+		ByClass: map[string]string{},
+		ByCode:  map[string]string{},
+	}
 	err := s.analyticsRead(ctx, p, q, func(queries *generated.Queries) error {
 		// Failures read only Run counts, so no grouping here computes the time
 		// percentiles or unpriced models.
-		totalsParams := analyticsGroupsParams(p, q, q.StartAt, q.EndAt, analyticsGroupNone, "", analyticsAllRows, 0)
+		totalsParams := analyticsGroupsParams(
+			p,
+			q,
+			q.StartAt,
+			q.EndAt,
+			analyticsGroupNone,
+			"",
+			analyticsAllRows,
+			0,
+		)
 		totalsParams.Detail = false
 		totals, err := analyticsGroups(ctx, queries, totalsParams)
 		if err != nil {
@@ -594,8 +742,20 @@ func (s *DefaultUsageService) GetAnalyticsFailures(ctx context.Context, p auth.U
 		if len(totals) > 0 {
 			result.Succeeded = totals[0].Metrics.Runs.Completed
 		}
-		codes, err := analyticsGroups(ctx, queries,
-			analyticsGroupsParams(p, q, q.StartAt, q.EndAt, analyticsGroupFailureReason, "failures", analyticsAllRows, 0))
+		codes, err := analyticsGroups(
+			ctx,
+			queries,
+			analyticsGroupsParams(
+				p,
+				q,
+				q.StartAt,
+				q.EndAt,
+				analyticsGroupFailureReason,
+				"failures",
+				analyticsAllRows,
+				0,
+			),
+		)
 		if err != nil {
 			return fmt.Errorf("read analytics failure codes: %w", err)
 		}
@@ -651,94 +811,108 @@ func (s *DefaultUsageService) GetAnalyticsFailures(ctx context.Context, p auth.U
 // Project the caller reads (ADR 0017); otherwise it answers like a missing
 // Task. Tokens and cost show for usage.read holders, and otherwise only on
 // the Runs the caller authorized.
-func (s *DefaultUsageService) GetTaskUsage(ctx context.Context, p auth.UserPrincipal, taskID uuid.UUID) (AnalyticsTaskUsage, error) {
+func (s *DefaultUsageService) GetTaskUsage(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	taskID uuid.UUID,
+) (AnalyticsTaskUsage, error) {
 	result := AnalyticsTaskUsage{TaskID: taskID, Items: []AnalyticsTaskUsageRun{}}
 	if taskID == uuid.Nil || p.UserID == uuid.Nil || p.CompanyID == uuid.Nil {
 		return result, ErrInvalidInput
 	}
-	err := s.store.WithinRawTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx generated.DBTX, queries *generated.Queries) error {
-		if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5s'"); err != nil {
-			return err
-		}
-		task, err := queries.GetTaskUsageTaskForReader(ctx, generated.GetTaskUsageTaskForReaderParams{
-			CompanyID: p.CompanyID, UserID: p.UserID, TaskID: taskID,
-		})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrTaskUsageNotFound
-		} else if err != nil {
-			return err
-		}
-		canReadCompanyUsage := p.Can(auth.PermissionUsageRead) && auth.CompanyRole(task.Role).Can(auth.PermissionUsageRead)
-		if task.CompletedAt.Valid {
-			value := durationMillis(task.CreatedAt.Time, task.CompletedAt.Time)
-			result.LeadTimeMs = &value
-		} else {
-			value := durationMillis(task.CreatedAt.Time, time.Now().UTC())
-			result.LeadTimeMs = &value
-		}
-		rows, err := queries.ListTaskUsageRuns(ctx, generated.ListTaskUsageRunsParams{
-			CompanyID: p.CompanyID, TaskID: taskID, UserID: p.UserID,
-		})
-		if err != nil {
-			return err
-		}
-		agentTime, tokens, cost := "0", "0", "0"
-		var hasTiming, hasTokens, hasCost bool
-		for _, row := range rows {
-			authorizer := row.ExecutionAuthorizedByUserID
-			restricted := !canReadCompanyUsage && (!authorizer.Valid || authorizer.UUID != p.UserID)
-			item := AnalyticsTaskUsageRun{ID: row.ID, Status: row.Status, Agent: row.AgentName, UsageRestricted: restricted}
-			if row.Model != "" {
-				model := row.Model
-				item.Model = &model
+	err := s.store.WithinRawTx(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(tx generated.DBTX, queries *generated.Queries) error {
+			if _, err := tx.Exec(ctx, "SET LOCAL statement_timeout = '5s'"); err != nil {
+				return err
 			}
-			if row.StartedAt.Valid {
-				value := row.StartedAt.Time.UTC()
-				item.StartedAt = &value
+			task, err := queries.GetTaskUsageTaskForReader(ctx, generated.GetTaskUsageTaskForReaderParams{
+				CompanyID: p.CompanyID, UserID: p.UserID, TaskID: taskID,
+			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrTaskUsageNotFound
+			} else if err != nil {
+				return err
 			}
-			if row.FinishedAt.Valid {
-				value := row.FinishedAt.Time.UTC()
-				item.FinishedAt = &value
+			canReadCompanyUsage := p.Can(auth.PermissionUsageRead) &&
+				auth.CompanyRole(task.Role).Can(auth.PermissionUsageRead)
+			if task.CompletedAt.Valid {
+				value := durationMillis(task.CreatedAt.Time, task.CompletedAt.Time)
+				result.LeadTimeMs = &value
+			} else {
+				value := durationMillis(task.CreatedAt.Time, time.Now().UTC())
+				result.LeadTimeMs = &value
 			}
-			if row.QueuedAt.Valid && row.ClaimedAt.Valid {
-				value := durationMillis(row.QueuedAt.Time, row.ClaimedAt.Time)
-				item.QueueWaitMs = &value
+			rows, err := queries.ListTaskUsageRuns(ctx, generated.ListTaskUsageRunsParams{
+				CompanyID: p.CompanyID, TaskID: taskID, UserID: p.UserID,
+			})
+			if err != nil {
+				return err
 			}
-			if row.StartedAt.Valid && row.FinishedAt.Valid {
-				value := durationMillis(row.StartedAt.Time, row.FinishedAt.Time)
-				item.DurationMs = &value
-				agentTime = addDecimalStrings(agentTime, value)
-				hasTiming = true
-			}
-			if !restricted && row.FactCount != "0" {
-				if row.Tokens != "" {
-					value := row.Tokens
-					item.Tokens = &value
-					tokens = addDecimalStrings(tokens, value)
-					hasTokens = true
+			agentTime, tokens, cost := "0", "0", "0"
+			var hasTiming, hasTokens, hasCost bool
+			for _, row := range rows {
+				authorizer := row.ExecutionAuthorizedByUserID
+				restricted := !canReadCompanyUsage && (!authorizer.Valid || authorizer.UUID != p.UserID)
+				item := AnalyticsTaskUsageRun{
+					ID:              row.ID,
+					Status:          row.Status,
+					Agent:           row.AgentName,
+					UsageRestricted: restricted,
 				}
-				if row.CostUsdTicks != "" {
-					value := row.CostUsdTicks
-					item.CostUsdTicks = &value
-					cost = addDecimalStrings(cost, value)
-					hasCost = true
+				if row.Model != "" {
+					model := row.Model
+					item.Model = &model
 				}
+				if row.StartedAt.Valid {
+					value := row.StartedAt.Time.UTC()
+					item.StartedAt = &value
+				}
+				if row.FinishedAt.Valid {
+					value := row.FinishedAt.Time.UTC()
+					item.FinishedAt = &value
+				}
+				if row.QueuedAt.Valid && row.ClaimedAt.Valid {
+					value := durationMillis(row.QueuedAt.Time, row.ClaimedAt.Time)
+					item.QueueWaitMs = &value
+				}
+				if row.StartedAt.Valid && row.FinishedAt.Valid {
+					value := durationMillis(row.StartedAt.Time, row.FinishedAt.Time)
+					item.DurationMs = &value
+					agentTime = addDecimalStrings(agentTime, value)
+					hasTiming = true
+				}
+				if !restricted && row.FactCount != "0" {
+					if row.Tokens != "" {
+						value := row.Tokens
+						item.Tokens = &value
+						tokens = addDecimalStrings(tokens, value)
+						hasTokens = true
+					}
+					if row.CostUsdTicks != "" {
+						value := row.CostUsdTicks
+						item.CostUsdTicks = &value
+						cost = addDecimalStrings(cost, value)
+						hasCost = true
+					}
+				}
+				result.Items = append(result.Items, item)
 			}
-			result.Items = append(result.Items, item)
-		}
-		result.Runs = strconv.Itoa(len(result.Items))
-		if hasTiming {
-			result.AgentTimeMs = &agentTime
-		}
-		if hasTokens {
-			result.Tokens = &tokens
-		}
-		if hasCost {
-			result.CostUsdTicks = &cost
-		}
-		result.UsageRestricted = !canReadCompanyUsage
-		return nil
-	})
+			result.Runs = strconv.Itoa(len(result.Items))
+			if hasTiming {
+				result.AgentTimeMs = &agentTime
+			}
+			if hasTokens {
+				result.Tokens = &tokens
+			}
+			if hasCost {
+				result.CostUsdTicks = &cost
+			}
+			result.UsageRestricted = !canReadCompanyUsage
+			return nil
+		},
+	)
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "57014" {
 		return result, ErrAnalyticsBusy
@@ -752,21 +926,28 @@ func (s *DefaultUsageService) GetTaskUsage(ctx context.Context, p auth.UserPrinc
 	return result, nil
 }
 
-func (s *DefaultUsageService) GetAnalyticsBudgets(ctx context.Context, p auth.UserPrincipal) ([]AnalyticsBudget, error) {
+func (s *DefaultUsageService) GetAnalyticsBudgets(
+	ctx context.Context,
+	p auth.UserPrincipal,
+) ([]AnalyticsBudget, error) {
 	result := []AnalyticsBudget{}
-	err := s.store.WithinRawTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx generated.DBTX, q *generated.Queries) error {
-		if err := authorizeAnalyticsCompany(ctx, q, p); err != nil {
-			return err
-		}
-		rows, err := q.ListAnalyticsBudgets(ctx, p.CompanyID)
-		if err != nil {
-			return err
-		}
-		for _, row := range rows {
-			result = append(result, analyticsBudgetFromRow(row))
-		}
-		return nil
-	})
+	err := s.store.WithinRawTx(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(_ generated.DBTX, q *generated.Queries) error {
+			if err := authorizeAnalyticsCompany(ctx, q, p); err != nil {
+				return err
+			}
+			rows, err := q.ListAnalyticsBudgets(ctx, p.CompanyID)
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				result = append(result, analyticsBudgetFromRow(row))
+			}
+			return nil
+		},
+	)
 	if errors.Is(err, ErrForbidden) || errors.Is(err, ErrInvalidInput) {
 		return result, err
 	}
@@ -776,11 +957,16 @@ func (s *DefaultUsageService) GetAnalyticsBudgets(ctx context.Context, p auth.Us
 	return result, nil
 }
 
-func (s *DefaultUsageService) UpsertAnalyticsBudget(ctx context.Context, p auth.UserPrincipal, input AnalyticsBudgetInput) (AnalyticsBudget, error) {
+func (s *DefaultUsageService) UpsertAnalyticsBudget(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	input AnalyticsBudgetInput,
+) (AnalyticsBudget, error) {
 	if input.OwnerKind != "company" && input.OwnerKind != "agent" {
 		return AnalyticsBudget{}, ErrInvalidInput
 	}
-	if input.OwnerKind == "company" && input.AgentID != nil || input.OwnerKind == "agent" && (input.AgentID == nil || *input.AgentID == uuid.Nil) {
+	if input.OwnerKind == "company" && input.AgentID != nil ||
+		input.OwnerKind == "agent" && (input.AgentID == nil || *input.AgentID == uuid.Nil) {
 		return AnalyticsBudget{}, ErrInvalidInput
 	}
 	limit, err := strconv.ParseInt(input.MonthlyLimitUsdTicks, 10, 64)
@@ -793,7 +979,13 @@ func (s *DefaultUsageService) UpsertAnalyticsBudget(ctx context.Context, p auth.
 			return err
 		}
 		if input.AgentID != nil {
-			if _, err := q.LockActiveAgentParent(ctx, generated.LockActiveAgentParentParams{CompanyID: p.CompanyID, AgentID: *input.AgentID}); errors.Is(err, pgx.ErrNoRows) {
+			if _, err := q.LockActiveAgentParent(
+				ctx,
+				generated.LockActiveAgentParentParams{CompanyID: p.CompanyID, AgentID: *input.AgentID},
+			); errors.Is(
+				err,
+				pgx.ErrNoRows,
+			) {
 				return ErrInvalidInput
 			} else if err != nil {
 				return err
@@ -823,7 +1015,10 @@ func authorizeAnalyticsCompany(ctx context.Context, q *generated.Queries, p auth
 	if p.UserID == uuid.Nil || p.CompanyID == uuid.Nil || !p.Can(auth.PermissionUsageRead) {
 		return ErrForbidden
 	}
-	member, err := q.GetActiveCompanyMembership(ctx, generated.GetActiveCompanyMembershipParams{CompanyID: p.CompanyID, UserID: p.UserID})
+	member, err := q.GetActiveCompanyMembership(
+		ctx,
+		generated.GetActiveCompanyMembershipParams{CompanyID: p.CompanyID, UserID: p.UserID},
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrForbidden
@@ -845,8 +1040,13 @@ func lockAnalyticsBudgetMembership(ctx context.Context, q *generated.Queries, p 
 	} else if err != nil {
 		return err
 	}
-	member, err := q.GetCompanyMemberForUpdate(ctx, generated.GetCompanyMemberForUpdateParams{CompanyID: p.CompanyID, UserID: p.UserID})
-	if errors.Is(err, pgx.ErrNoRows) || err == nil && (member.Status != "active" || !auth.CompanyRole(member.Role).Can(auth.PermissionUsageRead)) {
+	member, err := q.GetCompanyMemberForUpdate(
+		ctx,
+		generated.GetCompanyMemberForUpdateParams{CompanyID: p.CompanyID, UserID: p.UserID},
+	)
+	if errors.Is(err, pgx.ErrNoRows) ||
+		err == nil &&
+			(member.Status != "active" || !auth.CompanyRole(member.Role).Can(auth.PermissionUsageRead)) {
 		return ErrForbidden
 	}
 	return err
@@ -860,7 +1060,12 @@ func analyticsNullableUUID(value *uuid.UUID) uuid.NullUUID {
 }
 
 func analyticsBudgetFromRow(row generated.AnalyticsBudget) AnalyticsBudget {
-	result := AnalyticsBudget{ID: row.ID, OwnerKind: row.OwnerKind, MonthlyLimitUsdTicks: strconv.FormatInt(row.MonthlyLimitUsdTicks, 10), Enabled: row.Enabled}
+	result := AnalyticsBudget{
+		ID:                   row.ID,
+		OwnerKind:            row.OwnerKind,
+		MonthlyLimitUsdTicks: strconv.FormatInt(row.MonthlyLimitUsdTicks, 10),
+		Enabled:              row.Enabled,
+	}
 	if row.AgentID.Valid {
 		value := row.AgentID.UUID
 		result.AgentID = &value
@@ -906,6 +1111,7 @@ func analyticsCursor(q AnalyticsQuery, offset int) string {
 	hash := sha256.Sum256(encoded)
 	return base64.RawURLEncoding.EncodeToString([]byte(fmt.Sprintf("%d:%x", offset, hash[:8])))
 }
+
 func analyticsCursorOffset(q AnalyticsQuery) (int, error) {
 	if q.Cursor == "" {
 		return 0, nil

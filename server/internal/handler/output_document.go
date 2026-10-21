@@ -6,9 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func outputDocumentPath(c *gin.Context) (auth.UserPrincipal, uuid.UUID, uuid.UUID, bool) {

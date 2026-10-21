@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 const maxSafeInteger = int64(9_007_199_254_740_991)

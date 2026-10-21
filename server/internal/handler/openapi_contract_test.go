@@ -14,7 +14,7 @@ import (
 // specRelativePath is the contract, from this package's directory.
 const specRelativePath = "../../../docs/api/spec/openapi.yaml"
 
-// plannedStatus is the x-boardly-status value marking an operation that the
+// plannedStatus is the x-zenith-team-status value marking an operation that the
 // contract specifies but the server does not serve yet.
 const plannedStatus = "planned"
 
@@ -53,14 +53,14 @@ func TestOpenAPISpecMatchesRouteTable(t *testing.T) {
 	}
 	if len(servedAsPlanned) > 0 {
 		t.Errorf(
-			"served but still marked x-boardly-status: planned (%d):\n  %s",
+			"served but still marked x-zenith-team-status: planned (%d):\n  %s",
 			len(servedAsPlanned), strings.Join(servedAsPlanned, "\n  "),
 		)
 	}
 	if len(extra) > 0 {
 		t.Errorf(
 			"in docs/api/spec/openapi.yaml but not served, and not marked "+
-				"x-boardly-status: planned (%d):\n  %s",
+				"x-zenith-team-status: planned (%d):\n  %s",
 			len(extra), strings.Join(extra, "\n  "),
 		)
 	}
@@ -69,7 +69,7 @@ func TestOpenAPISpecMatchesRouteTable(t *testing.T) {
 	// looking like it means something.
 	if len(mislabeled) > 0 {
 		t.Errorf(
-			"unknown x-boardly-status value; only %q is defined (%d):\n  %s",
+			"unknown x-zenith-team-status value; only %q is defined (%d):\n  %s",
 			plannedStatus, len(mislabeled), strings.Join(mislabeled, "\n  "),
 		)
 	}
@@ -105,8 +105,8 @@ func routeToOpenAPIPath(route string) string {
 var pathItemRef = regexp.MustCompile(`^\./([\w.-]+\.yaml)#/paths/([\w-]+)$`)
 
 // operationsInSpec returns every "METHOD /path" the spec declares, the
-// subset marked x-boardly-status: planned, and the operations carrying an
-// x-boardly-status value the mechanism does not define.
+// subset marked x-zenith-team-status: planned, and the operations carrying an
+// x-zenith-team-status value the mechanism does not define.
 //
 // The spec is split one file per domain, with openapi.yaml as the index, so a
 // path item is a $ref into a domain file rather than the item itself. Only
@@ -138,7 +138,7 @@ func operationsInSpec(t *testing.T) (all, planned map[string]bool, mislabeled []
 				continue
 			}
 			var operation struct {
-				Status string `yaml:"x-boardly-status"`
+				Status string `yaml:"x-zenith-team-status"`
 			}
 			if err := node.Decode(&operation); err != nil {
 				t.Fatalf("parse operation %s %s: %v", key, path, err)
@@ -150,7 +150,7 @@ func operationsInSpec(t *testing.T) (all, planned map[string]bool, mislabeled []
 			case plannedStatus:
 				planned[name] = true
 			default:
-				mislabeled = append(mislabeled, name+" (x-boardly-status: "+operation.Status+")")
+				mislabeled = append(mislabeled, name+" (x-zenith-team-status: "+operation.Status+")")
 			}
 		}
 	}

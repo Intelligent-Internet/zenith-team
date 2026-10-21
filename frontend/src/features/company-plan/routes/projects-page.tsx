@@ -19,7 +19,7 @@ import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { hasProjectPermission, useCan } from "@/shared/permissions";
 import { WorkspacePageFrame } from "@/features/common/components/workspace-page-frame";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import {
   Archive,
   FolderOpen,
@@ -100,7 +100,7 @@ export function ProjectsWorkspace({
           }).unwrap();
         } catch (err) {
           toast.error(
-            getBoardlyQueryErrorMessage(err, "Couldn't archive project"),
+            getZenithTeamQueryErrorMessage(err, "Couldn't archive project"),
           );
         }
       },
@@ -633,7 +633,7 @@ function ProjectEditor({
     } catch (err) {
       setConfirmArchive(false);
       setError(
-        getBoardlyQueryErrorMessage(err, "Project could not be archived."),
+        getZenithTeamQueryErrorMessage(err, "Project could not be archived."),
       );
     }
   };
@@ -705,7 +705,10 @@ function ProjectEditor({
             } catch (err) {
               void existingProjects.refetch();
               setError(
-                getBoardlyQueryErrorMessage(err, "Project could not be saved."),
+                getZenithTeamQueryErrorMessage(
+                  err,
+                  "Project could not be saved.",
+                ),
               );
             }
           }}

@@ -123,11 +123,12 @@ FOR UPDATE OF runs;
 -- agent row held, so an edit committing between that read and the claim means
 -- this claim acted on the previous value. That is fine by design — the cap is
 -- dispatcher policy read live at claim time, never frozen into a run, so the
--- next claim uses the new number. See ADR 0003 for what a run does freeze.
+-- next claim uses the new number. What a run does freeze (its prompt and the
+-- agent's execution identity) goes into runs.context at enqueue.
 -- name: LockAgentClaimSlot :exec
 SELECT pg_advisory_xact_lock(
     hashtextextended(
-        'boardly.agent_claim:' || sqlc.arg(agent_id)::uuid::text
+        'zenith-team.agent_claim:' || sqlc.arg(agent_id)::uuid::text
             || ':' || sqlc.arg(runtime_id)::uuid::text,
         0
     )
@@ -195,7 +196,7 @@ WHERE runs.agent_id = sqlc.arg(agent_id)::uuid
 --
 -- Project access (ADR 0017) is the second arm, beside the first: a Run in a
 -- Task chat is claimable only while the delegate rule lets it execute on the
--- chat's Project (run_permission_held, D31): its authorizer (by the first
+-- chat's Project (run_permission_held): its authorizer (by the first
 -- arm also the machine's owner) holds project.read and project.tasks.execute
 -- there. It is keyed on the chat, not on runs.task_id, which a Task delete
 -- sets NULL; a Task chat with no Project (deleted before 000067) runs
@@ -376,7 +377,7 @@ WHERE candidate.runtime_id = ANY(@runtime_ids::uuid[])
 
 -- The enqueue kernel's Project access fence (ADR 0017): a Run in a Task chat
 -- needs the delegate rule's project.tasks.execute on the chat's Project
--- (delegate_permission_held, D31), the same rule the claim applies through
+-- (delegate_permission_held), the same rule the claim applies through
 -- run_permission_held. The Run does not exist yet, so the caller names its
 -- Authorizer; the chat it answers into is this one. A Task chat with no
 -- Project admits no Run. Any other chat is not a Project's and passes. No
@@ -1127,7 +1128,7 @@ WHERE runs.company_id = @company_id
       -- A scalar lookup with LIMIT 1: Postgres may turn an EXISTS here
       -- into a hashed subplan that builds the person's whole readable set
       -- (every chat they read, from a scan of all conversations) before it
-      -- matches one Run (TECH §10). This form is always one probe per Run.
+      -- matches one Run. This form is always one probe per Run.
       AND COALESCE((
         SELECT true
         FROM conversation_readers AS reader

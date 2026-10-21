@@ -20,14 +20,14 @@ func TestLoadServerConfigUsesServerOrigin(t *testing.T) {
 			want:   "http://localhost:8000",
 			status: 200,
 		},
-		{name: "missing origin", body: `{}`, status: 200, wantError: true},
+		{name: "Studio off", body: `{}`, want: "", status: 200},
 		{name: "invalid origin", body: `{"studioApiOrigin":"http://remote.example"}`, status: 200, wantError: true},
 		{name: "unavailable", body: `{}`, status: 503, wantError: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != "GET" || r.URL.Path != "/api/v1/daemon/config" {
+				if r.Method != http.MethodGet || r.URL.Path != "/api/v1/daemon/config" {
 					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 				}
 				if r.Header.Get("Authorization") != "Bearer user-session" {
@@ -62,6 +62,9 @@ func TestLoadServerConfigUsesServerOrigin(t *testing.T) {
 					d.tools.studioOrigin,
 					test.want,
 				)
+			}
+			if test.want == "" {
+				return
 			}
 			release, _ := findToolRelease("zenith-studio")
 			scope := toolAuthScope{"22222222-2222-4222-8222-222222222222", testToolAgentID}

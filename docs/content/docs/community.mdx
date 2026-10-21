@@ -1,0 +1,54 @@
+---
+title: Community
+description: Who maintains Zenith Team, how decisions are made, where to get help, and how to become a maintainer.
+---
+
+Zenith Team is an open-source project under the [MIT License](https://github.com/Intelligent-Internet/zenith-team/blob/main/LICENSE). Everyone who takes part follows the [Code of Conduct](https://github.com/Intelligent-Internet/zenith-team/blob/main/CODE_OF_CONDUCT.md).
+
+## Who maintains it
+
+Two GitHub teams own the code. [`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) says which paths each one owns, and a pull request needs a review from the owners of what it changes.
+
+| Team | Owns |
+| --- | --- |
+| `@Intelligent-Internet/zenith-team-maintainers` | Everything, except the paths below |
+| `@Intelligent-Internet/zenith-team-security` | The security-sensitive paths: sign-in and permissions, configuration, middleware, the agent sandbox, the provider adapters, database migrations, the desktop app's native code, CI, the secret-scan rules and the security policy |
+
+## How decisions are made
+
+1. **It starts with an issue.** Bugs and small fixes can go straight to a pull request. A new feature or a change in behavior starts as a [feature request](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose), so we agree on the direction before anyone builds it.
+2. **Maintainers decide in the open.** The discussion stays on the issue or pull request, where everyone can read it.
+3. **Big decisions become ADRs.** A choice that shapes the system for a long time is written down as an Architecture Decision Record in [`docs/adr`](https://github.com/Intelligent-Internet/zenith-team/tree/main/docs/adr). Each record says what we decided, why, and what it costs. Code comments cite them as `ADR 00NN`.
+
+The engineering rules that every change follows are in [`AGENTS.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/AGENTS.md). [Conventions](/developers/conventions) is a short digest.
+
+## Get help
+
+| You want to… | Go to |
+| --- | --- |
+| Ask a question or share an idea | [GitHub Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions) |
+| Report a bug | [A bug report](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose) |
+| Ask for a feature | [A feature request](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose) |
+| Fix something yourself | [CONTRIBUTING.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/CONTRIBUTING.md) |
+
+[SUPPORT.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SUPPORT.md) lists what to include so others can help you. Maintainers and the community answer when they can. There is no guaranteed response time.
+
+## Report a security problem
+
+Never in a public issue. Report it privately through [GitHub security advisories](https://github.com/Intelligent-Internet/zenith-team/security/advisories/new). [SECURITY.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SECURITY.md) explains what to include and what happens next.
+
+## Become a maintainer
+
+There is no application form. Maintainers invite people who have shown, over time, that they:
+
+- send good changes that follow the project's rules,
+- review other people's pull requests with care,
+- help others in issues and Discussions, and
+- understand an area of the code well.
+
+Reviews, docs and answered questions count as much as code. If you would like to help maintain an area, say so in Discussions.
+
+## Next steps
+
+- **[Contributing](/developers/contributing)**: set up the code and check your change.
+- **[Conventions](/developers/conventions)**: the house rules in short.

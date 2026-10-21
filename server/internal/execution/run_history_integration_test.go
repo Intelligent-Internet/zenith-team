@@ -12,14 +12,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 func TestRunSourceRevisionAndRetryPreserveFrozenInput(t *testing.T) {
@@ -38,21 +38,32 @@ func TestRunSourceRevisionAndRetryPreserveFrozenInput(t *testing.T) {
 		`UPDATE tasks SET version = 7, title = 'Original brief', status = 'in_progress' WHERE id = $1`,
 		fixture.TaskA)
 	parent, err := queries.CreateRun(ctx, db.CreateRunParams{
-		CompanyID: fixture.CompanyA, AgentID: fixture.AgentA,
-		TaskID:         uuid.NullUUID{UUID: fixture.TaskA, Valid: true},
-		ConversationID: fixture.ConversationA, RuntimeID: fixture.RuntimeA,
+		CompanyID:                   fixture.CompanyA,
+		AgentID:                     fixture.AgentA,
+		TaskID:                      uuid.NullUUID{UUID: fixture.TaskA, Valid: true},
+		ConversationID:              fixture.ConversationA,
+		RuntimeID:                   fixture.RuntimeA,
 		ExecutionAuthorizedByUserID: fixture.UserA,
-		Status:                      "failed", Attempt: 1, Context: []byte(`{"prompt":"Execute the frozen brief"}`),
+		Status:                      "failed",
+		Attempt:                     1,
+		Context:                     []byte(`{"prompt":"Execute the frozen brief"}`),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET version = 8, title = 'Changed later' WHERE id = $1`, fixture.TaskA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE tasks SET version = 8, title = 'Changed later' WHERE id = $1`,
+		fixture.TaskA,
+	)
 	retry, err := queries.CreateRetryRun(ctx, db.CreateRetryRunParams{ParentRunID: parent.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if parent.ID == uuid.Nil || retry.ID == parent.ID || !retry.ParentRunID.Valid || retry.ParentRunID.UUID != parent.ID {
+	if parent.ID == uuid.Nil || retry.ID == parent.ID || !retry.ParentRunID.Valid ||
+		retry.ParentRunID.UUID != parent.ID {
 		t.Fatalf("retry lineage = %s -> %s (parent %v)", parent.ID, retry.ID, retry.ParentRunID)
 	}
 	for _, run := range []db.Run{parent, db.Run(retry)} {
@@ -72,7 +83,8 @@ func TestRunSourceRevisionAndRetryPreserveFrozenInput(t *testing.T) {
 		if err := json.Unmarshal(run.Context, &input); err != nil {
 			t.Fatal(err)
 		}
-		if input.Source.EntityID != fixture.TaskA || input.Source.Revision != 7 || input.Source.Title != "Original brief" {
+		if input.Source.EntityID != fixture.TaskA || input.Source.Revision != 7 ||
+			input.Source.Title != "Original brief" {
 			t.Fatalf("frozen source changed: %+v", input.Source)
 		}
 	}
@@ -172,7 +184,13 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 				h.pool,
 				`UPDATE tasks SET version=7,status='in_progress',title='Frozen task' WHERE id=$1`,
 				h.fixture.TaskA)
-			dbtest.MustExec(t, ctx, h.pool, `UPDATE conversations SET version=31 WHERE id=$1`, h.fixture.ConversationA)
+			dbtest.MustExec(
+				t,
+				ctx,
+				h.pool,
+				`UPDATE conversations SET version=31 WHERE id=$1`,
+				h.fixture.ConversationA,
+			)
 			run := enqueueHistoryRun(t, h)
 			// Conversation output finalization is exercised by its own service suite.
 			h.svc.SetRunQueuePromoter(RunQueuePromoterFunc(func(context.Context,
@@ -184,7 +202,8 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 			) {
 				return nil, nil
 			}))
-			if run.ID == uuid.Nil || run.RunType != "task" || !run.Revision.Valid || run.Revision.Int64 != 7 {
+			if run.ID == uuid.Nil || run.RunType != "task" || !run.Revision.Valid ||
+				run.Revision.Int64 != 7 {
 				t.Fatalf("enqueued identity/source = %+v", run)
 			}
 			claimed, err := h.svc.ClaimRun(ctx, h.fixture.AgentA, h.fixture.RuntimeA)
@@ -215,7 +234,16 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 					_, err := h.svc.CompleteRun(ctx, run.ID, proof, "", false, "")
 					return err
 				case "failed":
-					_, err := h.svc.FailRun(ctx, run.ID, proof, "provider rejected request", "", "invalid_request", false, "")
+					_, err := h.svc.FailRun(
+						ctx,
+						run.ID,
+						proof,
+						"provider rejected request",
+						"",
+						"invalid_request",
+						false,
+						"",
+					)
 					return err
 				default:
 					_, err := h.svc.Cancel(ctx,
@@ -249,7 +277,8 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 			var previous map[string]any
 			for i, status := range []string{"queued", "dispatched", "running", terminal} {
 				entry := rows[len(rows)-1-i]
-				if entry.Action != "run."+status || entry.Entity.ID != run.ID.String() || entry.Revision != nil {
+				if entry.Action != "run."+status || entry.Entity.ID != run.ID.String() ||
+					entry.Revision != nil {
 					t.Fatalf("lifecycle entry = %+v", entry)
 				}
 				wantActor := "system"
@@ -327,9 +356,13 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 				if status == "failed" {
 					wantFailureReason = "invalid_request"
 				}
-				if details.After["failureReason"] != wantFailureReason || details.After["waitReason"] != nil ||
-					details.After["fireAt"] != nil || details.After["companyId"] != h.fixture.CompanyA.String() ||
-					details.After["taskExecutionGeneration"] != float64(run.TaskExecutionGeneration.Int64) {
+				if details.After["failureReason"] != wantFailureReason ||
+					details.After["waitReason"] != nil ||
+					details.After["fireAt"] != nil ||
+					details.After["companyId"] != h.fixture.CompanyA.String() ||
+					details.After["taskExecutionGeneration"] != float64(
+						run.TaskExecutionGeneration.Int64,
+					) {
 					t.Fatalf("%s safe transition fields = %s", status, entry.Details)
 				}
 				createdAt, ok := details.After["createdAt"].(string)
@@ -338,7 +371,12 @@ func TestRunHistoryCapturesLifecycleActorsAndTerminalReplay(t *testing.T) {
 				}
 				parsed, err := time.Parse(time.RFC3339Nano, createdAt)
 				if err != nil || !parsed.Equal(run.CreatedAt.Time) {
-					t.Fatalf("Run creation time = %q, want %v (%v)", createdAt, run.CreatedAt.Time, err)
+					t.Fatalf(
+						"Run creation time = %q, want %v (%v)",
+						createdAt,
+						run.CreatedAt.Time,
+						err,
+					)
 				}
 				previous = details.After
 			}
@@ -411,7 +449,13 @@ func TestRunHistoryRetryInheritsSourceAndFreshEnqueueUsesEditedRevision(t *testi
 	if _, err := h.svc.StartRun(ctx, parent.ID, h.fixture.RuntimeA); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE tasks SET version=13,title='Edited source' WHERE id=$1`, h.fixture.TaskA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE tasks SET version=13,title='Edited source' WHERE id=$1`,
+		h.fixture.TaskA,
+	)
 	if _, err := h.svc.FailRun(ctx,
 		parent.ID,
 		emptyTerminalProof(),

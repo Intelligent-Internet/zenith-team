@@ -13,9 +13,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestResolveRunOriginRequiresAnUnexpiredCurrentlyRunningRun(t *testing.T) {
@@ -66,7 +66,7 @@ func TestResolveRunOriginRequiresAnUnexpiredCurrentlyRunningRun(t *testing.T) {
 		t.Fatalf("ResolveRunOrigin() authorizer = %v, want %s", origin.AuthorizedByUserID, fixture.UserA)
 	}
 	// The proof says whether its Agent is the root Agent and whether that
-	// Agent's Company Plan tools are on, read live (IA-FR12).
+	// Agent's Company Plan tools are on, read live.
 	if !origin.RootAgent || origin.PlanningDisabled {
 		t.Fatalf(
 			"ResolveRunOrigin() root, planning off = %t, %t; want true, false",

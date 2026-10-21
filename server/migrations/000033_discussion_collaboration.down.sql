@@ -1,5 +1,5 @@
--- A downgrade cannot preserve replies or tombstones in the C1 item shape.
--- Refuse it while C4 content exists; never silently discard human discussion.
+-- A downgrade cannot preserve replies or tombstones in the 000031 item shape.
+-- Refuse it while collaboration content exists; never silently discard human discussion.
 DO $$ BEGIN
     IF EXISTS(SELECT 1 FROM conversation_items WHERE thread_root_id IS NOT NULL OR deleted_at IS NOT NULL OR edited_at IS NOT NULL)
         OR EXISTS(SELECT 1 FROM conversation_message_pins)

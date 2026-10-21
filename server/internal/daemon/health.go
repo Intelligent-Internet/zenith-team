@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 var errHealthHandlersNotDrained = errors.New("local health handlers did not drain")

@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
@@ -31,7 +32,20 @@ func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
 	s := newCalendarTestService(t, store)
 	p := auth.UserPrincipal{UserID: f.UserA}
 	lead := int32(10)
-	event, err := s.Create(ctx, p, Input{Type: "reminder", Title: "Private review", Color: "sage", StartLocal: "2026-09-22T09:00", EndLocal: "2026-09-22T10:00", TimeZone: "Asia/Ho_Chi_Minh", Recurrence: "daily", ReminderMinutes: &lead})
+	event, err := s.Create(
+		ctx,
+		p,
+		Input{
+			Type:            "reminder",
+			Title:           "Private review",
+			Color:           "sage",
+			StartLocal:      "2026-09-22T09:00",
+			EndLocal:        "2026-09-22T10:00",
+			TimeZone:        "Asia/Ho_Chi_Minh",
+			Recurrence:      "daily",
+			ReminderMinutes: &lead,
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +60,8 @@ func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
 			return err
 		}
 		var exists bool
-		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM inbox_items WHERE id=$1 AND recipient_user_id=$2)`, hint.NotificationID, f.UserA).Scan(&exists); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM inbox_items WHERE id=$1 AND recipient_user_id=$2)`, hint.NotificationID, f.UserA).
+			Scan(&exists); err != nil {
 			return err
 		}
 		if !exists || event.CompanyID != uuid.Nil {
@@ -63,7 +78,9 @@ func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	var count int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).Scan(&count); err != nil || count != 0 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).
+		Scan(&count); err != nil ||
+		count != 0 {
 		t.Fatalf("early notices = %d, %v", count, err)
 	}
 	now := before.Add(time.Minute)
@@ -80,16 +97,25 @@ func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
 	wg.Wait()
 	var companyID *uuid.UUID
 	var title, path string
-	if err := pool.QueryRow(ctx, `SELECT company_id,title,deep_link FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).Scan(&companyID, &title, &path); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT company_id,title,deep_link FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).
+		Scan(&companyID, &title, &path); err != nil {
 		t.Fatal(err)
 	}
-	if companyID != nil || title != "Reminder: “Private review”" || path != "/calendar?eventId="+event.ID+"&date=2026-09-22" {
+	if companyID != nil || title != "Reminder: “Private review”" ||
+		path != "/calendar?eventId="+event.ID+"&date=2026-09-22" {
 		t.Fatalf("personal notice = %v, %q, %q", companyID, title, path)
 	}
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).Scan(&count); err != nil || count != 1 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).
+		Scan(&count); err != nil ||
+		count != 1 {
 		t.Fatalf("deduplicated notices = %d, %v", count, err)
 	}
-	if err := s.Occurrence(ctx, p, event.ID, OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-23", Action: "complete"}); err != nil {
+	if err := s.Occurrence(
+		ctx,
+		p,
+		event.ID,
+		OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-23", Action: "complete"},
+	); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.Deliver(ctx, now.Add(24*time.Hour)); err != nil {
@@ -98,7 +124,9 @@ func TestRemindersCreateDurableInboxWithoutAnOpenClient(t *testing.T) {
 	if err := r.Deliver(ctx, now.Add(48*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).Scan(&count); err != nil || count != 2 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1`, f.UserA).
+		Scan(&count); err != nil ||
+		count != 2 {
 		t.Fatalf("completed occurrence suppressed = %d, %v", count, err)
 	}
 	if nativeHints.Load() != 2 {
@@ -125,7 +153,12 @@ func TestSharedRemindersRespectRSVPRevocationAndCancellation(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -150,7 +183,16 @@ func TestSharedRemindersRespectRSVPRevocationAndCancellation(t *testing.T) {
 			companyCalendar = c.ID
 		}
 	}
-	input := Input{CalendarID: companyCalendar, Type: "reminder", Title: "Team review", Color: "sky", StartLocal: "2026-09-22T09:00", EndLocal: "2026-09-22T10:00", TimeZone: "UTC", Recurrence: "daily"}
+	input := Input{
+		CalendarID: companyCalendar,
+		Type:       "reminder",
+		Title:      "Team review",
+		Color:      "sky",
+		StartLocal: "2026-09-22T09:00",
+		EndLocal:   "2026-09-22T10:00",
+		TimeZone:   "UTC",
+		Recurrence: "daily",
+	}
 	event, err := s.Create(ctx, a, input)
 	if err != nil {
 		t.Fatal(err)
@@ -162,7 +204,8 @@ func TestSharedRemindersRespectRSVPRevocationAndCancellation(t *testing.T) {
 	assertCount := func(userID uuid.UUID, want int) {
 		t.Helper()
 		var got int
-		err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1 AND kind='calendar_reminder'`, userID).Scan(&got)
+		err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1 AND kind='calendar_reminder'`, userID).
+			Scan(&got)
 		if err != nil || got != want {
 			t.Fatalf("user %s notices=%d want=%d error=%v", userID, got, want, err)
 		}
@@ -189,14 +232,24 @@ func TestSharedRemindersRespectRSVPRevocationAndCancellation(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertCount(f.UserB, 1)
-	if err := s.Occurrence(ctx, a, event.ID, OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-25", Action: "cancel"}); err != nil {
+	if err := s.Occurrence(
+		ctx,
+		a,
+		event.ID,
+		OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-25", Action: "cancel"},
+	); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.Deliver(ctx, now.Add(72*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	assertCount(f.UserB, 1)
-	if _, err := pool.Exec(ctx, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	if err := r.Deliver(ctx, now.Add(96*time.Hour)); err != nil {

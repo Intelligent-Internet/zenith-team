@@ -10,23 +10,27 @@ import (
 	"strconv"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 const maxTaskBodyBytes = 512 << 10
 
 type TaskService interface {
-	SubmitHuddleNotes(context.Context, auth.UserPrincipal, task.SubmitHuddleNotesInput) (task.HuddleNotesSubmission, error)
+	SubmitHuddleNotes(
+		context.Context,
+		auth.UserPrincipal,
+		task.SubmitHuddleNotesInput,
+	) (task.HuddleNotesSubmission, error)
 	FinalizeResults(
 		context.Context,
 		auth.UserPrincipal,
@@ -66,11 +70,7 @@ type TaskService interface {
 		task.FailureInput,
 	) (task.Response, error)
 	ListDependencies(context.Context, auth.UserPrincipal, uuid.UUID, *task.RunScope) (task.DependencySet, error)
-	ListDependencyGraph(
-		context.Context,
-		auth.UserPrincipal,
-		task.DependencyGraphOptions,
-	) (task.DependencyGraph, error)
+	ListDependencyGraph(context.Context, auth.UserPrincipal) (task.DependencyGraph, error)
 }
 
 // taskActorRequest is the write-side actor reference: AssigneeRef (always
@@ -226,8 +226,7 @@ func (h *Handler) getTaskWorkspace(c *gin.Context) {
 }
 
 func (h *Handler) listTaskDependencyGraph(c *gin.Context) {
-	options, err := parseTaskDependencyGraphOptions(c.Request.URL.RawQuery)
-	if err != nil {
+	if err := validateTaskDependencyGraphQuery(c.Request.URL.RawQuery); err != nil {
 		writeTaskError(c, task.ErrInvalidInput)
 		return
 	}
@@ -235,11 +234,7 @@ func (h *Handler) listTaskDependencyGraph(c *gin.Context) {
 	if !ok {
 		return
 	}
-	result, err := h.TaskService.ListDependencyGraph(
-		c.Request.Context(),
-		principal,
-		options,
-	)
+	result, err := h.TaskService.ListDependencyGraph(c.Request.Context(), principal)
 	if err != nil {
 		writeTaskError(c, err)
 		return
@@ -336,7 +331,7 @@ func (h *Handler) createTask(c *gin.Context) {
 }
 
 // taskRunScope is the scope a Task read or create is made under (runReadScope).
-// A Run reads only its own Tasks (owner decision, 2026-09-26): the ones its
+// A Run reads only its own Tasks: the ones its
 // Agent does for the member it works for, its authorizer (ADR 0014), and
 // only in Projects everyone reading its answer may read (ADR 0017).
 func (h *Handler) taskRunScope(c *gin.Context, principal auth.UserPrincipal) (*task.RunScope, bool) {
@@ -592,24 +587,6 @@ func parseOptionalTaskAssignee(raw json.RawMessage) (task.ActorRef, bool, error)
 	return actor, true, nil
 }
 
-func parseOptionalTaskUUID(raw json.RawMessage) (uuid.UUID, bool, error) {
-	if len(raw) == 0 {
-		return uuid.Nil, false, nil
-	}
-	if string(raw) == "null" {
-		return uuid.Nil, false, task.ErrInvalidInput
-	}
-	var value string
-	if err := json.Unmarshal(raw, &value); err != nil {
-		return uuid.Nil, false, task.ErrInvalidInput
-	}
-	id, err := util.ParseGoUUID(value)
-	if err != nil {
-		return uuid.Nil, false, task.ErrInvalidInput
-	}
-	return id, true, nil
-}
-
 func parseOptionalTaskString(raw json.RawMessage) (string, bool, error) {
 	if len(raw) == 0 {
 		return "", false, nil
@@ -695,15 +672,14 @@ func parseTaskListOptions(c *gin.Context) (task.ListOptions, error) {
 	return options, nil
 }
 
-func parseTaskDependencyGraphOptions(rawQuery string) (task.DependencyGraphOptions, error) {
+// validateTaskDependencyGraphQuery rejects every query parameter: the graph is
+// Company-wide and takes no filters.
+func validateTaskDependencyGraphQuery(rawQuery string) error {
 	query, err := url.ParseQuery(rawQuery)
-	if err != nil {
-		return task.DependencyGraphOptions{}, task.ErrInvalidInput
+	if err != nil || len(query) != 0 {
+		return task.ErrInvalidInput
 	}
-	if len(query) != 0 {
-		return task.DependencyGraphOptions{}, task.ErrInvalidInput
-	}
-	return task.DependencyGraphOptions{}, nil
+	return nil
 }
 
 func parseTaskWorkspaceOptions(rawQuery string) (task.WorkspaceOptions, error) {

@@ -43,7 +43,7 @@ func TestGoogleProviderAuthorizationURLUsesExactClientFieldsAndDesktopOnlyPKCE(t
 			name: "Web",
 			request: OAuthAuthorizationRequest{
 				Client:      ClientWeb,
-				RedirectURI: "https://api.boardly.test/api/v1/auth/google/web/callback",
+				RedirectURI: "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 				State:       "web-state",
 				Nonce:       "web-nonce",
 			},
@@ -172,7 +172,7 @@ func TestGoogleProviderAllowsDesktopOnlyConfiguration(t *testing.T) {
 		)
 	}
 	if _, err := provider.AuthorizationURL(OAuthAuthorizationRequest{
-		Client: ClientWeb, RedirectURI: "https://api.boardly.test/api/v1/auth/google/web/callback",
+		Client: ClientWeb, RedirectURI: "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 		State: "web-state", Nonce: "web-nonce",
 	}); !errors.Is(err, ErrOAuthNotConfigured) {
 		t.Fatalf("Web AuthorizationURL() error = %v, want ErrOAuthNotConfigured", err)
@@ -205,7 +205,7 @@ func TestGoogleProviderExchangeUsesSelectedClientAndReturnsOnlyVerifiedAllowlist
 		{
 			name: "Web", client: ClientWeb,
 			clientID: "web-client.apps.googleusercontent.com", clientSecret: "web-secret",
-			redirectURI: "https://api.boardly.test/api/v1/auth/google/web/callback",
+			redirectURI: "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 		},
 		{
 			name: "Desktop", client: ClientDesktop,
@@ -395,7 +395,7 @@ func TestGoogleProviderValidatorFailuresAreClassifiedAndRedacted(t *testing.T) {
 
 			_, err = provider.Exchange(context.Background(), OAuthExchangeRequest{
 				Client:      ClientWeb,
-				RedirectURI: "https://api.boardly.test/callback",
+				RedirectURI: "https://api.zenith-team.test/callback",
 				Code:        "sentinel-code",
 				NonceHash:   make([]byte, sha256.Size),
 			})
@@ -498,7 +498,7 @@ func TestGoogleProviderRejectsInvalidRequiredIdentityClaims(t *testing.T) {
 
 			_, err := provider.Exchange(context.Background(), OAuthExchangeRequest{
 				Client:      ClientWeb,
-				RedirectURI: "https://api.boardly.test/callback",
+				RedirectURI: "https://api.zenith-team.test/callback",
 				Code:        "sentinel-code",
 				NonceHash:   expectedNonceHash[:],
 			})
@@ -535,7 +535,7 @@ func TestGoogleProviderDiscardsInvalidOrOversizedOptionalClaims(t *testing.T) {
 		provider := newGoogleProviderForPayloadTest(t, now, payload)
 
 		result, err := provider.Exchange(context.Background(), OAuthExchangeRequest{
-			Client: ClientWeb, RedirectURI: "https://api.boardly.test/callback", Code: "sentinel-code",
+			Client: ClientWeb, RedirectURI: "https://api.zenith-team.test/callback", Code: "sentinel-code",
 			NonceHash: nonceHash[:],
 		})
 		if err != nil {
@@ -634,7 +634,7 @@ func TestGoogleProviderTokenEndpointFailuresAreClassifiedAndRedacted(t *testing.
 
 			_, err = provider.Exchange(ctx, OAuthExchangeRequest{
 				Client:      ClientWeb,
-				RedirectURI: "https://api.boardly.test/callback",
+				RedirectURI: "https://api.zenith-team.test/callback",
 				Code:        "sentinel-provider-code",
 				NonceHash:   make([]byte, sha256.Size),
 			})

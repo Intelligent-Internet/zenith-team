@@ -12,13 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestCreateDirectDefaultsOnlyFirstCEOChatToPinned(t *testing.T) {
@@ -233,7 +234,11 @@ func TestRenameDirectPreservesChatAndRecordsPrivateCommittedHistory(t *testing.T
 	service := newTestConversationService(t, store, bus)
 	principal := auth.UserPrincipal{CompanyID: fixture.CompanyA, UserID: fixture.UserA, Role: auth.CompanyRoleOwner}
 	key := uuid.New()
-	created, err := service.CreateDirect(ctx, principal, CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key})
+	created, err := service.CreateDirect(
+		ctx,
+		principal,
+		CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,9 +294,11 @@ func TestRenameDirectPreservesChatAndRecordsPrivateCommittedHistory(t *testing.T
 		}
 		var title string
 		var revision int64
-		if err := pool.QueryRow(ctx, `SELECT title, version FROM conversations WHERE id = $1`, id).Scan(&title, &revision); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT title, version FROM conversations WHERE id = $1`, id).
+			Scan(&title, &revision); err != nil {
 			t.Errorf("read committed rename in subscriber: %v", err)
-		} else if snapshot.Conversation.Title == nil || title != *snapshot.Conversation.Title || revision != snapshot.Conversation.Revision {
+		} else if snapshot.Conversation.Title == nil || title != *snapshot.Conversation.Title ||
+			revision != snapshot.Conversation.Revision {
 			t.Errorf("published rename = %+v, stored title %q revision %d", snapshot, title, revision)
 		}
 		snapshots = append(snapshots, snapshot)
@@ -322,7 +329,8 @@ func TestRenameDirectPreservesChatAndRecordsPrivateCommittedHistory(t *testing.T
 		snapshots[0].Conversation.CreatedByUserID == nil || *snapshots[0].Conversation.CreatedByUserID != fixture.UserA {
 		t.Fatalf("rename snapshots = %+v, want one creator-private direct snapshot", snapshots)
 	}
-	if len(history) != 1 || !history[0].VisibilityUserID.Valid || history[0].VisibilityUserID.UUID != fixture.UserA {
+	if len(history) != 1 || !history[0].VisibilityUserID.Valid ||
+		history[0].VisibilityUserID.UUID != fixture.UserA {
 		t.Fatalf("rename history = %+v, want one creator-private change", history)
 	}
 	var change struct {
@@ -342,29 +350,58 @@ func TestRenameDirectPreservesChatAndRecordsPrivateCommittedHistory(t *testing.T
 		change.Before.Revision != state.Revision || change.After.Revision != got.Revision {
 		t.Fatalf("rename history change = %+v", change)
 	}
-	replay, err := service.CreateDirect(ctx, principal, CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key})
-	if err != nil || replay.Created || replay.Conversation.ID != id || replay.Conversation.Title == nil || *replay.Conversation.Title != *got.Title {
+	replay, err := service.CreateDirect(
+		ctx,
+		principal,
+		CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key},
+	)
+	if err != nil || replay.Created || replay.Conversation.ID != id || replay.Conversation.Title == nil ||
+		*replay.Conversation.Title != *got.Title {
 		t.Fatalf("creation replay after rename = %+v, %v", replay, err)
 	}
-	noop, err := service.RenameDirect(ctx, principal, id, RenameDirectInput{Title: " Release review ", ExpectedRevision: got.Revision})
+	noop, err := service.RenameDirect(
+		ctx,
+		principal,
+		id,
+		RenameDirectInput{Title: " Release review ", ExpectedRevision: got.Revision},
+	)
 	if err != nil || noop.Revision != got.Revision || !noop.UpdatedAt.Equal(got.UpdatedAt) {
 		t.Fatalf("same-title rename = %+v, %v, want unchanged snapshot", noop, err)
 	}
 	for _, title := range []string{"Stale edit", "Release review"} {
-		if _, err := service.RenameDirect(ctx, principal, id, RenameDirectInput{Title: title, ExpectedRevision: state.Revision}); !errors.Is(err, ErrConflict) {
+		if _, err := service.RenameDirect(
+			ctx,
+			principal,
+			id,
+			RenameDirectInput{Title: title, ExpectedRevision: state.Revision},
+		); !errors.Is(
+			err,
+			ErrConflict,
+		) {
 			t.Fatalf("stale rename %q error = %v, want %v", title, err, ErrConflict)
 		}
 	}
 	if len(snapshots) != 1 || len(history) != 1 || !bytes.Equal(preservedState(), wantPreserved) {
-		t.Fatalf("no-op/conflict published events or changed chat state: snapshots %d, history %d", len(snapshots), len(history))
+		t.Fatalf(
+			"no-op/conflict published events or changed chat state: snapshots %d, history %d",
+			len(snapshots),
+			len(history),
+		)
 	}
 	var storedTitle string
 	var storedRevision int64
-	if err := pool.QueryRow(ctx, `SELECT title, version FROM conversations WHERE id = $1`, id).Scan(&storedTitle, &storedRevision); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT title, version FROM conversations WHERE id = $1`, id).
+		Scan(&storedTitle, &storedRevision); err != nil {
 		t.Fatal(err)
 	}
 	if storedTitle != *got.Title || storedRevision != got.Revision {
-		t.Fatalf("stored rename = %q revision %d, want %q revision %d", storedTitle, storedRevision, *got.Title, got.Revision)
+		t.Fatalf(
+			"stored rename = %q revision %d, want %q revision %d",
+			storedTitle,
+			storedRevision,
+			*got.Title,
+			got.Revision,
+		)
 	}
 }
 
@@ -389,7 +426,11 @@ func TestRenameDirectRejectsInaccessibleConversations(t *testing.T) {
 				t.Fatal(err)
 			}
 			service := newTestConversationService(t, store, bus)
-			principal := auth.UserPrincipal{CompanyID: fixture.CompanyA, UserID: fixture.UserA, Role: auth.CompanyRoleOwner}
+			principal := auth.UserPrincipal{
+				CompanyID: fixture.CompanyA,
+				UserID:    fixture.UserA,
+				Role:      auth.CompanyRoleOwner,
+			}
 			id := fixture.DirectConversationA
 			switch name {
 			case "other owner", "other admin":
@@ -397,13 +438,34 @@ func TestRenameDirectRejectsInaccessibleConversations(t *testing.T) {
 				if name == "other admin" {
 					principal.Role = auth.CompanyRoleAdmin
 				}
-				dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`, fixture.CompanyA, fixture.UserB, string(principal.Role))
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
+					fixture.CompanyA,
+					fixture.UserB,
+					string(principal.Role),
+				)
 			case "foreign company":
 				id = fixture.UnownedConversationB
 			case "revoked member":
-				dbtest.MustExec(t, ctx, pool, `UPDATE company_members SET status = 'revoked' WHERE company_id = $1 AND user_id = $2`, fixture.CompanyA, fixture.UserA)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE company_members SET status = 'revoked' WHERE company_id = $1 AND user_id = $2`,
+					fixture.CompanyA,
+					fixture.UserA,
+				)
 			case "deleting company":
-				dbtest.MustExec(t, ctx, pool, `UPDATE companies SET deleting_at = clock_timestamp() WHERE id = $1`, fixture.CompanyA)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE companies SET deleting_at = clock_timestamp() WHERE id = $1`,
+					fixture.CompanyA,
+				)
 			case "task":
 				id = fixture.ConversationA
 			case "schedule":
@@ -421,31 +483,58 @@ func TestRenameDirectRejectsInaccessibleConversations(t *testing.T) {
 						id, fixture.CompanyA, scheduleID, fixture.AgentA, fixture.UserA)
 				})
 			case "human direct":
-				dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, fixture.UserB)
-				created, err := service.CreateHumanDirect(ctx, principal, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{fixture.UserB}})
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+					fixture.CompanyA,
+					fixture.UserB,
+				)
+				created, err := service.CreateHumanDirect(
+					ctx,
+					principal,
+					CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{fixture.UserB}},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
 				id = created.Conversation.ID
 			case "channel":
-				created, err := service.CreateChannel(ctx, principal, CreateChannelInput{RequestKey: uuid.New(), Name: "Team updates"})
+				created, err := service.CreateChannel(
+					ctx,
+					principal,
+					CreateChannelInput{RequestKey: uuid.New(), Name: "Team updates"},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
 				id = created.Conversation.ID
 			}
 			var before, after []byte
-			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c) FROM conversations c WHERE id = $1`, id).Scan(&before); err != nil {
+			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c) FROM conversations c WHERE id = $1`, id).
+				Scan(&before); err != nil {
 				t.Fatal(err)
 			}
 			var published int
-			if err := bus.SubscribeAll(func(context.Context, events.Event) error { published++; return nil }); err != nil {
+			if err := bus.SubscribeAll(
+				func(context.Context, events.Event) error { published++; return nil },
+			); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := service.RenameDirect(ctx, principal, id, RenameDirectInput{Title: "Forbidden rename", ExpectedRevision: 1}); !errors.Is(err, ErrNotFound) {
+			if _, err := service.RenameDirect(
+				ctx,
+				principal,
+				id,
+				RenameDirectInput{Title: "Forbidden rename", ExpectedRevision: 1},
+			); !errors.Is(
+				err,
+				ErrNotFound,
+			) {
 				t.Fatalf("RenameDirect() error = %v, want %v", err, ErrNotFound)
 			}
-			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c) FROM conversations c WHERE id = $1`, id).Scan(&after); err != nil {
+			if err := pool.QueryRow(ctx, `SELECT to_jsonb(c) FROM conversations c WHERE id = $1`, id).
+				Scan(&after); err != nil {
 				t.Fatal(err)
 			}
 			if !bytes.Equal(before, after) || published != 0 {
@@ -485,9 +574,14 @@ func TestRenameDirectSerializesConcurrentTitles(t *testing.T) {
 		go func() {
 			defer workers.Done()
 			<-start
-			results[index].value, results[index].err = service.RenameDirect(ctx, principal, fixture.DirectConversationA, RenameDirectInput{
-				Title: "Concurrent title " + strconv.Itoa(index), ExpectedRevision: 1,
-			})
+			results[index].value, results[index].err = service.RenameDirect(
+				ctx,
+				principal,
+				fixture.DirectConversationA,
+				RenameDirectInput{
+					Title: "Concurrent title " + strconv.Itoa(index), ExpectedRevision: 1,
+				},
+			)
 		}()
 	}
 	close(start)
@@ -509,7 +603,8 @@ func TestRenameDirectSerializesConcurrentTitles(t *testing.T) {
 		t.Fatalf("concurrent rename = %d successes, %d conflicts, winner %+v", successes, conflicts, winner)
 	}
 	stored, err := service.FetchDirect(ctx, principal, fixture.DirectConversationA)
-	if err != nil || stored.Conversation.Title == nil || *stored.Conversation.Title != *winner.Title || stored.Conversation.Revision != winner.Revision {
+	if err != nil || stored.Conversation.Title == nil || *stored.Conversation.Title != *winner.Title ||
+		stored.Conversation.Revision != winner.Revision {
 		t.Fatalf("stored concurrent winner = %+v, %v, want %+v", stored, err, winner)
 	}
 }

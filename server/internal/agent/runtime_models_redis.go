@@ -11,12 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	provideragent "boardly.dev/boardly/server/pkg/agent"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 const (
-	modelDiscoveryRedisPrefix       = "boardly:{runtime-model-discovery}:request:"
-	modelDiscoveryRedisActivePrefix = "boardly:{runtime-model-discovery}:active:"
+	modelDiscoveryRedisPrefix       = "zenith-team:{runtime-model-discovery}:request:"
+	modelDiscoveryRedisActivePrefix = "zenith-team:{runtime-model-discovery}:active:"
 	modelDiscoveryRedisRetentionMS  = int64(modelDiscoveryRetention / time.Millisecond)
 	modelDiscoveryPendingTimeoutMS  = int64(modelDiscoveryPendingTimeout / time.Millisecond)
 	modelDiscoveryRunningTimeoutMS  = int64(modelDiscoveryRunningTimeout / time.Millisecond)

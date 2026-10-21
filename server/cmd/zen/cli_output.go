@@ -6,7 +6,6 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -94,20 +93,6 @@ func shortID(value string) string {
 		return value[:8]
 	}
 	return value
-}
-
-func timeOrDash(value *time.Time) string {
-	if value == nil {
-		return "-"
-	}
-	return value.Local().Format("2006-01-02 15:04")
-}
-
-func formatTime(value time.Time) string {
-	if value.IsZero() {
-		return "-"
-	}
-	return value.Local().Format("2006-01-02 15:04")
 }
 
 // noteCursor tells an operator how to fetch the next page. It goes to

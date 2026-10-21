@@ -722,7 +722,7 @@ function normalizeReleaseVersion(value) {
   const normalized = String(value)
     .trim()
     .replace(/^v/i, "")
-    .replace(/^(?:Zenith Team|Boardly)\s+/i, "");
+    .replace(/^Zenith Team\s+/i, "");
 
   return /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(normalized)
     ? normalized

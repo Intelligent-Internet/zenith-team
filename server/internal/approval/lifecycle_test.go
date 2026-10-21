@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // A continuation the enqueue kernel refuses is abandoned with the reason the
@@ -43,7 +43,14 @@ func TestClassifyContinuationRefusal(t *testing.T) {
 	} {
 		got, ok := classifyContinuationRefusal(test.err, test.status)
 		if got != test.want || ok != test.ok {
-			t.Errorf("%s: classifyContinuationRefusal() = %q, %t; want %q, %t", test.name, got, ok, test.want, test.ok)
+			t.Errorf(
+				"%s: classifyContinuationRefusal() = %q, %t; want %q, %t",
+				test.name,
+				got,
+				ok,
+				test.want,
+				test.ok,
+			)
 		}
 	}
 }
@@ -319,7 +326,11 @@ func TestAbandonedTaskContinuationNoticeNamesOnlyWhatTheMemberCanDo(t *testing.T
 			t.Errorf("%s notice body = %q, want %q", test.reason, body, test.want)
 		}
 		if strings.Contains(body, "run the task again") || strings.Contains(body, "run it again") {
-			t.Errorf("%s notice body = %q tells the member to start a Task that has no start", test.reason, body)
+			t.Errorf(
+				"%s notice body = %q tells the member to start a Task that has no start",
+				test.reason,
+				body,
+			)
 		}
 	}
 }

@@ -224,8 +224,8 @@ export class WikiGraphScene {
       attributeFilter: [
         "class",
         "style",
-        "data-boardly-workspace-theme",
-        "data-boardly-color-mode",
+        "data-zenith-team-workspace-theme",
+        "data-zenith-team-color-mode",
       ],
     });
     this.colorScheme.addEventListener("change", this.invalidatePalette);

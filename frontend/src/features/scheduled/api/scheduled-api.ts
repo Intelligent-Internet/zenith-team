@@ -1,5 +1,5 @@
 import { runService } from "@/shared/api/run.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { connectorService } from "@/shared/api/connector.service";
 import { agentDirectoryService } from "@/shared/api/agent-directory.service";
 import { pluginService } from "@/shared/api/plugin.service";
@@ -39,7 +39,7 @@ type RunScheduleArguments = CompanyScheduleArguments & {
   request: ScheduleRunNowRequest;
 };
 
-export const scheduledApi = boardlyApi.injectEndpoints({
+export const scheduledApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listSchedules: builder.query<
       SchedulePage,
@@ -54,7 +54,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         })) ?? []),
       ],
       queryFn: ({ companyId, ...request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.list(companyId, request),
           "Schedules could not be loaded.",
           { retry: true },
@@ -66,7 +66,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: scheduleId, type: "Schedule" },
       ],
       queryFn: ({ companyId, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.get(companyId, scheduleId),
           "Schedule could not be loaded.",
           { retry: true },
@@ -77,7 +77,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
       { companyId: string; request: SchedulePreviewRequest }
     >({
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.preview(companyId, request),
           "Schedule preview could not be generated.",
         ),
@@ -90,7 +90,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:list`, type: "Schedule" },
       ],
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.create(companyId, request),
           "Schedule could not be created.",
         ),
@@ -101,7 +101,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: scheduleMutationTags,
       queryFn: ({ companyId, request, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.update(companyId, scheduleId, request),
           "Schedule could not be updated.",
         ),
@@ -112,7 +112,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: scheduleMutationTags,
       queryFn: ({ companyId, request, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.pause(companyId, scheduleId, request),
           "Schedule could not be paused.",
         ),
@@ -123,7 +123,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: scheduleMutationTags,
       queryFn: ({ companyId, request, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.resume(companyId, scheduleId, request),
           "Schedule could not be resumed.",
         ),
@@ -134,7 +134,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: scheduleMutationTags,
       queryFn: ({ companyId, request, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.cancel(companyId, scheduleId, request),
           "Schedule could not be cancelled.",
         ),
@@ -145,7 +145,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: scheduleMutationTags,
       queryFn: ({ companyId, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runService.cancelRun(companyId, runId),
           "The waiting run could not be cancelled.",
         ),
@@ -156,7 +156,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:${scheduleId}:runs`, type: "Run" },
       ],
       queryFn: ({ companyId, request, scheduleId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.runNow(companyId, scheduleId, request),
           "Schedule could not be run now.",
         ),
@@ -171,7 +171,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:${scheduleId}:runs`, type: "Run" },
       ],
       queryFn: ({ companyId, scheduleId, ...request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => scheduleService.listRuns(companyId, scheduleId, request),
           "Schedule history could not be loaded.",
           { retry: true },
@@ -185,7 +185,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Connector" },
       ],
       queryFn: ({ companyId, provider }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             connectorService.listAllConnectors(companyId, {
               provider,
@@ -203,7 +203,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Plugin" },
       ],
       queryFn: ({ companyId, provider }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             pluginService.listAllPlugins(companyId, {
               provider,
@@ -218,7 +218,7 @@ export const scheduledApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Agent" },
       ],
       queryFn: ({ companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentDirectoryService.listAgents(companyId, {
               includeArchived: false,

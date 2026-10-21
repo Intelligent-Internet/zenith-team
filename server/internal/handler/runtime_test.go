@@ -12,11 +12,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type runtimeServiceStub struct {
@@ -263,7 +263,7 @@ func TestRuntimeListRouteReturnsOwningDomainProjection(t *testing.T) {
 			ID: runtimeID, CompanyID: companyID, DaemonID: daemonID,
 			// An unusable runtime is structurally offline (the CHECK forbids
 			// the pair online + reason), so the stub row is offline too.
-			Name: "Duong Mac", Provider: "codex", Status: "offline",
+			Name: "Alex Mac", Provider: "codex", Status: "offline",
 			DeviceInfo: "macOS arm64",
 			// The domain projection rides the user plane unchanged, so a
 			// stored unusable reason reaches the roster as its object.
@@ -338,34 +338,6 @@ func memberCompanyStub(t *testing.T, userID, companyID uuid.UUID) *companyServic
 	}}
 }
 
-// ownerCompanyStub answers the owner gate for one company; any other id is
-// not found, exactly as the real service fences it.
-func ownerCompanyStub(t *testing.T, userID, companyID uuid.UUID) *companyServiceStub {
-	t.Helper()
-	return &companyServiceStub{requirePermission: func(
-		_ context.Context,
-		principal auth.UserPrincipal,
-		gotCompanyID uuid.UUID,
-	) (auth.UserPrincipal, error) {
-		if principal.UserID != userID || gotCompanyID != companyID {
-			return auth.UserPrincipal{}, company.ErrNotFound
-		}
-		principal.CompanyID = companyID
-		principal.Role = auth.CompanyRoleOwner
-		return principal, nil
-	}}
-}
-
-// nonOwnerCompanyStub answers the owner gate the way the real service does
-// for a plain member.
-func nonOwnerCompanyStub() *companyServiceStub {
-	return &companyServiceStub{requirePermission: func(
-		context.Context, auth.UserPrincipal, uuid.UUID,
-	) (auth.UserPrincipal, error) {
-		return auth.UserPrincipal{}, company.ErrForbidden
-	}}
-}
-
 func TestRuntimeGetRouteReturnsOwningDomainProjection(t *testing.T) {
 	t.Parallel()
 	userID := uuid.Must(uuid.NewV7())
@@ -383,9 +355,9 @@ func TestRuntimeGetRouteReturnsOwningDomainProjection(t *testing.T) {
 		}
 		return agent.Runtime{
 			ID: runtimeID, CompanyID: companyID, DaemonID: "daemon-a",
-			Name: "Claude (duong-macbook)", Provider: "claude", Status: "online",
-			Owner:           &agent.OwnerRef{ID: ownerID, Kind: "user", DisplayName: "Duong Phung"},
-			DeviceInfo:      "duong-macbook · 2.1.4",
+			Name: "Claude (alex-macbook)", Provider: "claude", Status: "online",
+			Owner:           &agent.OwnerRef{ID: ownerID, Kind: "user", DisplayName: "Alex Rivera"},
+			DeviceInfo:      "alex-macbook · 2.1.4",
 			ProviderVersion: "2.1.4", CLIVersion: "0.9.3", LaunchedBy: agent.RuntimeLaunchedByDesktop,
 			LastSeenAt: &lastSeenAt, CreatedAt: lastSeenAt, UpdatedAt: lastSeenAt,
 		}, nil
@@ -410,9 +382,9 @@ func TestRuntimeGetRouteReturnsOwningDomainProjection(t *testing.T) {
 	}
 	owner, _ := body["owner"].(map[string]any)
 	if body["id"] != runtimeID.String() || body["companyId"] != companyID.String() ||
-		body["daemonId"] != "daemon-a" || body["name"] != "Claude (duong-macbook)" ||
+		body["daemonId"] != "daemon-a" || body["name"] != "Claude (alex-macbook)" ||
 		body["provider"] != "claude" || body["status"] != "online" ||
-		owner["name"] != "Duong Phung" || body["deviceInfo"] != "duong-macbook · 2.1.4" ||
+		owner["name"] != "Alex Rivera" || body["deviceInfo"] != "alex-macbook · 2.1.4" ||
 		body["providerVersion"] != "2.1.4" || body["cliVersion"] != "0.9.3" ||
 		body["launchedBy"] != "desktop" || body["lastSeenAt"] != "2026-08-19T09:10:11.123Z" ||
 		body["createdAt"] == nil || body["updatedAt"] == nil {
@@ -528,7 +500,11 @@ func TestRuntimeModelDiscoveryRoutesAreMemberGatedAndExactScoped(t *testing.T) {
 		},
 	}
 	memberHandler := New(Handler{
-		AuthService: authenticatedAuthStub(userID), CompanyService: memberCompanyStub(t, userID, companyID), RuntimeService: service,
+		AuthService: authenticatedAuthStub(
+			userID,
+		),
+		CompanyService: memberCompanyStub(t, userID, companyID),
+		RuntimeService: service,
 	})
 	base := "/api/v1/companies/" + companyID.String() + "/runtimes/" + runtimeID.String() + "/models"
 	response := serveBearerRequest(memberHandler, http.MethodPost, base, nil)
@@ -581,7 +557,7 @@ func TestRuntimeRenameRouteScopesAndBindsTheBody(t *testing.T) {
 	renamed := func(customName *string) agent.Runtime {
 		return agent.Runtime{
 			ID: runtimeID, CompanyID: companyID, DaemonID: "daemon-a",
-			Name: "Claude (duong-macbook)", CustomName: customName, Provider: "claude", Status: "online",
+			Name: "Claude (alex-macbook)", CustomName: customName, Provider: "claude", Status: "online",
 			CreatedAt: now, UpdatedAt: now,
 		}
 	}
@@ -618,7 +594,7 @@ func TestRuntimeRenameRouteScopesAndBindsTheBody(t *testing.T) {
 		if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 			t.Fatalf("decode response: %v", err)
 		}
-		if body["id"] != runtimeID.String() || body["name"] != "Claude (duong-macbook)" ||
+		if body["id"] != runtimeID.String() || body["name"] != "Claude (alex-macbook)" ||
 			body["customName"] != "Office Mac" || calls != 1 {
 			t.Fatalf("response = %s (service calls %d)", response.Body.String(), calls)
 		}
@@ -657,7 +633,12 @@ func TestRuntimeRenameRouteScopesAndBindsTheBody(t *testing.T) {
 		}{
 			// Another member's machine is invisible to the caller (ADR 0014),
 			// so it answers exactly like an unknown id.
-			{"unknown, foreign or another member's", agent.ErrRuntimeNotFound, http.StatusNotFound, "runtime_not_found"},
+			{
+				"unknown, foreign or another member's",
+				agent.ErrRuntimeNotFound,
+				http.StatusNotFound,
+				"runtime_not_found",
+			},
 			{
 				"too long after trimming",
 				agent.ErrRuntimeInvalidInput,

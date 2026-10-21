@@ -7,12 +7,13 @@ import (
 	"errors"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
@@ -43,8 +44,15 @@ func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
 	if err != nil || queued.Disposition != SendDispositionQueued {
 		t.Fatalf("queued = %+v/%v", queued, err)
 	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id) VALUES($1,$2,$3)`,
-		f.CompanyA, f.UserA, f.DirectConversationA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id) VALUES($1,$2,$3)`,
+		f.CompanyA,
+		f.UserA,
+		f.DirectConversationA,
+	)
 	for _, existing := range []SendInput{input, queuedInput} {
 		if _, err := s.Send(ctx, p, target, existing); err != nil {
 			t.Fatalf("exact replay rejected: %v", err)
@@ -52,20 +60,38 @@ func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
 	}
 	for _, status := range []string{"queued", "completed"} {
 		dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status=$2 WHERE id=$1`, *first.RunID, status)
-		if _, err := s.Send(ctx, p, target, SendInput{RequestKey: dbtest.NewUUID(t), Content: "Must wait"}); !errors.Is(err, ErrInitializationPending) {
+		if _, err := s.Send(
+			ctx,
+			p,
+			target,
+			SendInput{RequestKey: dbtest.NewUUID(t), Content: "Must wait"},
+		); !errors.Is(
+			err,
+			ErrInitializationPending,
+		) {
 			t.Fatalf("new send while Run %s = %v", status, err)
 		}
 	}
 	var promotion QueuePromotion
 	err = store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := q.LockConversationForSystemRunQueueMutation(ctx, generated.LockConversationForSystemRunQueueMutationParams{
-			CompanyID: f.CompanyA, ConversationID: f.DirectConversationA,
-		}); err != nil {
+		if _, err := q.LockConversationForSystemRunQueueMutation(
+			ctx,
+			generated.LockConversationForSystemRunQueueMutationParams{
+				CompanyID: f.CompanyA, ConversationID: f.DirectConversationA,
+			},
+		); err != nil {
 			return err
 		}
 		pending := []events.Event{}
 		var err error
-		promotion, err = PromoteRunQueueInTx(ctx, q, &pending, testTaskMessageRuns(), f.CompanyA, f.DirectConversationA)
+		promotion, err = PromoteRunQueueInTx(
+			ctx,
+			q,
+			&pending,
+			testTaskMessageRuns(),
+			f.CompanyA,
+			f.DirectConversationA,
+		)
 		return err
 	})
 	if err != nil || promotion.RunID != nil || promotion.RemovedCount != 0 {
@@ -79,7 +105,12 @@ func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
 		t.Fatal(err)
 	}
 	if messages != 1 || runs != 1 || queuedRows != 1 {
-		t.Fatalf("blocked send or promotion wrote data: messages=%d runs=%d queued=%d", messages, runs, queuedRows)
+		t.Fatalf(
+			"blocked send or promotion wrote data: messages=%d runs=%d queued=%d",
+			messages,
+			runs,
+			queuedRows,
+		)
 	}
 	requestKey := dbtest.NewUUID(t)
 	other, err := s.CreateDirect(ctx, p, CreateDirectInput{RequestKey: &requestKey, AgentID: f.AgentA})
@@ -94,8 +125,20 @@ func TestInitializationPendingFencesNewSendsUntilResearchStarts(t *testing.T) {
 	// Once the research is started the chat is open again: a message queues
 	// behind the research Run like behind any other Run.
 	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='running' WHERE id=$1`, *first.RunID)
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_initializations SET research_run_id=$2 WHERE company_id=$1`, f.CompanyA, *first.RunID)
-	if _, err := s.Send(ctx, p, target, SendInput{RequestKey: dbtest.NewUUID(t), Content: "Research is running"}); err != nil {
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE company_initializations SET research_run_id=$2 WHERE company_id=$1`,
+		f.CompanyA,
+		*first.RunID,
+	)
+	if _, err := s.Send(
+		ctx,
+		p,
+		target,
+		SendInput{RequestKey: dbtest.NewUUID(t), Content: "Research is running"},
+	); err != nil {
 		t.Fatalf("running research still blocks: %v", err)
 	}
 }
@@ -130,34 +173,51 @@ func TestResumeInitializationQueueStagesFinalCreatorPrivateSnapshot(t *testing.T
 			if err != nil {
 				t.Fatal(err)
 			}
-			dbtest.MustExec(t, ctx, pool, `INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id) VALUES($1,$2,$3)`,
-				f.CompanyA, f.UserA, f.DirectConversationA)
+			dbtest.MustExec(
+				t,
+				ctx,
+				pool,
+				`INSERT INTO company_initializations(company_id,created_by_user_id,conversation_id) VALUES($1,$2,$3)`,
+				f.CompanyA,
+				f.UserA,
+				f.DirectConversationA,
+			)
 			if tc.removeOnly {
-				dbtest.MustExec(t, ctx, pool, `DELETE FROM agent_runtime_bindings WHERE agent_id=$1 AND user_id=$2`, f.AgentA, f.UserA)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`DELETE FROM agent_runtime_bindings WHERE agent_id=$1 AND user_id=$2`,
+					f.AgentA,
+					f.UserA,
+				)
 			}
 			var published []Snapshot
 			var committedRevision, committedQueuedRuns, remainingPrompts int64
 			var committedState string
 			var completed bool
 			var readErr error
-			if err := bus.Subscribe(EventConversationUpdated, func(ctx context.Context, event events.Event) error {
-				payload, err := events.PayloadOf[Snapshot](event)
-				if err != nil {
-					readErr = err
-					return err
-				}
-				published = append(published, payload)
-				// The subscriber uses a separate connection, so every projection
-				// and queue fact must already be committed when it receives this.
-				readErr = pool.QueryRow(ctx, `SELECT c.version,
+			if err := bus.Subscribe(
+				EventConversationUpdated,
+				func(ctx context.Context, event events.Event) error {
+					payload, err := events.PayloadOf[Snapshot](event)
+					if err != nil {
+						readErr = err
+						return err
+					}
+					published = append(published, payload)
+					// The subscriber uses a separate connection, so every projection
+					// and queue fact must already be committed when it receives this.
+					readErr = pool.QueryRow(ctx, `SELECT c.version,
 					(SELECT count(*) FROM runs WHERE conversation_id=c.id AND status='queued'),
 					(SELECT count(*) FROM conversation_run_queue_items WHERE conversation_id=c.id AND state='queued'),
 					(SELECT state FROM conversation_run_queue_items WHERE id=$2),
 					(SELECT completed_at IS NOT NULL FROM company_initializations WHERE company_id=c.company_id)
 					FROM conversations c WHERE c.id=$1`, f.DirectConversationA, queued.ID,
-				).Scan(&committedRevision, &committedQueuedRuns, &remainingPrompts, &committedState, &completed)
-				return readErr
-			}); err != nil {
+					).Scan(&committedRevision, &committedQueuedRuns, &remainingPrompts, &committedState, &completed)
+					return readErr
+				},
+			); err != nil {
 				t.Fatal(err)
 			}
 			var pending []events.Event
@@ -167,9 +227,12 @@ func TestResumeInitializationQueueStagesFinalCreatorPrivateSnapshot(t *testing.T
 				if _, err := q.LockCompanyForMembershipMutation(ctx, f.CompanyA); err != nil {
 					return err
 				}
-				row, err := q.LockConversationForSystemRunQueueMutation(ctx, generated.LockConversationForSystemRunQueueMutationParams{
-					CompanyID: f.CompanyA, ConversationID: f.DirectConversationA,
-				})
+				row, err := q.LockConversationForSystemRunQueueMutation(
+					ctx,
+					generated.LockConversationForSystemRunQueueMutationParams{
+						CompanyID: f.CompanyA, ConversationID: f.DirectConversationA,
+					},
+				)
 				if err != nil {
 					return err
 				}
@@ -177,7 +240,14 @@ func TestResumeInitializationQueueStagesFinalCreatorPrivateSnapshot(t *testing.T
 				if err := q.CompleteCompanyInitialization(ctx, f.CompanyA); err != nil {
 					return err
 				}
-				promotion, err = ResumeInitializationQueueInTx(ctx, q, &pending, testTaskMessageRuns(), f.CompanyA, f.DirectConversationA)
+				promotion, err = ResumeInitializationQueueInTx(
+					ctx,
+					q,
+					&pending,
+					testTaskMessageRuns(),
+					f.CompanyA,
+					f.DirectConversationA,
+				)
 				return err
 			})
 			if err != nil {
@@ -187,16 +257,29 @@ func TestResumeInitializationQueueStagesFinalCreatorPrivateSnapshot(t *testing.T
 				bus.Publish(ctx, batch.Topic, batch.Events...)
 			}
 			if len(published) != 1 || readErr != nil {
-				t.Fatalf("conversation updates = %d, committed read error = %v; want exactly one final snapshot", len(published), readErr)
+				t.Fatalf(
+					"conversation updates = %d, committed read error = %v; want exactly one final snapshot",
+					len(published),
+					readErr,
+				)
 			}
 			payload := published[0]
-			if payload.Conversation.ID != f.DirectConversationA || payload.Conversation.CompanyID != f.CompanyA ||
-				payload.Conversation.Kind != KindDirect || payload.ProjectAudience() != nil ||
-				payload.Conversation.CreatedByUserID == nil || *payload.Conversation.CreatedByUserID != f.UserA {
+			if payload.Conversation.ID != f.DirectConversationA ||
+				payload.Conversation.CompanyID != f.CompanyA ||
+				payload.Conversation.Kind != KindDirect ||
+				payload.ProjectAudience() != nil ||
+				payload.Conversation.CreatedByUserID == nil ||
+				*payload.Conversation.CreatedByUserID != f.UserA {
 				t.Fatalf("snapshot routing = %+v; want creator-private direct chat", payload)
 			}
-			if payload.Conversation.Revision != initialRevision+1 || payload.Conversation.Revision != committedRevision {
-				t.Fatalf("snapshot revision = %d, committed = %d, initial = %d", payload.Conversation.Revision, committedRevision, initialRevision)
+			if payload.Conversation.Revision != initialRevision+1 ||
+				payload.Conversation.Revision != committedRevision {
+				t.Fatalf(
+					"snapshot revision = %d, committed = %d, initial = %d",
+					payload.Conversation.Revision,
+					committedRevision,
+					initialRevision,
+				)
 			}
 			wantState, wantQueuedRuns, wantRemoved := "materialized", int64(1), 0
 			if tc.removeOnly {
@@ -206,11 +289,23 @@ func TestResumeInitializationQueueStagesFinalCreatorPrivateSnapshot(t *testing.T
 				committedQueuedRuns != wantQueuedRuns || payload.Summary.Runs.QueuedCount != wantQueuedRuns ||
 				payload.Summary.Runs.ActiveCount != 0 || promotion.RemovedCount != wantRemoved ||
 				(promotion.RunID == nil) != tc.removeOnly {
-				t.Fatalf("completed=%t, remaining prompts=%d, queue state=%s, committed queued Runs=%d, summary=%+v, promotion=%+v",
-					completed, remainingPrompts, committedState, committedQueuedRuns, payload.Summary, promotion)
+				t.Fatalf(
+					"completed=%t, remaining prompts=%d, queue state=%s, committed queued Runs=%d, summary=%+v, promotion=%+v",
+					completed,
+					remainingPrompts,
+					committedState,
+					committedQueuedRuns,
+					payload.Summary,
+					promotion,
+				)
 			}
-			if !tc.removeOnly && (payload.Summary.Runs.Latest == nil || payload.Summary.Runs.Latest.RunID != *promotion.RunID) {
-				t.Fatalf("latest Run = %+v, promoted = %s", payload.Summary.Runs.Latest, *promotion.RunID)
+			if !tc.removeOnly &&
+				(payload.Summary.Runs.Latest == nil || payload.Summary.Runs.Latest.RunID != *promotion.RunID) {
+				t.Fatalf(
+					"latest Run = %+v, promoted = %s",
+					payload.Summary.Runs.Latest,
+					*promotion.RunID,
+				)
 			}
 		})
 	}

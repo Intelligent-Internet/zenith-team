@@ -14,11 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	dbgen "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestPublicationWorkerPublishesAndUnpublishesDurably(t *testing.T) {
@@ -96,7 +96,7 @@ func TestPublicationWorkerPublishesAndUnpublishesDurably(t *testing.T) {
 		t.Fatalf("GetOutputPublicationByOutput() error = %v", err)
 	}
 	if row.Status != string(PublicationStatusPublished) || !row.PublicUrl.Valid ||
-		row.PublicUrl.String != "https://published.boardly.test" || provider.publishCalls != 1 ||
+		row.PublicUrl.String != "https://published.zenith-team.test" || provider.publishCalls != 1 ||
 		provider.publishedSource != "application archive" {
 		t.Fatalf("published row/provider = %+v / %+v", row, provider)
 	}
@@ -375,7 +375,7 @@ func (p *recordingPublicationProvider) Publish(
 			ArtifactDigest: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 			ServiceRef:     "provider://services/application",
 		},
-		ServiceURI: "https://published.boardly.test",
+		ServiceURI: "https://published.zenith-team.test",
 	}, nil
 }
 

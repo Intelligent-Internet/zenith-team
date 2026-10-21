@@ -1,0 +1,130 @@
+---
+title: Troubleshooting
+description: Fixes for the problems people hit most often, from an offline computer to a server that will not start, and where every log lives.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Start with the two quick checks below. Then find your symptom.
+
+## Two quick checks
+
+**On a computer that runs agents**, run:
+
+```bash
+zen doctor
+```
+
+It checks your sign-in, the server, the daemon and the provider CLIs, and prints one next step for each problem. It never prints a token.
+
+**On the server**, ask whether it is ready:
+
+```bash
+curl -fsS http://localhost:8788/readyz    # {"status":"ready"}
+```
+
+`/readyz` answers `ready` when PostgreSQL is reachable and its schema matches this server. `/healthz` only says the process is up.
+
+## A computer will not connect, or its runtime is offline
+
+1. Run `zen daemon status`. If the `session` line says `signed out` or `expired`, run `zen auth login --server <your server address>`, then `zen daemon restart`.
+2. Check that `codex` or `claude` is installed and on your `PATH`. `zen daemon start` refuses to start without one of them.
+3. Check the server address. `zen auth login` saves it, and `zen daemon status` shows it. A computer on another machine needs your HTTPS address, not `localhost`. See [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls).
+4. Read the daemon log with `zen daemon logs`. Registration and heartbeat errors are there, with their causes.
+
+A runtime goes offline about 150 seconds after its last heartbeat. The full checklist is in [Daemon and runtimes](/daemon-and-runtimes#troubleshooting-an-offline-runtime).
+
+## A run stays queued, or fails with `queued_expired`
+
+A queued run waits for a runtime on the right computer to claim it. Common reasons it waits:
+
+- **The computer is offline.** A task runs only on its assignee's own computer. Bring that computer online.
+- **The agent is not set up there.** The agent needs a binding on that member's computer. The app offers to set it up.
+- **The agent is busy.** Task runs wait while the agent is at its limit of task runs at once. See [Runs](/runs#lanes-and-capacity).
+
+An ordinary run that nobody claims within two hours fails with `queued_expired`. Bring the computer online, then send the message again or start the task again.
+
+## Runs fail with a provider sign-in error
+
+A run that fails with `agent_error.provider_auth_or_access` means the provider CLI on that computer is not signed in, or its account cannot use the model. Zenith Team does not hold these credentials, so the fix is on that computer: sign in again with the vendor's own CLI. For Codex, run `codex login`. For Claude Code, start `claude` and follow its sign-in steps. Then try again. The runtime page shows **Not signed in** when the daemon's own check caught it. See [Providers](/providers#sign-in-and-credentials).
+
+## `origin is not allowed`
+
+The server accepts browser requests only from the exact addresses in `AUTH_WEB_ORIGINS`.
+
+- `http://localhost:8080` and `http://127.0.0.1:8080` are different addresses. Open the one that is listed, or list both.
+- Write each address with its scheme and port, with no path and no trailing slash.
+- Plain `http://` works only for loopback addresses. A real server needs `https://`.
+- Keep `zenith-team-app://renderer` in the list for the desktop app.
+
+After you change `deploy/.env`, run `make selfhost-up` again. See [Environment variables](/self-hosting/environment-variables#where-people-open-zenith-team).
+
+## Live updates stop behind a proxy
+
+If a chat message shows only after you reload the page, or connected computers pick up work slowly, your proxy is not passing WebSockets. Two paths must upgrade:
+
+- `/api/v1/ws`, for live updates in the app
+- `/api/v1/daemon/ws`, for connected computers
+
+The proxy must pass the `Upgrade` and `Connection` headers, keep the `Host` header, and allow long idle connections (for example `proxy_read_timeout 1h` in nginx). Working Caddy and nginx examples are in [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls).
+
+Set `ZENITH_TEAM_TRUSTED_PROXIES` only when your proxy rewrites the `Host` header. See [Trusted proxies](/self-hosting/reverse-proxy-and-tls#trusted-proxies).
+
+## Uploads or share links fail
+
+- **Uploads fail with `attachment_storage_unavailable`.** The server cannot reach file storage. Check the `STORAGE_S3_*` settings, and that the bucket exists. On the bundled stack, check `docker compose -f deploy/docker-compose.production.yml ps storage`.
+- **Large uploads fail at the proxy.** A file can be up to 100 MB. Raise your proxy's body size limit, for example `client_max_body_size 110m` in nginx.
+- **Images do not post to Facebook or Instagram.** Meta fetches the image from storage, so storage must have a public HTTPS address. The bundled storage does not. See [Share links](/self-hosting/storage#share-links).
+- **Links in emails or invitations point at the wrong address.** They use `AUTH_WEB_APP_ORIGIN`. Set it to the address people open.
+
+## Email codes do not arrive
+
+- **Email is off.** With no email settings, sign-up finishes at once and no code is sent. That is expected.
+- **The settings are incomplete.** Once any email setting is set, the server will not start until the provider, API key, verification secret and both template IDs are set. The error names the missing variable.
+- **Resend refuses the message.** Check that your sending domain is verified in Resend, and that each template is published. The app shows `email_delivery_unavailable` when sending fails. The server log and Resend's own log say why.
+- **The code was sent, but you asked again too soon.** Wait for the cooldown, then send a new code.
+
+Also check the spam folder. Setup steps are in [Sign-in setup](/self-hosting/auth-setup#email-codes-and-password-reset).
+
+## The server is unhealthy, or a migration failed
+
+```bash
+docker compose -f deploy/docker-compose.production.yml ps            # is server "healthy"?
+docker compose -f deploy/docker-compose.production.yml logs server   # why not
+```
+
+- **A setting is wrong.** The server checks every setting at start. The error names the variable.
+- **A migration failed.** The server applies migrations before it serves, and stops if one fails. The log names the migration. Keep the previous release tag and your backup at hand. See [Upgrading](/self-hosting/upgrading#what-happens-at-start).
+- **`/readyz` says not ready after a rollback.** An older server never reports ready on a database that a newer one migrated. Restore the backup you took before the upgrade. See [Rolling back](/self-hosting/upgrading#rolling-back).
+
+## A port is already in use
+
+| Port | Used by | Change it with |
+| --- | --- | --- |
+| `8080` | Self-hosted web app | `APP_WEB_PORT` in `deploy/.env`, then update `AUTH_WEB_ORIGINS` and `AUTH_WEB_APP_ORIGIN` |
+| `8788` | Self-hosted API, or `make server` | `APP_HTTP_PORT` in `deploy/.env`; `APP_HTTP_ADDR` for a server run from source |
+| `5173` | `make frontend` (Vite) | Fixed. Stop the other process |
+| `5432`, `6379`, `9000`, `9001` | `make infra-up` (PostgreSQL, Redis, storage) | `APP_POSTGRES_PORT`, `APP_REDIS_PORT`, `APP_MINIO_PORT`, `APP_MINIO_CONSOLE_PORT`, then update the matching URL in `docker/dev.local.env` |
+| `7880`–`7882` | LiveKit, for Huddles | Fixed. Run only one LiveKit |
+| `8081` | Voice worker | Fixed |
+| `19713` | `zen daemon` health port | `ZENITH_TEAM_HEALTH_PORT` |
+
+To find what holds a port on macOS or Linux, run `lsof -nP -iTCP:<port> -sTCP:LISTEN`.
+
+## Where logs live
+
+| Part | Where to look |
+| --- | --- |
+| Self-hosted server | `make selfhost-logs` follows every container, or `docker compose -f deploy/docker-compose.production.yml logs server` for the server alone. One JSON object per line; `APP_LOG_LEVEL=debug` adds detail. |
+| Server from source | The terminal that runs `make server`. |
+| Daemon started with `zen` | `zen daemon logs` prints the file paths and the last lines; `-f` follows. The files are `daemon.log` and `daemon.err.log` in `~/.zenith-team`, or in `ZENITH_TEAM_HOME` when you set it. |
+| Desktop app | `logs/zenith-team-main.log` in the app's data folder (see [Desktop app](/desktop-app#data-folders-and-uninstall)). **Help → Copy Diagnostics Summary** copies the app version, platform and log paths. The app's own daemon log is under **Settings → Updates & Support**, on the **Agent service** card. |
+| Voice worker | The terminal that runs `make voice-start`. `make voice-status` shows its state. A deployed worker logs to its container. |
+
+<Callout type="warning">
+Logs can hold email addresses and company names. Remove tokens, passwords and keys before you share any log.
+</Callout>
+
+## Still stuck?
+
+Ask in [GitHub Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions), or open a bug report. Say how you run Zenith Team, and include the output of `zen doctor`. [SUPPORT.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SUPPORT.md) lists what to include.

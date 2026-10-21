@@ -22,12 +22,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 var (
@@ -174,7 +174,13 @@ type WikiService interface {
 	ArchivePage(context.Context, auth.UserPrincipal, uuid.UUID, int64) (PageResponse, error)
 	RestorePage(context.Context, auth.UserPrincipal, uuid.UUID, int64) (PageResponse, error)
 	ListRevisions(context.Context, auth.UserPrincipal, uuid.UUID, int32, int32) (RevisionList, error)
-	RestoreRevision(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, RestoreRevisionInput) (Document, error)
+	RestoreRevision(
+		context.Context,
+		auth.UserPrincipal,
+		uuid.UUID,
+		uuid.UUID,
+		RestoreRevisionInput,
+	) (Document, error)
 	ReadDocument(context.Context, auth.UserPrincipal, uuid.UUID, DocumentReadInput) (Document, error)
 	SyncDocument(context.Context, auth.UserPrincipal, uuid.UUID, SyncDocumentInput) (Document, error)
 	ReserveBlockIDs(context.Context, auth.UserPrincipal, uuid.UUID, int32) ([]uuid.UUID, error)
@@ -229,10 +235,17 @@ func pageResponse(row generated.GetWikiPageForMemberRow) PageResponse {
 
 func revisionResponse(row generated.WikiRevision) RevisionResponse {
 	return RevisionResponse{
-		ID: row.ID, PageID: row.PageID, Number: row.Number, Title: row.Title,
-		Content: revisionContent(row.BlockContent, row.Body),
-		Body:    row.Body, Summary: row.Summary, CollectionID: uuidPointer(row.CollectionID),
-		AuthorUserID: row.AuthorUserID, AuthorAgentID: uuidPointer(row.AuthorAgentID), CreatedAt: row.CreatedAt.Time,
+		ID:            row.ID,
+		PageID:        row.PageID,
+		Number:        row.Number,
+		Title:         row.Title,
+		Content:       revisionContent(row.BlockContent, row.Body),
+		Body:          row.Body,
+		Summary:       row.Summary,
+		CollectionID:  uuidPointer(row.CollectionID),
+		AuthorUserID:  row.AuthorUserID,
+		AuthorAgentID: uuidPointer(row.AuthorAgentID),
+		CreatedAt:     row.CreatedAt.Time,
 	}
 }
 
@@ -395,7 +408,12 @@ func (s *DefaultWikiService) RenameCollection(
 // DeleteCollection moves active and archived pages to Unfiled. Page versions
 // advance so drafts opened before the move cannot overwrite it. The existing
 // revision FK clears the deleted collection reference without losing content.
-func (s *DefaultWikiService) DeleteCollection(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID, expectedRevision int64) error {
+func (s *DefaultWikiService) DeleteCollection(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+	expectedRevision int64,
+) error {
 	if id == uuid.Nil || expectedRevision < 1 {
 		return ErrPageInvalidInput
 	}
@@ -410,7 +428,10 @@ func (s *DefaultWikiService) DeleteCollection(ctx context.Context, principal aut
 		if err := q.LockWikiCollectionsExclusive(ctx, principal.CompanyID); err != nil {
 			return fmt.Errorf("lock Wiki collections: %w", err)
 		}
-		current, err := q.GetWikiCollectionForUpdate(ctx, generated.GetWikiCollectionForUpdateParams{CompanyID: principal.CompanyID, CollectionID: id})
+		current, err := q.GetWikiCollectionForUpdate(
+			ctx,
+			generated.GetWikiCollectionForUpdateParams{CompanyID: principal.CompanyID, CollectionID: id},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrCollectionNotFound
 		}
@@ -420,10 +441,16 @@ func (s *DefaultWikiService) DeleteCollection(ctx context.Context, principal aut
 		if current.Version != expectedRevision {
 			return ErrCollectionConflict
 		}
-		if err := q.UnfileWikiCollectionPages(ctx, generated.UnfileWikiCollectionPagesParams{CompanyID: principal.CompanyID, CollectionID: id}); err != nil {
+		if err := q.UnfileWikiCollectionPages(
+			ctx,
+			generated.UnfileWikiCollectionPagesParams{CompanyID: principal.CompanyID, CollectionID: id},
+		); err != nil {
 			return fmt.Errorf("unfile Wiki collection pages: %w", err)
 		}
-		if err := q.DeleteWikiCollection(ctx, generated.DeleteWikiCollectionParams{CompanyID: principal.CompanyID, CollectionID: id}); err != nil {
+		if err := q.DeleteWikiCollection(
+			ctx,
+			generated.DeleteWikiCollectionParams{CompanyID: principal.CompanyID, CollectionID: id},
+		); err != nil {
 			return fmt.Errorf("delete Wiki collection: %w", err)
 		}
 		deleted = collectionResponse(current)
@@ -436,7 +463,11 @@ func (s *DefaultWikiService) DeleteCollection(ctx context.Context, principal aut
 	return nil
 }
 
-func (s *DefaultWikiService) ListPages(ctx context.Context, principal auth.UserPrincipal, input PageListInput) (PageList, error) {
+func (s *DefaultWikiService) ListPages(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	input PageListInput,
+) (PageList, error) {
 	if input.Status == "" {
 		input.Status = "active"
 	}
@@ -468,9 +499,16 @@ func (s *DefaultWikiService) ListPages(ctx context.Context, principal auth.UserP
 	items := make([]PageSummary, len(rows))
 	for i, row := range rows {
 		items[i] = PageSummary{
-			ID: row.ID, CollectionID: uuidPointer(row.CollectionID),
-			Slug: row.Slug, Title: row.Title, Summary: row.Summary, Status: row.Status,
-			Revision: row.Version, UpdatedAt: row.UpdatedAt.Time, Favorite: row.Favorite, Published: row.Published,
+			ID:           row.ID,
+			CollectionID: uuidPointer(row.CollectionID),
+			Slug:         row.Slug,
+			Title:        row.Title,
+			Summary:      row.Summary,
+			Status:       row.Status,
+			Revision:     row.Version,
+			UpdatedAt:    row.UpdatedAt.Time,
+			Favorite:     row.Favorite,
+			Published:    row.Published,
 		}
 	}
 	return PageList{Items: items, Total: count}, nil
@@ -492,9 +530,16 @@ func (s *DefaultWikiService) GetGraph(ctx context.Context, principal auth.UserPr
 	}
 	for _, row := range rows[:min(len(rows), 500)] {
 		result.Pages = append(result.Pages, PageSummary{
-			ID: row.ID, CollectionID: uuidPointer(row.CollectionID), Slug: row.Slug,
-			Title: row.Title, Summary: row.Summary, Status: row.Status,
-			Revision: row.Version, UpdatedAt: row.UpdatedAt.Time, Favorite: row.Favorite, Published: row.Published,
+			ID:           row.ID,
+			CollectionID: uuidPointer(row.CollectionID),
+			Slug:         row.Slug,
+			Title:        row.Title,
+			Summary:      row.Summary,
+			Status:       row.Status,
+			Revision:     row.Version,
+			UpdatedAt:    row.UpdatedAt.Time,
+			Favorite:     row.Favorite,
+			Published:    row.Published,
 		})
 	}
 	visibleIDs := make([]uuid.UUID, len(result.Pages))
@@ -580,7 +625,11 @@ func (s *DefaultWikiService) GetPageLinks(
 	return result, nil
 }
 
-func (s *DefaultWikiService) CreatePage(ctx context.Context, principal auth.UserPrincipal, input CreatePageInput) (PageResponse, error) {
+func (s *DefaultWikiService) CreatePage(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	input CreatePageInput,
+) (PageResponse, error) {
 	title, body, summary, err := normalizePageInput(input.Title, input.Body, input.Summary)
 	if err != nil {
 		return PageResponse{}, err
@@ -626,7 +675,16 @@ func createDraftInTx(
 	title, summary, body string,
 	collectionID *uuid.UUID,
 ) (uuid.UUID, error) {
-	id, err := q.CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: principal.CompanyID, CollectionID: nullableUUID(collectionID), Title: title, Summary: summary, CreatedByUserID: principal.UserID})
+	id, err := q.CreateWikiPage(
+		ctx,
+		generated.CreateWikiPageParams{
+			CompanyID:       principal.CompanyID,
+			CollectionID:    nullableUUID(collectionID),
+			Title:           title,
+			Summary:         summary,
+			CreatedByUserID: principal.UserID,
+		},
+	)
 	if err != nil {
 		return uuid.Nil, mapWriteError(err)
 	}
@@ -638,14 +696,30 @@ func createDraftInTx(
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if _, err = q.CreateCanvasDraft(ctx, generated.CreateCanvasDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Markdown: body}); err != nil {
+	if _, err = q.CreateCanvasDraft(
+		ctx,
+		generated.CreateCanvasDraftParams{
+			CompanyID: principal.CompanyID,
+			PageID:    id,
+			State:     state,
+			Markdown:  body,
+		},
+	); err != nil {
 		return uuid.Nil, err
 	}
 	content, err := json.Marshal(root)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if _, err = q.UpgradeWikiDraft(ctx, generated.UpgradeWikiDraftParams{CompanyID: principal.CompanyID, PageID: id, State: state, Content: content}); err != nil {
+	if _, err = q.UpgradeWikiDraft(
+		ctx,
+		generated.UpgradeWikiDraftParams{
+			CompanyID: principal.CompanyID,
+			PageID:    id,
+			State:     state,
+			Content:   content,
+		},
+	); err != nil {
 		return uuid.Nil, err
 	}
 	return id, nil
@@ -723,7 +797,9 @@ func replaceLinks(ctx context.Context, q *generated.Queries, companyID, pageID u
 // artifactRefPattern mirrors the editor's citation token: an Artifact id and an
 // optional 0-based item ordinal. It never matches a page link, whose id follows
 // `[[` directly.
-var artifactRefPattern = regexp.MustCompile(`\[\[artifact:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:#(\d{1,2}))?\]\]`)
+var artifactRefPattern = regexp.MustCompile(
+	`\[\[artifact:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:#(\d{1,2}))?\]\]`,
+)
 
 // artifactRef is one citation; Ordinal -1 cites the whole Artifact.
 type artifactRef struct {
@@ -759,7 +835,14 @@ func parseArtifactRefs(body string) []artifactRef {
 // not carried over must name an Artifact item the author can open now; a
 // carried one is indexed while its Artifact still exists. Citing grants no
 // access: readers are checked again on every read.
-func replaceArtifactRefs(ctx context.Context, q *generated.Queries, principal auth.UserPrincipal, pageID uuid.UUID, body string, carried []artifactRef) error {
+func replaceArtifactRefs(
+	ctx context.Context,
+	q *generated.Queries,
+	principal auth.UserPrincipal,
+	pageID uuid.UUID,
+	body string,
+	carried []artifactRef,
+) error {
 	refs := parseArtifactRefs(body)
 	if len(refs) > 50 {
 		return ErrArtifactRefLimit
@@ -775,9 +858,12 @@ func replaceArtifactRefs(ctx context.Context, q *generated.Queries, principal au
 		}
 	}
 	if len(added) > 0 {
-		targets, err := q.ListWikiArtifactRefTargetsForMember(ctx, generated.ListWikiArtifactRefTargetsForMemberParams{
-			CompanyID: principal.CompanyID, ActorUserID: principal.UserID, OutputIds: added,
-		})
+		targets, err := q.ListWikiArtifactRefTargetsForMember(
+			ctx,
+			generated.ListWikiArtifactRefTargetsForMemberParams{
+				CompanyID: principal.CompanyID, ActorUserID: principal.UserID, OutputIds: added,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("check cited Artifacts: %w", err)
 		}
@@ -816,7 +902,12 @@ func replaceArtifactRefs(ctx context.Context, q *generated.Queries, principal au
 	return nil
 }
 
-func (s *DefaultWikiService) ArchivePage(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID, expectedRevision int64) (PageResponse, error) {
+func (s *DefaultWikiService) ArchivePage(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+	expectedRevision int64,
+) (PageResponse, error) {
 	return s.setArchiveStatus(ctx, principal, id, expectedRevision, true)
 }
 

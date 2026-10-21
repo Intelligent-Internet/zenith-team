@@ -13,13 +13,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type discussionBatchRecording struct {
@@ -88,7 +88,7 @@ func TestDiscussionDispatcherResolvesCurrentParticipantsAtDelivery(t *testing.T)
 		id,
 		f.UserB,
 	)
-	for _, job := range dispatcher.take(8) {
+	for _, job := range dispatcher.take() {
 		dispatcher.deliver(ctx, job)
 	}
 	if len(recorder.users) != 1 || len(recorder.users[0]) != 1 || recorder.users[0][0] != f.UserA.String() {
@@ -108,7 +108,7 @@ func TestDiscussionDispatcherResolvesCurrentParticipantsAtDelivery(t *testing.T)
 	if err := dispatcher.enqueue(ctx, revoked); err != nil {
 		t.Fatal(err)
 	}
-	for _, job := range dispatcher.take(8) {
+	for _, job := range dispatcher.take() {
 		dispatcher.deliver(ctx, job)
 	}
 	if len(recorder.users) != 2 || len(recorder.users[1]) != 1 || recorder.users[1][0] != f.UserB.String() {
@@ -132,7 +132,7 @@ func TestDiscussionDispatcherResolvesCurrentParticipantsAtDelivery(t *testing.T)
 	if err = dispatcher.enqueue(ctx, state); err != nil {
 		t.Fatal(err)
 	}
-	for _, job := range dispatcher.take(8) {
+	for _, job := range dispatcher.take() {
 		dispatcher.deliver(ctx, job)
 	}
 	if len(recorder.users) != 2 {
@@ -190,7 +190,7 @@ func TestChannelAgentRunHintsNeverExposeExecutionPayload(t *testing.T) {
 			); err != nil {
 				t.Fatal(err)
 			}
-			jobs := d.take(8)
+			jobs := d.take()
 			if len(jobs) != 1 {
 				t.Fatalf("missing channel hint for %s: %+v", name, jobs)
 			}
@@ -254,7 +254,7 @@ func TestGeneralChannelDispatcherReachesEveryMember(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	for _, job := range dispatcher.take(8) {
+	for _, job := range dispatcher.take() {
 		dispatcher.deliver(ctx, job)
 	}
 	seen := map[string]bool{}

@@ -57,11 +57,11 @@ export function resolveOnboardingScreen(
 }
 
 export function onboardingStageKey(session: SessionSnapshot) {
-  return `boardly:onboarding:stage:${session.email ?? "anonymous"}`;
+  return `zenith-team:onboarding:stage:${session.email ?? "anonymous"}`;
 }
 
 export function onboardingDraftKey(session: SessionSnapshot) {
-  return `boardly:onboarding:draft:${session.email ?? "anonymous"}`;
+  return `zenith-team:onboarding:draft:${session.email ?? "anonymous"}`;
 }
 
 // Creating Andrew completes the server's agent-setup stamp before the local

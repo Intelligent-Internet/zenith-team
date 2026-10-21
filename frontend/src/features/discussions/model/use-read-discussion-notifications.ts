@@ -43,7 +43,7 @@ export function useReadDiscussionNotifications(
           for (const item of page.items) {
             if (!focused()) return;
             if (!item.deepLink) continue;
-            const params = new URL(item.deepLink, "https://boardly.internal")
+            const params = new URL(item.deepLink, "https://zenith-team.internal")
               .searchParams;
             if (params.get("conversationId") !== conversationId) continue;
             const root = params.get("threadRootId");

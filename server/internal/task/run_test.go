@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The assignee is always the member column; executedBy is the executing
@@ -29,7 +29,11 @@ func TestTaskFromRowMapsAssigneeAndExecutedBy(t *testing.T) {
 	}
 	row.ExecutedByAgentID = uuid.NullUUID{}
 	if human := taskFromRow(row); human.ExecutedBy != human.Assignee {
-		t.Fatalf("taskFromRow(no agent).ExecutedBy = %+v, want the assignee %+v", human.ExecutedBy, human.Assignee)
+		t.Fatalf(
+			"taskFromRow(no agent).ExecutedBy = %+v, want the assignee %+v",
+			human.ExecutedBy,
+			human.Assignee,
+		)
 	}
 }
 

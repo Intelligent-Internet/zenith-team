@@ -8,10 +8,10 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// 000101 (Access TECH D1) adds Groups: three tables, a Group arm in
+// 000101 adds Groups: three tables, a Group arm in
 // project_permission_held, project_access (via 'group') and output_access,
 // the project_access_paths view, and the Inbox kind project_access_granted
 // with the entity project. On a copy with data, a Group member reads a

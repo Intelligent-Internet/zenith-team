@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
 )
 
 type realtimeHealthResponse struct {
@@ -18,8 +18,7 @@ type realtimeHealthResponse struct {
 }
 
 // realtimeMetrics serves the live realtime + daemon-WS hub counters for
-// operators. Access mirrors the reference architecture's gate: a configured
-// bearer token admits anyone who presents it; without a token only direct
+// operators. Access is gated: a configured bearer token admits anyone who presents it; without a token only direct
 // loopback connections may read, and every other caller gets a
 // non-disclosing 404.
 func (h *Handler) realtimeMetrics(c *gin.Context) {

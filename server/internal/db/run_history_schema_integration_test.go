@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestRunHistoryUsesDatabaseUUIDIdentity(t *testing.T) {
@@ -62,19 +62,40 @@ func TestRunUUIDMigrationPreservesInboxReferences(t *testing.T) {
 		t.Fatalf("close old migration: %v, %v", sourceErr, databaseErr)
 	}
 	companyID, userID := dbtest.NewUUID(t), dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO companies (id, name, slug, task_prefix) VALUES ($1, 'Company', 'company', 'C')`, companyID)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, 'test@example.com', 'User')`, userID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO companies (id, name, slug, task_prefix) VALUES ($1, 'Company', 'company', 'C')`,
+		companyID,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'test@example.com', 'User')`,
+		userID,
+	)
 	for _, link := range []string{"/app?companyId=company&runId=4841&tab=run", "/runs/4841"} {
-		dbtest.MustExec(t, ctx, pool, `
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`
 			INSERT INTO inbox_items (company_id, recipient_user_id, kind, entity_type, entity_id, title, body, deep_link, dedupe_key)
 			VALUES ($1, $2, 'run_completed', 'run', '4841', 'Run 4841', 'Original content 4841', $3, $4)`,
-			companyID, userID, link, "run:4841:"+map[bool]string{true: "completed", false: "failed"}[strings.HasPrefix(link, "/app?")])
+			companyID,
+			userID,
+			link,
+			"run:4841:"+map[bool]string{true: "completed", false: "failed"}[strings.HasPrefix(link, "/app?")],
+		)
 	}
 	if err := MigrateUp(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
 	var runID uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT run_id FROM run_identity_mappings WHERE legacy_id = 4841`).Scan(&runID); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT run_id FROM run_identity_mappings WHERE legacy_id = 4841`).
+		Scan(&runID); err != nil {
 		t.Fatalf("Inbox-only retained mapping: %v", err)
 	}
 	var count int
@@ -125,7 +146,8 @@ func TestRunUUIDMigrationPreservesOrphanActivityIdentity(t *testing.T) {
 		t.Fatalf("retained orphan Run mapping: %v", err)
 	}
 	var subject string
-	if err := pool.QueryRow(ctx, `SELECT entity_id FROM activity_events WHERE id = $1`, activityID).Scan(&subject); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT entity_id FROM activity_events WHERE id = $1`, activityID).
+		Scan(&subject); err != nil {
 		t.Fatal(err)
 	}
 	if mappedID == uuid.Nil || subject != mappedID.String() {

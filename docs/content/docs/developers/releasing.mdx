@@ -1,0 +1,120 @@
+---
+title: Releasing
+description: How maintainers cut a Zenith Team release, and what the release workflow publishes from a version tag.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. It needs no secrets beyond the workflow's own GitHub token.
+
+Merges to `main` publish nothing. Only a tag does.
+
+## Before you tag
+
+- The commit you tag is on `main`, and CI is green on it.
+- The integration suites pass. The nightly CI run includes them; check the latest one, or start the CI workflow by hand. See [Testing](/developers/testing#ci).
+- `make go-vuln` finds no known vulnerabilities in the Go dependencies. The release stops on any (see below).
+- Merged pull requests carry the right labels, so the release notes sort them (see below).
+- Docs and `deploy/production.env.example` cover any new setting.
+
+## Cut the release
+
+```bash
+git checkout main
+git pull
+git tag -a v1.3.0 -m "Zenith Team v1.3.0"
+git push origin v1.3.0
+```
+
+Two kinds of tag start the workflow:
+
+| Tag | Kind | Moves `latest`? |
+| --- | --- | --- |
+| `v1.3.0` | A release | Yes |
+| `v1.3.0-rc.1`, `v1.3.0-beta.2`, `v1.3.0-alpha.1` | A pre-release, for testing | No |
+
+A pre-release never moves the `latest` image tag or the latest GitHub Release, so people who follow `latest` do not get it. Any other tag shape that starts with `v` and a version fails in the first step.
+
+<Callout type="warning">
+A pushed tag publishes images and a GitHub Release right away. Check the commit before you push the tag.
+</Callout>
+
+## What the workflow does
+
+The four jobs run in this order. One release runs at a time per tag, and a running release is never cancelled.
+
+### 1. Verify
+
+- Checks the tag shape and decides whether it is a pre-release.
+- Checks that the tagged commit is on `main`. A tag anywhere else fails here.
+- Scans the Go dependencies for known vulnerabilities with `make go-vuln`. This is fail-closed: any finding stops the release.
+- Runs `make go-fmt-check`, `make go-unit`, and the frontend checks `make lint typecheck api-lint api-types-check`.
+
+**Releasing despite a vulnerability.** Sometimes a finding has no fix yet and does not affect Zenith Team. A maintainer can then release one tag anyway: set the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` to exactly that tag, such as `v1.3.1`, and re-run the workflow. The bypass works only for that one tag, and the run shows a warning. Remove the variable afterwards, and say in the release notes why the bypass was needed.
+
+### 2. Images
+
+Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, and pushes them to GitHub Container Registry:
+
+- `ghcr.io/intelligent-internet/zenith-team-server`
+- `ghcr.io/intelligent-internet/zenith-team-web`
+
+For `v1.3.0`, each image gets three tags:
+
+| Tag | Meaning |
+| --- | --- |
+| `1.3.0` | This exact release. Self-hosters should pin this. |
+| `1.3` | The newest patch of the 1.3 line. |
+| `latest` | The newest release. |
+
+A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`.
+
+Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built).
+
+### 3. Binaries
+
+Builds `zen` and `zenith-team-mcp` for each system and packs them into one archive per system:
+
+| System | `zen` | `zenith-team-mcp` |
+| --- | --- | --- |
+| Linux `amd64`, `arm64` | Yes | Yes |
+| macOS `amd64`, `arm64` | Yes | Yes |
+| Windows `amd64` | Not yet | Yes (`.exe`) |
+
+Archives are named like `zenith-team_v1.3.0_linux_amd64.tar.gz`. Each one also holds `LICENSE` and `THIRD_PARTY_NOTICES.md`. `zen version` reports the release version. A `checksums.txt` file lists the SHA-256 of every archive.
+
+### 4. Publish
+
+Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, marked as a pre-release when the tag is one. The release notes are generated from the pull requests merged since the last release.
+
+## Release notes
+
+`.github/release.yml` sorts the merged pull requests by label:
+
+| Section | Labels |
+| --- | --- |
+| Breaking changes | `breaking` |
+| New features | `enhancement`, `feature` |
+| Fixes | `bug`, `fix` |
+| Security | `security` |
+| Documentation | `documentation` |
+| Other changes | everything else |
+
+Pull requests labelled `skip-changelog`, and those opened by Dependabot, are left out. You can edit the notes on GitHub after the release is published.
+
+## Desktop app
+
+The release workflow does not build the desktop app. Each desktop build has its server's address built in, so self-hosters build their own; see [Desktop app](/desktop-app).
+
+To check packaging, a maintainer runs **Desktop Smoke Build** (`.github/workflows/desktop-smoke.yml`) from the Actions tab. It builds unsigned macOS (arm64) and Linux (x64) installers and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for the local variant, or give a server address for a prod build. Windows joins once `zen` builds there.
+
+## If a release fails
+
+- **Verify failed.** Fix the problem on `main`, then tag a new patch version. Do not move an existing tag. For a vulnerability finding, see the bypass above.
+- **A later job failed.** Re-run the failed jobs from the workflow run page. If the code itself must change, tag a new patch version.
+
+## Next steps
+
+- **[Testing](/developers/testing)**: the checks a release depends on.
+- **[Maintaining](/developers/maintaining)**: the repository settings a release relies on.
+- **[Upgrading](/self-hosting/upgrading)**: what self-hosters do with a new release.

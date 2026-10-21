@@ -9,14 +9,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/usage"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// TestHuddleContextNeedsItsAuthorizerInTheCall pins D31 step B5: only someone
+// TestHuddleContextNeedsItsAuthorizerInTheCall pins the rule that only someone
 // in the call (connected to the Huddle and an active member of its chat) may
 // switch Company context on, and the voice assistant reads it only while that
 // person stays in the call.

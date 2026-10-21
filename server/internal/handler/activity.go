@@ -16,10 +16,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 var (
@@ -160,7 +160,8 @@ func parseActivityQuery(c *gin.Context) (activity.ListOptions, error) {
 		return activity.ListOptions{}, errInvalidActivityInput
 	}
 	parsed.ActorType, parsed.ActorID = firstValue(query, "actor_type"), firstValue(query, "actor_id")
-	if parsed.ActorType != "" && parsed.ActorType != "user" && parsed.ActorType != "agent" && parsed.ActorType != "system" {
+	if parsed.ActorType != "" && parsed.ActorType != "user" && parsed.ActorType != "agent" &&
+		parsed.ActorType != "system" {
 		return activity.ListOptions{}, errInvalidActivityInput
 	}
 	if parsed.ActorID != "" {
@@ -174,7 +175,8 @@ func parseActivityQuery(c *gin.Context) (activity.ListOptions, error) {
 	for key, target := range map[string]**int64{"revision": &parsed.Revision, "before_revision": &parsed.BeforeRevision} {
 		if value := firstValue(query, key); value != "" {
 			revision, err := strconv.ParseInt(value, 10, 64)
-			if err != nil || revision < 1 || revision > 9007199254740991 || strconv.FormatInt(revision, 10) != value {
+			if err != nil || revision < 1 || revision > 9007199254740991 ||
+				strconv.FormatInt(revision, 10) != value {
 				return activity.ListOptions{}, errInvalidActivityInput
 			}
 			*target = &revision

@@ -25,7 +25,7 @@ const (
 	EntityQuestion     EntityType = "question"
 	EntityDeliverable  EntityType = "deliverable"
 	// EntityProject names a Project itself: the subject of the Inbox notice
-	// that someone can now see it (project_access_granted, D31).
+	// that someone can now see it (project_access_granted).
 	EntityProject EntityType = "project"
 )
 

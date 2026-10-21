@@ -11,23 +11,23 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/mailbox"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/social"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Resource registrars mount routes conditionally, so a dependency that app.Run
@@ -91,13 +91,13 @@ func fullyWiredHandler() Handler {
 		Readiness:                routeTableReadiness{},
 		StudioProjectService:     conversation.NewStudioProjectService(nil),
 		StudioEditorService:      conversation.NewStudioEditorService(nil, nil, uuid.Nil),
-		AllowedOrigins:           []string{"https://app.boardly.test"},
+		AllowedOrigins:           []string{"https://app.zenith-team.test"},
 		CSRF:                     routeTableCSRF{},
 		AuthService:              &authServiceStub{},
 		AccountService:           &accountServiceStub{},
 		DesktopHandoffService:    &desktopHandoffServiceStub{},
 		GoogleOAuthService:       &googleOAuthServiceStub{},
-		OAuthWebAppOrigin:        "https://app.boardly.test",
+		OAuthWebAppOrigin:        "https://app.zenith-team.test",
 		CompanyService:           &companyServiceStub{},
 		InitializationService:    &company.DefaultInitializationService{},
 		MilestoneService:         &milestoneServiceStub{},

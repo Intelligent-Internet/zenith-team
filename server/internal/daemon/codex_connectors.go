@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 const (
@@ -72,7 +72,7 @@ const (
 	CodexConnectorSourceLocalMCP CodexConnectorSource = "codex_mcp"
 )
 
-// CodexConnectorStatus is Boardly's conservative projection of native Codex state.
+// CodexConnectorStatus is Zenith Team's conservative projection of native Codex state.
 type CodexConnectorStatus string
 
 const (
@@ -306,7 +306,7 @@ func (osCodexConnectorBackend) ReadWithDirectory(
 // logCodexConnectorDiscoveryFailure records why discovery failed, which the
 // public ErrCodexConnectorsUnavailable hides, so a catalog that stopped
 // updating (an item or page limit, a timeout) is diagnosable from the daemon
-// log. The cause carries Boardly's own messages and Go's I/O errors, never
+// log. The cause carries Zenith Team's own messages and Go's I/O errors, never
 // Codex's response text. A cancelled daemon context is shutdown.
 func logCodexConnectorDiscoveryFailure(ctx context.Context, err error) {
 	if ctx.Err() != nil {
@@ -459,7 +459,7 @@ func (b *CodexConnectorBackend) discover(
 // live app/installed read that bypasses Codex's cache; checks within
 // codexConnectorStatusReuse share one read. It is how the desktop notices an
 // app connected in the browser, since the connect page has no callback into
-// Boardly. A linked app Codex cannot call yet is not connected here, as
+// Zenith Team. A linked app Codex cannot call yet is not connected here, as
 // discovery publishes it installed_not_ready.
 func (b *CodexConnectorBackend) HostedAppConnected(
 	ctx context.Context,

@@ -8,7 +8,7 @@ import (
 
 var ErrInvalidVerificationConfig = errors.New("invalid email verification configuration")
 
-// VerificationService owns Boardly's verification-template contract while the
+// VerificationService owns Zenith Team's verification-template contract while the
 // underlying email Service remains reusable and provider-neutral.
 type VerificationService interface {
 	SendVerification(context.Context, string, string, string, string) error

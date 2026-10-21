@@ -1,15 +1,19 @@
-# Boardly cloud API server image.
+# Zenith Team cloud API server image.
 #
 # Build from the repository root; server/Dockerfile.dockerignore trims the
 # BuildKit context to the Go module:
 #
-#   docker build -f server/Dockerfile -t boardly-server .
+#   docker build -f server/Dockerfile -t zenith-team-server .
 #
 # The runtime stage is distroless static: no shell, no package manager, and a
 # non-root user. Configuration is entirely environment-driven (documented in
 # deploy/README.md) and PostgreSQL migrations run automatically at startup.
 
-FROM golang:1.26-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+ARG TARGETOS=linux
+ARG TARGETARCH
+# Release builds pass the tag without its leading "v"; logged at startup.
+ARG VERSION=dev
 WORKDIR /src/server
 
 # Cache module downloads independently of source edits.
@@ -17,8 +21,8 @@ COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 COPY server/ ./
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
-    -o /out/boardly-server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
+    -ldflags="-s -w -X main.version=${VERSION}" -o /out/zenith-team-server ./cmd/server
 
 # Distroless has no shell or curl, so the container healthcheck is a tiny
 # static probe that GETs /readyz and exits non-zero unless it returns 200.
@@ -48,13 +52,14 @@ RUN mkdir -p /out/probe && printf '%s\n' \
     '}' \
     > /out/probe/main.go \
     && cd /out/probe \
-    && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
-       -o /out/boardly-readyz main.go
+    && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" \
+       -o /out/zenith-team-readyz main.go
 
 FROM gcr.io/distroless/static-debian12:nonroot
-COPY --from=build /out/boardly-server /usr/local/bin/boardly-server
-COPY --from=build /out/boardly-readyz /usr/local/bin/boardly-readyz
+COPY --from=build /out/zenith-team-server /usr/local/bin/zenith-team-server
+COPY --from=build /out/zenith-team-readyz /usr/local/bin/zenith-team-readyz
+COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/zenith-team/
 
 EXPOSE 8788
 USER nonroot
-ENTRYPOINT ["/usr/local/bin/boardly-server"]
+ENTRYPOINT ["/usr/local/bin/zenith-team-server"]

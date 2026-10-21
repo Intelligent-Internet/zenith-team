@@ -10,18 +10,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type studioEditorRequest struct {
 	SchemaVersion int             `json:"schemaVersion" binding:"eq=2"`
-	RequestID     uuid.UUID       `json:"requestId" binding:"required"`
-	RuntimeID     uuid.UUID       `json:"runtimeId" binding:"required"`
-	Operation     string          `json:"operation" binding:"required,oneof=resolveContext ensureBinding"`
-	Payload       json.RawMessage `json:"payload" binding:"required"`
+	RequestID     uuid.UUID       `json:"requestId"     binding:"required"`
+	RuntimeID     uuid.UUID       `json:"runtimeId"     binding:"required"`
+	Operation     string          `json:"operation"     binding:"required,oneof=resolveContext ensureBinding"`
+	Payload       json.RawMessage `json:"payload"       binding:"required"`
 }
 
 type studioEnsureRequest struct {
@@ -124,8 +124,8 @@ func (h *Handler) studioEditorOperation(c *gin.Context) {
 		writeMappedError(c, err, studioEditorErrorMappings, internalErrorFallback)
 		return
 	}
-	switch {
-	case request.Operation == "resolveContext":
+	switch request.Operation {
+	case "resolveContext":
 		c.JSON(
 			http.StatusOK,
 			studioEditorResponse[conversation.StudioContextResponse]{

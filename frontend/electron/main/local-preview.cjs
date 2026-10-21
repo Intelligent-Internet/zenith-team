@@ -58,7 +58,7 @@ const LOCAL_PLUGIN_ICON_CONTENT_TYPES = new Set([
 ]);
 
 function createDesktopLocalPreview({
-  boardlyHomeDirectory,
+  zenithTeamHomeDirectory,
   onStateChange = () => {},
 } = {}) {
   let enabled = false;
@@ -118,7 +118,7 @@ function createDesktopLocalPreview({
   async function connect(connectionGeneration) {
     let config;
     try {
-      config = await readLocalPreviewConfig(boardlyHomeDirectory);
+      config = await readLocalPreviewConfig(zenithTeamHomeDirectory);
     } catch {
       scheduleReconnect(connectionGeneration, "config_unavailable");
       return;
@@ -294,7 +294,7 @@ function createDesktopLocalPreview({
     }
     const response = await requestLocalOperation({
       accept: "application/json",
-      boardlyHomeDirectory,
+      zenithTeamHomeDirectory,
       maximumResponseBytes: LOCAL_OPERATION_MAX_JSON_BYTES,
       pathname,
       payload,
@@ -327,7 +327,7 @@ function createDesktopLocalPreview({
     }
     let config;
     try {
-      config = await readLocalPreviewConfig(boardlyHomeDirectory);
+      config = await readLocalPreviewConfig(zenithTeamHomeDirectory);
     } catch {
       return null;
     }
@@ -343,7 +343,7 @@ function createDesktopLocalPreview({
     if (!isPlainObject(payload)) return null;
     const response = await requestLocalOperation({
       accept: "image/png, image/jpeg, image/webp, image/svg+xml",
-      boardlyHomeDirectory,
+      zenithTeamHomeDirectory,
       maximumResponseBytes: LOCAL_OPERATION_MAX_ICON_BYTES,
       pathname: "/v1/plugins/icon",
       payload,
@@ -387,7 +387,7 @@ function createDesktopLocalPreview({
 
 async function requestLocalOperation({
   accept,
-  boardlyHomeDirectory,
+  zenithTeamHomeDirectory,
   maximumResponseBytes,
   pathname,
   payload,
@@ -395,7 +395,7 @@ async function requestLocalOperation({
 }) {
   let config;
   try {
-    config = await readLocalPreviewConfig(boardlyHomeDirectory);
+    config = await readLocalPreviewConfig(zenithTeamHomeDirectory);
   } catch {
     return null;
   }
@@ -549,7 +549,7 @@ async function consumeLocalExportResponse(response, destinationPath) {
     return null;
   }
 
-  const temporaryPath = `${destinationPath}.boardly-${crypto.randomUUID()}.tmp`;
+  const temporaryPath = `${destinationPath}.zenith-team-${crypto.randomUUID()}.tmp`;
   try {
     const noFollow = fs.constants.O_NOFOLLOW ?? 0;
     const handle = await fs.promises.open(
@@ -665,8 +665,8 @@ async function readBoundedResponse(response, maximumBytes) {
   return Buffer.concat(chunks);
 }
 
-async function readLocalPreviewConfig(boardlyHomeDirectory) {
-  const configPath = path.join(boardlyHomeDirectory, LOCAL_PREVIEW_CONFIG_FILE);
+async function readLocalPreviewConfig(zenithTeamHomeDirectory) {
+  const configPath = path.join(zenithTeamHomeDirectory, LOCAL_PREVIEW_CONFIG_FILE);
   const [raw, info] = await Promise.all([
     fs.promises.readFile(configPath, "utf8"),
     fs.promises.stat(configPath),

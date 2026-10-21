@@ -153,7 +153,7 @@ type ListRunChannelArtifactsRow struct {
 
 // The Artifact references a channel or group-DM Run freezes: those its
 // caller, the Run's Authorizer, may read. The Run uses its Authorizer's
-// access and nothing else narrows it (D31): the person who tagged the Agent
+// access and nothing else narrows it: the person who tagged the Agent
 // answers for what it shares, as for the chat files it freezes.
 func (q *Queries) ListRunChannelArtifacts(ctx context.Context, arg ListRunChannelArtifactsParams) ([]ListRunChannelArtifactsRow, error) {
 	rows, err := q.db.Query(ctx, listRunChannelArtifacts, arg.ActorUserID, arg.CompanyID, arg.MessageIds)

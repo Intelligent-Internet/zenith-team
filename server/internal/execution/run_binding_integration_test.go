@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // seedMemberB adds a plain member to the fixture's CompanyA.
@@ -22,10 +22,22 @@ func seedMemberB(t *testing.T, h *runHarness) uuid.UUID {
 	t.Helper()
 	ctx := context.Background()
 	id := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, h.pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Member B')`, id, id.String()+"@boardly.test")
-	dbtest.MustExec(t, ctx, h.pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, h.fixture.CompanyA, id)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Member B')`,
+		id,
+		id.String()+"@zenith-team.test",
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		h.fixture.CompanyA,
+		id,
+	)
 	// Member B works on the fixture Project (ADR 0017): they read, write and
 	// run its Tasks.
 	dbtest.GrantProject(t, ctx, h.pool, h.fixture.CompanyA, h.fixture.ProjectA, id)
@@ -105,7 +117,16 @@ func TestEnqueueUsesTheAuthorizersBindingAndRefusesWithoutOne(t *testing.T) {
 	if _, err := EnqueueRunInTx(ctx, h.queries, &pending, trigger(uuid.Nil)); !errors.Is(err, ErrRunAgentNotBound) {
 		t.Fatalf("no authorizer: error = %v, want ErrRunAgentNotBound", err)
 	}
-	if err := ProbeRunEnqueue(ctx, h.queries, h.fixture.CompanyA, h.fixture.AgentA, memberB); !errors.Is(err, ErrRunAgentNotBound) {
+	if err := ProbeRunEnqueue(
+		ctx,
+		h.queries,
+		h.fixture.CompanyA,
+		h.fixture.AgentA,
+		memberB,
+	); !errors.Is(
+		err,
+		ErrRunAgentNotBound,
+	) {
 		t.Fatalf("probe for member B: error = %v, want ErrRunAgentNotBound", err)
 	}
 	if got := countRuns(t, h); got != before || len(pending) != 0 {
@@ -119,7 +140,11 @@ func TestEnqueueUsesTheAuthorizersBindingAndRefusesWithoutOne(t *testing.T) {
 	}
 	if !run.ExecutionAuthorizedByUserID.Valid || run.ExecutionAuthorizedByUserID.UUID != h.fixture.UserA ||
 		run.RuntimeID != h.fixture.RuntimeA {
-		t.Fatalf("run = authorizer %+v on %s, want the registrant on their runtime", run.ExecutionAuthorizedByUserID, run.RuntimeID)
+		t.Fatalf(
+			"run = authorizer %+v on %s, want the registrant on their runtime",
+			run.ExecutionAuthorizedByUserID,
+			run.RuntimeID,
+		)
 	}
 
 	// Member B sets the Agent up on their own machine: their Run lands
@@ -135,14 +160,27 @@ func TestEnqueueUsesTheAuthorizersBindingAndRefusesWithoutOne(t *testing.T) {
 	}
 	if !bound.ExecutionAuthorizedByUserID.Valid || bound.ExecutionAuthorizedByUserID.UUID != memberB ||
 		bound.RuntimeID != machineB {
-		t.Fatalf("bound run = authorizer %+v on %s, want member B on their machine", bound.ExecutionAuthorizedByUserID, bound.RuntimeID)
+		t.Fatalf(
+			"bound run = authorizer %+v on %s, want member B on their machine",
+			bound.ExecutionAuthorizedByUserID,
+			bound.RuntimeID,
+		)
 	}
 
 	// A member who lost their standing is refused, binding or not.
 	dbtest.MustExec(t, ctx, h.pool,
 		`UPDATE company_members SET status = 'revoked' WHERE company_id = $1 AND user_id = $2`,
 		h.fixture.CompanyA, memberB)
-	if err := ProbeRunEnqueue(ctx, h.queries, h.fixture.CompanyA, h.fixture.AgentA, memberB); !errors.Is(err, ErrRunAgentNotBound) {
+	if err := ProbeRunEnqueue(
+		ctx,
+		h.queries,
+		h.fixture.CompanyA,
+		h.fixture.AgentA,
+		memberB,
+	); !errors.Is(
+		err,
+		ErrRunAgentNotBound,
+	) {
 		t.Fatalf("probe for a revoked member: error = %v, want ErrRunAgentNotBound", err)
 	}
 }
@@ -228,7 +266,14 @@ func TestClaimRefusesARunWhoseAuthorizerDoesNotOwnTheRuntime(t *testing.T) {
 		}
 	}
 
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE runtimes SET owner_user_id = $1 WHERE id = $2`, h.fixture.UserA, machineB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE runtimes SET owner_user_id = $1 WHERE id = $2`,
+		h.fixture.UserA,
+		machineB,
+	)
 	expectClaim(false, "the runtime is another member's")
 	dbtest.MustExec(t, ctx, h.pool, `UPDATE runtimes SET owner_user_id = $1 WHERE id = $2`, memberB, machineB)
 	dbtest.MustExec(t, ctx, h.pool, `UPDATE runtimes SET status = 'offline' WHERE id = $1`, machineB)
@@ -241,14 +286,22 @@ func TestClaimRefusesARunWhoseAuthorizerDoesNotOwnTheRuntime(t *testing.T) {
 	expectClaim(true, "owned, bound and online again")
 
 	var status string
-	if err := h.pool.QueryRow(ctx, `SELECT status FROM runs WHERE id = $1`, queued.ID).Scan(&status); err != nil || status != "dispatched" {
+	if err := h.pool.QueryRow(ctx, `SELECT status FROM runs WHERE id = $1`, queued.ID).
+		Scan(&status); err != nil ||
+		status != "dispatched" {
 		t.Fatalf("run after claim = %s, %v; want dispatched", status, err)
 	}
 
 	// The retry child is placed by the authorizer's binding at retry time:
 	// a binding moved to another of their machines takes the retry with it,
 	// and a missing binding means no retry at all.
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE runs SET status = 'failed', failure_reason = 'runtime_offline' WHERE id = $1`, queued.ID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE runs SET status = 'failed', failure_reason = 'runtime_offline' WHERE id = $1`,
+		queued.ID,
+	)
 	machineB2 := seedRuntime(t, h, memberB, "codex", "daemon-b2")
 	bind(t, h, h.fixture.AgentA, memberB, machineB2, "codex")
 	child, err := createRetryRunInTx(ctx, h.queries, mustRun(t, h, queued.ID))
@@ -260,7 +313,13 @@ func TestClaimRefusesARunWhoseAuthorizerDoesNotOwnTheRuntime(t *testing.T) {
 		t.Fatalf("retry = authorizer %+v on %s, want member B on their current machine %s",
 			child.ExecutionAuthorizedByUserID, child.RuntimeID, machineB2)
 	}
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE runs SET status = 'failed', failure_reason = 'runtime_offline' WHERE id = $1`, child.ID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE runs SET status = 'failed', failure_reason = 'runtime_offline' WHERE id = $1`,
+		child.ID,
+	)
 	dbtest.MustExec(t, ctx, h.pool, `DELETE FROM agent_runtime_bindings WHERE agent_id = $1 AND user_id = $2`,
 		h.fixture.AgentA, memberB)
 	if orphan, err := createRetryRunInTx(ctx, h.queries, mustRun(t, h, child.ID)); err != nil || orphan != nil {
@@ -294,7 +353,7 @@ func TestCapacityIsPerBinding(t *testing.T) {
 	dbtest.MustExec(t, ctx, h.pool, `UPDATE tasks SET status = 'in_progress' WHERE id = $1`, h.fixture.TaskA)
 
 	var pending []events.Event
-	enqueue := func(conversationID uuid.UUID, taskID, authorizer uuid.UUID) generated.Run {
+	enqueue := func(conversationID, taskID, authorizer uuid.UUID) generated.Run {
 		t.Helper()
 		run, err := EnqueueRunInTx(ctx, h.queries, &pending, RunTrigger{
 			CompanyID: h.fixture.CompanyA, ConversationID: conversationID, AgentID: h.fixture.AgentA,
@@ -317,7 +376,11 @@ func TestCapacityIsPerBinding(t *testing.T) {
 	// machine is untouched by it.
 	claimedB, err := h.svc.ClaimRun(ctx, h.fixture.AgentA, machineB)
 	if err != nil || claimedB == nil || claimedB.ID != runB.ID {
-		t.Fatalf("claim on member B's machine = %v, %v; want run B despite the registrant's live run", claimedB, err)
+		t.Fatalf(
+			"claim on member B's machine = %v, %v; want run B despite the registrant's live run",
+			claimedB,
+			err,
+		)
 	}
 }
 
@@ -328,7 +391,7 @@ func TestHandoffCancelsEveryLiveRunOfTheTask(t *testing.T) {
 	h := newRunHarness(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	seed := func(conversationID uuid.UUID, taskID uuid.UUID, status string) uuid.UUID {
+	seed := func(conversationID, taskID uuid.UUID, status string) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
 		if err := h.pool.QueryRow(ctx, `
@@ -355,7 +418,14 @@ func TestHandoffCancelsEveryLiveRunOfTheTask(t *testing.T) {
 			assignee_user_id, executed_by_agent_id, creator_user_id)
 		VALUES ($1, $2, $3, $4, 'product', 8, 'other', 'Other', $5, $6, $5)`,
 		otherTask, h.fixture.CompanyA, otherConversation, h.fixture.ProjectA, h.fixture.UserA, h.fixture.AgentA)
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE conversations SET task_id = $1 WHERE id = $2`, otherTask, otherConversation)
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE conversations SET task_id = $1 WHERE id = $2`,
+		otherTask,
+		otherConversation,
+	)
 	untouched := seed(otherConversation, otherTask, "queued")
 	logged := captureRunCancelledLines(t)
 
@@ -400,7 +470,12 @@ func TestHandoffCancelsEveryLiveRunOfTheTask(t *testing.T) {
 	// reading it sees why the old machine dropped its work.
 	for _, id := range []uuid.UUID{queued, running} {
 		if reason, ok := logged.reason(id); !ok || reason != RunReasonTaskReassigned {
-			t.Fatalf("run cancelled log for %s = %q (logged %v), want reason task_reassigned", id, reason, ok)
+			t.Fatalf(
+				"run cancelled log for %s = %q (logged %v), want reason task_reassigned",
+				id,
+				reason,
+				ok,
+			)
 		}
 	}
 	if _, ok := logged.reason(untouched); ok {

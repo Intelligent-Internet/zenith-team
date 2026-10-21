@@ -6,7 +6,7 @@ import {
   type DragEvent,
 } from "react";
 import { attachmentService } from "@/shared/api/attachment.service";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { toast } from "@/shared/ui/sonner";
 import {
   useAttachWhiteboardFileMutation,
@@ -147,7 +147,7 @@ export function useBoardFileImport({
         });
       } catch (error) {
         toast.error(
-          `${file.name}: ${getBoardlyQueryErrorMessage(error, "This file could not be added. Try again.")}`,
+          `${file.name}: ${getZenithTeamQueryErrorMessage(error, "This file could not be added. Try again.")}`,
         );
       }
     }
@@ -172,7 +172,7 @@ export function useBoardFileImport({
     if (!position) return;
     pending.current = upload(files, { ...position, anchor: placement.anchor })
       .catch((error) => {
-        toast.error(getBoardlyQueryErrorMessage(error));
+        toast.error(getZenithTeamQueryErrorMessage(error));
       })
       .finally(() => {
         pending.current = null;

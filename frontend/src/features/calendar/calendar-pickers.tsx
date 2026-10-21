@@ -115,7 +115,7 @@ export function CalendarDatePicker({
       <Popover.Portal
         container={
           appearance === "calendar"
-            ? document.querySelector(".boardly-workspace-theme")
+            ? document.querySelector(".zenith-team-workspace-theme")
             : undefined
         }
       >
@@ -275,7 +275,7 @@ export function CalendarTimePicker({
       <Popover.Portal
         container={
           appearance === "calendar"
-            ? document.querySelector(".boardly-workspace-theme")
+            ? document.querySelector(".zenith-team-workspace-theme")
             : undefined
         }
       >
@@ -380,7 +380,7 @@ export function CalendarOptionPicker({
       <Popover.Portal
         container={
           appearance === "calendar"
-            ? document.querySelector(".boardly-workspace-theme")
+            ? document.querySelector(".zenith-team-workspace-theme")
             : undefined
         }
       >

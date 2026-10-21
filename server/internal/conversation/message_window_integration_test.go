@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // A chat page is a count of messages, and only PostgreSQL can decide which
@@ -68,7 +68,7 @@ func TestNewestMessageWindowCountsMessagesAcrossInvisibleItems(t *testing.T) {
 	// Every parameter is cast: an INSERT ... SELECT gives its select list no
 	// type context from the target columns, so an uncast parameter arrives as
 	// text and leans on an assignment coercion to become a uuid again.
-	seedRunDetail := func(conversationID uuid.UUID, runID uuid.UUID, firstSeq, lastSeq int64) {
+	seedRunDetail := func(conversationID, runID uuid.UUID, firstSeq, lastSeq int64) {
 		t.Helper()
 		dbtest.MustExec(t, ctx, pool, `
 			INSERT INTO conversation_items (

@@ -24,7 +24,7 @@ import {
   type CalendarOccurrence,
 } from "./calendar-api";
 import { addDays, calendarColors, dateKey, dayAt } from "./calendar-dates";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 
 import { CalendarRepeatField } from "./calendar-repeat-field";
 import { EventSharingFields } from "./event-participants";
@@ -192,7 +192,7 @@ export function EventEditor({
       );
       onClose();
     } catch (error) {
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     }
   }
   async function deleteEvent(single: boolean) {
@@ -217,7 +217,7 @@ export function EventEditor({
       toast.success(single ? "Occurrence removed" : "Event deleted");
       onClose();
     } catch (error) {
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     }
   }
   async function toggleComplete() {
@@ -234,7 +234,7 @@ export function EventEditor({
       }).unwrap();
       onClose();
     } catch (error) {
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     }
   }
   function chooseStartDate(value: string) {
@@ -322,7 +322,7 @@ export function EventEditor({
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal
-              container={document.querySelector(".boardly-workspace-theme")}
+              container={document.querySelector(".zenith-team-workspace-theme")}
             >
               <DropdownMenu.Content
                 className="calendar-action-menu"
@@ -535,7 +535,7 @@ export function EventEditor({
               role={catalog.isError ? "alert" : undefined}
             >
               {catalog.isError
-                ? getBoardlyQueryErrorMessage(catalog.error)
+                ? getZenithTeamQueryErrorMessage(catalog.error)
                 : "Loading calendars and members…"}
             </p>
           )}

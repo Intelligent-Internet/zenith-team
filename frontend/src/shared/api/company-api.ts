@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { companyService } from "@/shared/api/company.service";
 import { attachmentService } from "@/shared/api/attachment.service";
 import type {
@@ -9,11 +12,11 @@ import type {
   UpdateProactiveModeRequest,
 } from "@/shared/api/types";
 
-export const companyApi = boardlyApi.injectEndpoints({
+export const companyApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkspaceCompanies: builder.query<CompanyPage, void>({
       queryFn: () =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.listCompanies(),
           "Companies could not be loaded.",
         ),
@@ -24,7 +27,7 @@ export const companyApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Company" },
       ],
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getCompanyById(companyId),
           "Company could not be loaded.",
         ),
@@ -35,7 +38,7 @@ export const companyApi = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 60,
       queryFn: ({ companyId, attachmentId }, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const blob = await attachmentService.download(
             companyId,
             attachmentId,
@@ -59,7 +62,7 @@ export const companyApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: ["Company"],
       queryFn: ({ companyId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.deleteCompany(companyId, expectedRevision),
           "Company could not be deleted.",
         ),
@@ -69,7 +72,7 @@ export const companyApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "ProactiveMode" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getProactiveMode(companyId),
           "Proactive Mode could not be loaded.",
         ),
@@ -95,7 +98,7 @@ export const companyApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.updateProactiveMode(companyId, request),
           "Proactive Mode could not be updated.",
         ),
@@ -106,7 +109,7 @@ export const companyApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: ["Company"],
       queryFn: ({ companyId, payload }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.updateCompanyProfile(companyId, payload),
           "Company settings could not be saved.",
         ),

@@ -14,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // idRows is a one-column result of ids for recordingDBTX.lists.
@@ -71,31 +71,49 @@ func TestEntryAudienceMatchesTheFeed(t *testing.T) {
 		{name: "Company-wide chat work with no Project reaches nobody", entityType: "message", want: nobody},
 		{name: "an addressed row with no Project keeps its route", entityType: "task", addressee: addressed(reader)},
 		{name: "a Company row that is not Project work keeps its route", entityType: "agent"},
-		{name: "a project_grant row with no Project reaches the managers", entityType: "project_grant",
-			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{manager}}},
-		{name: "an addressed project_grant row with no Project reaches its addressee and the managers",
+		{
+			name: "a project_grant row with no Project reaches the managers", entityType: "project_grant",
+			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{manager}},
+		},
+		{
+			name:       "an addressed project_grant row with no Project reaches its addressee and the managers",
 			entityType: "project_grant", addressee: addressed(outsider),
-			want: &auth.ProjectAudience{UserIDs: sortedIDs(manager, outsider)}},
-		{name: "a Company-wide row in a restricted Project reaches its readers", entityType: "task",
+			want: &auth.ProjectAudience{UserIDs: sortedIDs(manager, outsider)},
+		},
+		{
+			name: "a Company-wide row in a restricted Project reaches its readers", entityType: "task",
 			project: project, visibility: "restricted",
-			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other)}},
-		{name: "a row in a Company-visible Project reaches the Company", entityType: "task",
-			project: project, visibility: "company", want: &auth.ProjectAudience{CompanyWide: true}},
-		{name: "an addressed row reaches its addressee who reads the Project", entityType: "approval",
+			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other)},
+		},
+		{
+			name: "a row in a Company-visible Project reaches the Company", entityType: "task",
+			project: project, visibility: "company", want: &auth.ProjectAudience{CompanyWide: true},
+		},
+		{
+			name: "an addressed row reaches its addressee who reads the Project", entityType: "approval",
 			project: project, addressee: addressed(reader), visibility: "restricted",
-			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{reader}}},
-		{name: "an addressed row reaches nobody when the addressee cannot read the Project",
+			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{reader}},
+		},
+		{
+			name:       "an addressed row reaches nobody when the addressee cannot read the Project",
 			entityType: "approval", project: project, addressee: addressed(outsider), visibility: "restricted",
-			want: nobody},
-		{name: "an addressed row in a Company-visible Project reaches its addressee", entityType: "question",
+			want: nobody,
+		},
+		{
+			name: "an addressed row in a Company-visible Project reaches its addressee", entityType: "question",
 			project: project, addressee: addressed(outsider), visibility: "company",
-			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{outsider}}},
-		{name: "a project_grant row reaches the readers and the managers", entityType: "project_grant",
+			want: &auth.ProjectAudience{UserIDs: []uuid.UUID{outsider}},
+		},
+		{
+			name: "a project_grant row reaches the readers and the managers", entityType: "project_grant",
 			project: project, visibility: "restricted",
-			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other, manager)}},
-		{name: "an addressed project_grant row reaches the readers and the managers",
+			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other, manager)},
+		},
+		{
+			name:       "an addressed project_grant row reaches the readers and the managers",
 			entityType: "project_grant", project: project, addressee: addressed(outsider), visibility: "restricted",
-			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other, manager)}},
+			want: &auth.ProjectAudience{UserIDs: sortedIDs(reader, other, manager)},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -130,7 +148,10 @@ func TestEntryAudienceMatchesTheFeed(t *testing.T) {
 			for _, call := range database.calls {
 				if call.name == "ListActiveCompanyMemberIDsByRoles" &&
 					!hasArg(call.args, auth.RolesWith(auth.PermissionProjectsManage)) {
-					t.Fatalf("managers read with %v, want the roles holding projects.manage", call.args)
+					t.Fatalf(
+						"managers read with %v, want the roles holding projects.manage",
+						call.args,
+					)
 				}
 			}
 		})

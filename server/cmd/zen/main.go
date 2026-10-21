@@ -2,7 +2,7 @@
 // (`zen auth login`), runs the local agent daemon (`zen daemon ...`), and
 // works with the product API (`zen task ...`, `zen run ...`, `zen agent ...`).
 // Inside an agent process the same binary runs in Agent mode: it reads the
-// run.json the daemon placed in its BOARDLY_HOME and routes every product
+// run.json the daemon placed in its ZENITH_TEAM_HOME and routes every product
 // call through the daemon's Run channel, so an Agent can inspect and act on
 // its own Run without ever holding a credential.
 package main
@@ -49,7 +49,7 @@ func newRootCmd() *cobra.Command {
 	root.PersistentFlags().String(
 		"company",
 		"",
-		"company id (default: BOARDLY_COMPANY_ID, then the saved company_id; fixed in Agent mode)",
+		"company id (default: ZENITH_TEAM_COMPANY_ID, then the saved company_id; fixed in Agent mode)",
 	)
 	root.PersistentFlags().String(
 		"request-key",
@@ -99,8 +99,8 @@ func newRootCmd() *cobra.Command {
 // rejectUnknownSubcommands makes `zen <family> <unknown>` fail the way the
 // root does: "unknown command" on stderr, exit 1. Cobra rejects an unknown
 // subcommand only at the root; a family with no Run accepts `zen task
-// frobnicate`, prints its help on stdout and exits 0, which breaks CL-FR6
-// (a failure terminates non-zero and stdout stays parseable). Args must be
+// frobnicate`, prints its help on stdout and exits 0, which breaks the rule
+// that a failure terminates non-zero and stdout stays parseable. Args must be
 // paired with a Run, because cobra asks for help on a non-runnable command
 // before it validates args; a bare `zen <family>` therefore still prints
 // its help, now through that Run. A family that already runs on its own
@@ -150,16 +150,16 @@ const (
 func exitCodeFor(err error) int {
 	var api *apiError
 	if errors.As(err, &api) {
-		switch {
-		case api.Status == 401 || api.Status == 403:
+		switch api.Status {
+		case 401, 403:
 			return exitAuth
-		case api.Status == 404:
+		case 404:
 			return exitNotFound
-		case api.Status == 409:
+		case 409:
 			return exitConflict
-		case api.Status == 400 || api.Status == 413 || api.Status == 415 || api.Status == 422:
+		case 400, 413, 415, 422:
 			return exitValidation
-		case api.Status == 0:
+		case 0:
 			return exitNetwork
 		}
 		return exitGeneric

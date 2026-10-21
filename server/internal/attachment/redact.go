@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 func (DefaultAttachmentService) Format(state fmt.State, _ rune) {

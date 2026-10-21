@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { companyResourceService } from "@/shared/api/company-resource.service";
 import type {
   EntityRevisionRequest,
@@ -7,7 +10,7 @@ import type {
   CompanyResourceUpdateRequest,
 } from "@/shared/api/types";
 
-export const resourceApi = boardlyApi.injectEndpoints({
+export const resourceApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkspaceResources: builder.query<
       Awaited<ReturnType<typeof companyResourceService.listResources>>,
@@ -17,7 +20,7 @@ export const resourceApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "ProjectResource" },
       ],
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyResourceService.listResources(companyId),
           "Resources could not be loaded.",
         ),
@@ -36,7 +39,7 @@ export const resourceApi = boardlyApi.injectEndpoints({
         companyId: string;
         request: CompanyResourceCreateRequest;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             companyResourceService.createResource(
               argument.companyId,
@@ -61,7 +64,7 @@ export const resourceApi = boardlyApi.injectEndpoints({
         request: CompanyResourceUpdateRequest;
         resourceId: string;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             companyResourceService.updateResource(
               argument.companyId,
@@ -87,7 +90,7 @@ export const resourceApi = boardlyApi.injectEndpoints({
         request: EntityRevisionRequest;
         resourceId: string;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             companyResourceService.deleteResource(
               argument.companyId,

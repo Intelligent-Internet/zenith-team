@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // companyResearchOverviewKey is the hub page the founder's research Run writes
@@ -37,8 +37,16 @@ type companyResearchOutcome struct {
 // complete when the Run is the research lineage's final attempt, so the
 // completion never depends on a client being open. A retried failure is not
 // final and changes nothing.
-func settleCompanyResearchInTx(ctx context.Context, q *db.Queries, run db.Run, retrying bool) (companyResearchOutcome, error) {
-	research, err := q.IsInitializationResearchRun(ctx, db.IsInitializationResearchRunParams{CompanyID: run.CompanyID, RunID: run.ID})
+func settleCompanyResearchInTx(
+	ctx context.Context,
+	q *db.Queries,
+	run db.Run,
+	retrying bool,
+) (companyResearchOutcome, error) {
+	research, err := q.IsInitializationResearchRun(
+		ctx,
+		db.IsInitializationResearchRunParams{CompanyID: run.CompanyID, RunID: run.ID},
+	)
 	if err != nil {
 		return companyResearchOutcome{}, fmt.Errorf("read company research lineage: %w", err)
 	}
@@ -49,7 +57,10 @@ func settleCompanyResearchInTx(ctx context.Context, q *db.Queries, run db.Run, r
 	if retrying {
 		return outcome, nil
 	}
-	if _, err := q.CompleteCompanyInitializationForRun(ctx, db.CompleteCompanyInitializationForRunParams{CompanyID: run.CompanyID, RunID: run.ID}); err != nil {
+	if _, err := q.CompleteCompanyInitializationForRun(
+		ctx,
+		db.CompleteCompanyInitializationForRunParams{CompanyID: run.CompanyID, RunID: run.ID},
+	); err != nil {
 		return companyResearchOutcome{}, fmt.Errorf("complete company initialization: %w", err)
 	}
 	outcome.pages, err = countResearchPages(ctx, q, run.CompanyID)
@@ -75,7 +86,10 @@ func settleCompanyResearchInTx(ctx context.Context, q *db.Queries, run db.Run, r
 func lockResearchInboxTargets(ctx context.Context, q *db.Queries, runs []db.Run) (map[uuid.UUID]runInboxTarget, error) {
 	research := make([]db.Run, 0, 1)
 	for _, run := range runs {
-		isResearch, err := q.IsInitializationResearchRun(ctx, db.IsInitializationResearchRunParams{CompanyID: run.CompanyID, RunID: run.ID})
+		isResearch, err := q.IsInitializationResearchRun(
+			ctx,
+			db.IsInitializationResearchRunParams{CompanyID: run.CompanyID, RunID: run.ID},
+		)
 		if err != nil {
 			return nil, fmt.Errorf("read company research lineage: %w", err)
 		}
@@ -130,7 +144,10 @@ func createCompanyResearchInboxItem(
 	target runInboxTarget,
 	outcome companyResearchOutcome,
 ) (inbox.CreateResult, error) {
-	agent, err := queries.GetRunAgentBrief(ctx, db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID})
+	agent, err := queries.GetRunAgentBrief(
+		ctx,
+		db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID},
+	)
 	if err != nil {
 		return inbox.CreateResult{}, fmt.Errorf("read company research Inbox agent: %w", err)
 	}
@@ -138,7 +155,10 @@ func createCompanyResearchInboxItem(
 	if run.Status == "failed" {
 		target.failureReason = run.FailureReason.String
 		target.failureText = run.Error.String
-		runtime, err := queries.GetRunRuntime(ctx, db.GetRunRuntimeParams{CompanyID: run.CompanyID, ID: run.RuntimeID})
+		runtime, err := queries.GetRunRuntime(
+			ctx,
+			db.GetRunRuntimeParams{CompanyID: run.CompanyID, ID: run.RuntimeID},
+		)
 		if err != nil {
 			return inbox.CreateResult{}, fmt.Errorf("read company research Inbox runtime: %w", err)
 		}
@@ -168,7 +188,11 @@ func createCompanyResearchInboxItem(
 // Success opens the overview page, or the Wiki when the Run saved none;
 // failure opens the Wiki, where the retry action lives. The links are the
 // client's own routes: the Wiki is mounted at /wiki, not under /app.
-func companyResearchInboxContent(status string, target runInboxTarget, outcome companyResearchOutcome) (inbox.Type, string, string, string) {
+func companyResearchInboxContent(
+	status string,
+	target runInboxTarget,
+	outcome companyResearchOutcome,
+) (inbox.Type, string, string, string) {
 	agentName := runInboxLabel(target.agentName, 128)
 	if status == "failed" || status == "cancelled" {
 		return inbox.TypeRunFailed, "Company research could not finish",
@@ -185,7 +209,9 @@ func companyResearchInboxContent(status string, target runInboxTarget, outcome c
 	case outcome.pages == 1:
 		body = agentName + " wrote 1 page about your company. Open the Wiki to review it."
 	case outcome.pages > 1:
-		body = agentName + " wrote " + strconv.Itoa(outcome.pages) + " pages about your company. Open the Wiki to review them."
+		body = agentName + " wrote " + strconv.Itoa(
+			outcome.pages,
+		) + " pages about your company. Open the Wiki to review them."
 	}
 	return inbox.TypeRunCompleted, "Your company wiki is ready", body, deepLink
 }

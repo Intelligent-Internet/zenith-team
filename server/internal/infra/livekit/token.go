@@ -42,7 +42,8 @@ func NewTokenIssuer(options TokenOptions) (*TokenIssuer, error) {
 }
 
 func (i *TokenIssuer) IssueParticipantToken(now time.Time, request ParticipantTokenRequest) (string, error) {
-	if i == nil || len(i.apiSecret) == 0 || strings.TrimSpace(request.RoomName) == "" || strings.TrimSpace(request.Identity) == "" {
+	if i == nil || len(i.apiSecret) == 0 || strings.TrimSpace(request.RoomName) == "" ||
+		strings.TrimSpace(request.Identity) == "" {
 		return "", errors.New("LiveKit token request is invalid")
 	}
 	if now.IsZero() {

@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -155,25 +155,43 @@ func TestTaskDependencyGraphFiltersRequireBothEndpoints(t *testing.T) {
 	if err != nil || len(rows) != 3 {
 		t.Fatalf("ListCompanyTaskDependencyGraph() rows = %d, error = %v, want 3", len(rows), err)
 	}
-	other, err := store.Queries().ListCompanyTaskDependencyGraph(ctx, generated.ListCompanyTaskDependencyGraphParams{
-		CompanyID: fixture.CompanyB, ActorUserID: fixture.UserA,
-	})
+	other, err := store.Queries().
+		ListCompanyTaskDependencyGraph(ctx, generated.ListCompanyTaskDependencyGraphParams{
+			CompanyID: fixture.CompanyB, ActorUserID: fixture.UserA,
+		})
 	if err != nil || len(other) != 0 {
 		t.Fatalf("ListCompanyTaskDependencyGraph(other Company) rows = %d, error = %v, want 0", len(other), err)
 	}
 	// A member who cannot read the Project sees none of its edges, and
 	// neither endpoint of one is locked for them (ADR 0017).
 	outsider := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, 'graph-outsider@example.com', 'Outsider')`, outsider)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, outsider)
-	hidden, err := store.Queries().ListCompanyTaskDependencyGraph(ctx, generated.ListCompanyTaskDependencyGraphParams{
-		CompanyID: fixture.CompanyA, ActorUserID: outsider,
-	})
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'graph-outsider@example.com', 'Outsider')`,
+		outsider,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		outsider,
+	)
+	hidden, err := store.Queries().
+		ListCompanyTaskDependencyGraph(ctx, generated.ListCompanyTaskDependencyGraphParams{
+			CompanyID: fixture.CompanyA, ActorUserID: outsider,
+		})
 	if err != nil || len(hidden) != 0 {
 		t.Fatalf("ListCompanyTaskDependencyGraph(outsider) rows = %d, error = %v, want 0", len(hidden), err)
 	}
 	endpoints, err := store.Queries().LockTaskDependencyEndpoints(ctx, generated.LockTaskDependencyEndpointsParams{
-		CompanyID: fixture.CompanyA, DependentTaskID: engineeringA, PrerequisiteTaskID: engineeringB, ActorUserID: outsider,
+		CompanyID:          fixture.CompanyA,
+		DependentTaskID:    engineeringA,
+		PrerequisiteTaskID: engineeringB,
+		ActorUserID:        outsider,
 	})
 	if err != nil || len(endpoints) != 0 {
 		t.Fatalf("LockTaskDependencyEndpoints(outsider) = %d rows, %v; want none", len(endpoints), err)

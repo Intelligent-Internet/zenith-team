@@ -8,7 +8,7 @@ import (
 func TestParseAndValidate(t *testing.T) {
 	t.Parallel()
 	document, summary, err := ParseAndValidate([]byte(`format_version: 5
-company: boardly
+company: zenith-team
 projects:
   - key: work
     title: Work
@@ -28,7 +28,7 @@ tasks:
 	if err != nil {
 		t.Fatalf("ParseAndValidate() error = %v", err)
 	}
-	if document.Company != "boardly" || summary != (Summary{Tasks: 1}) {
+	if document.Company != "zenith-team" || summary != (Summary{Tasks: 1}) {
 		t.Fatalf("document = %+v summary = %+v", document, summary)
 	}
 }
@@ -36,7 +36,7 @@ tasks:
 func TestParseAndValidateRejectsUnknownField(t *testing.T) {
 	t.Parallel()
 	_, _, err := ParseAndValidate([]byte(`format_version: 5
-company: boardly
+company: zenith-team
 unknown: true
 projects:
   - key: work
@@ -68,7 +68,7 @@ func TestParseAndValidateRejectsDuplicateTaskKeys(t *testing.T) {
 
 func TestParseAndValidateRejectsMissingTaskList(t *testing.T) {
 	t.Parallel()
-	_, _, err := ParseAndValidate([]byte("format_version: 5\ncompany: boardly\nprojects: []\n"))
+	_, _, err := ParseAndValidate([]byte("format_version: 5\ncompany: zenith-team\nprojects: []\n"))
 	if err == nil || !strings.Contains(err.Error(), "tasks must be a list") {
 		t.Fatalf("ParseAndValidate() error = %v", err)
 	}
@@ -77,7 +77,7 @@ func TestParseAndValidateRejectsMissingTaskList(t *testing.T) {
 func TestParseAndValidateRejectsInvalidEnums(t *testing.T) {
 	t.Parallel()
 	_, _, err := ParseAndValidate([]byte(`format_version: 5
-company: boardly
+company: zenith-team
 projects:
   - key: work
     title: Work
@@ -162,9 +162,11 @@ func TestValidateDocumentRejectsInvalidDependencyGraphWithPath(t *testing.T) {
 }
 
 func dependencyGraphDocument() Document {
-	return Document{Projects: []Project{{Key: "work", Title: "Work"}},
+	return Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
 		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
-			{ProjectKey: "work",
+			{
+				ProjectKey:    "work",
 				Key:           "product_spec",
 				AgentID:       "0198aa00-0000-7000-8000-00000000a003",
 				MilestoneType: "product", Title: "Product spec",
@@ -173,7 +175,8 @@ func dependencyGraphDocument() Document {
 				Priority:    "high",
 				DependsOn:   []TaskDependency{},
 			},
-			{ProjectKey: "work",
+			{
+				ProjectKey:    "work",
 				Key:           "engineering_build",
 				AgentID:       "0198aa00-0000-7000-8000-00000000a002",
 				MilestoneType: "product", Title: "Build",
@@ -190,7 +193,7 @@ func TestParseAndValidateAcceptsTaskOnlyFormat(t *testing.T) {
 	t.Parallel()
 
 	document, summary, err := ParseAndValidate([]byte(`format_version: 5
-company: boardly
+company: zenith-team
 projects:
   - key: work
     title: Work
@@ -219,10 +222,10 @@ tasks:
 func TestParseAndValidateRejectsRetiredPlanningDocument(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct{ name, document, want string }{
-		{"retired goal format", "format_version: 2\ncompany: boardly\ntasks: []\n", "unsupported format_version 2"},
-		{"retired department format", "format_version: 3\ncompany: boardly\ntasks: []\n", "unsupported format_version 3"},
-		{"retired department field", "format_version: 5\ncompany: boardly\ntasks:\n  - key: ship\n    department_key: engineering\n", "field department_key not found"},
-		{"retired collection", "format_version: 5\ncompany: boardly\ngoals: []\ntasks: []\n", "field goals not found"},
+		{"retired goal format", "format_version: 2\ncompany: zenith-team\ntasks: []\n", "unsupported format_version 2"},
+		{"retired department format", "format_version: 3\ncompany: zenith-team\ntasks: []\n", "unsupported format_version 3"},
+		{"retired department field", "format_version: 5\ncompany: zenith-team\ntasks:\n  - key: ship\n    department_key: engineering\n", "field department_key not found"},
+		{"retired collection", "format_version: 5\ncompany: zenith-team\ngoals: []\ntasks: []\n", "field goals not found"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

@@ -1,6 +1,6 @@
 package agent
 
-// The one thing Boardly says out loud about a machine: when the stale sweep
+// The one thing Zenith Team says out loud about a machine: when the stale sweep
 // takes a runtime offline while it still held in-flight runs, the member who
 // registered the machine gets an Inbox item naming it and the count. Nobody
 // else can see the machine (ADR 0014), and a runtime whose registrant was
@@ -25,10 +25,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // runtimeOfflineRecipientKey addresses one person in one company — the pair
@@ -185,7 +185,7 @@ func lockRuntimeOfflineRecipients(
 // recipient and the next runtime are tried. This is not a way to hide a
 // database failure: a driver error poisons the transaction and its commit
 // still fails, so nothing half-commits. What it recovers from is the item
-// Boardly could not build.
+// Zenith Team could not build.
 func stageRuntimeOfflineNotices(
 	ctx context.Context,
 	tx *generated.Queries,

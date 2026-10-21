@@ -23,8 +23,8 @@ func TestS3RoundTripPreservesContentMetadata(t *testing.T) {
 	t.Parallel()
 
 	client := newMemoryS3Client()
-	store := newS3Store("boardly-test", client)
-	payload := []byte("boardly s3 attachment")
+	store := newS3Store("zenith-team-test", client)
+	payload := []byte("zenith-team s3 attachment")
 	key := "companies/acme/attachments/file.txt"
 	if err := store.Upload(
 		context.Background(), key, bytes.NewReader(payload), int64(len(payload)),
@@ -72,12 +72,12 @@ func TestNewS3FailsFastOnInvalidConfiguration(t *testing.T) {
 
 	for name, configuration := range map[string]S3Config{
 		"missing bucket": {Region: "us-east-1"},
-		"missing region": {Bucket: "boardly-test"},
+		"missing region": {Bucket: "zenith-team-test"},
 		"incomplete credentials": {
-			Bucket: "boardly-test", Region: "us-east-1", AccessKeyID: "only-access-key",
+			Bucket: "zenith-team-test", Region: "us-east-1", AccessKeyID: "only-access-key",
 		},
 		"invalid endpoint": {
-			Bucket: "boardly-test", Region: "us-east-1", Endpoint: "file:///private/store",
+			Bucket: "zenith-team-test", Region: "us-east-1", Endpoint: "file:///private/store",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestS3PresignUsesBoundedTTLAndContentDisposition(t *testing.T) {
 	t.Parallel()
 
 	presigner := &presignerFake{url: "https://objects.example/signed"}
-	store := &S3{bucket: "boardly-test", presigner: presigner}
+	store := &S3{bucket: "zenith-team-test", presigner: presigner}
 	got, err := store.PresignGetWithContentDisposition(
 		context.Background(), "companies/acme/attachments/file.txt", 15*time.Minute,
 		"attachment; filename=report.txt",
@@ -211,7 +211,7 @@ func TestS3MultipartCleanupUsesFreshBoundedContext(t *testing.T) {
 			if remaining <= 0 || remaining > 10*time.Second {
 				t.Fatalf("abort context remaining = %s", remaining)
 			}
-			if aws.ToString(input.Bucket) != "boardly-test" ||
+			if aws.ToString(input.Bucket) != "zenith-team-test" ||
 				aws.ToString(input.Key) != "multipart/canceled" ||
 				aws.ToString(input.UploadId) != "upload-123" {
 				t.Fatalf("AbortMultipartUpload input = %#v", input)
@@ -222,7 +222,7 @@ func TestS3MultipartCleanupUsesFreshBoundedContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	store := &S3{
-		bucket: "boardly-test",
+		bucket: "zenith-team-test",
 		client: client,
 		uploader: uploadFunc(func(
 			context.Context,
@@ -251,7 +251,7 @@ func TestS3CancellationAfterProviderCommitCannotReturnSuccess(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	store := &S3{
-		bucket: "boardly-test",
+		bucket: "zenith-team-test",
 		client: newMemoryS3Client(),
 		uploader: uploadFunc(func(
 			context.Context,
@@ -279,7 +279,7 @@ func TestS3GetReaderClosesProviderBodyWhenCancellationRacesResponse(t *testing.T
 	client := &cancelingGetS3Client{
 		memoryS3Client: newMemoryS3Client(), cancel: cancel, body: body,
 	}
-	store := newS3Store("boardly-test", client)
+	store := newS3Store("zenith-team-test", client)
 	reader, err := store.GetReader(ctx, "companies/acme/attachments/canceled-response")
 	if reader != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("GetReader() = %#v, %v; want context cancellation", reader, err)
@@ -448,7 +448,7 @@ func (u uploadFunc) Upload(
 
 func newUploadErrorStore(client s3Client, uploadErr error) *S3 {
 	return &S3{
-		bucket: "boardly-test",
+		bucket: "zenith-team-test",
 		client: client,
 		uploader: uploadFunc(func(
 			context.Context,

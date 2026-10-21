@@ -12,12 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // seedTaskMember adds an active member of CompanyA, a colleague a Task can
@@ -163,7 +163,11 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 		}
 		created := result.Task
 		if created.Status != StatusInProgress || result.RunID == nil {
-			t.Fatalf("Create(executedBy agent) = status %q run %v, want in_progress with a Run", created.Status, result.RunID)
+			t.Fatalf(
+				"Create(executedBy agent) = status %q run %v, want in_progress with a Run",
+				created.Status,
+				result.RunID,
+			)
 		}
 		// The assignee defaults to the caller, and the Run is placed on
 		// their binding.
@@ -263,7 +267,11 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 		}
 		created := result.Task
 		if created.Status != StatusDone || countRuns(created.ID) != 0 {
-			t.Fatalf("Create(done) = status %q with %d Runs, want done and none", created.Status, countRuns(created.ID))
+			t.Fatalf(
+				"Create(done) = status %q with %d Runs, want done and none",
+				created.Status,
+				countRuns(created.ID),
+			)
 		}
 		// A Task born finished carries its outcome time from the start, the
 		// way one that reaches the state through an update does.
@@ -296,7 +304,8 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 			t.Fatalf("Create(human work) error = %v", err)
 		}
 		created := result.Task
-		if created.Status != StatusTodo || created.ExecutedBy != created.Assignee || countRuns(created.ID) != 0 {
+		if created.Status != StatusTodo || created.ExecutedBy != created.Assignee ||
+			countRuns(created.ID) != 0 {
 			t.Fatalf("Create(human work) = status %q executedBy %+v with %d Runs",
 				created.Status, created.ExecutedBy, countRuns(created.ID))
 		}
@@ -311,7 +320,15 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 			t.Fatalf("Update(executedBy agent) = run %v status %q %d Runs; want a Run, in_progress, 1",
 				handed.RunID, handed.Task.Status, countRuns(created.ID))
 		}
-		assertTaskRunPrompt(t, ctx, pool, handed.Task, *handed.RunID, principal.UserID, execution.RunSourceAssign)
+		assertTaskRunPrompt(
+			t,
+			ctx,
+			pool,
+			handed.Task,
+			*handed.RunID,
+			principal.UserID,
+			execution.RunSourceAssign,
+		)
 
 		// Re-selecting the same Agent is not a handoff: no second Run, and
 		// the Task stays where its live Run left it.
@@ -439,7 +456,11 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 		if _, err := service.Update(ctx, principal, fixture.TaskA, UpdateInput{
 			ExpectedRevision: current.Revision, ExecutedBy: &otherAgent, ConfirmHandoff: true,
 		}); !errors.Is(err, ErrConflict) {
-			t.Fatalf("Update(handoff while the failure Run is active) error = %v, want %v", err, ErrConflict)
+			t.Fatalf(
+				"Update(handoff while the failure Run is active) error = %v, want %v",
+				err,
+				ErrConflict,
+			)
 		}
 		if got := countRuns(fixture.TaskA); got != runsBefore {
 			t.Fatalf("refused handoff enqueued a Run: %d, want %d", got, runsBefore)
@@ -454,11 +475,15 @@ func TestAssignmentRunsMoveTheTaskIntoProgress(t *testing.T) {
 		}
 		if reopened.RunID == nil || reopened.Task.Status != StatusInProgress ||
 			reopened.Task.ExecutedBy.ID != otherAgent.ID || countRuns(fixture.TaskA) != runsBefore+1 {
-			t.Fatalf("Update(handoff after failure) = run %v, status %q, %d Runs; want a Run, in_progress, %d",
-				reopened.RunID, reopened.Task.Status, countRuns(fixture.TaskA), runsBefore+1)
+			t.Fatalf(
+				"Update(handoff after failure) = run %v, status %q, %d Runs; want a Run, in_progress, %d",
+				reopened.RunID,
+				reopened.Task.Status,
+				countRuns(fixture.TaskA),
+				runsBefore+1,
+			)
 		}
 	})
-
 }
 
 // Taking a Task that has run away from the member running it is a confirmed
@@ -536,7 +561,10 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 	if _, err := service.Update(ctx, principal, created.Task.ID, UpdateInput{
 		ExpectedRevision: current.Revision, Assignee: &mine,
 	}); !errors.As(err, &live) || !live.RunLive {
-		t.Fatalf("Update(unconfirmed handoff, Run live) error = %v, want HandoffConfirmationError{RunLive: true}", err)
+		t.Fatalf(
+			"Update(unconfirmed handoff, Run live) error = %v, want HandoffConfirmationError{RunLive: true}",
+			err,
+		)
 	}
 
 	handed, err := service.Update(ctx, principal, created.Task.ID, UpdateInput{
@@ -568,8 +596,13 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 	assertTaskRunPrompt(t, ctx, pool, handed.Task, *handed.RunID, principal.UserID, execution.RunSourceAssign)
 	afterExecution, afterWorkspace := generationsOf()
 	if afterExecution != beforeExecution+2 || afterWorkspace != beforeWorkspace+1 {
-		t.Fatalf("generations = %d/%d, want %d/%d: the handoff advances both and its Run advances execution again",
-			afterExecution, afterWorkspace, beforeExecution+2, beforeWorkspace+1)
+		t.Fatalf(
+			"generations = %d/%d, want %d/%d: the handoff advances both and its Run advances execution again",
+			afterExecution,
+			afterWorkspace,
+			beforeExecution+2,
+			beforeWorkspace+1,
+		)
 	}
 
 	// The previous assignee's Run is cancelled, so their daemon drops the
@@ -605,7 +638,11 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 		member.String() + ":task_handoff":  true,
 	}
 	if !reflect.DeepEqual(items, want) {
-		t.Fatalf("handoff Inbox = %v, want %v: the assignment and the handoff, both to the colleague", items, want)
+		t.Fatalf(
+			"handoff Inbox = %v, want %v: the assignment and the handoff, both to the colleague",
+			items,
+			want,
+		)
 	}
 	colleagueNotice := func(kind string) string {
 		t.Helper()
@@ -627,7 +664,9 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 	}
 	// The first assignment named who gave it and what to press: the Task was
 	// waiting to start and the colleague had the Agent set up.
-	if got, want := colleagueNotice("task_assigned"), "Schema A assigned you “Handoff”. Start it on your computer: Agent A runs there."; got != want {
+	if got, want := colleagueNotice(
+		"task_assigned",
+	), "Schema A assigned you “Handoff”. Start it on your computer: Agent A runs there."; got != want {
 		t.Fatalf("first task_assigned body = %q, want %q", got, want)
 	}
 
@@ -656,7 +695,10 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 	if _, err := service.Update(ctx, principal, created.Task.ID, UpdateInput{
 		ExpectedRevision: reviewed.Revision, Assignee: &colleagueRef,
 	}); !errors.As(err, &finished) || finished.RunLive {
-		t.Fatalf("Update(unconfirmed handoff, nothing live) error = %v, want HandoffConfirmationError{RunLive: false}", err)
+		t.Fatalf(
+			"Update(unconfirmed handoff, nothing live) error = %v, want HandoffConfirmationError{RunLive: false}",
+			err,
+		)
 	}
 	back, err := service.Update(ctx, principal, created.Task.ID, UpdateInput{
 		ExpectedRevision: reviewed.Revision, Assignee: &colleagueRef, ConfirmHandoff: true,
@@ -680,7 +722,9 @@ func TestTaskHandoffTakesTheWorkOffThePreviousAssigneesMachine(t *testing.T) {
 			reviewRead, reviewArchived)
 	}
 	// The colleague is told to start it on their computer, and can.
-	if got, want := colleagueNotice("task_assigned"), "Schema A assigned you “Handoff”. Start it on your computer: Agent A runs there."; got != want {
+	if got, want := colleagueNotice(
+		"task_assigned",
+	), "Schema A assigned you “Handoff”. Start it on your computer: Agent A runs there."; got != want {
 		t.Fatalf("hand-back task_assigned body = %q, want %q", got, want)
 	}
 	restarted, err := service.StartExecution(ctx, memberPrincipal, created.Task.ID, StartExecutionInput{
@@ -896,10 +940,15 @@ func TestTaskAgentHandoffTellsTheAssigneeTheirRunStopped(t *testing.T) {
 	// nothing running: it goes back to todo for the member to start.
 	if moved.RunID != nil || moved.Task.Assignee.ID != member || moved.Task.ExecutedBy.ID != second.ID ||
 		moved.Task.Status != StatusTodo {
-		t.Fatalf("moved Task = %+v, run %v; want the member's, done by Second, todo, no Run", moved.Task, moved.RunID)
+		t.Fatalf(
+			"moved Task = %+v, run %v; want the member's, done by Second, todo, no Run",
+			moved.Task,
+			moved.RunID,
+		)
 	}
 	var status string
-	if err := pool.QueryRow(ctx, `SELECT status FROM runs WHERE id = $1`, *started.RunID).Scan(&status); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT status FROM runs WHERE id = $1`, *started.RunID).
+		Scan(&status); err != nil {
 		t.Fatalf("read the member's Run: %v", err)
 	}
 	if status != "cancelled" {
@@ -927,7 +976,11 @@ func TestTaskAgentHandoffTellsTheAssigneeTheirRunStopped(t *testing.T) {
 		t.Fatalf("read the earlier review notice: %v", err)
 	}
 	if readAt == nil || archivedAt == nil {
-		t.Fatalf("earlier review notice read %v archived %v, want both: nobody reviews that Run now", readAt, archivedAt)
+		t.Fatalf(
+			"earlier review notice read %v archived %v, want both: nobody reviews that Run now",
+			readAt,
+			archivedAt,
+		)
 	}
 
 	// The member moving their own Task is told nothing.
@@ -984,7 +1037,10 @@ func TestTaskReviewIsTheAssigneesOrATasksAssignHolders(t *testing.T) {
 	if _, err := service.Update(ctx, principalOf(colleague), reviewed.ID, UpdateInput{
 		ExpectedRevision: reviewed.Revision, Status: &done,
 	}); !errors.Is(err, ErrReviewPermissionRequired) {
-		t.Fatalf("Update(colleague marks done without review) error = %v, want ErrReviewPermissionRequired", err)
+		t.Fatalf(
+			"Update(colleague marks done without review) error = %v, want ErrReviewPermissionRequired",
+			err,
+		)
 	}
 	if finished, err := service.Update(ctx, principalOf(member), reviewed.ID, UpdateInput{
 		ExpectedRevision: reviewed.Revision, Status: &done,
@@ -1041,7 +1097,11 @@ func TestCreateMintsTheDisplayedKeyWhenNoneIsGiven(t *testing.T) {
 		t.Fatalf("Create(chosen key) error = %v", err)
 	}
 	if kept.Task.Number != 8 || kept.Task.Key != "ship_release" {
-		t.Fatalf("Create(chosen key) = number %d key %q, want 8 and ship_release", kept.Task.Number, kept.Task.Key)
+		t.Fatalf(
+			"Create(chosen key) = number %d key %q, want 8 and ship_release",
+			kept.Task.Number,
+			kept.Task.Key,
+		)
 	}
 
 	// The label namespace belongs to the server: a chosen key shaped like a
@@ -1081,7 +1141,12 @@ func TestCreateMintsTheDisplayedKeyWhenNoneIsGiven(t *testing.T) {
 	}
 	again, err := service.Create(ctx, principal, founder)
 	if err != nil || again.Task.Number != 11 || again.Task.Key != "NWR-11" {
-		t.Fatalf("Create(no key, after skip) = %d %q, %v; want 11 NWR-11", again.Task.Number, again.Task.Key, err)
+		t.Fatalf(
+			"Create(no key, after skip) = %d %q, %v; want 11 NWR-11",
+			again.Task.Number,
+			again.Task.Key,
+			err,
+		)
 	}
 }
 
@@ -1146,7 +1211,11 @@ func TestTaskWritesWakeTheRuntimeForTheRunsTheyEnqueue(t *testing.T) {
 		t.Fatalf("Create(executedBy agent) error = %v", err)
 	}
 	if len(woken) != 1 || woken[0] != lastRunID(created.Task.ID) {
-		t.Fatalf("Create(executedBy agent) woke %v, want the assignment Run %s", woken, lastRunID(created.Task.ID))
+		t.Fatalf(
+			"Create(executedBy agent) woke %v, want the assignment Run %s",
+			woken,
+			lastRunID(created.Task.ID),
+		)
 	}
 
 	// A human Task handed to an Agent.

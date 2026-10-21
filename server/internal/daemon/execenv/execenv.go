@@ -1,5 +1,5 @@
 // Package execenv is the provider pass of run preparation: given a workdir
-// prepared by boardly's own workspace design, it sets up the per-run Codex
+// prepared by zenith-team's own workspace design, it sets up the per-run Codex
 // home, the run-local Claude settings file, and materializes the run's skills
 // into provider-native locations.
 package execenv
@@ -61,8 +61,8 @@ type Options struct {
 	// edits inside them.
 	ReadOnlyDirs []string
 	// ProtectedCredentialPaths lists absolute paths that can hold the
-	// person's Zenith Team sign-in: the daemon's real BOARDLY_HOME,
-	// ~/.boardly and the desktop session store. Claude's own file tools
+	// person's Zenith Team sign-in: the daemon's real ZENITH_TEAM_HOME,
+	// ~/.zenith-team and the desktop session store. Claude's own file tools
 	// (Read, Edit, Write) are denied every one that exists. The rules do not
 	// bind Claude's shell or Codex; only the macOS sandbox does that.
 	// Connector-only Runs have no file tools, so their settings ignore it.
@@ -236,7 +236,7 @@ func hydrateCodexSkills(codexHome string, skills []Skill, disabled []RuntimeSkil
 // writeSkillFiles materializes skills as <dir>/<slug>/SKILL.md plus supporting
 // files. Slugs are deduplicated within the batch; a slot occupied by something
 // this call did not create (a user-installed skill or link) yields to a
-// "-boardly" suffixed sibling instead of overwriting user bytes.
+// "-zenith-team" suffixed sibling instead of overwriting user bytes.
 func writeSkillFiles(skillsDir string, skills []Skill) error {
 	if err := os.MkdirAll(skillsDir, 0o755); err != nil {
 		return fmt.Errorf("create skills dir: %w", err)
@@ -257,9 +257,9 @@ func writeSkillFiles(skillsDir string, skills []Skill) error {
 		// A pre-existing entry (dir, file, or link) at the natural slug is not
 		// ours: allocate a collision-free sibling rather than overwrite it.
 		if _, err := os.Lstat(dir); err == nil {
-			slug += "-boardly"
+			slug += "-zenith-team"
 			for n := 2; taken[slug]; n++ {
-				slug = fmt.Sprintf("%s-boardly-%d", base, n)
+				slug = fmt.Sprintf("%s-zenith-team-%d", base, n)
 			}
 			taken[slug] = true
 			dir = filepath.Join(skillsDir, slug)

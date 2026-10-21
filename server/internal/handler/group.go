@@ -6,13 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
-// Groups (Access TECH D3): every active member reads a Company's Groups, as
+// Groups: every active member reads a Company's Groups, as
 // they read the Team page; owners and admins (members.manage) create,
 // rename, fill, empty and delete them. Every route is a person's: a Run
 // proof is refused before authentication (route_actor.go), and
@@ -217,7 +217,7 @@ func (h *Handler) previewGroupChange(c *gin.Context) {
 	c.JSON(http.StatusOK, preview)
 }
 
-// The two Group answers the Project routes share (Access TECH D4).
+// The two Group answers the Project routes share.
 var (
 	groupNotFoundMapping = errorMapping{
 		company.ErrGroupNotFound, http.StatusNotFound, "Group not found", "group_not_found",

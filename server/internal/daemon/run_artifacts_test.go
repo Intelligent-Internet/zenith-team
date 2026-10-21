@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type artifactAPIFake struct {
@@ -124,7 +124,7 @@ func TestArtifactFetchRejectsPartialFilesAndPathEscape(t *testing.T) {
 }
 
 // The daemon writes a fetched file from outside the Run's sandbox, so it
-// writes only where the sandbox would let the Run write (Access TECH B3e). A
+// writes only where the sandbox would let the Run write. A
 // link the Run made inside its workspace may not carry the write elsewhere,
 // even somewhere inside the workspace (a workspace that is the person's home
 // holds launch points and sign-ins), and a folder the Run's guard denies is
@@ -258,7 +258,7 @@ func TestArtifactToolsEndToEndThroughRunChannel(t *testing.T) {
 	}
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer session-token" ||
-			r.Header.Get("X-Boardly-Run-Token") != run.AuthToken {
+			r.Header.Get("X-Zenith-Team-Run-Token") != run.AuthToken {
 			t.Error("missing server proof")
 		}
 		prefix := "/api/v1/companies/" + run.CompanyID + "/runs/" + run.ID.String() + "/agent-artifacts/" + manifest.ID
@@ -279,7 +279,12 @@ func TestArtifactToolsEndToEndThroughRunChannel(t *testing.T) {
 		localPlaneEndpoint: "http://127.0.0.1:19713",
 	}
 	d.client.SetToken("session-token")
-	control, revoke, err := d.registerRunChannel(run, RunContext{}, run.AuthToken, runChannelWorkspace{path: t.TempDir()})
+	control, revoke, err := d.registerRunChannel(
+		run,
+		RunContext{},
+		run.AuthToken,
+		runChannelWorkspace{path: t.TempDir()},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

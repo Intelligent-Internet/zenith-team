@@ -5,7 +5,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"boardly.dev/boardly/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
 )
 
 // RelayNotifier sends daemon wakeup hints to the local daemon hub and, when

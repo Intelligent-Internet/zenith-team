@@ -43,7 +43,7 @@ import {
   runtimeComputerName,
 } from "@/features/settings/model/runtime-management";
 import { getSettingsTab } from "@/features/settings/model/settings-navigation";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { AgentDto, RunDto, RuntimeDto } from "@/shared/api/types";
 import { cx } from "@/shared/lib/cx";
 import { AgentSetupReturn } from "../components/agent-setup-return";
@@ -125,7 +125,7 @@ function RuntimeDetailContent({
 
   // A refetch after the roster's `remove` answers 404 while the last good
   // row is still cached, so the error is judged before the data.
-  const runtimeError = runtimeQuery.error as BoardlyApiError | undefined;
+  const runtimeError = runtimeQuery.error as ZenithTeamApiError | undefined;
   if (runtimeError?.code === "runtime_not_found") {
     return (
       <RuntimeDetailFrame>

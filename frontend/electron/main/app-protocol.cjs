@@ -5,13 +5,13 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { net, protocol } = require("electron");
 
-const BOARDLY_APP_PROTOCOL = "boardly-app";
-const BOARDLY_APP_HOST = "renderer";
-const BOARDLY_APP_ORIGIN = `${BOARDLY_APP_PROTOCOL}://${BOARDLY_APP_HOST}`;
-const BOARDLY_APP_INDEX_URL = `${BOARDLY_APP_ORIGIN}/index.html`;
-const CODEX_GENERATED_IMAGE_PROTOCOL = "boardly-generated-image";
+const ZENITH_TEAM_APP_PROTOCOL = "zenith-team-app";
+const ZENITH_TEAM_APP_HOST = "renderer";
+const ZENITH_TEAM_APP_ORIGIN = `${ZENITH_TEAM_APP_PROTOCOL}://${ZENITH_TEAM_APP_HOST}`;
+const ZENITH_TEAM_APP_INDEX_URL = `${ZENITH_TEAM_APP_ORIGIN}/index.html`;
+const CODEX_GENERATED_IMAGE_PROTOCOL = "zenith-team-generated-image";
 const CODEX_GENERATED_IMAGE_HOST = "codex";
-const PLUGIN_ICON_PROTOCOL = "boardly-plugin-icon";
+const PLUGIN_ICON_PROTOCOL = "zenith-team-plugin-icon";
 const PLUGIN_ICON_HOST = "local";
 const MAX_GENERATED_IMAGE_BYTES = 32 * 1024 * 1024;
 const MAX_PLUGIN_ICON_BYTES = 4 * 1024 * 1024;
@@ -33,7 +33,7 @@ const CODEX_IMAGE_FILE_PATTERN =
 function registerPackagedAppProtocolScheme(protocolModule = protocol) {
   protocolModule.registerSchemesAsPrivileged([
     {
-      scheme: BOARDLY_APP_PROTOCOL,
+      scheme: ZENITH_TEAM_APP_PROTOCOL,
       privileges: {
         standard: true,
         secure: true,
@@ -276,7 +276,7 @@ function registerPackagedAppProtocol({
     return;
   }
 
-  protocolModule.handle(BOARDLY_APP_PROTOCOL, (request) => {
+  protocolModule.handle(ZENITH_TEAM_APP_PROTOCOL, (request) => {
     const filePath = getDistFilePathForProtocolUrl(
       request.url,
       app.getAppPath(),
@@ -308,8 +308,8 @@ function getDistFilePathForProtocolUrl(rawUrl, appPath) {
   }
 
   if (
-    parsedUrl.protocol !== `${BOARDLY_APP_PROTOCOL}:` ||
-    parsedUrl.hostname !== BOARDLY_APP_HOST
+    parsedUrl.protocol !== `${ZENITH_TEAM_APP_PROTOCOL}:` ||
+    parsedUrl.hostname !== ZENITH_TEAM_APP_HOST
   ) {
     return null;
   }
@@ -354,7 +354,7 @@ function decodeProtocolPath(pathname) {
 }
 
 function hasUnsafeRawPathSegments(rawUrl) {
-  const protocolPrefix = `${BOARDLY_APP_PROTOCOL}://${BOARDLY_APP_HOST}`;
+  const protocolPrefix = `${ZENITH_TEAM_APP_PROTOCOL}://${ZENITH_TEAM_APP_HOST}`;
 
   if (!rawUrl.startsWith(protocolPrefix)) {
     return false;
@@ -374,10 +374,10 @@ function hasUnsafeRawPathSegments(rawUrl) {
 }
 
 module.exports = {
-  BOARDLY_APP_HOST,
-  BOARDLY_APP_INDEX_URL,
-  BOARDLY_APP_ORIGIN,
-  BOARDLY_APP_PROTOCOL,
+  ZENITH_TEAM_APP_HOST,
+  ZENITH_TEAM_APP_INDEX_URL,
+  ZENITH_TEAM_APP_ORIGIN,
+  ZENITH_TEAM_APP_PROTOCOL,
   CODEX_GENERATED_IMAGE_PROTOCOL,
   PLUGIN_ICON_PROTOCOL,
   getDistFilePathForProtocolUrl,

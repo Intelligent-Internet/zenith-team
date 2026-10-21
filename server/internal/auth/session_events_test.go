@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // A event event is opaque by design — holding one proves only that its

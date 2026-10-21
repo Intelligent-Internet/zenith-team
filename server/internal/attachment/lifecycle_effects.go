@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // LifecycleEffect contains only public lifecycle state and actor provenance.
@@ -24,7 +24,7 @@ type LifecycleEffect struct {
 	ActorKind           string
 	ActorID             *uuid.UUID
 	// RunActor, when set, names the Run that caused the transition: its
-	// Agent, acting for the member who uploaded, in that Run (D31). It
+	// Agent, acting for the member who uploaded, in that Run. It
 	// replaces ActorKind and ActorID.
 	RunActor events.Actor
 }

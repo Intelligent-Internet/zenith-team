@@ -168,21 +168,24 @@ actions:
 	if err != nil {
 		t.Fatalf("ParseActions() error = %v", err)
 	}
-	current := Document{Projects: []Project{{Key: "work", Title: "Work"}},
+	current := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
 		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
-			{ProjectKey: "work",
-				Key:       "prerequisite",
-				Title:     "Prerequisite",
-				Status:    "todo",
-				Priority:  "high",
-				DependsOn: []TaskDependency{},
+			{
+				ProjectKey: "work",
+				Key:        "prerequisite",
+				Title:      "Prerequisite",
+				Status:     "todo",
+				Priority:   "high",
+				DependsOn:  []TaskDependency{},
 			},
-			{ProjectKey: "work",
-				Key:       "existing",
-				Title:     "Existing",
-				Status:    "todo",
-				Priority:  "high",
-				DependsOn: []TaskDependency{{TaskKey: "prerequisite"}},
+			{
+				ProjectKey: "work",
+				Key:        "existing",
+				Title:      "Existing",
+				Status:     "todo",
+				Priority:   "high",
+				DependsOn:  []TaskDependency{{TaskKey: "prerequisite"}},
 			},
 		},
 	}
@@ -343,7 +346,15 @@ actions:
 	if err != nil {
 		t.Fatal(err)
 	}
-	desired, err := ApplyActions(Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{}}, transaction)
+	desired, err := ApplyActions(
+		Document{
+			Projects:      []Project{{Key: "work", Title: "Work"}},
+			FormatVersion: FormatVersion,
+			Company:       "acme",
+			Tasks:         []Task{},
+		},
+		transaction,
+	)
 	if err != nil {
 		t.Fatalf("ApplyActions() error = %v", err)
 	}
@@ -358,7 +369,8 @@ actions:
 
 func TestApplyActionsUsesCreateUpdateAndCancel(t *testing.T) {
 	t.Parallel()
-	current := Document{Projects: []Project{{Key: "work", Title: "Work"}},
+	current := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
 		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
 			{ProjectKey: "work", Key: "keep", Title: "Keep", Status: "todo", Priority: "medium"},
 			{ProjectKey: "work", Key: "cancel", Title: "Cancel", Status: "todo", Priority: "low"},
@@ -398,10 +410,19 @@ actions:
 func TestApplyActionsUpdateEligibilityByState(t *testing.T) {
 	t.Parallel()
 	base := func(taskStatus string) Document {
-		return Document{Projects: []Project{{Key: "work", Title: "Work"}},
+		return Document{
+			Projects:      []Project{{Key: "work", Title: "Work"}},
 			FormatVersion: FormatVersion,
 			Company:       "acme",
-			Tasks:         []Task{{ProjectKey: "work", Key: "task", Title: "Task", Status: taskStatus, Priority: "medium"}},
+			Tasks: []Task{
+				{
+					ProjectKey: "work",
+					Key:        "task",
+					Title:      "Task",
+					Status:     taskStatus,
+					Priority:   "medium",
+				},
+			},
 		}
 	}
 	allowed := []struct {
@@ -499,20 +520,41 @@ func TestApplyActionsUpdateEligibilityByState(t *testing.T) {
 func TestApplyActionsAllowsOnlyDependencyRemovalForFailedAndErrorTasks(t *testing.T) {
 	t.Parallel()
 	base := func(status string) Document {
-		return Document{Projects: []Project{{Key: "work", Title: "Work"}},
+		return Document{
+			Projects:      []Project{{Key: "work", Title: "Work"}},
 			FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
-				{ProjectKey: "work",
-					Key: "prerequisite", AgentID: "0198aa00-0000-7000-8000-00000000a003", MilestoneType: "product", Title: "Prerequisite", Description: "Define the work.",
-					Status: "done", Priority: "medium", DependsOn: []TaskDependency{},
+				{
+					ProjectKey:    "work",
+					Key:           "prerequisite",
+					AgentID:       "0198aa00-0000-7000-8000-00000000a003",
+					MilestoneType: "product",
+					Title:         "Prerequisite",
+					Description:   "Define the work.",
+					Status:        "done",
+					Priority:      "medium",
+					DependsOn:     []TaskDependency{},
 				},
-				{ProjectKey: "work",
-					Key: "other", AgentID: "0198aa00-0000-7000-8000-00000000a002", MilestoneType: "product", Title: "Other", Description: "Do other work.",
-					Status: "todo", Priority: "medium", DependsOn: []TaskDependency{},
+				{
+					ProjectKey:    "work",
+					Key:           "other",
+					AgentID:       "0198aa00-0000-7000-8000-00000000a002",
+					MilestoneType: "product",
+					Title:         "Other",
+					Description:   "Do other work.",
+					Status:        "todo",
+					Priority:      "medium",
+					DependsOn:     []TaskDependency{},
 				},
-				{ProjectKey: "work",
-					Key: "task", AgentID: "0198aa00-0000-7000-8000-00000000a002", MilestoneType: "product", Title: "Task", Description: "Do the task.",
-					Status: status, Priority: "medium",
-					DependsOn: []TaskDependency{{TaskKey: "prerequisite"}},
+				{
+					ProjectKey:    "work",
+					Key:           "task",
+					AgentID:       "0198aa00-0000-7000-8000-00000000a002",
+					MilestoneType: "product",
+					Title:         "Task",
+					Description:   "Do the task.",
+					Status:        status,
+					Priority:      "medium",
+					DependsOn:     []TaskDependency{{TaskKey: "prerequisite"}},
 				},
 			},
 		}
@@ -572,7 +614,8 @@ func TestApplyActionsAllowsOnlyDependencyRemovalForFailedAndErrorTasks(t *testin
 
 func TestApplyActionsRejectsCancellingTerminalEntity(t *testing.T) {
 	t.Parallel()
-	current := Document{Projects: []Project{{Key: "work", Title: "Work"}},
+	current := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
 		FormatVersion: FormatVersion,
 		Company:       "acme", Tasks: []Task{{ProjectKey: "work", Key: "done", Title: "Done", Status: "done"}},
 	}
@@ -595,7 +638,7 @@ func TestParseActionsAcceptsIndependentTasks(t *testing.T) {
 
 	transaction, _, err := ParseActions([]byte(`kind: company_plan_transaction
 format_version: 5
-company: boardly
+company: zenith-team
 actions:
   - id: build_product
     operation: create
@@ -612,7 +655,15 @@ actions:
 	if err != nil || len(transaction.Actions) != 1 {
 		t.Fatalf("ParseActions() = %+v, error = %v", transaction, err)
 	}
-	desired, err := ApplyActions(Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "boardly", Tasks: []Task{}}, transaction)
+	desired, err := ApplyActions(
+		Document{
+			Projects:      []Project{{Key: "work", Title: "Work"}},
+			FormatVersion: FormatVersion,
+			Company:       "zenith-team",
+			Tasks:         []Task{},
+		},
+		transaction,
+	)
 	if err != nil {
 		t.Fatalf("ApplyActions() error = %v", err)
 	}
@@ -634,7 +685,7 @@ func TestParseActionsRejectsRetiredPlanningFields(t *testing.T) {
 			t.Parallel()
 			_, _, err := ParseActions(
 				[]byte(
-					"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly\nactions:\n  - " + test.action + "\n",
+					"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team\nactions:\n  - " + test.action + "\n",
 				),
 			)
 			if err == nil || !strings.Contains(err.Error(), test.want) {

@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // Relay scope types are an internal Redis transport vocabulary. Browser

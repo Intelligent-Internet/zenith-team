@@ -423,7 +423,7 @@ type ReadHuddleWorkRow struct {
 // automatic retries and explicit human-input continuations, capped defensively.
 // No runtime identity, private transcript, reasoning or raw error is exposed.
 // A submitted Task's work is kept only where reader_user_id may read its
-// Project by the delegate rule (D31): the person who shared Company context
+// Project by the delegate rule: the person who shared Company context
 // for the voice tools and spoken notices, the viewer for the status a person
 // reads. Go binds the permissions and the default set.
 func (q *Queries) ReadHuddleWork(ctx context.Context, arg ReadHuddleWorkParams) ([]ReadHuddleWorkRow, error) {

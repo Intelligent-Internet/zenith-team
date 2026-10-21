@@ -1103,23 +1103,23 @@ func writeClaudePrivateTempFile(directoryPattern, filename string, data []byte) 
 // writeMcpConfigToTemp writes MCP config JSON to a temporary file and returns
 // its path. The caller is responsible for removing it via cleanupMcpConfigTemp.
 func writeMcpConfigToTemp(raw json.RawMessage) (string, error) {
-	return writeClaudePrivateTempFile("boardly-mcp-*", "mcp-config.json", raw)
+	return writeClaudePrivateTempFile("zenith-team-mcp-*", "mcp-config.json", raw)
 }
 
 func cleanupMcpConfigTemp(path string) {
-	cleanupClaudePrivateTempFile(path, "boardly-mcp-")
+	cleanupClaudePrivateTempFile(path, "zenith-team-mcp-")
 }
 
 func writeClaudeSystemPromptToTemp(prompt string) (string, error) {
 	return writeClaudePrivateTempFile(
-		"boardly-claude-prompt-*",
+		"zenith-team-claude-prompt-*",
 		"system-prompt.txt",
 		[]byte(prompt),
 	)
 }
 
 func cleanupClaudeSystemPromptTemp(path string) {
-	cleanupClaudePrivateTempFile(path, "boardly-claude-prompt-")
+	cleanupClaudePrivateTempFile(path, "zenith-team-claude-prompt-")
 }
 
 func cleanupClaudePrivateTempFile(path, directoryPrefix string) {

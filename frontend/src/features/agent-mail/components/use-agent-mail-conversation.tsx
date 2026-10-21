@@ -7,7 +7,7 @@ import { canListAgentMailDraftGroups } from "@/features/agent-mail/model/agent-m
 import { useGetMailboxStateQuery } from "@/features/mailbox/api/mailbox-api";
 import type { ChatConversationDecorator } from "@/features/chat-panel/types";
 import type { ChatMessage } from "@/shared/chat/types";
-import { isRetryableBoardlyQueryError } from "@/shared/api/boardly-api";
+import { isRetryableZenithTeamQueryError } from "@/shared/api/zenith-team-api";
 import { useCompanyPermissions } from "@/shared/permissions";
 
 export function useAgentMailConversation({
@@ -199,7 +199,7 @@ function useMailQueryContentAvailable(
 ) {
   const [deniedScope, setDeniedScope] = useState<string | null>(null);
   const denied =
-    Boolean(query.error) && !isRetryableBoardlyQueryError(query.error);
+    Boolean(query.error) && !isRetryableZenithTeamQueryError(query.error);
 
   useEffect(() => {
     if (denied) {

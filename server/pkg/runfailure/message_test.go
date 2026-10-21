@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // TestEveryReasonHasAMessage is the pin that makes the mapping single-owner:
@@ -80,9 +80,9 @@ func TestQuotaMessageDoesNotPromiseARetry(t *testing.T) {
 	}
 }
 
-// TestMessageForNamesTheProvider pins the owner decision of 2026-09-16: a
-// person reading a failed run must learn which provider failed, not "the
-// agent provider". The generic form stays for callers without a provider.
+// TestMessageForNamesTheProvider pins the rule that a person reading a failed
+// run must learn which provider failed, not "the agent provider". The generic
+// form stays for callers without a provider.
 func TestMessageForNamesTheProvider(t *testing.T) {
 	t.Parallel()
 

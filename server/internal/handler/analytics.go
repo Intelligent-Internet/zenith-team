@@ -6,13 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
 )
 
 type analyticsBudgetRequest struct {
-	OwnerKind            string     `json:"ownerKind" binding:"required,oneof=company agent"`
+	OwnerKind            string     `json:"ownerKind"            binding:"required,oneof=company agent"`
 	AgentID              *uuid.UUID `json:"agentId"`
 	MonthlyLimitUsdTicks string     `json:"monthlyLimitUsdTicks" binding:"required"`
 	Enabled              bool       `json:"enabled"`
@@ -93,10 +93,14 @@ func (h *Handler) putAnalyticsBudget(c *gin.Context) {
 		writeBoundaryError(c, boundaryErrorAuthenticationRequired)
 		return
 	}
-	result, err := h.AnalyticsService.UpsertAnalyticsBudget(c.Request.Context(), principal, usage.AnalyticsBudgetInput{
-		OwnerKind: request.OwnerKind, AgentID: request.AgentID,
-		MonthlyLimitUsdTicks: request.MonthlyLimitUsdTicks, Enabled: request.Enabled,
-	})
+	result, err := h.AnalyticsService.UpsertAnalyticsBudget(
+		c.Request.Context(),
+		principal,
+		usage.AnalyticsBudgetInput{
+			OwnerKind: request.OwnerKind, AgentID: request.AgentID,
+			MonthlyLimitUsdTicks: request.MonthlyLimitUsdTicks, Enabled: request.Enabled,
+		},
+	)
 	if err != nil {
 		writeAnalyticsError(c, err)
 		return
@@ -209,14 +213,39 @@ func (h *Handler) getTaskUsage(c *gin.Context) {
 }
 
 var analyticsErrorMappings = []errorMapping{
-	{target: usage.ErrInvalidInput, status: http.StatusUnprocessableEntity, detail: "request validation failed", code: "validation_failed"},
-	{target: usage.ErrForbidden, status: http.StatusForbidden, detail: "Your Company role does not allow this action", code: "company_permission_required"},
-	{target: usage.ErrTaskUsageNotFound, status: http.StatusNotFound, detail: "Task not found", code: "task_not_found"},
+	{
+		target: usage.ErrInvalidInput,
+		status: http.StatusUnprocessableEntity,
+		detail: "request validation failed",
+		code:   "validation_failed",
+	},
+	{
+		target: usage.ErrForbidden,
+		status: http.StatusForbidden,
+		detail: "Your Company role does not allow this action",
+		code:   "company_permission_required",
+	},
+	{
+		target: usage.ErrTaskUsageNotFound,
+		status: http.StatusNotFound,
+		detail: "Task not found",
+		code:   "task_not_found",
+	},
 	// ADR 0017: a project_id or task_id filter naming work the caller does not
 	// read answers like one naming work that does not exist.
-	{target: auth.ErrProjectNotVisible, status: http.StatusNotFound, detail: "Project not found", code: "project_not_found"},
+	{
+		target: auth.ErrProjectNotVisible,
+		status: http.StatusNotFound,
+		detail: "Project not found",
+		code:   "project_not_found",
+	},
 	{target: auth.ErrTaskNotVisible, status: http.StatusNotFound, detail: "Task not found", code: "task_not_found"},
-	{target: usage.ErrAnalyticsBusy, status: http.StatusServiceUnavailable, detail: "Analytics is busy; try again", code: "analytics_busy"},
+	{
+		target: usage.ErrAnalyticsBusy,
+		status: http.StatusServiceUnavailable,
+		detail: "Analytics is busy; try again",
+		code:   "analytics_busy",
+	},
 }
 
 func writeAnalyticsError(c *gin.Context, err error) {

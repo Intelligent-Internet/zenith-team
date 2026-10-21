@@ -1,48 +1,48 @@
 /* Plum Studio: structured work and the Company directory. */
-html[data-boardly-workspace-theme] .boardly-workspace-theme {
+html[data-zenith-team-workspace-theme] .zenith-team-workspace-theme {
   --workspace-status-success-bg: var(--workspace-success-soft);
   --workspace-status-info-bg: var(--workspace-info-soft);
   --workspace-status-approval-bg: var(--workspace-approval-soft);
   --workspace-status-danger-bg: var(--workspace-danger-soft);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.company-plan-layout, .member-work-layout) {
   color: var(--workspace-native-text);
   font-family: var(--font-sans);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.company-plan-layout, .member-work-layout)
   :is(h1, h2, h3) {
   font-family: var(--font-heading);
   letter-spacing: -0.025em;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.work-workspace, .workspace-work-board, .workspace-work-lane) {
   border-color: transparent !important;
   background: var(--workspace-content-bg) !important;
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-workspace-theme .work-workspace {
+html[data-zenith-team-workspace-theme] .zenith-team-workspace-theme .work-workspace {
   border: 0;
   padding: 0;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-work-board__column-header, .workspace-work-lane__header) {
   border-color: var(--workspace-divider) !important;
   background: transparent !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-board__column-label {
   border-color: transparent !important;
   padding-inline: 0;
@@ -56,46 +56,46 @@ html[data-boardly-workspace-theme]
   text-transform: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-task-card {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-panel-bg) !important;
   box-shadow: 0 2px 4px rgb(50 37 60 / 3%) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-task-card:hover {
   border-color: var(--workspace-divider-strong) !important;
   background: var(--workspace-panel-raised-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-task-card.is-selected {
   border-color: var(--workspace-native-accent) !important;
   background: var(--workspace-selected-bg) !important;
   box-shadow: 0 0 0 1px var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-task-card__avatar {
   border-color: transparent !important;
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-work-task-key, .workspace-work-lane__role) {
   background: transparent !important;
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-work-task-card--assignee
   > div:last-child
   > span:last-child {
@@ -103,8 +103,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .work-list-toolbar
   button[aria-pressed="true"] {
   background: var(--workspace-selected-bg) !important;
@@ -112,8 +112,8 @@ html[data-boardly-workspace-theme]
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .work-list-toolbar > label,
     .member-work-search,
@@ -124,8 +124,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .work-list-toolbar > label,
     .member-work-search,
@@ -134,8 +134,8 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-native-accent);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.work-workspace)
   select
   option {
@@ -143,14 +143,14 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .work-task-inspector {
   background: var(--workspace-panel-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .work-task-inspector
   > header
   > p {
@@ -158,8 +158,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-label);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .work-task-inspector
   footer {
   height: auto;
@@ -169,8 +169,8 @@ html[data-boardly-workspace-theme]
   padding-top: 12px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status, .member-work-row__status) {
   border: 0 !important;
   background: var(--workspace-control-bg) !important;
@@ -180,8 +180,8 @@ html[data-boardly-workspace-theme]
   font-weight: 650;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status, .member-work-row__status):is(
     [data-status="done"],
     [data-status="Available"],
@@ -191,8 +191,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-success) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status, .member-work-row__status):is(
     [data-status="in_progress"],
     [data-status="In Progress"]
@@ -201,8 +201,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-info) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status, .member-work-row__status):is(
     [data-status="in_review"],
     [data-status="blocked"],
@@ -213,8 +213,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-approval) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status, .member-work-row__status):is(
     [data-status="error"],
     [data-status="failed"],
@@ -227,15 +227,15 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-danger) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-task-status[data-status="todo"]) {
   background: var(--workspace-selected-bg) !important;
   color: var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .member-work-search input,
     .member-work-row,
@@ -245,15 +245,15 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .member-work-search
   input::placeholder {
   color: var(--workspace-native-text-faint);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .member-work-filters button,
     .member-work-row__key,
@@ -266,8 +266,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .member-work-filters button,
     .member-work-row__key,
@@ -280,16 +280,16 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-body);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .member-work-row__copy
   strong {
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .member-work-filters button:hover,
     .member-work-filters button[data-active="true"],
@@ -299,29 +299,29 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .member-work-row[data-selected="true"] {
   border-color: var(--workspace-divider-strong);
   background: var(--workspace-selected-bg);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .member-task-inspector__close {
   border-color: var(--workspace-divider);
   color: var(--workspace-native-text-muted);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .member-task-inspector__close:hover {
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .workspace-task-primary-action,
     .member-task-inspector__chat,
@@ -333,25 +333,25 @@ html[data-boardly-workspace-theme]
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-workspace-theme .team-tab {
+html[data-zenith-team-workspace-theme] .zenith-team-workspace-theme .team-tab {
   color: var(--workspace-native-text-muted);
   font-weight: 600;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-tab:is(:hover, [data-active="true"]) {
   color: var(--workspace-native-accent);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.team-directory-section h2, .team-directory-card h3, .team-avatar) {
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .team-directory-section > header p,
     .team-directory-card p,
@@ -366,8 +366,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .team-directory-section > header p,
     .team-directory-card p,
@@ -380,14 +380,14 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-body);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-directory-meta {
   font-family: var(--font-sans);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-readonly-label {
   border-color: var(--workspace-divider);
   font-size: var(--workspace-text-caption);
@@ -396,30 +396,30 @@ html[data-boardly-workspace-theme]
   text-transform: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-directory-card {
   border-color: transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-directory-card
   + .team-directory-card {
   border-top-color: var(--workspace-divider) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.team-avatar, .team-status-badge, .team-row-action) {
   border-color: var(--workspace-divider);
   background: var(--workspace-control-bg);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .team-avatar[data-tone="lime"],
     .team-status-badge[data-tone="positive"]
@@ -428,15 +428,15 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-success);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-avatar[data-tone="yellow"] {
   background: var(--workspace-selected-bg);
   color: var(--workspace-native-accent);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .team-row-action:hover {
   border-color: var(--workspace-native-accent);
   background: var(--workspace-selected-bg);
@@ -444,7 +444,7 @@ html[data-boardly-workspace-theme]
 }
 
 @media (max-width: 720px) {
-  html[data-boardly-workspace-theme] .boardly-workspace-theme .team-row-action {
+  html[data-zenith-team-workspace-theme] .zenith-team-workspace-theme .team-row-action {
     font-size: 0;
   }
 }

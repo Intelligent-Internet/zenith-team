@@ -4,7 +4,7 @@ import { agentMailInvalidationTags } from "@/features/agent-mail/api/agent-mail-
 import { subscribeToAgentMailChanges } from "@/features/agent-mail/model/agent-mail-realtime";
 import { mailboxInvalidationTags } from "@/features/mailbox/api/mailbox-api";
 import { subscribeToMailboxChanges } from "@/features/mailbox/model/mailbox-realtime";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import { useCan } from "@/shared/permissions";
 import { useAppDispatch } from "@/state";
 
@@ -44,7 +44,7 @@ export function MailboxRealtimeController({
         mailboxChanged = false;
         pendingMessageIds.clear();
         pendingDraftConversationIds.clear();
-        dispatch(boardlyApi.util.invalidateTags(tags));
+        dispatch(zenithTeamApi.util.invalidateTags(tags));
       }, mailboxRefreshDebounceMs);
     };
 

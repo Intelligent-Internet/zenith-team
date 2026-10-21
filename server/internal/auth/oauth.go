@@ -48,7 +48,7 @@ type OAuthLoginFlow struct {
 	CreatedAt          time.Time
 }
 
-// OAuthClientMetadata is the complete field allowlist for Boardly client
+// OAuthClientMetadata is the complete field allowlist for Zenith Team client
 // details that OAuth flows and their resulting sessions may persist. Callers
 // cannot supply arbitrary JSON keys through this boundary.
 type OAuthClientMetadata struct {

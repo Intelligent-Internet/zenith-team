@@ -1,18 +1,18 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type {
   ConversationModelSettings,
   ConversationModelSettingsUpdate,
 } from "@/shared/api/types";
 
-export const conversationModelSettingsApi = boardlyApi.injectEndpoints({
+export const conversationModelSettingsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getConversationModelSettings: builder.query<
       ConversationModelSettings,
       string
     >({
       queryFn: (conversationId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ConversationModelSettings>(
               `/conversations/${conversationId}/model-settings`,
@@ -29,7 +29,7 @@ export const conversationModelSettingsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ conversationId, payload }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<ConversationModelSettings>(
               `/conversations/${conversationId}/model-settings`,
@@ -50,7 +50,7 @@ export const conversationModelSettingsApi = boardlyApi.injectEndpoints({
         } catch {
           // Refetch on a conflict so the next edit uses the authoritative revision.
           dispatch(
-            boardlyApi.util.invalidateTags([
+            zenithTeamApi.util.invalidateTags([
               { type: "Conversation", id: conversationId },
             ]),
           );

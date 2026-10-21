@@ -14,11 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // projectDecisionWorld is a Company whose Task Runs raise Approvals and
@@ -55,8 +55,16 @@ func newProjectDecisionWorld(t *testing.T) projectDecisionWorld {
 		t.Fatalf("NewBus() error = %v", err)
 	}
 	w := projectDecisionWorld{
-		ctx: ctx, pool: pool, fixture: fixture, store: store, bus: bus,
-		owner: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
+		ctx:     ctx,
+		pool:    pool,
+		fixture: fixture,
+		store:   store,
+		bus:     bus,
+		owner: auth.UserPrincipal{
+			UserID:    fixture.UserA,
+			CompanyID: fixture.CompanyA,
+			Role:      auth.CompanyRoleOwner,
+		},
 	}
 	w.deciderID, w.decider = w.seedMember(t, "decider@example.com", auth.CompanyRoleMember)
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, w.deciderID, "project.approvals.resolve")
@@ -149,14 +157,33 @@ func TestTaskApprovalIsDecidedInsideItsProject(t *testing.T) {
 	if got, err := service.Get(w.ctx, w.reader, raised.ID); err != nil || got.ID != raised.ID {
 		t.Errorf("Get(reader) = %+v, %v", got, err)
 	}
-	if _, err := service.Reject(w.ctx, w.reader, raised.ID, decision); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.Reject(
+		w.ctx,
+		w.reader,
+		raised.ID,
+		decision,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Errorf("Reject(admin with project.read) error = %v, want ErrProjectPermissionRequired", err)
 	}
 
 	// The member decider may not approve without project.tasks.write, the
 	// permission the apply writes with; rejecting needs only theirs.
-	if _, err := service.Approve(w.ctx, w.decider, raised.ID, decision); !errors.Is(err, auth.ErrProjectPermissionRequired) {
-		t.Errorf("Approve(member decider without project.tasks.write) error = %v, want ErrProjectPermissionRequired", err)
+	if _, err := service.Approve(
+		w.ctx,
+		w.decider,
+		raised.ID,
+		decision,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
+		t.Errorf(
+			"Approve(member decider without project.tasks.write) error = %v, want ErrProjectPermissionRequired",
+			err,
+		)
 	}
 	rejected, err := service.Reject(w.ctx, w.decider, raised.ID, decision)
 	if err != nil || rejected.Status != ApprovalStatusRejected {
@@ -182,9 +209,18 @@ func TestTaskApprovalIsDecidedInsideItsProject(t *testing.T) {
 		Principal:     auth.UserPrincipal{UserID: w.fixture.UserA, CompanyID: w.fixture.CompanyA},
 		TaskProjectID: uuid.NullUUID{UUID: w.fixture.ProjectA, Valid: true},
 	}); participant.prepared != want {
-		t.Errorf("prepared for %+v, want the requesting member bound to the Task's Project %+v", participant.prepared, want)
+		t.Errorf(
+			"prepared for %+v, want the requesting member bound to the Task's Project %+v",
+			participant.prepared,
+			want,
+		)
 	}
-	approved, err := service.Approve(w.ctx, w.decider, second.ID, ApprovalDecisionInput{ExpectedRevision: second.Revision})
+	approved, err := service.Approve(
+		w.ctx,
+		w.decider,
+		second.ID,
+		ApprovalDecisionInput{ExpectedRevision: second.Revision},
+	)
 	if err != nil || approved.Status != ApprovalStatusApproved {
 		t.Fatalf("Approve(member decider) = %+v, %v", approved, err)
 	}
@@ -340,7 +376,15 @@ func TestTaskQuestionIsAnsweredInsideItsProject(t *testing.T) {
 	if page, err := service.List(w.ctx, w.reader, QuestionListOptions{}); err != nil || len(page.Items) != 1 {
 		t.Errorf("List(reader) = %d items, %v; want the Question", len(page.Items), err)
 	}
-	if _, err := service.Answer(w.ctx, w.reader, asked.ID, answer); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.Answer(
+		w.ctx,
+		w.reader,
+		asked.ID,
+		answer,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Errorf("Answer(reader) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	answered, err := service.Answer(w.ctx, w.decider, asked.ID, answer)
@@ -352,7 +396,15 @@ func TestTaskQuestionIsAnsweredInsideItsProject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Ask(second) error = %v", err)
 	}
-	if _, err := service.Withdraw(w.ctx, w.reader, second.ID, second.Revision); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.Withdraw(
+		w.ctx,
+		w.reader,
+		second.ID,
+		second.Revision,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Errorf("Withdraw(admin with project.read) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	withdrawn, err := service.Withdraw(w.ctx, w.decider, second.ID, second.Revision)
@@ -419,14 +471,27 @@ func TestTaskRaiseWithNoEligibleResolverStopsTheRun(t *testing.T) {
 		).Scan(&status, &reason, &runError, &children, &tokens, &notices, &body); err != nil {
 			t.Fatal(err)
 		}
-		if status != "failed" || reason != "no_eligible_resolver" || runError != "" || children != 0 || tokens != 0 {
-			t.Errorf("%s: Run = %s (%q, error %q, %d retries, %d tokens), want failed with no_eligible_resolver, "+
-				"no provider text, no retry and no token", name, status, reason, runError, children, tokens)
+		if status != "failed" || reason != "no_eligible_resolver" || runError != "" || children != 0 ||
+			tokens != 0 {
+			t.Errorf(
+				"%s: Run = %s (%q, error %q, %d retries, %d tokens), want failed with no_eligible_resolver, "+
+					"no provider text, no retry and no token",
+				name,
+				status,
+				reason,
+				runError,
+				children,
+				tokens,
+			)
 		}
 		if notices != 1 || !strings.Contains(body, "nobody who can see this work may make") ||
 			!strings.Contains(body, "Codex") {
-			t.Errorf("%s: run_failed items for the authorizer = %d (%q), want one naming the reason and the provider",
-				name, notices, body)
+			t.Errorf(
+				"%s: run_failed items for the authorizer = %d (%q), want one naming the reason and the provider",
+				name,
+				notices,
+				body,
+			)
 		}
 		var stored int
 		if err := w.pool.QueryRow(w.ctx, `
@@ -477,6 +542,9 @@ func TestTaskApprovalWithOnlyMemberDecidersIsRefused(t *testing.T) {
 		[]byte(`{"artifactVersion":1,"desired":{"tasks":[]}}`),
 	)
 	if !errors.Is(err, auth.ErrNoEligibleResolver) {
-		t.Fatalf("RequestCompanyPlanApply() with only a member decider error = %v, want ErrNoEligibleResolver", err)
+		t.Fatalf(
+			"RequestCompanyPlanApply() with only a member decider error = %v, want ErrNoEligibleResolver",
+			err,
+		)
 	}
 }

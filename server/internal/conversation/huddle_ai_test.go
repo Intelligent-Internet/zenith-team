@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 func TestHuddleAIRefusesInvitationsWhileVoiceAgentsAreOff(t *testing.T) {

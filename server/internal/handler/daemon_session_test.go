@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func routeActorDaemonSession() auth.UserPrincipal {
@@ -45,7 +45,7 @@ func countingDaemonAuth() (*authServiceStub, func() int) {
 	}
 }
 
-// IA-FR7, IA-AC6 (D31): the daemon's own session with no Run proof is
+// The daemon's own session with no Run proof is
 // refused with 403 run_proof_required on every route that authenticates,
 // person, run and any alike, except the daemon plane. It is never its
 // person.
@@ -116,7 +116,7 @@ func TestDaemonSessionWithoutAProofIsRefusedOffTheDaemonPlane(t *testing.T) {
 	}
 }
 
-// IA-AC6 (D31): with its person's live proof the daemon's session reaches
+// With its person's live proof the daemon's session reaches
 // every run route, and the proof is resolved once, by the credential guard;
 // the handler reads the guard's answer instead of resolving it again. The
 // Run here is in another Company, so each handler still refuses it on its
@@ -166,7 +166,7 @@ func TestDaemonSessionReachesRunRoutesWithItsPersonsLiveProof(t *testing.T) {
 	}
 }
 
-// POST /auth/daemon-session (D31): a person's bearer session starts the
+// POST /auth/daemon-session: a person's bearer session starts the
 // daemon's own session; a daemon session cannot start another, and a
 // browser's cookie session gets no bearer pair.
 func TestDaemonSessionRouteMintsOnlyForAPersonsBearerSession(t *testing.T) {
@@ -270,7 +270,7 @@ func TestDaemonSessionRouteMintsOnlyForAPersonsBearerSession(t *testing.T) {
 		},
 		{
 			name: "a browser gets no bearer pair", principal: person,
-			headers: map[string]string{"Origin": "https://app.boardly.test"},
+			headers: map[string]string{"Origin": "https://app.zenith-team.test"},
 			status:  http.StatusUnprocessableEntity, code: "client_transport_mismatch",
 		},
 		{

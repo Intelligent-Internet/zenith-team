@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestAgentReadsReturnCanonicalBulkProjections(t *testing.T) {
@@ -86,12 +86,18 @@ func TestAgentProjectionIsPerViewerAndNamesNoOtherMembersMachine(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	fixture := dbtest.SeedFixture(t, ctx, pool)
-	dbtest.MustExec(t, ctx, pool, `UPDATE runtimes SET custom_name = 'Quy secret laptop' WHERE id = $1`, fixture.RuntimeA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runtimes SET custom_name = 'Sam secret laptop' WHERE id = $1`,
+		fixture.RuntimeA,
+	)
 
 	member := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Member')`,
-		member, "member-"+member.String()+"@boardly.test")
+		member, "member-"+member.String()+"@zenith-team.test")
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)
 		VALUES ($1, $2, 'member')`, fixture.CompanyA, member)
@@ -105,7 +111,7 @@ func TestAgentProjectionIsPerViewerAndNamesNoOtherMembersMachine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encode projection: %v", err)
 	}
-	for _, secret := range []string{fixture.RuntimeA.String(), "Runtime A", "Quy secret laptop"} {
+	for _, secret := range []string{fixture.RuntimeA.String(), "Runtime A", "Sam secret laptop"} {
 		if strings.Contains(string(encoded), secret) {
 			t.Fatalf("another member's payload names the registrant's machine (%q): %s", secret, encoded)
 		}
@@ -124,7 +130,11 @@ func TestAgentProjectionIsPerViewerAndNamesNoOtherMembersMachine(t *testing.T) {
 		!rows[0].RuntimeAvailable || !rows[0].Access.Execute || rows[0].UnavailableReason != nil {
 		t.Fatalf("bound member's projection = %+v, %v; want their own binding, available", rows, err)
 	}
-	registrant := auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner}
+	registrant := auth.UserPrincipal{
+		UserID:    fixture.UserA,
+		CompanyID: fixture.CompanyA,
+		Role:      auth.CompanyRoleOwner,
+	}
 	rows, err = ListProjectionsForMember(ctx, store.Queries(), registrant, ListOptions{})
 	if err != nil || len(rows) != 1 || rows[0].Binding == nil || rows[0].Binding.Runtime.ID != fixture.RuntimeA {
 		t.Fatalf("registrant's projection = %+v, %v; want their own binding untouched", rows, err)

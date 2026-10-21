@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The Company Plan scope rules of ADR 0017, decided without a database.
@@ -31,15 +31,43 @@ func TestClassifyPlanProject(t *testing.T) {
 		markedReadOnly bool
 		want           planProjectStanding
 	}{
-		{"another Project than the Task chat's", planScopeRule{actor: taskBound}, true, nil, false, planProjectOutsideTask},
+		{
+			"another Project than the Task chat's",
+			planScopeRule{actor: taskBound},
+			true,
+			nil,
+			false,
+			planProjectOutsideTask,
+		},
 		{"raise, writable", planScopeRule{writeNeeded: true}, true, nil, false, planProjectInScope},
 		{"raise, read-only", planScopeRule{writeNeeded: true}, false, nil, false, planProjectReadOnly},
 		{"Task-chat raise previews without write", planScopeRule{}, false, nil, false, planProjectInScope},
 		{"raise, marked read-only", planScopeRule{}, true, nil, true, planProjectReadOnly},
 		{"apply, read writable, writable", planScopeRule{base: base}, true, read, false, planProjectInScope},
-		{"apply, read writable, write lost", planScopeRule{base: base}, false, read, false, planProjectWriteLost},
-		{"apply, read read-only, now writable", planScopeRule{base: base}, true, readOnly, false, planProjectReadOnly},
-		{"apply, marked read-only in desired", planScopeRule{base: base}, true, read, true, planProjectReadOnly},
+		{
+			"apply, read writable, write lost",
+			planScopeRule{base: base},
+			false,
+			read,
+			false,
+			planProjectWriteLost,
+		},
+		{
+			"apply, read read-only, now writable",
+			planScopeRule{base: base},
+			true,
+			readOnly,
+			false,
+			planProjectReadOnly,
+		},
+		{
+			"apply, marked read-only in desired",
+			planScopeRule{base: base},
+			true,
+			read,
+			true,
+			planProjectReadOnly,
+		},
 		{"apply, unread, writable", planScopeRule{base: base}, true, nil, false, planProjectUnlisted},
 		{"apply, unread, read-only", planScopeRule{base: base}, false, nil, false, planProjectReadOnly},
 	}
@@ -66,15 +94,27 @@ func newPlanWorld(base *PlanBase) planWorld {
 	return planWorld{
 		mine: mine, shared: shared,
 		locked: lockedPlan{
-			projects: map[string]generated.Project{"mine": {ID: mine, Key: "mine", Title: "mine", Version: 1}},
+			projects: map[string]generated.Project{
+				"mine": {ID: mine, Key: "mine", Title: "mine", Version: 1},
+			},
 			access: map[string]auth.ProjectAccess{"mine": {
-				ProjectID: mine, Permissions: []auth.ProjectPermission{auth.ProjectPermissionTasksWrite},
+				ProjectID:   mine,
+				Permissions: []auth.ProjectPermission{auth.ProjectPermissionTasksWrite},
 			}},
-			outside:    map[string]planProjectStanding{"shared": planProjectReadOnly, "secret": planProjectUnlisted},
+			outside: map[string]planProjectStanding{
+				"shared": planProjectReadOnly,
+				"secret": planProjectUnlisted,
+			},
 			lost:       map[string]generated.Project{},
 			unreadable: map[string]bool{"gone": true},
 			tasks: map[string]persistedTask{
-				"mine_task": {ID: uuid.New(), ProjectID: mine, Key: "mine_task", Status: "todo", Version: 1},
+				"mine_task": {
+					ID:        uuid.New(),
+					ProjectID: mine,
+					Key:       "mine_task",
+					Status:    "todo",
+					Version:   1,
+				},
 			},
 			dependencies: map[string]persistedDependency{},
 			base:         base,
@@ -83,7 +123,12 @@ func newPlanWorld(base *PlanBase) planWorld {
 }
 
 func planDocument(projects []string, tasks ...PlanTask) PlanDocument {
-	document := PlanDocument{FormatVersion: planFormatVersion, Company: "acme", Projects: []PlanProject{}, Tasks: tasks}
+	document := PlanDocument{
+		FormatVersion: planFormatVersion,
+		Company:       "acme",
+		Projects:      []PlanProject{},
+		Tasks:         tasks,
+	}
 	if document.Tasks == nil {
 		document.Tasks = []PlanTask{}
 	}
@@ -150,23 +195,43 @@ func TestScopeDesired(t *testing.T) {
 	t.Run("naming an unlisted Project is stale", func(t *testing.T) {
 		t.Parallel()
 		world := newPlanWorld(&PlanBase{})
-		if _, err := world.locked.scopeDesired(planDocument([]string{"secret"}), false); !errors.Is(err, errPlanStale) {
+		if _, err := world.locked.scopeDesired(
+			planDocument([]string{"secret"}),
+			false,
+		); !errors.Is(
+			err,
+			errPlanStale,
+		) {
 			t.Fatalf("scopeDesired() error = %v, want errPlanStale", err)
 		}
 	})
 	t.Run("naming a Project no longer readable is skipped", func(t *testing.T) {
 		t.Parallel()
 		world := newPlanWorld(&PlanBase{})
-		scoped, err := world.locked.scopeDesired(planDocument([]string{"gone"}, plannedTask("gone_task", "gone")), false)
-		want := []PlanSkip{{EntityType: "project", Key: "gone", Operation: "tasks", Permission: auth.ProjectPermissionRead}}
-		if err != nil || len(scoped.Projects) != 0 || len(scoped.Tasks) != 0 || !slices.Equal(world.locked.skipped, want) {
+		scoped, err := world.locked.scopeDesired(
+			planDocument([]string{"gone"}, plannedTask("gone_task", "gone")),
+			false,
+		)
+		want := []PlanSkip{
+			{
+				EntityType: "project",
+				Key:        "gone",
+				Operation:  "tasks",
+				Permission: auth.ProjectPermissionRead,
+			},
+		}
+		if err != nil || len(scoped.Projects) != 0 || len(scoped.Tasks) != 0 ||
+			!slices.Equal(world.locked.skipped, want) {
 			t.Fatalf("scopeDesired() = %+v, skipped %+v, %v", scoped, world.locked.skipped, err)
 		}
 	})
 	t.Run("restating a Task the base read that has gone is stale", func(t *testing.T) {
 		t.Parallel()
 		world := newPlanWorld(&PlanBase{Tasks: []PlanBaseEntity{{ID: uuid.NewString(), Key: "old_task"}}})
-		_, err := world.locked.scopeDesired(planDocument([]string{"mine"}, plannedTask("old_task", "mine")), false)
+		_, err := world.locked.scopeDesired(
+			planDocument([]string{"mine"}, plannedTask("old_task", "mine")),
+			false,
+		)
 		if !errors.Is(err, errPlanStale) {
 			t.Fatalf("scopeDesired() error = %v, want errPlanStale", err)
 		}
@@ -174,7 +239,10 @@ func TestScopeDesired(t *testing.T) {
 	t.Run("moving a Task to another Project is invalid", func(t *testing.T) {
 		t.Parallel()
 		world := newPlanWorld(&PlanBase{})
-		_, err := world.locked.scopeDesired(planDocument([]string{"mine", "brand_new"}, plannedTask("mine_task", "brand_new")), false)
+		_, err := world.locked.scopeDesired(
+			planDocument([]string{"mine", "brand_new"}, plannedTask("mine_task", "brand_new")),
+			false,
+		)
 		if !errors.Is(err, ErrPlanInvalidInput) {
 			t.Fatalf("scopeDesired() error = %v, want ErrPlanInvalidInput", err)
 		}
@@ -193,28 +261,57 @@ func TestLockedPlanMatchesBase(t *testing.T) {
 		base PlanBase
 		want bool
 	}{
-		{"as read", PlanBase{Projects: []PlanBaseEntity{projectEntity}, Tasks: []PlanBaseEntity{taskEntity}}, true},
-		{"base entries outside the scope are ignored", PlanBase{
-			Projects: []PlanBaseEntity{projectEntity, {ID: world.shared.String(), Key: "shared", Revision: 7}},
-			Tasks:    []PlanBaseEntity{taskEntity, outside},
-		}, true},
-		{"a Task added since", PlanBase{Projects: []PlanBaseEntity{projectEntity}, Tasks: []PlanBaseEntity{}}, false},
+		{
+			"as read",
+			PlanBase{Projects: []PlanBaseEntity{projectEntity}, Tasks: []PlanBaseEntity{taskEntity}},
+			true,
+		},
+		{
+			"base entries outside the scope are ignored",
+			PlanBase{
+				Projects: []PlanBaseEntity{
+					projectEntity,
+					{ID: world.shared.String(), Key: "shared", Revision: 7},
+				},
+				Tasks: []PlanBaseEntity{taskEntity, outside},
+			},
+			true,
+		},
+		{
+			"a Task added since",
+			PlanBase{Projects: []PlanBaseEntity{projectEntity}, Tasks: []PlanBaseEntity{}},
+			false,
+		},
 		{"a Task changed since", PlanBase{
 			Projects: []PlanBaseEntity{projectEntity},
 			Tasks:    []PlanBaseEntity{{ID: current.ID.String(), Key: "mine_task", Revision: 2}},
 		}, false},
-		{"a gone Task the plan omits", PlanBase{
-			Projects: []PlanBaseEntity{projectEntity},
-			Tasks:    []PlanBaseEntity{taskEntity, {ID: uuid.NewString(), Key: "deleted_task", Revision: 1}},
-		}, true},
+		{
+			"a gone Task the plan omits",
+			PlanBase{
+				Projects: []PlanBaseEntity{projectEntity},
+				Tasks: []PlanBaseEntity{
+					taskEntity,
+					{ID: uuid.NewString(), Key: "deleted_task", Revision: 1},
+				},
+			},
+			true,
+		},
 		{"the Project changed since", PlanBase{
 			Projects: []PlanBaseEntity{{ID: world.mine.String(), Key: "mine", Revision: 2}},
 			Tasks:    []PlanBaseEntity{taskEntity},
 		}, false},
-		{"an edge added since", PlanBase{
-			Projects: []PlanBaseEntity{projectEntity}, Tasks: []PlanBaseEntity{taskEntity},
-			Dependencies: []PlanBaseDependency{{DependentTaskID: current.ID.String(), PrerequisiteTaskID: uuid.NewString()}},
-		}, false},
+		{
+			"an edge added since",
+			PlanBase{
+				Projects: []PlanBaseEntity{projectEntity},
+				Tasks:    []PlanBaseEntity{taskEntity},
+				Dependencies: []PlanBaseDependency{
+					{DependentTaskID: current.ID.String(), PrerequisiteTaskID: uuid.NewString()},
+				},
+			},
+			false,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -245,20 +342,32 @@ func TestSetAsideLostProjects(t *testing.T) {
 	world := lostWorld()
 	world.locked.setAsideLostProjects(restated)
 	if len(world.locked.skipped) != 0 || len(world.locked.tasks) != 0 {
-		t.Fatalf("restated: skipped %+v, Tasks %v; want none skipped and the Task set aside", world.locked.skipped, world.locked.tasks)
+		t.Fatalf(
+			"restated: skipped %+v, Tasks %v; want none skipped and the Task set aside",
+			world.locked.skipped,
+			world.locked.tasks,
+		)
 	}
 
 	world = lostWorld()
 	world.locked.setAsideLostProjects(planDocument([]string{"mine"}))
-	want := []PlanSkip{{EntityType: "project", Key: "mine", Operation: "tasks", Permission: auth.ProjectPermissionTasksWrite}}
+	want := []PlanSkip{
+		{EntityType: "project", Key: "mine", Operation: "tasks", Permission: auth.ProjectPermissionTasksWrite},
+	}
 	if !slices.Equal(world.locked.skipped, want) || len(world.locked.tasks) != 0 {
-		t.Fatalf("changed: skipped %+v, Tasks %v; want the Project skipped and its Task set aside", world.locked.skipped, world.locked.tasks)
+		t.Fatalf(
+			"changed: skipped %+v, Tasks %v; want the Project skipped and its Task set aside",
+			world.locked.skipped,
+			world.locked.tasks,
+		)
 	}
 }
 
 func TestHoldUnpermittedArchives(t *testing.T) {
 	t.Parallel()
-	archiveHeld := []PlanSkip{{EntityType: "project", Key: "mine", Operation: "archive", Permission: auth.ProjectPermissionArchive}}
+	archiveHeld := []PlanSkip{
+		{EntityType: "project", Key: "mine", Operation: "archive", Permission: auth.ProjectPermissionArchive},
+	}
 	archivedMine := planDocument([]string{"mine"})
 	archivedMine.Projects[0].Archived = true
 	tests := []struct {
@@ -292,7 +401,8 @@ func TestHoldUnpermittedArchives(t *testing.T) {
 			world.locked.holdUnpermittedArchives()
 			_, inScope := world.locked.projects["mine"]
 			if test.held {
-				if !slices.Equal(world.locked.skipped, archiveHeld) || inScope || len(world.locked.tasks) != 0 ||
+				if !slices.Equal(world.locked.skipped, archiveHeld) || inScope ||
+					len(world.locked.tasks) != 0 ||
 					len(world.locked.desired.Projects) != 0 {
 					t.Fatalf("held: skipped %+v, in scope %v, Tasks %v, desired %+v",
 						world.locked.skipped, inScope, world.locked.tasks, world.locked.desired)
@@ -300,7 +410,12 @@ func TestHoldUnpermittedArchives(t *testing.T) {
 				return
 			}
 			if len(world.locked.skipped) != 0 || !inScope || len(world.locked.tasks) != 1 {
-				t.Fatalf("kept: skipped %+v, in scope %v, Tasks %v", world.locked.skipped, inScope, world.locked.tasks)
+				t.Fatalf(
+					"kept: skipped %+v, in scope %v, Tasks %v",
+					world.locked.skipped,
+					inScope,
+					world.locked.tasks,
+				)
 			}
 		})
 	}
@@ -319,7 +434,14 @@ func TestApplyPlanProjectsSkipsARenameWithoutSettingsUpdate(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	want := []PlanSkip{{EntityType: "project", Key: "mine", Operation: "update", Permission: auth.ProjectPermissionSettingsUpdate}}
+	want := []PlanSkip{
+		{
+			EntityType: "project",
+			Key:        "mine",
+			Operation:  "update",
+			Permission: auth.ProjectPermissionSettingsUpdate,
+		},
+	}
 	if !slices.Equal(result.Skipped, want) || result.Updated != 0 {
 		t.Fatalf("result = %+v, want the rename skipped", result)
 	}
@@ -351,8 +473,24 @@ func TestRequirePlanTaskAuthority(t *testing.T) {
 		want     error
 	}{
 		{"restated", member, inReview, restated, true, agent, nil},
-		{"handed to the assignee's own hands", member, inReview, handedOver, true, uuid.Nil, taskdomain.ErrHandoffPermissionRequired},
-		{"handed to another Agent", member, inReview, restated, true, uuid.New(), taskdomain.ErrHandoffPermissionRequired},
+		{
+			"handed to the assignee's own hands",
+			member,
+			inReview,
+			handedOver,
+			true,
+			uuid.Nil,
+			taskdomain.ErrHandoffPermissionRequired,
+		},
+		{
+			"handed to another Agent",
+			member,
+			inReview,
+			restated,
+			true,
+			uuid.New(),
+			taskdomain.ErrHandoffPermissionRequired,
+		},
 		{"out of review", member, inReview, done, true, agent, taskdomain.ErrReviewPermissionRequired},
 		{"deleted", member, inReview, desiredTask{}, false, uuid.Nil, ErrPlanTaskDeletePermissionRequired},
 		{"the assignee's own Task", member, own, done, true, agent, nil},
@@ -362,7 +500,13 @@ func TestRequirePlanTaskAuthority(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			err := requirePlanTaskAuthority(test.applier, test.current, test.target, test.retained, test.agent)
+			err := requirePlanTaskAuthority(
+				test.applier,
+				test.current,
+				test.target,
+				test.retained,
+				test.agent,
+			)
 			if !errors.Is(err, test.want) || (test.want == nil && err != nil) {
 				t.Fatalf("requirePlanTaskAuthority() = %v, want %v", err, test.want)
 			}

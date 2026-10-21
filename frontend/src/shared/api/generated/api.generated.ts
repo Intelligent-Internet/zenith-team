@@ -1632,7 +1632,7 @@ export interface paths {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 companyId: string;
@@ -2478,7 +2478,7 @@ export interface paths {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 companyId: string;
@@ -2500,7 +2500,7 @@ export interface paths {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 "Idempotency-Key": string;
             };
             path: {
@@ -2713,13 +2713,13 @@ export interface paths {
          *     (`403 company_permission_required` otherwise) and is refused with a
          *     Run proof (`403 human_actor_required`).
          *
-         *     Sent with a Run's `X-Boardly-Run-Token` (`zen project list`, offered
+         *     Sent with a Run's `X-Zenith-Team-Run-Token` (`zen project list`, offered
          *     only to Runs outside a task), the token must prove a running Run in
          *     this Company carried by its member's own session
          *     (`401 run_token_invalid` otherwise). The list is the Projects that
          *     member reads, for a Run started by a mention in a channel or a
          *     direct message between people too: such a Run uses the access of the
-         *     person who mentioned the Agent (D31). A task Run's channel refuses
+         *     person who mentioned the Agent. A task Run's channel refuses
          *     `zen project list` with `run_scope_denied` before it reaches the
          *     server; a list carrying a task Run's token anyway holds only its
          *     task's Project, as a second guard.
@@ -2788,7 +2788,7 @@ export interface paths {
          *     the three management permissions. Anyone else gets
          *     `404 project_not_found`, the answer a missing Project gets.
          *
-         *     Sent with a Run's `X-Boardly-Run-Token` (`zen project get`, offered
+         *     Sent with a Run's `X-Zenith-Team-Run-Token` (`zen project get`, offered
          *     to Runs outside a task, and the own-Project lookup of a task Run
          *     below), the token must prove a running Run in this Company carried by
          *     its member's own session
@@ -2797,7 +2797,7 @@ export interface paths {
          *     only as the member's reader: a Project the member only manages is
          *     `404 project_not_found`. A Run started by a mention in a channel or a
          *     direct message between people reads the Projects the person who
-         *     mentioned the Agent reads, whoever else is in the chat (D31). A task
+         *     mentioned the Agent reads, whoever else is in the chat. A task
          *     Run's channel sends only the read of its own task's Project (the lookup
          *     `zen task create` makes, which `zen project get` with that key or id
          *     also passes while Work coordination is on) and refuses any other with
@@ -2886,7 +2886,7 @@ export interface paths {
         /**
          * List the people granted access to a Project
          * @description Lists every person with a stored source on the Project: their own
-         *     grant, a Group they are in, or both (Access TECH D4). A person who
+         *     grant, a Group they are in, or both. A person who
          *     reaches it only through a Group has `granted: []` and `grantedBy:
          *     null`. Each entry's `sources` says where its access comes from, and
          *     `effective` is the union. On a Company-visible Project every active
@@ -3036,7 +3036,7 @@ export interface paths {
         /**
          * Set one Group's permissions on a Project
          * @description Makes the Group's stored permissions on the Project exactly
-         *     `permissions`, as a person grant does (Access TECH D4): the same
+         *     `permissions`, as a person grant does: the same
          *     catalog and levels, `project.read` added to a non-empty set, an empty
          *     set removes the Group, sending the stored set changes nothing, and an
          *     archived Project stays manageable. Every member of the Group holds
@@ -3513,7 +3513,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate the session
-         * @description For `client: "web"` the server reads the `boardly_refresh` cookie and
+         * @description For `client: "web"` the server reads the `zenith_team_refresh` cookie and
          *     **silently ignores** any `refreshToken` in the body. For
          *     `client: "desktop"` the body's `refreshToken` is required.
          *
@@ -3524,8 +3524,8 @@ export interface paths {
          *     same child session and refresh token instead of treating the old token
          *     as a replay. Clear the identifier only after the new session is stored.
          *
-         *     CSRF for this route validates against `boardly_refresh_csrf`, not
-         *     `boardly_csrf`.
+         *     CSRF for this route validates against `zenith_team_refresh_csrf`, not
+         *     `zenith_team_csrf`.
          *
          *     Ordering note: `client` carries a struct-tag rule, which the binder
          *     enforces **before** the transport check — so a missing, empty, or
@@ -3559,7 +3559,7 @@ export interface paths {
          *     For `client: "web"` the four auth cookies are always cleared, whether
          *     or not there was a session to revoke.
          *
-         *     CSRF validates against `boardly_refresh_csrf`. As with refresh, the
+         *     CSRF validates against `zenith_team_refresh_csrf`. As with refresh, the
          *     struct-tag rule on `client` precedes the transport check.
          */
         post: operations["logout"];
@@ -3580,15 +3580,15 @@ export interface paths {
         put?: never;
         /**
          * Start the daemon's own session
-         * @description Starts a new session for the signed-in person, held by their daemon
-         *     (D31). The desktop app calls it after sign-in, and `zen daemon
+         * @description Starts a new session for the signed-in person, held by their daemon.
+         *     The desktop app calls it after sign-in, and `zen daemon
          *     start` calls it when its home holds no `daemon-auth.json`; both
          *     store the answer there. The daemon renews it with
          *     `POST /auth/refresh` (`client: "desktop"`) like any bearer session,
          *     and a refresh keeps it a daemon session.
          *
          *     A daemon session acts only on the daemon plane (`/api/v1/daemon/*`)
-         *     and, beside a live `X-Boardly-Run-Token` whose Run works for the same
+         *     and, beside a live `X-Zenith-Team-Run-Token` whose Run works for the same
          *     person, on the routes that accept a Run. Everywhere else it is
          *     `403 run_proof_required`; it is never its person.
          *
@@ -4240,7 +4240,7 @@ export interface paths {
          *
          *     Two gates, because this stores a person's statement but is written by an
          *     Agent: the session must be the Company owner, and the request must carry
-         *     `X-Boardly-Run-Token` proving a live Run in the same Company. An owner
+         *     `X-Zenith-Team-Run-Token` proving a live Run in the same Company. An owner
          *     session alone would let any client assert the founder's history outside
          *     the conversation where the founder was actually asked.
          *
@@ -4461,7 +4461,7 @@ export interface paths {
          *
          *     The daemon serializes access to the selected path. A managed directory
          *     or Git worktree is not an OS sandbox guarantee. The managed-only
-         *     replacement is Planned in docs/specs/workspaces; this operation still
+         *     replacement is planned; this operation still
          *     describes the served directory-binding baseline.
          *
          *     PostgreSQL generates the row `id`. Repeating the same `daemonId`,
@@ -4800,7 +4800,7 @@ export interface paths {
          *     compiled or pinned into this release, so it names exactly what ships; it is identical for every Company and
          *     carries no Company data. The keys are reserved — a custom skill can
          *     never shadow them — and they cannot be switched off: the Agent's
-         *     `disabledBuiltIns` switches gate the `boardly-mcp` tool groups, not
+         *     `disabledBuiltIns` switches gate the `zenith-team-mcp` tool groups, not
          *     the procedures.
          */
         get: operations["listPlatformSkills"];
@@ -5012,7 +5012,7 @@ export interface paths {
         put?: never;
         /**
          * Ask the active Runtime to refresh Plugin discovery
-         * @description Any active member, for their own default Runtime (ADR 0014): the computer is the caller's, so no Company permission is needed. Install and uninstall take `plugins.manage`, which every role holds (D28). The cloud cannot reach the machine, so a Runtime of the caller's answers `503 plugin_action_unavailable`; Zenith Team Desktop asks its own daemon to publish a new snapshot instead. With no Runtime of the caller's, `409 plugin_provider_unavailable`.
+         * @description Any active member, for their own default Runtime (ADR 0014): the computer is the caller's, so no Company permission is needed. Install and uninstall take `plugins.manage`, which every role holds. The cloud cannot reach the machine, so a Runtime of the caller's answers `503 plugin_action_unavailable`; Zenith Team Desktop asks its own daemon to publish a new snapshot instead. With no Runtime of the caller's, `409 plugin_provider_unavailable`.
          */
         post: operations["refreshPlugins"];
         delete?: never;
@@ -5674,7 +5674,7 @@ export interface paths {
         /**
          * Apply, or request approval to apply, the whole Company Plan
          * @description With only the ordinary bearer credential, this is the synchronous apply
-         *     under `company.plan.apply` (owner, admin) and returns `200`. When `X-Boardly-Run-Token` is
+         *     under `company.plan.apply` (owner, admin) and returns `200`. When `X-Zenith-Team-Run-Token` is
          *     present, the token must prove a currently running Run in this Company
          *     and a UUID `Idempotency-Key` is required; the server recomputes the
          *     authoritative diff, freezes it, and returns a durable Approval receipt
@@ -5783,7 +5783,7 @@ export interface paths {
          *     response rather than the whole board plus a dependency read per row.
          *
          *     `zen task list` inside a Run outside a task sends the member's
-         *     session plus the Run's `X-Boardly-Run-Token`, and a Run reads only
+         *     session plus the Run's `X-Zenith-Team-Run-Token`, and a Run reads only
          *     its own tasks: the list is then the tasks the Run's agent does for
          *     the member the Run works for, whatever `assignee_id` or
          *     `executed_by_agent_id` asked for; the other filters still narrow it.
@@ -5791,14 +5791,14 @@ export interface paths {
          *     sent with any session other than the Run's member's, is
          *     `401 run_token_invalid`. A Run started by a mention in a channel or a
          *     direct message between people uses the access of the person who
-         *     mentioned the Agent, whoever else is in the chat (D31). A task Run
+         *     mentioned the Agent, whoever else is in the chat. A task Run
          *     is not offered `zen task list`: its channel refuses the request with
          *     `run_scope_denied` before it reaches the server. Should a list carry
          *     a task Run's token anyway, the server answers only tasks in that
          *     task chat's Project, as a second guard. One Run reads more: the
          *     Company's root agent in its member's direct chat, with its Company
          *     planning on, plans the Company, so its list is every task its member
-         *     reads, with the caller's filters as asked (IA-FR12). The server
+         *     reads, with the caller's filters as asked. The server
          *     decides this from the token.
          *
          *     All matching tasks are returned in one response. The query parameters
@@ -5852,7 +5852,7 @@ export interface paths {
          *     no start (in progress, in review, failed).
          *
          *     `zen task create` inside a Run sends the member's session plus the
-         *     Run's `X-Boardly-Run-Token`. When the header is present it must prove
+         *     Run's `X-Zenith-Team-Run-Token`. When the header is present it must prove
          *     a Run in this Company that is still running and has an authorizing
          *     member, else `401 run_token_invalid` and nothing is written: a Run
          *     cancelled by a handoff or by a person cannot file follow-up work. A
@@ -5967,7 +5967,7 @@ export interface paths {
          *     displayed `{taskPrefix}-{number}` label.
          *
          *     `zen task get` inside a Run sends the member's session plus the
-         *     Run's `X-Boardly-Run-Token`, and a Run reads only its own tasks: the
+         *     Run's `X-Zenith-Team-Run-Token`, and a Run reads only its own tasks: the
          *     ones its agent does for the member the Run works for. Any other
          *     task is `403 task_outside_run_scope` — even one the member could
          *     read — with nothing of the task in the body: its `detail` is always
@@ -5975,9 +5975,9 @@ export interface paths {
          *     answer meets a task Run reading a task in any Project but its own
          *     (ADR 0017). A Run started by a mention in a channel or a direct
          *     message between people uses the access of the person who mentioned
-         *     the Agent, whoever else is in the chat (D31). The root agent's Run in its member's direct
+         *     the Agent, whoever else is in the chat. The root agent's Run in its member's direct
          *     chat, with its Company planning on, reads every task its member
-         *     reads (IA-FR12). A token that does not prove a
+         *     reads. A token that does not prove a
          *     running Run in this Company, or is sent with any session other than
          *     the Run's member's, is `401 run_token_invalid`; a task that does not
          *     exist stays `404`.
@@ -6093,13 +6093,13 @@ export interface paths {
          *     data.
          *
          *     The path names the task by its id, its `key` or its displayed
-         *     label. Sent with a Run's `X-Boardly-Run-Token`, the task itself must
+         *     label. Sent with a Run's `X-Zenith-Team-Run-Token`, the task itself must
          *     be one of the Run's own, as on `GET .../tasks/{taskId}`, else
          *     `403 task_outside_run_scope`; its prerequisites then come with it as
          *     read-only context, and of its dependents (`blocks`) only the Run's
          *     own. The root agent's Run in its member's direct chat, with its
          *     Company planning on, reads every task its member reads and gets
-         *     every dependent (IA-FR12).
+         *     every dependent.
          *
          *     A task whose Project the caller cannot read is `404 task_not_found`
          *     (ADR 0017), and every embedded task is read through the caller's
@@ -6209,7 +6209,7 @@ export interface paths {
         /**
          * Report a business failure for the live Run's Task
          * @description Requires the ordinary bearer principal plus a supplemental live
-         *     `X-Boardly-Run-Token`. The token, rather than caller-authored ids,
+         *     `X-Zenith-Team-Run-Token`. The token, rather than caller-authored ids,
          *     supplies the Run and Task identity and must prove a currently running
          *     Run in this Company.
          *
@@ -6511,7 +6511,7 @@ export interface paths {
          *     it answers an empty window carrying the real `throughSeq`.
          *
          *     A Run reads its own chat here with its proof (`zen conversation
-         *     get`). With `X-Boardly-Run-Token` the path must name the token's own
+         *     get`). With `X-Zenith-Team-Run-Token` the path must name the token's own
          *     chat, and a Run tagged in a channel or group DM reads none
          *     (`403 task_outside_run_scope`).
          */
@@ -6561,7 +6561,7 @@ export interface paths {
          *     Conversation only to its creator.
          *
          *     A Run reads its own chat's transcript with its proof (`zen
-         *     conversation transcript`). With `X-Boardly-Run-Token` the path must
+         *     conversation transcript`). With `X-Zenith-Team-Run-Token` the path must
          *     name the token's own chat, and a Run tagged in a channel or group DM
          *     reads none (`403 task_outside_run_scope`).
          */
@@ -6924,7 +6924,7 @@ export interface paths {
          *     `POST .../complete` marks it `ready`.
          *
          *     The daemon uploads the files a Run presents on the member's session.
-         *     When it sends the Run's `X-Boardly-Run-Token`, the token is checked
+         *     When it sends the Run's `X-Zenith-Team-Run-Token`, the token is checked
          *     right after the metadata part, before the file is stored.
          *
          *     Served `Cache-Control: no-store`.
@@ -6950,7 +6950,7 @@ export interface paths {
          * @description Moves the attachment from `pending` to `ready` and raises
          *     `attachment.completed`. Only then can it be referenced by a message.
          *     The daemon completes a Run's upload with the Run's
-         *     `X-Boardly-Run-Token`, checked against the `companyId` in the body
+         *     `X-Zenith-Team-Run-Token`, checked against the `companyId` in the body
          *     before the attachment changes.
          *     Served `Cache-Control: no-store`.
          */
@@ -7096,7 +7096,7 @@ export interface paths {
         /**
          * Create the current Run's reviewable Agent Mail drafts
          * @description Requires an ordinary bearer principal with `mailbox.manage` plus the supplemental live
-         *     `X-Boardly-Run-Token`. The resolved token exclusively supplies the Run
+         *     `X-Zenith-Team-Run-Token`. The resolved token exclusively supplies the Run
          *     and Agent identity; the path Conversation must belong to that Run.
          *     PostgreSQL generates group, draft, and delivery ids.
          *
@@ -7217,8 +7217,9 @@ export interface paths {
          *     repeated query parameter is `422` API-wide, so the multi-status filter
          *     has to travel in one value.
          *
-         *     Task-conversation runs are visible to every company member. Direct-
-         *     conversation runs are visible only to the conversation creator.
+         *     A task's runs are visible to the people who can read its Project, and
+         *     stay so after the task is deleted. Direct-conversation and Schedule
+         *     runs are visible only to their creator.
          */
         get: operations["listRuns"];
         put?: never;
@@ -7250,7 +7251,7 @@ export interface paths {
          *
          *     A Run reads its own record here with its proof (`zen run get`), a
          *     Run tagged in a channel or group DM included. With
-         *     `X-Boardly-Run-Token` the path must name the token's own Run
+         *     `X-Zenith-Team-Run-Token` the path must name the token's own Run
          *     (`403 task_outside_run_scope`).
          */
         get: operations["getRun"];
@@ -7671,7 +7672,7 @@ export interface paths {
         };
         /**
          * Inspect immutable Artifact evidence for a live Run
-         * @description Requires the Run Authorizer's session and live Run proof. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The artifact ID pins its immutable output items and Asset Versions; no source workspace path is exposed.
+         * @description Requires the Run Authorizer's session and live Run proof. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it. An Artifact the Authorizer cannot read is 404. The artifact ID pins its immutable output items and Asset Versions; no source workspace path is exposed.
          */
         get: operations["inspectArtifactForRun"];
         put?: never;
@@ -7691,7 +7692,7 @@ export interface paths {
         };
         /**
          * Download a pinned Artifact file for a live consuming Run
-         * @description Requires the Run Authorizer's session and live Run proof, rechecked before streaming bytes. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The runId identifies the consuming Run, not the Run that produced the Artifact. Does not redirect to storage.
+         * @description Requires the Run Authorizer's session and live Run proof, rechecked before streaming bytes. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it. An Artifact the Authorizer cannot read is 404. The runId identifies the consuming Run, not the Run that produced the Artifact. Does not redirect to storage.
          */
         get: operations["downloadArtifactForRun"];
         put?: never;
@@ -8222,7 +8223,7 @@ export interface paths {
         };
         /**
          * Open the daemon control socket
-         * @description WebSocket upgrade. The daemon id comes from the `X-Boardly-Daemon-ID`
+         * @description WebSocket upgrade. The daemon id comes from the `X-Zenith-Team-Daemon-ID`
          *     header, falling back to the `daemon_id` query parameter; `runtime_ids` is
          *     a comma-separated scope. The caller's complete company set is resolved
          *     server-side so heartbeats and RPCs reuse the HTTP checks.
@@ -8407,7 +8408,7 @@ export interface paths {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Daemon-ID": string;
+                "X-Zenith-Team-Daemon-ID": string;
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -8434,7 +8435,7 @@ export interface paths {
             query?: never;
             header: {
                 /** @description Must match the Runtime's owning daemon; required independently of the legacy header rollout setting. */
-                "X-Boardly-Daemon-ID": string;
+                "X-Zenith-Team-Daemon-ID": string;
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -8467,7 +8468,7 @@ export interface paths {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -8478,11 +8479,11 @@ export interface paths {
          * Read one of this daemon's runtimes and its person's Agent bindings on it
          * @description The daemon checks it before a local Tool sign-in and before it
          *     publishes Tool status. The runtime must be this daemon's
-         *     (`X-Boardly-Daemon-ID`) and the signed-in person's, in a Company they
+         *     (`X-Zenith-Team-Daemon-ID`) and the signed-in person's, in a Company they
          *     still belong to; anything else is `404 runtime_not_found` or
          *     `404 company_not_found`. `items` are the person's own bindings on the
          *     runtime, as `GET /companies/{companyId}/agent-bindings?runtime_id=`
-         *     lists them. The daemon's own session (D31) cannot read that member
+         *     lists them. The daemon's own session cannot read that member
          *     route, so the daemon plane carries this read.
          */
         get: operations["listDaemonRuntimeAgentBindings"];
@@ -9245,7 +9246,7 @@ export interface paths {
         /**
          * Ask humans a question on behalf of a live run
          * @description Requires an ordinary bearer principal plus the supplemental live
-         *     `X-Boardly-Run-Token`. `Idempotency-Key` is a UUID scoped to this
+         *     `X-Zenith-Team-Run-Token`. `Idempotency-Key` is a UUID scoped to this
          *     Question operation and the originating run. First creation is `201`;
          *     an exact replay returns the same Question with `200` — the status code
          *     is the whole created-signal. A replay with a different payload is
@@ -9354,7 +9355,7 @@ export interface paths {
          *     have filled.
          *
          *     The workspace carries the whole task, so a request sent with a Run's
-         *     `X-Boardly-Run-Token` reads only the Run's own tasks, as
+         *     `X-Zenith-Team-Run-Token` reads only the Run's own tasks, as
          *     `GET .../tasks/{taskId}` does: any other task is
          *     `403 task_outside_run_scope`, with nothing of the task in the body.
          *     Its `dependencies` are what `.../dependencies` gives the Run. No Run
@@ -9396,7 +9397,7 @@ export interface paths {
          *     Artifact, and ordinal; assetVersionId identifies its immutable file
          *     snapshot.
          *
-         *     Sent with a Run's `X-Boardly-Run-Token`, the task must be one of the
+         *     Sent with a Run's `X-Zenith-Team-Run-Token`, the task must be one of the
          *     Run's own, as on `GET .../tasks/{taskId}`, else
          *     `403 task_outside_run_scope` and no result is read. No Run command
          *     reaches this route today; the rule keeps it closed.
@@ -9770,7 +9771,7 @@ export interface paths {
         };
         /**
          * Search the Company Wiki as an Agent's Run
-         * @description Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+         * @description Read-only. Requires `X-Zenith-Team-Run-Token` proving a live, non-Schedule
          *     Run of this Company, sent by the Run's authorizer. Searches
          *     active pages only; the words of `q` are matched as word prefixes
          *     (exact below three characters) against the page's title, summary and
@@ -9800,7 +9801,7 @@ export interface paths {
         };
         /**
          * Browse the Company Wiki as an Agent's Run
-         * @description Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+         * @description Read-only. Requires `X-Zenith-Team-Run-Token` proving a live, non-Schedule
          *     Run of this Company, sent by the Run's authorizer. Lists the active
          *     published pages ordered by title, optionally within one collection.
          *     The first page (`offset` 0) also returns every collection with its
@@ -9834,7 +9835,7 @@ export interface paths {
         put?: never;
         /**
          * Save Wiki pages as the founder's company-research Run
-         * @description The only Wiki write an Agent has. Requires `X-Boardly-Run-Token`
+         * @description The only Wiki write an Agent has. Requires `X-Zenith-Team-Run-Token`
          *     proving a live, non-Schedule Run of this Company, sent by the Run's
          *     authorizer, and an `Idempotency-Key` UUID. The server then re-proves in
          *     the write transaction that the Run is `running`, that its frozen
@@ -10425,7 +10426,7 @@ export interface components {
             sequence: number;
             /** @description The reading the model sees: one line per object, frames first, then rows top to bottom. */
             text: string;
-            /** @description Each listed object's ID, revisions, and an item's geometry and properties, so boardly-mcp fills edit revisions itself and keeps the fields an edit does not name. */
+            /** @description Each listed object's ID, revisions, and an item's geometry and properties, so zenith-team-mcp fills edit revisions itself and keeps the fields an edit does not name. */
             refs: components["schemas"]["BoardAgentRef"][];
             area: components["schemas"]["BoardRect"] | null;
             image?: components["schemas"]["BoardVisualRegion"];
@@ -12543,8 +12544,7 @@ export interface components {
          *     offline, was garbage-collected, a machine was renamed, a runtime was
          *     removed, or a runtime's tool state changed. A `deregister` also reaches
          *     a person whose runtimes went offline because someone else signed in on
-         *     the same computer (D33). Delivered to the
-         *     registrant (ADR 0014), except `stale_sweep` and `runtime_gc`, which
+         *     the same computer. Delivered to the registrant (ADR 0014), except `stale_sweep` and `runtime_gc`, which
          *     name no machine and go to the whole Company. A refetch signal — the
          *     roster is a join across daemons and runtimes with no single row to
          *     carry — so a client re-reads runtimes (and agents on `update`, whose
@@ -18484,10 +18484,10 @@ export interface components {
          * @description Whether the daemon keeps a runtime's Agents away from the Zenith Team
          *     sign-in files on its computer. `enforced`: on macOS the daemon starts
          *     every provider process in a sandbox that can neither read nor write
-         *     the daemon's home, `~/.boardly`, the desktop app's session store or
+         *     the daemon's home, `~/.zenith-team`, the desktop app's session store or
          *     `local-preview.json`, and this round's probe proved it. `not_enforced`:
          *     Windows, Linux, a failed probe, or the test switch
-         *     `BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced`. A daemon reports it
+         *     `ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION=not_enforced`. A daemon reports it
          *     at registration and on every heartbeat.
          * @enum {string}
          */
@@ -18530,8 +18530,8 @@ export interface components {
          *     not served; the user plane's `Run` is where those live.
          *
          *     There is no trigger-message id beside `id`: the words the run answers
-         *     arrive frozen in `context.prompt` (ADR 0001), so the daemon never
-         *     resolves a prompt by id.
+         *     arrive frozen in `context.prompt` when the run is created, so the
+         *     daemon never resolves a prompt by id.
          */
         DaemonRun: {
             /** Format: uuid */
@@ -18560,8 +18560,8 @@ export interface components {
              *     bundles/references.
              *     Current non-Schedule Resource bindings can include `localPath` here;
              *     this private daemon shape is not the public Resource projection.
-             *     The versioned managed-only replacement is Planned in docs/specs/runs
-             *     and docs/specs/workspaces, not required by this baseline schema.
+             *     A versioned managed-only replacement is planned and is not required
+             *     by this baseline schema.
              */
             context?: {
                 [key: string]: unknown;
@@ -19521,7 +19521,7 @@ export interface components {
         /**
          * @description `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
          *     `company_access_required`, or `human_actor_required` when a Run proof
-         *     (`X-Boardly-Run-Token`) reaches a route that does not accept a Run.
+         *     (`X-Zenith-Team-Run-Token`) reaches a route that does not accept a Run.
          */
         Forbidden: {
             headers: {
@@ -19552,7 +19552,7 @@ export interface components {
         /**
          * @description `401` — `authentication_required`, `session_invalid` or
          *     `invalid_credentials`, or `run_token_invalid` when a supplied
-         *     `X-Boardly-Run-Token` does not prove a running Run whose member is the
+         *     `X-Zenith-Team-Run-Token` does not prove a running Run whose member is the
          *     caller.
          */
         UnauthorizedRunProof: {
@@ -19620,7 +19620,7 @@ export interface components {
         /**
          * @description `401` — `authentication_required`, `session_invalid` or
          *     `invalid_credentials`, or `run_token_invalid` when a supplied
-         *     `X-Boardly-Run-Token` does not prove a running Run in this Company.
+         *     `X-Zenith-Team-Run-Token` does not prove a running Run in this Company.
          */
         UnauthorizedRunRead: {
             headers: {
@@ -20530,7 +20530,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -20579,7 +20579,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -20628,7 +20628,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -20677,7 +20677,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`). */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -24180,7 +24180,7 @@ export interface operations {
                 to?: string;
             };
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 companyId: string;
@@ -24229,7 +24229,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 "Idempotency-Key": string;
             };
             path: {
@@ -28418,7 +28418,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 companyId: string;
@@ -28468,7 +28468,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 "Idempotency-Key": string;
             };
             path: {
@@ -29535,7 +29535,7 @@ export interface operations {
             };
             header?: {
                 /** @description Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller. */
-                "X-Boardly-Run-Token"?: string;
+                "X-Zenith-Team-Run-Token"?: string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -29663,7 +29663,7 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller. */
-                "X-Boardly-Run-Token"?: string;
+                "X-Zenith-Team-Run-Token"?: string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -32735,7 +32735,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Proof of a live Run in this Company. */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -35821,8 +35821,8 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Supplying this switches the operation to the approval-request branch. */
-                "X-Boardly-Run-Token"?: string;
-                /** @description Required as a UUID whenever `X-Boardly-Run-Token` is supplied. */
+                "X-Zenith-Team-Run-Token"?: string;
+                /** @description Required as a UUID whenever `X-Zenith-Team-Run-Token` is supplied. */
                 "Idempotency-Key"?: string;
             };
             path: {
@@ -35934,7 +35934,7 @@ export interface operations {
                  *     this Company, and the read covers only that Run's own tasks: the ones
                  *     its agent does for the member the Run works for.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -35973,7 +35973,7 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Sent by a Run's channel; when present it must prove a live Run in this Company. */
-                "X-Boardly-Run-Token"?: string;
+                "X-Zenith-Team-Run-Token"?: string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -36029,7 +36029,7 @@ export interface operations {
             /**
              * @description `401` — `authentication_required`, `session_invalid` or
              *     `invalid_credentials`, or `run_token_invalid` when a supplied
-             *     `X-Boardly-Run-Token` does not prove a running Run in this
+             *     `X-Zenith-Team-Run-Token` does not prove a running Run in this
              *     Company with an authorizing member, or is sent with another
              *     member's session.
              */
@@ -36497,7 +36497,7 @@ export interface operations {
                  *     this Company, and the read covers only that Run's own tasks: the ones
                  *     its agent does for the member the Run works for.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -36649,7 +36649,7 @@ export interface operations {
                  *     this Company, and the read covers only that Run's own tasks: the ones
                  *     its agent does for the member the Run works for.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -36797,7 +36797,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Supplemental proof for the live Run whose Task failed. */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 /** @description UUID replay fence scoped to this task-failure operation and Run. */
                 "Idempotency-Key": string;
             };
@@ -37512,7 +37512,7 @@ export interface operations {
                  *     group DM reads its own Run and none of the chat reads. Without it the
                  *     read is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenOwnRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenOwnRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -37623,7 +37623,7 @@ export interface operations {
                  *     group DM reads its own Run and none of the chat reads. Without it the
                  *     read is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenOwnRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenOwnRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -38015,7 +38015,7 @@ export interface operations {
                  *     group DM reads its own Run and none of the chat reads. Without it the
                  *     read is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenOwnRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenOwnRead"];
             };
             path: {
                 conversationId: components["parameters"]["conversationId"];
@@ -38424,7 +38424,7 @@ export interface operations {
                  *     member is the caller (`401 run_token_invalid`, nothing is stored).
                  *     Without it the upload is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenUpload"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenUpload"];
             };
             path?: never;
             cookie?: never;
@@ -38529,7 +38529,7 @@ export interface operations {
                  *     member is the caller (`401 run_token_invalid`, nothing is stored).
                  *     Without it the upload is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenUpload"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenUpload"];
             };
             path: {
                 attachmentId: components["parameters"]["attachmentId"];
@@ -38902,7 +38902,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Supplemental proof for the live Run creating the drafts. */
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 /** @description UUID replay fence scoped to this draft-create operation and Run. */
                 "Idempotency-Key": string;
             };
@@ -39252,7 +39252,7 @@ export interface operations {
                  *     group DM reads its own Run and none of the chat reads. Without it the
                  *     read is the member's own.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenOwnRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenOwnRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -39343,7 +39343,7 @@ export interface operations {
             query?: never;
             header: {
                 "Idempotency-Key": string;
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -39650,7 +39650,7 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Opt into desktop disk-cache revalidation after current artifact authorization. */
-                "X-Boardly-Artifact-Cache"?: "revalidate";
+                "X-Zenith-Team-Artifact-Cache"?: "revalidate";
                 /** @description Exact ETag from a prior authorized download; only used with the desktop cache opt-in header. */
                 "If-None-Match"?: string;
             };
@@ -40153,7 +40153,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -40183,7 +40183,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -40388,7 +40388,7 @@ export interface operations {
             query?: never;
             header?: {
                 /** @description Opt into desktop disk-cache revalidation after current artifact authorization. */
-                "X-Boardly-Artifact-Cache"?: "revalidate";
+                "X-Zenith-Team-Artifact-Cache"?: "revalidate";
                 /** @description Exact ETag from a prior authorized download; only used with the desktop cache opt-in header. */
                 "If-None-Match"?: string;
             };
@@ -40904,7 +40904,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path?: never;
             cookie?: never;
@@ -40950,7 +40950,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path?: never;
             cookie?: never;
@@ -41070,7 +41070,7 @@ export interface operations {
         parameters: {
             query?: {
                 /**
-                 * @description Fallback for the `X-Boardly-Daemon-ID` header. When neither is
+                 * @description Fallback for the `X-Zenith-Team-Daemon-ID` header. When neither is
                  *     present the upgrade follows the header's rollout rule: admitted
                  *     with a warning, or `400 invalid_request` once required.
                  */
@@ -41098,7 +41098,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path?: never;
             cookie?: never;
@@ -41163,7 +41163,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41237,7 +41237,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41291,7 +41291,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41359,7 +41359,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41442,7 +41442,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Daemon-ID": string;
+                "X-Zenith-Team-Daemon-ID": string;
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41514,7 +41514,7 @@ export interface operations {
             query?: never;
             header: {
                 /** @description Must match the Runtime's owning daemon; required independently of the legacy header rollout setting. */
-                "X-Boardly-Daemon-ID": string;
+                "X-Zenith-Team-Daemon-ID": string;
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41557,7 +41557,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41606,7 +41606,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41659,7 +41659,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41724,7 +41724,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41804,7 +41804,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41871,7 +41871,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 runtimeId: components["parameters"]["runtimeId"];
@@ -41938,7 +41938,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -41995,7 +41995,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -42052,7 +42052,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -42109,7 +42109,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42176,7 +42176,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42253,7 +42253,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42327,7 +42327,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42395,7 +42395,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42468,7 +42468,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42542,7 +42542,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42650,7 +42650,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -42736,7 +42736,7 @@ export interface operations {
                  *     `APP_DAEMON_ID_REQUIRED=true` — the default next release — a missing
                  *     header is `400 invalid_request`.
                  */
-                "X-Boardly-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
+                "X-Zenith-Team-Daemon-ID"?: components["parameters"]["daemonIDHeader"];
             };
             path: {
                 /** @description Database-generated Run UUID. Numeric IDs are not accepted. */
@@ -43405,7 +43405,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 "Idempotency-Key": string;
             };
             path: {
@@ -43627,7 +43627,7 @@ export interface operations {
                  *     this Company, and the read covers only that Run's own tasks: the ones
                  *     its agent does for the member the Run works for.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -43695,7 +43695,7 @@ export interface operations {
                  *     this Company, and the read covers only that Run's own tasks: the ones
                  *     its agent does for the member the Run works for.
                  */
-                "X-Boardly-Run-Token"?: components["parameters"]["runTokenRead"];
+                "X-Zenith-Team-Run-Token"?: components["parameters"]["runTokenRead"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -43734,7 +43734,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": string;
+                "X-Zenith-Team-Run-Token": string;
                 "Idempotency-Key": string;
             };
             path: {
@@ -44492,7 +44492,7 @@ export interface operations {
                 limit?: number;
             };
             header: {
-                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+                "X-Zenith-Team-Run-Token": components["parameters"]["runToken"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -44529,7 +44529,7 @@ export interface operations {
                 limit?: number;
             };
             header: {
-                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+                "X-Zenith-Team-Run-Token": components["parameters"]["runToken"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -44561,7 +44561,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+                "X-Zenith-Team-Run-Token": components["parameters"]["runToken"];
                 "Idempotency-Key": string;
             };
             path: {
@@ -44603,7 +44603,7 @@ export interface operations {
                 offset?: number;
             };
             header: {
-                "X-Boardly-Run-Token": components["parameters"]["runToken"];
+                "X-Zenith-Team-Run-Token": components["parameters"]["runToken"];
             };
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */

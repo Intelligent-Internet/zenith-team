@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +17,46 @@ import (
 
 	"github.com/google/uuid"
 )
+
+// With Studio off (no origin from the server), the daemon must not run the
+// Studio CLI at all: no status probe, and a connect request fails at once.
+func TestStudioOffNeverRunsTheStudioCLI(t *testing.T) {
+	t.Parallel()
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("Node is unavailable")
+	}
+	service := newLocalToolService(t.TempDir())
+	service.authorizeLogin = func(context.Context, toolAuthScope) bool { return true }
+	marker := filepath.Join(service.root, "ran")
+	entry := filepath.Join(service.root, "studio.cjs")
+	script := fmt.Sprintf(
+		`require("fs").writeFileSync(%q, "ran");console.log(JSON.stringify({ok:true,data:{authenticated:true}}));`,
+		marker,
+	)
+	if err := os.WriteFile(entry, []byte(script), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	release := studioRelease()
+	service.installed[release.ID()] = toolInstallation{Node: node, Entrypoint: entry}
+	scope := toolAuthScope{uuid.NewString(), uuid.NewString()}
+	for _, action := range []string{"status", "connect"} {
+		job := toolJob{CompanyID: scope.CompanyID, AgentID: scope.AgentID, Key: release.Key, Action: action}
+		service.mu.Lock()
+		service.pending[job] = true
+		service.mu.Unlock()
+		service.probeAuth(t.Context(), job, release)
+	}
+	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("the Studio CLI ran with Studio off (stat err = %v)", err)
+	}
+	if got := service.observations(scope.CompanyID, scope.AgentID)[0].AuthState; got != "error" {
+		t.Fatalf("connect with Studio off: auth state = %q, want %q", got, "error")
+	}
+	if got := service.observations(scope.CompanyID, scope.AgentID)[0].APIOrigin; got != "" {
+		t.Fatalf("Studio off reported API origin %q, want none", got)
+	}
+}
 
 func TestPendingToolLoginDoesNotBlockStatus(t *testing.T) {
 	t.Parallel()
@@ -74,6 +115,7 @@ func testToolLoginStatus(t *testing.T, inflightStatus bool) {
 		t.Fatal(err)
 	}
 	service := newLocalToolService(root)
+	service.studioOrigin = testStudioOrigin
 	studio, _ := findToolRelease("zenith-studio")
 	service.installed[studio.ID()] = toolInstallation{Node: node, Entrypoint: entry}
 	service.authorizeLogin = func(_ context.Context, _ toolAuthScope) bool { return true }
@@ -142,6 +184,7 @@ func TestConnectedStudioAccountIsUsedByRun(t *testing.T) {
 		t.Fatal(err)
 	}
 	service := newLocalToolService(root)
+	service.studioOrigin = testStudioOrigin
 	service.authorizeLogin = func(context.Context, toolAuthScope) bool { return true }
 	for _, release := range reviewedToolReleases() {
 		service.installed[release.ID()] = toolInstallation{Node: node, Entrypoint: entry}
@@ -165,7 +208,7 @@ func TestConnectedStudioAccountIsUsedByRun(t *testing.T) {
 	}
 	for _, provider := range []string{"codex", "claude"} {
 		t.Run(provider, func(t *testing.T) {
-			d := &Daemon{tools: service}
+			d := &Daemon{tools: service, cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 			run := Run{
 				ID:        uuid.New(),
 				CompanyID: companyID,
@@ -204,7 +247,7 @@ func TestConnectedStudioAccountIsUsedByRun(t *testing.T) {
 					toolAuthScope{companyID, testToolAgentID},
 					studioRelease(),
 				) ||
-				result.Data.API != "https://api-agent.ii.inc" {
+				result.Data.API != testStudioOrigin {
 				t.Fatalf("wrong Run account: %s, %v", output, err)
 			}
 			if _, err := runToolProcess(
@@ -218,7 +261,7 @@ func TestConnectedStudioAccountIsUsedByRun(t *testing.T) {
 			}
 		})
 	}
-	d := &Daemon{tools: service}
+	d := &Daemon{tools: service, cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 	_, err = d.prepareStudioEnvironment(
 		t.Context(),
 		studioRunInput{
@@ -277,6 +320,7 @@ func TestStudioLoginSharesOneLoginSlot(t *testing.T) {
 				t.Fatal(err)
 			}
 			service := newLocalToolService(root)
+			service.studioOrigin = testStudioOrigin
 			service.authorizeLogin = func(context.Context, toolAuthScope) bool { return true }
 			release, _ := findToolRelease("zenith-studio")
 			service.installed[release.ID()] = toolInstallation{Node: node, Entrypoint: entry}
@@ -425,7 +469,7 @@ func TestRunDoesNotInheritAnotherAgentOrLegacyStudioAccount(t *testing.T) {
 		{"other Company", toolAuthScope{uuid.NewString(), owner.AgentID}, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			d := &Daemon{tools: service}
+			d := &Daemon{tools: service, cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 			env, err := d.prepareStudioEnvironment(
 				t.Context(),
 				studioRunInput{
@@ -516,6 +560,7 @@ func TestStudioAuthStatusVerifiesRemoteAccess(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			service := newLocalToolService(t.TempDir())
+			service.studioOrigin = testStudioOrigin
 			release := studioRelease()
 			entry := filepath.Join(service.root, "auth.cjs")
 			script := fmt.Sprintf(

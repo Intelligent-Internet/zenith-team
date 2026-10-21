@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AlertCircle, Info } from "@/shared/ui/icons";
 import { Tooltip } from "@/shared/ui/tooltip";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { AgentSkill } from "@/shared/api/agent-skill-api";
 
 export type SkillSource = AgentSkill["sourceType"];
@@ -148,7 +148,7 @@ export function skillProblem(
       return {
         title: "Couldn’t complete this action",
         help: "Check your connection and access, then try again.",
-        detail: getBoardlyQueryErrorMessage(error),
+        detail: getZenithTeamQueryErrorMessage(error),
       };
   }
 }
@@ -211,7 +211,7 @@ export function skillEditProblem(error: unknown, name: string): SkillProblem {
       return {
         title: "Couldn’t save changes",
         help: "Your edits are still here. Check your connection and access, then try again.",
-        detail: getBoardlyQueryErrorMessage(error),
+        detail: getZenithTeamQueryErrorMessage(error),
       };
   }
 }

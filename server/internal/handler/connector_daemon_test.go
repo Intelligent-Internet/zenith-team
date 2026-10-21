@@ -12,10 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const reaffirmTestDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -59,7 +59,7 @@ func postReaffirm(handler http.Handler, companyID uuid.UUID, body string) *httpt
 		bytes.NewBufferString(body),
 	)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("X-Boardly-Daemon-ID", "daemon-a")
+	request.Header.Set("X-Zenith-Team-Daemon-ID", "daemon-a")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
@@ -79,18 +79,26 @@ func TestReaffirmConnectorDiscoveryForwardsTheFencedGeneration(t *testing.T) {
 			input agent.ConnectorDiscoveryReaffirmInput,
 		) (agent.ConnectorDiscoveryResult, error) {
 			calls++
-			if principal.UserID != daemonTestPrincipal().UserID || principal.CompanyID != reaffirmTestCompanyID ||
-				input.CompanyID != reaffirmTestCompanyID || input.RuntimeID != reaffirmTestRuntimeID ||
-				input.DaemonID != "daemon-a" || input.Generation != reaffirmTestGeneration ||
-				input.ManifestDigest != reaffirmTestDigest || !input.ObservedAt.Equal(observedAt) {
+			if principal.UserID != daemonTestPrincipal().UserID ||
+				principal.CompanyID != reaffirmTestCompanyID ||
+				input.CompanyID != reaffirmTestCompanyID ||
+				input.RuntimeID != reaffirmTestRuntimeID ||
+				input.DaemonID != "daemon-a" ||
+				input.Generation != reaffirmTestGeneration ||
+				input.ManifestDigest != reaffirmTestDigest ||
+				!input.ObservedAt.Equal(observedAt) {
 				t.Fatalf("ReaffirmDiscovery() principal = %+v input = %+v", principal, input)
 			}
 			return agent.ConnectorDiscoveryResult{Applied: true}, nil
 		},
 	}
-	response := postReaffirm(reaffirmTestHandler(service), reaffirmTestCompanyID, `{"schemaVersion":1,"generation":"`+
-		reaffirmTestGeneration.String()+`","manifestDigest":"`+reaffirmTestDigest+
-		`","observedAt":"2026-09-24T09:30:00Z"}`)
+	response := postReaffirm(
+		reaffirmTestHandler(service),
+		reaffirmTestCompanyID,
+		`{"schemaVersion":1,"generation":"`+
+			reaffirmTestGeneration.String()+`","manifestDigest":"`+reaffirmTestDigest+
+			`","observedAt":"2026-09-24T09:30:00Z"}`,
+	)
 	if response.Code != http.StatusOK || response.Body.String() != `{"applied":true}` || calls != 1 {
 		t.Fatalf("reaffirm = %d %s after %d calls", response.Code, response.Body.String(), calls)
 	}
@@ -137,23 +145,46 @@ func TestReaffirmConnectorDiscoveryRejectsInvalidRequests(t *testing.T) {
 		code      string
 		companyID uuid.UUID
 	}{
-		{"schema version 2", body(func(f map[string]string) { f["schemaVersion"] = `2` }),
-			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID},
-		{"missing generation", body(func(f map[string]string) { delete(f, "generation") }),
-			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID},
-		{"generation is not a uuid", body(func(f map[string]string) { f["generation"] = `"generation-1"` }),
-			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID},
-		{"short digest", body(func(f map[string]string) { f["manifestDigest"] = `"abc"` }),
-			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID},
-		{"observedAt is not a wire time", body(func(f map[string]string) { f["observedAt"] = `"yesterday"` }),
-			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID},
-		{"unknown field", body(func(f map[string]string) { f["items"] = `[]` }),
-			http.StatusBadRequest, "invalid_request", reaffirmTestCompanyID},
+		{
+			"schema version 2", body(func(f map[string]string) { f["schemaVersion"] = `2` }),
+			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID,
+		},
+		{
+			"missing generation", body(func(f map[string]string) { delete(f, "generation") }),
+			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID,
+		},
+		{
+			"generation is not a uuid",
+			body(func(f map[string]string) { f["generation"] = `"generation-1"` }),
+			http.StatusUnprocessableEntity,
+			"validation_failed",
+			reaffirmTestCompanyID,
+		},
+		{
+			"short digest", body(func(f map[string]string) { f["manifestDigest"] = `"abc"` }),
+			http.StatusUnprocessableEntity, "validation_failed", reaffirmTestCompanyID,
+		},
+		{
+			"observedAt is not a wire time",
+			body(func(f map[string]string) { f["observedAt"] = `"yesterday"` }),
+			http.StatusUnprocessableEntity,
+			"validation_failed",
+			reaffirmTestCompanyID,
+		},
+		{
+			"unknown field", body(func(f map[string]string) { f["items"] = `[]` }),
+			http.StatusBadRequest, "invalid_request", reaffirmTestCompanyID,
+		},
 		{"body over 1 KiB", body(func(f map[string]string) {
 			f["observedAt"] = `"` + strings.Repeat("9", 1<<10) + `"`
 		}), http.StatusRequestEntityTooLarge, "request_too_large", reaffirmTestCompanyID},
-		{"another Company's path", body(func(map[string]string) {}),
-			http.StatusNotFound, "runtime_not_found", uuid.MustParse("019fa834-a515-79b2-b1bd-19e6bd4f2799")},
+		{
+			"another Company's path",
+			body(func(map[string]string) {}),
+			http.StatusNotFound,
+			"runtime_not_found",
+			uuid.MustParse("019fa834-a515-79b2-b1bd-19e6bd4f2799"),
+		},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -172,6 +203,10 @@ func TestReaffirmConnectorDiscoveryRejectsInvalidRequests(t *testing.T) {
 			return agent.ConnectorDiscoveryResult{}, agent.ErrConnectorDiscoveryConflict
 		},
 	}
-	response := postReaffirm(reaffirmTestHandler(conflicting), reaffirmTestCompanyID, body(func(map[string]string) {}))
+	response := postReaffirm(
+		reaffirmTestHandler(conflicting),
+		reaffirmTestCompanyID,
+		body(func(map[string]string) {}),
+	)
 	assertErrorResponse(t, response, http.StatusConflict, "connector_discovery_conflict")
 }

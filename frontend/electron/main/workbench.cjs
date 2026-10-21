@@ -179,7 +179,7 @@ function createDesktopWorkbench({
     unregisterGlobalShortcut();
     const registered = Boolean(
       globalShortcut.register(state.globalShortcut.accelerator, () => {
-        const targetWindow = openBoardlyWindow();
+        const targetWindow = openZenithTeamWindow();
         sendMenuCommand(targetWindow, { type: "command-palette:open" });
       }),
     );
@@ -216,7 +216,7 @@ function createDesktopWorkbench({
     const mainWindow = getMainWindow?.();
     if (
       normalized.notification.suppressWhenFocused &&
-      isFocusedBoardlyWindow(mainWindow)
+      isFocusedZenithTeamWindow(mainWindow)
     ) {
       return { disposition: "suppressed-focused", ok: true };
     }
@@ -249,7 +249,7 @@ function createDesktopWorkbench({
       activeNotifications.add(notification);
 
       notification.on?.("click", () => {
-        const targetWindow = openBoardlyWindow();
+        const targetWindow = openZenithTeamWindow();
         if (normalized.notification.id && normalized.notification.path) {
           sendMenuCommand(targetWindow, {
             notificationId: normalized.notification.id,
@@ -303,7 +303,7 @@ function createDesktopWorkbench({
 
     const mainWindow = getMainWindow?.();
     // The in-app call card is already in front of a focused window.
-    if (isFocusedBoardlyWindow(mainWindow)) {
+    if (isFocusedZenithTeamWindow(mainWindow)) {
       return { disposition: "suppressed-focused", ok: true };
     }
 
@@ -353,7 +353,7 @@ function createDesktopWorkbench({
       });
       notification.on?.("click", () => {
         closeHuddleCall(call.invitationId);
-        openBoardlyWindow();
+        openZenithTeamWindow();
       });
       notification.on?.("close", () => {
         if (huddleCalls.get(call.invitationId)?.notification === notification) {
@@ -463,20 +463,20 @@ function createDesktopWorkbench({
       {
         label: "Open Zenith Team",
         click: () => {
-          openBoardlyWindow();
+          openZenithTeamWindow();
         },
       },
       {
         label: "Open Command Palette",
         click: () => {
-          const targetWindow = openBoardlyWindow();
+          const targetWindow = openZenithTeamWindow();
           sendMenuCommand(targetWindow, { type: "command-palette:open" });
         },
       },
       {
         label: "Search Company Work",
         click: () => {
-          const targetWindow = openBoardlyWindow();
+          const targetWindow = openZenithTeamWindow();
           sendMenuCommand(targetWindow, {
             route: "work-search",
             type: "route:navigate",
@@ -541,7 +541,7 @@ function createDesktopWorkbench({
     }
   }
 
-  function openBoardlyWindow() {
+  function openZenithTeamWindow() {
     const targetWindow =
       typeof openMainWindow === "function"
         ? openMainWindow()
@@ -752,9 +752,9 @@ function normalizeInternalPath(value) {
     return null;
   }
   try {
-    const url = new URL(value, "https://boardly.internal");
+    const url = new URL(value, "https://zenith-team.internal");
     if (
-      url.origin !== "https://boardly.internal" ||
+      url.origin !== "https://zenith-team.internal" ||
       url.username ||
       url.password ||
       url.hash
@@ -972,7 +972,7 @@ function focusMainWindow(mainWindow) {
   mainWindow.focus?.();
 }
 
-function isFocusedBoardlyWindow(mainWindow) {
+function isFocusedZenithTeamWindow(mainWindow) {
   return Boolean(
     mainWindow &&
     !mainWindow.isDestroyed?.() &&

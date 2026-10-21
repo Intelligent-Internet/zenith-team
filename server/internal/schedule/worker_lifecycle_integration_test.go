@@ -10,13 +10,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	agentdomain "boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	companydomain "boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	agentdomain "github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	companydomain "github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // scheduleCreator is a member who is not the fixture owner: an admin with
@@ -90,7 +90,7 @@ func seedScheduleCreatorWithQueuedRun(
 // so it stops within one worker poll once its creator leaves the Company
 // (creator_changed) or no longer has the Agent set up on a runtime of theirs
 // that is not removed (agent_unavailable), and the next due pass enqueues
-// nothing (D31). Removing the member and unbinding the Agent cancel the
+// nothing. Removing the member and unbinding the Agent cancel the
 // creator's queued Run themselves; when a queued Run outlives the change,
 // the reconcile pass invalidates it and marks its firing.
 func TestFiringWorkerStopsAScheduleItsCreatorCanNoLongerRun(t *testing.T) {

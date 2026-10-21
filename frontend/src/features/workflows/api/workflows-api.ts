@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type {
   Workflow,
   WorkflowCatalog,
@@ -19,14 +22,14 @@ type WorkflowReadinessArguments = WorkflowArguments & {
 // Committed discovery, bindings and runtime status refresh mounted queries.
 export const WORKFLOW_READINESS_REMOUNT_REFETCH_SECONDS = 10;
 
-export const workflowsApi = boardlyApi.injectEndpoints({
+export const workflowsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkflows: builder.query<WorkflowCatalog, string>({
       providesTags: (_result, _error, companyId) => [
         { id: `${companyId}:list`, type: "Workflow" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => workflowService.list(companyId),
           "Workflows could not be loaded.",
           { retry: true },
@@ -39,7 +42,7 @@ export const workflowsApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:${workflowKey}`, type: "Workflow" },
       ],
       queryFn: ({ companyId, workflowKey }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => workflowService.get(companyId, workflowKey),
           "This workflow could not be loaded.",
         ),
@@ -65,7 +68,7 @@ export const workflowsApi = boardlyApi.injectEndpoints({
         },
       ],
       queryFn: ({ agentId, companyId, workflowKey }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => workflowService.readiness(companyId, workflowKey, agentId),
           "App readiness could not be loaded.",
         ),

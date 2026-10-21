@@ -13,8 +13,8 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/redis/go-redis/v9"
 
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
 )
 
 type scheduleQueue struct {

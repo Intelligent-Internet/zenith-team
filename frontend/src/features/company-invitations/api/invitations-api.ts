@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 export type CompanyInvitation = components["schemas"]["CompanyInvitation"];
@@ -13,11 +13,11 @@ const companyPath = (id: string) =>
 const tokenPath = (token: string) =>
   `/invitations/${encodeURIComponent(token)}`;
 
-export const invitationsApi = boardlyApi.injectEndpoints({
+export const invitationsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getCompanyShareLink: builder.query<ShareLink, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ShareLink>(
               `/companies/${encodeURIComponent(companyId)}/share-link`,
@@ -38,7 +38,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, action, expectedRevision }) =>
-        executeBoardlyQuery(() => {
+        executeZenithTeamQuery(() => {
           const path = `/companies/${encodeURIComponent(companyId)}/share-link`;
           return action === "disable"
             ? apiClient.delete<ShareLink>(path, { data: { expectedRevision } })
@@ -55,7 +55,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
     }),
     listCompanyInvitations: builder.query<Collection, string>({
       queryFn: (id) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Collection>(companyPath(id)),
           "Invitations could not be loaded.",
         ),
@@ -66,7 +66,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
       { companyId: string; emails: string[] }
     >({
       queryFn: ({ companyId, emails }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Results>(companyPath(companyId), {
               emails,
@@ -87,7 +87,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, invitation, action }) =>
-        executeBoardlyQuery(() => {
+        executeZenithTeamQuery(() => {
           const path = `${companyPath(companyId)}/${encodeURIComponent(invitation.id)}`;
           const body = { expectedRevision: invitation.revision };
           return action === "resend"
@@ -103,7 +103,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
       { token: string; userId?: string }
     >({
       queryFn: ({ token }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Preview>(tokenPath(token)),
           "This invitation could not be loaded.",
         ),
@@ -111,7 +111,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
     }),
     acceptCompanyInvitation: builder.mutation<Acceptance, string>({
       queryFn: (token) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.post<Acceptance>(`${tokenPath(token)}/accept`, {}),
           "Could not join the company. Try again.",
         ),
@@ -119,7 +119,7 @@ export const invitationsApi = boardlyApi.injectEndpoints({
     }),
     requestInvitationRenewal: builder.mutation<void, string>({
       queryFn: (token) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.post<void>(`${tokenPath(token)}/request-renewal`, {}),
           "Your request could not be sent. Try again.",
         ),

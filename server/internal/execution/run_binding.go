@@ -18,10 +18,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ErrRunAgentNotBound signals that the enqueue refused to queue work because
@@ -121,7 +121,7 @@ func CancelTaskRunsForHandoffInTx(
 	if err != nil {
 		return nil, fmt.Errorf("list Task Runs for handoff: %w", err)
 	}
-	return cancelRunCandidatesInTx(ctx, q, pending, input.CompanyID, candidates, RunReasonTaskReassigned)
+	return cancelRunCandidatesInTx(ctx, q, pending, candidates, RunReasonTaskReassigned)
 }
 
 // CancelDeletedTaskRunsInTx ends the live work of a Task about to be deleted:
@@ -144,7 +144,7 @@ func CancelDeletedTaskRunsInTx(
 	if err != nil {
 		return nil, fmt.Errorf("list Runs of a deleted Task: %w", err)
 	}
-	return cancelRunCandidatesInTx(ctx, q, pending, companyID, candidates, RunReasonTaskDeleted)
+	return cancelRunCandidatesInTx(ctx, q, pending, candidates, RunReasonTaskDeleted)
 }
 
 // BindingWork names a member's unclaimed work on some Agents of one runtime:
@@ -208,7 +208,16 @@ func RetargetPendingRunsForBindingsInTx(
 		return nil, fmt.Errorf("retarget pending runs: %w", err)
 	}
 	for _, run := range moved {
-		if err := activity.RecordInTx(ctx, q, pending, actor, "run.updated", beforeHistory[run.ID], Topic, run.ID); err != nil {
+		if err := activity.RecordInTx(
+			ctx,
+			q,
+			pending,
+			actor,
+			"run.updated",
+			beforeHistory[run.ID],
+			Topic,
+			run.ID,
+		); err != nil {
 			return nil, err
 		}
 	}
@@ -244,5 +253,5 @@ func CancelPendingRunsForBindingsInTx(
 	if err != nil {
 		return nil, fmt.Errorf("list pending runs for cancellation: %w", err)
 	}
-	return cancelRunCandidatesInTx(ctx, q, pending, work.CompanyID, candidates, reason)
+	return cancelRunCandidatesInTx(ctx, q, pending, candidates, reason)
 }

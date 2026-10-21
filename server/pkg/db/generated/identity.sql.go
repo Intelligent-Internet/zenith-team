@@ -213,7 +213,7 @@ type GetActiveSessionUserRow struct {
 
 // GetActiveSessionUser also reads who holds the session (client): a person
 // or a daemon, which the server admits only on the daemon plane and beside a
-// live Run proof (D31).
+// live Run proof.
 func (q *Queries) GetActiveSessionUser(ctx context.Context, arg GetActiveSessionUserParams) (GetActiveSessionUserRow, error) {
 	row := q.db.QueryRow(ctx, getActiveSessionUser, arg.SessionID, arg.UserID)
 	var i GetActiveSessionUserRow

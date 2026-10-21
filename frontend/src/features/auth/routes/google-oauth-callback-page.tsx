@@ -29,7 +29,7 @@ export function GoogleOAuthCallbackPage() {
       source: "google-oauth-callback-page",
     });
 
-    const completion = window.boardlyDesktop
+    const completion = window.zenithTeamDesktop
       ? completeDesktopGoogleOAuth(location.search)
       : authService.completeGoogleSignIn();
 

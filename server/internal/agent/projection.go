@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RosterProjection is the Agent-owned organization snapshot a composite read
@@ -154,9 +154,12 @@ func applyActiveRunCounts(
 	if len(responses) == 0 {
 		return nil
 	}
-	rows, err := q.CountActiveTaskLaneRunsByAgentForBinder(ctx, generated.CountActiveTaskLaneRunsByAgentForBinderParams{
-		UserID: viewer.UserID, CompanyID: viewer.CompanyID,
-	})
+	rows, err := q.CountActiveTaskLaneRunsByAgentForBinder(
+		ctx,
+		generated.CountActiveTaskLaneRunsByAgentForBinderParams{
+			UserID: viewer.UserID, CompanyID: viewer.CompanyID,
+		},
+	)
 	if err != nil {
 		return fmt.Errorf("count active task-lane Runs per Agent: %w", err)
 	}
@@ -182,18 +185,25 @@ func responseFromProjectionRow(row generated.ListAgentProjectionsForActorRow, vi
 			ID:      row.BindingID.UUID,
 			AgentID: row.Agent.ID,
 			Runtime: RuntimeRef{
-				ID:             row.RuntimeID.UUID,
-				Name:           row.RuntimeName.String,
-				CustomName:     util.TextToPtr(row.RuntimeCustomName),
-				Status:         row.RuntimeStatus.String,
-				Provider:       row.Agent.Provider,
-				SignIn:         runtimeSignInRef(row.RuntimeSignInState, row.RuntimeSignInDetail, row.RuntimeSignInCheckedAt),
-				UnusableReason: runtimeUnusableReasonRef(row.RuntimeUnusableReasonCode, row.RuntimeUnusableReasonMessage),
+				ID:         row.RuntimeID.UUID,
+				Name:       row.RuntimeName.String,
+				CustomName: util.TextToPtr(row.RuntimeCustomName),
+				Status:     row.RuntimeStatus.String,
+				Provider:   row.Agent.Provider,
+				SignIn: runtimeSignInRef(
+					row.RuntimeSignInState,
+					row.RuntimeSignInDetail,
+					row.RuntimeSignInCheckedAt,
+				),
+				UnusableReason: runtimeUnusableReasonRef(
+					row.RuntimeUnusableReasonCode,
+					row.RuntimeUnusableReasonMessage,
+				),
 			},
 			CreatedAt: row.BindingCreatedAt.Time.UTC(),
 		}
 	}
-	response.Access = AgentAccess{
+	response.Access = Access{
 		Configure: canConfigureAgent(viewer.Role, row.Agent, viewer.UserID),
 		Execute:   row.RuntimeAvailable,
 	}

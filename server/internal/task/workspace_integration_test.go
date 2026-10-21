@@ -15,11 +15,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestTaskReadsReturnCanonicalProjection(t *testing.T) {
@@ -124,7 +124,7 @@ func TestTaskReadsReturnCanonicalProjection(t *testing.T) {
 
 	// The graph's stubs carry the number every surface displays, so a
 	// dependency canvas labels a Task the way the board does (F3).
-	graph, err := service.ListDependencyGraph(ctx, principal, DependencyGraphOptions{})
+	graph, err := service.ListDependencyGraph(ctx, principal)
 	if err != nil {
 		t.Fatalf("ListDependencyGraph() error = %v", err)
 	}
@@ -326,7 +326,10 @@ func TestWorkspaceReturnsBoundedBulkSnapshotWithoutDirectConversationLeak(t *tes
 		t.Fatalf("Workspace() runtimes = current %+v, active %v; want neither named",
 			result.RunQueue.CurrentRun, result.ActiveRuns[0].ViewerRuntimeID)
 	}
-	if encoded, err := json.Marshal(result); err != nil || strings.Contains(string(encoded), fixture.RuntimeA.String()) {
+	if encoded, err := json.Marshal(
+		result,
+	); err != nil ||
+		strings.Contains(string(encoded), fixture.RuntimeA.String()) {
 		t.Fatalf("Workspace() names another member's runtime: %s, %v", encoded, err)
 	}
 	// One timeline per Run the window refers to, each bounded to the newest

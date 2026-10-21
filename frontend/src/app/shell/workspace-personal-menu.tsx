@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
-import { logoutBoardlySession } from "@/features/auth/model/logout";
+import { logoutZenithTeamSession } from "@/features/auth/model/logout";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
 import { discussionsApi } from "@/features/discussions/api/discussions-api";
 import { useMemberPresence } from "@/features/discussions/model/use-member-presence";
@@ -167,7 +167,7 @@ export function WorkspacePersonalMenu({
             <DropdownMenu.Item
               className="personal-menu-sign-out text-workspace-muted"
               onSelect={() =>
-                void logoutBoardlySession().then(() =>
+                void logoutZenithTeamSession().then(() =>
                   navigate("/login", { replace: true }),
                 )
               }

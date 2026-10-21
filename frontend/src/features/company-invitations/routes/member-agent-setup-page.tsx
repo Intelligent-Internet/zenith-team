@@ -13,7 +13,7 @@ import {
   clearAuthContinuation,
   readAuthContinuationReturnPath,
 } from "@/features/auth/model/auth-continuation";
-import { logoutBoardlySession } from "@/features/auth/model/logout";
+import { logoutZenithTeamSession } from "@/features/auth/model/logout";
 import { OnboardingActions } from "@/features/onboarding/company/components/onboarding-actions";
 import { AppTitlebar } from "@/app/shell/app-titlebar";
 import { ArrowLeft, ArrowRight, RefreshCwIcon } from "@/shared/ui/icons";
@@ -82,8 +82,8 @@ function MemberAgentSetupContent({
 
   return (
     <main
-      className="boardly-workspace-theme workspace-onboarding member-agent-setup"
-      data-boardly-theme={preferences.themeId}
+      className="zenith-team-workspace-theme workspace-onboarding member-agent-setup"
+      data-zenith-team-theme={preferences.themeId}
       data-desktop-mac={
         (shouldUseDesktopHashRouter() && detectDesktopPlatform() === "macos") ||
         undefined
@@ -92,7 +92,7 @@ function MemberAgentSetupContent({
     >
       <AppTitlebar
         className="workspace-onboarding__titlebar"
-        onLogout={logoutBoardlySession}
+        onLogout={logoutZenithTeamSession}
         showProfileFacts={false}
         showSettingsItems={false}
       />

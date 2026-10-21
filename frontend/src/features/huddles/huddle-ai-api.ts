@@ -1,6 +1,6 @@
 import { skipToken } from "@reduxjs/toolkit/query";
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 type Status = components["schemas"]["HuddleAIStatus"];
@@ -8,7 +8,7 @@ type Budget = components["schemas"]["HuddleBudget"];
 type Scope = { companyId: string; huddleId: string };
 const path = ({ companyId, huddleId }: Scope) =>
   `/companies/${encodeURIComponent(companyId)}/huddles/${encodeURIComponent(huddleId)}/ai`;
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     // Fixed for the life of a server process, so it is fetched once.
     getHuddleCapabilities: builder.query<
@@ -17,7 +17,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 3600,
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["HuddleCapabilities"]>(
               `/companies/${encodeURIComponent(companyId)}/huddles/capabilities`,
@@ -36,7 +36,7 @@ const api = boardlyApi.injectEndpoints({
         getNextPageParam: (page) => page.olderCursor ?? undefined,
       },
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["DiscussionPage"]>(
               `/companies/${queryArg.companyId}/conversations/${queryArg.conversationId}/discussion-messages`,
@@ -51,7 +51,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: ({ companyId, conversationId }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["DiscussionPage"]>(
               `/companies/${companyId}/conversations/${conversationId}/discussion-messages`,
@@ -69,7 +69,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, conversationId, body }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<components["schemas"]["DiscussionReceipt"]>(
               `/companies/${companyId}/conversations/${conversationId}/discussion-messages`,
@@ -81,7 +81,7 @@ const api = boardlyApi.injectEndpoints({
     }),
     getHuddleAI: builder.query<Status, Scope>({
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Status>(path(scope)),
           "Voice Agent status is unavailable.",
         ),
@@ -91,7 +91,7 @@ const api = boardlyApi.injectEndpoints({
       Scope & { body: components["schemas"]["SetHuddleAI"] }
     >({
       queryFn: ({ body, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.put<Status>(path(scope), body),
           "Could not change the voice Agent for this call.",
         ),
@@ -104,7 +104,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ proposalId, body, ...scope }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<components["schemas"]["HuddleProposal"]>(
               `${path(scope)}/proposals/${encodeURIComponent(proposalId)}`,
@@ -122,7 +122,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ proposalId, body, ...scope }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<components["schemas"]["HuddleProposal"]>(
               `${path(scope)}/proposals/${encodeURIComponent(proposalId)}/submit`,
@@ -141,7 +141,7 @@ const api = boardlyApi.injectEndpoints({
     }),
     getHuddleBudget: builder.query<Budget, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Budget>(`/companies/${companyId}/huddle-budget`),
           "Could not read the huddle budget.",
         ),
@@ -155,7 +155,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, ...body }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Budget>(
               `/companies/${companyId}/huddle-budget`,

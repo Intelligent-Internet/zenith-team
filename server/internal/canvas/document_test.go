@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func TestDocumentStructuralConflict(t *testing.T) {

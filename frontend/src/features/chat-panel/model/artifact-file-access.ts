@@ -3,7 +3,7 @@ import type {
   ArtifactRunResult,
   RunOutputItem,
 } from "@/features/run-deliverables/model/run-deliverable";
-import { BOARDLY_API_BASE_URL } from "@/lib/api-client";
+import { ZENITH_TEAM_API_BASE_URL } from "@/lib/api-client";
 import { attachmentKind } from "@/shared/chat/attachment-preview";
 
 export type ArtifactFileSelection = {
@@ -231,7 +231,7 @@ export function artifactAppUrl(value: string): string | null {
 
 export function artifactAppPreviewReason(url: string): string | null {
   const app = new URL(url);
-  const apiOrigin = new URL(BOARDLY_API_BASE_URL, window.location.href).origin;
+  const apiOrigin = new URL(ZENITH_TEAM_API_BASE_URL, window.location.href).origin;
   if (app.origin === window.location.origin || app.origin === apiOrigin) {
     return "Open this app in your browser to view it.";
   }

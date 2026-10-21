@@ -13,12 +13,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	dbgen "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestWebAppPresentationOmitsLocalURLWithoutPublication(t *testing.T) {
@@ -157,9 +157,11 @@ func TestWebAppPresentationOmitsLocalURLWithoutPublication(t *testing.T) {
 				t.Fatalf("Present(replay) = %+v, %v", replay, err)
 			}
 			view, err := service.FetchRunResult(ctx, principal, fixture.RunA)
-			if err != nil || view.RuntimeID == nil || *view.RuntimeID != fixture.RuntimeA || view.Output == nil ||
+			if err != nil || view.RuntimeID == nil || *view.RuntimeID != fixture.RuntimeA ||
+				view.Output == nil ||
 				view.Output.Type != ArtifactTypeApp ||
-				view.Output.URL != nil || len(view.Output.Items) != 0 ||
+				view.Output.URL != nil ||
+				len(view.Output.Items) != 0 ||
 				view.Deliverable != nil {
 				t.Fatalf("FetchRunResult() = %+v, %v", view, err)
 			}
@@ -356,12 +358,26 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := canvasService.Snapshot(ctx, tc.principal, fixture.ProjectA, 0)
 			if err != nil || len(got.Items) != tc.want || len(got.Artifacts) != tc.want {
-				t.Fatalf("automatic canvas visibility = %+v, %v; want %d cards and artifacts", got, err, tc.want)
+				t.Fatalf(
+					"automatic canvas visibility = %+v, %v; want %d cards and artifacts",
+					got,
+					err,
+					tc.want,
+				)
 			}
 		})
 	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO output_grants(company_id,output_id,user_id,permission,granted_by_user_id)
-		VALUES($1,$2,$3,'view',$4)`, fixture.CompanyA, presented.OutputID, fixture.UserB, fixture.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO output_grants(company_id,output_id,user_id,permission,granted_by_user_id)
+		VALUES($1,$2,$3,'view',$4)`,
+		fixture.CompanyA,
+		presented.OutputID,
+		fixture.UserB,
+		fixture.UserA,
+	)
 	shared, err := canvasService.Snapshot(ctx, reader, fixture.ProjectA, 0)
 	if err != nil || len(shared.Items) != 1 || len(shared.Artifacts) != 1 {
 		t.Fatalf("shared automatic canvas = %+v, %v; want 1 card and artifact", shared, err)
@@ -481,7 +497,7 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 	viewerID := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Artifact Viewer')`,
-		viewerID, viewerID.String()+"@deliverables.boardly.test")
+		viewerID, viewerID.String()+"@deliverables.zenith-team.test")
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role, status)
 		VALUES ($1, $2, 'member', 'active')`, fixture.CompanyA, viewerID)
@@ -504,7 +520,6 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 	if sharedArtifact.Source != nil {
 		t.Fatalf("shared Artifact source = %+v, want no private source", sharedArtifact.Source)
 	}
-
 }
 
 func TestTaskRunAuthorizerCanViewTheArtifactItPresented(t *testing.T) {
@@ -624,7 +639,8 @@ func TestTaskRunAuthorizerCanViewTheArtifactItPresented(t *testing.T) {
 				t.Fatalf("GetArtifact(runner) = %+v, %v", seen.Access, err)
 			}
 
-			if seen.Source == nil || seen.Source.Type != "task" || seen.Source.TaskID == nil || *seen.Source.TaskID != fixture.TaskA {
+			if seen.Source == nil || seen.Source.Type != "task" || seen.Source.TaskID == nil ||
+				*seen.Source.TaskID != fixture.TaskA {
 				t.Fatalf("Artifact source = %+v, want TaskA", seen.Source)
 			}
 
@@ -650,8 +666,8 @@ func TestTaskRunAuthorizerCanViewTheArtifactItPresented(t *testing.T) {
 	}
 }
 
-// A tagged Run works for the person who tagged the Agent (D31), so what it
-// presents is theirs (Access TECH B11). The channel Agent's chat belongs to
+// A tagged Run works for the person who tagged the Agent, so what it
+// presents is theirs. The channel Agent's chat belongs to
 // the Agent's creator, yet the Output is owned by the tagger and starts
 // private: the Agent's creator can neither open it, nor its file, nor share
 // it. The tagger shares it into the channel with the existing controls, and
@@ -927,14 +943,4 @@ func insertReadyDeliverableAttachment(
 		filename,
 	)
 	return attachmentID
-}
-
-func containsDeliverableEvent(pending []events.Event, name string, id uuid.UUID) bool {
-	for _, event := range pending {
-		payload, ok := event.Payload.(DeliverableEvent)
-		if ok && event.Name == name && payload.ID == id {
-			return true
-		}
-	}
-	return false
 }

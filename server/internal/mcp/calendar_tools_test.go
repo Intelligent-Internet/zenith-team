@@ -4,15 +4,20 @@ import (
 	"context"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type calendarToolsStub struct{}
 
 func (*calendarToolsStub) ReadCalendar(context.Context, tools.ReadCalendarInput) (tools.ReadCalendarResult, error) {
-	return tools.ReadCalendarResult{Items: []tools.CalendarEvent{}, Catalog: tools.CalendarCatalog{Members: []tools.CalendarMember{}}}, nil
+	return tools.ReadCalendarResult{
+		Items:   []tools.CalendarEvent{},
+		Catalog: tools.CalendarCatalog{Members: []tools.CalendarMember{}},
+	}, nil
 }
+
 func (*calendarToolsStub) WriteCalendar(context.Context, tools.WriteCalendarInput) (tools.WriteCalendarResult, error) {
 	return tools.WriteCalendarResult{}, nil
 }
@@ -59,7 +64,17 @@ func TestCalendarToolsRequireExplicitAllowlistAndExposeTypedSchemas(t *testing.T
 				t.Fatalf("calendar tool count = %d, want %d", found, want)
 			}
 			if enabled {
-				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "calendar_write", Arguments: map[string]any{"action": "delete", "eventId": "event", "expectedRevision": 1}})
+				result, err := session.CallTool(
+					ctx,
+					&mcpsdk.CallToolParams{
+						Name: "calendar_write",
+						Arguments: map[string]any{
+							"action":           "delete",
+							"eventId":          "event",
+							"expectedRevision": 1,
+						},
+					},
+				)
 				if err != nil || result.IsError {
 					t.Fatalf("tool call = %#v, %v", result, err)
 				}

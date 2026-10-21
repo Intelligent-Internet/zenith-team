@@ -80,8 +80,14 @@ func TestHealthServesAppPreviewControlRoutes(t *testing.T) {
 		t.Run(operation, func(t *testing.T) {
 			t.Parallel()
 			for _, authorized := range []bool{false, true} {
-				request, err := http.NewRequestWithContext(t.Context(), http.MethodPost,
-					"http://"+listener.Addr().String()+"/v2/app-previews/"+operation, strings.NewReader(`{}`))
+				request, err := http.NewRequestWithContext(
+					t.Context(),
+					http.MethodPost,
+					"http://"+listener.Addr().
+						String()+
+						"/v2/app-previews/"+operation,
+					strings.NewReader(`{}`),
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -97,7 +103,12 @@ func TestHealthServesAppPreviewControlRoutes(t *testing.T) {
 				}
 				_ = response.Body.Close()
 				if response.StatusCode != want {
-					t.Fatalf("authorized=%v: status = %d, want %d", authorized, response.StatusCode, want)
+					t.Fatalf(
+						"authorized=%v: status = %d, want %d",
+						authorized,
+						response.StatusCode,
+						want,
+					)
 				}
 			}
 		})

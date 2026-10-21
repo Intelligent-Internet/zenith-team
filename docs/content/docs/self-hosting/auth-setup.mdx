@@ -1,0 +1,140 @@
+---
+title: Sign-in setup
+description: Turn on email codes and password reset through Resend, add Google sign-in, and let the desktop app sign in to your own server.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Out of the box, people sign up with an email and a password, and sign-up finishes at once. That is fine for a trial on your own machine. For a server other people use, turn on email, so addresses are confirmed and people can reset a forgotten password. Google sign-in is optional.
+
+Every setting on this page goes in `deploy/.env`. Run `make selfhost-up` after you change it. The full list is in [Environment variables](/self-hosting/environment-variables).
+
+## Your web address comes first
+
+Email links and Google sign-in both point people back to your web app, so two settings must be right first:
+
+- **`AUTH_WEB_ORIGINS`** lists the exact addresses people open Zenith Team at, comma separated. The server refuses browser requests from any address not on the list. Plain `http://` is allowed only for `localhost` and other loopback addresses, so a real server needs HTTPS.
+- **`AUTH_WEB_APP_ORIGIN`** is the web app's own address. It must be one of `AUTH_WEB_ORIGINS`, written exactly, with no path and no trailing slash.
+
+```dotenv
+AUTH_WEB_ORIGINS=https://zenith.example.com,zenith-team-app://renderer
+AUTH_WEB_APP_ORIGIN=https://zenith.example.com
+```
+
+Listing an `https://` address turns on Secure cookies, and they cannot be turned off while it is listed. [Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls) shows how to serve that address.
+
+## Email codes and password reset
+
+Zenith Team sends email through [Resend](https://resend.com) templates. The templates live in your own Resend account. Their HTML sources ship in the repository, in `docs/branding/emails`.
+
+When email is on:
+
+- Sign-up asks for a 6-digit code sent to the address, before the account is created.
+- People can reset a forgotten password from the sign-in screen.
+- Member invitations go out by email, if you add the invitation template.
+
+### 1. Set up Resend
+
+1. In Resend, verify the domain you will send from.
+2. Create one template for each file below. Paste the HTML, add the listed variables, and publish it.
+3. Set the sender address and the subject inside each template. The server sends only the template ID, the recipient and the variables.
+
+| Source file | Setting | Variables |
+| --- | --- | --- |
+| `email-verification.html` | `AUTH_EMAIL_VERIFICATION_TEMPLATE_ID` (required) | `DISPLAY_NAME`, `OTP_CODE` |
+| `password-reset.html` | `AUTH_PASSWORD_RESET_TEMPLATE_ID` (required) | `DISPLAY_NAME`, `RESET_URL` |
+| `member-invitation.html` | `AUTH_INVITATION_TEMPLATE_ID` (optional) | `COMPANY_NAME`, `INVITER_NAME`, `INVITATION_URL`, `EXPIRES_AT` |
+
+Use **Zenith Team** as the sender's display name.
+
+### 2. Add the settings
+
+```dotenv
+AUTH_EMAIL_PROVIDER=resend
+AUTH_RESEND_API_KEY=<your Resend API key>
+AUTH_EMAIL_VERIFICATION_SECRET=<output of: openssl rand -hex 32>
+AUTH_EMAIL_VERIFICATION_TEMPLATE_ID=<template ID>
+AUTH_PASSWORD_RESET_TEMPLATE_ID=<template ID>
+# Optional: turns invitation emails on.
+AUTH_INVITATION_TEMPLATE_ID=<template ID>
+```
+
+The API key and the verification secret are secrets. The verification secret must be at least 32 bytes. Changing it later cancels any codes already sent.
+
+The links in these emails use `AUTH_WEB_APP_ORIGIN`, so set it to your real address first.
+
+<Callout type="warning">
+Email is all or nothing. Setting **any** `AUTH_EMAIL_*`, `AUTH_PASSWORD_RESET_*` or `AUTH_INVITATION_*` value turns email on, and then the server will not start until the provider, API key, verification secret and both required template IDs are set. To keep email off, leave them all empty.
+</Callout>
+
+The server stores only a keyed hash of each code, never the code itself.
+
+The company mailbox, which receives email for companies, is a separate feature with its own Resend team and key. See [Environment variables](/self-hosting/environment-variables#company-mailbox).
+
+## Google sign-in
+
+Google sign-in uses two separate OAuth clients, created in the Google Cloud console:
+
+- a **web client** for the web app, and
+- a **desktop client** for the desktop app and `zen auth login --google`.
+
+Set up either one or both. Leaving both empty hides the Google button.
+
+### Web client
+
+1. Create an OAuth client of type **Web application**.
+2. Add one authorized redirect URI: your web address followed by `/api/v1/auth/google/web/callback`.
+
+   ```text
+   https://zenith.example.com/api/v1/auth/google/web/callback
+   ```
+
+3. Add the client to `deploy/.env`:
+
+   ```dotenv
+   GOOGLE_WEB_CLIENT_ID=<client ID>
+   GOOGLE_WEB_CLIENT_SECRET=<client secret>
+   GOOGLE_WEB_REDIRECT_URI=https://zenith.example.com/api/v1/auth/google/web/callback
+   ```
+
+The rules the server checks:
+
+- All three values are set together.
+- `GOOGLE_WEB_REDIRECT_URI` is exactly an address plus `/api/v1/auth/google/web/callback`, with no query string. It must match the URI registered at Google.
+- It uses HTTPS. The one exception is a local trial: when `AUTH_WEB_APP_ORIGIN` is a plain-HTTP loopback address, such as `http://localhost:8080`, the redirect URI may be plain-HTTP loopback too.
+- `AUTH_WEB_APP_ORIGIN` is set and listed in `AUTH_WEB_ORIGINS`.
+
+### Desktop client
+
+1. Create a second OAuth client, of type **Desktop app**.
+2. Add it to `deploy/.env`:
+
+   ```dotenv
+   GOOGLE_DESKTOP_CLIENT_ID=<client ID>
+   GOOGLE_DESKTOP_CLIENT_SECRET=<client secret>
+   ```
+
+Set both values together. The desktop client ID must differ from the web client ID. The desktop app and `zen auth login --google` finish sign-in on a local address on the person's own computer (`http://127.0.0.1` with a port), so there is no redirect URI to enter on your server.
+
+Google accounts whose email address Google has not verified cannot sign in.
+
+## Desktop app
+
+The desktop app starts its own daemon, so a person who uses it needs no `zen` setup. Two things make it work with your server.
+
+**Keep the desktop origin in the list.** The desktop app's pages send the origin `zenith-team-app://renderer`. Keep it in `AUTH_WEB_ORIGINS`, as the defaults do. Without it, the server refuses the app's requests.
+
+**Build the app for your server.** A desktop build has your server's address built in. Build it from source in `frontend/`. You need Node.js 24, pnpm (`corepack enable` picks the pinned version) and Go 1.26, because the build also compiles the bundled `zen` and `zenith-team-mcp`.
+
+```bash
+cd frontend
+pnpm install
+ZENITH_TEAM_DESKTOP_PROD_ORIGIN=https://zenith.example.com pnpm electron:make
+```
+
+The build stops if `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` is missing or points at localhost, so the server must have a real address first. The packages land in `frontend/out/make`. They are not signed. [Desktop app](/desktop-app) covers unsigned builds, updates and crash reports; every build setting is in `frontend/README.md`.
+
+## Next steps
+
+- **[Reverse proxy and TLS](/self-hosting/reverse-proxy-and-tls)**: serve your HTTPS address.
+- **[Security model](/self-hosting/security-model)**: who can sign up, and the hardening checklist.

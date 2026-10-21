@@ -88,7 +88,7 @@ function activitySummary(activity: ActivityDto) {
   return `${activityActorLabel(activity)}: ${entityLabel} — ${action}`;
 }
 
-// A Group row (group.created and the rest, Access TECH D3) carries the
+// A Group row (group.created and the rest) carries the
 // Group's name as it was then; it has no entity title of its own.
 function groupRowName(activity: ActivityDto): string | null {
   if (activity.entity.type !== "group") return null;
@@ -123,7 +123,7 @@ export function projectResourceToResourceSummary(
       ...resource.metadata,
       ...resource.resourceRef,
     },
-    mime_type: "application/vnd.boardly.resource",
+    mime_type: "application/vnd.zenith-team.resource",
     preview_kind: "unknown",
     preview_status: "unsupported",
     preview_url: null,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 func TestNormalizedSkillNamesRemainPortableForNonLatinSources(t *testing.T) {
@@ -23,7 +23,10 @@ func TestNormalizedSkillNamesRemainPortableForNonLatinSources(t *testing.T) {
 			if bundle.Name != normalizeImportedSkillName(original) || len(bundle.Name) > 64 {
 				t.Fatalf("name = %q", bundle.Name)
 			}
-			if err := contentbundle.ValidateSkill(contentbundle.SkillReference(bundle), bundle); err != nil {
+			if err := contentbundle.ValidateSkill(
+				contentbundle.SkillReference(bundle),
+				bundle,
+			); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -45,13 +48,30 @@ func TestSkillCopyNamesAvoidInstalledAndIncomingNames(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			items, err := readSkillUpload("skills.zip", skillZIP(t, map[string][]byte{"a/SKILL.md": skillMarkdown(test.source), "b/SKILL.md": skillMarkdown(test.incoming)}))
+			items, err := readSkillUpload(
+				"skills.zip",
+				skillZIP(
+					t,
+					map[string][]byte{
+						"a/SKILL.md": skillMarkdown(test.source),
+						"b/SKILL.md": skillMarkdown(test.incoming),
+					},
+				),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
 			id := uuid.New()
-			drafts, err := prepareSkillPreviewNames(items, []SkillView{{ID: id, Name: test.source, Revision: 7}, {ID: uuid.New(), Name: test.occupied}})
-			if err != nil || drafts[0].Copy == nil || drafts[0].Copy.Bundle.Name != test.want || drafts[0].Existing.ID != id || drafts[0].Existing.Revision != 7 {
+			drafts, err := prepareSkillPreviewNames(
+				items,
+				[]SkillView{
+					{ID: id, Name: test.source, Revision: 7},
+					{ID: uuid.New(), Name: test.occupied},
+				},
+			)
+			if err != nil || drafts[0].Copy == nil || drafts[0].Copy.Bundle.Name != test.want ||
+				drafts[0].Existing.ID != id ||
+				drafts[0].Existing.Revision != 7 {
 				t.Fatalf("choices = %+v, %v", drafts, err)
 			}
 			if drafts[1].Copy != nil {

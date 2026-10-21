@@ -16,13 +16,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type discussionFixture struct {
@@ -111,7 +111,7 @@ func TestHumanDirectPairSendRecoveryAndPrivacy(t *testing.T) {
 	results := make(chan HumanDirectResult, callers)
 	errs := make(chan error, callers)
 	var wg sync.WaitGroup
-	for i := 0; i < callers; i++ {
+	for i := range callers {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -119,7 +119,11 @@ func TestHumanDirectPairSendRecoveryAndPrivacy(t *testing.T) {
 			if i%2 == 1 {
 				p, peer = f.b, f.a.UserID
 			}
-			r, e := f.conversations.CreateHumanDirect(f.ctx, p, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}})
+			r, e := f.conversations.CreateHumanDirect(
+				f.ctx,
+				p,
+				CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{peer}},
+			)
 			results <- r
 			errs <- e
 		}(i)
@@ -411,7 +415,11 @@ func TestChannelContentManagementAndGrantGenerations(t *testing.T) {
 
 func TestDiscussionLifecycleRegrantAndEmptyRestore(t *testing.T) {
 	f := newDiscussionFixture(t)
-	dm, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	dm, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -504,7 +512,11 @@ func TestDiscussionLifecycleRegrantAndEmptyRestore(t *testing.T) {
 	if err != nil || len(states) != 0 {
 		t.Fatalf("Company rejoin revived grants=%+v %v", states, err)
 	}
-	reopened, err := f.conversations.CreateHumanDirect(f.ctx, f.b, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.a.UserID}})
+	reopened, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.b,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.a.UserID}},
+	)
 	if err != nil || reopened.Conversation.ID != dm.Conversation.ID || reopened.Created {
 		t.Fatalf("DM reopen=%+v %v", reopened, err)
 	}
@@ -693,7 +705,11 @@ func TestDiscussionsAvailableByDefaultAcrossCompanies(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			direct, err := f.conversations.CreateHumanDirect(f.ctx, test.principal, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{test.peerID}})
+			direct, err := f.conversations.CreateHumanDirect(
+				f.ctx,
+				test.principal,
+				CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{test.peerID}},
+			)
 			if err != nil {
 				t.Fatalf("CreateHumanDirect() error = %v", err)
 			}
@@ -761,7 +777,11 @@ func TestDiscussionsAvailableByDefaultAcrossCompanies(t *testing.T) {
 
 func TestDiscussionMessageWindowsAndConcurrentReplay(t *testing.T) {
 	f := newDiscussionFixture(t)
-	created, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	created, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -976,7 +996,11 @@ func TestDiscussionActivityIsInternalAndHintsAreBodyless(t *testing.T) {
 
 func TestDiscussionSendWaitsForCompanyRevocationFence(t *testing.T) {
 	f := newDiscussionFixture(t)
-	created, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	created, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1052,7 +1076,11 @@ func TestDiscussionSendWaitsForCompanyRevocationFence(t *testing.T) {
 
 func TestDiscussionDirectNotificationAndReplay(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1149,7 +1177,12 @@ func TestDiscussionHereNotificationVisibility(t *testing.T) {
 	id := created.Conversation.ID
 	mentions := "mentions"
 	for _, principal := range []auth.UserPrincipal{f.b, f.c} {
-		if _, err := f.discussion.UpdateState(f.ctx, principal, id, DiscussionStateInput{NotificationLevel: &mentions}); err != nil {
+		if _, err := f.discussion.UpdateState(
+			f.ctx,
+			principal,
+			id,
+			DiscussionStateInput{NotificationLevel: &mentions},
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1176,7 +1209,9 @@ func TestDiscussionHereNotificationVisibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	input := textSend("@here")
-	input.Body.References = []json.RawMessage{json.RawMessage(`{"start":0,"end":5,"type":"broadcast","scope":"here"}`)}
+	input.Body.References = []json.RawMessage{
+		json.RawMessage(`{"start":0,"end":5,"type":"broadcast","scope":"here"}`),
+	}
 	sent, err := f.discussion.Send(f.ctx, f.a, id, input)
 	if err != nil {
 		t.Fatal(err)
@@ -1227,13 +1262,26 @@ func TestDiscussionHereNotificationVisibility(t *testing.T) {
 
 func TestDiscussionChannelNotificationLevels(t *testing.T) {
 	f := newDiscussionFixture(t)
-	created, err := f.conversations.CreateChannel(f.ctx, f.a, CreateChannelInput{RequestKey: uuid.New(), Name: "Notifications", MemberUserIDs: []uuid.UUID{f.b.UserID, f.c.UserID}})
+	created, err := f.conversations.CreateChannel(
+		f.ctx,
+		f.a,
+		CreateChannelInput{
+			RequestKey:    uuid.New(),
+			Name:          "Notifications",
+			MemberUserIDs: []uuid.UUID{f.b.UserID, f.c.UserID},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	id := created.Conversation.ID
 	mentions, muted := "mentions", "muted"
-	if _, err := f.discussion.UpdateState(f.ctx, f.b, id, DiscussionStateInput{NotificationLevel: &mentions}); err != nil {
+	if _, err := f.discussion.UpdateState(
+		f.ctx,
+		f.b,
+		id,
+		DiscussionStateInput{NotificationLevel: &mentions},
+	); err != nil {
 		t.Fatal(err)
 	}
 	var hints []inbox.ToastHint
@@ -1253,16 +1301,23 @@ func TestDiscussionChannelNotificationLevels(t *testing.T) {
 		t.Fatalf("all versus mentions: %+v", hints)
 	}
 	// A post that names nobody says who wrote. The channel's title never
-	// enters the notice (C0-CONTRACT §5); its deep link opens the channel.
+	// enters the notice; its deep link opens the channel.
 	if hints[0].Title != "New channel message" || hints[0].Body != "Schema A wrote in a channel." {
 		t.Fatalf("channel notice = %q / %q", hints[0].Title, hints[0].Body)
 	}
-	if _, err := f.discussion.UpdateState(f.ctx, f.c, id, DiscussionStateInput{NotificationLevel: &muted}); err != nil {
+	if _, err := f.discussion.UpdateState(
+		f.ctx,
+		f.c,
+		id,
+		DiscussionStateInput{NotificationLevel: &muted},
+	); err != nil {
 		t.Fatal(err)
 	}
 	hints = nil
 	input := textSend("@everyone")
-	input.Body.References = []json.RawMessage{json.RawMessage(`{"start":0,"end":9,"type":"broadcast","scope":"everyone"}`)}
+	input.Body.References = []json.RawMessage{
+		json.RawMessage(`{"start":0,"end":9,"type":"broadcast","scope":"everyone"}`),
+	}
 	if _, err := f.discussion.Send(f.ctx, f.a, id, input); err != nil {
 		t.Fatal(err)
 	}
@@ -1273,14 +1328,27 @@ func TestDiscussionChannelNotificationLevels(t *testing.T) {
 
 func TestDiscussionEditMentionNotifiesOnce(t *testing.T) {
 	f := newDiscussionFixture(t)
-	created, err := f.conversations.CreateChannel(f.ctx, f.a, CreateChannelInput{RequestKey: uuid.New(), Name: "Edit mentions", MemberUserIDs: []uuid.UUID{f.b.UserID, f.c.UserID}})
+	created, err := f.conversations.CreateChannel(
+		f.ctx,
+		f.a,
+		CreateChannelInput{
+			RequestKey:    uuid.New(),
+			Name:          "Edit mentions",
+			MemberUserIDs: []uuid.UUID{f.b.UserID, f.c.UserID},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	id := created.Conversation.ID
 	mentions := "mentions"
 	for _, p := range []auth.UserPrincipal{f.b, f.c} {
-		if _, err := f.discussion.UpdateState(f.ctx, p, id, DiscussionStateInput{NotificationLevel: &mentions}); err != nil {
+		if _, err := f.discussion.UpdateState(
+			f.ctx,
+			p,
+			id,
+			DiscussionStateInput{NotificationLevel: &mentions},
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1299,9 +1367,17 @@ func TestDiscussionEditMentionNotifiesOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := textSend("@B @everyone").Body
-	body.References = []json.RawMessage{json.RawMessage(fmt.Sprintf(`{"type":"user","userId":"%s","start":0,"end":2}`, f.b.UserID)), json.RawMessage(`{"type":"broadcast","scope":"everyone","start":3,"end":12}`)}
+	body.References = []json.RawMessage{
+		json.RawMessage(fmt.Sprintf(`{"type":"user","userId":"%s","start":0,"end":2}`, f.b.UserID)),
+		json.RawMessage(`{"type":"broadcast","scope":"everyone","start":3,"end":12}`),
+	}
 	target := DiscussionMessageTarget{ConversationID: id, MessageID: sent.Message.ID}
-	edited, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: sent.Message.Revision, Body: body})
+	edited, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: sent.Message.Revision, Body: body},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1311,11 +1387,21 @@ func TestDiscussionEditMentionNotifiesOnce(t *testing.T) {
 	if hints[0].Title != "New mention in chat" || hints[0].Body != "Schema A mentioned you in a channel." {
 		t.Fatalf("mention notice = %q / %q", hints[0].Title, hints[0].Body)
 	}
-	removed, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: textSend("hello again").Body})
+	removed, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: textSend("hello again").Body},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: removed.Message.Revision, Body: body}); err != nil {
+	if _, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: removed.Message.Revision, Body: body},
+	); err != nil {
 		t.Fatal(err)
 	}
 	if len(hints) != 1 {
@@ -1325,37 +1411,96 @@ func TestDiscussionEditMentionNotifiesOnce(t *testing.T) {
 
 func TestDiscussionEditPreservesHistoricalMention(t *testing.T) {
 	f := newDiscussionFixture(t)
-	created, err := f.conversations.CreateChannel(f.ctx, f.a, CreateChannelInput{RequestKey: uuid.New(), Name: "Historical mention", MemberUserIDs: []uuid.UUID{f.b.UserID}})
+	created, err := f.conversations.CreateChannel(
+		f.ctx,
+		f.a,
+		CreateChannelInput{
+			RequestKey:    uuid.New(),
+			Name:          "Historical mention",
+			MemberUserIDs: []uuid.UUID{f.b.UserID},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	id := created.Conversation.ID
 	input := textSend("@B hello")
-	input.Body.References = []json.RawMessage{json.RawMessage(fmt.Sprintf(`{"start":0,"end":2,"type":"user","userId":%q}`, f.b.UserID))}
+	input.Body.References = []json.RawMessage{
+		json.RawMessage(fmt.Sprintf(`{"start":0,"end":2,"type":"user","userId":%q}`, f.b.UserID)),
+	}
 	sent, err := f.discussion.Send(f.ctx, f.a, id, input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `UPDATE conversation_members SET status='revoked',revoked_at=now(),version=version+1 WHERE conversation_id=$1 AND user_id=$2`, id, f.b.UserID)
-	body := DiscussionBody{Version: 1, Markdown: "Hi @B hello", References: []json.RawMessage{json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.b.UserID))}}
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`UPDATE conversation_members SET status='revoked',revoked_at=now(),version=version+1 WHERE conversation_id=$1 AND user_id=$2`,
+		id,
+		f.b.UserID,
+	)
+	body := DiscussionBody{
+		Version:  1,
+		Markdown: "Hi @B hello",
+		References: []json.RawMessage{
+			json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.b.UserID)),
+		},
+	}
 	target := DiscussionMessageTarget{ConversationID: id, MessageID: sent.Message.ID}
-	edited, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: sent.Message.Revision, Body: body})
+	edited, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: sent.Message.Revision, Body: body},
+	)
 	if err != nil {
 		t.Fatalf("edit unchanged historical mention: %v", err)
 	}
 	body.Markdown = "Hi @C hello"
-	if _, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body}); !errors.Is(err, ErrDiscussionInvalid) {
+	if _, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body},
+	); !errors.Is(
+		err,
+		ErrDiscussionInvalid,
+	) {
 		t.Fatalf("renamed historical mention: %v", err)
 	}
 	body.Markdown = "Hi @B hello"
-	body.References = []json.RawMessage{json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.c.UserID))}
-	if _, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body}); !errors.Is(err, ErrDiscussionInvalid) {
+	body.References = []json.RawMessage{
+		json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.c.UserID)),
+	}
+	if _, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body},
+	); !errors.Is(
+		err,
+		ErrDiscussionInvalid,
+	) {
 		t.Fatalf("retargeted historical mention: %v", err)
 	}
-	body.References = []json.RawMessage{json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.b.UserID))}
+	body.References = []json.RawMessage{
+		json.RawMessage(fmt.Sprintf(`{"start":3,"end":5,"type":"user","userId":%q}`, f.b.UserID)),
+	}
 	body.Markdown = "Hi @B @B"
-	body.References = append(body.References, json.RawMessage(fmt.Sprintf(`{"start":6,"end":8,"type":"user","userId":%q}`, f.b.UserID)))
-	if _, err := f.discussion.EditMessage(f.ctx, f.a, target, DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body}); !errors.Is(err, ErrDiscussionInvalid) {
+	body.References = append(
+		body.References,
+		json.RawMessage(fmt.Sprintf(`{"start":6,"end":8,"type":"user","userId":%q}`, f.b.UserID)),
+	)
+	if _, err := f.discussion.EditMessage(
+		f.ctx,
+		f.a,
+		target,
+		DiscussionEditInput{ExpectedRevision: edited.Message.Revision, Body: body},
+	); !errors.Is(
+		err,
+		ErrDiscussionInvalid,
+	) {
 		t.Fatalf("new mention of departed member: %v", err)
 	}
 }

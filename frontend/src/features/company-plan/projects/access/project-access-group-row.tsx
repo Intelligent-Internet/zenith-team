@@ -7,7 +7,7 @@ import {
   PROJECT_VISIBILITY_FLOOR_COPY,
   accessErrorCopy,
 } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type {
   ProjectPermission,
   ProjectVisibility,
@@ -102,7 +102,7 @@ function groupGrantReview({
 }
 
 /**
- * Changes one Group's grant on a Project (Access DESIGN 7.0): reads the
+ * Changes one Group's grant on a Project: reads the
  * server's preview and saves straight away, unless the change asks first
  * (`changeAsksFirst`). Then it saves nothing and returns the review to
  * show, with the preview it read. Throws what the preview or save threw.
@@ -117,7 +117,7 @@ export async function changeGroupGrant(
   return null;
 }
 
-// One Group with access to the Project (Access DESIGN 7.0): its mark, name
+// One Group with access to the Project: its mark, name
 // and size, the same access label and picker as a person, and a menu to
 // edit or delete it for whoever manages Groups. A change of its access
 // reads the server's preview first and saves straight away unless someone
@@ -190,7 +190,7 @@ export function ProjectAccessGroupRow({
       return true;
     } catch (reason) {
       toast.error(
-        accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+        accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
           "Couldn't change access",
       );
       return false;
@@ -216,7 +216,7 @@ export function ProjectAccessGroupRow({
           onSaved(result.revision);
         } catch (reason) {
           toast.error(
-            accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+            accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
               "Couldn't remove group",
           );
         }
@@ -237,7 +237,7 @@ export function ProjectAccessGroupRow({
       });
     } catch (reason) {
       toast.error(
-        accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+        accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
           "Couldn't check change",
       );
     } finally {

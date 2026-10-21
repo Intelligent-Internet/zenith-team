@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RPCDispatcher is the RPCHandler wired into the WS hub. It dispatches each

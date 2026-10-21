@@ -1,7 +1,7 @@
 import { runDeliverableService } from "@/features/run-deliverables/api/run-deliverable.service";
 import { attachmentService } from "@/shared/api/attachment.service";
 import type { PreviewResponse } from "../previews/preview-worker.types";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import type {
   NodePreviewData,
   NodePreviewRequest,
@@ -154,7 +154,7 @@ type PlaybackPreview = {
   value: string;
 };
 
-export const nodePreviewApi = boardlyApi.injectEndpoints({
+export const nodePreviewApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     canvasThumbnail: builder.query<NodePreviewData, NodePreviewInput>({
       keepUnusedDataFor: 10,

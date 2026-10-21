@@ -18,12 +18,12 @@ The default style is Outline. `bookmark-bold` and `star-bold` use the official B
 SVG IDs. The original 24 × 24 viewBox is retained.
 
 The following local variants reuse Iconsax geometry: `3-dots-more` uses the
-original Outline outer contours as solid dots, omitting the inner cutouts at
-the owner's request on 2026-09-24. Each dot is scaled to 80% around its original
-center to balance the filled weight with adjacent Outline icons. Workspace
-styles soften their fill to 80% opacity except in high-contrast mode.
+original Outline outer contours as solid dots, omitting the inner cutouts.
+Each dot is scaled to 80% around its original center to balance the filled
+weight with adjacent Outline icons. Workspace styles soften their fill to 80%
+opacity except in high-contrast mode.
 `stop-filled` keeps the Outline `stop` outer contour and omits its inner cutout
-for the chat composer's Stop action, as requested by the owner on 2026-10-01.
+for the chat composer's Stop action.
 `add` extends the arms of
 the original glyph; `close` rotates the same cross with longer arms to balance
 its diagonal footprint. Both preserve the original line thickness and rounded

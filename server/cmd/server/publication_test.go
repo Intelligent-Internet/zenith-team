@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 func TestPublicationProviderCatalogSelectsDefaultAndResolvesExactBindings(t *testing.T) {

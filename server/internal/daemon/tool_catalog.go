@@ -8,7 +8,7 @@ import (
 	"slices"
 	"sync"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // These wire types are shared with bundlectl, which verifies the same
@@ -21,7 +21,7 @@ type (
 )
 
 // Only managed Tool assets reach the daemon and zen; Workflow bytes stay
-// with platformbundle, the server and boardly-mcp.
+// with platformbundle, the server and zenith-team-mcp.
 //
 //go:embed tool_releases/*.lock.json tool_releases/generated/*.json
 var skillAssets embed.FS

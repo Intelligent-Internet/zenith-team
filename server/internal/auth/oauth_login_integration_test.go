@@ -110,7 +110,7 @@ func TestOAuthRepositoryConsumesMatchingFlowsWithoutConsumingMismatches(t *testi
 			Provider:           web.Provider,
 			StateHash:          web.StateHash,
 			BrowserBindingHash: web.BrowserBindingHash,
-			RedirectURI:        "https://api.boardly.test/wrong",
+			RedirectURI:        "https://api.zenith-team.test/wrong",
 		},
 		{
 			Provider:           web.Provider,
@@ -274,24 +274,24 @@ func TestOAuthRepositoryLoginUsesProviderSubjectBeforeEmail(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	picture := "https://images.boardly.test/founder.png"
+	picture := "https://images.zenith-team.test/founder.png"
 	locale := "en-US"
-	hostedDomain := "boardly.test"
+	hostedDomain := "zenith-team.test"
 	webSession := newOAuthSession(t, 61)
 	webSession.Client = ClientWeb
 	first := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{
 			Provider: "google",
 			Subject:  "google-subject-stable",
-			Email:    "founder@boardly.test",
+			Email:    "founder@zenith-team.test",
 			Profile: OAuthProfileSnapshot{
-				Name:         "Boardly Founder",
+				Name:         "Zenith Team Founder",
 				PictureURL:   &picture,
 				Locale:       &locale,
 				HostedDomain: &hostedDomain,
 			},
 		},
-		InitialDisplayName: "Boardly Founder",
+		InitialDisplayName: "Zenith Team Founder",
 		Session:            webSession,
 	}
 	created, firstSessionID, err := loginWithOAuthAndCreateSession(ctx, store, first)
@@ -309,12 +309,12 @@ func TestOAuthRepositoryLoginUsesProviderSubjectBeforeEmail(t *testing.T) {
 		t.Fatalf("GetActiveSessionUser(first OAuth session) error = %v", err)
 	}
 
-	updatedPicture := "https://images.boardly.test/founder-new.png"
+	updatedPicture := "https://images.zenith-team.test/founder-new.png"
 	second := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{
 			Provider: "google",
 			Subject:  first.Identity.Subject,
-			Email:    "renamed@boardly.test",
+			Email:    "renamed@zenith-team.test",
 			Profile: OAuthProfileSnapshot{
 				Name:       "Provider Name Changed",
 				PictureURL: &updatedPicture,
@@ -331,7 +331,7 @@ func TestOAuthRepositoryLoginUsesProviderSubjectBeforeEmail(t *testing.T) {
 		t.Fatalf("resolved OAuth user = %#v, first = %#v", resolved, created)
 	}
 	if resolved.DisplayName != created.DisplayName || resolved.AvatarURL == nil || *resolved.AvatarURL != picture {
-		t.Fatalf("provider snapshot overwrote Boardly profile: first=%#v second=%#v", created, resolved)
+		t.Fatalf("provider snapshot overwrote Zenith Team profile: first=%#v second=%#v", created, resolved)
 	}
 
 	var accountEmail string
@@ -372,9 +372,9 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	existingSession := newBoardlySession(t, 63)
+	existingSession := newZenithTeamSession(t, 63)
 	existingUser, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "existing@boardly.test",
+		Email:        "existing@zenith-team.test",
 		PasswordHash: "password-hash", DisplayName: "Existing",
 	}, existingSession)
 	if err != nil {
@@ -383,7 +383,7 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 	existingUserID := existingUser.ID
 	conflicting := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{
-			Provider: "google", Subject: "new-google-subject", Email: "EXISTING@boardly.test",
+			Provider: "google", Subject: "new-google-subject", Email: "EXISTING@zenith-team.test",
 			Profile: OAuthProfileSnapshot{Name: "Existing"},
 		},
 		InitialDisplayName: "Existing",
@@ -393,7 +393,7 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 	if err != nil {
 		t.Fatalf("LoginWithOAuthAndCreateSession(password link) error = %v", err)
 	}
-	if linkedPasswordUser.ID != existingUserID || linkedPasswordUser.Email != "existing@boardly.test" ||
+	if linkedPasswordUser.ID != existingUserID || linkedPasswordUser.Email != "existing@zenith-team.test" ||
 		linkedPasswordUser.PasswordHash != "password-hash" || linkedPasswordUser.DisplayName != "Existing" ||
 		linkedPasswordUser.EmailVerifiedAt == nil {
 		t.Fatalf("linked password user = %#v", linkedPasswordUser)
@@ -416,7 +416,7 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 		t.Fatalf("query linked OAuth session owner: %v", err)
 	}
 	var linkedEmailUserCount int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE lower(email) = 'existing@boardly.test'`).
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE lower(email) = 'existing@zenith-team.test'`).
 		Scan(&linkedEmailUserCount); err != nil {
 		t.Fatalf("count linked email users: %v", err)
 	}
@@ -470,7 +470,7 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 
 	linked := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{
-			Provider: "google", Subject: "disabled-google-subject", Email: "disabled@boardly.test",
+			Provider: "google", Subject: "disabled-google-subject", Email: "disabled@zenith-team.test",
 			Profile: OAuthProfileSnapshot{Name: "Disabled"},
 		},
 		InitialDisplayName: "Disabled",
@@ -492,7 +492,7 @@ func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.
 		Scan(&sessionsBefore); err != nil {
 		t.Fatalf("count sessions before disabled login: %v", err)
 	}
-	linked.Identity.Email = "must-not-update@boardly.test"
+	linked.Identity.Email = "must-not-update@zenith-team.test"
 	linked.Session = newOAuthSession(t, 66)
 	if _, _, err := loginWithOAuthAndCreateSession(ctx, store, linked); !errors.Is(err, ErrAccountDisabled) {
 		t.Fatalf("LoginWithOAuthAndCreateSession(disabled) error = %v", err)
@@ -526,7 +526,7 @@ func TestOAuthRepositoryUsesSeparateInitialDisplayNameWithoutFabricatingProvider
 		Identity: VerifiedOAuthIdentity{
 			Provider: googleOAuthProvider,
 			Subject:  "fallback-name-google-subject",
-			Email:    "fallback.user@boardly.test",
+			Email:    "fallback.user@zenith-team.test",
 			Profile:  OAuthProfileSnapshot{},
 		},
 		InitialDisplayName: "fallback.user",
@@ -570,11 +570,11 @@ func TestOAuthServiceResolvesSameSubjectAcrossWebAndDesktopSessions(t *testing.T
 			identity := VerifiedOAuthIdentity{
 				Provider: googleOAuthProvider,
 				Subject:  "cross-client-stable-subject",
-				Email:    "first@boardly.test",
+				Email:    "first@zenith-team.test",
 				Profile:  OAuthProfileSnapshot{Name: "First Provider Name"},
 			}
 			if request.Client == ClientDesktop {
-				identity.Email = "changed@boardly.test"
+				identity.Email = "changed@zenith-team.test"
 				identity.Profile.Name = "Changed Provider Name"
 			}
 			return OAuthProviderIdentity{Identity: identity, Nonce: authorization.Nonce}, nil
@@ -595,7 +595,7 @@ func TestOAuthServiceResolvesSameSubjectAcrossWebAndDesktopSessions(t *testing.T
 			return userID.String() + "." + sessionID.String(), time.Now().UTC().Add(15 * time.Minute), nil
 		},
 	}
-	callbackURI := "https://api.boardly.test/api/v1/auth/google/web/callback"
+	callbackURI := "https://api.zenith-team.test/api/v1/auth/google/web/callback"
 	service, err := NewOAuthService(OAuthServiceOptions{
 		Store: store, Provider: provider, Tokens: tokens,
 		WebRedirectURI: callbackURI, Random: bytes.NewReader(random),
@@ -633,7 +633,7 @@ func TestOAuthServiceResolvesSameSubjectAcrossWebAndDesktopSessions(t *testing.T
 		t.Fatalf("CompleteDesktop() error = %v", err)
 	}
 
-	if desktopResult.User.ID != webResult.Result.User.ID || desktopResult.User.Email != "first@boardly.test" ||
+	if desktopResult.User.ID != webResult.Result.User.ID || desktopResult.User.Email != "first@zenith-team.test" ||
 		desktopResult.User.DisplayName != "First Provider Name" {
 		t.Fatalf(
 			"cross-client subject resolution: Web=%#v Desktop=%#v",
@@ -671,9 +671,9 @@ func TestOAuthRepositoryRollsBackIdentityWhenSessionCreationFails(t *testing.T) 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	duplicateSession := newBoardlySession(t, 67)
+	duplicateSession := newZenithTeamSession(t, 67)
 	if _, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "session-owner@boardly.test",
+		Email:        "session-owner@zenith-team.test",
 		PasswordHash: "password-hash", DisplayName: "Session Owner",
 	}, duplicateSession); err != nil {
 		t.Fatalf("CreateUserWithSession(duplicate token owner) error = %v", err)
@@ -681,8 +681,10 @@ func TestOAuthRepositoryRollsBackIdentityWhenSessionCreationFails(t *testing.T) 
 
 	input := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{
-			Provider: "google", Subject: "rollback-google-subject", Email: "rollback-oauth@boardly.test",
-			Profile: OAuthProfileSnapshot{Name: "Rollback OAuth"},
+			Provider: "google",
+			Subject:  "rollback-google-subject",
+			Email:    "rollback-oauth@zenith-team.test",
+			Profile:  OAuthProfileSnapshot{Name: "Rollback OAuth"},
 		},
 		InitialDisplayName: "Rollback OAuth",
 		Session: NewOAuthSession{
@@ -718,7 +720,7 @@ func TestOAuthRepositoryRollsBackExistingIdentitySnapshotWhenSessionCreationFail
 		Identity: VerifiedOAuthIdentity{
 			Provider: "google",
 			Subject:  "existing-rollback-google-subject",
-			Email:    "original-oauth@boardly.test",
+			Email:    "original-oauth@zenith-team.test",
 			Profile:  OAuthProfileSnapshot{Name: "Original OAuth Snapshot"},
 		},
 		InitialDisplayName: "Original OAuth Snapshot",
@@ -743,16 +745,16 @@ func TestOAuthRepositoryRollsBackExistingIdentitySnapshotWhenSessionCreationFail
 		t.Fatalf("count sessions before failed login: %v", err)
 	}
 
-	duplicateSession := newBoardlySession(t, 69)
+	duplicateSession := newZenithTeamSession(t, 69)
 	if _, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "existing-rollback-session-owner@boardly.test",
+		Email:        "existing-rollback-session-owner@zenith-team.test",
 		PasswordHash: "password-hash", DisplayName: "Existing Rollback Session Owner",
 	}, duplicateSession); err != nil {
 		t.Fatalf("CreateUserWithSession(duplicate token owner) error = %v", err)
 	}
 
 	retry := initial
-	retry.Identity.Email = "mutated-oauth@boardly.test"
+	retry.Identity.Email = "mutated-oauth@zenith-team.test"
 	retry.Identity.Profile = OAuthProfileSnapshot{Name: "Mutated OAuth Snapshot"}
 	retry.Session = NewOAuthSession{
 		TokenPrefix: "brf_duplicate_existing",
@@ -832,7 +834,7 @@ func TestOAuthPersistenceDoesNotPersistProviderCredentialArtifactsFromClientMeta
 		Identity: VerifiedOAuthIdentity{
 			Provider: "google",
 			Subject:  "credential-artifact-google-subject",
-			Email:    "credential-artifact@boardly.test",
+			Email:    "credential-artifact@zenith-team.test",
 			Profile:  OAuthProfileSnapshot{Name: "Credential Artifact Sentinel"},
 		},
 		InitialDisplayName: "Credential Artifact Sentinel",
@@ -910,7 +912,7 @@ func newWebOAuthFlow(t *testing.T, seed byte) NewOAuthLoginFlow {
 		StateHash:          bytes.Repeat([]byte{seed}, 32),
 		NonceHash:          bytes.Repeat([]byte{seed + 1}, 32),
 		BrowserBindingHash: bytes.Repeat([]byte{seed + 2}, 32),
-		RedirectURI:        "https://api.boardly.test/api/v1/auth/google/web/callback",
+		RedirectURI:        "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 		ReturnPath:         &returnPath,
 		ClientMetadata:     OAuthClientMetadata{AppVersion: "test"},
 		ExpiresAt:          time.Now().UTC().Add(10 * time.Minute),
@@ -943,7 +945,7 @@ func newOAuthSession(t *testing.T, seed byte) NewOAuthSession {
 	}
 }
 
-func newBoardlySession(t *testing.T, seed byte) NewSession {
+func newZenithTeamSession(t *testing.T, seed byte) NewSession {
 	t.Helper()
 	return NewSession{
 		TokenPrefix:    "brf_oauth_test_fixture",

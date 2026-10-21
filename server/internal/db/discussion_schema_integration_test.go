@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestDiscussionSchemaUpgradeAndShape(t *testing.T) {
@@ -27,7 +27,12 @@ func TestDiscussionSchemaUpgradeAndShape(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if err := runMigration(ctx, pool, "migrate before group DMs", func(m *migrate.Migrate) error { return m.Migrate(43) }); err != nil {
+	if err := runMigration(
+		ctx,
+		pool,
+		"migrate before group DMs",
+		func(m *migrate.Migrate) error { return m.Migrate(43) },
+	); err != nil {
 		t.Fatal(err)
 	}
 	dbtest.MustExec(

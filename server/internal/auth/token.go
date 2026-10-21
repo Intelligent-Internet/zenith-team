@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	accessTokenIssuer   = "boardly-api"
-	accessTokenAudience = "boardly-clients"
+	accessTokenIssuer   = "zenith-team-api"
+	accessTokenAudience = "zenith-team-clients"
 	accessTokenUse      = "access"
 	refreshTokenPrefix  = "brf_"
 )
@@ -297,6 +297,6 @@ func validRefreshToken(raw string) bool {
 
 func deriveTokenKey(secret []byte, purpose string) []byte {
 	mac := hmac.New(sha256.New, secret)
-	_, _ = mac.Write([]byte("boardly-auth-v1:" + purpose))
+	_, _ = mac.Write([]byte("zenith-team-auth-v1:" + purpose))
 	return mac.Sum(nil)
 }

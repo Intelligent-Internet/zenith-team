@@ -131,7 +131,7 @@
   padding: 18px 20px;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .project-access-confirm
   .profile-delete-dialog__surface:focus-visible,
 .project-access-confirm .profile-delete-dialog__surface:focus {
@@ -158,9 +158,9 @@ html[data-boardly-workspace-theme]
 }
 
 /* Outranks the shell's red confirm icon (workspace-surfaces.css,
-   html[data-boardly-workspace-theme] :is(.profile-delete-dialog__icon…)),
+   html[data-zenith-team-workspace-theme] :is(.profile-delete-dialog__icon…)),
    so the calm pause stays muted in every theme. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .project-access-confirm
   .profile-delete-dialog__icon[data-tone="neutral"],
 .project-access-confirm .profile-delete-dialog__icon[data-tone="neutral"] {
@@ -434,7 +434,7 @@ button.project-access-perms:disabled {
 
 /* Focused on open so no preset's tooltip shows; the ring would only
    outline the whole popover (it outranks the workspace focus ring). */
-html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
+html[data-zenith-team-workspace-theme] .project-access-picker[role]:focus-visible,
 .project-access-picker:focus {
   outline: none;
 }
@@ -1005,8 +1005,7 @@ html[data-boardly-workspace-theme] .project-access-picker[role]:focus-visible,
     display: none;
   }
 
-  /* Dialogs fill the screen, their buttons pinned at the bottom (Access
-     DESIGN 1). */
+  /* Dialogs fill the screen, their buttons pinned at the bottom. */
   .project-access-dialog[data-slot="dialog-content"] {
     width: 100vw;
     max-width: 100vw;

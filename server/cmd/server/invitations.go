@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
 )
 
 type invitationEmailSender struct {

@@ -10,12 +10,7 @@ Browser and desktop clients use the user-plane resources documented in
 Local working directories and provider environments are documented in
 [workspaces.md](workspaces.md). That page distinguishes the served directory
 override from the Planned managed-only release and documents local loopback
-file/review capabilities separately from this cloud daemon plane.
-
-For the cross-domain ordering, see the
-[Runtime and Run sequence guide](../specs/runs/runtime-and-run-sequences.TECH.md).
-Its diagrams distinguish shipped transport behavior from Planned preparation
-and context-snapshot changes; this page remains the wire contract.
+file/review capabilities separately from this server-side daemon plane.
 
 ## Authentication and transport
 
@@ -26,14 +21,14 @@ WebSocket upgrade:
 Authorization: Bearer <accessToken>
 ```
 
-The daemon's session (D31) belongs to the same person as the app's but is a
+The daemon's session belongs to the same person as the app's but is a
 session of its own: `POST /api/v1/auth/daemon-session` starts it from the
 person's session ([Authentication](authentication.md)), `zen daemon start`
 or the desktop app stores it in `daemon-auth.json` in the daemon's home, and
 the daemon renews it with `POST /auth/refresh` like any bearer session. The
 server accepts it on every route of this plane. Off this plane it acts only
 for a Run: on a route that accepts a Run, beside exactly one live
-`X-Boardly-Run-Token` whose Run works for the same person — the Run channel's
+`X-Zenith-Team-Run-Token` whose Run works for the same person — the Run channel's
 and the output presenter's calls. Anything else is
 `403 run_proof_required`; it is never its person. Older daemons that still
 send the person's own session keep working on this plane.
@@ -51,7 +46,7 @@ existence with a `403`.
 The daemon also names its machine on every request:
 
 ```http
-X-Boardly-Daemon-ID: <daemonId>
+X-Zenith-Team-Daemon-ID: <daemonId>
 ```
 
 The value is the `daemonId` it sent on register. Runtime-scoped routes —
@@ -137,7 +132,7 @@ those live.
 | `forceFreshSession` | boolean | Prevents resuming the earlier provider session. |
 
 There is **no trigger-message id**: the words the run answers arrive frozen in
-`context.prompt` (ADR 0001), so the daemon never resolves a prompt by id and had
+`context.prompt`, so the daemon never resolves a prompt by id and had
 nothing to do with the field.
 
 Claim responses may additionally carry:
@@ -152,9 +147,9 @@ Optional fields are omitted. Machine-local execution details are not stored in
 or returned by this API.
 
 The `context` document carries the run's frozen inputs, stamped in the enqueue
-transaction: the prompt (ADR 0001) and the agent execution brief — name,
-instructions, model, thinking level — read from the agents row at enqueue
-(ADR 0003). The daemon executes what the context says; it never fetches the
+transaction: the prompt and the agent execution brief — name,
+instructions, model, thinking level — read from the agents row at enqueue.
+The daemon executes what the context says; it never fetches the
 agent back through the user plane. It also carries `conversationSnapshot`,
 the bounded prior chat of the run's conversation with each message's author,
 and, when a member's message started the run, `trigger`: that member and the
@@ -284,7 +279,7 @@ whole computer from the same round:
 of the runtime, and every app preview's commands, inside a sandbox that can
 neither read nor write the Zenith Team sign-in files on that computer: the
 daemon's home (`daemon-auth.json`, an operator's `auth.json`,
-`local-preview.json`), `~/.boardly` and the desktop app's session store. The
+`local-preview.json`), `~/.zenith-team` and the desktop app's session store. The
 same sandbox keeps each Run out of every other Run's isolated home, so no
 Run reads another's `run.json` and calls through its channel, and refuses
 to start `launchctl`, `open` and `osascript` or to write the person's
@@ -292,7 +287,7 @@ launchd agents folder and shell start-up files. Each round tests it: a
 process in the sandbox must fail to read `daemon-auth.json` and a stand-in
 Run's `run.json`, and must start. `not_enforced` means
 anything else: Windows, Linux, a failed test, a workspaces root inside the
-daemon's home, or the test switch `BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced`
+daemon's home, or the test switch `ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION=not_enforced`
 on the daemon, which lets a Mac play a Windows computer. The switch only
 lowers the report; the daemon refuses to start with any other value. The
 daemon wraps a provider or a preview exactly when the last round's test
@@ -300,9 +295,8 @@ passed, and a Run or a preview that started unwrapped keeps the report at
 `not_enforced` until it has stopped, so `enforced` never covers such a
 process running outside the sandbox.
 Any other value of `credentialIsolation` is `422 validation_failed`; an entry without it (an older daemon) is
-accepted. The server checks the value and does not store it. The Agent
-access policy that would have stored it (Access TECH C1, C4) was dropped
-on 2026-10-06 (D31), so nothing on the server uses it.
+accepted. The server checks the value and does not store it, and nothing
+on the server uses it.
 
 Success returns:
 
@@ -331,7 +325,7 @@ Request and response:
 ```
 
 An id is skipped when it names no runtime, a runtime of another daemon (when
-the `X-Boardly-Daemon-ID` header is sent), a runtime another member
+the `X-Zenith-Team-Daemon-ID` header is sent), a runtime another member
 registered, or a runtime in a company where the caller is not an active
 member — deregistering something already gone is the converged state, not an
 error. A **failed write is `500`**, with nothing confirmed: the `200` receipt
@@ -462,7 +456,7 @@ This route has no pagination parameters.
 GET /api/v1/daemon/ws
 ```
 
-This route upgrades to the daemon control WebSocket. `X-Boardly-Daemon-ID`
+This route upgrades to the daemon control WebSocket. `X-Zenith-Team-Daemon-ID`
 identifies the machine; `daemon_id` is its query fallback. `runtime_ids` is an
 optional comma-separated runtime scope. The server keeps only the ids of
 runtimes the signed-in user registered, from this machine, in one of their
@@ -565,10 +559,9 @@ not a shipped Agent Skill assignment flow. Normal MCP preparation passes no
 custom snapshot directory; Task platform Skills are compiled into MCP and
 work independently. The request does not accept a `hash` field.
 
-The Planned end-to-end producer, exact-reference hash checks, native/MCP
-parity and local workspace provenance are defined in
-[Runs TECH §11.5–11.7](../specs/runs/TECH.md#115-frozen-content-reviewed-authority-rn-c11).
-Those future context/index fields are not current public request fields.
+An end-to-end producer, exact-reference hash checks, native/MCP parity and
+local workspace provenance are Planned. Their future context and index fields
+are not current public request fields.
 
 ### Recover orphaned runs
 
@@ -632,8 +625,7 @@ for a cancel that recorded no reason. The response is not a run object.
 `task_reassigned` means a confirmed handoff cancelled the run
 ([ADR 0014](../adr/0014-private-runtimes-and-agent-bindings.md)). The Task's
 workspace generation has moved on, so the daemon marks the run's Task root
-superseded — kept, never continued — instead of completed
-([Workspaces TECH §4](../specs/workspaces/TECH.md#4-lifecycle-and-concurrency)).
+superseded — kept, never continued — instead of completed.
 
 The daemon reads this route at three points in
 `server/internal/daemon/run.go`. `client.go` decodes the body as `RunStatus`;
@@ -774,7 +766,7 @@ capability does not authorize requests to its replacement.
 
 `run.preview.delta` frames carry `runId`, `conversationId`, `itemKey`,
 `channel`, `operation`, and `content`. `runId` is the Run UUID string, the
-same id the cloud planes carry; the frame is disposable scratch the desktop
+same id the server's planes carry; the frame is disposable scratch the desktop
 correlates by string key and validates as bounded text. The channel is `text`
 or `reasoning`;
 Electron maps reasoning to the UI's thinking presentation. These frames are
@@ -782,7 +774,7 @@ deliberately droppable: bounded queues may coalesce adjacent appends, replace
 pending values, or discard old frames under load. A payload-free
 `run.preview.reset` clears all local scratch when a stream is established or
 the Desktop bridge disconnects. The browser never receives either frame. The
-matching cloud `run.message_created` is the post-commit authority and reaches every
+matching `run.message_created` from the server is the post-commit authority and reaches every
 eligible connected client. See [realtime.md](realtime.md#local-desktop-preview).
 
 ### Report usage
@@ -1019,7 +1011,7 @@ Desktop controls call the token-protected loopback `POST /v1/tools/operate`
 with `{schemaVersion: 1, companyId, runtimeId, provider, toolKey, action}`.
 Actions are `status`, `repair`, `connect`, and `cancel`; the renderer only
 supports status and repair. Operations recheck the exact local Runtime and
-live cloud access. Browser sign-in runs separately from setup and status jobs.
+the caller's live membership and Runtime ownership on the server. Browser sign-in runs separately from setup and status jobs.
 Company credentials live in the CLI-owned `.tools/accounts/<companyId>/zenith-studio`
 home; Runs pin that home and API origin and cannot initiate account changes.
 

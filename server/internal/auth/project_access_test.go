@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestProjectAccessEffectivePermissions(t *testing.T) {
@@ -206,30 +206,97 @@ func TestProjectAccessChecksRefuseUnresolvedPrincipal(t *testing.T) {
 	if _, err := LockProjectAccess(ctx, nil, principal, projectID); !errors.Is(err, ErrProjectNotVisible) {
 		t.Errorf("LockProjectAccess error = %v, want ErrProjectNotVisible", err)
 	}
-	if _, err := RequireProjectPermission(ctx, nil, principal, projectID, ProjectPermissionRead); !errors.Is(err, ErrProjectNotVisible) {
+	if _, err := RequireProjectPermission(
+		ctx,
+		nil,
+		principal,
+		projectID,
+		ProjectPermissionRead,
+	); !errors.Is(
+		err,
+		ErrProjectNotVisible,
+	) {
 		t.Errorf("RequireProjectPermission error = %v, want ErrProjectNotVisible", err)
 	}
-	if _, err := RequireTaskPermission(ctx, nil, principal, uuid.New(), ProjectPermissionRead); !errors.Is(err, ErrTaskNotVisible) {
+	if _, err := RequireTaskPermission(
+		ctx,
+		nil,
+		principal,
+		uuid.New(),
+		ProjectPermissionRead,
+	); !errors.Is(
+		err,
+		ErrTaskNotVisible,
+	) {
 		t.Errorf("RequireTaskPermission error = %v, want ErrTaskNotVisible", err)
 	}
-	if _, err := ResolveMemberProjectAccess(ctx, nil, uuid.New(), uuid.Nil, projectID); !errors.Is(err, ErrProjectNotVisible) {
+	if _, err := ResolveMemberProjectAccess(
+		ctx,
+		nil,
+		uuid.New(),
+		uuid.Nil,
+		projectID,
+	); !errors.Is(
+		err,
+		ErrProjectNotVisible,
+	) {
 		t.Errorf("ResolveMemberProjectAccess error = %v, want ErrProjectNotVisible", err)
 	}
-	if held, err := HoldsProjectPermission(ctx, nil, uuid.Nil, projectID, principal.UserID, ProjectPermissionRead); held || err != nil {
+	if held, err := HoldsProjectPermission(
+		ctx,
+		nil,
+		uuid.Nil,
+		projectID,
+		principal.UserID,
+		ProjectPermissionRead,
+	); held ||
+		err != nil {
 		t.Errorf("HoldsProjectPermission = %t, %v, want false", held, err)
 	}
-	if err := RequireProjectPermissionHeld(ctx, nil, uuid.Nil, projectID, principal.UserID, ProjectPermissionRead); !errors.Is(err, ErrProjectPermissionRequired) {
+	if err := RequireProjectPermissionHeld(
+		ctx,
+		nil,
+		uuid.Nil,
+		projectID,
+		principal.UserID,
+		ProjectPermissionRead,
+	); !errors.Is(
+		err,
+		ErrProjectPermissionRequired,
+	) {
 		t.Errorf("RequireProjectPermissionHeld error = %v, want ErrProjectPermissionRequired", err)
 	}
 	// The Task chat checks refuse before reading anything, so an unresolved
 	// principal never falls back to a Company rule.
-	if _, scoped, err := RequireTaskChatPermission(ctx, nil, principal, uuid.New(), ProjectPermissionApprovalsResolve); !scoped || !errors.Is(err, ErrTaskNotVisible) {
+	if _, scoped, err := RequireTaskChatPermission(
+		ctx,
+		nil,
+		principal,
+		uuid.New(),
+		ProjectPermissionApprovalsResolve,
+	); !scoped ||
+		!errors.Is(err, ErrTaskNotVisible) {
 		t.Errorf("RequireTaskChatPermission = scoped %t, %v, want scoped ErrTaskNotVisible", scoped, err)
 	}
-	if _, err := RequireProjectContentPermission(ctx, nil, principal, projectID, ProjectPermissionApprovalsResolve); !errors.Is(err, ErrTaskNotVisible) {
+	if _, err := RequireProjectContentPermission(
+		ctx,
+		nil,
+		principal,
+		projectID,
+		ProjectPermissionApprovalsResolve,
+	); !errors.Is(
+		err,
+		ErrTaskNotVisible,
+	) {
 		t.Errorf("RequireProjectContentPermission error = %v, want ErrTaskNotVisible", err)
 	}
-	if id, scoped, err := TaskChatProjectID(ctx, nil, uuid.Nil, uuid.New()); id != uuid.Nil || scoped || err != nil {
+	if id, scoped, err := TaskChatProjectID(
+		ctx,
+		nil,
+		uuid.Nil,
+		uuid.New(),
+	); id != uuid.Nil || scoped ||
+		err != nil {
 		t.Errorf("TaskChatProjectID(no Company) = %v, %t, %v; want no Project", id, scoped, err)
 	}
 }

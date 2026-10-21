@@ -9,7 +9,7 @@ import (
 )
 
 // RunSeed names the Run SeedRun inserts. The delegate rule
-// (run_permission_held, D31) reads what a Run may do from the Run's own row,
+// (run_permission_held) reads what a Run may do from the Run's own row,
 // so a test that reads under a Run's scope needs a real Run.
 type RunSeed struct {
 	CompanyID, AgentID, RuntimeID uuid.UUID
@@ -52,9 +52,9 @@ func SeedRun(t *testing.T, ctx context.Context, pool *pgxpool.Pool, seed RunSeed
 // for callerID and inserts the Run that answers it, as a tag would: the
 // caller's message in the chat, the channel Agent's own chat, an active
 // invocation naming the chat, and a running Run the caller authorizes. The
-// Run answers into the channel Agent's chat and uses the caller's access
-// (D31). It returns the Run's id. One Agent holds one active tag per
-// chat, so seed one Run per chat and Agent.
+// Run answers into the channel Agent's chat and uses the caller's access.
+// It returns the Run's id. One Agent holds one active tag per chat, so seed
+// one Run per chat and Agent.
 func SeedTaggedRun(
 	t *testing.T,
 	ctx context.Context,

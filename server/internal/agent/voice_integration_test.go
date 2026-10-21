@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
 )
 
 func TestAgentVoiceConfiguration(t *testing.T) {
@@ -39,11 +39,24 @@ func TestAgentVoiceConfiguration(t *testing.T) {
 		t.Fatalf("cross-company update = %v", err)
 	}
 	settings.Greet = true
-	if _, err := service.Update(ctx, fixture.principal, fixture.rootAgentID, input); !errors.Is(err, ErrRevisionConflict) {
+	if _, err := service.Update(
+		ctx,
+		fixture.principal,
+		fixture.rootAgentID,
+		input,
+	); !errors.Is(
+		err,
+		ErrRevisionConflict,
+	) {
 		t.Fatalf("changed replay = %v", err)
 	}
 	title := "Meeting secretary"
-	retained, err := service.Update(ctx, fixture.principal, fixture.rootAgentID, UpdateInput{ExpectedRevision: updated.Revision, Title: &title})
+	retained, err := service.Update(
+		ctx,
+		fixture.principal,
+		fixture.rootAgentID,
+		UpdateInput{ExpectedRevision: updated.Revision, Title: &title},
+	)
 	if err != nil || retained.Voice != updated.Voice {
 		t.Fatalf("unrelated update lost Voice = %+v, %v", retained, err)
 	}

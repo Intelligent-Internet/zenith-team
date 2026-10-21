@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type commentCharacter struct {

@@ -56,7 +56,7 @@
 .workspace-inbox-filters [role="tablist"] {
   justify-content: space-between;
 }
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-inbox-page
   .workspace-inbox-filters
   [role="tab"] {
@@ -66,7 +66,7 @@
   font-weight: 500;
   border-radius: 6px;
 }
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-inbox-page
   .workspace-inbox-filters
   [aria-selected="true"] {
@@ -78,7 +78,7 @@
   display: grid;
   gap: 2px;
 }
-.boardly-workspace-theme .workspace-inbox-page .workspace-inbox-row {
+.zenith-team-workspace-theme .workspace-inbox-page .workspace-inbox-row {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -96,10 +96,10 @@
   background: var(--workspace-divider);
   pointer-events: none;
 }
-.boardly-workspace-theme .workspace-inbox-page .workspace-inbox-row:hover {
+.zenith-team-workspace-theme .workspace-inbox-page .workspace-inbox-row:hover {
   background: var(--workspace-hover-bg);
 }
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-inbox-page
   .workspace-inbox-row[data-selected="true"] {
   border-color: transparent;
@@ -174,7 +174,7 @@
   }
 }
 
-.boardly-workspace-theme .workspace-inbox-item-action {
+.zenith-team-workspace-theme .workspace-inbox-item-action {
   min-height: 28px;
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);

@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/migrations"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 func TestAnalyticsSummaryCountsActiveRunsWithoutUsage(t *testing.T) {
@@ -35,28 +36,89 @@ func TestAnalyticsSummaryCountsActiveRunsWithoutUsage(t *testing.T) {
 	}
 	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
 	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-	query := AnalyticsQuery{Scope: AnalyticsScopeCompany, StartAt: start, EndAt: start.AddDate(0, 0, 1), TimeZone: "UTC"}
+	query := AnalyticsQuery{
+		Scope:    AnalyticsScopeCompany,
+		StartAt:  start,
+		EndAt:    start.AddDate(0, 0, 1),
+		TimeZone: "UTC",
+	}
 	for _, status := range []string{"queued", "deferred", "dispatched", "waiting_local_directory", "running"} {
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,context)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,context)
 		 VALUES($1,$2,$3,$4,$5,'direct_chat',$6,'{"agent":{"model":"frozen-model"}}')`,
-			f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA, status, f.UserA)
+			f.CompanyA,
+			f.AgentA,
+			f.DirectConversationA,
+			f.RuntimeA,
+			status,
+			f.UserA,
+		)
 	}
 	// A provider default is resolved locally and cannot match an exact model filter.
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id)
-	 VALUES($1,$2,$3,$4,'running','direct_chat',$5)`, f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA, f.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id)
+	 VALUES($1,$2,$3,$4,'running','direct_chat',$5)`,
+		f.CompanyA,
+		f.AgentA,
+		f.DirectConversationA,
+		f.RuntimeA,
+		f.UserA,
+	)
 	dbtest.MustExec(t, ctx, pool, `UPDATE agents SET model='changed-model' WHERE id=$1`, f.AgentA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='running',context='{"agent":{"model":"frozen-model"}}' WHERE id=$1`, f.RunB)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',context='{"agent":{"model":"frozen-model"}}' WHERE id=$1`,
+		f.RunB,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		f.CompanyA,
+		f.UserB,
+	)
 	var otherRuntime uuid.UUID
 	if err := pool.QueryRow(ctx, `INSERT INTO runtimes(company_id,daemon_id,name,provider,owner_user_id)
 	 VALUES($1,$2,'Other computer','codex',$3) RETURNING id`, f.CompanyA, f.DaemonB, f.UserB).Scan(&otherRuntime); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,context)
-	 VALUES($1,$2,$3,$4,'running','direct_chat',$5,'{"agent":{"model":"frozen-model"}}')`, f.CompanyA, f.AgentA, f.DirectConversationA, otherRuntime, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,context)
+	 VALUES($1,$2,$3,$4,'running','direct_chat',$5,'{"agent":{"model":"frozen-model"}}')`,
+		f.CompanyA,
+		f.AgentA,
+		f.DirectConversationA,
+		otherRuntime,
+		f.UserB,
+	)
 	// Finished analytics must still use reported model facts, not the frozen request.
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET finished_at=$2,context='{"agent":{"model":"frozen-model"}}' WHERE id=$1`, f.RunA, start.Add(time.Hour))
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO run_usage(run_id,provider,model,input_tokens,raw_json) VALUES($1,'codex','reported-model',100,'{}')`, f.RunA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET finished_at=$2,context='{"agent":{"model":"frozen-model"}}' WHERE id=$1`,
+		f.RunA,
+		start.Add(time.Hour),
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO run_usage(run_id,provider,model,input_tokens,raw_json) VALUES($1,'codex','reported-model',100,'{}')`,
+		f.RunA,
+	)
 
 	cases := []struct {
 		name     string
@@ -123,9 +185,27 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
 	now := time.Now().UTC()
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	q := AnalyticsQuery{Scope: AnalyticsScopeCompany, StartAt: start, EndAt: start.AddDate(0, 1, 0), TimeZone: "UTC"}
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET finished_at=$2 WHERE company_id=$1`, f.CompanyA, start.AddDate(0, 0, -1))
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO model_prices(provider,model,effective_from,input_usd_per_mtok,output_usd_per_mtok,cache_read_usd_per_mtok,cache_write_usd_per_mtok,source) VALUES ('codex','test-priced',$1,1,2,0.1,0,'fixture')`, start)
+	q := AnalyticsQuery{
+		Scope:    AnalyticsScopeCompany,
+		StartAt:  start,
+		EndAt:    start.AddDate(0, 1, 0),
+		TimeZone: "UTC",
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET finished_at=$2 WHERE company_id=$1`,
+		f.CompanyA,
+		start.AddDate(0, 0, -1),
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO model_prices(provider,model,effective_from,input_usd_per_mtok,output_usd_per_mtok,cache_read_usd_per_mtok,cache_write_usd_per_mtok,source) VALUES ('codex','test-priced',$1,1,2,0.1,0,'fixture')`,
+		start,
+	)
 	for i, billing := range []string{"api", "api", "subscription", "api", "unknown"} {
 		var runID uuid.UUID
 		var authorizer any = f.UserA
@@ -138,7 +218,8 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 			status = "failed"
 			reason = "runtime_offline"
 		}
-		err := pool.QueryRow(ctx, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,queued_at,claimed_at,started_at,finished_at,failure_reason) VALUES($1,$2,$3,$4,$5,'direct_chat',$6,$7,$7::timestamptz+interval '2 minutes',$7::timestamptz+interval '3 minutes',$7::timestamptz+interval '10 minutes',NULLIF($8,'')) RETURNING id`, f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA, status, authorizer, start.Add(now.Sub(start)/2).Add(-10*time.Minute), reason).Scan(&runID)
+		err := pool.QueryRow(ctx, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,execution_authorized_by_user_id,queued_at,claimed_at,started_at,finished_at,failure_reason) VALUES($1,$2,$3,$4,$5,'direct_chat',$6,$7,$7::timestamptz+interval '2 minutes',$7::timestamptz+interval '3 minutes',$7::timestamptz+interval '10 minutes',NULLIF($8,'')) RETURNING id`, f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA, status, authorizer, start.Add(now.Sub(start)/2).Add(-10*time.Minute), reason).
+			Scan(&runID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,13 +234,27 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 		if i == 0 || i == 2 {
 			reported = "0.42"
 		}
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO run_usage(run_id,provider,model,input_tokens,output_tokens,cache_read_tokens,provider_cost_usd,billing_mode,raw_json) VALUES($1,'codex',$2,100,50,20,$3,$4,'{}')`, runID, model, reported, billing)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO run_usage(run_id,provider,model,input_tokens,output_tokens,cache_read_tokens,provider_cost_usd,billing_mode,raw_json) VALUES($1,'codex',$2,100,50,20,$3,$4,'{}')`,
+			runID,
+			model,
+			reported,
+			billing,
+		)
 	}
 	summary, err := service.GetAnalyticsSummary(ctx, p, q)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if summary.Current.Runs.Total != "5" || summary.Current.Tokens.Input != "500" || summary.Current.Cost.PlanCoveredTokens != "150" || summary.Current.Cost.ReportedUsdTicks == nil || *summary.Current.Cost.ReportedUsdTicks != "4200000000" || summary.Current.Cost.EstimatedUsdTicks == nil || *summary.Current.Cost.EstimatedUsdTicks != "2020000" {
+	if summary.Current.Runs.Total != "5" || summary.Current.Tokens.Input != "500" ||
+		summary.Current.Cost.PlanCoveredTokens != "150" ||
+		summary.Current.Cost.ReportedUsdTicks == nil ||
+		*summary.Current.Cost.ReportedUsdTicks != "4200000000" ||
+		summary.Current.Cost.EstimatedUsdTicks == nil ||
+		*summary.Current.Cost.EstimatedUsdTicks != "2020000" {
 		t.Fatalf("summary = %+v", summary.Current)
 	}
 	for _, by := range []string{"agent", "model", "member", "project", "task", "run_type"} {
@@ -170,11 +265,15 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", by, err)
 		}
-		var sum string = "0"
+		sum := "0"
 		for _, row := range report.Rows {
 			sum = addDecimalStrings(sum, row.Tokens.Input)
-			if by == "model" && row.Key.Label == "codex / test-priced" && len(row.Cost.UnpricedModels) != 0 {
-				t.Fatalf("priced model includes other groups' missing prices: %+v", row.Cost.UnpricedModels)
+			if by == "model" && row.Key.Label == "codex / test-priced" &&
+				len(row.Cost.UnpricedModels) != 0 {
+				t.Fatalf(
+					"priced model includes other groups' missing prices: %+v",
+					row.Cost.UnpricedModels,
+				)
 			}
 		}
 		if sum != report.Total.Tokens.Input {
@@ -221,10 +320,18 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 	}
 	q.Model = ""
 	// Even administrators cannot name or isolate another member's computer.
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'admin')`, f.CompanyA, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'admin')`,
+		f.CompanyA,
+		f.UserB,
+	)
 	other := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserB, Role: auth.CompanyRoleAdmin}
 	private, err := service.GetAnalyticsBreakdown(ctx, other, q)
-	if err != nil || len(private.Rows) != 1 || private.Rows[0].Key.ID != nil || private.Rows[0].Key.Label != "Other computers" {
+	if err != nil || len(private.Rows) != 1 || private.Rows[0].Key.ID != nil ||
+		private.Rows[0].Key.Label != "Other computers" {
 		t.Fatalf("private runtime projection = %+v, err = %v", private, err)
 	}
 	q.RuntimeID = &f.RuntimeA
@@ -277,7 +384,8 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 		t.Fatal(err)
 	}
 	var alerts int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM analytics_budget_alerts WHERE budget_id=$1`, budget.ID).Scan(&alerts); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM analytics_budget_alerts WHERE budget_id=$1`, budget.ID).
+		Scan(&alerts); err != nil {
 		t.Fatal(err)
 	}
 	if alerts != 2 {
@@ -286,10 +394,24 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 	if err := worker.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM analytics_budget_alerts WHERE budget_id=$1`, budget.ID).Scan(&alerts); err != nil || alerts != 2 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM analytics_budget_alerts WHERE budget_id=$1`, budget.ID).
+		Scan(&alerts); err != nil ||
+		alerts != 2 {
 		t.Fatalf("replayed budget alerts = %d, err = %v, want 2", alerts, err)
 	}
-	if _, err := service.UpsertAnalyticsBudget(ctx, p, AnalyticsBudgetInput{OwnerKind: "agent", AgentID: &f.AgentB, MonthlyLimitUsdTicks: "100", Enabled: true}); !errors.Is(err, ErrInvalidInput) {
+	if _, err := service.UpsertAnalyticsBudget(
+		ctx,
+		p,
+		AnalyticsBudgetInput{
+			OwnerKind:            "agent",
+			AgentID:              &f.AgentB,
+			MonthlyLimitUsdTicks: "100",
+			Enabled:              true,
+		},
+	); !errors.Is(
+		err,
+		ErrInvalidInput,
+	) {
 		t.Fatalf("cross-company budget error = %v, want invalid input", err)
 	}
 }
@@ -307,12 +429,20 @@ func TestAnalyticsMigrationPreservesHistoricalEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	dbtest.MustExec(t, ctx, pool, string(down))
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO run_usage(run_id,provider,model,input_tokens,output_tokens,cache_read_tokens,provider_cost_usd,raw_json) VALUES($1,'codex','historical',100,50,30,0.25,'{}')`, f.RunA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO run_usage(run_id,provider,model,input_tokens,output_tokens,cache_read_tokens,provider_cost_usd,raw_json) VALUES($1,'codex','historical',100,50,30,0.25,'{}')`,
+		f.RunA,
+	)
 	var beforeRuns, beforeUsage string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r) ORDER BY id)::text FROM runs r`).Scan(&beforeRuns); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r) ORDER BY id)::text FROM runs r`).
+		Scan(&beforeRuns); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u) ORDER BY run_id,provider,model)::text FROM run_usage u`).Scan(&beforeUsage); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u) ORDER BY run_id,provider,model)::text FROM run_usage u`).
+		Scan(&beforeUsage); err != nil {
 		t.Fatal(err)
 	}
 	up, err := migrations.Files.ReadFile("000067_analytics_foundation.up.sql")
@@ -321,31 +451,47 @@ func TestAnalyticsMigrationPreservesHistoricalEvidence(t *testing.T) {
 	}
 	dbtest.MustExec(t, ctx, pool, string(up))
 	var afterRuns, afterUsage string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r)-ARRAY['queued_at','claimed_at','started_at','finished_at'] ORDER BY id)::text FROM runs r`).Scan(&afterRuns); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r)-ARRAY['queued_at','claimed_at','started_at','finished_at'] ORDER BY id)::text FROM runs r`).
+		Scan(&afterRuns); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u)-ARRAY['reasoning_tokens','turns','provider_duration_ms','billing_mode'] ORDER BY run_id,provider,model)::text FROM run_usage u`).Scan(&afterUsage); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u)-ARRAY['reasoning_tokens','turns','provider_duration_ms','billing_mode'] ORDER BY run_id,provider,model)::text FROM run_usage u`).
+		Scan(&afterUsage); err != nil {
 		t.Fatal(err)
 	}
 	if beforeRuns != afterRuns || beforeUsage != afterUsage {
 		t.Fatal("Analytics migration changed existing Run or usage evidence")
 	}
 	var truthful bool
-	if err := pool.QueryRow(ctx, `SELECT bool_and(queued_at IS NULL AND claimed_at IS NULL AND started_at IS NULL AND finished_at IS NULL) FROM runs WHERE status IN ('completed','failed','cancelled')`).Scan(&truthful); err != nil || !truthful {
+	if err := pool.QueryRow(ctx, `SELECT bool_and(queued_at IS NULL AND claimed_at IS NULL AND started_at IS NULL AND finished_at IS NULL) FROM runs WHERE status IN ('completed','failed','cancelled')`).
+		Scan(&truthful); err != nil ||
+		!truthful {
 		t.Fatalf("historical timing preservation = %t, err = %v", truthful, err)
 	}
 	// Enough out-of-window rows make the optimizer choose a range scan without
 	// disabling its normal cost decisions. This checks plan shape, not latency.
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,finished_at)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,finished_at)
 		SELECT $1,$2,$3,$4,'completed','direct_chat',now()-n*interval '1 day' FROM generate_series(1,2000) n`,
-		f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA)
+		f.CompanyA,
+		f.AgentA,
+		f.DirectConversationA,
+		f.RuntimeA,
+	)
 	dbtest.MustExec(t, ctx, pool, `ANALYZE runs`)
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer conn.Release()
-	rows, err := conn.Query(ctx, `EXPLAIN SELECT id FROM runs WHERE company_id=$1 AND finished_at >= now()-interval '7 days' AND finished_at<now()`, f.CompanyA)
+	rows, err := conn.Query(
+		ctx,
+		`EXPLAIN SELECT id FROM runs WHERE company_id=$1 AND finished_at >= now()-interval '7 days' AND finished_at<now()`,
+		f.CompanyA,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

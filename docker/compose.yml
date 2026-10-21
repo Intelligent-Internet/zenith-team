@@ -1,18 +1,18 @@
-name: boardly
+name: zenith-team
 
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: boardly
-      POSTGRES_USER: boardly
-      POSTGRES_PASSWORD: boardly
+      POSTGRES_DB: zenith_team
+      POSTGRES_USER: zenith_team
+      POSTGRES_PASSWORD: zenith_team
     ports:
       - "${APP_POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U boardly -d boardly"]
+      test: ["CMD-SHELL", "pg_isready -U zenith_team -d zenith_team"]
       interval: 2s
       timeout: 3s
       retries: 30
@@ -34,8 +34,8 @@ services:
     image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
-      MINIO_ROOT_USER: boardly
-      MINIO_ROOT_PASSWORD: boardly-development-secret
+      MINIO_ROOT_USER: zenith-team
+      MINIO_ROOT_PASSWORD: zenith-team-development-secret
     ports:
       - "${APP_MINIO_PORT:-9000}:9000"
       - "${APP_MINIO_CONSOLE_PORT:-9001}:9001"
@@ -57,8 +57,8 @@ services:
       - /bin/sh
       - -ec
       - |
-        mcli alias set boardly http://silo:9000 boardly boardly-development-secret
-        mcli mb --ignore-existing boardly/boardly-attachments
+        mcli alias set zenith-team http://silo:9000 zenith-team zenith-team-development-secret
+        mcli mb --ignore-existing zenith-team/zenith-team-attachments
 
   # Media server for Huddles (calls, screen sharing, voice Agents).
   livekit:

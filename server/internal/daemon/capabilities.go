@@ -40,7 +40,7 @@ func disabledPluginNames(doc RunContext) []string {
 	return names
 }
 
-func removeDisabledBoardlyTools(allowed map[string]struct{}, disabled []string) {
+func removeDisabledZenithTeamTools(allowed map[string]struct{}, disabled []string) {
 	for _, group := range disabled {
 		var tools []string
 		switch group {
@@ -83,7 +83,7 @@ func runOutputPresentationAvailable(doc RunContext) bool {
 }
 
 // runTaskCreationAvailable is the CLI authority for `zen task create` (ADR
-// 0014 D6). Creating Tasks is work coordination, so the same switch that
+// 0014). Creating Tasks is work coordination, so the same switch that
 // withholds Task failure and drafting withholds it. Task creation has
 // no MCP tool to derive it from. The root Agent outside a Task may create
 // explicitly requested scheduled work; its channel row requires a schedule
@@ -98,8 +98,8 @@ func runTaskCreationAvailable(doc RunContext) bool {
 // unless Company planning is switched off. A Task read by name is not
 // behind it; every Run with a channel has that. It does not follow the
 // company_plan_export tool, which is offered to the root Agent alone; the
-// server scopes these reads, the export's included (ADR 0014 rule 14, Access
-// TECH B6), so they are safe for any Agent.
+// server scopes these reads, the export's included (ADR 0014 rule 14), so
+// they are safe for any Agent.
 func runCompanyReadsAvailable(doc RunContext) bool {
 	return runToolPolicy(doc) == "" && doc.ExecutionProfile.Task == nil &&
 		!slices.Contains(doc.Agent.Capabilities.DisabledBuiltIns, "planning")

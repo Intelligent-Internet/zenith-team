@@ -11,12 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // mustRemovalService is mustRuntimeLifecycleService plus a recorder on the
@@ -195,7 +195,15 @@ func TestRemoveRuntimeRefusesAnOnlineRuntime(t *testing.T) {
 		t.Fatalf("Remove(online) error = %v, want ErrRuntimeRemoveBlockedOnline", err)
 	}
 	// And so is the targetless form: online outranks everything else.
-	if _, err := service.Remove(ctx, ownerOf(fixture), fixture.RuntimeA, RuntimeRemovalInput{}); !errors.Is(err, ErrRuntimeRemoveBlockedOnline) {
+	if _, err := service.Remove(
+		ctx,
+		ownerOf(fixture),
+		fixture.RuntimeA,
+		RuntimeRemovalInput{},
+	); !errors.Is(
+		err,
+		ErrRuntimeRemoveBlockedOnline,
+	) {
 		t.Fatalf("Remove(online, no target) error = %v, want ErrRuntimeRemoveBlockedOnline", err)
 	}
 	assertNothingWritten(t, ctx, pool, fixture, log)
@@ -219,7 +227,12 @@ func TestRemoveRuntimeMovesTheRegistrantsBindingsAndPendingRuns(t *testing.T) {
 	dispatched := seedRun(t, ctx, pool, fixture, fixture.AgentA, fixture.RuntimeA, fixture.UserA, "dispatched")
 	completed := seedRun(t, ctx, pool, fixture, fixture.AgentA, fixture.RuntimeA, fixture.UserA, "completed")
 
-	receipt, err := service.Remove(ctx, ownerOf(fixture), fixture.RuntimeA, RuntimeRemovalInput{TargetRuntimeID: &target})
+	receipt, err := service.Remove(
+		ctx,
+		ownerOf(fixture),
+		fixture.RuntimeA,
+		RuntimeRemovalInput{TargetRuntimeID: &target},
+	)
 	if err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}
@@ -237,7 +250,12 @@ func TestRemoveRuntimeMovesTheRegistrantsBindingsAndPendingRuns(t *testing.T) {
 	var provider string
 	if err := pool.QueryRow(ctx, `SELECT version, provider FROM agents WHERE id = $1`, fixture.AgentA).
 		Scan(&version, &provider); err != nil || version != 1 || provider != "codex" {
-		t.Fatalf("AgentA after removal = version %d provider %q, %v; want the template untouched", version, provider, err)
+		t.Fatalf(
+			"AgentA after removal = version %d provider %q, %v; want the template untouched",
+			version,
+			provider,
+			err,
+		)
 	}
 	for _, test := range []struct {
 		runID       uuid.UUID
@@ -251,7 +269,14 @@ func TestRemoveRuntimeMovesTheRegistrantsBindingsAndPendingRuns(t *testing.T) {
 	} {
 		runtimeID, status, _ := readRun(t, ctx, pool, test.runID)
 		if runtimeID != test.wantRuntime || status != test.wantStatus {
-			t.Fatalf("run %s = %s / %s, want %s / %s", test.runID, runtimeID, status, test.wantRuntime, test.wantStatus)
+			t.Fatalf(
+				"run %s = %s / %s, want %s / %s",
+				test.runID,
+				runtimeID,
+				status,
+				test.wantRuntime,
+				test.wantStatus,
+			)
 		}
 	}
 	removedAt, status := readRemovedAt(t, ctx, pool, fixture.RuntimeA)
@@ -305,7 +330,13 @@ func TestRemoveRuntimeWithoutATargetDropsBindingsAndCancelsPendingRuns(t *testin
 	if got := readBindingRuntime(t, ctx, pool, fixture.AgentA, fixture.UserA); got != uuid.Nil {
 		t.Fatalf("binding after a targetless removal = %s, want none", got)
 	}
-	if _, status, reason := readRun(t, ctx, pool, queued); status != "cancelled" || reason != execution.RunReasonRuntimeRemoved {
+	if _, status, reason := readRun(
+		t,
+		ctx,
+		pool,
+		queued,
+	); status != "cancelled" ||
+		reason != execution.RunReasonRuntimeRemoved {
 		t.Fatalf("queued run = %s / %q, want cancelled with runtime_removed", status, reason)
 	}
 	if _, status, _ := readRun(t, ctx, pool, running); status != "running" {
@@ -370,13 +401,21 @@ func TestRemoveRuntimeIsTheRegistrantsAlone(t *testing.T) {
 		runtimeID uuid.UUID
 	}{
 		{
-			name:      "a member does not see the owner's machine",
-			principal: auth.UserPrincipal{UserID: machineOwner, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleMember},
+			name: "a member does not see the owner's machine",
+			principal: auth.UserPrincipal{
+				UserID:    machineOwner,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleMember,
+			},
 			runtimeID: fixture.RuntimeA,
 		},
 		{
-			name:      "another member does not see the machine owner's",
-			principal: auth.UserPrincipal{UserID: bystander, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleMember},
+			name: "another member does not see the machine owner's",
+			principal: auth.UserPrincipal{
+				UserID:    bystander,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleMember,
+			},
 			runtimeID: ownedByMember,
 		},
 		{
@@ -384,23 +423,39 @@ func TestRemoveRuntimeIsTheRegistrantsAlone(t *testing.T) {
 			principal: ownerOf(fixture), runtimeID: ownedByMember,
 		},
 		{
-			name:      "a claimed owner role loses to the stored registrant",
-			principal: auth.UserPrincipal{UserID: machineOwner, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
+			name: "a claimed owner role loses to the stored registrant",
+			principal: auth.UserPrincipal{
+				UserID:    machineOwner,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
 			runtimeID: fixture.RuntimeA,
 		},
 		{
-			name:      "a revoked owner sees no runtime",
-			principal: auth.UserPrincipal{UserID: revoked, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
+			name: "a revoked owner sees no runtime",
+			principal: auth.UserPrincipal{
+				UserID:    revoked,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
 			runtimeID: fixture.RuntimeA,
 		},
 		{
-			name:      "another company's owner sees no runtime",
-			principal: auth.UserPrincipal{UserID: fixture.UserB, CompanyID: fixture.CompanyB, Role: auth.CompanyRoleOwner},
+			name: "another company's owner sees no runtime",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserB,
+				CompanyID: fixture.CompanyB,
+				Role:      auth.CompanyRoleOwner,
+			},
 			runtimeID: fixture.RuntimeA,
 		},
 		{
-			name:      "a non-member acting in the company sees no runtime",
-			principal: auth.UserPrincipal{UserID: fixture.UserB, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
+			name: "a non-member acting in the company sees no runtime",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserB,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
 			runtimeID: fixture.RuntimeA,
 		},
 		{
@@ -409,7 +464,15 @@ func TestRemoveRuntimeIsTheRegistrantsAlone(t *testing.T) {
 		},
 	}
 	for _, refusal := range refusals {
-		if _, err := service.Remove(ctx, refusal.principal, refusal.runtimeID, RuntimeRemovalInput{}); !errors.Is(err, ErrRuntimeNotFound) {
+		if _, err := service.Remove(
+			ctx,
+			refusal.principal,
+			refusal.runtimeID,
+			RuntimeRemovalInput{},
+		); !errors.Is(
+			err,
+			ErrRuntimeNotFound,
+		) {
 			t.Fatalf("%s: Remove() error = %v, want ErrRuntimeNotFound", refusal.name, err)
 		}
 	}
@@ -480,7 +543,12 @@ func TestRemoveRuntimeMovesArchivedAgentsBindingsToo(t *testing.T) {
 	target := seedRuntime(t, ctx, pool, fixture, "daemon-s", "codex", fixture.UserA)
 	setRuntimeOffline(t, ctx, pool, fixture.RuntimeA)
 
-	receipt, err := service.Remove(ctx, ownerOf(fixture), fixture.RuntimeA, RuntimeRemovalInput{TargetRuntimeID: &target})
+	receipt, err := service.Remove(
+		ctx,
+		ownerOf(fixture),
+		fixture.RuntimeA,
+		RuntimeRemovalInput{TargetRuntimeID: &target},
+	)
 	if err != nil {
 		t.Fatalf("Remove() error = %v", err)
 	}
@@ -512,7 +580,13 @@ func TestRemoveRuntimeHidesTheRowAndKeepsItsHistory(t *testing.T) {
 	if _, err := service.Get(ctx, ownerOf(fixture), fixture.RuntimeA); !errors.Is(err, ErrRuntimeNotFound) {
 		t.Fatalf("Get() after removal error = %v, want ErrRuntimeNotFound", err)
 	}
-	if runtimeID, status, _ := readRun(t, ctx, pool, historic); runtimeID != fixture.RuntimeA || status != "completed" {
+	if runtimeID, status, _ := readRun(
+		t,
+		ctx,
+		pool,
+		historic,
+	); runtimeID != fixture.RuntimeA ||
+		status != "completed" {
 		t.Fatalf("run history after removal = %s / %s, want the machine's history intact", runtimeID, status)
 	}
 

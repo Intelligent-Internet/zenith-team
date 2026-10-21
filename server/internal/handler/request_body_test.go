@@ -10,8 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/canvas"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
 )
 
 func TestDeclaresRequiredCollectionBoundary(t *testing.T) {

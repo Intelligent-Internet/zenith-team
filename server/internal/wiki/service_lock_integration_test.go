@@ -15,8 +15,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const lockTestTimeout = 5 * time.Second
@@ -119,7 +119,11 @@ func TestWikiMutationsDoNotWaitForAnAutosaveInFlight(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Filed", CollectionID: &doomed.ID}); err != nil {
+	if _, err = s.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "Filed", CollectionID: &doomed.ID},
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -176,7 +180,11 @@ func TestWikiMutationsDoNotWaitForAnAutosaveInFlight(t *testing.T) {
 func TestAgentWriteDoesNotWaitForAnUnrelatedAutosave(t *testing.T) {
 	h := startAgentWrite(t)
 	ctx := t.Context()
-	busy, err := h.service.DefaultWikiService.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Busy", Body: "autosaved"})
+	busy, err := h.service.DefaultWikiService.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "Busy", Body: "autosaved"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,16 +272,24 @@ func TestWikiMutationsRecheckMembershipAfterConcurrentLifecycleChange(t *testing
 			}
 		}},
 		{"RenameCollection", func(t *testing.T, tag string) func(context.Context) error {
+			t.Helper()
 			collection, err := s.CreateCollection(ctx, h.owner, "Rename raced "+tag)
 			if err != nil {
 				t.Fatal(err)
 			}
 			return func(ctx context.Context) error {
-				_, err := s.RenameCollection(ctx, h.owner, collection.ID, collection.Revision, "Renamed")
+				_, err := s.RenameCollection(
+					ctx,
+					h.owner,
+					collection.ID,
+					collection.Revision,
+					"Renamed",
+				)
 				return err
 			}
 		}},
 		{"DeleteCollection", func(t *testing.T, tag string) func(context.Context) error {
+			t.Helper()
 			collection, err := s.CreateCollection(ctx, h.owner, "Delete raced "+tag)
 			if err != nil {
 				t.Fatal(err)
@@ -283,6 +299,7 @@ func TestWikiMutationsRecheckMembershipAfterConcurrentLifecycleChange(t *testing
 			}
 		}},
 		{"ArchivePage", func(t *testing.T, _ string) func(context.Context) error {
+			t.Helper()
 			created, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Archive raced"})
 			if err != nil {
 				t.Fatal(err)
@@ -293,7 +310,12 @@ func TestWikiMutationsRecheckMembershipAfterConcurrentLifecycleChange(t *testing
 			}
 		}},
 		{"PublishPage", func(t *testing.T, _ string) func(context.Context) error {
-			created, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Publish raced", Body: "text"})
+			t.Helper()
+			created, err := s.CreatePage(
+				ctx,
+				h.owner,
+				wiki.CreatePageInput{Title: "Publish raced", Body: "text"},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -334,7 +356,11 @@ func TestWikiMutationsRecheckMembershipAfterConcurrentLifecycleChange(t *testing
 					t.Fatal(err)
 				}
 				t.Cleanup(func() { _ = holder.Rollback(context.Background()) })
-				if _, err := holder.Exec(ctx, `SELECT id FROM companies WHERE id = $1 FOR UPDATE`, h.owner.CompanyID); err != nil {
+				if _, err := holder.Exec(
+					ctx,
+					`SELECT id FROM companies WHERE id = $1 FOR UPDATE`,
+					h.owner.CompanyID,
+				); err != nil {
 					t.Fatal(err)
 				}
 				result := make(chan error, 1)
@@ -357,7 +383,13 @@ func TestWikiMutationsRecheckMembershipAfterConcurrentLifecycleChange(t *testing
 						WHERE company_id = $1 AND user_id = $2`, h.owner.CompanyID, h.owner.UserID)
 				})
 				if err := receive(t, op.name, result); !errors.Is(err, change.want) {
-					t.Fatalf("%s after the member was %s = %v, want %v", op.name, change.name, err, change.want)
+					t.Fatalf(
+						"%s after the member was %s = %v, want %v",
+						op.name,
+						change.name,
+						err,
+						change.want,
+					)
 				}
 			})
 		}
@@ -416,7 +448,11 @@ func TestDeleteCollectionQueuesBehindAFilingPublishWithoutDeadlock(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	filed, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Filed", Body: "text", CollectionID: &collection.ID})
+	filed, err := s.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "Filed", Body: "text", CollectionID: &collection.ID},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -478,7 +514,11 @@ func TestConcurrentCollectionDeleteAndFilingNeverFail(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		filed, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Filed", Body: "text", CollectionID: &collection.ID})
+		filed, err := s.CreatePage(
+			ctx,
+			h.owner,
+			wiki.CreatePageInput{Title: "Filed", Body: "text", CollectionID: &collection.ID},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -504,12 +544,18 @@ func TestConcurrentCollectionDeleteAndFilingNeverFail(t *testing.T) {
 			},
 			func() error {
 				_, err := s.UpdateDraftMetadata(ctx, h.owner, other.ID, wiki.DraftMetadataInput{
-					ExpectedSequence: otherDraft.Sequence, Title: "Other", CollectionID: &collection.ID,
+					ExpectedSequence: otherDraft.Sequence,
+					Title:            "Other",
+					CollectionID:     &collection.ID,
 				})
 				return err
 			},
 			func() error {
-				_, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Fresh", CollectionID: &collection.ID})
+				_, err := s.CreatePage(
+					ctx,
+					h.owner,
+					wiki.CreatePageInput{Title: "Fresh", CollectionID: &collection.ID},
+				)
 				return err
 			},
 		}
@@ -528,8 +574,13 @@ func TestConcurrentCollectionDeleteAndFilingNeverFail(t *testing.T) {
 		wg.Wait()
 		close(results)
 		for err := range results {
-			if err != nil && !errors.Is(err, wiki.ErrCollectionNotFound) && !errors.Is(err, wiki.ErrPageConflict) {
-				t.Fatalf("round %d: concurrent delete and filing = %v, want nil, ErrCollectionNotFound or ErrPageConflict", round, err)
+			if err != nil && !errors.Is(err, wiki.ErrCollectionNotFound) &&
+				!errors.Is(err, wiki.ErrPageConflict) {
+				t.Fatalf(
+					"round %d: concurrent delete and filing = %v, want nil, ErrCollectionNotFound or ErrPageConflict",
+					round,
+					err,
+				)
 			}
 		}
 		var dangling int
@@ -574,7 +625,11 @@ func TestConcurrentAgentWritesHoldThePerRunPageCap(t *testing.T) {
 			defer wg.Done()
 			pages := make([]wiki.AgentWritePageInput, 3)
 			for i := range pages {
-				pages[i] = page(fmt.Sprintf("%s-%d", prefix, i), fmt.Sprintf("%s page %d", strings.ToUpper(prefix), i), "text")
+				pages[i] = page(
+					fmt.Sprintf("%s-%d", prefix, i),
+					fmt.Sprintf("%s page %d", strings.ToUpper(prefix), i),
+					"text",
+				)
 			}
 			<-start
 			_, err := h.writes.Write(ctx, h.owner, h.research, wiki.AgentWriteInput{Pages: pages})
@@ -705,11 +760,16 @@ func TestPublishDoesNotWaitForALockedLinkTarget(t *testing.T) {
 			if _, err := s.PublishPage(opCtx, h.owner, linking.ID, wiki.PublishPageInput{
 				ExpectedRevision: linking.Revision, ExpectedSequence: draft.Sequence,
 			}); err != nil {
-				t.Fatalf("publish linking to a page held by %s = %v, want it to complete", hold.name, err)
+				t.Fatalf(
+					"publish linking to a page held by %s = %v, want it to complete",
+					hold.name,
+					err,
+				)
 			}
 			var links int
 			if err := h.pool.QueryRow(ctx, `SELECT count(*) FROM wiki_links WHERE from_page_id = $1 AND to_page_id = $2`,
-				linking.ID, target.ID).Scan(&links); err != nil {
+				linking.ID, target.ID).
+				Scan(&links); err != nil {
 				t.Fatal(err)
 			}
 			if links != 1 {

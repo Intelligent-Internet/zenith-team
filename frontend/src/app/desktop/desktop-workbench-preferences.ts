@@ -16,7 +16,7 @@ export type DesktopWorkbenchPreferences = {
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
 const DESKTOP_WORKBENCH_PREFERENCES_KEY =
-  "boardly.desktop.workbench.preferences";
+  "zenith-team.desktop.workbench.preferences";
 
 export const desktopNotificationCategories: DesktopNotificationCategoryPreference[] =
   [

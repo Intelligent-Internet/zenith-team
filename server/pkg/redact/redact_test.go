@@ -48,7 +48,8 @@ var ruleCases = []struct {
 		want:  "[redacted:github-pat]",
 	},
 	{
-		name:  "slack bot token",
+		name: "slack bot token",
+		// Split so secret scanners do not mistake the fake for a real token.
 		input: "xoxb-" + "123456789012-ABCDEFGHIJKLMNOPQRSTUVWX",
 		want:  "[redacted:slack-token]",
 	},
@@ -84,8 +85,8 @@ var ruleCases = []struct {
 	},
 	{
 		name:  "url userinfo credentials",
-		input: "postgres://alice:s3cr3t-pass@db.internal:5432/boardly",
-		want:  "postgres://[redacted:url-credentials]@db.internal:5432/boardly",
+		input: "postgres://alice:s3cr3t-pass@db.internal:5432/zenith_team",
+		want:  "postgres://[redacted:url-credentials]@db.internal:5432/zenith_team",
 	},
 	{
 		name:  "generic key value secret",

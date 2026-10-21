@@ -13,7 +13,7 @@ const {
 } = require("../shared/desktop-variant.cjs");
 
 const desktopEnvironment = normalizeDesktopEnvironment(
-  process.env.BOARDLY_DESKTOP_ENV,
+  process.env.ZENITH_TEAM_DESKTOP_ENV,
 );
 loadElectronEnvFiles({
   files: desktopEnvironment === "dev" ? DEV_ENV_FILES : PROD_ENV_FILES,
@@ -27,21 +27,24 @@ if (removedDownloadSymlinks.length > 0) {
 }
 
 const DEFAULT_LOCAL_API_URL = "http://127.0.0.1:8788";
-const STUDIO_MEDIA_ORIGINS = [
-  "https://storage.googleapis.com",
-  "https://files.example.com",
-];
-
 const rendererEnv = createRendererBuildEnv(desktopEnvironment);
 const studioApiOrigin = resolveStudioApiOrigin();
+// Studio renders cloud assets from these hosts. Without Studio the CSP
+// allows none of them.
+const STUDIO_MEDIA_ORIGINS = studioApiOrigin
+  ? (process.env.ZENITH_STUDIO_MEDIA_ORIGINS ?? "https://storage.googleapis.com")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  : [];
 
 const pnpmProcess = spawnPnpm(["build"], {
   env: {
     ...process.env,
     ...rendererEnv,
-    BOARDLY_ELECTRON_BUILD: "true",
-    BOARDLY_DESKTOP_ENV: desktopEnvironment,
-    VITE_BOARDLY_DESKTOP_ENV: desktopEnvironment,
+    ZENITH_TEAM_ELECTRON_BUILD: "true",
+    ZENITH_TEAM_DESKTOP_ENV: desktopEnvironment,
+    VITE_ZENITH_TEAM_DESKTOP_ENV: desktopEnvironment,
   },
 });
 
@@ -62,9 +65,9 @@ function applyPackagedContentSecurityPolicy(env) {
   const csp = [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' https://fonts.googleapis.com 'unsafe-inline'",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    `img-src 'self' data: blob: file: boardly-generated-image: boardly-plugin-icon: https://files.openai.com https://chatgpt.com https://*.googleusercontent.com ${STUDIO_MEDIA_ORIGINS.join(" ")}`,
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
+    `img-src 'self' data: blob: file: zenith-team-generated-image: zenith-team-plugin-icon: https://files.openai.com https://chatgpt.com https://*.googleusercontent.com ${STUDIO_MEDIA_ORIGINS.join(" ")}`,
     `connect-src ${connectSources.join(" ")}`,
     `media-src ${mediaSources.join(" ")}`,
     "object-src 'none'",
@@ -89,14 +92,13 @@ function createConnectSources(env) {
   const sources = new Set([
     "'self'",
     "blob:",
-    "https://app.example.com",
     "ws://127.0.0.1:*",
     // Huddles: LiveKit Cloud signals over wss and validates a failed
     // connection over https, and may move a session to a regional host.
     "https://*.livekit.cloud",
     "wss://*.livekit.cloud",
     // Studio renders cloud assets and fetches signed uploads/downloads.
-    ...STUDIO_MEDIA_ORIGINS,
+    ...(studioApiOrigin ? STUDIO_MEDIA_ORIGINS : []),
   ]);
 
   addUrlSource(sources, env.VITE_API_URL);
@@ -118,11 +120,11 @@ function createConnectSources(env) {
 
 function resolveStudioApiOrigin() {
   const { isIP } = require("node:net");
-  const variant = getDesktopVariant({
-    BOARDLY_DESKTOP_ENV: desktopEnvironment,
-  });
-  const rawUrl =
-    process.env.ZENITH_STUDIO_API_URL?.trim() || variant.studioApiOrigin;
+  // Zenith Studio is optional: without ZENITH_STUDIO_API_URL it stays off.
+  const rawUrl = process.env.ZENITH_STUDIO_API_URL?.trim();
+  if (!rawUrl) {
+    return null;
+  }
   let url;
   try {
     url = new URL(rawUrl);
@@ -219,10 +221,10 @@ function createRendererBuildEnv(desktopEnvironment) {
 
   const configuredOrigin =
     desktopEnvironment === "dev"
-      ? process.env.BOARDLY_DESKTOP_DEV_ORIGIN
-      : process.env.BOARDLY_DESKTOP_PROD_ORIGIN;
+      ? process.env.ZENITH_TEAM_DESKTOP_DEV_ORIGIN
+      : process.env.ZENITH_TEAM_DESKTOP_PROD_ORIGIN;
   const defaultOrigin = getDesktopVariant({
-    BOARDLY_DESKTOP_ENV: desktopEnvironment,
+    ZENITH_TEAM_DESKTOP_ENV: desktopEnvironment,
   }).apiOrigin;
   const cloudOrigin = normalizeCloudOrigin(
     configuredOrigin,
@@ -240,14 +242,17 @@ function createRendererBuildEnv(desktopEnvironment) {
 
 function normalizeCloudOrigin(value, defaultOrigin, desktopEnvironment) {
   const origin = value?.trim() || defaultOrigin;
-
-  assertNonLocalCloudUrl(
+  const name =
     desktopEnvironment === "dev"
-      ? "BOARDLY_DESKTOP_DEV_ORIGIN"
-      : "BOARDLY_DESKTOP_PROD_ORIGIN",
-    origin,
-    desktopEnvironment,
-  );
+      ? "ZENITH_TEAM_DESKTOP_DEV_ORIGIN"
+      : "ZENITH_TEAM_DESKTOP_PROD_ORIGIN";
+
+  if (!origin) {
+    throw new Error(
+      `${name} is required for ${desktopEnvironment} desktop builds: set it to your Zenith Team server origin.`,
+    );
+  }
+  assertNonLocalCloudUrl(name, origin, desktopEnvironment);
   return origin.replace(/\/+$/, "");
 }
 

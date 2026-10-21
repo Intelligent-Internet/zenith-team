@@ -21,14 +21,14 @@ func TestSandboxCommandWrapsTheProviderInSandboxExec(t *testing.T) {
 	sandbox := &Sandbox{
 		Profile: "(version 1)\n(allow default)",
 		Params: map[string]string{
-			"PROTECTED_1": "/Users/olivia/Library/Application Support/Zenith Team/boardly-home",
-			"PROTECTED_0": "/Users/olivia/.boardly",
+			"PROTECTED_1": "/Users/olivia/Library/Application Support/Zenith Team/zenith-team-home",
+			"PROTECTED_0": "/Users/olivia/.zenith-team",
 		},
 	}
 	name, args = sandbox.Command("/opt/bin/codex", []string{"app-server", "--listen", "stdio://"})
 	want := []string{
-		"-D", "PROTECTED_0=/Users/olivia/.boardly",
-		"-D", "PROTECTED_1=/Users/olivia/Library/Application Support/Zenith Team/boardly-home",
+		"-D", "PROTECTED_0=/Users/olivia/.zenith-team",
+		"-D", "PROTECTED_1=/Users/olivia/Library/Application Support/Zenith Team/zenith-team-home",
 		"-p", "(version 1)\n(allow default)",
 		"--", "/opt/bin/codex", "app-server", "--listen", "stdio://",
 	}

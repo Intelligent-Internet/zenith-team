@@ -23,7 +23,7 @@ RETURNING *;
 -- any page row lock. It excludes only DeleteCollection, so filing writers
 -- never queue behind each other or behind an autosave.
 SELECT pg_advisory_xact_lock_shared(hashtextextended(
-    'boardly/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
+    'zenith-team/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
     0
 ));
 
@@ -33,7 +33,7 @@ SELECT pg_advisory_xact_lock_shared(hashtextextended(
 -- page -> collection; this lock, taken first on both sides, keeps the two
 -- orders from forming a deadlock cycle.
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
+    'zenith-team/wiki-collections/v1/' || sqlc.arg(company_id)::uuid::text,
     0
 ));
 

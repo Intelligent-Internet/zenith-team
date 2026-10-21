@@ -9,7 +9,7 @@ function startSentryCrashReporter({ app, policy }) {
   Sentry.init({
     ...sentryOptions,
     dsn: policy.dsn,
-    environment: policy.globalExtra.boardly_env,
+    environment: policy.globalExtra.zenith_team_env,
     release: `zenith-team-desktop@${app.getVersion()}`,
     initialScope: { tags: policy.globalExtra },
     // The SDK's sandbox-compatible preload carries events through Electron IPC.

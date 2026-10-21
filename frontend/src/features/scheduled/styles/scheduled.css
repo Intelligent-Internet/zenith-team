@@ -22,7 +22,7 @@
   background: var(--workspace-selected-bg);
 }
 
-.boardly-workspace-theme .scheduled-page .scheduled-primary-button {
+.zenith-team-workspace-theme .scheduled-page .scheduled-primary-button {
   min-height: var(--workspace-control-size);
   height: var(--workspace-control-size);
   padding: 5px 12px;
@@ -39,14 +39,14 @@
   outline-color: var(--workspace-native-accent);
 }
 
-.boardly-workspace-theme .scheduled-page .scheduled-primary-button:hover {
+.zenith-team-workspace-theme .scheduled-page .scheduled-primary-button:hover {
   background: var(
     --workspace-accent-hover,
     var(--workspace-native-accent)
   ) !important;
 }
 
-.boardly-workspace-theme .scheduled-page .scheduled-primary-button:disabled {
+.zenith-team-workspace-theme .scheduled-page .scheduled-primary-button:disabled {
   border-color: var(--workspace-divider);
   background: var(--workspace-control-bg) !important;
   color: var(--workspace-native-text-muted) !important;
@@ -65,11 +65,11 @@
   line-height: var(--workspace-leading-label);
 }
 
-.boardly-workspace-theme .scheduled-control:focus-within {
+.zenith-team-workspace-theme .scheduled-control:focus-within {
   border-color: var(--workspace-native-accent);
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .scheduled-control
   :is(input, textarea, select):focus-visible {
   outline: none;
@@ -111,7 +111,7 @@
 }
 
 @media (pointer: coarse) {
-  .boardly-workspace-theme .scheduled-page .scheduled-primary-button,
+  .zenith-team-workspace-theme .scheduled-page .scheduled-primary-button,
   .scheduled-page .scheduled-toolbar-refresh,
   .scheduled-page .scheduled-control:not(:has(textarea)),
   .scheduled-page [aria-label="Schedule status"] button {

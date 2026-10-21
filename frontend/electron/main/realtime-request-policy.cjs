@@ -28,7 +28,9 @@ function resolveDesktopRendererApiUrl(env, isPackaged) {
     fallback: isPackaged ? "prod" : "local",
   });
   const configured =
-    env.VITE_API_URL || env.BOARDLY_DESKTOP_API_BASE_URL || variant.apiOrigin;
+    env.VITE_API_URL ||
+    env.ZENITH_TEAM_DESKTOP_API_BASE_URL ||
+    variant.apiOrigin;
   const url = new URL(configured);
   if (
     (url.protocol !== "http:" && url.protocol !== "https:") ||

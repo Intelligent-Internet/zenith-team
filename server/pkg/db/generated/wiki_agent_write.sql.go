@@ -160,7 +160,7 @@ func (q *Queries) LockRunForWikiWrite(ctx context.Context, arg LockRunForWikiWri
 
 const lockWikiResearchWrites = `-- name: LockWikiResearchWrites :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/wiki-research-writes/v1/' || $1::uuid::text,
+    'zenith-team/wiki-research-writes/v1/' || $1::uuid::text,
     0
 ))
 `

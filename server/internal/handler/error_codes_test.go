@@ -223,7 +223,7 @@ func TestErrorMappingsAreRegistered(t *testing.T) {
 // API without being documented, and cannot be documented without existing.
 //
 // Codes under the "Planned codes" heading are contracted ahead of the server
-// and are allowed to have no producer, the same way x-boardly-status lets an
+// and are allowed to have no producer, the same way x-zenith-team-status lets an
 // operation lead its implementation.
 func TestErrorCodesMatchDocumentation(t *testing.T) {
 	t.Parallel()

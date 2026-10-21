@@ -12,18 +12,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Every file list and download check reaches attachment_access, a UNION ALL
-// view, through a lookup that names the file and the person (ADR 0017, TECH
-// "How queries use the views"). The lookup must stay one indexed probe per
-// file: no hashed subplan and no scan of the tables behind the view's arms,
-// which would build the person's whole readable set (every channel file,
-// every Project file) to answer a page of a few. A list may still walk its
-// own rows as the planner likes; only the access tables are pinned.
+// view, through a lookup that names the file and the person (ADR 0017). The
+// lookup must stay one indexed probe per file: no hashed subplan and no scan
+// of the tables behind the view's arms, which would build the person's whole
+// readable set (every channel file, every Project file) to answer a page of a
+// few. A list may still walk its own rows as the planner likes; only the
+// access tables are pinned.
 func TestProjectFileListsProbeAttachmentAccessPerRow(t *testing.T) {
 	t.Parallel()
 	pool, _ := dbtest.StartPostgres(t)

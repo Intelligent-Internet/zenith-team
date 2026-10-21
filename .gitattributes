@@ -2,13 +2,14 @@
 # (ADR 0016). A Windows checkout with core.autocrlf=true would otherwise
 # rewrite it:
 #
-# - boardly-mcp matches each platform SKILL.md's `name:` and `description:`
+# - zenith-team-mcp matches each platform SKILL.md's `name:` and `description:`
 #   frontmatter lines byte for byte, so a CRLF copy is refused;
 # - platformbundle.Decode checks each tar's sha256 against its lock, so a
 #   converted tar is refused, and the server does not start.
 #
-# These rules cover only those paths. The rest of the repository keeps each
-# checkout's own line-ending settings.
+# These rules, and the shell and env rules at the end, cover only those
+# paths. The rest of the repository keeps each checkout's own line-ending
+# settings.
 
 # The pinned artifact, written only by bundlectl import, and the golden
 # format-1 tar the tests compare against.
@@ -28,3 +29,19 @@ server/internal/mcp/tools/builtin/** text eol=lf
 server/internal/daemon/tool_releases/*.lock.json text eol=lf
 server/internal/daemon/studio_skill.md text eol=lf
 server/internal/daemon/studio_runtime.md text eol=lf
+
+# make, sh and Docker Compose read these; a CRLF copy breaks them.
+Makefile text eol=lf
+*.sh text eol=lf
+*.env text eol=lf
+*.env.example text eol=lf
+.env.example text eol=lf
+deploy/Caddyfile text eol=lf
+
+# Generated code and lockfiles: collapsed in GitHub diffs, left out of
+# language stats.
+server/pkg/db/generated/** linguist-generated
+frontend/src/shared/api/generated/** linguist-generated
+frontend/pnpm-lock.yaml linguist-generated
+voice-agent/uv.lock linguist-generated
+server/go.sum linguist-generated

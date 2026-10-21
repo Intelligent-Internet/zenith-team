@@ -39,7 +39,11 @@ func TestTaskMetadataPatchDistinguishesOmissionAndClearing(t *testing.T) {
 	start, due := "2026-09-11", "2026-09-30"
 	current := validResponse()
 	current.StartDate, current.DueDate, current.Labels = &start, &due, []string{"Design"}
-	input := UpdateInput{ExpectedRevision: current.Revision, Labels: []string{}, StartDate: DateChange{Present: true}}
+	input := UpdateInput{
+		ExpectedRevision: current.Revision,
+		Labels:           []string{},
+		StartDate:        DateChange{Present: true},
+	}
 	normalized, err := normalizeUpdateInput(input)
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +52,14 @@ func TestTaskMetadataPatchDistinguishesOmissionAndClearing(t *testing.T) {
 	if target.StartDate != nil || target.DueDate == nil || *target.DueDate != due || len(target.Labels) != 0 {
 		t.Fatalf("target = %+v", target)
 	}
-	if fields := changedTaskFields(current, target, normalized); !reflect.DeepEqual(fields, []Field{FieldLabels, FieldStartDate}) {
+	if fields := changedTaskFields(
+		current,
+		target,
+		normalized,
+	); !reflect.DeepEqual(
+		fields,
+		[]Field{FieldLabels, FieldStartDate},
+	) {
 		t.Fatalf("changed fields = %v", fields)
 	}
 }

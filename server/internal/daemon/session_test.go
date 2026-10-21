@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
 )
 
-// writeCredential stores the daemon's own session (daemon-auth.json, D31)
+// writeCredential stores the daemon's own session (daemon-auth.json)
 // with an access token that expires after accessTTL, as `zen daemon start`
 // or the desktop app would.
 func writeCredential(t *testing.T, baseURL, accessToken, refreshToken string, accessTTL time.Duration) string {
@@ -69,7 +69,7 @@ func sessionServer(t *testing.T, refreshes *int) *httptest.Server {
 // the rotated refresh token must land on disk, because the server treats a
 // replayed refresh token as theft.
 func TestFileSessionRenewsExpiredAccessTokenAndPersistsRotation(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	refreshes := 0
 	srv := sessionServer(t, &refreshes)
 	defer srv.Close()
@@ -96,7 +96,7 @@ func TestFileSessionRenewsExpiredAccessTokenAndPersistsRotation(t *testing.T) {
 }
 
 func TestFileSessionKeepsAValidAccessTokenWithoutRefreshing(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	refreshes := 0
 	srv := sessionServer(t, &refreshes)
 	defer srv.Close()
@@ -114,7 +114,7 @@ func TestFileSessionKeepsAValidAccessTokenWithoutRefreshing(t *testing.T) {
 // Renew covers the server rejecting a token the file still advertises (early
 // revocation, clock skew): one forced refresh, not a login prompt.
 func TestFileSessionRenewForcesRefreshOfARejectedToken(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	refreshes := 0
 	srv := sessionServer(t, &refreshes)
 	defer srv.Close()
@@ -137,7 +137,7 @@ func TestResolveAuthReportsAMissingCredential(t *testing.T) {
 	}
 }
 
-// D31: the daemon runs only on its own session. The person's auth.json in
+// The daemon runs only on its own session. The person's auth.json in
 // the same home is the CLI's, and the daemon never falls back to it.
 func TestResolveAuthNeverReadsThePersonsSession(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1:1")

@@ -9,12 +9,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // FailureInput is the replay fence and Agent-authored business reason for one
@@ -115,7 +115,7 @@ func (s *DefaultTaskService) MarkFailed(
 		target := previous
 		target.Status = StatusFailed
 		// The Run declares the failure: its Agent, for its authorizer, in
-		// this Run (D31).
+		// this Run.
 		actor := origin.Actor()
 		updated, err := updateTask(
 			ctx, tx, target, previous.Revision, &pending, actor, false, projectWriteFence{},

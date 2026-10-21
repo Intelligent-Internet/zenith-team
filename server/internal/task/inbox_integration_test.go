@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestTaskInboxAssignmentAndBlockerRecipientsAreDeduplicated(t *testing.T) {
@@ -32,8 +32,8 @@ func TestTaskInboxAssignmentAndBlockerRecipientsAreDeduplicated(t *testing.T) {
 	agentID := uuid.Must(uuid.NewV7())
 	mustTaskInboxExec(t, ctx, pool, `
 		INSERT INTO users (id,email,display_name) VALUES
-			($1,'task-inbox-creator@boardly.test','Creator'),
-			($2,'task-inbox-assignee@boardly.test','Assignee')`,
+			($1,'task-inbox-creator@zenith-team.test','Creator'),
+			($2,'task-inbox-assignee@zenith-team.test','Assignee')`,
 		creatorID, assigneeID)
 	mustTaskInboxExec(t, ctx, pool, `
 		INSERT INTO companies (id,name,slug,task_prefix)

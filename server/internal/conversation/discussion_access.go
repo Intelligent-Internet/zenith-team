@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func discussionParameters(p auth.UserPrincipal) generated.ListDiscussionAccessParams {
@@ -303,8 +303,8 @@ func normalizeChannelName(name string) (string, error) {
 	return name, nil
 }
 
-func validDiscussionIDs(ids []uuid.UUID, cap int) bool {
-	if len(ids) > cap {
+func validDiscussionIDs(ids []uuid.UUID, limit int) bool {
+	if len(ids) > limit {
 		return false
 	}
 	seen := make(map[uuid.UUID]bool, len(ids))

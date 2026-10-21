@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 // A Run proof acts only for the member the Run works for, in their Company
@@ -35,8 +35,8 @@ func TestRunProofBearerIsTheRunsAuthorizer(t *testing.T) {
 	}
 }
 
-// The server alone decides which Run reads as the Company's planner
-// (IA-FR12): only the root Agent's Run in its person's direct chat, with its
+// The server alone decides which Run reads as the Company's planner:
+// only the root Agent's Run in its person's direct chat, with its
 // Company Plan tools on and with no Task and no tagging channel. Every other
 // Run reads only its own Tasks.
 func TestRunProofScopeDecidesThePlanner(t *testing.T) {

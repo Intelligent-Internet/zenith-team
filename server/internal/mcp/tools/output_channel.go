@@ -18,8 +18,8 @@ import (
 // OutputChannelService presents through the daemon's Run channel. The daemon
 // owns file access and app supervision; the MCP child never chooses a workspace.
 // The fixed wire request mirrors runchannel.Request, and the endpoint and
-// capability come from the Run's run.json (Access TECH B3b). Channel transport
-// tests pin that boundary.
+// capability come from the Run's run.json. Channel transport tests pin that
+// boundary.
 type OutputChannelService interface {
 	PresentOutput(context.Context, PresentOutputInput) (PresentOutputResult, error)
 }
@@ -39,14 +39,22 @@ func NewOutputChannelService(endpoint, capability, runID string) (*DefaultOutput
 		capability == "" || strings.ContainsAny(capability, " \t\r\n") || idErr != nil || id == uuid.Nil {
 		return nil, errors.New("Run channel is unavailable")
 	}
-	return &DefaultOutputChannelService{endpoint: endpoint, capability: capability, runID: id.String(), client: &http.Client{
-		Timeout:       65 * time.Second,
-		Transport:     &http.Transport{Proxy: nil},
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
-	}}, nil
+	return &DefaultOutputChannelService{
+		endpoint:   endpoint,
+		capability: capability,
+		runID:      id.String(),
+		client: &http.Client{
+			Timeout:       65 * time.Second,
+			Transport:     &http.Transport{Proxy: nil},
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
+		},
+	}, nil
 }
 
-func (s *DefaultOutputChannelService) PresentOutput(ctx context.Context, input PresentOutputInput) (PresentOutputResult, error) {
+func (s *DefaultOutputChannelService) PresentOutput(
+	ctx context.Context,
+	input PresentOutputInput,
+) (PresentOutputResult, error) {
 	var result PresentOutputResult
 	if err := s.call(ctx, "/runs/"+s.runID+"/output", input, &result); err != nil {
 		return PresentOutputResult{}, err
@@ -72,7 +80,12 @@ func (s *DefaultOutputChannelService) call(ctx context.Context, path string, inp
 	if err != nil {
 		return err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint+"/v1/run/api", bytes.NewReader(body))
+	request, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		s.endpoint+"/v1/run/api",
+		bytes.NewReader(body),
+	)
 	if err != nil {
 		return errors.New("create Run channel request")
 	}
@@ -91,7 +104,9 @@ func (s *DefaultOutputChannelService) call(ctx context.Context, path string, inp
 		Status        int             `json:"status"`
 		Body          json.RawMessage `json:"body"`
 	}
-	if err := json.NewDecoder(io.LimitReader(response.Body, 8<<20)).Decode(&verdict); err != nil || verdict.SchemaVersion != 1 {
+	if err := json.NewDecoder(io.LimitReader(response.Body, 8<<20)).
+		Decode(&verdict); err != nil ||
+		verdict.SchemaVersion != 1 {
 		return errors.New("invalid Run channel response")
 	}
 	if verdict.Status < 200 || verdict.Status >= 300 {

@@ -12,14 +12,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Project grants (ADR 0017): permissions granted to one person on one
@@ -35,7 +35,7 @@ import (
 // Group), what they hold with every source (Effective: their rows, what
 // their Groups hold there, the Company default set on a Company-visible
 // Project, and the management permissions when their Company role holds
-// projects.manage), and each source on its own (Sources, D4). GrantedBy is
+// projects.manage), and each source on its own (Sources). GrantedBy is
 // the author of their most recent own row, nil without one; UpdatedAt is the
 // latest change of any stored source.
 type ProjectGrant struct {
@@ -70,7 +70,7 @@ type ProjectGrantSource struct {
 }
 
 // ProjectGrantList is GET /projects/{id}/grants: every person with a stored
-// source on the Project, and every Group holding a grant there (D4).
+// source on the Project, and every Group holding a grant there.
 type ProjectGrantList struct {
 	Items  []ProjectGrant      `json:"items"`
 	Groups []ProjectGroupGrant `json:"groups"`
@@ -471,12 +471,28 @@ func (s *DefaultProjectService) changeGrant(
 		}
 		result.Revision = project.AccessVersion
 		if grantChangeRecorded(before, after, written) {
-			if result.Revision, err = change.commit(ctx, q, &pending, projectGrantChanged,
-				&userID, auth.ProjectPermissionStrings(before.Granted), auth.ProjectPermissionStrings(after.Granted),
+			if result.Revision, err = change.commit(
+				ctx,
+				q,
+				&pending,
+				projectGrantChanged,
+				&userID,
+				auth.ProjectPermissionStrings(before.Granted),
+				auth.ProjectPermissionStrings(after.Granted),
 			); err != nil {
 				return err
 			}
-			if err := applyProjectAccessLossInTx(ctx, q, &pending, &notices, principal.CompanyID, id, userID, before, after); err != nil {
+			if err := applyProjectAccessLossInTx(
+				ctx,
+				q,
+				&pending,
+				&notices,
+				principal.CompanyID,
+				id,
+				userID,
+				before,
+				after,
+			); err != nil {
 				return err
 			}
 		}
@@ -507,7 +523,7 @@ func readProjectGrant(
 	return nil, nil
 }
 
-// grantWithinOwn is the self-grant cap (D31, owner ruling 8). Someone who
+// grantWithinOwn is the self-grant cap. Someone who
 // manages a Project's access only through their own grant may set only
 // permissions they hold there (requested), and may not change a grant that
 // holds one they lack (target, the stored grant being changed). Only that
@@ -530,7 +546,12 @@ func grantWithinOwn(caller auth.ProjectAccess, target, requested []auth.ProjectP
 // through Company projects.manage but cannot read. The caller's role is
 // rechecked under the member lock; a caller who already reads the Project
 // changes nothing.
-func (s *DefaultProjectService) Join(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID, expectedRevision int64) (ProjectResponse, error) {
+func (s *DefaultProjectService) Join(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+	expectedRevision int64,
+) (ProjectResponse, error) {
 	if id == uuid.Nil || expectedRevision < 1 {
 		return ProjectResponse{}, ErrProjectInvalidInput
 	}
@@ -637,7 +658,13 @@ func setProjectVisibilityInTx(
 	}
 	before := make(map[uuid.UUID]auth.ProjectAccess, len(authorizers))
 	for _, userID := range authorizers {
-		if before[userID], err = auth.ResolveMemberProjectAccess(ctx, q, principal.CompanyID, userID, project.ID); err != nil {
+		if before[userID], err = auth.ResolveMemberProjectAccess(
+			ctx,
+			q,
+			principal.CompanyID,
+			userID,
+			project.ID,
+		); err != nil {
 			return generated.Project{}, err
 		}
 	}
@@ -664,7 +691,17 @@ func setProjectVisibilityInTx(
 		if err != nil {
 			return generated.Project{}, err
 		}
-		if err := applyProjectAccessLossInTx(ctx, q, pending, notices, principal.CompanyID, project.ID, userID, before[userID], after); err != nil {
+		if err := applyProjectAccessLossInTx(
+			ctx,
+			q,
+			pending,
+			notices,
+			principal.CompanyID,
+			project.ID,
+			userID,
+			before[userID],
+			after,
+		); err != nil {
 			return generated.Project{}, err
 		}
 	}
@@ -814,7 +851,7 @@ func projectAccessChangedEvent(
 // a person made. The feed reads it for the Project's readers and the
 // members whose role holds projects.manage (ListActivity); the row is
 // addressed to the actor, so its activity.created frame reaches only them
-// until Activity frames get a Project audience (plan rollout 9).
+// until Activity frames get a Project audience.
 func recordProjectGrantInTx(
 	ctx context.Context,
 	q *generated.Queries,
@@ -827,7 +864,9 @@ func recordProjectGrantInTx(
 	before, after []string,
 ) error {
 	return recordProjectGrantAsInTx(ctx, q, pending, projectGrantAuthor{
-		companyID: principal.CompanyID, actor: events.UserActor(principal.UserID.String()), recipient: principal.UserID,
+		companyID: principal.CompanyID,
+		actor:     events.UserActor(principal.UserID.String()),
+		recipient: principal.UserID,
 	}, action, projectID, projectTitle, userID, before, after)
 }
 
@@ -868,7 +907,7 @@ func recordProjectGrantAsInTx(
 // removal, a member leaving, or account deletion). It reads what the
 // departing member held on each Project from every stored source first, then
 // deletes their Group memberships (advancing each Group's revision and
-// staging group.changed, D5) and their own grants (advancing the revision of
+// staging group.changed) and their own grants (advancing the revision of
 // each Project that held one), and advances the revision of each Project
 // they reached only through a Group. Each Project they reached is recorded as
 // one project_grant.changed row (before = what they held there from every
@@ -1019,9 +1058,14 @@ func applyProjectAccessLossInTx(
 	if !projectWorkLost(before, after) {
 		return nil
 	}
-	runs, stopped, err := execution.CancelProjectAccessRevokedRunsInTx(ctx, q, pending, execution.ProjectAccessRevocation{
-		CompanyID: companyID, ProjectID: projectID, UserID: userID,
-	})
+	runs, stopped, err := execution.CancelProjectAccessRevokedRunsInTx(
+		ctx,
+		q,
+		pending,
+		execution.ProjectAccessRevocation{
+			CompanyID: companyID, ProjectID: projectID, UserID: userID,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -1077,7 +1121,10 @@ const (
 
 // AccessReport builds the report for a caller whose Company role holds
 // projects.manage; the window is the last 30 days of Runs.
-func (s *DefaultProjectService) AccessReport(ctx context.Context, principal auth.UserPrincipal) (ProjectAccessReport, error) {
+func (s *DefaultProjectService) AccessReport(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+) (ProjectAccessReport, error) {
 	if !principal.Role.Can(auth.PermissionProjectsManage) {
 		return ProjectAccessReport{}, ErrProjectForbidden
 	}
@@ -1099,7 +1146,10 @@ func groupProjectAccessReport(since time.Time, rows []generated.ListProjectAcces
 	for _, row := range rows {
 		if n := len(report.Items); n == 0 || report.Items[n-1].ProjectID != row.ProjectID {
 			report.Items = append(report.Items, ProjectAccessReportEntry{
-				ProjectID: row.ProjectID, Key: row.Key, Title: row.Title, People: []ProjectAccessReportPerson{},
+				ProjectID: row.ProjectID,
+				Key:       row.Key,
+				Title:     row.Title,
+				People:    []ProjectAccessReportPerson{},
 			})
 		}
 		reasons := make([]ProjectAccessReportReason, len(row.Reasons))

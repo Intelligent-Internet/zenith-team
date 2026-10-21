@@ -82,7 +82,7 @@ func TestBulkRunFailureQueriesDeferRunLocksUntilConversationLock(t *testing.T) {
 // its enclosing helper) and fails when a Project lock call follows a
 // Conversation or Run lock call in source order, or a Group lock call follows
 // a Project, Conversation or Run lock call (company -> member -> group ->
-// project -> conversation -> run, Access TECH section 13).
+// project -> conversation -> run).
 func TestProjectLocksPrecedeConversationAndRunLocks(t *testing.T) {
 	t.Parallel()
 
@@ -115,7 +115,7 @@ func TestProjectLocksPrecedeConversationAndRunLocks(t *testing.T) {
 	if len(laterLocks) == 0 {
 		t.Fatal("found no Conversation or Run lock queries")
 	}
-	// A Group lock (Access TECH D3, D4) comes before every Project,
+	// A Group lock comes before every Project,
 	// Conversation and Run lock: company -> member -> group -> project.
 	groupLocks := map[string]bool{}
 	groupSource := queryFileSource(t, "groups.sql")
@@ -170,7 +170,13 @@ func TestProjectLocksPrecedeConversationAndRunLocks(t *testing.T) {
 					case laterLocks[name] && firstLater == "":
 						firstLater = name
 					case projectLocks[name] && firstLater != "":
-						t.Errorf("%s: %s takes %s after %s", fset.Position(call.Pos()), function.Name.Name, name, firstLater)
+						t.Errorf(
+							"%s: %s takes %s after %s",
+							fset.Position(call.Pos()),
+							function.Name.Name,
+							name,
+							firstLater,
+						)
 					case projectLocks[name] && firstProject == "":
 						firstProject = name
 					}

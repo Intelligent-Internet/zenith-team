@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // wantCheckConstraints is every CHECK constraint the schema is allowed to have.
@@ -29,12 +29,12 @@ import (
 // creator and single assignee rules. Those constraints make projection mappers
 // total without re-validating rows after every read.
 //
-// C1 additionally pins bounded discussion wire integers, canonical pair and
+// The list also pins bounded discussion wire integers, canonical pair and
 // grant shapes, immutable receipt digests and bounded metadata. These are the
-// persisted discussion contract from C0, validated before writes by the service.
+// persisted discussion contract, validated before writes by the service.
 //
-// D26 pins the Plugin presentation's prompt array shape (at most three) and
-// brand color format, which clients render without re-validating.
+// The Plugin presentation's prompt array shape (at most three) and brand
+// color format are pinned too: clients render them without re-validating.
 //
 // The list is pinned rather than counted so both directions fail loudly:
 // reintroducing a policy constraint, or quietly dropping a vocabulary or
@@ -234,7 +234,7 @@ var wantCheckConstraints = []string{
 	"activity_events_revision_check",
 	"activity_events_schema_version_check",
 	"activity_events_visibility_check",
-	// D31: only an Agent acts for a person, and a Run is named only with
+	// Only an Agent acts for a person, and a Run is named only with
 	// the person it works for.
 	"activity_events_on_behalf_of_check",
 	"activity_events_run_check",
@@ -347,7 +347,7 @@ var wantCheckConstraints = []string{
 	"channel_invocations_status_check",
 	"channel_invocations_publication_status_check",
 	"conversations_general_shape_check",
-	// D31: a session is a person's or a daemon's.
+	// A session is a person's or a daemon's.
 	"auth_sessions_client_check",
 	"crash_reports_kind_check",
 	"deliverable_review_actions_status_check",
@@ -425,7 +425,7 @@ var wantCheckConstraints = []string{
 	"task_report_events_completion_source_check",
 	"task_report_events_failure_origin_check",
 	"task_schedules_generation_check",
-	// D31: a Task a Run creates names its person and the creating Agent.
+	// A Task a Run creates names its person and the creating Agent.
 	"tasks_creator_present_check",
 	"tasks_milestone_type_check",
 	"tasks_priority_check",

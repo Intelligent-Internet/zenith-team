@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestActivitySchemaVersionMigrationCopiesTheEnvelopeVersion(t *testing.T) {
@@ -87,11 +87,15 @@ func TestActivitySchemaVersionMigrationCopiesTheEnvelopeVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	if columns != 0 || snapshots != 1 {
-		t.Fatalf("after rollback: schema_version columns = %d, snapshot envelopes = %d; want 0 and 1", columns, snapshots)
+		t.Fatalf(
+			"after rollback: schema_version columns = %d, snapshot envelopes = %d; want 0 and 1",
+			columns,
+			snapshots,
+		)
 	}
 }
 
-// D31 (000097): Activity rows written before the migration read on with no
+// 000097: Activity rows written before the migration read on with no
 // person and no Run; afterwards only an Agent acts for a person, and a Run is
 // named only with that person. A Task may name its person and the Agent that
 // created it, and its chat Agent counts the creating Agent only when no

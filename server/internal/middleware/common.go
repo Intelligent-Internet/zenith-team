@@ -29,10 +29,10 @@ import (
 // checks them and internal/handler's auth handlers set and clear them, so
 // they are declared once, here.
 const (
-	AuthCookieName        = "boardly_access"
-	RefreshCookieName     = "boardly_refresh"
-	CSRFCookieName        = "boardly_csrf"
-	RefreshCSRFCookieName = "boardly_refresh_csrf"
+	AuthCookieName        = "zenith_team_access"
+	RefreshCookieName     = "zenith_team_refresh"
+	CSRFCookieName        = "zenith_team_csrf"
+	RefreshCSRFCookieName = "zenith_team_refresh_csrf"
 	CSRFHeaderName        = "X-CSRF-Token"
 )
 
@@ -47,7 +47,7 @@ const (
 	// daemon package repeats the literal rather than importing it, because
 	// cmd/zen must not link this package; the wire round-trip test pins
 	// the two together.
-	HeaderDaemonID = "X-Boardly-Daemon-ID"
+	HeaderDaemonID = "X-Zenith-Team-Daemon-ID"
 )
 
 // clientMetadataKey types the client-metadata context keys so a foreign

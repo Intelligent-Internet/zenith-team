@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A read avoids taking the Agent graph lock after the Huddle lock. Claim and
@@ -24,7 +25,10 @@ func huddleVoiceEligible(
 	if !id.Valid {
 		return false, nil
 	}
-	enabled, err := q.HuddleVoiceAgentEnabled(ctx, generated.HuddleVoiceAgentEnabledParams{CompanyID: companyID, ID: id.UUID})
+	enabled, err := q.HuddleVoiceAgentEnabled(
+		ctx,
+		generated.HuddleVoiceAgentEnabledParams{CompanyID: companyID, ID: id.UUID},
+	)
 	if err != nil {
 		return false, fmt.Errorf("read Huddle voice Agent: %w", err)
 	}

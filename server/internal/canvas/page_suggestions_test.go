@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func TestSuggestionApplicability(t *testing.T) {
@@ -213,23 +213,38 @@ func TestSuggestionPlacementInvalidatesReview(t *testing.T) {
 		t.Run(op.Type+op.AfterID+op.BeforeID, func(t *testing.T) {
 			t.Parallel()
 			operations, _ := json.Marshal([]wiki.BlockOperation{op})
-			row := generated.ProjectPageChange{ID: uuid.New(), BeforeContent: before,
-				Operations: operations, Decisions: []byte(`{}`), Status: "proposed"}
+			row := generated.ProjectPageChange{
+				ID: uuid.New(), BeforeContent: before,
+				Operations: operations, Decisions: []byte(`{}`), Status: "proposed",
+			}
 			original, err := pageSuggestionState(row, base, "", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
-			unrelated := wiki.BlockNode{Type: "doc", Content: append(append([]wiki.BlockNode{}, base.Content...), block("e"))}
+			unrelated := wiki.BlockNode{
+				Type:    "doc",
+				Content: append(append([]wiki.BlockNode{}, base.Content...), block("e")),
+			}
 			stable, err := pageSuggestionState(row, unrelated, "", nil)
 			if err != nil || stable.fingerprint != original.fingerprint {
 				t.Fatalf("unrelated insertion changed review: %v", err)
 			}
-			moved := wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{block("a"), block("c"), block("b"), block("d")}}
+			moved := wiki.BlockNode{
+				Type:    "doc",
+				Content: []wiki.BlockNode{block("a"), block("c"), block("b"), block("d")},
+			}
 			changed, err := pageSuggestionState(row, moved, "", nil)
-			if err != nil || changed.suggestions[0].Status != "needs_update" || changed.fingerprint == original.fingerprint {
+			if err != nil || changed.suggestions[0].Status != "needs_update" ||
+				changed.fingerprint == original.fingerprint {
 				t.Fatalf("relocated suggestion = %+v, %v", changed, err)
 			}
-			if _, err := suggestionSelection(changed, PageChangeReviewInput{Action: "apply"}); !errors.Is(err, ErrConflict) {
+			if _, err := suggestionSelection(
+				changed,
+				PageChangeReviewInput{Action: "apply"},
+			); !errors.Is(
+				err,
+				ErrConflict,
+			) {
 				t.Fatalf("relocated application = %v, want conflict", err)
 			}
 		})
@@ -253,24 +268,42 @@ func TestIndependentAdditionsAreNotCompetingSuggestions(t *testing.T) {
 		peer     wiki.BlockOperation
 		want     bool
 	}{
-		{"distinct additions at same position",
+		{
+			"distinct additions at same position",
 			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &second}, false},
-		{"same inserted identity",
+			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &second},
+			false,
+		},
+		{
+			"same inserted identity",
 			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first}, true},
-		{"editing text beside an addition",
 			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &anchor}, false},
-		{"removing insertion anchor",
+			true,
+		},
+		{
+			"editing text beside an addition",
 			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "remove", BlockID: "anchor"}, true},
-		{"replacing insertion parent",
+			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &anchor},
+			false,
+		},
+		{
+			"removing insertion anchor",
+			wiki.BlockOperation{Type: "insert", AfterID: "anchor", Content: &first},
+			wiki.BlockOperation{Type: "remove", BlockID: "anchor"},
+			true,
+		},
+		{
+			"replacing insertion parent",
 			wiki.BlockOperation{Type: "insert", ParentID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &anchor}, true},
-		{"competing replacements",
+			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &anchor},
+			true,
+		},
+		{
+			"competing replacements",
 			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &first},
-			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &second}, true},
+			wiki.BlockOperation{Type: "update", BlockID: "anchor", Content: &second},
+			true,
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {

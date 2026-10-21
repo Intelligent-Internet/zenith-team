@@ -867,10 +867,6 @@ WHERE id = sqlc.arg(id) AND binding_revision = sqlc.arg(binding_revision)
     AND creation_request_hash = sqlc.arg(creation_request_hash) AND project_id IS NULL
 RETURNING *;
 
--- name: GetStudioRunOrigin :one
-SELECT COALESCE(context->>'studioApiOrigin', 'https://api-agent.ii.inc')::text AS api_origin
-FROM runs WHERE id = $1 AND company_id = $2;
-
 -- name: LockStudioBinding :one
 SELECT * FROM conversation_studio_projects
 WHERE company_id = $1 AND conversation_id = $2

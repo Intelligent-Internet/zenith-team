@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // Approving a Company Plan raised in a Task chat with a Project needs
@@ -34,10 +34,31 @@ func TestCompanyPlanApplyScope(t *testing.T) {
 		err    error
 	}{
 		{"member writer in the Task chat's Project", auth.CompanyRoleMember, writer, true, bound, nil},
-		{"member without project.tasks.write", auth.CompanyRoleMember, resolverOnly, true, uuid.NullUUID{}, auth.ErrProjectPermissionRequired},
-		{"owner without project.tasks.write", auth.CompanyRoleOwner, resolverOnly, true, uuid.NullUUID{}, auth.ErrProjectPermissionRequired},
+		{
+			"member without project.tasks.write",
+			auth.CompanyRoleMember,
+			resolverOnly,
+			true,
+			uuid.NullUUID{},
+			auth.ErrProjectPermissionRequired,
+		},
+		{
+			"owner without project.tasks.write",
+			auth.CompanyRoleOwner,
+			resolverOnly,
+			true,
+			uuid.NullUUID{},
+			auth.ErrProjectPermissionRequired,
+		},
 		{"Company plan, owner", auth.CompanyRoleOwner, auth.ProjectAccess{}, false, uuid.NullUUID{}, nil},
-		{"Company plan, member", auth.CompanyRoleMember, auth.ProjectAccess{}, false, uuid.NullUUID{}, ErrApprovalForbidden},
+		{
+			"Company plan, member",
+			auth.CompanyRoleMember,
+			auth.ProjectAccess{},
+			false,
+			uuid.NullUUID{},
+			ErrApprovalForbidden,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

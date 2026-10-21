@@ -282,7 +282,7 @@ type AuthorizeRunAttachmentDownloadParams struct {
 // it and no Project has ever held it, so a chat file or a Project file
 // registered as a reference keeps its own rule. The Artifact exclusion
 // applies to every arm. Only a Task Run is narrowed further (below); a Run
-// tagged in a channel or group DM opens what its Authorizer opens (D31).
+// tagged in a channel or group DM opens what its Authorizer opens.
 func (q *Queries) AuthorizeRunAttachmentDownload(ctx context.Context, arg AuthorizeRunAttachmentDownloadParams) (Attachment, error) {
 	row := q.db.QueryRow(ctx, authorizeRunAttachmentDownload,
 		arg.RunID,

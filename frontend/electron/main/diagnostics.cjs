@@ -9,7 +9,7 @@ const {
 } = require("../shared/desktop-variant.cjs");
 
 const RENDERER_DIAGNOSTIC_CHANNEL = "desktop:renderer-diagnostic";
-const LOG_FILENAME = "boardly-main.log";
+const LOG_FILENAME = "zenith-team-main.log";
 let desktopEnv = process.env;
 
 function registerDiagnostics(options = {}) {
@@ -141,7 +141,7 @@ function readNumber(value) {
 
 function getDesktopEnvironmentName(env = desktopEnv) {
   return normalizeDesktopEnvironment(
-    env?.BOARDLY_DESKTOP_ENV,
+    env?.ZENITH_TEAM_DESKTOP_ENV,
     app.isPackaged ? "prod" : "local",
   );
 }

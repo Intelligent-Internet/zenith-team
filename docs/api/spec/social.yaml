@@ -414,7 +414,7 @@ paths:
     parameters:
       - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
       - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
-      - {name: X-Boardly-Run-Token, in: header, required: true, schema: {type: string}}
+      - {name: X-Zenith-Team-Run-Token, in: header, required: true, schema: {type: string}}
     get:
       tags: [social]
       operationId: readAgentSocial
@@ -446,7 +446,7 @@ paths:
     parameters:
       - {name: companyId, in: path, required: true, schema: {type: string, format: uuid}}
       - {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
-      - {name: X-Boardly-Run-Token, in: header, required: true, schema: {type: string}}
+      - {name: X-Zenith-Team-Run-Token, in: header, required: true, schema: {type: string}}
       - {name: Idempotency-Key, in: header, required: true, schema: {type: string, format: uuid}}
     post:
       tags: [social]

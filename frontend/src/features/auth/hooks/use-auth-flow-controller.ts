@@ -1,7 +1,7 @@
 import { getAuthReturnRoute } from "@/features/auth/model/auth-continuation";
 import { useEffect, useMemo, useReducer, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { BOARDLY_API_BASE_URL } from "@/lib/api-client";
+import { ZENITH_TEAM_API_BASE_URL } from "@/lib/api-client";
 import {
   writeSessionFromLoginResponse,
   type SessionProvider,
@@ -87,8 +87,8 @@ type AuthFlowEvent =
   | { type: "resend_failed"; message: string };
 
 const idleStatus: AuthAsyncStatus = { kind: "idle" };
-const DEV_QA_AUTH_PARAM = "boardly_qa_auth";
-const DEV_QA_EMAIL = "qa-founder@boardly.local";
+const DEV_QA_AUTH_PARAM = "zenith_team_qa_auth";
+const DEV_QA_EMAIL = "qa-founder@zenith-team.local";
 
 type AuthRouteStateInput = {
   pathname: string;
@@ -359,7 +359,7 @@ function authFlowReducer(
 export function useAuthFlowController() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isDesktop = window.boardlyDesktop !== undefined;
+  const isDesktop = window.zenithTeamDesktop !== undefined;
   const providersQuery = useGetAuthProvidersQuery(undefined, {
     skip: isDesktop,
   });
@@ -399,8 +399,8 @@ export function useAuthFlowController() {
       return undefined;
     }
     const providers = requestDesktopGoogleProviders(
-      window.boardlyDesktop,
-      BOARDLY_API_BASE_URL,
+      window.zenithTeamDesktop,
+      ZENITH_TEAM_API_BASE_URL,
     );
     if (!providers) {
       setIsGoogleEnabled(false);
@@ -586,7 +586,7 @@ export function useAuthFlowController() {
     dispatch({ type: "google_started" });
 
     try {
-      if (window.boardlyDesktop) {
+      if (window.zenithTeamDesktop) {
         await beginDesktopGoogleOAuthRedirect();
       } else {
         const response = await authService.continueWithGoogle();

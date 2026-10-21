@@ -20,7 +20,7 @@ var (
 	ErrAccountDisabled           = errors.New("account is disabled")
 	ErrNotFound                  = errors.New("not found")
 	// ErrDaemonSessionCannotMint refuses a daemon session that asks for
-	// another daemon session (D31): only a person's session starts one.
+	// another daemon session: only a person's session starts one.
 	ErrDaemonSessionCannotMint = errors.New("a daemon session cannot start another daemon session")
 )
 

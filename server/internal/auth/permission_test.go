@@ -62,7 +62,7 @@ func TestOwnerOnlyPermissionsArePinned(t *testing.T) {
 }
 
 // A member discusses and installs plugins and connects apps on their own
-// computers (owner decision, 2026-09-29); every Company-wide management
+// computers; every Company-wide management
 // permission, reviewing apps' changed tools included, stays above them.
 func TestMemberHoldsOnlyDiscussionAndOwnComputerPermissions(t *testing.T) {
 	t.Parallel()

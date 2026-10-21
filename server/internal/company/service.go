@@ -1,4 +1,4 @@
-// Package company owns Boardly's tenancy domain: the Company row, membership
+// Package company owns Zenith Team's tenancy domain: the Company row, membership
 // and roles, onboarding, Company-scoped typed resources, cross-entity search,
 // and Company Plan application.
 package company
@@ -15,21 +15,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var (
 	slugPattern       = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 	taskPrefixPattern = regexp.MustCompile(`^[A-Z][A-Z0-9]{1,9}$`)
 	reservedSlugs     = map[string]struct{}{
-		"admin": {}, "api": {}, "app": {}, "auth": {}, "boardly": {},
+		"admin": {}, "api": {}, "app": {}, "auth": {}, "zenith-team": {},
 		"callback": {}, "companies": {}, "dashboard": {}, "download": {},
 		"healthz": {}, "login": {}, "logout": {}, "metrics": {}, "new": {},
 		"oauth": {}, "onboarding": {}, "projects": {}, "readyz": {},
@@ -41,7 +41,7 @@ var (
 // CompanyService owns the Company row and its membership: onboarding, the
 // tenancy lookups, and the authorization that turns a user into a
 // Company-scoped principal.
-type CompanyService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type CompanyService interface {
 	Create(context.Context, auth.UserPrincipal, CreateCompanyInput) (Response, error)
 	Delete(context.Context, auth.UserPrincipal, int64) error
 	Get(context.Context, auth.UserPrincipal, uuid.UUID) (Response, error)
@@ -127,7 +127,6 @@ func (s *DefaultCompanyService) Create(
 			&pending,
 			principal.UserID,
 			companyRow.ID,
-			normalized,
 		)
 		return err
 	})
@@ -236,7 +235,6 @@ func (s *DefaultCompanyService) createOnboardingAggregate(
 	pending *[]events.Event,
 	ownerID uuid.UUID,
 	companyID uuid.UUID,
-	input CreateCompanyInput,
 ) (Response, error) {
 	memberRow, err := tx.CreateCompanyMember(ctx, generated.CreateCompanyMemberParams{
 		CompanyID: companyID,

@@ -27,8 +27,8 @@ type PageOperation struct {
 // PageBlock makes the replacement subtree explicit in the tool schema. Child
 // nodes retain the native document shape, including marks and reference attrs.
 type PageBlock struct {
-	Type    string           `json:"type" jsonschema:"Native block type from page_read, such as paragraph or heading. Required; an update preserves the target type."`
-	Attrs   map[string]any   `json:"attrs,omitempty" jsonschema:"Copy the target attrs from page_read for updates, including blockId. Inserts omit blockId."`
+	Type    string           `json:"type"              jsonschema:"Native block type from page_read, such as paragraph or heading. Required; an update preserves the target type."`
+	Attrs   map[string]any   `json:"attrs,omitempty"   jsonschema:"Copy the target attrs from page_read for updates, including blockId. Inserts omit blockId."`
 	Content []map[string]any `json:"content,omitempty" jsonschema:"Native child nodes, each with a type. Text is {type: text, text: ...}; line breaks are {type: hardBreak}. Preserve descendant block IDs on updates."`
 	Text    string           `json:"text,omitempty"`
 	Marks   []map[string]any `json:"marks,omitempty"`
@@ -143,12 +143,18 @@ func (s *DefaultPageToolService) EditPage(ctx context.Context, in PageEditInput)
 			continue
 		}
 		if op.Content == nil || op.Content.Type == "" {
-			return PageEditResult{}, fmt.Errorf("operations[%d].content must be a complete native block with type, attrs and content; copy the block from page_read and edit its text", index)
+			return PageEditResult{}, fmt.Errorf(
+				"operations[%d].content must be a complete native block with type, attrs and content; copy the block from page_read and edit its text",
+				index,
+			)
 		}
 		if op.Type == "update" {
 			blockID, _ := op.Content.Attrs["blockId"].(string)
 			if op.BlockID == "" || blockID != op.BlockID {
-				return PageEditResult{}, fmt.Errorf("operations[%d].content.attrs.blockId must match blockId; copy the target type and attrs from page_read, preserving descendant IDs", index)
+				return PageEditResult{}, fmt.Errorf(
+					"operations[%d].content.attrs.blockId must match blockId; copy the target type and attrs from page_read, preserving descendant IDs",
+					index,
+				)
 			}
 		}
 	}

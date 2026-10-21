@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 // A Run mentioned in a chat reads a Project only when everyone there can
@@ -28,7 +28,12 @@ func TestProjectGetInsideARunRelaysTheRefusalAsTheBareSentence(t *testing.T) {
 
 	_, err := executeCLI(t, newRootCmd, "project", "get", hidden)
 	if err == nil || exitCodeFor(err) != exitAuth {
-		t.Fatalf("zen project get = %v (exit %d), want the refusal with exit %d", err, exitCodeFor(err), exitAuth)
+		t.Fatalf(
+			"zen project get = %v (exit %d), want the refusal with exit %d",
+			err,
+			exitCodeFor(err),
+			exitAuth,
+		)
 	}
 	want := "zen: " + refusal + " (code: task_outside_run_scope) [request req-9]"
 	if message := formatCommandError(err, false, ""); message != want {
@@ -50,7 +55,14 @@ func TestProjectGetInsideARunRelaysTheRefusalAsTheBareSentence(t *testing.T) {
 	if err == nil {
 		t.Fatal("zen project list was admitted by a channel that refuses it")
 	}
-	if message := formatCommandError(err, false, ""); !strings.Contains(message, "GET /companies/"+testCompanyID+"/projects: ") {
+	if message := formatCommandError(
+		err,
+		false,
+		"",
+	); !strings.Contains(
+		message,
+		"GET /companies/"+testCompanyID+"/projects: ",
+	) {
 		t.Fatalf("zen project list lost its request line: %q", message)
 	}
 }

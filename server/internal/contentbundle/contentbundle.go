@@ -27,7 +27,7 @@ import (
 // component does not allow.
 var ErrInvalid = errors.New("platform bundle is invalid")
 
-// ComponentType is the closed set of Boardly components a plugin can ship.
+// ComponentType is the closed set of Zenith Team components a plugin can ship.
 type ComponentType string
 
 // Supported release components. Workflows carry forms and playbooks;

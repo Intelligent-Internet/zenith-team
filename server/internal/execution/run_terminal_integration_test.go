@@ -14,12 +14,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/telemetry"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 func TestCancelledRunAcknowledgesLateTerminalCallbackWithoutChangingHistory(t *testing.T) {
@@ -41,9 +41,13 @@ func TestCancelledRunAcknowledgesLateTerminalCallbackWithoutChangingHistory(t *t
 			}
 			readHistory := func() []activity.Entry {
 				t.Helper()
-				rows, _, err := activity.NewFeed(h.queries).List(ctx, h.fixture.CompanyA, activity.ListOptions{
-					UserID: h.fixture.UserA, EntityType: "run", EntityID: runID.String(), Limit: 20,
-				})
+				rows, _, err := activity.NewFeed(h.queries).
+					List(ctx, h.fixture.CompanyA, activity.ListOptions{
+						UserID:     h.fixture.UserA,
+						EntityType: "run",
+						EntityID:   runID.String(),
+						Limit:      20,
+					})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -54,7 +58,16 @@ func TestCancelledRunAcknowledgesLateTerminalCallbackWithoutChangingHistory(t *t
 				if callback == "complete" {
 					return h.svc.CompleteRun(ctx, runID, proof, "", false, "")
 				}
-				return h.svc.FailRun(ctx, runID, proof, "provider disconnected", "", "provider_network", false, "")
+				return h.svc.FailRun(
+					ctx,
+					runID,
+					proof,
+					"provider disconnected",
+					"",
+					"provider_network",
+					false,
+					"",
+				)
 			}
 			proof := terminalProof(head, head.ItemKey)
 			for range 2 {
@@ -74,7 +87,9 @@ func TestCancelledRunAcknowledgesLateTerminalCallbackWithoutChangingHistory(t *t
 			if got := readHistory(); !reflect.DeepEqual(got, before) {
 				t.Fatalf("late callback changed history: got %+v, want %+v", got, before)
 			}
-			if h.recorder.topicCount(EventRunFailed) != 0 || h.recorder.topicCount(EventRunCompleted) != 0 || h.recorder.topicCount(EventRunQueued) != 0 {
+			if h.recorder.topicCount(EventRunFailed) != 0 ||
+				h.recorder.topicCount(EventRunCompleted) != 0 ||
+				h.recorder.topicCount(EventRunQueued) != 0 {
 				t.Fatal("late callback published a terminal transition or retry")
 			}
 			// The late callbacks persisted nothing, so the metrics saw
@@ -204,8 +219,8 @@ func TestTerminalOutcomesReachTheMetricsEndpoint(t *testing.T) {
 	}
 	body := response.Body.String()
 	for _, want := range []string{
-		`boardly_run_terminal_total{failure_kind="none",outcome="message",provider="codex"} 1`,
-		`boardly_run_terminal_total{failure_kind="infrastructure",outcome="failed",provider="codex"} 1`,
+		`zenith_team_run_terminal_total{failure_kind="none",outcome="message",provider="codex"} 1`,
+		`zenith_team_run_terminal_total{failure_kind="infrastructure",outcome="failed",provider="codex"} 1`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics missing %q:\n%s", want, body)

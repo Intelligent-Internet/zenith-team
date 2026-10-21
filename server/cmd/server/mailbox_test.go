@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/handler"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/handler"
 )
 
 func TestDisabledMailboxComponentsStayNilAtHandlerBoundary(t *testing.T) {

@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // DiscussionReadInput fences queued device updates to the membership they saw.
@@ -23,10 +23,16 @@ type DiscussionReadInput struct {
 }
 
 func refreshDiscussionUnread(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, id uuid.UUID) error {
-	if err := q.RefreshDiscussionRootUnread(ctx, generated.RefreshDiscussionRootUnreadParams{ConversationID: id, UserID: p.UserID}); err != nil {
+	if err := q.RefreshDiscussionRootUnread(
+		ctx,
+		generated.RefreshDiscussionRootUnreadParams{ConversationID: id, UserID: p.UserID},
+	); err != nil {
 		return err
 	}
-	return q.RefreshDiscussionThreadUnread(ctx, generated.RefreshDiscussionThreadUnreadParams{ConversationID: id, UserID: p.UserID})
+	return q.RefreshDiscussionThreadUnread(
+		ctx,
+		generated.RefreshDiscussionThreadUnreadParams{ConversationID: id, UserID: p.UserID},
+	)
 }
 
 type discussionUnreadDelta struct {
@@ -39,13 +45,31 @@ type discussionUnreadDelta struct {
 
 func applyDiscussionUnreadDelta(ctx context.Context, q *generated.Queries, input discussionUnreadDelta) error {
 	if input.RootID.Valid {
-		return q.ApplyDiscussionThreadUnreadDelta(ctx, generated.ApplyDiscussionThreadUnreadDeltaParams{ConversationID: input.ConversationID, RootID: input.RootID.UUID, AuthorID: input.AuthorID, Seq: input.Seq, Delta: input.Delta})
+		return q.ApplyDiscussionThreadUnreadDelta(
+			ctx,
+			generated.ApplyDiscussionThreadUnreadDeltaParams{
+				ConversationID: input.ConversationID,
+				RootID:         input.RootID.UUID,
+				AuthorID:       input.AuthorID,
+				Seq:            input.Seq,
+				Delta:          input.Delta,
+			},
+		)
 	}
-	return q.ApplyDiscussionRootUnreadDelta(ctx, generated.ApplyDiscussionRootUnreadDeltaParams{ConversationID: input.ConversationID, AuthorID: input.AuthorID, Seq: input.Seq, Delta: input.Delta})
+	return q.ApplyDiscussionRootUnreadDelta(
+		ctx,
+		generated.ApplyDiscussionRootUnreadDeltaParams{
+			ConversationID: input.ConversationID,
+			AuthorID:       input.AuthorID,
+			Seq:            input.Seq,
+			Delta:          input.Delta,
+		},
+	)
 }
 
 func normalizeDiscussionReadInput(input DiscussionReadInput) error {
-	if input.ReadThroughSeq == nil && input.ManualUnreadSeq == nil || !discussionRevisionValid(input.GrantGeneration) {
+	if input.ReadThroughSeq == nil && input.ManualUnreadSeq == nil ||
+		!discussionRevisionValid(input.GrantGeneration) {
 		return ErrDiscussionInvalid
 	}
 	for _, seq := range []*int64{input.ReadThroughSeq, input.ManualUnreadSeq, input.ExpectedRevision} {
@@ -59,7 +83,12 @@ func normalizeDiscussionReadInput(input DiscussionReadInput) error {
 	return nil
 }
 
-func nextDiscussionReadState(ctx context.Context, q *generated.Queries, target DiscussionMessageTarget, current DiscussionReadInput, input DiscussionReadInput) (int64, pgtype.Int8, error) {
+func nextDiscussionReadState(
+	ctx context.Context,
+	q *generated.Queries,
+	target DiscussionMessageTarget,
+	current, input DiscussionReadInput,
+) (int64, pgtype.Int8, error) {
 	read := *current.ReadThroughSeq
 	manual := pgtype.Int8{}
 	if current.ManualUnreadSeq != nil {
@@ -69,7 +98,17 @@ func nextDiscussionReadState(ctx context.Context, q *generated.Queries, target D
 		if seq == nil || *seq == 0 {
 			continue
 		}
-		if _, err := q.GetDiscussionReadPosition(ctx, generated.GetDiscussionReadPositionParams{ConversationID: target.ConversationID, RootID: uuid.NullUUID{UUID: target.MessageID, Valid: target.MessageID != uuid.Nil}, Seq: *seq}); err != nil {
+		if _, err := q.GetDiscussionReadPosition(
+			ctx,
+			generated.GetDiscussionReadPositionParams{
+				ConversationID: target.ConversationID,
+				RootID: uuid.NullUUID{
+					UUID:  target.MessageID,
+					Valid: target.MessageID != uuid.Nil,
+				},
+				Seq: *seq,
+			},
+		); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return 0, manual, ErrDiscussionInvalid
 			}
@@ -85,14 +124,21 @@ func nextDiscussionReadState(ctx context.Context, q *generated.Queries, target D
 	if input.ReadThroughSeq != nil {
 		read = max(read, *input.ReadThroughSeq)
 		// A read started before another device marked unread cannot clear that marker.
-		if input.ManualUnreadSeq == nil && manual.Valid && *input.ReadThroughSeq >= manual.Int64 && input.ExpectedRevision != nil && *input.ExpectedRevision == *current.ExpectedRevision {
+		if input.ManualUnreadSeq == nil && manual.Valid && *input.ReadThroughSeq >= manual.Int64 &&
+			input.ExpectedRevision != nil &&
+			*input.ExpectedRevision == *current.ExpectedRevision {
 			manual = pgtype.Int8{}
 		}
 	}
 	return read, manual, nil
 }
 
-func (s *DefaultDiscussionService) UpdateReadState(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, input DiscussionReadInput) (DiscussionUserState, error) {
+func (s *DefaultDiscussionService) UpdateReadState(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	input DiscussionReadInput,
+) (DiscussionUserState, error) {
 	if err := normalizeDiscussionReadInput(input); err != nil {
 		return DiscussionUserState{}, err
 	}
@@ -112,12 +158,31 @@ func (s *DefaultDiscussionService) UpdateReadState(ctx context.Context, p auth.U
 		if access.GrantGeneration.Int64 != input.GrantGeneration {
 			return ErrDiscussionRevisionConflict
 		}
-		read, manual, err := nextDiscussionReadState(ctx, q, DiscussionMessageTarget{ConversationID: id}, DiscussionReadInput{ReadThroughSeq: &access.MainReadSeq, ManualUnreadSeq: discussionInt(access.ManualUnreadSeq), ExpectedRevision: &access.StateRevision.Int64}, input)
+		read, manual, err := nextDiscussionReadState(
+			ctx,
+			q,
+			DiscussionMessageTarget{ConversationID: id},
+			DiscussionReadInput{
+				ReadThroughSeq:   &access.MainReadSeq,
+				ManualUnreadSeq:  discussionInt(access.ManualUnreadSeq),
+				ExpectedRevision: &access.StateRevision.Int64,
+			},
+			input,
+		)
 		if err != nil {
 			return err
 		}
 		if read != access.MainReadSeq || manual != access.ManualUnreadSeq {
-			row, err := q.SetDiscussionReadState(ctx, generated.SetDiscussionReadStateParams{ConversationID: id, UserID: p.UserID, GrantGeneration: input.GrantGeneration, ReadSeq: read, ManualUnreadSeq: manual})
+			row, err := q.SetDiscussionReadState(
+				ctx,
+				generated.SetDiscussionReadStateParams{
+					ConversationID:  id,
+					UserID:          p.UserID,
+					GrantGeneration: input.GrantGeneration,
+					ReadSeq:         read,
+					ManualUnreadSeq: manual,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -139,7 +204,12 @@ func (s *DefaultDiscussionService) UpdateReadState(ctx context.Context, p auth.U
 	return result, err
 }
 
-func (s *DefaultDiscussionService) updateThreadReadState(ctx context.Context, p auth.UserPrincipal, target DiscussionMessageTarget, input DiscussionReadInput) (DiscussionThreadState, error) {
+func (s *DefaultDiscussionService) updateThreadReadState(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	target DiscussionMessageTarget,
+	input DiscussionReadInput,
+) (DiscussionThreadState, error) {
 	if err := normalizeDiscussionReadInput(input); err != nil {
 		return DiscussionThreadState{}, err
 	}
@@ -170,18 +240,46 @@ func (s *DefaultDiscussionService) updateThreadReadState(ctx context.Context, p 
 		if err != nil {
 			return err
 		}
-		read, manual, err := nextDiscussionReadState(ctx, q, target, DiscussionReadInput{ReadThroughSeq: &state.ReadThroughSeq, ManualUnreadSeq: state.ManualUnreadSeq, ExpectedRevision: &state.Revision}, input)
+		read, manual, err := nextDiscussionReadState(
+			ctx,
+			q,
+			target,
+			DiscussionReadInput{
+				ReadThroughSeq:   &state.ReadThroughSeq,
+				ManualUnreadSeq:  state.ManualUnreadSeq,
+				ExpectedRevision: &state.Revision,
+			},
+			input,
+		)
 		if err != nil {
 			return err
 		}
-		if read != state.ReadThroughSeq || (manual.Valid != (state.ManualUnreadSeq != nil)) || manual.Valid && manual.Int64 != *state.ManualUnreadSeq {
-			if err = q.SetDiscussionThreadReadState(ctx, generated.SetDiscussionThreadReadStateParams{CompanyID: p.CompanyID, ConversationID: target.ConversationID, RootID: target.MessageID, UserID: p.UserID, GrantGeneration: input.GrantGeneration, ReadSeq: read, ManualUnreadSeq: manual}); err != nil {
+		if read != state.ReadThroughSeq || (manual.Valid != (state.ManualUnreadSeq != nil)) ||
+			manual.Valid && manual.Int64 != *state.ManualUnreadSeq {
+			if err = q.SetDiscussionThreadReadState(
+				ctx,
+				generated.SetDiscussionThreadReadStateParams{
+					CompanyID:       p.CompanyID,
+					ConversationID:  target.ConversationID,
+					RootID:          target.MessageID,
+					UserID:          p.UserID,
+					GrantGeneration: input.GrantGeneration,
+					ReadSeq:         read,
+					ManualUnreadSeq: manual,
+				},
+			); err != nil {
 				return err
 			}
 			if err = refreshDiscussionUnread(ctx, q, p, target.ConversationID); err != nil {
 				return err
 			}
-			row, err := q.TouchDiscussionUserState(ctx, generated.TouchDiscussionUserStateParams{ConversationID: target.ConversationID, UserID: p.UserID})
+			row, err := q.TouchDiscussionUserState(
+				ctx,
+				generated.TouchDiscussionUserStateParams{
+					ConversationID: target.ConversationID,
+					UserID:         p.UserID,
+				},
+			)
 			if err != nil {
 				return err
 			}

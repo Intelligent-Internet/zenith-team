@@ -56,7 +56,7 @@ const PLAIN_COPY: Record<string, (detail: string | null) => string> = {
   no_eligible_resolver: () => NO_ELIGIBLE_RESOLVER_COPY,
   task_outside_run_scope: () =>
     "This run can only work on its own task. Use the task chat or a direct message instead.",
-  // Groups (Access TECH D3, D4): short labels, since only the access
+  // Groups: short labels, since only the access
   // screens show them.
   group_not_found: () => "Group no longer exists",
   group_conflict: () => GROUP_CONFLICT_COPY,

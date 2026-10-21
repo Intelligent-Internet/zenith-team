@@ -134,7 +134,8 @@ func TestBlockMarkdownPreservesWikiUnderline(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw, _ := json.Marshal(got)
-	if !strings.Contains(string(raw), `"type":"underline"`) || strings.TrimSpace(markdown) != "Keep <u>this emphasis</u>." {
+	if !strings.Contains(string(raw), `"type":"underline"`) ||
+		strings.TrimSpace(markdown) != "Keep <u>this emphasis</u>." {
 		t.Fatalf("underline migration = %s / %q", raw, markdown)
 	}
 }
@@ -156,7 +157,9 @@ func TestBlockEncodingPreservesMarkBoundaries(t *testing.T) {
 
 func TestBlockTableJSONRoundTrip(t *testing.T) {
 	t.Parallel()
-	raw, err := json.Marshal(BlocksFromMarkdown("- First action\n\n| Item | State |\n| --- | --- |\n| Draft | Ready |"))
+	raw, err := json.Marshal(
+		BlocksFromMarkdown("- First action\n\n| Item | State |\n| --- | --- |\n| Draft | Ready |"),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,9 +13,9 @@ import (
 // the one failure mode a user cannot see.
 func TestLoadCLIConfigReadsAConfigWrittenBeforeTheCamelCaseContract(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	legacy := `{
-		"server_url": "https://boardly.example",
+		"server_url": "https://zenith-team.example",
 		"company_id": "0198aa00-0000-7000-8000-0000000000c0",
 		"device_name": "old-laptop",
 		"poll_interval": "45s",
@@ -29,7 +29,7 @@ func TestLoadCLIConfigReadsAConfigWrittenBeforeTheCamelCaseContract(t *testing.T
 	if err != nil {
 		t.Fatalf("LoadCLIConfig() error = %v", err)
 	}
-	if cfg.ServerURL != "https://boardly.example" || cfg.CompanyID != "0198aa00-0000-7000-8000-0000000000c0" {
+	if cfg.ServerURL != "https://zenith-team.example" || cfg.CompanyID != "0198aa00-0000-7000-8000-0000000000c0" {
 		t.Fatalf("config = %+v, want the legacy server URL and company preserved", cfg)
 	}
 	if cfg.DeviceName != "old-laptop" || cfg.PollInterval != "45s" || cfg.MaxConcurrentRuns != 7 {
@@ -53,7 +53,7 @@ func TestLoadCLIConfigReadsAConfigWrittenBeforeTheCamelCaseContract(t *testing.T
 
 func TestLoadCLIConfigPrefersTheCurrentKeyWhenBothSpellingsArePresent(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	mixed := `{"serverUrl": "https://current.example", "server_url": "https://legacy.example"}`
 	if err := os.WriteFile(filepath.Join(home, "config.json"), []byte(mixed), 0o600); err != nil {
 		t.Fatalf("write mixed config: %v", err)
@@ -70,7 +70,7 @@ func TestLoadCLIConfigPrefersTheCurrentKeyWhenBothSpellingsArePresent(t *testing
 
 // The credential paths a Run's Claude settings deny are the daemon's real
 // home (where its daemon-auth.json lives), the CLI's default home and, when
-// the desktop names it, the desktop app's own session store (D31).
+// the desktop names it, the desktop app's own session store.
 func TestProtectedCredentialPathsNameTheDaemonHomeAndTheCLIHome(t *testing.T) {
 	user := t.TempDir()
 	t.Setenv("HOME", user)
@@ -79,39 +79,42 @@ func TestProtectedCredentialPathsNameTheDaemonHomeAndTheCLIHome(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	desktopHome := filepath.Join(t.TempDir(), "boardly-home")
+	desktopHome := filepath.Join(t.TempDir(), "zenith-team-home")
 	desktopStore := filepath.Join(filepath.Dir(desktopHome), "desktop-session.bin")
 
 	tests := []struct {
-		name         string
-		boardlyHome  string
-		desktopStore string
-		want         []string
+		name           string
+		zenithTeamHome string
+		desktopStore   string
+		want           []string
 	}{
 		{
-			name:        "desktop daemon home",
-			boardlyHome: desktopHome,
-			want:        []string{desktopHome, filepath.Join(user, ".boardly")},
+			name:           "desktop daemon home",
+			zenithTeamHome: desktopHome,
+			want:           []string{desktopHome, filepath.Join(user, ".zenith-team")},
 		},
 		{
-			name:         "desktop session store",
-			boardlyHome:  desktopHome,
-			desktopStore: desktopStore,
-			want:         []string{desktopHome, filepath.Join(user, ".boardly"), desktopStore},
+			name:           "desktop session store",
+			zenithTeamHome: desktopHome,
+			desktopStore:   desktopStore,
+			want:           []string{desktopHome, filepath.Join(user, ".zenith-team"), desktopStore},
 		},
 		{
-			name:        "relative home made absolute",
-			boardlyHome: "rig-home",
-			want:        []string{filepath.Join(working, "rig-home"), filepath.Join(user, ".boardly")},
+			name:           "relative home made absolute",
+			zenithTeamHome: "rig-home",
+			want: []string{
+				filepath.Join(working, "rig-home"),
+				filepath.Join(user, ".zenith-team"),
+			},
 		},
 		{
 			name: "default home named once",
-			want: []string{filepath.Join(user, ".boardly")},
+			want: []string{filepath.Join(user, ".zenith-team")},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Setenv("BOARDLY_HOME", test.boardlyHome)
+			t.Setenv("ZENITH_TEAM_HOME", test.zenithTeamHome)
 			t.Setenv(DesktopSessionPathEnv, test.desktopStore)
 			got := protectedCredentialPaths()
 			if strings.Join(got, "\n") != strings.Join(test.want, "\n") {
@@ -121,11 +124,11 @@ func TestProtectedCredentialPathsNameTheDaemonHomeAndTheCLIHome(t *testing.T) {
 	}
 }
 
-// D31: the daemon's own session sits beside the CLI's in the same home, in a
+// The daemon's own session sits beside the CLI's in the same home, in a
 // file of its own; the daemon reads only that one.
 func TestOwnCredentialPathIsBesideTheCLISession(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	daemonPath, err := OwnCredentialPath()
 	if err != nil {
 		t.Fatal(err)

@@ -264,7 +264,7 @@ function WorkflowAppConnectBody({
   const canReview = useCan("connectors.manage");
   // Install {Plugin} starts the one install flow, as the Plugins list's + and
   // a plugin's page do, so an app the plugin must connect first connects
-  // before anything installs (D27). The flow takes the plugin as the catalog
+  // before anything installs. The flow takes the plugin as the catalog
   // lists it.
   const installablePlugin =
     local &&
@@ -305,8 +305,8 @@ function WorkflowAppConnectBody({
   // The action button to give focus back to once a request settles.
   const focusAfterAction = useRef<PanelActionButton | null>(null);
   // A Codex app that is not linked yet is checked live through the daemon
-  // (`app/installed`, about a second), as the plugin install flow does
-  // (D27), not by re-discovering every plugin and app on the computer,
+  // (`app/installed`, about a second), as the plugin install flow does,
+  // not by re-discovering every plugin and app on the computer,
   // which takes a minute or more on a Codex account with many apps. A
   // linked app that isn't usable yet (`installed_not_ready`) has nothing
   // new to tell a live check, so it is re-discovered.

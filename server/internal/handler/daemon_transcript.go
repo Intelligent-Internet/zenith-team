@@ -13,10 +13,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // DaemonWSRunTranscriptAppend is the daemonws RPC adapter for one completed

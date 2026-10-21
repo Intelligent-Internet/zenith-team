@@ -1,7 +1,7 @@
 # Zenith Team social card
 
 `zenith-team-social-card.png` is the shared Open Graph and Twitter preview image.
-The public website is `https://app.example.com`. Do not print a domain in the image.
+The image is served from the build's `VITE_ZENITH_TEAM_PUBLIC_SITE_ORIGIN`. Do not print a domain in the image.
 The PNG is 1731 × 909 pixels (1.90:1) and approximately 1.6 MB. The metadata in
 `frontend/index.html` records its actual dimensions and content type.
 

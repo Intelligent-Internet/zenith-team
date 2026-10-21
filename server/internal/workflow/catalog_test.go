@@ -11,8 +11,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
 )
 
 // Every shipped Workflow must parse, and its playbook must be a reference a
@@ -174,11 +174,16 @@ func TestParseCatalogRefusesMalformedWorkflows(t *testing.T) {
 		return map[string]string{"sample/workflow.yaml": yaml, "sample/playbook.md": "# S\n"}
 	}
 	withSchedule := func(cron, instructions string) map[string]string {
-		return sample(validWorkflowYAML + "schedule:\n  cron: \"" + cron + "\"\n  instructions: " + instructions + "\n")
+		return sample(
+			validWorkflowYAML + "schedule:\n  cron: \"" + cron + "\"\n  instructions: " + instructions + "\n",
+		)
 	}
 	// withApps gives the sample two connectors plus the requirement lines.
 	withApps := func(requires string) string {
-		return replace("submitLabel: Run it\n", "connectors: [gmail, google_drive]\n"+requires+"submitLabel: Run it\n")
+		return replace(
+			"submitLabel: Run it\n",
+			"connectors: [gmail, google_drive]\n"+requires+"submitLabel: Run it\n",
+		)
 	}
 	manyFields := strings.Repeat("      - { key: extra_%d, type: text, label: Extra, required: false }\n", 1)
 	var sixteenMore strings.Builder
@@ -193,58 +198,205 @@ func TestParseCatalogRefusesMalformedWorkflows(t *testing.T) {
 		{"unknown yaml field", sample(validWorkflowYAML + "extra: true\n"), "field extra not found"},
 		{"second yaml document", sample(validWorkflowYAML + "---\nkey: other\n"), "exactly one YAML document"},
 		{"schema version", sample(replace("schemaVersion: 1", "schemaVersion: 2")), "schemaVersion must be 1"},
-		{"key differs from directory", map[string]string{"other/workflow.yaml": validWorkflowYAML, "other/playbook.md": "# S\n"}, "must equal its directory"},
-		{"missing playbook", map[string]string{"sample/workflow.yaml": validWorkflowYAML}, "exactly playbook.md and workflow.yaml"},
-		{"stray file", map[string]string{"sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "# S\n", "sample/notes.txt": "x"}, "exactly playbook.md and workflow.yaml"},
-		{"playbook without title", map[string]string{"sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "no title"}, `"# " title line`},
-		{"playbook too large", map[string]string{"sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "# S\n" + strings.Repeat("x", 64<<10)}, "UTF-8 text of 1 to"},
+		{
+			"key differs from directory",
+			map[string]string{"other/workflow.yaml": validWorkflowYAML, "other/playbook.md": "# S\n"},
+			"must equal its directory",
+		},
+		{
+			"missing playbook",
+			map[string]string{"sample/workflow.yaml": validWorkflowYAML},
+			"exactly playbook.md and workflow.yaml",
+		},
+		{
+			"stray file",
+			map[string]string{
+				"sample/workflow.yaml": validWorkflowYAML,
+				"sample/playbook.md":   "# S\n",
+				"sample/notes.txt":     "x",
+			},
+			"exactly playbook.md and workflow.yaml",
+		},
+		{
+			"playbook without title",
+			map[string]string{"sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "no title"},
+			`"# " title line`,
+		},
+		{
+			"playbook too large",
+			map[string]string{
+				"sample/workflow.yaml": validWorkflowYAML,
+				"sample/playbook.md":   "# S\n" + strings.Repeat("x", 64<<10),
+			},
+			"UTF-8 text of 1 to",
+		},
 		{"placeholder names no field", sample(replace("{{company}}", "{{firm}}")), "{{firm}} names no field"},
 		{"field never placed", sample(replace("{{ depth }}", "some")), `field "depth" is never placed`},
 		{"placeholder across lines", sample(replace("{{ depth }}", "{{\n    depth\n    }}")), "stray braces"},
 		{"unbalanced braces", sample(replace("depth.", "depth {{company}.")), "stray braces"},
 		{"unknown icon", sample(replace("search-zoom-in-1", "lucide-radar")), "not a bundled workflow icon"},
 		{"unknown category", sample(replace("[research]", "[health]")), "categories"},
-		{"too many deliverables", sample(replace("[report]", "[report, pdf, csv, image, video]")), "deliverables must hold 1 to 4"},
+		{
+			"too many deliverables",
+			sample(replace("[report]", "[report, pdf, csv, image, video]")),
+			"deliverables must hold 1 to 4",
+		},
 		{"unknown milestone", sample(replace("positioning", "fundraising")), "not a Task milestone"},
 		{"two highlights", sample(replace("[One, Two, Three]", "[One, Two]")), "exactly 3"},
 		{"untrimmed label", sample(replace("label: Deep }", "label: \" Deep\" }")), "one trimmed line"},
 		{"control character", sample(replace("label: Deep }", "label: \"De\\u0007ep\" }")), "one trimmed line"},
-		{"default outside options", sample(replace("default: quick", "default: slow")), "must be one of its options"},
-		{"one option", sample(replace("          - { value: deep, label: Deep }\n", "")), "needs 2 to 30 options"},
+		{
+			"default outside options",
+			sample(replace("default: quick", "default: slow")),
+			"must be one of its options",
+		},
+		{
+			"one option",
+			sample(replace("          - { value: deep, label: Deep }\n", "")),
+			"needs 2 to 30 options",
+		},
 		{"duplicate option value", sample(replace("value: deep", "value: quick")), "unique lowercase code"},
-		{"defaults on a select", sample(replace("default: quick", "defaults: [quick]")), "distinct options of a multi_select"},
-		{"repeated multi_select defaults", sample(strings.Replace(replace("type: select", "type: multi_select"), "default: quick", "defaults: [quick, quick]", 1)), "distinct options of a multi_select"},
-		{"impossible date default", sample(replace("type: text, label: Company, required: true", "type: text, label: Company, required: true }\n      - { key: due, type: date, label: Due, required: false, default: 2024-13-45")), "real YYYY-MM-DD date"},
-		{"non-web url default", sample(replace("type: text, label: Company, required: true", "type: text, label: Company, required: true }\n      - { key: site, type: url, label: Site, required: false, default: not-a-url")), "absolute http or https URL"},
+		{
+			"defaults on a select",
+			sample(replace("default: quick", "defaults: [quick]")),
+			"distinct options of a multi_select",
+		},
+		{
+			"repeated multi_select defaults",
+			sample(
+				strings.Replace(
+					replace("type: select", "type: multi_select"),
+					"default: quick",
+					"defaults: [quick, quick]",
+					1,
+				),
+			),
+			"distinct options of a multi_select",
+		},
+		{
+			"impossible date default",
+			sample(
+				replace(
+					"type: text, label: Company, required: true",
+					"type: text, label: Company, required: true }\n      - { key: due, type: date, label: Due, required: false, default: 2024-13-45",
+				),
+			),
+			"real YYYY-MM-DD date",
+		},
+		{
+			"non-web url default",
+			sample(
+				replace(
+					"type: text, label: Company, required: true",
+					"type: text, label: Company, required: true }\n      - { key: site, type: url, label: Site, required: false, default: not-a-url",
+				),
+			),
+			"absolute http or https URL",
+		},
 		{"duplicate field key", sample(replace("key: depth", "key: company")), "duplicate key"},
-		{"too many fields", sample(replace("      - key: depth\n", sixteenMore.String()+"      - key: depth\n")), "at most 16 fields"},
-		{"optional title field", sample(replace("label: Company, required: true", "label: Company, required: false")), "must name a required field"},
-		{"title field names no field", sample(replace("titleField: company", "titleField: firm")), "must name a text, url or select field"},
+		{
+			"too many fields",
+			sample(replace("      - key: depth\n", sixteenMore.String()+"      - key: depth\n")),
+			"at most 16 fields",
+		},
+		{
+			"optional title field",
+			sample(replace("label: Company, required: true", "label: Company, required: false")),
+			"must name a required field",
+		},
+		{
+			"title field names no field",
+			sample(replace("titleField: company", "titleField: firm")),
+			"must name a text, url or select field",
+		},
 		{"cron shorthand", withSchedule("@daily", "Do {{company}}."), "not a valid Schedule cron"},
 		{"cron day names", withSchedule("0 8 * * MON", "Do {{company}}."), "not a valid Schedule cron"},
 		{"cron every minute", withSchedule("* * * * *", "Do {{company}}."), "not a valid Schedule cron"},
 		{"cron never fires", withSchedule("0 8 31 2 *", "Do {{company}}."), "not a valid Schedule cron"},
 		{"file field type", sample(replace("type: text", "type: file")), `type "file" is not supported`},
-		{"files on a text field", sample(replace("label: Company, required: true", "label: Company, required: true, acceptsFiles: true")), "acceptsFiles belongs to a textarea field"},
-		{"files on a recurring workflow", sample(strings.Replace(validWorkflowYAML, "      - key: depth\n",
-			"      - { key: notes, type: textarea, label: Notes, required: false, acceptsFiles: true }\n      - key: depth\n", 1) +
+		{
+			"files on a text field",
+			sample(
+				replace(
+					"label: Company, required: true",
+					"label: Company, required: true, acceptsFiles: true",
+				),
+			),
+			"acceptsFiles belongs to a textarea field",
+		},
+		{"files on a recurring workflow", sample(strings.Replace(
+			validWorkflowYAML,
+			"      - key: depth\n",
+			"      - { key: notes, type: textarea, label: Notes, required: false, acceptsFiles: true }\n      - key: depth\n",
+			1,
+		) +
 			"schedule:\n  cron: \"0 8 * * 1\"\n  instructions: Check {{company}} weekly.\n"), "a recurring workflow cannot take files"},
-		{"requirement app not a connector", sample(withApps("requires:\n  - anyOf: [slack]\n")), "must be one of the workflow's connectors"},
+		{
+			"requirement app not a connector",
+			sample(withApps("requires:\n  - anyOf: [slack]\n")),
+			"must be one of the workflow's connectors",
+		},
 		{"requirement with no app", sample(withApps("requires:\n  - anyOf: []\n")), "anyOf must hold 1 to 4"},
-		{"app in two requirements", sample(withApps("requires:\n  - anyOf: [gmail]\n  - anyOf: [gmail, google_drive]\n")), "already belongs to another requirement"},
-		{"four requirements", sample(withApps("requires:\n  - anyOf: [gmail]\n  - anyOf: [google_drive]\n  - anyOf: [slack]\n  - anyOf: [notion]\n")), "at most 3 requirements"},
-		{"requirement orField names no field", sample(withApps("requires:\n  - { anyOf: [gmail], orField: export }\n")), `orField "export" names no field`},
-		{"requirement orField is required", sample(withApps("requires:\n  - { anyOf: [gmail], orField: company }\n")), "must name an optional field"},
-		{"requirement orField is a choice", sample(strings.Replace(withApps("requires:\n  - { anyOf: [gmail], orField: depth }\n"), "required: true\n        default: quick", "required: false\n        default: quick", 1)), "must name a textarea or url field"},
-		{"label too long for the Task label", map[string]string{
-			"a-very-long-workflow-key-that-cannot-fit/workflow.yaml": replace("key: sample", "key: a-very-long-workflow-key-that-cannot-fit"),
-			"a-very-long-workflow-key-that-cannot-fit/playbook.md":   "# S\n",
-		}, "at most 39 characters"},
+		{
+			"app in two requirements",
+			sample(withApps("requires:\n  - anyOf: [gmail]\n  - anyOf: [gmail, google_drive]\n")),
+			"already belongs to another requirement",
+		},
+		{
+			"four requirements",
+			sample(
+				withApps(
+					"requires:\n  - anyOf: [gmail]\n  - anyOf: [google_drive]\n  - anyOf: [slack]\n  - anyOf: [notion]\n",
+				),
+			),
+			"at most 3 requirements",
+		},
+		{
+			"requirement orField names no field",
+			sample(withApps("requires:\n  - { anyOf: [gmail], orField: export }\n")),
+			`orField "export" names no field`,
+		},
+		{
+			"requirement orField is required",
+			sample(withApps("requires:\n  - { anyOf: [gmail], orField: company }\n")),
+			"must name an optional field",
+		},
+		{
+			"requirement orField is a choice",
+			sample(
+				strings.Replace(
+					withApps("requires:\n  - { anyOf: [gmail], orField: depth }\n"),
+					"required: true\n        default: quick",
+					"required: false\n        default: quick",
+					1,
+				),
+			),
+			"must name a textarea or url field",
+		},
+		{
+			"label too long for the Task label",
+			map[string]string{
+				"a-very-long-workflow-key-that-cannot-fit/workflow.yaml": replace(
+					"key: sample",
+					"key: a-very-long-workflow-key-that-cannot-fit",
+				),
+				"a-very-long-workflow-key-that-cannot-fit/playbook.md": "# S\n",
+			},
+			"at most 39 characters",
+		},
 		{"duplicate name", map[string]string{
 			"sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "# S\n",
 			"second/workflow.yaml": replace("key: sample", "key: second"), "second/playbook.md": "# S\n",
 		}, "already used"},
-		{"stray top-level file", map[string]string{"README.md": "x", "sample/workflow.yaml": validWorkflowYAML, "sample/playbook.md": "# S\n"}, "unexpected file"},
+		{
+			"stray top-level file",
+			map[string]string{
+				"README.md":            "x",
+				"sample/workflow.yaml": validWorkflowYAML,
+				"sample/playbook.md":   "# S\n",
+			},
+			"unexpected file",
+		},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -314,8 +466,12 @@ func TestParseCatalogAcceptsARecurringWorkflow(t *testing.T) {
 // A textarea may take files in place of, or beside, the pasted text; the
 // launched Task carries them to its Runs.
 func TestParseCatalogAcceptsATextareaThatTakesFiles(t *testing.T) {
-	yaml := strings.Replace(validWorkflowYAML, "      - key: depth\n",
-		"      - { key: contract, type: textarea, label: Contract, required: true, acceptsFiles: true }\n      - key: depth\n", 1)
+	yaml := strings.Replace(
+		validWorkflowYAML,
+		"      - key: depth\n",
+		"      - { key: contract, type: textarea, label: Contract, required: true, acceptsFiles: true }\n      - key: depth\n",
+		1,
+	)
 	yaml = strings.Replace(yaml, "brief: |\n  Research {{company}} at {{ depth }} depth.\n",
 		"brief: |\n  Research {{company}} at {{ depth }} depth.\n  Contract: {{contract}}\n", 1)
 	catalog, err := parseCatalog(catalogFS(map[string]string{

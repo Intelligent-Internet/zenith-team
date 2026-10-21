@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // Every Project frame's audience is decided from the rows the transaction
@@ -32,7 +32,12 @@ func TestStampProjectAudiencesFollowsProjectAccess(t *testing.T) {
 	slices.SortFunc(readers, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
 
 	event := func(conversationID, taskID uuid.UUID, payload testProjectFrame) events.Event {
-		return events.Event{CompanyID: w.f.CompanyA, ConversationID: conversationID, TaskID: taskID, Payload: payload}
+		return events.Event{
+			CompanyID:      w.f.CompanyA,
+			ConversationID: conversationID,
+			TaskID:         taskID,
+			Payload:        payload,
+		}
 	}
 	stamped := &ProjectAudience{UserIDs: []uuid.UUID{w.admin}}
 	pending := []events.Event{
@@ -42,7 +47,11 @@ func TestStampProjectAudiencesFollowsProjectAccess(t *testing.T) {
 		event(w.f.DirectConversationA, uuid.Nil, testProjectFrame{scoped: true}),
 		event(legacy, uuid.Nil, testProjectFrame{scoped: true}),
 		event(w.f.ConversationA, uuid.Nil, testProjectFrame{}),
-		event(w.f.ConversationA, uuid.Nil, testProjectFrame{scoped: true, ProjectFrame: ProjectFrame{Audience: stamped}}),
+		event(
+			w.f.ConversationA,
+			uuid.Nil,
+			testProjectFrame{scoped: true, ProjectFrame: ProjectFrame{Audience: stamped}},
+		),
 		event(uuid.Nil, uuid.Nil, testProjectFrame{scoped: true, projectID: uuid.New()}),
 	}
 	if err := StampProjectAudiencesInTx(ctx, w.q, pending); err != nil {

@@ -22,7 +22,7 @@ import {
 } from "@/features/mailbox/api/mailbox-api";
 import { MailboxInbox } from "@/features/mailbox/components/mailbox-inbox";
 import type { CompanyMailbox } from "@/features/mailbox/model/mailbox";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { cx } from "@/shared/lib/cx";
 
@@ -82,7 +82,7 @@ export function MailboxSettingsSection({
       />
     );
   }
-  const stateError = stateQuery.error as BoardlyApiError | undefined;
+  const stateError = stateQuery.error as ZenithTeamApiError | undefined;
   if (stateError?.status === 401 || stateError?.status === 403) {
     return (
       <MailboxStateCard
@@ -244,7 +244,7 @@ function CreateMailboxCard({
   const [createMailbox, createState] = useCreateMailboxMutation();
   const normalizedLocalPart = localPart.trim().toLowerCase();
   const validationError = validateLocalPart(normalizedLocalPart);
-  const requestError = createState.error as BoardlyApiError | undefined;
+  const requestError = createState.error as ZenithTeamApiError | undefined;
   const visibleError =
     (showValidation ? validationError : null) ??
     mailboxCreationError(requestError);
@@ -446,7 +446,7 @@ function validateLocalPart(localPart: string) {
   return null;
 }
 
-function mailboxCreationError(error: BoardlyApiError | undefined) {
+function mailboxCreationError(error: ZenithTeamApiError | undefined) {
   switch (error?.code) {
     case "mailbox_address_unavailable":
       return "That address is already in use. Choose another name.";

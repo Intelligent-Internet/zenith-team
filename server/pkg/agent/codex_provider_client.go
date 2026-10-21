@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 // ── codexClient: JSON-RPC 2.0 transport ──

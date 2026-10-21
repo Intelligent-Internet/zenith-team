@@ -51,11 +51,11 @@ async function runDesktopSupportDiagnosticsCapture(options) {
     options.diagnosticsDirectory ?? getSupportDiagnosticsDirectory(app);
   const netLogPath = path.join(
     diagnosticsDirectory,
-    `boardly-support-netlog-${timestamp}.json`,
+    `zenith-team-support-netlog-${timestamp}.json`,
   );
   const tracePath = path.join(
     diagnosticsDirectory,
-    `boardly-support-trace-${timestamp}.json`,
+    `zenith-team-support-trace-${timestamp}.json`,
   );
 
   if (netLog.currentlyLogging) {

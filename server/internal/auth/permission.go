@@ -62,7 +62,7 @@ var (
 // plugins.manage, and works through the other member-gated routes.
 // plugins.manage installs plugins and connects apps on the holder's own
 // computers, the only computers any Plugins action reaches (ADR 0014), so
-// every role holds it (owner decision, 2026-09-29); reviewing an app's
+// every role holds it; reviewing an app's
 // changed tools and the Company's Connector policy stay with
 // connectors.manage. The order matches the catalog above; every accessor
 // sorts its output.

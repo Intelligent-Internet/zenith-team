@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 const testPlugin = "zenith-workflows"
@@ -436,7 +436,7 @@ func TestImportDevReportsEveryProblemInTheCheckout(t *testing.T) {
 	}
 }
 
-// newPinRepo is a boardly repository in a temporary directory with an empty
+// newPinRepo is a zenith-team repository in a temporary directory with an empty
 // pin directory, so an import can compare with the release committed at HEAD.
 func newPinRepo(t *testing.T) (*fixtureRepo, string) {
 	t.Helper()
@@ -606,7 +606,7 @@ func TestImportRepinsAMovedCommitOnlyWithIdenticalContent(t *testing.T) {
 // and a broken pin is repaired by importing its tag again.
 func TestImportJudgesABumpAgainstTheCommittedRelease(t *testing.T) {
 	t.Parallel()
-	boardly, out := newPinRepo(t)
+	zenithTeam, out := newPinRepo(t)
 	plugins := newFixtureRepo(t)
 	files, keys := samplePlugin(t, 3)
 	released := map[string][]byte{}
@@ -621,7 +621,7 @@ func TestImportJudgesABumpAgainstTheCommittedRelease(t *testing.T) {
 		"--out", out); code != 0 {
 		t.Fatalf("import 1.0.0 exit %d\n%s", code, stderr)
 	}
-	boardly.commit("pin 1.0.0")
+	zenithTeam.commit("pin 1.0.0")
 
 	writePlugin(t, plugins.dir, checkPlugin, "1.0.0", files, nil)
 	if _, stderr, code := runCommand(t, "import", "--dev", "--from", plugins.dir, "--plugin", checkPlugin,
@@ -638,7 +638,7 @@ func TestImportJudgesABumpAgainstTheCommittedRelease(t *testing.T) {
 		!strings.Contains(stdout, "- Removed (0)") {
 		t.Fatalf("bump over a development pin exit %d\n%s%s", code, stdout, stderr)
 	}
-	boardly.commit("pin 1.0.1")
+	zenithTeam.commit("pin 1.0.1")
 	committed, err := os.ReadFile(filepath.Join(out, checkPlugin+".bundle.tar"))
 	if err != nil {
 		t.Fatal(err)
@@ -663,7 +663,7 @@ func TestImportJudgesABumpAgainstTheCommittedRelease(t *testing.T) {
 		"--out", out); code != 0 {
 		t.Fatalf("import --dev exit %d\n%s", code, stderr)
 	}
-	boardly.commit("commit a development pin by mistake")
+	zenithTeam.commit("commit a development pin by mistake")
 	dropped := map[string][]byte{}
 	for name, contents := range released {
 		if !strings.HasPrefix(name, keys[0]+"/") {
@@ -889,7 +889,7 @@ func TestGitErrorsLeaveOutURLCredentials(t *testing.T) {
 	}
 }
 
-// A Boardly folder that is a symlink at the tag is named as one, rather than
+// A Zenith Team folder that is a symlink at the tag is named as one, rather than
 // read as an empty catalog.
 func TestImportRefusesASymlinkedContentFolder(t *testing.T) {
 	t.Parallel()
@@ -908,7 +908,7 @@ func TestImportRefusesASymlinkedContentFolder(t *testing.T) {
 	repo.tag(testPlugin + "--v1.0.0")
 	_, stderr, code := runCommand(t, "import", "--tag", testPlugin+"--v1.0.0", "--repo", repo.dir,
 		"--out", t.TempDir())
-	want := "plugins/zenith-workflows/boardly/workflows: has git mode 120000; a plugin's Boardly folders are " +
+	want := "plugins/zenith-workflows/boardly/workflows: has git mode 120000; a plugin's Zenith Team folders are " +
 		"real directories"
 	if code != 1 || !strings.Contains(stderr, want) || strings.Contains(stderr, "is missing") ||
 		strings.Contains(stderr, "catalog is empty") {

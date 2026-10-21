@@ -186,7 +186,7 @@ function createArtifactFileCache({
         headers: {
           Authorization: `Bearer ${actor.token}`,
           "Accept-Encoding": "identity",
-          "X-Boardly-Artifact-Cache": "revalidate",
+          "X-Zenith-Team-Artifact-Cache": "revalidate",
           ...(tag ? { "If-None-Match": tag } : {}),
         },
         signal: AbortSignal.any([signal, AbortSignal.timeout(120_000)]),

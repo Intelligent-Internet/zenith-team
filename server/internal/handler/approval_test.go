@@ -13,11 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
 )
 
 func TestRunTokenRaisesCompanyPlanApprovalAndQuestion(t *testing.T) {
@@ -155,7 +155,7 @@ func TestHITLRaiseRequiresProofAndIdempotencyKey(t *testing.T) {
 	missingRequest.Header.Set("Authorization", "Bearer access-token")
 	missingRequest.Header.Set("Content-Type", "application/json")
 	missingRequest.Header.Set(
-		"X-Boardly-Run-Token",
+		"X-Zenith-Team-Run-Token",
 		"brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 	)
 	missingKey := httptest.NewRecorder()
@@ -164,7 +164,7 @@ func TestHITLRaiseRequiresProofAndIdempotencyKey(t *testing.T) {
 
 	request := httptest.NewRequest(http.MethodPost, path, nil)
 	request.Header.Set("Authorization", "Bearer access-token")
-	request.Header.Set("X-Boardly-Run-Token", "not-a-run-token")
+	request.Header.Set("X-Zenith-Team-Run-Token", "not-a-run-token")
 	request.Header.Set("Idempotency-Key", uuid.Must(uuid.NewV7()).String())
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -240,7 +240,7 @@ func serveHITLJSON(
 	request.Header.Set("Authorization", "Bearer access-token")
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set(
-		"X-Boardly-Run-Token",
+		"X-Zenith-Team-Run-Token",
 		"brt_"+"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 	)
 	request.Header.Set("Idempotency-Key", requestKey.String())

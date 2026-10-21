@@ -6,15 +6,19 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type wikiToolsStub struct{ searched, listed, read, written []string }
 
 func (s *wikiToolsStub) SearchWiki(_ context.Context, input tools.WikiSearchInput) (tools.WikiSearchResult, error) {
 	s.searched = append(s.searched, input.Query)
-	return tools.WikiSearchResult{Items: []tools.WikiSearchItem{{PageID: "p1", Title: "Refunds", Revision: 4}}, Total: 1}, nil
+	return tools.WikiSearchResult{
+		Items: []tools.WikiSearchItem{{PageID: "p1", Title: "Refunds", Revision: 4}},
+		Total: 1,
+	}, nil
 }
 
 func (s *wikiToolsStub) ListWiki(_ context.Context, input tools.WikiListInput) (tools.WikiListResult, error) {
@@ -28,12 +32,22 @@ func (s *wikiToolsStub) ListWiki(_ context.Context, input tools.WikiListInput) (
 
 func (s *wikiToolsStub) ReadWiki(_ context.Context, input tools.WikiReadInput) (tools.WikiReadResult, error) {
 	s.read = append(s.read, input.PageID)
-	return tools.WikiReadResult{PageID: input.PageID, Title: "Refunds", Revision: 4, Content: "body", Notice: "n"}, nil
+	return tools.WikiReadResult{
+		PageID:   input.PageID,
+		Title:    "Refunds",
+		Revision: 4,
+		Content:  "body",
+		Notice:   "n",
+	}, nil
 }
 
 func (s *wikiToolsStub) WriteWiki(_ context.Context, input tools.WikiWriteInput) (tools.WikiWriteResult, error) {
 	s.written = append(s.written, input.Pages[0].Key)
-	return tools.WikiWriteResult{Pages: []tools.WikiWriteItem{{Key: input.Pages[0].Key, PageID: "p1", Status: "created"}}, Warnings: []string{}, TotalPages: 1}, nil
+	return tools.WikiWriteResult{
+		Pages:      []tools.WikiWriteItem{{Key: input.Pages[0].Key, PageID: "p1", Status: "created"}},
+		Warnings:   []string{},
+		TotalPages: 1,
+	}, nil
 }
 
 func TestWikiWriteIsAdvertisedOnlyWhenAllowed(t *testing.T) {
@@ -55,7 +69,8 @@ func TestWikiWriteIsAdvertisedOnlyWhenAllowed(t *testing.T) {
 			server := newServer(stub, stub, nil, allowed, optionalTools{wiki: wiki})
 			st, ct := mcpsdk.NewInMemoryTransports()
 			go func() { _ = server.Run(ctx, st) }()
-			session, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "wiki-write-test", Version: "test"}, nil).Connect(ctx, ct, nil)
+			session, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "wiki-write-test", Version: "test"}, nil).
+				Connect(ctx, ct, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -75,13 +90,25 @@ func TestWikiWriteIsAdvertisedOnlyWhenAllowed(t *testing.T) {
 			if write == nil {
 				return
 			}
-			if write.InputSchema == nil || write.OutputSchema == nil || write.Annotations == nil || write.Annotations.ReadOnlyHint ||
-				!write.Annotations.IdempotentHint || write.Annotations.OpenWorldHint == nil || *write.Annotations.OpenWorldHint {
+			if write.InputSchema == nil || write.OutputSchema == nil || write.Annotations == nil ||
+				write.Annotations.ReadOnlyHint ||
+				!write.Annotations.IdempotentHint ||
+				write.Annotations.OpenWorldHint == nil ||
+				*write.Annotations.OpenWorldHint {
 				t.Fatalf("wiki_write schema/annotations = %+v", write.Annotations)
 			}
-			result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_write", Arguments: map[string]any{
-				"pages": []any{map[string]any{"key": "company-overview", "title": "Company overview", "markdown": "x"}},
-			}})
+			result, err := session.CallTool(
+				ctx,
+				&mcpsdk.CallToolParams{Name: "wiki_write", Arguments: map[string]any{
+					"pages": []any{
+						map[string]any{
+							"key":      "company-overview",
+							"title":    "Company overview",
+							"markdown": "x",
+						},
+					},
+				}},
+			)
 			if err != nil || result.IsError || !slices.Equal(wiki.written, []string{"company-overview"}) {
 				t.Fatalf("wiki_write = %#v, %v; written %q", result, err, wiki.written)
 			}
@@ -110,7 +137,8 @@ func TestWikiToolsRequireExplicitAllowlist(t *testing.T) {
 			server := newServer(stub, stub, nil, allowed, optionalTools{wiki: wiki})
 			st, ct := mcpsdk.NewInMemoryTransports()
 			go func() { _ = server.Run(ctx, st) }()
-			session, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "wiki-test", Version: "test"}, nil).Connect(ctx, ct, nil)
+			session, err := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "wiki-test", Version: "test"}, nil).
+				Connect(ctx, ct, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -131,25 +159,45 @@ func TestWikiToolsRequireExplicitAllowlist(t *testing.T) {
 				if tool.InputSchema == nil || tool.OutputSchema == nil {
 					t.Fatalf("%s missing typed schema", name)
 				}
-				if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || !tool.Annotations.IdempotentHint ||
-					tool.Annotations.OpenWorldHint == nil || *tool.Annotations.OpenWorldHint {
+				if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint ||
+					!tool.Annotations.IdempotentHint ||
+					tool.Annotations.OpenWorldHint == nil ||
+					*tool.Annotations.OpenWorldHint {
 					t.Fatalf("%s annotations = %+v", name, tool.Annotations)
 				}
 			}
 			if found["wiki_search"] != nil {
-				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_search", Arguments: map[string]any{"query": "refunds"}})
+				result, err := session.CallTool(
+					ctx,
+					&mcpsdk.CallToolParams{
+						Name:      "wiki_search",
+						Arguments: map[string]any{"query": "refunds"},
+					},
+				)
 				if err != nil || result.IsError || !slices.Equal(wiki.searched, []string{"refunds"}) {
 					t.Fatalf("wiki_search = %#v, %v; searched %q", result, err, wiki.searched)
 				}
 			}
 			if found["wiki_list"] != nil {
-				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_list", Arguments: map[string]any{"collectionId": "c1"}})
+				result, err := session.CallTool(
+					ctx,
+					&mcpsdk.CallToolParams{
+						Name:      "wiki_list",
+						Arguments: map[string]any{"collectionId": "c1"},
+					},
+				)
 				if err != nil || result.IsError || !slices.Equal(wiki.listed, []string{"c1"}) {
 					t.Fatalf("wiki_list = %#v, %v; listed %q", result, err, wiki.listed)
 				}
 			}
 			if found["wiki_read"] != nil {
-				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "wiki_read", Arguments: map[string]any{"pageId": "p1"}})
+				result, err := session.CallTool(
+					ctx,
+					&mcpsdk.CallToolParams{
+						Name:      "wiki_read",
+						Arguments: map[string]any{"pageId": "p1"},
+					},
+				)
 				if err != nil || result.IsError || !slices.Equal(wiki.read, []string{"p1"}) {
 					t.Fatalf("wiki_read = %#v, %v; read %q", result, err, wiki.read)
 				}

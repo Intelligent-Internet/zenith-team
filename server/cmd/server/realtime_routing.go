@@ -8,24 +8,24 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/mailbox"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/wiki"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // registerRealtimeRouting is the browser plane's consumer: it subscribes to
@@ -151,7 +151,8 @@ func registerRealtimeRouting(bus *events.Bus, b realtime.Broadcaster, hints whit
 			)
 		}),
 		bus.Subscribe(conversation.TopicHuddle, func(_ context.Context, e events.Event) error {
-			if e.Name == conversation.EventHuddleRosterChanged || e.Name == conversation.EventHuddleStatusChanged {
+			if e.Name == conversation.EventHuddleRosterChanged ||
+				e.Name == conversation.EventHuddleStatusChanged {
 				// Opaque refetch signals for the people in the call, addressed
 				// by the producer when the connection or status changed.
 				var recipients []uuid.UUID
@@ -232,7 +233,10 @@ func registerRealtimeRouting(bus *events.Bus, b realtime.Broadcaster, hints whit
 			if hints.viewers == nil || e.Name == canvas.EventBoardRenamed {
 				return toCompanyUsers(ctx, b, e, change.RecipientUserIDs)
 			}
-			sessions, err := hints.viewers.Sessions(ctx, e.CompanyID.String()+":whiteboard:"+change.BoardID.String())
+			sessions, err := hints.viewers.Sessions(
+				ctx,
+				e.CompanyID.String()+":whiteboard:"+change.BoardID.String(),
+			)
 			if err != nil {
 				return toCompanyUsers(ctx, b, e, change.RecipientUserIDs)
 			}

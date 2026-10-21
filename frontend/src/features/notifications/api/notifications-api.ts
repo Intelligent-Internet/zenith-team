@@ -15,7 +15,10 @@ import type {
   InboxReadAllResult,
   NotificationMutation,
 } from "@/features/notifications/model/notification";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 
 type ListInboxArgument = InboxListOptions & { companyId: string };
 type GetInboxItemArgument = { companyId: string; itemId: string };
@@ -44,7 +47,7 @@ function listTagId(argument: ListInboxArgument) {
   return `${argument.companyId}:list:${argument.status ?? "active"}:${argument.kind ?? "any"}`;
 }
 
-export const notificationsApi = boardlyApi.injectEndpoints({
+export const notificationsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getHuddleNotificationPreview: builder.query<
       { title: string; body: string } | null,
@@ -52,7 +55,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const history = await apiClient.get<
             components["schemas"]["HuddleInvitation"][]
           >(
@@ -73,7 +76,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
       // as permission to quote a message in an OS notification.
       keepUnusedDataFor: 0,
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const companyPath = `/companies/${encodeURIComponent(arg.companyId)}`;
           const conversationId = encodeURIComponent(arg.conversationId);
           const [context, detail] = await Promise.all([
@@ -113,7 +116,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
         { id: listTagId(argument), type: "Inbox" },
       ],
       queryFn: ({ companyId, ...options }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => notificationService.list(companyId, options),
           "Notifications could not be loaded.",
         ),
@@ -123,7 +126,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:counts`, type: "Inbox" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => notificationService.counts(companyId),
           "Notification count could not be loaded.",
         ),
@@ -134,7 +137,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
         { id: `${argument.companyId}:item:${argument.itemId}`, type: "Inbox" },
       ],
       queryFn: ({ companyId, itemId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => notificationService.get(companyId, itemId),
           "Notification could not be loaded.",
         ),
@@ -151,7 +154,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
         { id: `${argument.companyId}:item:${argument.itemId}`, type: "Inbox" },
       ],
       queryFn: ({ companyId, itemId, mutation, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             notificationService.mutate(
               companyId,
@@ -165,7 +168,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
     readAllNotifications: builder.mutation<InboxReadAllResult, string>({
       invalidatesTags: () => ["Inbox"],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => notificationService.readAll(companyId),
           "Notifications could not be marked as read.",
         ),
@@ -181,7 +184,7 @@ export const notificationsApi = boardlyApi.injectEndpoints({
         { id: `${companyId}:counts`, type: "Inbox" },
       ],
       queryFn: ({ companyId, conversationId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => notificationService.readConversation(companyId, conversationId),
           "Chat notifications could not be marked as read.",
         ),

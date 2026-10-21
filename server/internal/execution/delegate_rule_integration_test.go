@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // What Mia holds as a person, the expected side of the table below: her
@@ -235,7 +235,7 @@ func (w *delegateRuleWorld) holds(t *testing.T, project uuid.UUID, permission au
 }
 
 // A Run, or the voice assistant, uses its Authorizer's Project access, never
-// more, and nothing else narrows it (D31, revised 2026-10-06): there is no
+// more, and nothing else narrows it: there is no
 // chat audience. A Task chat's answer stays in that chat's Project. On every
 // row of the table, a Task Run, a tagged Run and a direct Run × the Task
 // chat's own Project or another × restricted or Company-visible × what Mia,
@@ -462,8 +462,8 @@ func TestDelegateRuleUsesTheAuthorizersAccess(t *testing.T) {
 
 	t.Run("deliberately narrower", func(t *testing.T) {
 		w.arrange(t, w.projectO, false, accessWork, accessRead)
-		// The voice assistant's Authorizer must read the Project (D31; B5
-		// then requires them in the call). An owner who cannot read Project O
+		// The voice assistant's Authorizer must read the Project (and must
+		// then be in the call). An owner who cannot read Project O
 		// cannot share it with the call, though Mia and Leo read it.
 		projects, err := w.q.ListVoiceProjects(w.ctx, db.ListVoiceProjectsParams{
 			CompanyID: w.f.CompanyA, ContextGrantedByUserID: w.f.UserA,

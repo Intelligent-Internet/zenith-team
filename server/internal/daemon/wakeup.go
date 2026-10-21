@@ -15,7 +15,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var errRuntimeSetChanged = errors.New("runtime set changed")

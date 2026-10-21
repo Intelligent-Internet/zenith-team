@@ -1,17 +1,13 @@
 # Lint configuration for docs/api/spec/openapi.yaml.
 #
 # Run via `make api-lint`. Rules are disabled only where the default does not
-# apply to a private, self-hosted API — never to hide a real defect. Each
+# apply to a self-hosted API — never to hide a real defect. Each
 # exemption carries its reason so the next person can re-enable it deliberately.
 
 extends:
   - recommended
 
 rules:
-  # Zenith Team is not a published API and ships no licence in its spec. The
-  # licence that governs the code governs the contract.
-  info-license: off
-
   # servers[0] is http://localhost:8788, the documented local development
   # address from docs/quickstart.md. The rule exists to catch specs shipped
   # with a placeholder host; ours is a real, intentional one.

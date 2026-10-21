@@ -6,7 +6,7 @@ import type { Reducer, UnknownAction } from "redux";
 import { persistReducer, type PersistedState } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import { appearanceReducer } from "@/state/slice/appearance";
 import { chatReducer } from "@/state/slice/chat";
 import {
@@ -73,7 +73,7 @@ const appReducer = combineReducers({
     { key: "agentDrafts", storage },
     agentDraftsReducer,
   ),
-  [boardlyApi.reducerPath]: boardlyApi.reducer,
+  [zenithTeamApi.reducerPath]: zenithTeamApi.reducer,
   appearance: appearanceReducer,
   chat: chatReducer,
   conversationDock: persistReducer(

@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // The notice's audience is the registrant alone (ADR 0014): a machine's
@@ -67,8 +67,8 @@ func TestRuntimeOfflineTitleNamesTheMachineAndFitsTheInboxLimit(t *testing.T) {
 		},
 		{
 			name:    "preserves Unicode",
-			machine: "Máy của Quy",
-			want:    "Máy của Quy went offline",
+			machine: "Máy của Sam",
+			want:    "Máy của Sam went offline",
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {

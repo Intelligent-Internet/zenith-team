@@ -14,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/reearth/ygo/crdt"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (
@@ -189,7 +189,11 @@ func normalizeAgentWrite(input AgentWriteInput) (AgentWriteInput, error) {
 			return AgentWriteInput{}, ErrPageInvalidInput
 		}
 		seen[page.Key] = struct{}{}
-		title, markdown, summary, err := normalizePageInput(page.Title, withoutTitleHeading(page.Title, page.Markdown), page.Summary)
+		title, markdown, summary, err := normalizePageInput(
+			page.Title,
+			withoutTitleHeading(page.Title, page.Markdown),
+			page.Summary,
+		)
 		if err != nil {
 			return AgentWriteInput{}, err
 		}
@@ -328,7 +332,17 @@ func savePageInTx(
 	if err != nil {
 		return PageResponse{}, false, 0, fmt.Errorf("lock Wiki page: %w", err)
 	}
-	sequence, err := replaceDraftInTx(ctx, q, principal.CompanyID, pageID, title, summary, collectionID, markdown, agentID)
+	sequence, err := replaceDraftInTx(
+		ctx,
+		q,
+		principal.CompanyID,
+		pageID,
+		title,
+		summary,
+		collectionID,
+		markdown,
+		agentID,
+	)
 	if err != nil {
 		return PageResponse{}, false, 0, err
 	}
@@ -454,15 +468,29 @@ func writeInTx(
 		if errors.Is(err, pgx.ErrNoRows) {
 			// A person may create the same name between the read and the
 			// insert; no row back means they won, and their collection is reused.
-			collection, err = q.CreateWikiCollectionIfAbsent(ctx, generated.CreateWikiCollectionIfAbsentParams{
-				CompanyID: principal.CompanyID, Name: "Company",
-			})
-			if errors.Is(err, pgx.ErrNoRows) {
-				collection, err = q.GetWikiCollectionByName(ctx, generated.GetWikiCollectionByNameParams{
+			collection, err = q.CreateWikiCollectionIfAbsent(
+				ctx,
+				generated.CreateWikiCollectionIfAbsentParams{
 					CompanyID: principal.CompanyID, Name: "Company",
-				})
+				},
+			)
+			if errors.Is(err, pgx.ErrNoRows) {
+				collection, err = q.GetWikiCollectionByName(
+					ctx,
+					generated.GetWikiCollectionByNameParams{
+						CompanyID: principal.CompanyID, Name: "Company",
+					},
+				)
 			} else if err == nil {
-				*pending = append(*pending, newCollectionEvent(principal.CompanyID, actor, EventCollectionCreated, collectionResponse(collection)))
+				*pending = append(
+					*pending,
+					newCollectionEvent(
+						principal.CompanyID,
+						actor,
+						EventCollectionCreated,
+						collectionResponse(collection),
+					),
+				)
 			}
 			if err != nil {
 				return fmt.Errorf("create Wiki collection: %w", err)
@@ -499,9 +527,22 @@ func writeInTx(
 		resolved, missing := resolveWikiKeys(markdown, known)
 		for _, missingKey := range missing {
 			response.Warnings = append(response.Warnings, fmt.Sprintf(
-				"page %q links to [[%s]], which is not a page the research has written; it was left as plain text", key, missingKey))
+				"page %q links to [[%s]], which is not a page the research has written; it was left as plain text",
+				key,
+				missingKey,
+			))
 		}
-		page, firstPublication, draftSeq, err := savePageInTx(ctx, q, principal, target.pageID, title, summary, collection, resolved, standing.AgentID)
+		page, firstPublication, draftSeq, err := savePageInTx(
+			ctx,
+			q,
+			principal,
+			target.pageID,
+			title,
+			summary,
+			collection,
+			resolved,
+			standing.AgentID,
+		)
 		if err != nil {
 			return err
 		}
@@ -547,7 +588,9 @@ func writeInTx(
 			}
 			if edited {
 				response.Warnings = append(response.Warnings, fmt.Sprintf(
-					"page %q was edited by a person after the research wrote it and was not changed", page.Key))
+					"page %q was edited by a person after the research wrote it and was not changed",
+					page.Key,
+				))
 				continue
 			}
 			collection = current.CollectionID
@@ -561,7 +604,15 @@ func writeInTx(
 				continue
 			}
 		}
-		if err := save(page.Key, target, page.Title, page.Summary, collection, page.Markdown, page.Markdown); err != nil {
+		if err := save(
+			page.Key,
+			target,
+			page.Title,
+			page.Summary,
+			collection,
+			page.Markdown,
+			page.Markdown,
+		); err != nil {
 			return err
 		}
 	}
@@ -569,7 +620,8 @@ func writeInTx(
 	// A page written by an earlier call may have linked to a key that did not
 	// exist then and was left as text; it links now that the key does.
 	for _, row := range owned {
-		if _, current := inBatch[row.Key]; current || row.Status != "active" || !referencesAny(row.SourceMarkdown, added) {
+		if _, current := inBatch[row.Key]; current || row.Status != "active" ||
+			!referencesAny(row.SourceMarkdown, added) {
 			continue
 		}
 		page, err := readPage(ctx, q, principal, row.PageID)
@@ -582,10 +634,20 @@ func writeInTx(
 		}
 		if edited {
 			response.Warnings = append(response.Warnings, fmt.Sprintf(
-				"page %q was edited by a person after the research wrote it; its new links were not added", row.Key))
+				"page %q was edited by a person after the research wrote it; its new links were not added",
+				row.Key,
+			))
 			continue
 		}
-		if err = save(row.Key, known[row.Key], page.Title, page.Summary, page.CollectionID, row.SourceMarkdown, row.SourceMarkdown); err != nil {
+		if err = save(
+			row.Key,
+			known[row.Key],
+			page.Title,
+			page.Summary,
+			page.CollectionID,
+			row.SourceMarkdown,
+			row.SourceMarkdown,
+		); err != nil {
 			return err
 		}
 	}

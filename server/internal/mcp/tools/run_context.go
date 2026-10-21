@@ -35,5 +35,5 @@ func runRequestKey(operation string, runContext RunContext, payload any) (string
 	if err != nil {
 		return "", fmt.Errorf("encode Zenith Team run request key: %w", err)
 	}
-	return uuid.NewSHA1(uuid.NameSpaceURL, append([]byte("boardly:run-tool:"), canonical...)).String(), nil
+	return uuid.NewSHA1(uuid.NameSpaceURL, append([]byte("zenith-team:run-tool:"), canonical...)).String(), nil
 }

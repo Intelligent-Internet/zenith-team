@@ -52,7 +52,9 @@ func TestDiscussionBodyValidationAndFingerprint(t *testing.T) {
 	mention, err := normalizeDiscussionSend(DiscussionSendInput{
 		RequestKey: uuid.New(),
 		Body: DiscussionBody{Version: 1, Markdown: "Hi @you", References: []json.RawMessage{
-			json.RawMessage(`{"start":3,"end":7,"type":"user","userId":"11111111-1111-4111-8111-111111111111"}`),
+			json.RawMessage(
+				`{"start":3,"end":7,"type":"user","userId":"11111111-1111-4111-8111-111111111111"}`,
+			),
 		}},
 	})
 	if err != nil || len(mention.Input.Body.References) != 1 {
@@ -61,7 +63,9 @@ func TestDiscussionBodyValidationAndFingerprint(t *testing.T) {
 	_, err = normalizeDiscussionSend(DiscussionSendInput{
 		RequestKey: uuid.New(),
 		Body: DiscussionBody{Version: 1, Markdown: "😀", References: []json.RawMessage{
-			json.RawMessage(`{"start":1,"end":2,"type":"user","userId":"11111111-1111-4111-8111-111111111111"}`),
+			json.RawMessage(
+				`{"start":1,"end":2,"type":"user","userId":"11111111-1111-4111-8111-111111111111"}`,
+			),
 		}},
 	})
 	if err == nil {

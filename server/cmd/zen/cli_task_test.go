@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const sampleTask = `{"id":"` + testRunTaskID + `","key":"ENG-7","companyId":"` + testCompanyID + `",` +
@@ -40,8 +40,8 @@ func TestTaskListAndGetInOperatorMode(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	out, err := executeCLI(t, newRootCmd, "task", "list", "--status", "in_progress,todo")
 	if err != nil {
@@ -108,8 +108,8 @@ func TestTaskDependenciesRendersBothDirections(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	out, err := executeCLI(t, newRootCmd, "task", "dependencies", testRunTaskID)
 	if err != nil {
@@ -171,8 +171,8 @@ func TestTaskCreateLeavesTheKeyToTheServerAndNamesBothHalvesOfTheAssignment(t *t
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	// A Task always belongs to a member and names the Agent that does the
 	// work (ADR 0014). Unnamed, the member is the caller: the server's
@@ -278,8 +278,8 @@ func TestTaskNamesGoToTheServerInOperatorMode(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	for _, test := range []struct {
 		args      []string
@@ -425,8 +425,8 @@ func TestTaskGetAndFailInsideARunUseTheChannel(t *testing.T) {
 	}
 	// Failing a Task is a Run's act; an operator shell cannot do it.
 	seedSession(t, "http://127.0.0.1:1")
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 	if _, err := executeCLI(t, newRootCmd, "task", "fail", "--reason", "x"); err == nil ||
 		!strings.Contains(err.Error(), "only works in Agent mode") {
 		t.Fatalf("task fail as operator = %v", err)
@@ -557,7 +557,7 @@ func TestTaskReadsInsideARunRefuseANameThatIsNotOnePathSegment(t *testing.T) {
 }
 
 // Inside a Run, `zen task create` files work for the member the Run works
-// for (ADR 0014 D6). The daemon forwards it with that member's session, so
+// for (ADR 0014). The daemon forwards it with that member's session, so
 // the server makes them the assignee and the CLI needs no /me; naming
 // another assignee is refused. A Task Run's new Task lands in the Run's own
 // Project, named or not, and this Run's Agent does the work unless the
@@ -678,8 +678,8 @@ func TestTaskAndConversationMessagesUseTheServersRoutes(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	if _, err := executeCLI(t, newRootCmd, "task", "messages", testRunTaskID); err != nil {
 		t.Fatalf("task messages: %v", err)

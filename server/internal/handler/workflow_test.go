@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/workflow"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/workflow"
 )
 
 func workflowTestHandler(t *testing.T) (http.Handler, string) {
@@ -54,7 +54,13 @@ func TestWorkflowsListTheCatalogForMembers(t *testing.T) {
 		t.Fatalf("workflow.List() error = %v", err)
 	}
 	if len(got.Items) != len(want) || got.Items[0]["key"] != want[0].Key {
-		t.Fatalf("items = %d (first %v), want %d (first %s)", len(got.Items), got.Items[0]["key"], len(want), want[0].Key)
+		t.Fatalf(
+			"items = %d (first %v), want %d (first %s)",
+			len(got.Items),
+			got.Items[0]["key"],
+			len(want),
+			want[0].Key,
+		)
 	}
 	if _, hasForm := got.Items[0]["pages"]; hasForm {
 		t.Fatalf("list item carries the form: %v", got.Items[0])
@@ -163,14 +169,23 @@ func TestWorkflowReadinessIsMemberReadable(t *testing.T) {
 			apps[index] = agent.ConnectorAppReadiness{App: app, State: agent.ConnectorAppStateReady}
 		}
 		return agent.ConnectorAppReadinessResult{
-			AgentID: agentID, Provider: agent.ConnectorProviderCodex,
+			AgentID:   agentID,
+			Provider:  agent.ConnectorProviderCodex,
 			RuntimeID: uuid.NullUUID{UUID: runtimeID, Valid: true},
-			Discovery: agent.ConnectorAppDiscovery{State: agent.ConnectorDiscoveryStateFresh, ObservedAt: &observedAt},
-			Apps:      apps,
+			Discovery: agent.ConnectorAppDiscovery{
+				State:      agent.ConnectorDiscoveryStateFresh,
+				ObservedAt: &observedAt,
+			},
+			Apps: apps,
 		}, nil
 	})
 
-	response := serveBearerJSON(handler, http.MethodGet, path+"/"+item.Key+"/readiness?agent_id="+agentID.String(), nil)
+	response := serveBearerJSON(
+		handler,
+		http.MethodGet,
+		path+"/"+item.Key+"/readiness?agent_id="+agentID.String(),
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
 	}
@@ -215,7 +230,12 @@ func TestWorkflowReadinessOfAnAgentTheViewerHasNotSetUp(t *testing.T) {
 		}, nil
 	})
 
-	response := serveBearerJSON(handler, http.MethodGet, path+"/"+item.Key+"/readiness?agent_id="+agentID.String(), nil)
+	response := serveBearerJSON(
+		handler,
+		http.MethodGet,
+		path+"/"+item.Key+"/readiness?agent_id="+agentID.String(),
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
 	}
@@ -249,9 +269,12 @@ func TestWorkflowReadinessConnectorCarriesToolCounts(t *testing.T) {
 			apps[index] = agent.ConnectorAppReadiness{
 				App: app, State: agent.ConnectorAppStateNeedsConnection,
 				Connector: &agent.ConnectorAppConnector{
-					ID: uuid.Must(uuid.NewV7()), Source: agent.ConnectorSourceCodexApp,
-					NativeID: "connector-" + string(app), Name: string(app),
-					Status: agent.ConnectorStatusNeedsAuth, Action: agent.ConnectorActionAuthenticate,
+					ID:       uuid.Must(uuid.NewV7()),
+					Source:   agent.ConnectorSourceCodexApp,
+					NativeID: "connector-" + string(app),
+					Name:     string(app),
+					Status:   agent.ConnectorStatusNeedsAuth,
+					Action:   agent.ConnectorActionAuthenticate,
 				},
 			}
 		}
@@ -260,14 +283,23 @@ func TestWorkflowReadinessConnectorCarriesToolCounts(t *testing.T) {
 		apps[0].Connector.Action = agent.ConnectorActionNone
 		apps[0].Connector.ToolCount, apps[0].Connector.WriteToolCount = 3, 1
 		return agent.ConnectorAppReadinessResult{
-			AgentID: agentID, Provider: agent.ConnectorProviderCodex,
+			AgentID:   agentID,
+			Provider:  agent.ConnectorProviderCodex,
 			RuntimeID: uuid.NullUUID{UUID: uuid.Must(uuid.NewV7()), Valid: true},
-			Discovery: agent.ConnectorAppDiscovery{State: agent.ConnectorDiscoveryStateFresh, ObservedAt: &observedAt},
-			Apps:      apps,
+			Discovery: agent.ConnectorAppDiscovery{
+				State:      agent.ConnectorDiscoveryStateFresh,
+				ObservedAt: &observedAt,
+			},
+			Apps: apps,
 		}, nil
 	})
 
-	response := serveBearerJSON(handler, http.MethodGet, path+"/"+item.Key+"/readiness?agent_id="+agentID.String(), nil)
+	response := serveBearerJSON(
+		handler,
+		http.MethodGet,
+		path+"/"+item.Key+"/readiness?agent_id="+agentID.String(),
+		nil,
+	)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body = %s", response.Code, response.Body.String())
 	}

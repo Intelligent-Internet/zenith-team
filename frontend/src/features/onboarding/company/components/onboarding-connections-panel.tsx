@@ -25,7 +25,7 @@ import {
 import type { AgentDto, PluginItemV1 } from "@/shared/api/types";
 import { AppAvatar } from "@/shared/ui/app-avatar";
 import { ArrowRight, RefreshCwIcon } from "@/shared/ui/icons";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { OnboardingActions } from "@/features/onboarding/company/components/onboarding-actions";
 import { useConnectedAppsQuery } from "@/features/onboarding/api/connected-apps-api";
 import { useOnboardingPluginsQuery } from "@/features/onboarding/api/onboarding-plugins-api";
@@ -141,7 +141,7 @@ function OnboardingPluginChoices({
         ]);
         return refreshed;
       } catch (error) {
-        setErrorMessage(getBoardlyQueryErrorMessage(error));
+        setErrorMessage(getZenithTeamQueryErrorMessage(error));
         return null;
       }
     },
@@ -409,7 +409,7 @@ function OnboardingPluginChoices({
           className="p-[12px_14px] [border:1px_solid_var(--workspace-native-danger)] rounded-workspace-control [background:color-mix(_in_srgb,_var(--workspace-native-danger)_8%,_var(--workspace-panel-bg)_)] text-workspace-danger text-[length:13px] leading-[1.5]"
           role="alert"
         >
-          {errorMessage || getBoardlyQueryErrorMessage(catalog.error)}
+          {errorMessage || getZenithTeamQueryErrorMessage(catalog.error)}
         </p>
       ) : null}
       <OnboardingActions

@@ -25,10 +25,12 @@ func TestClaudeResultUsagePreservesReportedCost(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := claudeResultUsage(msg, "sonnet")["sonnet"]
-			if (got.CostUSDTicks == nil) != (test.want == nil) || test.want != nil && *got.CostUSDTicks != *test.want {
+			if (got.CostUSDTicks == nil) != (test.want == nil) ||
+				test.want != nil && *got.CostUSDTicks != *test.want {
 				t.Fatalf("cost = %v, want %v", got.CostUSDTicks, test.want)
 			}
-			if msg.NumTurns > 0 && (got.Turns == nil || *got.Turns != 2 || got.ProviderDurationMs == nil || *got.ProviderDurationMs != 1200) {
+			if msg.NumTurns > 0 &&
+				(got.Turns == nil || *got.Turns != 2 || got.ProviderDurationMs == nil || *got.ProviderDurationMs != 1200) {
 				t.Fatalf("provider evidence = %+v", got)
 			}
 		})

@@ -1,4 +1,4 @@
--- Audit has three identities (D31). An Activity row an Agent writes in a Run
+-- Audit has three identities. An Activity row an Agent writes in a Run
 -- names the Agent (actor_type 'agent', actor_id), the person the Run works
 -- for (on_behalf_of_user_id, the Run's Authorizer) and the Run (run_id). A
 -- person's own row and a system row store NULL in both. Both columns are

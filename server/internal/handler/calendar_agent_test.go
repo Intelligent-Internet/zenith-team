@@ -6,17 +6,26 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 func TestCalendarRunProofRejectsWrongIdentityAndConversation(t *testing.T) {
 	t.Parallel()
 	user, company, conversation, agent, run := uuid.New(), uuid.New(), uuid.New(), uuid.New(), uuid.New()
 	p := auth.UserPrincipal{UserID: user, CompanyID: company, SessionID: uuid.New(), AuthKind: auth.TokenKindBearer}
-	valid := execution.RunOrigin{RunID: run, CompanyID: company, ConversationID: conversation, AgentID: agent, ConversationKind: "direct", OriginUserID: &user, AuthorizedByUserID: &user}
+	valid := execution.RunOrigin{
+		RunID:              run,
+		CompanyID:          company,
+		ConversationID:     conversation,
+		AgentID:            agent,
+		ConversationKind:   "direct",
+		OriginUserID:       &user,
+		AuthorizedByUserID: &user,
+	}
 	other := uuid.New()
 	for _, tc := range []struct {
 		name   string
@@ -45,7 +54,8 @@ func TestCalendarRunProofRejectsWrongIdentityAndConversation(t *testing.T) {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 			c.Params = gin.Params{{Key: "conversationId", Value: conversation.String()}}
-			c.Request = httptest.NewRequest(http.MethodGet, "/", nil).WithContext(auth.WithUserPrincipal(t.Context(), p))
+			c.Request = httptest.NewRequest(http.MethodGet, "/", nil).
+				WithContext(auth.WithUserPrincipal(t.Context(), p))
 			c.Request.Header.Set(runTokenHeader, token)
 			_, _, ok := h.calendarRunContext(c)
 			if ok != tc.want {

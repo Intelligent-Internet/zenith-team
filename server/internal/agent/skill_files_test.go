@@ -7,13 +7,15 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 func TestSkillFileEditsPreserveIdentityAndValidateTheWholePackage(t *testing.T) {
 	t.Parallel()
 	files := map[string][]byte{
-		"SKILL.md":            append(skillMarkdown("review-work"), []byte("\n[Guide](references/guide.md)\n")...),
+		"SKILL.md": append(
+			skillMarkdown("review-work"),
+			[]byte("\n[Guide](references/guide.md)\n")...),
 		"references/guide.md": []byte("Original guide"),
 		"scripts/check.py":    []byte("print('original')\n"),
 		"assets/icon.bin":     {0, 1, 255},
@@ -62,7 +64,10 @@ func TestSkillFileEditsPreserveIdentityAndValidateTheWholePackage(t *testing.T) 
 				found := false
 				for _, file := range contentbundle.SkillFiles(got) {
 					if file.Path == change.Path {
-						found = bytes.Equal(contentbundle.SkillFileBytes(file), []byte(change.Content))
+						found = bytes.Equal(
+							contentbundle.SkillFileBytes(file),
+							[]byte(change.Content),
+						)
 					}
 				}
 				if !found {
@@ -77,13 +82,23 @@ func TestSkillFileEditsPreserveIdentityAndValidateTheWholePackage(t *testing.T) 
 				}
 			}
 			for _, original := range contentbundle.SkillFiles(bundle) {
-				changed := slices.ContainsFunc(test.input.Changes, func(change SkillFileChange) bool { return change.Path == original.Path })
+				changed := slices.ContainsFunc(
+					test.input.Changes,
+					func(change SkillFileChange) bool { return change.Path == original.Path },
+				)
 				if changed || slices.Contains(test.input.DeletePaths, original.Path) {
 					continue
 				}
-				found := slices.ContainsFunc(contentbundle.SkillFiles(got), func(file contentbundle.SkillFile) bool {
-					return file.Path == original.Path && bytes.Equal(contentbundle.SkillFileBytes(file), contentbundle.SkillFileBytes(original))
-				})
+				found := slices.ContainsFunc(
+					contentbundle.SkillFiles(got),
+					func(file contentbundle.SkillFile) bool {
+						return file.Path == original.Path &&
+							bytes.Equal(
+								contentbundle.SkillFileBytes(file),
+								contentbundle.SkillFileBytes(original),
+							)
+					},
+				)
 				if !found {
 					t.Fatalf("untouched bytes changed for %q", original.Path)
 				}

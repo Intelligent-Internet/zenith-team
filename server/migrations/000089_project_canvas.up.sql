@@ -1,5 +1,5 @@
 -- Project Pages, collaborative documents, Canvas, Wiki drafts and Page comments.
--- Upgrades the main schema at version 000088 in one atomic migration.
+-- Upgrades the schema at version 000088 in one atomic migration.
 
 -- Project canvas
 -- Project canvas owns arrangement and review; source owners retain their content.

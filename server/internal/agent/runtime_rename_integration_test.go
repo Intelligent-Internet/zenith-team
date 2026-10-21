@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // seedRuntime inserts one more runtime for CompanyA, registered by daemonID
@@ -63,7 +63,8 @@ func customNames(t *testing.T, ctx context.Context, pool *pgxpool.Pool, ids ...u
 	names := make(map[uuid.UUID]*string, len(ids))
 	for _, id := range ids {
 		var name *string
-		if err := pool.QueryRow(ctx, `SELECT custom_name FROM runtimes WHERE id = $1`, id).Scan(&name); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT custom_name FROM runtimes WHERE id = $1`, id).
+			Scan(&name); err != nil {
 			t.Fatalf("read custom_name of %s: %v", id, err)
 		}
 		names[id] = name
@@ -191,7 +192,11 @@ func TestRenameRuntimeWithoutApplyToMachineTouchesOneRow(t *testing.T) {
 	}
 	names := customNames(t, ctx, pool, fixture.RuntimeA, sibling)
 	if names[fixture.RuntimeA] == nil || names[sibling] != nil {
-		t.Fatalf("custom names = %v / %v, want only the named runtime renamed", names[fixture.RuntimeA], names[sibling])
+		t.Fatalf(
+			"custom names = %v / %v, want only the named runtime renamed",
+			names[fixture.RuntimeA],
+			names[sibling],
+		)
 	}
 	roster := rosterEvents(log, fixture.CompanyA, protocol.DaemonRosterActionUpdate)
 	if len(roster) != 1 || roster[0].DaemonID != fixture.DaemonA ||
@@ -256,7 +261,12 @@ func TestRenameRuntimeClearsCustomNameWithBlankInput(t *testing.T) {
 	service, log := mustRuntimeLifecycleService(t, store)
 	owner := auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner}
 
-	if _, err := service.Rename(ctx, owner, fixture.RuntimeA, RuntimeRenameInput{CustomName: "Office Mac"}); err != nil {
+	if _, err := service.Rename(
+		ctx,
+		owner,
+		fixture.RuntimeA,
+		RuntimeRenameInput{CustomName: "Office Mac"},
+	); err != nil {
 		t.Fatalf("Rename() error = %v", err)
 	}
 	cleared, err := service.Rename(ctx, owner, fixture.RuntimeA, RuntimeRenameInput{CustomName: "   "})
@@ -315,10 +325,15 @@ func TestRenameRuntimeGate(t *testing.T) {
 			want: ErrRuntimeNotFound,
 		},
 		{
-			name:      "the company owner does not see a member's machine either",
-			principal: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
-			runtimeID: ownedByMember, input: input,
-			want: ErrRuntimeNotFound,
+			name: "the company owner does not see a member's machine either",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserA,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: ownedByMember,
+			input:     input,
+			want:      ErrRuntimeNotFound,
 		},
 		{
 			name:      "and an owner's machine is not the member's to rename",
@@ -326,38 +341,71 @@ func TestRenameRuntimeGate(t *testing.T) {
 			want: ErrRuntimeNotFound,
 		},
 		{
-			name:      "not even for the company owner, on an unowned row",
-			principal: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
-			runtimeID: unowned, input: input,
-			want: ErrRuntimeNotFound,
+			name: "not even for the company owner, on an unowned row",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserA,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: unowned,
+			input:     input,
+			want:      ErrRuntimeNotFound,
 		},
 		{
-			name:      "another company's owner sees no runtime",
-			principal: auth.UserPrincipal{UserID: fixture.UserB, CompanyID: fixture.CompanyB, Role: auth.CompanyRoleOwner},
-			runtimeID: fixture.RuntimeA, input: input,
-			want: ErrRuntimeNotFound,
+			name: "another company's owner sees no runtime",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserB,
+				CompanyID: fixture.CompanyB,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: fixture.RuntimeA,
+			input:     input,
+			want:      ErrRuntimeNotFound,
 		},
 		{
-			name:      "a non-member acting in the company sees no runtime",
-			principal: auth.UserPrincipal{UserID: fixture.UserB, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
-			runtimeID: fixture.RuntimeA, input: input,
-			want: ErrRuntimeNotFound,
+			name: "a non-member acting in the company sees no runtime",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserB,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: fixture.RuntimeA,
+			input:     input,
+			want:      ErrRuntimeNotFound,
 		},
 		{
-			name:      "an unknown runtime",
-			principal: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
-			runtimeID: dbtest.NewUUID(t), input: input,
-			want: ErrRuntimeNotFound,
+			name: "an unknown runtime",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserA,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: dbtest.NewUUID(t),
+			input:     input,
+			want:      ErrRuntimeNotFound,
 		},
 		{
-			name:      "a name past 100 runes is refused before any write",
-			principal: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
-			runtimeID: fixture.RuntimeA, input: RuntimeRenameInput{CustomName: strings.Repeat("a", 101)},
-			want: ErrRuntimeInvalidInput,
+			name: "a name past 100 runes is refused before any write",
+			principal: auth.UserPrincipal{
+				UserID:    fixture.UserA,
+				CompanyID: fixture.CompanyA,
+				Role:      auth.CompanyRoleOwner,
+			},
+			runtimeID: fixture.RuntimeA,
+			input:     RuntimeRenameInput{CustomName: strings.Repeat("a", 101)},
+			want:      ErrRuntimeInvalidInput,
 		},
 	}
 	for _, refusal := range refusals {
-		if _, err := service.Rename(ctx, refusal.principal, refusal.runtimeID, refusal.input); !errors.Is(err, refusal.want) {
+		if _, err := service.Rename(
+			ctx,
+			refusal.principal,
+			refusal.runtimeID,
+			refusal.input,
+		); !errors.Is(
+			err,
+			refusal.want,
+		) {
 			t.Fatalf("%s: Rename() error = %v, want %v", refusal.name, err, refusal.want)
 		}
 	}
@@ -381,9 +429,16 @@ func TestRenameRuntimeGate(t *testing.T) {
 		renamed.Owner.ID != machineOwner {
 		t.Fatalf("Rename() by the machine owner = %+v", renamed)
 	}
-	claimedOwner := auth.UserPrincipal{UserID: otherMember, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner}
+	claimedOwner := auth.UserPrincipal{
+		UserID:    otherMember,
+		CompanyID: fixture.CompanyA,
+		Role:      auth.CompanyRoleOwner,
+	}
 	if _, err := service.Rename(ctx, claimedOwner, unowned, input); !errors.Is(err, ErrRuntimeNotFound) {
-		t.Fatalf("Rename() with a claimed owner role error = %v, want ErrRuntimeNotFound from the stored registrant", err)
+		t.Fatalf(
+			"Rename() with a claimed owner role error = %v, want ErrRuntimeNotFound from the stored registrant",
+			err,
+		)
 	}
 	if roster := rosterEvents(log, fixture.CompanyA, protocol.DaemonRosterActionUpdate); len(roster) != 1 ||
 		roster[0].DaemonID != "daemon-c" {
@@ -407,7 +462,12 @@ func TestRegisterRuntimesPreservesCustomName(t *testing.T) {
 	service, _ := mustRuntimeLifecycleService(t, store)
 	owner := auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner}
 
-	if _, err := service.Rename(ctx, owner, fixture.RuntimeA, RuntimeRenameInput{CustomName: "Office Mac"}); err != nil {
+	if _, err := service.Rename(
+		ctx,
+		owner,
+		fixture.RuntimeA,
+		RuntimeRenameInput{CustomName: "Office Mac"},
+	); err != nil {
 		t.Fatalf("Rename() error = %v", err)
 	}
 	// The daemon re-registers the same (company, daemon, provider) identity
@@ -418,7 +478,9 @@ func TestRegisterRuntimesPreservesCustomName(t *testing.T) {
 		OwnerUserID: fixture.UserA,
 		DaemonID:    fixture.DaemonA,
 		DeviceName:  "MacBook Pro",
-		Runtimes:    []RuntimeRegistrationSpec{{Name: "Codex (MacBook Pro)", Provider: "codex", Version: "9.9.9"}},
+		Runtimes: []RuntimeRegistrationSpec{
+			{Name: "Codex (MacBook Pro)", Provider: "codex", Version: "9.9.9"},
+		},
 	})
 	if err != nil {
 		t.Fatalf("RegisterRuntimes() error = %v", err)

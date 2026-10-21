@@ -1,11 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 type Scope = { companyId: string; huddleId: string };
 const path = (s: Scope) =>
   `/companies/${s.companyId}/huddles/${s.huddleId}/notes`;
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (b) => ({
     getHuddleNotes: b.query<
       components["schemas"]["HuddleNotesStatus"],
@@ -13,7 +13,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (s, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["HuddleNotesStatus"]>(path(s), {
               params: { cursor: s.cursor },
@@ -27,7 +27,7 @@ const api = boardlyApi.injectEndpoints({
       Scope & { body: components["schemas"]["SetHuddleNotes"] }
     >({
       queryFn: (s) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<components["schemas"]["HuddleNotesStatus"]>(
               path(s),
@@ -41,7 +41,7 @@ const api = boardlyApi.injectEndpoints({
       Scope & { body: components["schemas"]["EditHuddleNotesRecap"] }
     >({
       queryFn: (s) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<components["schemas"]["HuddleNotesStatus"]>(
               `${path(s)}/recap`,
@@ -56,7 +56,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["HuddleNotesPolicy"]>(
               `/companies/${companyId}/huddles/notes-policy`,
@@ -69,7 +69,7 @@ const api = boardlyApi.injectEndpoints({
       { companyId: string; body: components["schemas"]["SetHuddleNotesPolicy"] }
     >({
       queryFn: (s) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<components["schemas"]["HuddleNotesPolicy"]>(
               `/companies/${s.companyId}/huddles/notes-policy`,
@@ -86,7 +86,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: (s) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<components["schemas"]["HuddleNotesSubmission"]>(
               `${path(s)}/actions/${s.actionIndex}/submit`,

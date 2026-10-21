@@ -19,10 +19,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/runchannel"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestDoRunClassifiesPreparationFailures(t *testing.T) {
@@ -66,8 +66,11 @@ func TestDoRunClassifiesPreparationFailures(t *testing.T) {
 		want           string
 	}{
 		{
-			name:     "missing run company",
-			run:      Run{ID: uuid.MustParse("00000000-0000-4000-8000-000000004701"), ConversationID: "conversation-1"},
+			name: "missing run company",
+			run: Run{
+				ID:             uuid.MustParse("00000000-0000-4000-8000-000000004701"),
+				ConversationID: "conversation-1",
+			},
 			provider: "claude",
 			want:     "run.preparation_failed.execution",
 		},
@@ -141,7 +144,10 @@ func TestDoRunClassifiesPreparationFailures(t *testing.T) {
 				entries, _ := os.ReadDir(d.cfg.WorkspacesRoot)
 				for _, entry := range entries {
 					if !strings.HasPrefix(entry.Name(), ".") {
-						t.Fatalf("workspace work happened before the snapshot was refused: %s", entry.Name())
+						t.Fatalf(
+							"workspace work happened before the snapshot was refused: %s",
+							entry.Name(),
+						)
 					}
 				}
 			}
@@ -176,7 +182,12 @@ func TestHandleRunReportsPhaseClassifiedPreparationFailureWithoutSensitiveDetail
 
 	d.handleRun(
 		t.Context(),
-		Run{ID: uuid.MustParse("00000000-0000-4000-8000-000000004711"), RuntimeID: "rt-1", CompanyID: "company-1", ConversationID: "conv-1"},
+		Run{
+			ID:             uuid.MustParse("00000000-0000-4000-8000-000000004711"),
+			RuntimeID:      "rt-1",
+			CompanyID:      "company-1",
+			ConversationID: "conv-1",
+		},
 		0,
 	)
 
@@ -208,9 +219,14 @@ func TestAcquireManagedRunWorkspaceUsesTheProjectScope(t *testing.T) {
 		CompanyID:      "01900000-0000-4000-8000-0000000000e1",
 		ConversationID: "01900000-0000-4000-8000-0000000000e2",
 	}
-	doc := RunContext{ExecutionProfile: RunExecutionProfileContext{Project: &RunProjectContext{ID: taskMergeTaskID}, Task: &RunTaskContext{
-		ConversationID: run.ConversationID,
-	}}}
+	doc := RunContext{
+		ExecutionProfile: RunExecutionProfileContext{
+			Project: &RunProjectContext{ID: taskMergeTaskID},
+			Task: &RunTaskContext{
+				ConversationID: run.ConversationID,
+			},
+		},
+	}
 
 	acquired, err := d.acquireManagedRunWorkspace(t.Context(), run, doc)
 	if err != nil {
@@ -595,7 +611,7 @@ func attachTranscriptAppendStatusRPC(t *testing.T, d *Daemon, status int) func()
 }
 
 func TestPrepareRunCLIHomeWithholdsAuthorityFromScheduledRuns(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
+	t.Setenv("ZENITH_TEAM_HOME", filepath.Join(t.TempDir(), "missing"))
 	envRoot := t.TempDir()
 	d := &Daemon{}
 	tests := []struct {
@@ -619,7 +635,7 @@ func TestPrepareRunCLIHomeWithholdsAuthorityFromScheduledRuns(t *testing.T) {
 			if err != nil {
 				t.Fatalf("prepareRunCLIEnvironment() error = %v", err)
 			}
-			if cliEnvironment.boardlyHome == "" || cliEnvironment.cleanup == nil {
+			if cliEnvironment.zenithTeamHome == "" || cliEnvironment.cleanup == nil {
 				t.Fatalf(
 					"prepareRunCLIEnvironment() = %+v, want an empty isolated home",
 					cliEnvironment,
@@ -631,7 +647,7 @@ func TestPrepareRunCLIHomeWithholdsAuthorityFromScheduledRuns(t *testing.T) {
 					cliEnvironment.executableDirectory,
 				)
 			}
-			entries, err := os.ReadDir(cliEnvironment.boardlyHome)
+			entries, err := os.ReadDir(cliEnvironment.zenithTeamHome)
 			if err != nil {
 				t.Fatalf("read isolated home: %v", err)
 			}
@@ -645,15 +661,15 @@ func TestPrepareRunCLIHomeWithholdsAuthorityFromScheduledRuns(t *testing.T) {
 	}
 }
 
-func TestPinnedBoardlyExecutableSurvivesOriginalReplacement(t *testing.T) {
+func TestPinnedZenithTeamExecutableSurvivesOriginalReplacement(t *testing.T) {
 	directory := t.TempDir()
-	original := filepath.Join(directory, boardlyExecutableName())
+	original := filepath.Join(directory, zenithTeamExecutableName())
 	if err := os.WriteFile(original, []byte("startup-image"), 0o700); err != nil {
 		t.Fatalf("write startup executable: %v", err)
 	}
-	pinned, cleanup, err := pinBoardlyExecutable(original)
+	pinned, cleanup, err := pinZenithTeamExecutable(original)
 	if err != nil {
-		t.Fatalf("pinBoardlyExecutable() error = %v", err)
+		t.Fatalf("pinZenithTeamExecutable() error = %v", err)
 	}
 	t.Cleanup(func() {
 		if err := cleanup(); err != nil {
@@ -668,10 +684,10 @@ func TestPinnedBoardlyExecutableSurvivesOriginalReplacement(t *testing.T) {
 	}
 
 	runDirectory := t.TempDir()
-	if err := copyBoardlyExecutable(pinned, runDirectory); err != nil {
-		t.Fatalf("copyBoardlyExecutable() error = %v", err)
+	if err := copyZenithTeamExecutable(pinned, runDirectory); err != nil {
+		t.Fatalf("copyZenithTeamExecutable() error = %v", err)
 	}
-	staged, err := os.ReadFile(filepath.Join(runDirectory, boardlyExecutableName()))
+	staged, err := os.ReadFile(filepath.Join(runDirectory, zenithTeamExecutableName()))
 	if err != nil {
 		t.Fatalf("read run-local executable: %v", err)
 	}
@@ -680,14 +696,14 @@ func TestPinnedBoardlyExecutableSurvivesOriginalReplacement(t *testing.T) {
 	}
 }
 
-func TestDaemonRunCleansPinnedBoardlyExecutableOnStartupFailure(t *testing.T) {
-	source := filepath.Join(t.TempDir(), boardlyExecutableName())
+func TestDaemonRunCleansPinnedZenithTeamExecutableOnStartupFailure(t *testing.T) {
+	source := filepath.Join(t.TempDir(), zenithTeamExecutableName())
 	if err := os.WriteFile(source, []byte("startup-image"), 0o700); err != nil {
 		t.Fatalf("write startup executable: %v", err)
 	}
-	pinned, cleanup, err := pinBoardlyExecutable(source)
+	pinned, cleanup, err := pinZenithTeamExecutable(source)
 	if err != nil {
-		t.Fatalf("pinBoardlyExecutable() error = %v", err)
+		t.Fatalf("pinZenithTeamExecutable() error = %v", err)
 	}
 	t.Cleanup(func() {
 		if err := cleanup(); err != nil {
@@ -696,10 +712,10 @@ func TestDaemonRunCleansPinnedBoardlyExecutableOnStartupFailure(t *testing.T) {
 	})
 	pinnedDirectory := filepath.Dir(pinned.Name())
 	d := &Daemon{
-		cfg:                      Config{HealthPort: -1},
-		logger:                   testLogger(),
-		boardlyExecutable:        pinned,
-		cleanupBoardlyExecutable: cleanup,
+		cfg:                         Config{HealthPort: -1},
+		logger:                      testLogger(),
+		zenithTeamExecutable:        pinned,
+		cleanupZenithTeamExecutable: cleanup,
 	}
 	if err := d.Run(t.Context()); err == nil {
 		t.Fatal("Run() error = nil, want invalid health port failure")
@@ -710,21 +726,21 @@ func TestDaemonRunCleansPinnedBoardlyExecutableOnStartupFailure(t *testing.T) {
 }
 
 func TestPrepareRunCLIEnvironmentAllowsTaskWithoutLocalEndpoint(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
-	boardlyExecutable := filepath.Join(t.TempDir(), "source-boardly")
-	if err := os.WriteFile(boardlyExecutable, []byte("exact-boardly-cli"), 0o700); err != nil {
-		t.Fatalf("seed Boardly executable: %v", err)
+	t.Setenv("ZENITH_TEAM_HOME", filepath.Join(t.TempDir(), "missing"))
+	zenithTeamExecutable := filepath.Join(t.TempDir(), "source-zenith-team")
+	if err := os.WriteFile(zenithTeamExecutable, []byte("exact-zenith-team-cli"), 0o700); err != nil {
+		t.Fatalf("seed Zenith Team executable: %v", err)
 	}
-	pinnedExecutable, cleanupPinnedExecutable, err := pinBoardlyExecutable(boardlyExecutable)
+	pinnedExecutable, cleanupPinnedExecutable, err := pinZenithTeamExecutable(zenithTeamExecutable)
 	if err != nil {
-		t.Fatalf("pin Boardly executable: %v", err)
+		t.Fatalf("pin Zenith Team executable: %v", err)
 	}
 	t.Cleanup(func() {
 		if err := cleanupPinnedExecutable(); err != nil {
-			t.Errorf("cleanup pinned Boardly executable: %v", err)
+			t.Errorf("cleanup pinned Zenith Team executable: %v", err)
 		}
 	})
-	d := &Daemon{boardlyExecutable: pinnedExecutable}
+	d := &Daemon{zenithTeamExecutable: pinnedExecutable}
 	run := Run{
 		ID:        uuid.MustParse("00000000-0000-4000-8000-000000001510"),
 		CompanyID: "01900000-0000-4000-8000-0000000000ee",
@@ -741,7 +757,7 @@ func TestPrepareRunCLIEnvironmentAllowsTaskWithoutLocalEndpoint(t *testing.T) {
 			t.Errorf("cleanup isolated CLI environment: %v", err)
 		}
 	}()
-	entries, err := os.ReadDir(cliEnvironment.boardlyHome)
+	entries, err := os.ReadDir(cliEnvironment.zenithTeamHome)
 	if err != nil {
 		t.Fatalf("read isolated home: %v", err)
 	}
@@ -776,7 +792,7 @@ func TestAcquireManagedRunWorkspaceKeepsScheduleIsolation(t *testing.T) {
 
 // A tagged Run gets a single-use scratch folder, as a Schedule occurrence
 // does: two Runs of one channel chat never share a folder, and neither is the
-// Company main (Access TECH B7).
+// Company main.
 func TestAcquireManagedRunWorkspaceGivesATaggedRunFreshScratch(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1")
 	doc := RunContext{
@@ -997,8 +1013,7 @@ func TestCompanyRunContextSharesMemoryAndBusinessContextAcrossRunKinds(t *testin
 	}
 
 	// A tagged Run works in its own scratch: it gets the business context
-	// folder read-only and no memory folder, whichever Agent it is for
-	// (Access TECH B7).
+	// folder read-only and no memory folder, whichever Agent it is for.
 	for name, doc := range map[string]RunContext{
 		"root agent":  {Agent: RunAgentContext{IsRoot: true}},
 		"other agent": {Agent: RunAgentContext{Name: "Eli", Title: "Engineering Agent"}},
@@ -1023,7 +1038,7 @@ func TestCompanyRunContextSharesMemoryAndBusinessContextAcrossRunKinds(t *testin
 // read-only. Document writing also starts fresh with no tools. An ordinary
 // direct chat is placed as before: in
 // the bound folder, or in the Company main with its memory, and resumes its
-// session (Access TECH B7).
+// session.
 func TestConversationRunIsolation(t *testing.T) {
 	executable, err := os.Executable()
 	if err != nil {
@@ -1166,13 +1181,16 @@ func TestConversationRunIsolation(t *testing.T) {
 			ConnectorSnapshot: &RunConnectorSnapshot{},
 		})
 		if opts.ToolPolicy != agent.ToolPolicyConnectorOnly || len(opts.McpConfig) != 0 ||
-			len(opts.AllowedMCPServers) != 0 || len(opts.ConnectorApps) != 0 || len(opts.PluginDirectories) != 0 {
+			len(
+				opts.AllowedMCPServers,
+			) != 0 || len(opts.ConnectorApps) != 0 || len(opts.PluginDirectories) != 0 {
 			t.Fatalf("writing options = %+v, want no tools", opts)
 		}
 		if opts.Cwd == localDir || opts.Cwd == companyMain || filepath.Base(opts.Cwd) != "workdir" {
 			t.Fatalf("writing workspace = %q, want isolated scratch", opts.Cwd)
 		}
-		if opts.ResumeSessionID != "" || opts.ResumeExpected || strings.Contains(prompt, "Session continuity notice") {
+		if opts.ResumeSessionID != "" || opts.ResumeExpected ||
+			strings.Contains(prompt, "Session continuity notice") {
 			t.Fatalf("writing resumed prior session: %+v, %s", opts, prompt)
 		}
 		if opts.ClaudeSettingsPath == "" {
@@ -1234,7 +1252,7 @@ func pinnedTestExecutable(t *testing.T) *os.File {
 	if err := os.WriteFile(source, []byte("exact-zen-cli"), 0o700); err != nil {
 		t.Fatalf("seed zen executable: %v", err)
 	}
-	pinned, cleanup, err := pinBoardlyExecutable(source)
+	pinned, cleanup, err := pinZenithTeamExecutable(source)
 	if err != nil {
 		t.Fatalf("pin zen executable: %v", err)
 	}
@@ -1250,10 +1268,10 @@ func pinnedTestExecutable(t *testing.T) *os.File {
 // zen binary and a run.json bound to its channel. Revoking the environment
 // closes the channel.
 func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "missing"))
+	t.Setenv("ZENITH_TEAM_HOME", filepath.Join(t.TempDir(), "missing"))
 	d := &Daemon{
-		boardlyExecutable:  pinnedTestExecutable(t),
-		localPlaneEndpoint: "http://127.0.0.1:19713",
+		zenithTeamExecutable: pinnedTestExecutable(t),
+		localPlaneEndpoint:   "http://127.0.0.1:19713",
 	}
 	tests := []struct {
 		name        string
@@ -1300,7 +1318,7 @@ func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 			if cliEnvironment.executableDirectory == "" {
 				t.Fatal("attended Run got no zen executable")
 			}
-			entries, err := os.ReadDir(cliEnvironment.boardlyHome)
+			entries, err := os.ReadDir(cliEnvironment.zenithTeamHome)
 			if err != nil {
 				t.Fatalf("read isolated home: %v", err)
 			}
@@ -1312,10 +1330,10 @@ func TestPrepareRunCLIHomeBindsAttendedRunsToTheChannel(t *testing.T) {
 			if strings.Join(names, ",") != strings.Join(wantNames, ",") {
 				t.Fatalf("isolated home entries = %v, want %v", names, wantNames)
 			}
-			if cliEnvironment.channelHome() != cliEnvironment.boardlyHome {
+			if cliEnvironment.channelHome() != cliEnvironment.zenithTeamHome {
 				t.Fatal("the isolated home holds run.json but does not report the channel")
 			}
-			control, err := runchannel.LoadRunControlConfig(cliEnvironment.boardlyHome)
+			control, err := runchannel.LoadRunControlConfig(cliEnvironment.zenithTeamHome)
 			if err != nil {
 				t.Fatalf("load run.json: %v", err)
 			}

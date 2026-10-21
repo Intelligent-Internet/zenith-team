@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // doctor composes the independent facts an operator needs when an Agent
@@ -49,7 +49,7 @@ type doctorReport struct {
 
 func runDoctor(cmd *cobra.Command, _ []string) error {
 	report := doctorReport{Version: version, Config: map[string]string{}}
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
@@ -69,21 +69,51 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	// 1. Session.
 	switch {
 	case auth.Mode == "agent" && auth.RunID != "":
-		report.Checks = append(report.Checks, doctorCheck{Name: "session", Status: "ok", Detail: "Agent mode: bound to Run " + auth.RunID})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{Name: "session", Status: "ok", Detail: "Agent mode: bound to Run " + auth.RunID},
+		)
 	case auth.Mode == "agent":
-		report.Checks = append(report.Checks, doctorCheck{Name: "session", Status: "fail", Detail: auth.Session, Action: "the daemon must place run.json in this Run's BOARDLY_HOME; check `zen daemon status` on the host"})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{
+				Name:   "session",
+				Status: "fail",
+				Detail: auth.Session,
+				Action: "the daemon must place run.json in this Run's ZENITH_TEAM_HOME; check `zen daemon status` on the host",
+			},
+		)
 	case auth.Session == "active" || auth.Session == "renewing on next request":
-		report.Checks = append(report.Checks, doctorCheck{Name: "session", Status: "ok", Detail: auth.Session + " for " + auth.Server})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{Name: "session", Status: "ok", Detail: auth.Session + " for " + auth.Server},
+		)
 	case auth.Session == "signed out":
-		report.Checks = append(report.Checks, doctorCheck{Name: "session", Status: "fail", Detail: "no saved session", Action: "run `zen auth login`"})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{
+				Name:   "session",
+				Status: "fail",
+				Detail: "no saved session",
+				Action: "run `zen auth login`",
+			},
+		)
 	default:
-		report.Checks = append(report.Checks, doctorCheck{Name: "session", Status: "fail", Detail: auth.Session, Action: "run `zen auth login` again"})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{
+				Name:   "session",
+				Status: "fail",
+				Detail: auth.Session,
+				Action: "run `zen auth login` again",
+			},
+		)
 	}
 
 	// 2. Server reachability, independent of credentials. The session is
 	// probed only when the server answers at all: a connection failure is a
 	// network problem, and telling the operator to sign in again for it
-	// would misclassify it as bad credentials (CL-AC4). This also covers a
+	// would misclassify it as bad credentials. This also covers a
 	// token refresh, whose network failure the transport reports as a
 	// session error.
 	if auth.Mode == "operator" {
@@ -106,7 +136,15 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	// 3. Daemon process and providers.
 	health, err := fetchDaemonHealth(ctx)
 	if err != nil {
-		report.Checks = append(report.Checks, doctorCheck{Name: "daemon", Status: "warn", Detail: "no daemon answering on port " + fmt.Sprint(daemonHealthPort()), Action: "run `zen daemon start` on this machine (or open the desktop app)"})
+		report.Checks = append(
+			report.Checks,
+			doctorCheck{
+				Name:   "daemon",
+				Status: "warn",
+				Detail: "no daemon answering on port " + fmt.Sprint(daemonHealthPort()),
+				Action: "run `zen daemon start` on this machine (or open the desktop app)",
+			},
+		)
 	} else {
 		report.Daemon = health
 		status := "ok"
@@ -116,28 +154,72 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		report.Checks = append(report.Checks, doctorCheck{
 			Name:   "daemon",
 			Status: status,
-			Detail: fmt.Sprintf("%s (pid %d, version %s, %d active runs, %d companies)", health.Status, health.PID, health.CLIVersion, health.ActiveRunCount, len(health.Companies)),
+			Detail: fmt.Sprintf(
+				"%s (pid %d, version %s, %d active runs, %d companies)",
+				health.Status,
+				health.PID,
+				health.CLIVersion,
+				health.ActiveRunCount,
+				len(health.Companies),
+			),
 		})
 		if health.CLIVersion != "" && health.CLIVersion != version {
-			report.Checks = append(report.Checks, doctorCheck{Name: "daemon version", Status: "warn", Detail: "daemon runs " + health.CLIVersion + ", this binary is " + version, Action: "run `zen daemon restart` to switch the daemon to this binary"})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{
+					Name:   "daemon version",
+					Status: "warn",
+					Detail: "daemon runs " + health.CLIVersion + ", this binary is " + version,
+					Action: "run `zen daemon restart` to switch the daemon to this binary",
+				},
+			)
 		}
 		if len(health.Agents) == 0 {
-			report.Checks = append(report.Checks, doctorCheck{Name: "providers", Status: "fail", Detail: "the daemon found no provider CLI", Action: "install claude or codex, sign in to it, then `zen daemon restart`"})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{
+					Name:   "providers",
+					Status: "fail",
+					Detail: "the daemon found no provider CLI",
+					Action: "install claude or codex, sign in to it, then `zen daemon restart`",
+				},
+			)
 		} else {
-			report.Checks = append(report.Checks, doctorCheck{Name: "providers", Status: "ok", Detail: strings.Join(health.Agents, ", ")})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{Name: "providers", Status: "ok", Detail: strings.Join(health.Agents, ", ")},
+			)
 		}
 		for provider, reason := range health.SkippedAgents {
-			report.Checks = append(report.Checks, doctorCheck{Name: "provider " + provider, Status: "warn", Detail: reason, Action: "upgrade or repair the " + provider + " CLI, then `zen daemon restart`"})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{
+					Name:   "provider " + provider,
+					Status: "warn",
+					Detail: reason,
+					Action: "upgrade or repair the " + provider + " CLI, then `zen daemon restart`",
+				},
+			)
 		}
 		if health.ReloadPendingReason != "" {
-			report.Checks = append(report.Checks, doctorCheck{Name: "restart pending", Status: "warn", Detail: health.ReloadPendingReason})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{
+					Name:   "restart pending",
+					Status: "warn",
+					Detail: health.ReloadPendingReason,
+				},
+			)
 		}
 	}
 
 	// 4. Local files the CLI depends on.
 	for _, name := range []string{"config.json", "daemon.id"} {
 		if _, err := os.Stat(filepath.Join(home, name)); err != nil {
-			report.Checks = append(report.Checks, doctorCheck{Name: name, Status: "skip", Detail: "not present yet"})
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{Name: name, Status: "skip", Detail: "not present yet"},
+			)
 		}
 	}
 
@@ -157,7 +239,10 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	printTable(out, []string{"STATUS", "CHECK", "DETAIL", "NEXT ACTION"}, rows)
 	if len(report.Config) != 0 {
 		fmt.Fprintln(out)
-		fmt.Fprintln(out, "effective configuration (precedence: --flag > BOARDLY_* env > config.json > default):")
+		fmt.Fprintln(
+			out,
+			"effective configuration (precedence: --flag > ZENITH_TEAM_* env > config.json > default):",
+		)
 		keys := make([]string, 0, len(report.Config))
 		for key := range report.Config {
 			keys = append(keys, key)
@@ -177,11 +262,20 @@ func checkServerReachable(ctx context.Context, server string) doctorCheck {
 	}
 	response, err := (&http.Client{Timeout: 10 * time.Second}).Do(request)
 	if err != nil {
-		return doctorCheck{Name: "server", Status: "fail", Detail: server + " unreachable: " + err.Error(), Action: "check the network, or fix the server URL with `zen config set server_url <url>` / BOARDLY_SERVER_URL"}
+		return doctorCheck{
+			Name:   "server",
+			Status: "fail",
+			Detail: server + " unreachable: " + err.Error(),
+			Action: "check the network, or fix the server URL with `zen config set server_url <url>` / ZENITH_TEAM_SERVER_URL",
+		}
 	}
 	_ = response.Body.Close()
 	if response.StatusCode >= 400 {
-		return doctorCheck{Name: "server", Status: "warn", Detail: fmt.Sprintf("%s answered /healthz with status %d", server, response.StatusCode)}
+		return doctorCheck{
+			Name:   "server",
+			Status: "warn",
+			Detail: fmt.Sprintf("%s answered /healthz with status %d", server, response.StatusCode),
+		}
 	}
 	return doctorCheck{Name: "server", Status: "ok", Detail: server + " reachable"}
 }
@@ -241,15 +335,31 @@ func effectiveConfig(cfg daemonpkg.CLIConfig) map[string]string {
 		return fallback + "  (default)"
 	}
 	return map[string]string{
-		"server_url":          explain("BOARDLY_SERVER_URL", cfg.ServerURL, daemonpkg.DefaultServerURL),
-		"company_id":          explain("BOARDLY_COMPANY_ID", cfg.CompanyID, "(not set)"),
-		"device_name":         explain("BOARDLY_DEVICE_NAME", cfg.DeviceName, "hostname"),
-		"workspaces_root":     explain("BOARDLY_WORKSPACES_ROOT", cfg.WorkspacesRoot, "~/boardly_workspaces"),
-		"poll_interval":       explain("BOARDLY_POLL_INTERVAL", cfg.PollInterval, daemonpkg.DefaultPollInterval.String()),
-		"heartbeat_interval":  explain("BOARDLY_HEARTBEAT_INTERVAL", cfg.HeartbeatInterval, daemonpkg.DefaultHeartbeatInterval.String()),
-		"max_concurrent_runs": explain("BOARDLY_MAX_CONCURRENT_RUNS", intOrEmpty(cfg.MaxConcurrentRuns), fmt.Sprint(daemonpkg.DefaultMaxConcurrentRuns)),
-		"log_level":           explain("BOARDLY_LOG_LEVEL", cfg.LogLevel, "info"),
-		"health_port":         explain("BOARDLY_HEALTH_PORT", "", fmt.Sprint(daemonpkg.DefaultHealthPort)),
+		"server_url":  explain("ZENITH_TEAM_SERVER_URL", cfg.ServerURL, daemonpkg.DefaultServerURL),
+		"company_id":  explain("ZENITH_TEAM_COMPANY_ID", cfg.CompanyID, "(not set)"),
+		"device_name": explain("ZENITH_TEAM_DEVICE_NAME", cfg.DeviceName, "hostname"),
+		"workspaces_root": explain(
+			"ZENITH_TEAM_WORKSPACES_ROOT",
+			cfg.WorkspacesRoot,
+			"~/zenith_team_workspaces",
+		),
+		"poll_interval": explain(
+			"ZENITH_TEAM_POLL_INTERVAL",
+			cfg.PollInterval,
+			daemonpkg.DefaultPollInterval.String(),
+		),
+		"heartbeat_interval": explain(
+			"ZENITH_TEAM_HEARTBEAT_INTERVAL",
+			cfg.HeartbeatInterval,
+			daemonpkg.DefaultHeartbeatInterval.String(),
+		),
+		"max_concurrent_runs": explain(
+			"ZENITH_TEAM_MAX_CONCURRENT_RUNS",
+			intOrEmpty(cfg.MaxConcurrentRuns),
+			fmt.Sprint(daemonpkg.DefaultMaxConcurrentRuns),
+		),
+		"log_level":   explain("ZENITH_TEAM_LOG_LEVEL", cfg.LogLevel, "info"),
+		"health_port": explain("ZENITH_TEAM_HEALTH_PORT", "", fmt.Sprint(daemonpkg.DefaultHealthPort)),
 	}
 }
 

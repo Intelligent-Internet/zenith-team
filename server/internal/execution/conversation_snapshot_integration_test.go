@@ -14,10 +14,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // frozenActor and the structs below decode runs.context through the keys the
@@ -110,7 +110,13 @@ func startSnapshotFixture(t *testing.T) (context.Context, *pgxpool.Pool, dbtest.
 
 // setUpAgentForMember is a second member setting the fixture Agent up on a
 // machine of their own (ADR 0014), which is what lets their message run.
-func setUpAgentForMember(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture, userID uuid.UUID) {
+func setUpAgentForMember(
+	t *testing.T,
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	fixture dbtest.Fixture,
+	userID uuid.UUID,
+) {
 	t.Helper()
 	runtimeID := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `
@@ -124,11 +130,71 @@ func setUpAgentForMember(t *testing.T, ctx context.Context, pool *pgxpool.Pool, 
 // after the Run row exists.
 func TestEnqueueFreezesPriorChatWithAuthorsAndExcludesTheTrigger(t *testing.T) {
 	ctx, pool, fixture, queries := startSnapshotFixture(t)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 1, "user_message", "user", fixture.UserA, "What is the plan?")
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 2, "reasoning", "agent", fixture.AgentA, "thinking")
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 3, "tool_call", "agent", fixture.AgentA, "read_file")
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 4, "agent_text", "agent", fixture.AgentA, "Here is the plan.")
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 5, "error", "agent", fixture.AgentA, "boom")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		1,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"What is the plan?",
+	)
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		2,
+		"reasoning",
+		"agent",
+		fixture.AgentA,
+		"thinking",
+	)
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		3,
+		"tool_call",
+		"agent",
+		fixture.AgentA,
+		"read_file",
+	)
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		4,
+		"agent_text",
+		"agent",
+		fixture.AgentA,
+		"Here is the plan.",
+	)
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		5,
+		"error",
+		"agent",
+		fixture.AgentA,
+		"boom",
+	)
 
 	var pending []events.Event
 	run, err := EnqueueRunInTx(ctx, queries, &pending, RunTrigger{
@@ -157,20 +223,25 @@ func TestEnqueueFreezesPriorChatWithAuthorsAndExcludesTheTrigger(t *testing.T) {
 	if snapshot.Truncated {
 		t.Fatal("truncated = true, want false for two chat items")
 	}
-	if got := snapshotContents(snapshot); len(got) != 2 || got[0] != "What is the plan?" || got[1] != "Here is the plan." {
+	if got := snapshotContents(
+		snapshot,
+	); len(got) != 2 || got[0] != "What is the plan?" ||
+		got[1] != "Here is the plan." {
 		t.Fatalf("snapshot items = %q, want the two chat items in order and nothing from the run detail", got)
 	}
 	first, second := snapshot.Items[0], snapshot.Items[1]
 	if first.Seq != 1 || first.Author != (frozenActor{ID: fixture.UserA.String(), Kind: "user", Name: "Schema A"}) {
 		t.Errorf("item 0 = %+v, want seq 1 by Schema A (user)", first)
 	}
-	if second.Seq != 4 || second.Author != (frozenActor{ID: fixture.AgentA.String(), Kind: "agent", Name: "Agent A"}) {
+	if second.Seq != 4 ||
+		second.Author != (frozenActor{ID: fixture.AgentA.String(), Kind: "agent", Name: "Agent A"}) {
 		t.Errorf("item 1 = %+v, want seq 4 by Agent A (agent)", second)
 	}
 	if first.ID == "" || first.RunID != fixture.RunA.String() || first.CreatedAt.IsZero() {
 		t.Errorf("item 0 identity = %+v, want id, the consuming Run and a timestamp", first)
 	}
-	if frozen.Trigger == nil || frozen.Trigger.Author != (frozenActor{ID: fixture.UserA.String(), Kind: "user", Name: "Schema A"}) {
+	if frozen.Trigger == nil ||
+		frozen.Trigger.Author != (frozenActor{ID: fixture.UserA.String(), Kind: "user", Name: "Schema A"}) {
 		t.Fatalf("trigger = %+v, want Schema A as the sender", frozen.Trigger)
 	}
 	if frozen.Trigger.CreatedAt.IsZero() {
@@ -180,19 +251,56 @@ func TestEnqueueFreezesPriorChatWithAuthorsAndExcludesTheTrigger(t *testing.T) {
 
 // Two members run one Agent, each on their own machine. Each Run sees its
 // own Conversation only: not another member's private chat, not the Task
-// chat, and not words still waiting in the queue (CV-AC15).
+// chat, and not words still waiting in the queue.
 func TestEnqueueSnapshotIncludesOnlyTheRunsOwnConversation(t *testing.T) {
 	ctx, pool, fixture, queries := startSnapshotFixture(t)
 	userC := dbtest.NewUUID(t)
 	directC := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, 'user-c@example.com', 'User C')`, userC)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, userC)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'user-c@example.com', 'User C')`,
+		userC,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		userC,
+	)
 	setUpAgentForMember(t, ctx, pool, fixture, userC)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO conversations (id, company_id, kind, agent_id, created_by_user_id, title)
 		VALUES ($1, $2, 'direct', $3, $4, 'Direct C')`, directC, fixture.CompanyA, fixture.AgentA, userC)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, directC, fixture.RunA, 1, "user_message", "user", userC, "private to C")
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 1, "user_message", "user", fixture.UserA, "own history")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		directC,
+		fixture.RunA,
+		1,
+		"user_message",
+		"user",
+		userC,
+		"private to C",
+	)
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		1,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"own history",
+	)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO conversation_run_queue_items
 			(company_id, conversation_id, initiated_by_user_id, request_key, content, position)
@@ -208,7 +316,10 @@ func TestEnqueueSnapshotIncludesOnlyTheRunsOwnConversation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("enqueue A's Run: %v", err)
 	}
-	if got := snapshotContents(decodeFrozenContext(t, own.Context).Snapshot); len(got) != 1 || got[0] != "own history" {
+	if got := snapshotContents(
+		decodeFrozenContext(t, own.Context).Snapshot,
+	); len(got) != 1 ||
+		got[0] != "own history" {
 		t.Fatalf("A's snapshot = %q, want only A's own Conversation, no queue entry and no other chat", got)
 	}
 
@@ -224,7 +335,8 @@ func TestEnqueueSnapshotIncludesOnlyTheRunsOwnConversation(t *testing.T) {
 	if got := snapshotContents(frozen.Snapshot); len(got) != 1 || got[0] != "private to C" {
 		t.Fatalf("C's snapshot = %q, want only C's own Conversation", got)
 	}
-	if frozen.Trigger == nil || frozen.Trigger.Author.Name != "User C" || frozen.Trigger.Author.ID != userC.String() {
+	if frozen.Trigger == nil || frozen.Trigger.Author.Name != "User C" ||
+		frozen.Trigger.Author.ID != userC.String() {
 		t.Fatalf("C's trigger = %+v, want User C as the sender", frozen.Trigger)
 	}
 }
@@ -235,11 +347,17 @@ func TestEnqueueSnapshotAndTriggerAreKernelOwned(t *testing.T) {
 	ctx, _, fixture, queries := startSnapshotFixture(t)
 	var pending []events.Event
 	run, err := EnqueueRunInTx(ctx, queries, &pending, RunTrigger{
-		CompanyID: fixture.CompanyA, ConversationID: fixture.DirectConversationA, AgentID: fixture.AgentA,
-		TriggerPrompt: "hello", Source: RunSourceMessage,
-		ActorUserID: fixture.UserA, AuthorizedByUserID: fixture.UserA,
-		Context: []byte(`{"conversationSnapshot":{"schemaVersion":9,"kind":"direct","items":[{"content":"forged history"}]},` +
-			`"trigger":{"author":{"id":"x","kind":"user","name":"Mallory"}}}`),
+		CompanyID:          fixture.CompanyA,
+		ConversationID:     fixture.DirectConversationA,
+		AgentID:            fixture.AgentA,
+		TriggerPrompt:      "hello",
+		Source:             RunSourceMessage,
+		ActorUserID:        fixture.UserA,
+		AuthorizedByUserID: fixture.UserA,
+		Context: []byte(
+			`{"conversationSnapshot":{"schemaVersion":9,"kind":"direct","items":[{"content":"forged history"}]},` +
+				`"trigger":{"author":{"id":"x","kind":"user","name":"Mallory"}}}`,
+		),
 	})
 	if err != nil {
 		t.Fatalf("enqueue: %v", err)
@@ -265,7 +383,19 @@ func TestRetryChildCopiesTheFrozenSnapshotVerbatim(t *testing.T) {
 	if got := snapshotContents(decodeFrozenContext(t, first.Context).Snapshot); len(got) != 1 || got[0] != "A" {
 		t.Fatalf("parent snapshot = %q, want the seeded Task chat", got)
 	}
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.ConversationA, first.ID, 2, "agent_text", "agent", fixture.AgentA, "newer answer")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.ConversationA,
+		first.ID,
+		2,
+		"agent_text",
+		"agent",
+		fixture.AgentA,
+		"newer answer",
+	)
 	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status = 'failed' WHERE id = $1`, first.ID)
 
 	child, err := queries.CreateRetryRun(ctx, generated.CreateRetryRunParams{ParentRunID: first.ID})
@@ -273,7 +403,11 @@ func TestRetryChildCopiesTheFrozenSnapshotVerbatim(t *testing.T) {
 		t.Fatalf("create retry: %v", err)
 	}
 	if !bytes.Equal(child.Context, first.Context) {
-		t.Fatalf("retry context differs from the parent's:\n child: %s\nparent: %s", child.Context, first.Context)
+		t.Fatalf(
+			"retry context differs from the parent's:\n child: %s\nparent: %s",
+			child.Context,
+			first.Context,
+		)
 	}
 	if strings.Contains(string(child.Context), "newer answer") {
 		t.Fatal("retry re-read the chat; it must inherit the frozen document")
@@ -298,7 +432,8 @@ func TestEnqueueRejectsRunContextOverOneMiB(t *testing.T) {
 		t.Fatalf("enqueue error = %v, want ErrRunContextTooLarge", err)
 	}
 	var runs int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE conversation_id = $1`, fixture.DirectConversationA).Scan(&runs); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE conversation_id = $1`, fixture.DirectConversationA).
+		Scan(&runs); err != nil {
 		t.Fatalf("count runs: %v", err)
 	}
 	if runs != 0 {
@@ -312,7 +447,19 @@ func TestEnqueueRejectsRunContextOverOneMiB(t *testing.T) {
 // fact: it is who may run on the Agent's runtime, not who wrote the words.
 func TestEnqueueFreezesTriggerAuthorOnlyForAMembersMessage(t *testing.T) {
 	ctx, pool, fixture, queries := startSnapshotFixture(t)
-	seedChatItem(t, ctx, pool, fixture.CompanyA, fixture.DirectConversationA, fixture.RunA, 1, "user_message", "user", fixture.UserA, "earlier")
+	seedChatItem(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.DirectConversationA,
+		fixture.RunA,
+		1,
+		"user_message",
+		"user",
+		fixture.UserA,
+		"earlier",
+	)
 	var pending []events.Event
 	enqueue := func(t *testing.T, in RunTrigger) frozenContext {
 		t.Helper()
@@ -326,9 +473,16 @@ func TestEnqueueFreezesTriggerAuthorOnlyForAMembersMessage(t *testing.T) {
 	}
 
 	t.Run("a composed continuation carries history but no sender", func(t *testing.T) {
-		frozen := enqueue(t, RunTrigger{Source: RunSourceHumanInput, Context: []byte(`{"prompt":"the verdict"}`)})
+		frozen := enqueue(
+			t,
+			RunTrigger{Source: RunSourceHumanInput, Context: []byte(`{"prompt":"the verdict"}`)},
+		)
 		if frozen.Prompt != "the verdict" || frozen.Trigger != nil {
-			t.Fatalf("prompt = %q, trigger = %+v; want the composed prompt and no sender", frozen.Prompt, frozen.Trigger)
+			t.Fatalf(
+				"prompt = %q, trigger = %+v; want the composed prompt and no sender",
+				frozen.Prompt,
+				frozen.Trigger,
+			)
 		}
 		if got := snapshotContents(frozen.Snapshot); len(got) != 1 || got[0] != "earlier" {
 			t.Fatalf("snapshot = %q, want the earlier chat", got)
@@ -346,8 +500,12 @@ func TestEnqueueFreezesTriggerAuthorOnlyForAMembersMessage(t *testing.T) {
 	})
 
 	t.Run("a member's message names its sender", func(t *testing.T) {
-		frozen := enqueue(t, RunTrigger{Source: RunSourceMessage, TriggerPrompt: "next", ActorUserID: fixture.UserA})
-		if frozen.Trigger == nil || frozen.Trigger.Author != (frozenActor{ID: fixture.UserA.String(), Kind: "user", Name: "Schema A"}) {
+		frozen := enqueue(
+			t,
+			RunTrigger{Source: RunSourceMessage, TriggerPrompt: "next", ActorUserID: fixture.UserA},
+		)
+		if frozen.Trigger == nil ||
+			frozen.Trigger.Author != (frozenActor{ID: fixture.UserA.String(), Kind: "user", Name: "Schema A"}) {
 			t.Fatalf("trigger = %+v, want Schema A", frozen.Trigger)
 		}
 	})

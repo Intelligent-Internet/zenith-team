@@ -6,13 +6,13 @@ import {
   updateSessionUserSummary,
 } from "@/shared/session/session";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {
   replaceVersioned,
   type RealtimeSyncContext,
 } from "@/app/shell/realtime-sync/realtime-sync-context";
 import { accountApi } from "@/shared/api/account-api";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import {
   removeMember,
   teamDirectoryApi,
@@ -33,7 +33,7 @@ let sessionReconciliation: Promise<void> | undefined;
 
 export function applyAuthCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   switch (event.type) {
     case "user.updated":
@@ -79,7 +79,7 @@ export function applyAuthCacheEvent(
  */
 function applyCompanyAccessChange(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   const payload = event.payload as Partial<CompanyAccessChanged>;
   if (payload.companyId !== context.companyId) return;
@@ -102,7 +102,7 @@ function applyCompanyAccessChange(
     if (!payload.permissions.includes("mailbox.manage")) {
       // Discard cached email bodies, signed attachment links and draft content
       // when Mailbox access is lost. The visible queries reload with new rights.
-      context.dispatch(boardlyApi.util.resetApiState());
+      context.dispatch(zenithTeamApi.util.resetApiState());
     }
     if (decidedByOther && payload.reason === "role_changed") {
       const companyName = current.company?.workspaceName ?? "this company";
@@ -113,7 +113,7 @@ function applyCompanyAccessChange(
   // permissions on every Project and the Managed projects view (ADR 0017),
   // so the Project reads refetch with it.
   context.dispatch(
-    boardlyApi.util.invalidateTags([
+    zenithTeamApi.util.invalidateTags([
       { id: context.companyId, type: "Member" },
       { id: context.companyId, type: "Invitation" },
       { id: context.companyId, type: "Project" },
@@ -169,7 +169,7 @@ function removeMembership(context: RealtimeSyncContext, member: MemberRemoved) {
 
 function updateInvitation(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   if (event.companyId !== context.companyId) return;
   const invitation = event.payload as CompanyInvitation;
@@ -194,13 +194,13 @@ function updateInvitation(
 
 function invalidateShareLink(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   if (event.companyId !== context.companyId) return;
   // The frame never carries the URL, so a panel showing the link refetches
   // it through the authorized route.
   context.dispatch(
-    boardlyApi.util.invalidateTags([
+    zenithTeamApi.util.invalidateTags([
       { id: `link:${context.companyId}`, type: "Invitation" },
     ]),
   );

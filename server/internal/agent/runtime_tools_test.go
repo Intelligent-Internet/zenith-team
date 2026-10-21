@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestNormalizeToolObservationsRejectsUnreviewedMetadata(t *testing.T) {

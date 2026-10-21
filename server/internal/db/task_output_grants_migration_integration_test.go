@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // A Task Run executes on its authorizer's computer (ADR 0014), yet 000036
@@ -147,16 +147,56 @@ func TestTaskOutputAuthorizerGrantsMigrationOnlyAddsAccess(t *testing.T) {
 		userID   uuid.UUID
 		access   access
 	}{
-		"colleague's run of their own task on their own computer": {colleagueRun, colleagueID, access{"shared", 2, "view"}},
-		"creator's own run":                                     {creatorRun, f.UserA, access{"private", 1, ""}},
-		"run of an Agent-created task":                          {unownedRun, colleagueID, access{"shared", 2, "view"}},
-		"run already shared to manage":                          {alreadyManaged, colleagueID, access{"shared", 2, "manage"}},
-		"direct conversation run":                               {directRun, colleagueID, access{"private", 1, ""}},
-		"colleague's answer on the creator's task and computer": {answeredRun, colleagueID, access{"private", 1, ""}},
-		"run on a computer the authorizer did not register":     {onAnotherComputer, colleagueID, access{"private", 1, ""}},
-		"run for a task the authorizer is not assigned":         {forAnotherAssignee, colleagueID, access{"private", 1, ""}},
-		"run by a member who left":                              {leaverRun, leaverID, access{"private", 1, ""}},
-		"run by a member who came back":                         {returnerRun, returnerID, access{"private", 1, ""}},
+		"colleague's run of their own task on their own computer": {
+			colleagueRun,
+			colleagueID,
+			access{"shared", 2, "view"},
+		},
+		"creator's own run": {
+			creatorRun,
+			f.UserA,
+			access{"private", 1, ""},
+		},
+		"run of an Agent-created task": {
+			unownedRun,
+			colleagueID,
+			access{"shared", 2, "view"},
+		},
+		"run already shared to manage": {
+			alreadyManaged,
+			colleagueID,
+			access{"shared", 2, "manage"},
+		},
+		"direct conversation run": {
+			directRun,
+			colleagueID,
+			access{"private", 1, ""},
+		},
+		"colleague's answer on the creator's task and computer": {
+			answeredRun,
+			colleagueID,
+			access{"private", 1, ""},
+		},
+		"run on a computer the authorizer did not register": {
+			onAnotherComputer,
+			colleagueID,
+			access{"private", 1, ""},
+		},
+		"run for a task the authorizer is not assigned": {
+			forAnotherAssignee,
+			colleagueID,
+			access{"private", 1, ""},
+		},
+		"run by a member who left": {
+			leaverRun,
+			leaverID,
+			access{"private", 1, ""},
+		},
+		"run by a member who came back": {
+			returnerRun,
+			returnerID,
+			access{"private", 1, ""},
+		},
 	}
 	assertAccess := func(step string) {
 		t.Helper()

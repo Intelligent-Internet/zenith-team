@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/companyplan"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/companyplan"
 )
 
 const (
@@ -27,7 +27,7 @@ type API interface {
 	companyplan.ApplyAPI
 }
 
-// CompanyPlanService owns the Boardly tools served over MCP: the enabled
+// CompanyPlanService owns the Zenith Team tools served over MCP: the enabled
 // Agent roster and the Company Plan export, preview, and apply flow.
 type CompanyPlanService interface {
 	ListAgents(context.Context, ListAgentsInput) (ListAgentsResult, error)
@@ -206,7 +206,7 @@ func (s *DefaultCompanyPlanService) Apply(ctx context.Context, input ApplyInput)
 	s.mu.Unlock()
 	requestKey := uuid.NewSHA1(
 		uuid.NameSpaceURL,
-		[]byte("boardly:company-plan-apply:"+digest),
+		[]byte("zenith-team:company-plan-apply:"+digest),
 	).String()
 	backendResult, err := companyplan.Apply(ctx, s.api, artifact, requestKey)
 	s.mu.Lock()
@@ -403,7 +403,7 @@ func writeOutputFile(path string, contents []byte, overwrite bool) error {
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		return fmt.Errorf("create output directory: %w", err)
 	}
-	temporary, err := os.CreateTemp(directory, ".boardly-company-plan-*.tmp")
+	temporary, err := os.CreateTemp(directory, ".zenith-team-company-plan-*.tmp")
 	if err != nil {
 		return fmt.Errorf("create temporary output: %w", err)
 	}

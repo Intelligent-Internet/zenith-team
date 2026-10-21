@@ -15,14 +15,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // planCounts is what a PlanApplyResult says, compared as one value.
@@ -73,8 +73,17 @@ func newPlanAccessWorld(t *testing.T) planAccessWorld {
 		t.Fatal(err)
 	}
 	return planAccessWorld{
-		ctx: ctx, pool: pool, fixture: fixture, store: store, bus: bus, service: service,
-		owner: auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner},
+		ctx:     ctx,
+		pool:    pool,
+		fixture: fixture,
+		store:   store,
+		bus:     bus,
+		service: service,
+		owner: auth.UserPrincipal{
+			UserID:    fixture.UserA,
+			CompanyID: fixture.CompanyA,
+			Role:      auth.CompanyRoleOwner,
+		},
 	}
 }
 
@@ -139,7 +148,10 @@ func (w planAccessWorld) read(t *testing.T, principal auth.UserPrincipal) (PlanD
 			}
 			for _, edge := range locked.dependencies {
 				if edge.DependentTaskID == value.ID {
-					planned.DependsOn = append(planned.DependsOn, PlanTaskDependency{TaskKey: taskKeys[edge.PrerequisiteTaskID]})
+					planned.DependsOn = append(
+						planned.DependsOn,
+						PlanTaskDependency{TaskKey: taskKeys[edge.PrerequisiteTaskID]},
+					)
 				}
 			}
 			document.Tasks = append(document.Tasks, planned)
@@ -228,7 +240,15 @@ func TestCompanyPlanApplyReachesOnlyTheApplierWritableProjects(t *testing.T) {
 	w.layOut(t)
 	admin := w.seedMember(t, "admin@example.com", auth.CompanyRoleAdmin)
 	dbtest.GrantProject(t, w.ctx, w.pool, w.fixture.CompanyA, w.projectID(t, "mine"), admin.UserID)
-	dbtest.GrantProject(t, w.ctx, w.pool, w.fixture.CompanyA, w.projectID(t, "shared"), admin.UserID, "project.read")
+	dbtest.GrantProject(
+		t,
+		w.ctx,
+		w.pool,
+		w.fixture.CompanyA,
+		w.projectID(t, "shared"),
+		admin.UserID,
+		"project.read",
+	)
 
 	document, _ := w.read(t, admin)
 	var read []string
@@ -253,7 +273,8 @@ func TestCompanyPlanApplyReachesOnlyTheApplierWritableProjects(t *testing.T) {
 		t.Fatalf("Tasks after the admin's apply = %v", got)
 	}
 	var assignee uuid.UUID
-	if err := w.pool.QueryRow(w.ctx, `SELECT assignee_user_id FROM tasks WHERE key = 'mine_next'`).Scan(&assignee); err != nil ||
+	if err := w.pool.QueryRow(w.ctx, `SELECT assignee_user_id FROM tasks WHERE key = 'mine_next'`).
+		Scan(&assignee); err != nil ||
 		assignee != admin.UserID {
 		t.Fatalf("mine_next assignee = %v, %v; want the admin who applied", assignee, err)
 	}
@@ -265,7 +286,14 @@ func TestCompanyPlanApplyReachesOnlyTheApplierWritableProjects(t *testing.T) {
 	dbtest.GrantProject(t, w.ctx, w.pool, w.fixture.CompanyA, w.projectID(t, "secret"), admin.UserID)
 	named := document
 	named.Projects = append(slices.Clone(document.Projects), PlanProject{Key: "secret", Title: "secret"})
-	if _, err := w.service.ApplyCompanyPlan(w.ctx, admin, w.artifact(base, named)); !errors.Is(err, ErrPlanConflict) {
+	if _, err := w.service.ApplyCompanyPlan(
+		w.ctx,
+		admin,
+		w.artifact(base, named),
+	); !errors.Is(
+		err,
+		ErrPlanConflict,
+	) {
 		t.Fatalf("a plan naming a Project granted after it was read error = %v, want ErrPlanConflict", err)
 	}
 	result, err = w.service.ApplyCompanyPlan(w.ctx, admin, w.artifact(base, document))
@@ -292,7 +320,8 @@ func TestCompanyPlanApplyTreatsAHiddenKeyLikeAnUnknownKey(t *testing.T) {
 			document.Projects = append(document.Projects, PlanProject{Key: key, Title: key, Archived: true})
 		})
 	}
-	if !errors.Is(outcomes["secret"], ErrPlanInvalidInput) || !errors.Is(outcomes["never_used"], ErrPlanInvalidInput) {
+	if !errors.Is(outcomes["secret"], ErrPlanInvalidInput) ||
+		!errors.Is(outcomes["never_used"], ErrPlanInvalidInput) {
 		t.Fatalf("archiving a hidden key = %v, an unused key = %v; want the same ErrPlanInvalidInput",
 			outcomes["secret"], outcomes["never_used"])
 	}
@@ -306,11 +335,15 @@ func TestCompanyPlanApplyTreatsAHiddenKeyLikeAnUnknownKey(t *testing.T) {
 	}
 	var title string
 	var grants int
-	if err := w.pool.QueryRow(w.ctx, `
+	if err := w.pool.QueryRow(
+		w.ctx,
+		`
 		SELECT project.title,
 		       (SELECT count(*) FROM project_grants WHERE project_id = project.id AND user_id = $2)
 		FROM projects AS project WHERE project.company_id = $1 AND project.key = 'secret'`,
-		w.fixture.CompanyA, admin.UserID).Scan(&title, &grants); err != nil || title != "secret" || grants != 0 {
+		w.fixture.CompanyA,
+		admin.UserID,
+	).Scan(&title, &grants); err != nil || title != "secret" || grants != 0 {
 		t.Fatalf("hidden Project after the refused create = %q, %d grants, %v", title, grants, err)
 	}
 }
@@ -328,7 +361,13 @@ func TestCompanyPlanApplyHoldsAnArchiveWithoutProjectArchive(t *testing.T) {
 	dbtest.GrantProject(t, w.ctx, w.pool, w.fixture.CompanyA, mine, writer.UserID)
 	// The writer is responsible for mine_task, so only project.archive
 	// stands between them and deleting it.
-	dbtest.MustExec(t, w.ctx, w.pool, `UPDATE tasks SET assignee_user_id = $1 WHERE key = 'mine_task'`, writer.UserID)
+	dbtest.MustExec(
+		t,
+		w.ctx,
+		w.pool,
+		`UPDATE tasks SET assignee_user_id = $1 WHERE key = 'mine_task'`,
+		writer.UserID,
+	)
 	actor := approval.CompanyPlanActor{Principal: writer, TaskProjectID: uuid.NullUUID{UUID: mine, Valid: true}}
 	archiveMine := func(document *PlanDocument) {
 		withoutTask(document, "mine_task")
@@ -347,24 +386,45 @@ func TestCompanyPlanApplyHoldsAnArchiveWithoutProjectArchive(t *testing.T) {
 	archived := func() bool {
 		t.Helper()
 		var archived bool
-		if err := w.pool.QueryRow(w.ctx, `SELECT archived_at IS NOT NULL FROM projects WHERE id = $1`, mine).Scan(&archived); err != nil {
+		if err := w.pool.QueryRow(w.ctx, `SELECT archived_at IS NOT NULL FROM projects WHERE id = $1`, mine).
+			Scan(&archived); err != nil {
 			t.Fatal(err)
 		}
 		return archived
 	}
 
-	want := []PlanSkip{{EntityType: "project", Key: "mine", Operation: "archive", Permission: auth.ProjectPermissionArchive}}
+	want := []PlanSkip{
+		{EntityType: "project", Key: "mine", Operation: "archive", Permission: auth.ProjectPermissionArchive},
+	}
 	for name, edit := range map[string]func(*PlanDocument){"archived": archiveMine, "left out": leaveMineOut} {
 		result := w.approveAs(t, actor, edit)
 		if countsOf(result) != (planCounts{Skipped: 1}) || !slices.Equal(result.Skipped, want) {
-			t.Fatalf("%s without project.archive = %+v, want nothing changed and the archive skipped", name, result)
+			t.Fatalf(
+				"%s without project.archive = %+v, want nothing changed and the archive skipped",
+				name,
+				result,
+			)
 		}
 		if archived() || !slices.Contains(w.taskKeys(t), "mine_task") {
-			t.Fatalf("%s without project.archive: mine archived = %v, Tasks = %v; want both kept", name, archived(), w.taskKeys(t))
+			t.Fatalf(
+				"%s without project.archive: mine archived = %v, Tasks = %v; want both kept",
+				name,
+				archived(),
+				w.taskKeys(t),
+			)
 		}
 	}
 
-	dbtest.GrantProject(t, w.ctx, w.pool, w.fixture.CompanyA, mine, writer.UserID, "project.tasks.write", "project.archive")
+	dbtest.GrantProject(
+		t,
+		w.ctx,
+		w.pool,
+		w.fixture.CompanyA,
+		mine,
+		writer.UserID,
+		"project.tasks.write",
+		"project.archive",
+	)
 	result := w.approveAs(t, actor, archiveMine)
 	if countsOf(result) != (planCounts{Updated: 1, Deleted: 1}) {
 		t.Fatalf("apply with project.archive = %+v, want mine_task deleted and mine archived", result)
@@ -419,7 +479,14 @@ func TestCompanyPlanApplySkipsAProjectWhoseWriteWasLost(t *testing.T) {
 	dbtest.MustExec(t, w.ctx, w.pool, `
 		DELETE FROM project_grants
 		WHERE project_id = $1 AND user_id = $2 AND permission = 'project.tasks.write'`, mine, admin.UserID)
-	dbtest.MustExec(t, w.ctx, w.pool, `DELETE FROM project_grants WHERE project_id = $1 AND user_id = $2`, shared, admin.UserID)
+	dbtest.MustExec(
+		t,
+		w.ctx,
+		w.pool,
+		`DELETE FROM project_grants WHERE project_id = $1 AND user_id = $2`,
+		shared,
+		admin.UserID,
+	)
 
 	result, err := w.service.ApplyCompanyPlan(w.ctx, admin, w.artifact(base, document))
 	want := []PlanSkip{
@@ -437,10 +504,17 @@ func TestCompanyPlanApplySkipsAProjectWhoseWriteWasLost(t *testing.T) {
 		return project.Key == "shared"
 	})
 	withoutTask(&restated, "shared_task")
-	base.Projects = slices.DeleteFunc(base.Projects, func(entity PlanBaseEntity) bool { return entity.Key == "shared" })
+	base.Projects = slices.DeleteFunc(
+		base.Projects,
+		func(entity PlanBaseEntity) bool { return entity.Key == "shared" },
+	)
 	result, err = w.service.ApplyCompanyPlan(w.ctx, admin, w.artifact(base, restated))
 	if err != nil || countsOf(result) != (planCounts{}) {
-		t.Fatalf("restating the Project whose write was lost = %+v, %v; want no change and no skip", result, err)
+		t.Fatalf(
+			"restating the Project whose write was lost = %+v, %v; want no change and no skip",
+			result,
+			err,
+		)
 	}
 }
 
@@ -460,7 +534,12 @@ func TestTaskPlanApprovalFrozenWiderThanItsProjectIsStale(t *testing.T) {
 	var executed approval.CompanyPlanActionResult
 	var pending []events.Event
 	err = w.store.WithinTx(w.ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		prepared, err := w.service.PrepareCompanyPlanApply(w.ctx, q, approval.CompanyPlanActor{Principal: w.owner}, encoded)
+		prepared, err := w.service.PrepareCompanyPlanApply(
+			w.ctx,
+			q,
+			approval.CompanyPlanActor{Principal: w.owner},
+			encoded,
+		)
 		if err != nil {
 			return err
 		}
@@ -470,7 +549,11 @@ func TestTaskPlanApprovalFrozenWiderThanItsProjectIsStale(t *testing.T) {
 		return err
 	})
 	if err != nil || executed.SkippedReason == nil {
-		t.Fatalf("executing a wider frozen base in a Task chat = %+v, %v; want a skipped execution", executed, err)
+		t.Fatalf(
+			"executing a wider frozen base in a Task chat = %+v, %v; want a skipped execution",
+			executed,
+			err,
+		)
 	}
 	if !slices.Contains(w.taskKeys(t), "shared_task") {
 		t.Fatalf("Tasks = %v, want shared_task kept", w.taskKeys(t))
@@ -569,7 +652,12 @@ func TestTaskPlanApprovalKeepsTheTaskRulesOfAPatch(t *testing.T) {
 		{"delete", remove, ErrPlanTaskDeletePermissionRequired},
 	} {
 		if _, err := w.decide(t, requester, member, refusal.edit); !errors.Is(err, refusal.want) {
-			t.Fatalf("%s by a member who is not the assignee error = %v, want %v", refusal.name, err, refusal.want)
+			t.Fatalf(
+				"%s by a member who is not the assignee error = %v, want %v",
+				refusal.name,
+				err,
+				refusal.want,
+			)
 		}
 	}
 	var status string
@@ -585,7 +673,12 @@ func TestTaskPlanApprovalKeepsTheTaskRulesOfAPatch(t *testing.T) {
 	}
 	read()
 	if status != "in_review" || generation != 1 || agent.UUID != w.fixture.AgentA {
-		t.Fatalf("task_a after the refusals = %s, generation %d, agent %v; want it untouched", status, generation, agent)
+		t.Fatalf(
+			"task_a after the refusals = %s, generation %d, agent %v; want it untouched",
+			status,
+			generation,
+			agent,
+		)
 	}
 
 	executed, err := w.decide(t, requester, requester, markDone)
@@ -631,7 +724,7 @@ func TestTaskPlanApprovalIsApprovedWithProjectPermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RequestCompanyPlanApply() error = %v", err)
 	}
-	var presentation CompanyPlanApprovalPresentation
+	var presentation PlanApprovalPresentation
 	if err := json.Unmarshal(raised.Presentation, &presentation); err != nil {
 		t.Fatal(err)
 	}
@@ -640,12 +733,27 @@ func TestTaskPlanApprovalIsApprovedWithProjectPermissions(t *testing.T) {
 		shown = append(shown, project.Key)
 	}
 	if !slices.Equal(shown, []string{"work"}) ||
-		!reflect.DeepEqual(presentation.Changes, []PlanChange{{EntityType: "task", Operation: "create", Key: "follow_up"}}) {
-		t.Fatalf("Approval shows Projects %v and changes %+v; want the work Project and one create", shown, presentation.Changes)
+		!reflect.DeepEqual(
+			presentation.Changes,
+			[]PlanChange{{EntityType: "task", Operation: "create", Key: "follow_up"}},
+		) {
+		t.Fatalf(
+			"Approval shows Projects %v and changes %+v; want the work Project and one create",
+			shown,
+			presentation.Changes,
+		)
 	}
 
 	decision := approval.ApprovalDecisionInput{ExpectedRevision: raised.Revision}
-	if _, err := approvals.Approve(w.ctx, resolverOnly, raised.ID, decision); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := approvals.Approve(
+		w.ctx,
+		resolverOnly,
+		raised.ID,
+		decision,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("Approve(project.approvals.resolve only) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	approved, err := approvals.Approve(w.ctx, decider, raised.ID, decision)
@@ -659,11 +767,17 @@ func TestTaskPlanApprovalIsApprovedWithProjectPermissions(t *testing.T) {
 	if countsOf(result) != (planCounts{Created: 1}) {
 		t.Fatalf("approved apply = %+v, want only the follow-up", result)
 	}
-	if got := w.taskKeys(t); !slices.Equal(got, []string{"follow_up", "mine_task", "secret_task", "shared_task", "task_a"}) {
+	if got := w.taskKeys(
+		t,
+	); !slices.Equal(
+		got,
+		[]string{"follow_up", "mine_task", "secret_task", "shared_task", "task_a"},
+	) {
 		t.Fatalf("Tasks after the approval = %v", got)
 	}
 	var assignee uuid.UUID
-	if err := w.pool.QueryRow(w.ctx, `SELECT assignee_user_id FROM tasks WHERE key = 'follow_up'`).Scan(&assignee); err != nil ||
+	if err := w.pool.QueryRow(w.ctx, `SELECT assignee_user_id FROM tasks WHERE key = 'follow_up'`).
+		Scan(&assignee); err != nil ||
 		assignee != decider.UserID {
 		t.Fatalf("follow_up assignee = %v, %v; want the decider who applied", assignee, err)
 	}

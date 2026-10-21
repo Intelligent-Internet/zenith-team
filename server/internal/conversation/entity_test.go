@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestConversationDTOJSONIsStrictlyDiscriminated(t *testing.T) {
@@ -109,8 +109,16 @@ func TestNormalizeRenameDirectInput(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := normalizeRenameDirectInput(test.input)
-			if !errors.Is(err, test.err) || err == nil && (got.Title != test.want || got.ExpectedRevision != test.input.ExpectedRevision) {
-				t.Fatalf("normalizeRenameDirectInput() = %+v, %v, want title %q, error %v", got, err, test.want, test.err)
+			if !errors.Is(err, test.err) ||
+				err == nil &&
+					(got.Title != test.want || got.ExpectedRevision != test.input.ExpectedRevision) {
+				t.Fatalf(
+					"normalizeRenameDirectInput() = %+v, %v, want title %q, error %v",
+					got,
+					err,
+					test.want,
+					test.err,
+				)
 			}
 		})
 	}
@@ -205,8 +213,14 @@ func validDirectListItem() ListItem {
 				QueuedCount: 1,
 				ActiveCount: 1,
 				Latest: &LatestRunSummary{
-					RunID: uuid.MustParse("00000000-0000-4000-8000-000000004242"), AgentID: agentID, Status: RunStatusRunning,
-					CreatedAt: now, Attempt: 1, MaxAttempts: 3,
+					RunID: uuid.MustParse(
+						"00000000-0000-4000-8000-000000004242",
+					),
+					AgentID:     agentID,
+					Status:      RunStatusRunning,
+					CreatedAt:   now,
+					Attempt:     1,
+					MaxAttempts: 3,
 				},
 			},
 		},

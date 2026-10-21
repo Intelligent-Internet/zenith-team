@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Task writes inside a Project (ADR 0017). The Project permission is the only
@@ -185,7 +185,9 @@ func personWriteFence(userID uuid.UUID, permission auth.ProjectPermission) proje
 func (f projectWriteFence) params() (uuid.NullUUID, string, auth.ProjectPermissionSets) {
 	if f.userID == uuid.Nil {
 		return uuid.NullUUID{}, "", auth.ProjectPermissionSets{
-			CompanyDefaultPermissions: []string{}, ManagementPermissions: []string{}, ManagementRoles: []string{},
+			CompanyDefaultPermissions: []string{},
+			ManagementPermissions:     []string{},
+			ManagementRoles:           []string{},
 		}
 	}
 	return uuid.NullUUID{UUID: f.userID, Valid: true}, string(f.permission), auth.ProjectPermissionHeldSets()

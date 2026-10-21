@@ -46,7 +46,7 @@ func TestAgentCapabilityDenialsNarrowToolsAndConnectorSnapshot(t *testing.T) {
 			},
 		},
 	}
-	tools := boardlyMCPToolsForRun(doc)
+	tools := zenithTeamMCPToolsForRun(doc)
 	for _, blocked := range []string{"ask_human", "company_plan_export", "company_plan_transaction_apply"} {
 		if slices.Contains(tools, blocked) {
 			t.Errorf("disabled tool still present: %s", blocked)
@@ -68,7 +68,7 @@ func TestAgentCapabilityDenialsNarrowToolsAndConnectorSnapshot(t *testing.T) {
 	doc.ExecutionProfile.Source = runSourceSchedule
 	scheduled := applyAgentCapabilityDenials(doc)
 	if len(scheduled.ConnectorSnapshot.Connectors) != 3 ||
-		len(boardlyMCPToolsForRun(scheduled)) != 0 || runOutputPresentationAvailable(scheduled) {
+		len(zenithTeamMCPToolsForRun(scheduled)) != 0 || runOutputPresentationAvailable(scheduled) {
 		t.Fatal("agent preferences changed reviewed Schedule scope")
 	}
 }
@@ -80,9 +80,9 @@ func TestSavedWorkCapabilityControlsMCPOutputPresentation(t *testing.T) {
 		t.Fatal("output presentation disabled by default")
 	}
 	doc.Agent.Capabilities.DisabledBuiltIns = []string{"saved-work"}
-	if runOutputPresentationAvailable(doc) || slices.Contains(boardlyMCPToolsForRun(doc), "present_output") ||
-		slices.Contains(boardlyMCPToolsForRun(doc), "artifact_inspect") ||
-		slices.Contains(boardlyMCPToolsForRun(doc), "artifact_fetch") {
+	if runOutputPresentationAvailable(doc) || slices.Contains(zenithTeamMCPToolsForRun(doc), "present_output") ||
+		slices.Contains(zenithTeamMCPToolsForRun(doc), "artifact_inspect") ||
+		slices.Contains(zenithTeamMCPToolsForRun(doc), "artifact_fetch") {
 		t.Fatal("saved-work denial did not disable MCP output presentation")
 	}
 }
@@ -104,7 +104,7 @@ func TestStudioToolsAreOptInAcrossInteractiveRuns(t *testing.T) {
 				t.Fatal("Studio missing from interactive Run")
 			}
 			for _, tool := range []string{"search_skills", "load_skill_reference"} {
-				if !slices.Contains(boardlyMCPToolsForRun(doc), tool) {
+				if !slices.Contains(zenithTeamMCPToolsForRun(doc), tool) {
 					t.Fatalf("Studio cannot load instructions: missing %s", tool)
 				}
 			}

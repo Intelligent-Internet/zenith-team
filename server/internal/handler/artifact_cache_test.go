@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 func TestArtifactDownloadRevalidatesBeforeUsingCache(t *testing.T) {
@@ -90,7 +90,7 @@ func TestArtifactDownloadRevalidatesBeforeUsingCache(t *testing.T) {
 				request := httptest.NewRequest(http.MethodGet, "/download", nil)
 				request.Header.Set("If-None-Match", cachedTag)
 				if scenario != "web" {
-					request.Header.Set("X-Boardly-Artifact-Cache", "revalidate")
+					request.Header.Set("X-Zenith-Team-Artifact-Cache", "revalidate")
 				}
 				c.Request = request.WithContext(
 					auth.WithUserPrincipal(request.Context(), auth.UserPrincipal{

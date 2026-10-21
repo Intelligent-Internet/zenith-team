@@ -3,8 +3,8 @@ package agent
 import (
 	"context"
 
-	"boardly.dev/boardly/server/internal/agent/connectorselection"
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/connectorselection"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 
 	"github.com/google/uuid"
 )

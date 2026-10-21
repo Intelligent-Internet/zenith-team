@@ -4,9 +4,9 @@ summary: Accepted desktop screens, their API contracts, and provider-dependent l
 ---
 
 The accepted desktop layouts use the existing company, agent, task, run and
-conversation domains. This map describes the implementation on
-`feat/boardly-ui-dashboard`. The per-domain OpenAPI files remain the detailed
-wire contract; [overview.md](overview.md) describes how they are checked.
+conversation domains. This page maps each screen to its contract. The
+per-domain OpenAPI files remain the detailed wire contract;
+[overview.md](overview.md) describes how they are checked.
 
 ## Screen-to-contract map
 
@@ -24,7 +24,7 @@ wire contract; [overview.md](overview.md) describes how they are checked.
 | Computers & runtimes | [Runs and runtimes](runs.md): registration, availability, rename/removal and agent bindings. [Connector and Plugin catalogues](connectors-and-plugins.md) accept `runtime_id`, so a selected computer never displays a different runtime's discovery. Existing refresh and provider operations remain runtime-scoped. |
 | Header Inbox preview and Inbox page | [Inbox](inbox.md) provides notifications and read state. [Approvals and questions](approvals.md) retain their own decision contracts; reading a notification is not an approval. |
 | Team | Company membership and agent reporting relationships remain distinct. The UI can display both without inventing a grouping of its own. |
-| My Account | [Authentication/account](authentication.md) provides the current user and profile mutation. Appearance remains a device preference, scoped locally to the user/company; there is no cloud appearance-sync API. |
+| My Account | [Authentication/account](authentication.md) provides the current user and profile mutation. Appearance remains a device preference, scoped locally to the user/company; there is no server-side appearance-sync API. |
 | More: email, schedules, assets, memory | Existing [mailbox](mailbox.md), [schedule](schedules.md) and [workspace](workspaces.md) APIs. Provider connections, permissions, object storage and external service configuration are still prerequisites. |
 
 All company routes above use `/api/v1/companies/{companyId}`. Abbreviated paths
@@ -49,7 +49,7 @@ in this table omit that prefix.
 
 ## Capability boundaries
 
-Built-in Zenith Team skills control groups of `boardly-mcp` tools; the `wiki` group
+Built-in Zenith Team skills control groups of `zenith-team-mcp` tools; the `wiki` group
 controls the read-only Company Wiki tools (`wiki_search`, `wiki_list`, `wiki_read`) and, because
 the daemon allowlist alone is not authority, the server's Run-proven Wiki read
 routes for that Agent. Discovered Skills
@@ -70,15 +70,9 @@ provider configuration is unchanged. If effective provider state cannot confirm
 the restriction, the run fails. These controls do not replace a filesystem or
 shell sandbox.
 
-## Schema and rollout
+## Schema
 
-The work-domain baseline adds task metadata, direct-session request keys and
-`conversation_user_states`. Fresh databases apply the repository's complete
-migration chain. A database that already applied the work baseline needs an
-explicit schema cutover or recreation before running this branch; running the
-migrator alone does not replay an applied baseline. The local development
-database was cut over with its existing smoke-test data preserved.
-
-The OpenAPI schemas and generated TypeScript client were updated together.
-Implementation and verification notes are in
-[backend-design-readiness.md](../design/backend-design-readiness.md).
+The work-domain migration (`server/migrations/000004_work.up.sql`) creates task
+metadata, direct-chat request keys and `conversation_user_states`. A fresh
+database gets them by applying the full migration chain. The OpenAPI schemas
+and the generated TypeScript client describe the same fields.

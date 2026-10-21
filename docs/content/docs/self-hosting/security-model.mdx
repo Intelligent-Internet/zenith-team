@@ -1,0 +1,83 @@
+---
+title: Security model
+description: What a self-hosted Zenith Team server protects, what runs on members' own computers, and a checklist for hardening your install.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This page explains who trusts whom in Zenith Team, in plain words, and lists what you, the operator, need to look after. It matches the model in [SECURITY.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SECURITY.md).
+
+## The server is the boundary
+
+One server hosts many companies. Its permission checks decide who can see and change what, company by company. A member sees only the companies they belong to, and inside a company, only what their role and [project access](/project-access) allow.
+
+These checks happen on the server for every request. The web app, the desktop app and agents can ask for anything, but the server answers only what that person is allowed to have. Reading or changing another company's data, acting beyond your role, or keeping access after it was taken away are vulnerabilities, and we want to hear about them.
+
+## Agents run on members' own computers
+
+Agents do not run on the server. Each one runs on a member's own computer, through the daemon, with that member's own `codex` or `claude` CLI and sign-in.
+
+- **An agent can do what its person can do on that computer.** That is by design. Connect only computers you are happy for your own agents to use.
+- **A computer belongs to the person who connected it.** Nobody else in the company sees it, not even the owner or an admin, and nobody else can run work on it. See [Daemon and runtimes](/daemon-and-runtimes#your-computers-are-yours).
+- **Provider sign-in stays on the computer.** Zenith Team never holds Codex or Claude credentials. See [Providers](/providers#sign-in-and-credentials).
+- **Code and files stay on the computer.** Only conversations, statuses and usage reach the server. See [the data and execution boundary](/how-zenith-team-works#the-data-and-execution-boundary).
+
+## Each run gets its own token
+
+Every run gets its own home folder and a token that works only for that run. The agent process itself holds no credential: its `zen` calls and Zenith Team tools go through the daemon, which checks each call against what the run may do before it forwards it. When the run ends, that path closes. A run that tries more than it is allowed gets a refusal, and the server makes the final check.
+
+## Secrets stay on the server
+
+- Every secret, from the Resend key to the Google and social app secrets, lives only in the server's environment. Browser code never reads any of them, and none belong in `VITE_*` build settings.
+- The web app keeps its sign-in in cookies, not in browser storage that page scripts can read. A CSRF token guards every change made with that cookie session.
+- The server's logs never contain tokens, provider credentials, file keys or local file paths.
+
+## Anyone who can reach the server can sign up
+
+There is no setting that turns sign-up off. Anyone who can open your web address can create an account and their own company. Their company is walled off from yours, but they still use your server.
+
+If the server is only for your team, keep it on a private network or behind a VPN. Turning on [email codes](/self-hosting/auth-setup#email-codes-and-password-reset) at least makes every account prove its address.
+
+## No telemetry
+
+The server sends no telemetry. [Privacy and network](/self-hosting/privacy-and-network) lists every outside call and the setting that turns it on.
+
+## What is yours to look after
+
+The operator owns the host, the network, TLS, and the secrets in `deploy/.env`. Zenith Team cannot protect against a compromised server machine or a leaked `deploy/.env`.
+
+## Hardening checklist
+
+**Secrets**
+
+- Generate secrets with `make selfhost-env` or `openssl`. Never reuse a value from an example or a template. Outside `APP_ENVIRONMENT=local`, the server refuses a placeholder `AUTH_CSRF_SECRET`.
+- Keep `deploy/.env` readable only by you: mode `600`, which `make selfhost-env` sets. Never commit it.
+- Keep a safe copy of `deploy/.env` with your backups.
+- Changing `AUTH_CSRF_SECRET` signs everyone out, because it signs every session. Rotate it only when you must, for example after a leak, and expect everyone to sign in again.
+- Keep `SOCIAL_TOKEN_ENCRYPTION_KEY` stable: it protects stored data, and changing it loses that data.
+
+**Network**
+
+- Serve Zenith Team only over HTTPS, through a [TLS proxy](/self-hosting/reverse-proxy-and-tls).
+- List only your real HTTPS address in `AUTH_WEB_ORIGINS`, plus `zenith-team-app://renderer` for the desktop app. Drop `http://localhost:8080` once you no longer need it.
+- Keep `APP_BIND_ADDRESS` at `127.0.0.1`. Docker publishes ports past the host firewall, and the API port also serves `/metrics`.
+- Leave `ZENITH_TEAM_TRUSTED_PROXIES` empty unless you need it, and never list a range other machines can send from.
+
+**Data**
+
+- [Back up](/self-hosting/storage#back-up-and-restore) PostgreSQL and file storage on a schedule, store the copies away from the server, and test a restore.
+
+**Updates**
+
+- Run the [latest release](https://github.com/Intelligent-Internet/zenith-team/releases). Only the latest release gets security fixes. See [Upgrading](/self-hosting/upgrading).
+- Pin image versions, such as `zenith-team-server:1.3.0`, rather than `latest`, so you know what runs.
+- The project updates its dependencies, base images and CI actions every week through Dependabot. A new release picks those up, so upgrading regularly keeps them current.
+- Keep `zen`, `zenith-team-mcp` and desktop apps on the same release as the server.
+
+## Report a vulnerability
+
+<Callout type="warning">
+Do not open a public issue for a security problem. Report it privately through [GitHub security advisories](https://github.com/Intelligent-Internet/zenith-team/security/advisories/new).
+</Callout>
+
+[SECURITY.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/SECURITY.md) says what to include, what happens next, and what is out of scope. Test only against your own install.

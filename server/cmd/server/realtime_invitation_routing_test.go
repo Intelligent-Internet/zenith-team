@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
 func TestInvitationRoutingReachesOnlyTheInvitingRoles(t *testing.T) {

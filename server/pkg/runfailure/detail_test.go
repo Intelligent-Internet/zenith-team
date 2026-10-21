@@ -5,7 +5,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestDetailKeepsTheProviderSentence(t *testing.T) {
@@ -95,7 +95,7 @@ func TestIsPreparationCode(t *testing.T) {
 	t.Parallel()
 
 	if !IsPreparationCode("run.preparation_failed.workspace") || IsPreparationCode("Overloaded") {
-		t.Fatal("IsPreparationCode does not recognise the daemon's diagnostic prefix")
+		t.Fatal("IsPreparationCode does not recognize the daemon's diagnostic prefix")
 	}
 }
 
@@ -143,7 +143,14 @@ func TestDetailLabel(t *testing.T) {
 		{ReasonRuntimeOffline, "claude", "the machine went away", "Details"},
 	} {
 		if got := DetailLabel(test.reason, test.provider, test.raw); got != test.want {
-			t.Errorf("DetailLabel(%q, %q, %q) = %q, want %q", test.reason, test.provider, test.raw, got, test.want)
+			t.Errorf(
+				"DetailLabel(%q, %q, %q) = %q, want %q",
+				test.reason,
+				test.provider,
+				test.raw,
+				got,
+				test.want,
+			)
 		}
 	}
 	for _, provider := range protocol.SupportedProviders {

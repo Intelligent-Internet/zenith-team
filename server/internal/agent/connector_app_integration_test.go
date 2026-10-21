@@ -16,11 +16,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Gmail, Google Calendar, Slack, Notion and Atlassian Rovo (Legacy) are the
@@ -607,8 +607,8 @@ func TestReadAppReadinessCountsNoToolsForClaudeNamespaces(t *testing.T) {
 // who has not set the Agent up is `unbound` and learns nothing of the
 // owner's computer, not even its discovery time; once bound, the member
 // reads their own computer's states and the Connector and Plugin behind
-// them, which plugins.manage — every role's since the 2026-09-29 owner
-// decision — connects and installs there, never the owner's.
+// them, which plugins.manage — every role's — connects and installs there,
+// never the owner's.
 func TestReadAppReadinessReadsTheViewersBindingAndPermissions(t *testing.T) {
 	pool, store := startAgentPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -639,7 +639,7 @@ func TestReadAppReadinessReadsTheViewersBindingAndPermissions(t *testing.T) {
 	memberID := uuid.Must(uuid.NewV7())
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Member')`,
-		memberID, fmt.Sprintf("member-%s@boardly.test", memberID))
+		memberID, fmt.Sprintf("member-%s@zenith-team.test", memberID))
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
 		fixture.companyID, memberID)

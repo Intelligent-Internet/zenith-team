@@ -550,7 +550,7 @@ func (q *Queries) LockTaskDependencyEndpoints(ctx context.Context, arg LockTaskD
 
 const lockTaskDependencyGraph = `-- name: LockTaskDependencyGraph :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/task-dependency-graph/v1/' || $1::uuid::text,
+    'zenith-team/task-dependency-graph/v1/' || $1::uuid::text,
     0
 ))
 `

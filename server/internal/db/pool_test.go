@@ -9,7 +9,7 @@ func TestPoolConfigAppliesExplicitLimits(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := parsePoolConfig(PoolConfig{
-		URL:               "postgres://boardly:boardly@localhost/boardly?sslmode=disable",
+		URL:               "postgres://zenith_team:zenith_team@localhost/zenith_team?sslmode=disable",
 		MaxConns:          30,
 		MinConns:          6,
 		MaxConnLifetime:   90 * time.Minute,
@@ -38,7 +38,7 @@ func TestPoolConfigRejectsInvalidBounds(t *testing.T) {
 	t.Parallel()
 
 	_, err := parsePoolConfig(PoolConfig{
-		URL:      "postgres://boardly:boardly@localhost/boardly",
+		URL:      "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		MaxConns: 2,
 		MinConns: 3,
 	})

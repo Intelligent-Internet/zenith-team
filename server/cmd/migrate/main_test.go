@@ -38,7 +38,7 @@ func TestRunRefusesDownWithoutExplicitConfirmation(t *testing.T) {
 
 	env := func(name string) (string, bool) {
 		if name == databaseURLVariable {
-			return "postgres://boardly:boardly@127.0.0.1:1/boardly", true
+			return "postgres://zenith_team:zenith_team@127.0.0.1:1/zenith_team", true
 		}
 		return "", false
 	}
@@ -55,7 +55,7 @@ func TestRunRejectsAnUnknownDirection(t *testing.T) {
 
 	env := func(name string) (string, bool) {
 		if name == databaseURLVariable {
-			return "postgres://boardly:boardly@127.0.0.1:1/boardly", true
+			return "postgres://zenith_team:zenith_team@127.0.0.1:1/zenith_team", true
 		}
 		return "", false
 	}

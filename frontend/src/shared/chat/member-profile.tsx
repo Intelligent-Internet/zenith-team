@@ -253,7 +253,7 @@ function ConnectedMemberProfileTrigger({
         }
       >
         <Dialog.Content
-          className="boardly-workspace-theme member-profile-card"
+          className="zenith-team-workspace-theme member-profile-card"
           id={cardId}
           ref={attachCard}
           style={{
@@ -483,7 +483,7 @@ export function MemberProfilePanel({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed z-[240] inset-0 [background:rgb(22_16_28_/_36%)]" />
         <Dialog.Content
-          className="boardly-workspace-theme member-profile-panel member-profile-panel--modal"
+          className="zenith-team-workspace-theme member-profile-panel member-profile-panel--modal"
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             closeButtonRef.current?.focus({ preventScroll: true });

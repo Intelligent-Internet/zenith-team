@@ -10,12 +10,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestTaskCompletionRequiresDeliveredSuggestionsApplied(t *testing.T) {
@@ -397,8 +397,14 @@ func TestRetainedDeliveryResultSelection(t *testing.T) {
     task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$4) WHERE id=$1`, f.RunA, status, f.UserA, f.TaskA)
 			q := generated.New(pool)
 			output, err := q.InsertOutput(ctx, generated.InsertOutputParams{
-				CompanyID: f.CompanyA, RunID: f.RunA, PresentationNumber: 1, Title: "Retained result",
-				Summary: "Keep evidence", PresentationFingerprint: "retained-result", Type: "file", Payload: []byte(`{}`),
+				CompanyID:               f.CompanyA,
+				RunID:                   f.RunA,
+				PresentationNumber:      1,
+				Title:                   "Retained result",
+				Summary:                 "Keep evidence",
+				PresentationFingerprint: "retained-result",
+				Type:                    "file",
+				Payload:                 []byte(`{}`),
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -413,7 +419,10 @@ func TestRetainedDeliveryResultSelection(t *testing.T) {
 			}
 			_, err = service.Update(ctx, p, f.TaskA, UpdateInput{
 				ExpectedRevision: current.Revision,
-				ResultSelection:  &ResultSelectionInput{RequestKey: uuid.New(), OutputIDs: []uuid.UUID{output.ID}},
+				ResultSelection: &ResultSelectionInput{
+					RequestKey: uuid.New(),
+					OutputIDs:  []uuid.UUID{output.ID},
+				},
 			})
 			if status != "completed" {
 				if !errors.Is(err, ErrConflict) {

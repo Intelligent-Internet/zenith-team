@@ -8,16 +8,16 @@ import (
 	"slices"
 	"time"
 
-	"boardly.dev/boardly/server/internal/agent/connectorselection"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/connectorselection"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ConnectorAppType names an external app a Workflow works best with. Its
@@ -299,7 +299,7 @@ type ConnectorAppReadinessResult struct {
 // Plugin behind each app are attached for a holder of plugins.manage, who
 // connects and installs them on their own computer, and the Connector also
 // for a holder of connectors.manage, who reviews it; every role holds
-// plugins.manage since the 2026-09-29 owner decision.
+// plugins.manage.
 func (s *DefaultConnectorService) ReadAppReadiness(
 	ctx context.Context,
 	principal auth.UserPrincipal,
@@ -533,7 +533,7 @@ func (s *DefaultConnectorService) ReadAppReadiness(
 // winning Connector's, any other observed candidate's, that of a Plugin
 // installed on the Runtime that bundles one of those Codex apps, the pinned
 // Plugin's, and one borrowed by the name of any of them. With none loadable
-// it keeps the first present, which the client's failover replaces (D26).
+// it keeps the first present, which the client's failover replaces.
 func connectorAppIcon(
 	rows []generated.ListConnectorAppReadinessRow,
 	candidates []connectorAppCandidate,

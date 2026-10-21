@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestTokenWithoutConfiguredEncryptionKey(t *testing.T) {

@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/realtime"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -220,16 +220,20 @@ func (d *discussionDispatcher) queue(job discussionDispatchJob) error {
 	return nil
 }
 
-func (d *discussionDispatcher) take(limit int) []discussionDispatchJob {
+// discussionDispatchWorkers is both the worker count and the most jobs one
+// tick takes, so a tick never hands out more work than the workers can start.
+const discussionDispatchWorkers = 8
+
+func (d *discussionDispatcher) take() []discussionDispatchJob {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	jobs := make([]discussionDispatchJob, 0, limit)
+	jobs := make([]discussionDispatchJob, 0, discussionDispatchWorkers)
 	for _, lane := range []map[discussionDispatchKey]discussionDispatchJob{d.revokes, d.resync, d.changes} {
 		for key, job := range lane {
 			if time.Now().Before(job.retryAt) {
 				continue
 			}
-			if len(jobs) == limit {
+			if len(jobs) == discussionDispatchWorkers {
 				return jobs
 			}
 			jobs = append(jobs, job)
@@ -244,7 +248,7 @@ func (d *discussionDispatcher) take(limit int) []discussionDispatchJob {
 func (d *discussionDispatcher) run(ctx context.Context) error {
 	jobs := make(chan discussionDispatchJob)
 	var workers sync.WaitGroup
-	for range 8 {
+	for range discussionDispatchWorkers {
 		workers.Add(1)
 		go func() {
 			defer workers.Done()
@@ -269,7 +273,7 @@ func (d *discussionDispatcher) run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			for _, job := range d.take(8) {
+			for _, job := range d.take() {
 				select {
 				case <-ctx.Done():
 					return nil

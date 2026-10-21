@@ -9,10 +9,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // RuntimeOwnerRevocation identifies the Company-scoped execution authority.
@@ -36,7 +36,7 @@ func CancelRuntimeOwnerRunsInTx(
 	if err != nil {
 		return nil, fmt.Errorf("list removed member runtime Runs: %w", err)
 	}
-	return cancelRunCandidatesInTx(ctx, q, pending, input.CompanyID, candidates, "runtime_owner_inactive")
+	return cancelRunCandidatesInTx(ctx, q, pending, candidates, "runtime_owner_inactive")
 }
 
 // RunReasonProjectAccessRevoked is the reason a member's Runs on a Project
@@ -92,7 +92,13 @@ func CancelProjectAccessRevokedRunsInTx(
 	if err != nil {
 		return nil, nil, err
 	}
-	cancelled, err := cancelRunCandidatesInTx(ctx, q, pending, input.CompanyID, candidates, RunReasonProjectAccessRevoked)
+	cancelled, err := cancelRunCandidatesInTx(
+		ctx,
+		q,
+		pending,
+		candidates,
+		RunReasonProjectAccessRevoked,
+	)
 	if err != nil || !notify {
 		return cancelled, nil, err
 	}
@@ -161,7 +167,15 @@ func FailRunForNoEligibleResolverInTx(
 	if err != nil {
 		return nil, inbox.CreateResult{}, fmt.Errorf("fail Run without an eligible resolver: %w", err)
 	}
-	if err := recordRunChangeInTx(ctx, q, pending, events.SystemActor(), EventRunFailed, before[failed.ID], failed); err != nil {
+	if err := recordRunChangeInTx(
+		ctx,
+		q,
+		pending,
+		events.SystemActor(),
+		EventRunFailed,
+		before[failed.ID],
+		failed,
+	); err != nil {
 		return nil, inbox.CreateResult{}, err
 	}
 	if err := q.DeleteRunTokensByRun(ctx, failed.ID); err != nil {
@@ -197,7 +211,6 @@ func cancelRunCandidatesInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	pending *[]events.Event,
-	companyID uuid.UUID,
 	candidates []generated.Run,
 	reason string,
 ) ([]generated.Run, error) {

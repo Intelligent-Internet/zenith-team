@@ -31,7 +31,7 @@ class DoctorTests(unittest.TestCase):
         self.assertEqual(read_env(path), {"A": "1", "B": "two", "C": "x=y"})
 
     def test_reads_the_old_workload_secret_name(self):
-        path = self.write(".env", "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET=old\n")
+        path = self.write(".env", "ZENITH_TEAM_HUDDLE_AI_WORKLOAD_SECRET=old\n")
         self.assertEqual(read_env(path)["HUDDLE_AI_WORKLOAD_SECRET"], "old")
 
     def test_maps_websocket_urls_to_http(self):

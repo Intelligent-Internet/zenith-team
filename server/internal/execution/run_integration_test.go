@@ -16,13 +16,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/telemetry"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 func TestCancelRunRevokesTokens(t *testing.T) {
@@ -449,7 +449,8 @@ func TestEnqueueRunOnePendingPerTaskAgent(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("occupy pending slot: %v", err)
 	}
-	if len(pending) != 3 || pending[1].Name != "activity.created" || pending[0].Name != EventRunQueued || pending[2].Name != "canvas.changed" {
+	if len(pending) != 3 || pending[1].Name != "activity.created" || pending[0].Name != EventRunQueued ||
+		pending[2].Name != "canvas.changed" {
 		t.Fatalf("task run.queued events = %d, want Run, Activity and overview creation", len(pending))
 	}
 	for _, group := range events.GroupByTopic(pending) {
@@ -504,7 +505,7 @@ func TestEnqueueRunPrecedesItsUserItemAndFreezesThePrompt(t *testing.T) {
 	if first.ID == uuid.Nil || first.Status != "queued" || first.RuntimeID != h.fixture.RuntimeA {
 		t.Fatalf("first run = %+v, want queued on RuntimeA (codex)", first)
 	}
-	// ADR 0003: the prompt is frozen onto the Run at enqueue, so a later read
+	// The prompt is frozen onto the Run at enqueue, so a later read
 	// cannot change what the provider was asked.
 	var frozen struct {
 		Prompt string `json:"prompt"`

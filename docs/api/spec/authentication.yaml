@@ -211,7 +211,7 @@ paths:
       operationId: refreshSession
       summary: Rotate the session
       description: |
-        For `client: "web"` the server reads the `boardly_refresh` cookie and
+        For `client: "web"` the server reads the `zenith_team_refresh` cookie and
         **silently ignores** any `refreshToken` in the body. For
         `client: "desktop"` the body's `refreshToken` is required.
 
@@ -222,8 +222,8 @@ paths:
         same child session and refresh token instead of treating the old token
         as a replay. Clear the identifier only after the new session is stored.
 
-        CSRF for this route validates against `boardly_refresh_csrf`, not
-        `boardly_csrf`.
+        CSRF for this route validates against `zenith_team_refresh_csrf`, not
+        `zenith_team_csrf`.
 
         Ordering note: `client` carries a struct-tag rule, which the binder
         enforces **before** the transport check — so a missing, empty, or
@@ -308,7 +308,7 @@ paths:
         For `client: "web"` the four auth cookies are always cleared, whether
         or not there was a session to revoke.
 
-        CSRF validates against `boardly_refresh_csrf`. As with refresh, the
+        CSRF validates against `zenith_team_refresh_csrf`. As with refresh, the
         struct-tag rule on `client` precedes the transport check.
       security: []
       requestBody:
@@ -338,15 +338,15 @@ paths:
       operationId: mintDaemonSession
       summary: Start the daemon's own session
       description: |
-        Starts a new session for the signed-in person, held by their daemon
-        (D31). The desktop app calls it after sign-in, and `zen daemon
+        Starts a new session for the signed-in person, held by their daemon.
+        The desktop app calls it after sign-in, and `zen daemon
         start` calls it when its home holds no `daemon-auth.json`; both
         store the answer there. The daemon renews it with
         `POST /auth/refresh` (`client: "desktop"`) like any bearer session,
         and a refresh keeps it a daemon session.
 
         A daemon session acts only on the daemon plane (`/api/v1/daemon/*`)
-        and, beside a live `X-Boardly-Run-Token` whose Run works for the same
+        and, beside a live `X-Zenith-Team-Run-Token` whose Run works for the same
         person, on the routes that accept a Run. Everywhere else it is
         `403 run_proof_required`; it is never its person.
 

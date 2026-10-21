@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type {
   components,
   operations,
@@ -44,11 +44,11 @@ const root = (companyId: string) =>
 const pagePath = (companyId: string, pageId: string) =>
   `${root(companyId)}/pages/${encodeURIComponent(pageId)}`;
 
-export const wikiApi = boardlyApi.injectEndpoints({
+export const wikiApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWikiCollections: builder.query<WikiCollectionList, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiCollectionList>(`${root(companyId)}/collections`),
           "Collections could not be loaded.",
@@ -62,7 +62,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string } & Omit<ListPagesQuery, "limit">
     >({
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiPageList>(`${root(companyId)}/pages`, {
               params: { ...query, limit: WIKI_PAGE_LIMIT },
@@ -78,7 +78,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string }
     >({
       queryFn: ({ companyId, pageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<WikiPageDetail>(pagePath(companyId, pageId)),
           "Page could not be loaded.",
         ),
@@ -92,7 +92,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string }
     >({
       queryFn: ({ companyId, pageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiPageLinks>(
               `${pagePath(companyId, pageId)}/links`,
@@ -107,7 +107,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
     }),
     getWikiGraph: builder.query<WikiGraphData, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<WikiGraphData>(`${root(companyId)}/graph`),
           "Graph could not be loaded.",
         ),
@@ -118,7 +118,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string } & ListRevisionsQuery
     >({
       queryFn: ({ companyId, pageId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiRevisionList>(
               `${pagePath(companyId, pageId)}/revisions`,
@@ -135,7 +135,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; request: PageCreate }
     >({
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<WikiPageDetail>(`${root(companyId)}/pages`, request),
           "Page could not be created.",
@@ -149,7 +149,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string }
     >({
       queryFn: ({ companyId, pageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiDocument>(
               `${pagePath(companyId, pageId)}/document`,
@@ -188,7 +188,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string; request: WikiDraftMetadata }
     >({
       queryFn: ({ companyId, pageId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<WikiDocument>(
               `${pagePath(companyId, pageId)}/document/metadata`,
@@ -236,7 +236,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, pageId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<WikiPageDetail>(
               `${pagePath(companyId, pageId)}/publish`,
@@ -261,7 +261,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, pageId, expectedRevision, archive }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<WikiPageDetail>(
               `${pagePath(companyId, pageId)}/${archive ? "archive" : "restore"}`,
@@ -279,7 +279,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string; favorite: boolean }
     >({
       queryFn: ({ companyId, pageId, favorite }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<void>(`${pagePath(companyId, pageId)}/favorite`, {
               favorite,
@@ -296,7 +296,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       { companyId: string; name: string }
     >({
       queryFn: ({ companyId, name }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<WikiCollection>(`${root(companyId)}/collections`, {
               name,
@@ -316,7 +316,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, collectionId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<WikiCollection>(
               `${root(companyId)}/collections/${encodeURIComponent(collectionId)}`,
@@ -337,7 +337,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, collectionId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(
               `${root(companyId)}/collections/${encodeURIComponent(collectionId)}`,
@@ -369,7 +369,7 @@ export const wikiApi = boardlyApi.injectEndpoints({
         expectedRevision,
         expectedSequence,
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<WikiDocument>(
               `${pagePath(companyId, pageId)}/restore-revision`,

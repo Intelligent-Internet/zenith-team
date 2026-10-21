@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // 000086 (ADR 0017) makes every existing Project restricted, gives every
@@ -45,12 +45,26 @@ func TestProjectAccessMigrationBackfillsAndRollsBack(t *testing.T) {
 		people[person.name] = id
 		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
 			id, person.name+"@backfill.example.com")
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role, status) VALUES ($1, $2, $3, $4)`,
-			f.CompanyA, id, person.role, person.status)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members (company_id, user_id, role, status) VALUES ($1, $2, $3, $4)`,
+			f.CompanyA,
+			id,
+			person.role,
+			person.status,
+		)
 	}
 	secondProjectID := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'second', 'Second')`,
-		secondProjectID, f.CompanyA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'second', 'Second')`,
+		secondProjectID,
+		f.CompanyA,
+	)
 
 	// A second Task whose chat outlives it: deleting the Task detaches the chat.
 	detachedConversationID, deletedTaskID := dbtest.NewUUID(t), dbtest.NewUUID(t)
@@ -123,7 +137,10 @@ func TestProjectAccessMigrationBackfillsAndRollsBack(t *testing.T) {
 		companyID, projectID, userID uuid.UUID
 	}
 	grants := map[grantKey][]string{}
-	rows, err := pool.Query(ctx, `SELECT company_id, project_id, user_id, permission FROM project_grants ORDER BY permission`)
+	rows, err := pool.Query(
+		ctx,
+		`SELECT company_id, project_id, user_id, permission FROM project_grants ORDER BY permission`,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +190,8 @@ func TestProjectAccessMigrationBackfillsAndRollsBack(t *testing.T) {
 	projectOf := func(table string, id uuid.UUID) uuid.NullUUID {
 		t.Helper()
 		var projectID uuid.NullUUID
-		if err := pool.QueryRow(ctx, `SELECT project_id FROM `+table+` WHERE id = $1`, id).Scan(&projectID); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT project_id FROM `+table+` WHERE id = $1`, id).
+			Scan(&projectID); err != nil {
 			t.Fatalf("read %s project: %v", table, err)
 		}
 		return projectID
@@ -208,7 +226,13 @@ func TestProjectAccessMigrationBackfillsAndRollsBack(t *testing.T) {
 	// The legacy pocket stays valid; a new Task chat must name its Project.
 	dbtest.AssertStatementRejected(t, ctx, pool, "23514",
 		`INSERT INTO conversations (company_id, kind, title) VALUES ($1, 'task', 'No project')`, f.CompanyA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE conversations SET title = 'Still detached' WHERE id = $1`, detachedConversationID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE conversations SET title = 'Still detached' WHERE id = $1`,
+		detachedConversationID,
+	)
 	// A live Task's chat can never lose its Project, whatever its age.
 	dbtest.AssertStatementRejected(t, ctx, pool, "23514",
 		`UPDATE conversations SET project_id = NULL WHERE id = $1`, f.ConversationA)
@@ -234,7 +258,11 @@ func TestProjectAccessMigrationBackfillsAndRollsBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	if outputAccessAfter != outputAccessBefore {
-		t.Errorf("rolled back output_access differs from 000036:\n%s\nwant\n%s", outputAccessAfter, outputAccessBefore)
+		t.Errorf(
+			"rolled back output_access differs from 000036:\n%s\nwant\n%s",
+			outputAccessAfter,
+			outputAccessBefore,
+		)
 	}
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM pg_class
 		WHERE relname IN ('project_access', 'task_access', 'conversation_readers', 'attachment_access')`).

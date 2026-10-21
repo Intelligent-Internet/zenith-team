@@ -30,3 +30,11 @@ Retrieved 2026-09-22. Facebook and LinkedIn reuse the existing bundled assets.
   Geometry, proportions and viewBox are unchanged; black fill becomes
   `currentColor` for legibility on light and dark surfaces. Used to identify
   the GitHub integration, subject to GitHub's brand guidelines.
+- `linux.svg`: a vector copy of Tux, the Linux penguin. Tux was drawn by
+  Larry Ewing (lewing@isc.tamu.edu) with The GIMP; he allows use and changes
+  as long as he and The GIMP are credited. Linux® is the registered trademark
+  of Linus Torvalds.
+
+Every other mark here (Facebook, Gmail, Google, Google Calendar, Google Drive,
+Google Maps, LinkedIn, Slack) belongs to its owner and is used
+only to name the matching product or service.

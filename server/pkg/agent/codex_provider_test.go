@@ -1512,7 +1512,7 @@ func TestCodexDeliverableOutputExcludesNarration(t *testing.T) {
 				t.Fatalf("Result.Output = %q, want %q", got, tc.want)
 			}
 			// Narrowing delivery must not narrow the transcript: both messages
-			// still stream to the timeline the Boardly UI renders.
+			// still stream to the timeline the Zenith Team UI renders.
 			if len(streamed) != 2 || streamed[0] != "Let me check the logs." {
 				t.Fatalf("expected both agent messages streamed, got %q", streamed)
 			}
@@ -2123,7 +2123,7 @@ func TestCodexStartOrResumeThreadResumesPriorThread(t *testing.T) {
 	}
 }
 
-const codexRuntimeBriefCanary = "BOARDLY-RUNTIME-BRIEF-CANARY"
+const codexRuntimeBriefCanary = "ZENITH-TEAM-RUNTIME-BRIEF-CANARY"
 
 func assertDeveloperInstructions(t *testing.T, params map[string]any, want string) {
 	t.Helper()
@@ -4191,8 +4191,8 @@ func TestCodexRawNormalizesPlanWebSearchAndMCPToolActivity(t *testing.T) {
 
 	for _, event := range []string{
 		`{"jsonrpc":"2.0","method":"item/completed","params":{"item":{"type":"plan","id":"plan-1","text":"Inspect, change, verify."}}}`,
-		`{"jsonrpc":"2.0","method":"item/started","params":{"item":{"type":"webSearch","id":"search-1","query":"Boardly transcript","action":{"type":"search","query":"Boardly transcript","queries":["Boardly transcript"]},"results":null}}}`,
-		`{"jsonrpc":"2.0","method":"item/completed","params":{"item":{"type":"webSearch","id":"search-1","query":"Boardly transcript","action":{"type":"search","query":"Boardly transcript","queries":["Boardly transcript"]},"results":[{"title":"Run stream","url":"https://example.test/run","snippet":"one item"}]}}}`,
+		`{"jsonrpc":"2.0","method":"item/started","params":{"item":{"type":"webSearch","id":"search-1","query":"Zenith Team transcript","action":{"type":"search","query":"Zenith Team transcript","queries":["Zenith Team transcript"]},"results":null}}}`,
+		`{"jsonrpc":"2.0","method":"item/completed","params":{"item":{"type":"webSearch","id":"search-1","query":"Zenith Team transcript","action":{"type":"search","query":"Zenith Team transcript","queries":["Zenith Team transcript"]},"results":[{"title":"Run stream","url":"https://example.test/run","snippet":"one item"}]}}}`,
 		`{"jsonrpc":"2.0","method":"item/started","params":{"item":{"type":"mcpToolCall","id":"mcp-1","server":"github","tool":"get_issue","arguments":{"number":42},"status":"inProgress"}}}`,
 	} {
 		c.handleLine(event)
@@ -4211,7 +4211,7 @@ func TestCodexRawNormalizesPlanWebSearchAndMCPToolActivity(t *testing.T) {
 	}
 	searchStart := messages[1]
 	if searchStart.Type != MessageToolUse || searchStart.ItemKey != "search-1" ||
-		searchStart.Tool != "web_search" || searchStart.Input["query"] != "Boardly transcript" {
+		searchStart.Tool != "web_search" || searchStart.Input["query"] != "Zenith Team transcript" {
 		t.Fatalf("web-search start = %#v", searchStart)
 	}
 	searchResult := messages[2]
@@ -5256,9 +5256,9 @@ func TestEnsureCodexMcpConfigEmptyClearsBlock(t *testing.T) {
 	// `[mcp_servers.user]`) is left untouched.
 	tmp := filepath.Join(t.TempDir(), "config.toml")
 	initial := "sandbox_mode = \"workspace-write\"\n\n" +
-		boardlyCodexMcpBeginMarker + "\n" +
+		zenithTeamCodexMcpBeginMarker + "\n" +
 		"[mcp_servers.fetch]\ncommand = \"uvx\"\n" +
-		boardlyCodexMcpEndMarker + "\n\n" +
+		zenithTeamCodexMcpEndMarker + "\n\n" +
 		"[mcp_servers.user_global]\ncommand = \"keep\"\n"
 	if err := os.WriteFile(tmp, []byte(initial), 0o600); err != nil {
 		t.Fatalf("seed config: %v", err)
@@ -5272,7 +5272,7 @@ func TestEnsureCodexMcpConfigEmptyClearsBlock(t *testing.T) {
 		t.Fatalf("read after: %v", err)
 	}
 	got := string(data)
-	if strings.Contains(got, boardlyCodexMcpBeginMarker) {
+	if strings.Contains(got, zenithTeamCodexMcpBeginMarker) {
 		t.Fatalf("managed block should be cleared, got:\n%s", got)
 	}
 	if !strings.Contains(got, "[mcp_servers.user_global]") {
@@ -5304,7 +5304,8 @@ func TestEnsureCodexMcpConfigWritesManagedBlock(t *testing.T) {
 	}
 	got := string(data)
 
-	if !strings.Contains(got, boardlyCodexMcpBeginMarker) || !strings.Contains(got, boardlyCodexMcpEndMarker) {
+	if !strings.Contains(got, zenithTeamCodexMcpBeginMarker) ||
+		!strings.Contains(got, zenithTeamCodexMcpEndMarker) {
 		t.Fatalf("expected managed block markers, got:\n%s", got)
 	}
 	alphaIdx := strings.Index(got, "[mcp_servers.alpha]")
@@ -5635,7 +5636,7 @@ func TestEnsureCodexMcpConfigAbsentLeavesUserTablesAlone(t *testing.T) {
 		if !strings.Contains(got, "[mcp_servers.user_global]") {
 			t.Fatalf("absent mcp_config (%q) must leave user MCP tables alone, got:\n%s", string(raw), got)
 		}
-		if strings.Contains(got, boardlyCodexMcpBeginMarker) {
+		if strings.Contains(got, zenithTeamCodexMcpBeginMarker) {
 			t.Fatalf("absent mcp_config (%q) must not write managed markers, got:\n%s", string(raw), got)
 		}
 	}
@@ -5668,8 +5669,8 @@ func TestEnsureCodexMcpConfigEmptyManagedSetStripsUserMcp(t *testing.T) {
 		if strings.Contains(got, "user_global") {
 			t.Fatalf("managed empty set (%q) must strip user MCP tables, got:\n%s", string(raw), got)
 		}
-		if !strings.Contains(got, boardlyCodexMcpBeginMarker) ||
-			!strings.Contains(got, boardlyCodexMcpEndMarker) {
+		if !strings.Contains(got, zenithTeamCodexMcpBeginMarker) ||
+			!strings.Contains(got, zenithTeamCodexMcpEndMarker) {
 			t.Fatalf(
 				"managed empty set (%q) must still write markers so future runs find them, got:\n%s",
 				string(raw),
@@ -6787,7 +6788,12 @@ func TestCodexFinalProofSurvivesCompletedItemConversion(t *testing.T) {
 			c.notificationProtocol = "raw"
 			var messages []providerMessage
 			c.onMessage = func(message providerMessage) { messages = append(messages, message) }
-			c.handleLine(fmt.Sprintf(`{"jsonrpc":"2.0","method":"item/completed","params":{"item":{"type":"agentMessage","id":"answer","text":"Hello","phase":%q}}}`, phase))
+			c.handleLine(
+				fmt.Sprintf(
+					`{"jsonrpc":"2.0","method":"item/completed","params":{"item":{"type":"agentMessage","id":"answer","text":"Hello","phase":%q}}}`,
+					phase,
+				),
+			)
 			if len(messages) != 1 {
 				t.Fatalf("messages = %d, want 1", len(messages))
 			}
@@ -6812,7 +6818,13 @@ func TestCodexToolStartRetainsResearchTargetBeforeResult(t *testing.T) {
 	t.Parallel()
 	sequence := 0
 	input := map[string]any{"action": map[string]any{"type": "openPage", "url": "https://example.com/about"}}
-	start := providerMessage{Type: providerMessageToolUse, ItemKey: "web-1", CallID: "web-1", Tool: "web_search", Input: input}
+	start := providerMessage{
+		Type:    providerMessageToolUse,
+		ItemKey: "web-1",
+		CallID:  "web-1",
+		Tool:    "web_search",
+		Input:   input,
+	}
 	event, ok := codexExecutionEvent(start, &sequence)
 	item, typed := event.(CompletedItem)
 	if !ok || !typed || len(item.Parts) != 1 {
@@ -6826,7 +6838,17 @@ func TestCodexToolStartRetainsResearchTargetBeforeResult(t *testing.T) {
 	if replay.(CompletedItem).Key != item.Key {
 		t.Fatal("duplicate start changed identity")
 	}
-	end, _ := codexExecutionEvent(providerMessage{Type: providerMessageToolResult, ItemKey: "web-1", CallID: "web-1", Tool: "web_search", Input: input, Status: "completed"}, &sequence)
+	end, _ := codexExecutionEvent(
+		providerMessage{
+			Type:    providerMessageToolResult,
+			ItemKey: "web-1",
+			CallID:  "web-1",
+			Tool:    "web_search",
+			Input:   input,
+			Status:  "completed",
+		},
+		&sequence,
+	)
 	if end.(CompletedItem).Key == item.Key {
 		t.Fatal("start collides with immutable result item")
 	}

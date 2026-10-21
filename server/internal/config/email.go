@@ -8,11 +8,6 @@ import (
 	"time"
 )
 
-const (
-	defaultEmailVerificationTemplateID = "00000000-0000-4000-8000-000000000001"
-	defaultPasswordResetTemplateID     = "00000000-0000-4000-8000-000000000002"
-)
-
 type EmailVerificationConfig struct {
 	Enabled                     bool
 	Provider                    string
@@ -87,11 +82,17 @@ func loadEmailVerificationConfig(lookup LookupEnv) (EmailVerificationConfig, err
 			"AUTH_EMAIL_VERIFICATION_SECRET must contain at least 32 bytes",
 		)
 	}
+	// Templates live in the operator's own Resend account; their HTML ships
+	// in docs/branding/emails.
 	if templateID == "" {
-		templateID = defaultEmailVerificationTemplateID
+		return EmailVerificationConfig{}, errors.New(
+			"AUTH_EMAIL_VERIFICATION_TEMPLATE_ID is required when email verification is enabled",
+		)
 	}
 	if passwordResetTemplateID == "" {
-		passwordResetTemplateID = defaultPasswordResetTemplateID
+		return EmailVerificationConfig{}, errors.New(
+			"AUTH_PASSWORD_RESET_TEMPLATE_ID is required when email verification is enabled",
+		)
 	}
 	ttl, err := boundedSeconds(
 		lookup, "AUTH_EMAIL_VERIFICATION_TTL_SECONDS", 10*time.Minute, time.Minute, 30*time.Minute,

@@ -6,14 +6,14 @@ import (
 
 	"github.com/pelletier/go-toml/v2"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // ensureCodexConnectorOnlyConfig replaces the run-local copy of config.toml
 // with the small model/auth surface needed to reach the selected provider plus
 // an exact deny-by-default execution policy. Unknown inherited keys are
 // intentionally discarded: a future Codex feature must not silently widen a
-// scheduled Run before Boardly has reviewed it. Inside the daemon's macOS
+// scheduled Run before Zenith Team has reviewed it. Inside the daemon's macOS
 // sandbox Codex's read-only mode (its own Seatbelt) cannot start, so the
 // config says danger-full-access and the daemon's profile fences writes.
 func ensureCodexConnectorOnlyConfig(configPath string, sandboxed bool) error {

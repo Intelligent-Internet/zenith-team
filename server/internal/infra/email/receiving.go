@@ -43,7 +43,7 @@ type ReceivedAttachment struct {
 	ContentID   string `json:"content_id"`
 }
 
-// ReceivedEmail is provider-derived content fetched only after Boardly has
+// ReceivedEmail is provider-derived content fetched only after Zenith Team has
 // authorized a Company-scoped message index.
 type ReceivedEmail struct {
 	ID          string

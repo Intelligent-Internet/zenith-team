@@ -16,13 +16,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	conversationdomain "boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	conversationdomain "github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestFiringWorkerIsolatesBrokenSchedule(t *testing.T) {
@@ -1006,9 +1006,9 @@ func TestSchedulePauseCancelsDeferredRetry(t *testing.T) {
 }
 
 // This is an explicit load gate, separate from the ordinary integration suite:
-// BOARDLY_SCHEDULE_LOAD_TEST=1 ... -run TestScheduleBurstAcrossTwoReplicas
+// ZENITH_TEAM_SCHEDULE_LOAD_TEST=1 ... -run TestScheduleBurstAcrossTwoReplicas
 func TestScheduleBurstAcrossTwoReplicas(t *testing.T) {
-	if os.Getenv("BOARDLY_SCHEDULE_LOAD_TEST") != "1" {
+	if os.Getenv("ZENITH_TEAM_SCHEDULE_LOAD_TEST") != "1" {
 		t.Skip("opt in to the 1000 Schedule load gate")
 	}
 	pool, store, f := startSchedulePostgres(t)

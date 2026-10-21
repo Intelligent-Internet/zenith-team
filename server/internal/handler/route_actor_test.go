@@ -13,14 +13,14 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // routeActorProof is a well-formed Run proof; the resolvers below decide
@@ -91,7 +91,7 @@ func routeActorCompanyService() *companyServiceStub {
 	return &companyServiceStub{authorize: member, requirePermission: member}
 }
 
-// IA-FR1, IA-AC2: every mounted route says whether it accepts a Run, once,
+// Every mounted route says whether it accepts a Run, once,
 // and the table names no route that is not mounted.
 func TestEveryRouteDeclaresItsActorType(t *testing.T) {
 	t.Parallel()
@@ -118,7 +118,7 @@ func TestEveryRouteDeclaresItsActorType(t *testing.T) {
 	}
 }
 
-// IA-FR1, IA-FR2, IA-AC1: a Run proof on a person route is refused before
+// A Run proof on a person route is refused before
 // authentication, so it reaches no service and no proof is resolved.
 func TestPersonRoutesRefuseARunProof(t *testing.T) {
 	t.Parallel()
@@ -161,7 +161,7 @@ func TestPersonRoutesRefuseARunProof(t *testing.T) {
 	}
 }
 
-// The deciding, editing and Project-making routes IA-AC1 names are person
+// The deciding, editing and Project-making routes are person
 // routes by name, so a later edit of the table cannot quietly open one.
 func TestDecidingRoutesArePersonRoutes(t *testing.T) {
 	t.Parallel()
@@ -256,7 +256,7 @@ func (p runRouteProbe) request(t *testing.T, route string) *http.Request {
 	return request
 }
 
-// IA-FR1: a run route is one whose handler reads the proof. Sent a proof,
+// A run route is one whose handler reads the proof. Sent a proof,
 // every run route resolves it, so none acts as the plain member.
 func TestRunRoutesResolveTheProof(t *testing.T) {
 	t.Parallel()
@@ -331,7 +331,7 @@ func (s runServiceGetStub) Get(context.Context, auth.UserPrincipal, uuid.UUID) (
 	return execution.RunView{}, nil
 }
 
-// IA-FR3, IA-AC3: with a proof, a Run's own reads must name its own Run or
+// With a proof, a Run's own reads must name its own Run or
 // chat. A Run tagged in a channel reads its own Run record, as the Run
 // channel offers every Run `zen run get`, but none of the chat reads.
 // Without a proof the read is the member's own and is untouched.
@@ -580,7 +580,7 @@ func TestUploadsCheckTheRunProofBearer(t *testing.T) {
 						test.wantCall,
 					)
 				}
-				// IA-FR4: a completion the member's own Run proves is
+				// A completion the member's own Run proves is
 				// recorded as the Run's; one with no proof is the member's.
 				var wantActor events.Actor
 				if step == "complete" && test.wantCall && test.proof {
@@ -595,7 +595,7 @@ func TestUploadsCheckTheRunProofBearer(t *testing.T) {
 }
 
 // runWriteActivity says, for every run route that writes, how the Activity
-// it records names the Run (IA-FR4, D31). A route either hands the proof's
+// it records names the Run. A route either hands the proof's
 // Run to the service that records it, and the named integration test reads
 // the stored rows back, or it writes no Activity row, and the entry says
 // why.
@@ -671,7 +671,7 @@ var runWriteActivity = map[string]struct {
 	},
 }
 
-// IA-FR4: every run route that writes says how its Activity names the Run,
+// Every run route that writes says how its Activity names the Run,
 // so a new one cannot record a Run's write as the member's own without the
 // table saying so. The Task create is the one route that turns the proof
 // into a scope itself, so that scope must carry the Run.

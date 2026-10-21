@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestStudioEditorsOnOneRuntimeUseDifferentAgentProfiles(t *testing.T) {
@@ -20,6 +20,7 @@ func TestStudioEditorsOnOneRuntimeUseDifferentAgentProfiles(t *testing.T) {
 		t.Skip("Node unavailable")
 	}
 	tools := newLocalToolService(t.TempDir())
+	tools.studioOrigin = testStudioOrigin
 	release := studioRelease()
 	entry := filepath.Join(tools.root, "bridge.cjs")
 	// This child exercises production pipe routing, not upstream sign-in.

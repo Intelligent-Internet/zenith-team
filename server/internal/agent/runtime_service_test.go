@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestRuntimeFromStoredRowProjectsRegistrationMetadata(t *testing.T) {
@@ -33,8 +33,10 @@ func TestRuntimeFromStoredRowProjectsRegistrationMetadata(t *testing.T) {
 		{
 			// The daemon sends an empty launchedBy for a terminal start; the
 			// projection names it.
-			name:                "terminal registration",
-			metadata:            []byte(`{"version":"1.2.3","cliVersion":"0.9.0","launchedBy":"","deviceName":"x"}`),
+			name: "terminal registration",
+			metadata: []byte(
+				`{"version":"1.2.3","cliVersion":"0.9.0","launchedBy":"","deviceName":"x"}`,
+			),
 			wantProviderVersion: "1.2.3",
 			wantCLIVersion:      "0.9.0",
 			wantLaunchedBy:      RuntimeLaunchedByCLI,
@@ -121,11 +123,11 @@ func TestRuntimeWithOwnerJoinsTheOwningUser(t *testing.T) {
 	withOwner := runtimeWithOwner(
 		generated.Runtime{Name: "Claude (host)"},
 		uuid.NullUUID{UUID: ownerID, Valid: true},
-		pgtype.Text{String: "Duong Phung", Valid: true},
+		pgtype.Text{String: "Alex Rivera", Valid: true},
 		pgtype.Text{String: "https://cdn.example/avatar.png", Valid: true},
 	)
 	if withOwner.Owner == nil || withOwner.Owner.ID != ownerID ||
-		withOwner.Owner.Kind != "user" || withOwner.Owner.DisplayName != "Duong Phung" ||
+		withOwner.Owner.Kind != "user" || withOwner.Owner.DisplayName != "Alex Rivera" ||
 		withOwner.Owner.AvatarURL == nil || *withOwner.Owner.AvatarURL != "https://cdn.example/avatar.png" {
 		t.Fatalf("runtimeWithOwner().Owner = %+v", withOwner.Owner)
 	}
@@ -156,12 +158,15 @@ func TestRuntimeWithOwnerProjectsTheWholeRowForItsRegistrant(t *testing.T) {
 		Metadata:                []byte(`{"version":"1.2.3","cliVersion":"0.9.0","tools":[{"name":"gh"}]}`),
 	}
 	ownerRef := uuid.NullUUID{UUID: ownerID, Valid: true}
-	name := pgtype.Text{String: "Quy", Valid: true}
+	name := pgtype.Text{String: "Sam", Valid: true}
 
 	registrant := runtimeWithOwner(row, ownerRef, name, pgtype.Text{})
-	if registrant.SignIn == nil || registrant.SignIn.State != "signed_in" || registrant.ProviderVersion != "1.2.3" ||
-		len(registrant.Tools) != 1 || registrant.DeviceInfo != "Office Mac · 0.9.0" ||
-		registrant.Owner == nil || registrant.Owner.DisplayName != "Quy" {
+	if registrant.SignIn == nil || registrant.SignIn.State != "signed_in" ||
+		registrant.ProviderVersion != "1.2.3" ||
+		len(registrant.Tools) != 1 ||
+		registrant.DeviceInfo != "Office Mac · 0.9.0" ||
+		registrant.Owner == nil ||
+		registrant.Owner.DisplayName != "Sam" {
 		t.Fatalf("registrant projection = %+v", registrant)
 	}
 }

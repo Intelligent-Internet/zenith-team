@@ -9,9 +9,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // ListDependencies reads both dependency directions of one Task. Inside a
@@ -42,7 +42,6 @@ func (s *DefaultTaskService) ListDependencies(
 func (s *DefaultTaskService) ListDependencyGraph(
 	ctx context.Context,
 	principal auth.UserPrincipal,
-	options DependencyGraphOptions,
 ) (DependencyGraph, error) {
 	queries := s.store.Queries()
 	if _, err := queries.GetActiveCompanyMembership(ctx, generated.GetActiveCompanyMembershipParams{
@@ -52,7 +51,7 @@ func (s *DefaultTaskService) ListDependencyGraph(
 	} else if err != nil {
 		return DependencyGraph{}, fmt.Errorf("authorize Task dependency graph: %w", err)
 	}
-	result, err := listDependencyGraph(ctx, queries, principal, options)
+	result, err := listDependencyGraph(ctx, queries, principal)
 	if err != nil {
 		return DependencyGraph{}, fmt.Errorf("list Task dependency graph: %w", err)
 	}

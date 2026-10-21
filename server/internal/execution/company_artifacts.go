@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	dbgen "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // CompanyArtifactListOptions pages the Company-wide Artifact list; Search
@@ -146,7 +146,12 @@ type ArtifactLibrarySource struct {
 	Detail string `json:"detail"`
 }
 
-func enrichArtifactLibrary(ctx context.Context, q *dbgen.Queries, p auth.UserPrincipal, items []ArtifactRunResult) error {
+func enrichArtifactLibrary(
+	ctx context.Context,
+	q *dbgen.Queries,
+	p auth.UserPrincipal,
+	items []ArtifactRunResult,
+) error {
 	if len(items) == 0 {
 		return nil
 	}
@@ -154,13 +159,25 @@ func enrichArtifactLibrary(ctx context.Context, q *dbgen.Queries, p auth.UserPri
 	for i, item := range items {
 		ids[i] = item.Artifact.ID
 	}
-	rows, err := q.ListArtifactLibraryMetadata(ctx, dbgen.ListArtifactLibraryMetadataParams{CompanyID: p.CompanyID, ActorUserID: p.UserID, OutputIds: ids})
+	rows, err := q.ListArtifactLibraryMetadata(
+		ctx,
+		dbgen.ListArtifactLibraryMetadataParams{CompanyID: p.CompanyID, ActorUserID: p.UserID, OutputIds: ids},
+	)
 	if err != nil {
 		return fmt.Errorf("read Artifact library metadata: %w", err)
 	}
 	metadata := make(map[uuid.UUID]*ArtifactLibraryMetadata, len(rows))
 	for _, row := range rows {
-		metadata[row.ID] = &ArtifactLibraryMetadata{OwnerName: row.OwnerName, Owned: row.Owned, CanShare: row.CanShare, Source: ArtifactLibrarySource{Type: row.SourceType, Title: row.SourceTitle, Detail: row.SourceDetail}}
+		metadata[row.ID] = &ArtifactLibraryMetadata{
+			OwnerName: row.OwnerName,
+			Owned:     row.Owned,
+			CanShare:  row.CanShare,
+			Source: ArtifactLibrarySource{
+				Type:   row.SourceType,
+				Title:  row.SourceTitle,
+				Detail: row.SourceDetail,
+			},
+		}
 	}
 	for i := range items {
 		items[i].Library = metadata[items[i].Artifact.ID]

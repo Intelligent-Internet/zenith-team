@@ -10,11 +10,15 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
+
+// studioTestOrigin is the Studio API origin a server would configure; the
+// daemon sends it with every Studio project request.
+const studioTestOrigin = "https://studio.example"
 
 func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 	t.Parallel()
@@ -50,7 +54,12 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		return id, token
 	}
 	runID, token := seed(f.DirectConversationA)
-	request := protocol.StudioProjectRequest{Action: "reserve", Title: "New campaign", RunToken: token}
+	request := protocol.StudioProjectRequest{
+		APIOrigin: studioTestOrigin,
+		Action:    "reserve",
+		Title:     "New campaign",
+		RunToken:  token,
+	}
 	access := StudioProjectAccess{RunID: runID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA}
 	var wg sync.WaitGroup
 	results := make(chan protocol.StudioProject, 2)
@@ -82,6 +91,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		principal,
 		access,
 		protocol.StudioProjectRequest{
+			APIOrigin: studioTestOrigin,
 			Action:    "bind",
 			RunToken:  token,
 			BindingID: binding.ID,
@@ -96,6 +106,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		principal,
 		access,
 		protocol.StudioProjectRequest{
+			APIOrigin: studioTestOrigin,
 			Action:    "bind",
 			RunToken:  token,
 			BindingID: binding.ID,
@@ -113,7 +124,12 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		ctx,
 		principal,
 		StudioProjectAccess{RunID: nextID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
-		protocol.StudioProjectRequest{Action: "reserve", Title: "Different title", RunToken: nextToken},
+		protocol.StudioProjectRequest{
+			APIOrigin: studioTestOrigin,
+			Action:    "reserve",
+			Title:     "Different title",
+			RunToken:  nextToken,
+		},
 	)
 	if err != nil || next.ProjectID != projectID || next.CanCreate {
 		t.Fatalf("continuation = %+v, %v", next, err)
@@ -129,7 +145,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		ctx,
 		principal,
 		StudioProjectAccess{RunID: nextID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
-		protocol.StudioProjectRequest{Action: "get", RunToken: nextToken},
+		protocol.StudioProjectRequest{APIOrigin: studioTestOrigin, Action: "get", RunToken: nextToken},
 	)
 	if err != nil || local.ProjectID != projectID {
 		t.Fatalf("local legacy origin = %+v, %v", local, err)
@@ -138,7 +154,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		t,
 		ctx,
 		pool,
-		`UPDATE conversation_studio_projects SET api_origin='https://api-agent.ii.inc' WHERE id=$1`,
+		`UPDATE conversation_studio_projects SET api_origin='https://studio.example' WHERE id=$1`,
 		binding.ID,
 	)
 	var otherConversation uuid.UUID
@@ -151,7 +167,12 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		ctx,
 		principal,
 		StudioProjectAccess{RunID: otherID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
-		protocol.StudioProjectRequest{Action: "reserve", Title: "New campaign", RunToken: otherToken},
+		protocol.StudioProjectRequest{
+			APIOrigin: studioTestOrigin,
+			Action:    "reserve",
+			Title:     "New campaign",
+			RunToken:  otherToken,
+		},
 	)
 	if err != nil || !other.CanCreate || other.ID == binding.ID || other.ProjectID != "" {
 		t.Fatalf("new conversation = %+v, %v", other, err)
@@ -161,6 +182,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		principal,
 		StudioProjectAccess{RunID: otherID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
 		protocol.StudioProjectRequest{
+			APIOrigin: studioTestOrigin,
 			Action:    "bind",
 			RunToken:  otherToken,
 			BindingID: other.ID,
@@ -185,7 +207,11 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 				ctx,
 				test.actor,
 				test.access,
-				protocol.StudioProjectRequest{Action: "get", RunToken: test.token},
+				protocol.StudioProjectRequest{
+					APIOrigin: studioTestOrigin,
+					Action:    "get",
+					RunToken:  test.token,
+				},
 			)
 			if !errors.Is(err, ErrStudioProjectNotFound) {
 				t.Fatalf("access = %v", err)
@@ -198,7 +224,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		ctx,
 		principal,
 		StudioProjectAccess{RunID: nextID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
-		protocol.StudioProjectRequest{Action: "get", RunToken: nextToken},
+		protocol.StudioProjectRequest{APIOrigin: studioTestOrigin, Action: "get", RunToken: nextToken},
 	); err != nil {
 		t.Fatalf("frozen Studio selection: %v", err)
 	}
@@ -208,7 +234,7 @@ func TestStudioProjectIsBoundToConversationAcrossRuns(t *testing.T) {
 		ctx,
 		principal,
 		StudioProjectAccess{RunID: nextID, RuntimeID: f.RuntimeA, DaemonID: f.DaemonA},
-		protocol.StudioProjectRequest{Action: "get", RunToken: nextToken},
+		protocol.StudioProjectRequest{APIOrigin: studioTestOrigin, Action: "get", RunToken: nextToken},
 	); !errors.Is(
 		err,
 		ErrStudioProjectNotFound,
@@ -246,7 +272,7 @@ func TestStudioProjectForChannelAgentInvocation(t *testing.T) {
 	)
 	svc := NewStudioProjectService(f.store)
 	access := StudioProjectAccess{RunID: run.ID, RuntimeID: f.seed.RuntimeA, DaemonID: f.seed.DaemonA}
-	for _, origin := range []string{"https://studio-dev.example.com", "http://localhost:8000"} {
+	for _, origin := range []string{"https://studio-dev.example", "http://localhost:8000"} {
 		project, err := svc.Resolve(
 			f.ctx,
 			f.a,
@@ -300,7 +326,7 @@ func TestStudioProjectForChannelAgentInvocation(t *testing.T) {
 		f.ctx,
 		f.b,
 		access,
-		protocol.StudioProjectRequest{Action: "get", RunToken: token},
+		protocol.StudioProjectRequest{Action: "get", RunToken: token, APIOrigin: "http://localhost:8000"},
 	); !errors.Is(
 		err,
 		ErrStudioProjectNotFound,
@@ -312,7 +338,7 @@ func TestStudioProjectForChannelAgentInvocation(t *testing.T) {
 		f.ctx,
 		f.a,
 		access,
-		protocol.StudioProjectRequest{Action: "get", RunToken: token},
+		protocol.StudioProjectRequest{Action: "get", RunToken: token, APIOrigin: "http://localhost:8000"},
 	); !errors.Is(
 		err,
 		ErrStudioProjectNotFound,

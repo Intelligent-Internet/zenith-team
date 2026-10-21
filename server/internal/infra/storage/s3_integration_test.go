@@ -11,20 +11,20 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
 )
 
 func TestS3AgainstLocalStore(t *testing.T) {
-	endpoint := os.Getenv("BOARDLY_TEST_S3_ENDPOINT")
+	endpoint := os.Getenv("ZENITH_TEAM_TEST_S3_ENDPOINT")
 	if endpoint == "" {
-		t.Skip("BOARDLY_TEST_S3_ENDPOINT is not configured")
+		t.Skip("ZENITH_TEAM_TEST_S3_ENDPOINT is not configured")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	store, err := NewS3(ctx, S3Config{
-		Bucket: os.Getenv("BOARDLY_TEST_S3_BUCKET"), Region: "us-east-1", Endpoint: endpoint,
-		AccessKeyID:     os.Getenv("BOARDLY_TEST_S3_ACCESS_KEY_ID"),
-		SecretAccessKey: os.Getenv("BOARDLY_TEST_S3_SECRET_ACCESS_KEY"), UsePathStyle: true,
+		Bucket: os.Getenv("ZENITH_TEAM_TEST_S3_BUCKET"), Region: "us-east-1", Endpoint: endpoint,
+		AccessKeyID:     os.Getenv("ZENITH_TEAM_TEST_S3_ACCESS_KEY_ID"),
+		SecretAccessKey: os.Getenv("ZENITH_TEAM_TEST_S3_SECRET_ACCESS_KEY"), UsePathStyle: true,
 	})
 	if err != nil {
 		t.Fatalf("NewS3() error = %v", err)
@@ -38,9 +38,9 @@ func TestS3AgainstLocalStore(t *testing.T) {
 			"AUTH_CSRF_SECRET":             "01234567890123456789012345678901",
 			"STORAGE_DRIVER":               "local",
 			"STORAGE_S3_ENDPOINT":          endpoint,
-			"STORAGE_S3_BUCKET":            os.Getenv("BOARDLY_TEST_S3_BUCKET"),
-			"STORAGE_S3_ACCESS_KEY_ID":     os.Getenv("BOARDLY_TEST_S3_ACCESS_KEY_ID"),
-			"STORAGE_S3_SECRET_ACCESS_KEY": os.Getenv("BOARDLY_TEST_S3_SECRET_ACCESS_KEY"),
+			"STORAGE_S3_BUCKET":            os.Getenv("ZENITH_TEAM_TEST_S3_BUCKET"),
+			"STORAGE_S3_ACCESS_KEY_ID":     os.Getenv("ZENITH_TEAM_TEST_S3_ACCESS_KEY_ID"),
+			"STORAGE_S3_SECRET_ACCESS_KEY": os.Getenv("ZENITH_TEAM_TEST_S3_SECRET_ACCESS_KEY"),
 		}
 		cfg, err := config.Load(func(key string) (string, bool) {
 			value, ok := values[key]
@@ -60,7 +60,7 @@ func TestS3AgainstLocalStore(t *testing.T) {
 func testLocalRoundTrip(t *testing.T, ctx context.Context, store *S3) {
 	t.Helper()
 
-	key := "integration/boardly-attachment"
+	key := "integration/zenith-team-attachment"
 	payload := []byte("silo attachment")
 	_ = store.DeleteObject(ctx, key)
 	t.Cleanup(func() { _ = store.DeleteObject(context.Background(), key) })

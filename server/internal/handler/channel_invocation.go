@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 func (h *Handler) listChannelInvocations(c *gin.Context) {
@@ -21,6 +21,7 @@ func (h *Handler) listChannelInvocations(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) getChannelAgentActivity(c *gin.Context) {
 	p, id, ok := discussionIdentity(c)
 	if !ok {
@@ -31,7 +32,11 @@ func (h *Handler) getChannelAgentActivity(c *gin.Context) {
 		writeDiscussionError(c, conversation.ErrDiscussionNotFound)
 		return
 	}
-	result, err := h.ChannelInvocationService.Activity(c.Request.Context(), p, conversation.ChannelAgentTarget{ChannelID: id, AgentID: agentID})
+	result, err := h.ChannelInvocationService.Activity(
+		c.Request.Context(),
+		p,
+		conversation.ChannelAgentTarget{ChannelID: id, AgentID: agentID},
+	)
 	if err != nil {
 		writeDiscussionError(c, err)
 		return
@@ -63,7 +68,11 @@ func (h *Handler) retryChannelInvocation(c *gin.Context) {
 		writeDiscussionError(c, conversation.ErrDiscussionInvalid)
 		return
 	}
-	result, err := h.ChannelInvocationService.Retry(c.Request.Context(), p, conversation.ChannelInvocationRetry{ChannelID: id, InvocationID: invocationID, RequestKey: requestKey})
+	result, err := h.ChannelInvocationService.Retry(
+		c.Request.Context(),
+		p,
+		conversation.ChannelInvocationRetry{ChannelID: id, InvocationID: invocationID, RequestKey: requestKey},
+	)
 	if err != nil {
 		writeDiscussionError(c, err)
 		return

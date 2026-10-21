@@ -1,6 +1,6 @@
 # Zenith Team production deployment runbook
 
-The Zenith Team cloud API is one stateless Go binary. It owns every HTTP and
+The Zenith Team API server is one stateless Go binary. It owns every HTTP and
 WebSocket surface, runs its own PostgreSQL migrations at startup, and takes
 all configuration from domain-prefixed environment variables (`APP_`, `AUTH_`,
 `STORAGE_`, `GOOGLE_`, `SOCIAL_`, `GCP_`, `CLOUD_RUN_`, `ATTACHMENT_`) — there are no
@@ -8,13 +8,19 @@ config files.
 Daemons are **not** deployed here: they run on user machines and connect out
 to this API.
 
+New to self-hosting? Start with [`../SELF_HOSTING.md`](../SELF_HOSTING.md),
+the short path. This runbook is the deeper reference.
+
 This directory contains:
 
 | File | Purpose |
 | --- | --- |
-| `docker-compose.production.yml` | Single-node production stack: server + bundled PostgreSQL/Redis with volumes and healthchecks |
-| `production.env.example` | Environment template; copy to `.env` next to the compose file and fill in |
-| `grafana-boardly.json` | Grafana dashboard for the server's Prometheus metrics |
+| `docker-compose.production.yml` | Single-node stack: server, web app, bundled PostgreSQL, Redis and S3-compatible storage, with volumes and healthchecks |
+| `production.env.example` | Environment template; `make selfhost-env` copies it to `.env` with generated secrets |
+| `Caddyfile` | The web image's own config: serves the app and forwards `/api` (HTTP and WebSocket) to the server |
+| `grafana-zenith-team.json` | Grafana dashboard for the server's Prometheus metrics |
+| `alerts/` | Prometheus alert rules (Schedules) |
+| `voice-agent/` | A Kubernetes starting point for the optional voice worker (see `../voice-agent/README.md`) |
 
 The development stack (PostgreSQL/Redis/Silo only, API from source) lives in
 [`../docker/`](../docker/README.md); day-to-day workflows and verification
@@ -26,18 +32,18 @@ Build the image from the repository root (multi-stage Go build, distroless
 static runtime, non-root user, ~56 MB):
 
 ```bash
-docker build -f server/Dockerfile -t boardly-server:$(git rev-parse --short HEAD) .
+docker build -f server/Dockerfile -t zenith-team-server:$(git rev-parse --short HEAD) .
 ```
 
 `server/Dockerfile.dockerignore` trims the BuildKit context to the Go module.
-CI runs the same build when a `release-<semver>` tag (for example
-`release-0.0.1`) is pushed at a commit on `main`
-(`.github/workflows/release.yml`) and pushes `my-registry/zenith-team:<semver>`
-and `:latest` to Artifact Registry without deploying; merges to `main` build no image,
-and the recipe above is for self-hosting. Tag local images with the
+CI publishes the same image, with the web image, to
+`ghcr.io/intelligent-internet/zenith-team-server` and
+`ghcr.io/intelligent-internet/zenith-team-web` when a `v<semver>` tag is
+pushed at a commit on `main` (`.github/workflows/release.yml`); merges to
+`main` build no image. Tag local images with the
 commit; `latest` is a convenience, never a deploy target. The image
-contains two binaries: `/usr/local/bin/boardly-server`
-and `/usr/local/bin/boardly-readyz`, a static probe used by the container
+contains two binaries: `/usr/local/bin/zenith-team-server`
+and `/usr/local/bin/zenith-team-readyz`, a static probe used by the container
 healthcheck (distroless has no shell or curl).
 
 ## Deploy
@@ -55,7 +61,7 @@ inject secrets from your secret manager. To use managed PostgreSQL/Redis, set
 `APP_DATABASE_URL`/`APP_REDIS_URL` and remove the bundled services.
 Run the API behind a TLS-terminating reverse proxy; WebSocket upgrade
 passthrough is required for `/api/v1/ws` and `/api/v1/daemon/ws`, and the
-proxy's CIDR belongs in `BOARDLY_TRUSTED_PROXIES` so the WebSocket origin
+proxy's CIDR belongs in `ZENITH_TEAM_TRUSTED_PROXIES` so the WebSocket origin
 check can trust the forwarded host.
 
 ## Migrate
@@ -81,7 +87,7 @@ fail fast with a named variable in the error. Durations use Go syntax
 
 | Variable | Rule |
 | --- | --- |
-| `APP_DATABASE_URL` | PostgreSQL DSN, e.g. `postgresql://boardly:pass@host:5432/boardly` |
+| `APP_DATABASE_URL` | PostgreSQL DSN, e.g. `postgresql://zenith_team:pass@host:5432/zenith_team` |
 | `APP_REDIS_URL` | Required for every API instance; bundled Compose supplies `redis://redis:6379/0` |
 | `AUTH_CSRF_SECRET` | At least 32 bytes; signs CSRF, session, and Run capability tokens — rotation invalidates all three |
 
@@ -93,8 +99,8 @@ fail fast with a named variable in the error. Durations use Go syntax
 | `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `APP_SHUTDOWN_TIMEOUT_SECONDS` | `15` | Graceful drain budget; keep below the orchestrator stop grace period |
 | `APP_API_REPLICAS` | `1` | Above 1 makes readiness fail-closed on cross-replica relay health |
-| `APP_DAEMON_ID_REQUIRED` | `false` | `true` refuses daemon-plane runtime requests without `X-Boardly-Daemon-ID` (`400 invalid_request`); `false` admits them with a warning log while old daemons upgrade |
-| `AUTH_WEB_ORIGINS` | `http://localhost:5173` | Comma-separated exact canonical renderer origins; non-loopback HTTP is rejected and packaged Electron may use only `boardly-app://renderer` |
+| `APP_DAEMON_ID_REQUIRED` | `false` | `true` refuses daemon-plane runtime requests without `X-Zenith-Team-Daemon-ID` (`400 invalid_request`); `false` admits them with a warning log while old daemons upgrade |
+| `AUTH_WEB_ORIGINS` | `http://localhost:5173` | Comma-separated exact canonical renderer origins; non-loopback HTTP is rejected and packaged Electron may use only `zenith-team-app://renderer` |
 | `AUTH_WEB_APP_ORIGIN` | empty | Required when email verification or Google OAuth is enabled; must appear in `AUTH_WEB_ORIGINS` |
 | `AUTH_COOKIE_SECURE` | derived | Forced `true` by any HTTPS origin (cannot be overridden to `false`) |
 | `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Access credential lifetime (15 minutes) |
@@ -170,7 +176,7 @@ objects, update every replica's configuration together, then resume traffic.
 `STORAGE_DRIVER=s3` is the default and uses the explicit settings below.
 For local development, `STORAGE_DRIVER=local` with `APP_ENVIRONMENT=local`
 supplies the bundled Silo defaults: endpoint `http://localhost:9000`, bucket
-`boardly-attachments`, region `us-east-1`, the Docker development credentials,
+`zenith-team-attachments`, region `us-east-1`, the Docker development credentials,
 and path-style requests. Run `make infra-up` to start Silo and create the
 bucket. Explicit `STORAGE_S3_*` settings override these defaults; custom access
 and secret keys must be supplied together. Staging and production reject the
@@ -228,7 +234,7 @@ Zenith Team writes the **full lowercase hostname** as the key:
 
 ```text
 key:   my-app.apps.example.com
-value: {"originUrl":"https://boardly-…run.app"}
+value: {"originUrl":"https://zenith-team-…run.app"}
 ```
 
 Your Worker should:
@@ -287,7 +293,7 @@ encryption key identical across API replicas and stable across releases:
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `SOCIAL_ENABLED_PLATFORMS` | `x` | Comma-separated `x,facebook,instagram,linkedin`; do not enable providers before their app is ready |
-| `SOCIAL_CALLBACK_ORIGIN` | — | Public HTTPS origin serving browser `/api/v1`, without a path, e.g. `https://app.example.com` |
+| `SOCIAL_CALLBACK_ORIGIN` | — | Public HTTPS origin serving browser `/api/v1`, without a path, e.g. `https://zenith.example.com` |
 | `SOCIAL_TOKEN_ENCRYPTION_KEY` | — | Base64 encoding of exactly 32 random bytes; required when a provider app is configured |
 | `SOCIAL_X_CLIENT_ID`, `SOCIAL_X_CLIENT_SECRET` | — | Dedicated Zenith Team OAuth 2 web app |
 | `SOCIAL_FACEBOOK_CLIENT_ID`, `SOCIAL_FACEBOOK_CLIENT_SECRET` | — | Optional Meta app pair |
@@ -297,8 +303,8 @@ encryption key identical across API replicas and stable across releases:
 
 Register the exact callback `${SOCIAL_CALLBACK_ORIGIN}/api/v1/social/oauth/x/callback`
 in the dedicated Zenith Team X app. Use the same browser-visible API host that sets
-the OAuth binding cookie: when the web app proxies `/api` at `https://app.example.com`,
-set `SOCIAL_CALLBACK_ORIGIN=https://app.example.com`, not a different backend hostname.
+the OAuth binding cookie: when the web app proxies `/api` at `https://zenith.example.com`,
+set `SOCIAL_CALLBACK_ORIGIN=https://zenith.example.com`, not a different backend hostname.
 `AUTH_WEB_APP_ORIGIN` must be the public web origin and appear in `AUTH_WEB_ORIGINS`.
 Electron opens the system browser through a single-use launch URL, then returns
 through a random loopback port; provider consoles still register only the server
@@ -355,7 +361,7 @@ There are no server-side tuning variables for daemon coordination. The
 runtime sweeper runs on a fixed 30-second loop
 (`server/cmd/server/runtime_sweeper.go`), and the claim/prepare-lease
 timings are constants in the run kernel. Everything an operator can change
-lives on the user's machine as `BOARDLY_*` environment variables read by the
+lives on the user's machine as `ZENITH_TEAM_*` environment variables read by the
 daemon (`zen daemon start --help`, or `zen config show`).
 
 ## Operate
@@ -368,7 +374,7 @@ human sessions and daemon credentials. There is no automatic purge and no
 public Admin restore endpoint.
 
 A trusted internal `account.Service.RestoreAccount(ctx, userID)` operation is
-proposed in the [admin console spec](../docs/specs/admin-console/PRD.md) and is
+proposed in the admin console spec and is
 not implemented yet; until it lands the SQL path below is the only restore path.
 When it exists, prefer it. Before invoking it, identify the User by immutable UUID and confirm
 that `deleted_at` and `disabled_at` are both non-null and exactly equal. The
@@ -421,7 +427,7 @@ in-flight requests within `APP_SHUTDOWN_TIMEOUT_SECONDS`.
 
 Point liveness probes at `/healthz` and load-balancer/traffic probes at
 `/readyz`. The container healthcheck already probes `/readyz` via
-`boardly-readyz` (override its target with `APP_READYZ_URL`).
+`zenith-team-readyz` (override its target with `APP_READYZ_URL`).
 
 ### Logs
 
@@ -435,20 +441,20 @@ The production compose caps json-file logs at 5 × 50 MB per container.
 
 ### Metrics and dashboard
 
-Import `grafana-boardly.json` into Grafana and point it at the Prometheus
+Import `grafana-zenith-team.json` into Grafana and point it at the Prometheus
 that scrapes `/metrics`. Application series (all low-cardinality by
 construction):
 
 | Metric | Labels |
 | --- | --- |
-| `boardly_http_requests_total` | `method`, `route`, `status` |
-| `boardly_http_request_duration_seconds` | `method`, `route` (histogram) |
-| `boardly_run_tokens_total` | `provider`, `kind` |
-| `boardly_run_terminal_total` | `provider`, `outcome`, `failure_kind` |
+| `zenith_team_http_requests_total` | `method`, `route`, `status` |
+| `zenith_team_http_request_duration_seconds` | `method`, `route` (histogram) |
+| `zenith_team_run_tokens_total` | `provider`, `kind` |
+| `zenith_team_run_terminal_total` | `provider`, `outcome`, `failure_kind` |
 
 Standard Go (`go_*`) and process (`process_*`) collectors are registered on
 the same endpoint. Useful alerts: `/readyz` failing for more than a minute,
-5xx ratio, p99 latency, `rate(boardly_run_terminal_total{outcome="failed",
+5xx ratio, p99 latency, `rate(zenith_team_run_terminal_total{outcome="failed",
 failure_kind="infrastructure"}[15m]) > 0`.
 
 ## Upgrade
@@ -505,11 +511,11 @@ against older object storage would reference missing attachment bodies.
 ```bash
 # PostgreSQL (bundled service shown; use your managed snapshot tooling otherwise)
 docker compose -f docker-compose.production.yml exec postgres \
-  pg_dump -U boardly -d boardly --format=custom --file=/tmp/boardly.dump
-docker compose -f docker-compose.production.yml cp postgres:/tmp/boardly.dump ./boardly-$(date +%F).dump
+  pg_dump -U zenith_team -d zenith_team --format=custom --file=/tmp/zenith-team.dump
+docker compose -f docker-compose.production.yml cp postgres:/tmp/zenith-team.dump ./zenith-team-$(date +%F).dump
 
 # Restore into a fresh database, then start the server
-pg_restore --clean --if-exists -U boardly -d boardly ./boardly-YYYY-MM-DD.dump
+pg_restore --clean --if-exists -U zenith_team -d zenith_team ./zenith-team-YYYY-MM-DD.dump
 ```
 
 For attachments, prefer bucket versioning plus lifecycle rules or cross-region
@@ -541,8 +547,7 @@ Current retention behavior, restated for operators:
   those facts directly; there is no usage pruning or rollup worker.
 - Raw provider events are never uploaded or persisted; bounded local
   Daemon logs rotate by size today (10 MiB, one `.old` generation, rotated at
-  daemon start; an age-based policy is Planned in the
-  [observability spec](../docs/specs/observability/PRD.md)); opt-in crash/freeze reports
+  daemon start; there is no age-based policy yet); opt-in crash/freeze reports
   retain 30 days and contain no prompt, message, path, email, or tool
   payload.
 
@@ -589,5 +594,4 @@ Load [alerts/schedules.yml](alerts/schedules.yml) in the existing Prometheus
 rule configuration. Alert on lag/overdue work and stale probes separately from
 readiness. Increasing sweep share points to a degraded beat; inspect Redis
 memory/availability and queue retries. Never repair a queue outage by deleting
-PostgreSQL firing receipts. See the [scheduler runbook](../docs/specs/scheduler/TECH.md)
-and [verification](../docs/specs/scheduler/VERIFICATION.md).
+PostgreSQL firing receipts.

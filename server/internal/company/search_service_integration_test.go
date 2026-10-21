@@ -16,10 +16,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestSearchReturnsCanonicalResultsWithoutDisclosingOtherDirectConversations(t *testing.T) {
@@ -144,12 +144,20 @@ func TestSearchReturnsCanonicalResultsWithoutDisclosingOtherDirectConversations(
 		twelveConversationID, fixture.CompanyA, twelveID); err != nil {
 		t.Fatalf("seed task twelve conversation: %v", err)
 	}
-	if _, err := seedTx.Exec(ctx, `
+	if _, err := seedTx.Exec(
+		ctx,
+		`
 		INSERT INTO tasks (
 			id, company_id, project_id, conversation_id, milestone_type,
 			number, key, title, executed_by_agent_id, assignee_user_id, creator_user_id
 		) VALUES ($1, $2, $6, $3, 'product', 12, 'task_twelve', 'Task twelve', $4, $5, $5)`,
-		twelveID, fixture.CompanyA, twelveConversationID, fixture.AgentA, fixture.UserA, fixture.ProjectA); err != nil {
+		twelveID,
+		fixture.CompanyA,
+		twelveConversationID,
+		fixture.AgentA,
+		fixture.UserA,
+		fixture.ProjectA,
+	); err != nil {
 		t.Fatalf("seed task twelve: %v", err)
 	}
 	if err := seedTx.Commit(ctx); err != nil {
@@ -249,13 +257,22 @@ func TestSearchDiscussionMembershipAndFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		f.CompanyA,
+		f.UserB,
+	)
 	id := dbtest.SeedDiscussionChannel(t, ctx, pool, f.CompanyA, f.UserB, nil)
 	var root, reply uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,request_key,send_fingerprint,body,content) VALUES($1,$2,1,'user_message','user',$3,gen_random_uuid(),decode(repeat('00',32),'hex'),'{"version":1,"markdown":"thiết kế","references":[]}','thiết kế') RETURNING id`, f.CompanyA, id, f.UserB).Scan(&root); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,request_key,send_fingerprint,body,content) VALUES($1,$2,1,'user_message','user',$3,gen_random_uuid(),decode(repeat('00',32),'hex'),'{"version":1,"markdown":"thiết kế","references":[]}','thiết kế') RETURNING id`, f.CompanyA, id, f.UserB).
+		Scan(&root); err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx, `INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,request_key,send_fingerprint,body,content,thread_root_id) VALUES($1,$2,2,'user_message','user',$3,gen_random_uuid(),decode(repeat('00',32),'hex'),'{"version":1,"markdown":"thiết kế mới","references":[]}','thiết kế mới',$4) RETURNING id`, f.CompanyA, id, f.UserB, root).Scan(&reply); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,request_key,send_fingerprint,body,content,thread_root_id) VALUES($1,$2,2,'user_message','user',$3,gen_random_uuid(),decode(repeat('00',32),'hex'),'{"version":1,"markdown":"thiết kế mới","references":[]}','thiết kế mới',$4) RETURNING id`, f.CompanyA, id, f.UserB, root).
+		Scan(&reply); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -289,12 +306,25 @@ func TestSearchDiscussionMembershipAndFilters(t *testing.T) {
 		t.Fatalf("file filter=%+v,%v", page, err)
 	}
 	input.HasFile = false
-	dbtest.MustExec(t, ctx, pool, `UPDATE conversation_items SET deleted_at=now(),body=NULL,content='' WHERE id=$1`, reply)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE conversation_items SET deleted_at=now(),body=NULL,content='' WHERE id=$1`,
+		reply,
+	)
 	page, err = service.Search(ctx, p, input)
 	if err != nil || len(page.Items) != 1 {
 		t.Fatalf("deleted search=%+v,%v", page, err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserB,
+	)
 	page, err = service.Search(ctx, p, input)
 	if err != nil || len(page.Items) != 0 {
 		t.Fatalf("revoked search=%+v,%v", page, err)
@@ -312,8 +342,21 @@ func TestSearchFindsTasksOnlyInReadableProjects(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
-	dbtest.MustExec(t, ctx, pool, `UPDATE conversation_items SET content = 'Release plan for the task' WHERE id = $1`, f.MessageA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		f.CompanyA,
+		f.UserB,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE conversation_items SET content = 'Release plan for the task' WHERE id = $1`,
+		f.MessageA,
+	)
 	store, err := db.NewStore(pool)
 	if err != nil {
 		t.Fatal(err)
@@ -325,17 +368,35 @@ func TestSearchFindsTasksOnlyInReadableProjects(t *testing.T) {
 	member := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserB}
 	search := func(query string, searchType SearchType) int {
 		t.Helper()
-		page, err := service.Search(ctx, member, SearchInput{Query: query, Types: []SearchType{searchType}, Limit: 50})
+		page, err := service.Search(
+			ctx,
+			member,
+			SearchInput{Query: query, Types: []SearchType{searchType}, Limit: 50},
+		)
 		if err != nil {
 			t.Fatalf("Search(%q) error = %v", query, err)
 		}
 		return len(page.Items)
 	}
-	if tasks, messages := search("task_a", SearchTypeTask), search("release", SearchTypeMessage); tasks != 0 || messages != 0 {
+	if tasks, messages := search(
+		"task_a",
+		SearchTypeTask,
+	), search(
+		"release",
+		SearchTypeMessage,
+	); tasks != 0 ||
+		messages != 0 {
 		t.Fatalf("a member outside the Project found %d Task(s) and %d message(s), want none", tasks, messages)
 	}
 	dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, f.UserB, "project.read")
-	if tasks, messages := search("task_a", SearchTypeTask), search("release", SearchTypeMessage); tasks != 1 || messages != 1 {
+	if tasks, messages := search(
+		"task_a",
+		SearchTypeTask,
+	), search(
+		"release",
+		SearchTypeMessage,
+	); tasks != 1 ||
+		messages != 1 {
 		t.Fatalf("a reader found %d Task(s) and %d message(s), want one of each", tasks, messages)
 	}
 }
@@ -353,7 +414,14 @@ func TestSearchHasFileCountsOnlyFilesTheCallerMayOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		f.CompanyA,
+		f.UserB,
+	)
 	channel := dbtest.SeedDiscussionChannel(t, ctx, pool, f.CompanyA, f.UserA, nil)
 	dbtest.AddDiscussionMember(t, ctx, pool, f.CompanyA, channel, f.UserB)
 	message := func(seq int, text, status string) uuid.UUID {
@@ -361,7 +429,8 @@ func TestSearchHasFileCountsOnlyFilesTheCallerMayOpen(t *testing.T) {
 		var messageID, file uuid.UUID
 		if err := pool.QueryRow(ctx, `INSERT INTO conversation_items(company_id,conversation_id,seq,type,author_kind,author_id,request_key,send_fingerprint,body,content)
 			VALUES($1,$2,$3,'user_message','user',$4,gen_random_uuid(),decode(repeat('00',32),'hex'),jsonb_build_object('version',1,'markdown',$5::text,'references','[]'::jsonb),$5) RETURNING id`,
-			f.CompanyA, channel, seq, f.UserA, text).Scan(&messageID); err != nil {
+			f.CompanyA, channel, seq, f.UserA, text).
+			Scan(&messageID); err != nil {
 			t.Fatal(err)
 		}
 		if err := pool.QueryRow(ctx, `INSERT INTO attachments
@@ -370,8 +439,16 @@ func TestSearchHasFileCountsOnlyFilesTheCallerMayOpen(t *testing.T) {
 			f.CompanyA, f.UserA, status).Scan(&file); err != nil {
 			t.Fatal(err)
 		}
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-			VALUES ($1, $2, $3, 0)`, f.CompanyA, messageID, file)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+			VALUES ($1, $2, $3, 0)`,
+			f.CompanyA,
+			messageID,
+			file,
+		)
 		return file
 	}
 	projectFile := message(1, "payroll salaries", "ready")
@@ -392,7 +469,11 @@ func TestSearchHasFileCountsOnlyFilesTheCallerMayOpen(t *testing.T) {
 	hits := func(userID uuid.UUID) []int64 {
 		t.Helper()
 		page, err := service.Search(ctx, auth.UserPrincipal{CompanyID: f.CompanyA, UserID: userID}, SearchInput{
-			Query: "payroll", Types: []SearchType{SearchTypeMessage}, Limit: 50, ConversationID: &channel, HasFile: true,
+			Query:          "payroll",
+			Types:          []SearchType{SearchTypeMessage},
+			Limit:          50,
+			ConversationID: &channel,
+			HasFile:        true,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -407,7 +488,10 @@ func TestSearchHasFileCountsOnlyFilesTheCallerMayOpen(t *testing.T) {
 		return seqs
 	}
 	if got := hits(f.UserB); !slices.Equal(got, []int64{2}) {
-		t.Fatalf("a channel member outside the Project got hasFile hits %v, want only the plain chat file [2]", got)
+		t.Fatalf(
+			"a channel member outside the Project got hasFile hits %v, want only the plain chat file [2]",
+			got,
+		)
 	}
 	if got := hits(f.UserA); !slices.Equal(got, []int64{1, 2}) {
 		t.Fatalf("the Project reader got hasFile hits %v, want [1 2]", got)

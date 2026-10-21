@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func authTestBus(t *testing.T) *events.Bus {

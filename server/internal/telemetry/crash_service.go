@@ -1,4 +1,4 @@
-// Package telemetry owns Boardly's operational telemetry: the low-cardinality
+// Package telemetry owns Zenith Team's operational telemetry: the low-cardinality
 // Prometheus registry, and opt-in redacted crash/freeze reports with their
 // 30-day retention.
 //
@@ -18,9 +18,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/internal/db"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 type CrashReportServiceOptions struct {

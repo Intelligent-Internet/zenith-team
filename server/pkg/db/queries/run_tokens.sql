@@ -25,7 +25,7 @@ SELECT
     conversations.created_by_user_id AS origin_user_id,
     invocation.caller_user_id AS invocation_caller_id,
     -- The channel or group DM a tagged Run answers into. It marks a tagged
-    -- Run and bounds nothing: the Run uses its Authorizer's access (D31).
+    -- Run and bounds nothing: the Run uses its Authorizer's access.
     -- NULL for any other Run.
     invocation.channel_id AS invocation_channel_id,
     -- A Task Run answers into its Task chat, whose readers are that chat's
@@ -34,7 +34,7 @@ SELECT
     runs.execution_authorized_by_user_id,
     -- The root Agent plans the Company: in its person's direct chat, with
     -- its Company Plan tools on, its reads are not narrowed to its own
-    -- Tasks (IA-FR12). Both facts are read live here, never as a filter.
+    -- Tasks. Both facts are read live here, never as a filter.
     (agents.reports_to_agent_id IS NULL)::boolean AS root_agent,
     (COALESCE(agents.settings->'capabilities'->'disabledBuiltIns', '[]'::jsonb) @> '"planning"'::jsonb)::boolean AS planning_disabled
 FROM run_tokens

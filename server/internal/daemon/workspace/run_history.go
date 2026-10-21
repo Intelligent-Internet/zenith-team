@@ -25,7 +25,11 @@ type RunIdentityChange struct {
 // excludes managed Git mutations; no commit, working file or directory is moved.
 // Git branch renaming precedes the atomic signed sidecar replacement, allowing
 // a retry to recognize an interruption between the two operations.
-func (m *Manager) MigrateRunIdentities(ctx context.Context, mappings map[string]uuid.UUID, apply bool) ([]RunIdentityChange, error) {
+func (m *Manager) MigrateRunIdentities(
+	ctx context.Context,
+	mappings map[string]uuid.UUID,
+	apply bool,
+) ([]RunIdentityChange, error) {
 	seen := make(map[uuid.UUID]bool, len(mappings))
 	for legacy, id := range mappings {
 		number, err := strconv.ParseInt(legacy, 10, 64)
@@ -58,14 +62,26 @@ func (m *Manager) MigrateRunIdentities(ctx context.Context, mappings map[string]
 			if !ok {
 				return fmt.Errorf("missing database mapping for retained Run %s", entry.LastRunID)
 			}
-			change := RunIdentityChange{Path: path, LegacyID: entry.LastRunID, RunID: id, Branch: entry.Branch}
-			if entry.Branch == "boardly/task-"+entry.LastRunID {
+			change := RunIdentityChange{
+				Path:     path,
+				LegacyID: entry.LastRunID,
+				RunID:    id,
+				Branch:   entry.Branch,
+			}
+			if entry.Branch == "zenith-team/task-"+entry.LastRunID {
 				change.Branch = taskBranch(id)
 				if err := checkRunIdentityBranch(ctx, path, entry.Branch, change.Branch); err != nil {
 					return err
 				}
-				commit, err := gitOutput(ctx, filepath.Join(path, workdirDirectoryName), "log", "main", "--max-count=1", "--format=%H",
-					"--grep=^Merge Zenith Team task run "+entry.LastRunID+"$")
+				commit, err := gitOutput(
+					ctx,
+					filepath.Join(path, workdirDirectoryName),
+					"log",
+					"main",
+					"--max-count=1",
+					"--format=%H",
+					"--grep=^Merge Zenith Team task run "+entry.LastRunID+"$",
+				)
 				if err != nil {
 					return fmt.Errorf("inspect retained merge receipt: %w", err)
 				}
@@ -73,7 +89,13 @@ func (m *Manager) MigrateRunIdentities(ctx context.Context, mappings map[string]
 				if change.MergedCommit != "" && !validCommitID(change.MergedCommit) {
 					return errors.New("retained merge receipt is invalid")
 				}
-				mapped, err := gitOutput(ctx, filepath.Join(path, workdirDirectoryName), "for-each-ref", "--format=%(objectname)", taskMergeReceiptRef(id))
+				mapped, err := gitOutput(
+					ctx,
+					filepath.Join(path, workdirDirectoryName),
+					"for-each-ref",
+					"--format=%(objectname)",
+					taskMergeReceiptRef(id),
+				)
 				if err != nil {
 					return err
 				}
@@ -93,8 +115,15 @@ func (m *Manager) MigrateRunIdentities(ctx context.Context, mappings map[string]
 				// A UUID-named receipt points at the existing commit. This
 				// preserves idempotent merge review without rewriting main,
 				// commit messages, or retaining numeric IDs in runtime reads.
-				if err := runGit(ctx, filepath.Join(change.Path, workdirDirectoryName), nil, nil,
-					"update-ref", taskMergeReceiptRef(change.RunID), change.MergedCommit); err != nil {
+				if err := runGit(
+					ctx,
+					filepath.Join(change.Path, workdirDirectoryName),
+					nil,
+					nil,
+					"update-ref",
+					taskMergeReceiptRef(change.RunID),
+					change.MergedCommit,
+				); err != nil {
 					return fmt.Errorf("preserve converted merge receipt: %w", err)
 				}
 			}
@@ -105,7 +134,16 @@ func (m *Manager) MigrateRunIdentities(ctx context.Context, mappings map[string]
 					return err
 				}
 				if strings.TrimSpace(current) == entry.Branch {
-					if err := runGit(ctx, workDir, nil, nil, "branch", "-m", entry.Branch, change.Branch); err != nil {
+					if err := runGit(
+						ctx,
+						workDir,
+						nil,
+						nil,
+						"branch",
+						"-m",
+						entry.Branch,
+						change.Branch,
+					); err != nil {
 						return fmt.Errorf("rename retained Run branch: %w", err)
 					}
 				}
@@ -134,7 +172,14 @@ func checkRunIdentityBranch(ctx context.Context, path, previous, next string) er
 	if current != previous && current != next {
 		return errors.New("retained Run workspace has an unexpected branch")
 	}
-	branches, err := gitOutput(ctx, workDir, "for-each-ref", "--format=%(refname)", "refs/heads/"+previous, "refs/heads/"+next)
+	branches, err := gitOutput(
+		ctx,
+		workDir,
+		"for-each-ref",
+		"--format=%(refname)",
+		"refs/heads/"+previous,
+		"refs/heads/"+next,
+	)
 	if err != nil {
 		return err
 	}

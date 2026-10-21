@@ -1,6 +1,6 @@
 /* Workspace typography, geometry and aliases shared by every palette. */
-html[data-boardly-workspace-theme],
-.boardly-workspace-theme {
+html[data-zenith-team-workspace-theme],
+.zenith-team-workspace-theme {
   color-scheme: var(--workspace-color-scheme);
   --workspace-radius-control: 8px;
   --workspace-radius-panel: 12px;
@@ -103,16 +103,16 @@ html[data-boardly-workspace-theme],
   text-rendering: optimizeLegibility;
 }
 
-.boardly-workspace-theme[data-boardly-theme][data-desktop-mac="true"] {
+.zenith-team-workspace-theme[data-zenith-team-theme][data-desktop-mac="true"] {
   --workspace-header-height: 44px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme:not([data-boardly-theme]) {
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme:not([data-zenith-team-theme]) {
   font-family: var(--workspace-font-body);
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   :is(.workspace-utility-header, .workspace-rail, .workspace-bottom-nav) {
   --workspace-notification-indicator: var(
     --workspace-nav-notification-indicator
@@ -134,40 +134,40 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-nav-text);
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-utility-header {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-utility-header {
   border-bottom-color: transparent;
   padding-right: 16px;
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-company-name {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-company-name {
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
   font-weight: 700;
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-wordmark {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-wordmark {
   color: var(--workspace-nav-text);
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-shell-body {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-shell-body {
   padding: 0 10px 10px 0;
   background: transparent;
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .workspace-shell-content:not(.workspace-shell-content--canvas) {
   border-radius: 12px;
   background: var(--workspace-content-bg);
   box-shadow: var(--workspace-shell-shadow);
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-rail {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-rail {
   gap: 8px;
   border-right-color: transparent;
   padding-top: 8px;
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-primary-nav-item {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-primary-nav-item {
   width: 64px;
   min-height: 56px;
   flex-shrink: 0;
@@ -178,23 +178,23 @@ html[data-boardly-workspace-theme]
   font-weight: 500;
 }
 
-.boardly-workspace-theme[data-boardly-theme="zenith-sky"]
+.zenith-team-workspace-theme[data-zenith-team-theme="zenith-sky"]
   .workspace-primary-nav-item.is-active {
   font-weight: 600;
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .workspace-primary-nav-item.is-active::before {
   display: none;
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   :is(h1, h2, h3, .workspace-page-frame__title) {
   font-family: var(--workspace-font-heading);
   letter-spacing: -0.02em;
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   :is(.workspace-page-frame__eyebrow, .workspace-eyebrow) {
   font-family: var(--workspace-font-body);
   font-size: var(--workspace-text-label);
@@ -205,28 +205,28 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
 }
 
-.boardly-workspace-theme[data-boardly-theme] .workspace-access-state__mark {
+.zenith-team-workspace-theme[data-zenith-team-theme] .workspace-access-state__mark {
   color: var(--workspace-accent-foreground);
 }
 
 @media (max-width: 899px) {
-  html[data-boardly-workspace-theme],
-  .boardly-workspace-theme {
+  html[data-zenith-team-workspace-theme],
+  .zenith-team-workspace-theme {
     --workspace-page-inset: 16px;
     --workspace-document-gutter: 24px;
   }
-  .boardly-workspace-theme[data-boardly-theme] .workspace-shell-body {
+  .zenith-team-workspace-theme[data-zenith-team-theme] .workspace-shell-body {
     padding: 0 0 var(--workspace-bottom-nav-height);
   }
-  .boardly-workspace-theme[data-boardly-theme]
+  .zenith-team-workspace-theme[data-zenith-team-theme]
     .workspace-shell-content:not(.workspace-shell-content--canvas) {
     border-radius: 0;
   }
-  .boardly-workspace-theme[data-boardly-theme] .workspace-bottom-nav {
+  .zenith-team-workspace-theme[data-zenith-team-theme] .workspace-bottom-nav {
     background: var(--workspace-rail-bg) var(--workspace-shell-gradient);
     box-shadow: none;
   }
-  .boardly-workspace-theme[data-boardly-theme]
+  .zenith-team-workspace-theme[data-zenith-team-theme]
     .workspace-bottom-nav
     .workspace-primary-nav-item {
     width: 100%;
@@ -236,7 +236,7 @@ html[data-boardly-workspace-theme]
   }
 }
 
-html[data-boardly-workspace-theme][data-boardly-high-contrast="true"] {
+html[data-zenith-team-workspace-theme][data-zenith-team-high-contrast="true"] {
   --workspace-divider: var(--workspace-contrast-divider) !important;
   --workspace-divider-strong: var(
     --workspace-contrast-divider-strong
@@ -250,7 +250,7 @@ html[data-boardly-workspace-theme][data-boardly-high-contrast="true"] {
 }
 
 @media (prefers-contrast: more) {
-  html[data-boardly-workspace-theme] {
+  html[data-zenith-team-workspace-theme] {
     --workspace-divider: var(--workspace-contrast-divider) !important;
     --workspace-divider-strong: var(
       --workspace-contrast-divider-strong
@@ -264,6 +264,6 @@ html[data-boardly-workspace-theme][data-boardly-high-contrast="true"] {
   }
 }
 
-html[data-boardly-workspace-theme] .text-brand-primary {
+html[data-zenith-team-workspace-theme] .text-brand-primary {
   color: var(--workspace-native-accent);
 }

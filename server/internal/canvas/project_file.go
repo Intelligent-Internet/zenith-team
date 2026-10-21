@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type projectFileInput struct {
@@ -18,7 +18,14 @@ type projectFileInput struct {
 // registerProjectFileInTx registers a human upload without manufacturing Run provenance.
 // The caller holds the Company, membership and Project canvas mutation locks.
 func registerProjectFileInTx(ctx context.Context, q *generated.Queries, in projectFileInput) (uuid.UUID, error) {
-	if err := auth.RequireProjectPermissionHeld(ctx, q, in.Principal.CompanyID, in.ProjectID, in.Principal.UserID, auth.ProjectPermissionFilesManage); err != nil {
+	if err := auth.RequireProjectPermissionHeld(
+		ctx,
+		q,
+		in.Principal.CompanyID,
+		in.ProjectID,
+		in.Principal.UserID,
+		auth.ProjectPermissionFilesManage,
+	); err != nil {
 		return uuid.Nil, err
 	}
 	file, err := q.LockCanvasUpload(

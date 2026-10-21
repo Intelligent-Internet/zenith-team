@@ -15,7 +15,7 @@ export function PublicArtifactShell() {
       companyId={session.company?.id}
       restoreLastAppearance
     >
-      <div className="boardly-workspace-theme public-artifact-shell">
+      <div className="zenith-team-workspace-theme public-artifact-shell">
         <AppTitlebar
           className="public-artifact-shell__titlebar"
           showProfileMenu={false}

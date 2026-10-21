@@ -25,7 +25,7 @@ func TestParseTaskLabelAcceptsOnlyAPrefixDashAndPositiveDigits(t *testing.T) {
 		"BSC-x8":                   {},
 		"BSC-+8":                   {},
 		"BSC--8":                   {},
-		"BSC-8 ":                   {},
+		"BSC-8 ":                   {}, //nolint:gocritic // the trailing space is the case under test
 		"BSC-99999999999999999999": {},
 	} {
 		prefix, number, ok := ParseTaskLabel(reference)

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestTaskConversationArchiveIsPrivateAndReversible(t *testing.T) {
@@ -43,7 +43,8 @@ func TestTaskConversationArchiveIsPrivateAndReversible(t *testing.T) {
 	}
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, fixture.UserB, "project.read")
 	var before int64
-	if err := pool.QueryRow(ctx, `SELECT version FROM conversations WHERE id=$1`, fixture.ConversationA).Scan(&before); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT version FROM conversations WHERE id=$1`, fixture.ConversationA).
+		Scan(&before); err != nil {
 		t.Fatal(err)
 	}
 	yes, no := true, false
@@ -65,7 +66,8 @@ func TestTaskConversationArchiveIsPrivateAndReversible(t *testing.T) {
 		t.Fatalf("pins = %+v, %v, want archived chats excluded", pins, err)
 	}
 	states, err := service.ListStates(ctx, principal)
-	if err != nil || len(states) != 1 || states[0].ConversationID != fixture.ConversationA || states[0].ArchivedAt == nil {
+	if err != nil || len(states) != 1 || states[0].ConversationID != fixture.ConversationA ||
+		states[0].ArchivedAt == nil {
 		t.Fatalf("saved states = %+v, %v, want personal archive", states, err)
 	}
 	otherStates, err := service.ListStates(ctx, other)
@@ -74,9 +76,15 @@ func TestTaskConversationArchiveIsPrivateAndReversible(t *testing.T) {
 	}
 	var after int64
 	var sharedArchived bool
-	err = pool.QueryRow(ctx, `SELECT version,archived_at IS NOT NULL FROM conversations WHERE id=$1`, fixture.ConversationA).Scan(&after, &sharedArchived)
+	err = pool.QueryRow(ctx, `SELECT version,archived_at IS NOT NULL FROM conversations WHERE id=$1`, fixture.ConversationA).
+		Scan(&after, &sharedArchived)
 	if err != nil || after != before || sharedArchived {
-		t.Fatalf("shared conversation = revision %d, archived %t, %v, want unchanged", after, sharedArchived, err)
+		t.Fatalf(
+			"shared conversation = revision %d, archived %t, %v, want unchanged",
+			after,
+			sharedArchived,
+			err,
+		)
 	}
 	if _, err := service.UpdateState(ctx, principal, fixture.ConversationA,
 		UpdateUserStateInput{ExpectedRevision: 0, Archived: &no}); !errors.Is(err, ErrConflict) {
@@ -91,9 +99,23 @@ func TestTaskConversationArchiveIsPrivateAndReversible(t *testing.T) {
 	if err != nil || len(pins) != 1 || pins[0].ConversationID != fixture.ConversationA {
 		t.Fatalf("restored pins = %+v, %v, want task chat", pins, err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, fixture.CompanyA, fixture.UserA)
-	if _, err := service.UpdateState(ctx, principal, fixture.ConversationA,
-		UpdateUserStateInput{ExpectedRevision: restored.Revision, Archived: &yes}); !errors.Is(err, ErrNotFound) {
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		fixture.CompanyA,
+		fixture.UserA,
+	)
+	if _, err := service.UpdateState(
+		ctx,
+		principal,
+		fixture.ConversationA,
+		UpdateUserStateInput{
+			ExpectedRevision: restored.Revision,
+			Archived:         &yes,
+		},
+	); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("revoked member archive = %v, want not found", err)
 	}
 	states, err = service.ListStates(ctx, principal)

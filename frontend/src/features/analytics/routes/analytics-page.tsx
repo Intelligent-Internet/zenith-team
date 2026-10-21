@@ -29,9 +29,9 @@ import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { Tooltip } from "@/shared/ui/tooltip";
 import { useCompanyPermissions } from "@/shared/permissions";
 import {
-  boardlyApi,
-  getBoardlyQueryErrorMessage,
-} from "@/shared/api/boardly-api";
+  zenithTeamApi,
+  getZenithTeamQueryErrorMessage,
+} from "@/shared/api/zenith-team-api";
 import { useAppDispatch } from "@/state";
 
 import type {
@@ -313,7 +313,7 @@ function AnalyticsView({ companyId }: { companyId: string }) {
   }, [summary.error, scope]);
   const refresh = () => {
     dispatch(
-      boardlyApi.util.invalidateTags([{ type: "Analytics", id: companyId }]),
+      zenithTeamApi.util.invalidateTags([{ type: "Analytics", id: companyId }]),
     );
     if (!agentOptions.isUninitialized) void agentOptions.refetch();
     if (!projectOptions.isUninitialized) void projectOptions.refetch();
@@ -649,7 +649,7 @@ function AnalyticsView({ companyId }: { companyId: string }) {
           role="alert"
           className="mt-[16px] p-[12px_16px] [border:1px_solid_color-mix(in_srgb,_var(--analytics-danger)_35%,_transparent)] rounded-workspace-panel text-[var(--analytics-danger)] text-workspace-caption"
         >
-          {getBoardlyQueryErrorMessage(error)}{" "}
+          {getZenithTeamQueryErrorMessage(error)}{" "}
           {"body" in error && error.body?.requestId
             ? `Request ${error.body.requestId}`
             : ""}{" "}
@@ -1073,7 +1073,7 @@ function BudgetCard({
             role="alert"
             className="mt-[16px] p-[12px_16px] [border:1px_solid_color-mix(in_srgb,_var(--analytics-danger)_35%,_transparent)] rounded-workspace-panel text-[var(--analytics-danger)] text-workspace-caption"
           >
-            {getBoardlyQueryErrorMessage(saveError)}
+            {getZenithTeamQueryErrorMessage(saveError)}
           </span>
         ) : unchanged ? (
           <span className="analytics-muted">Saved</span>
@@ -1443,7 +1443,7 @@ function BreakdownTable({
       exportBreakdownCsv(title, exportedRows);
     } catch (error) {
       if (generation === exportGeneration.current)
-        setExportError(getBoardlyQueryErrorMessage(error));
+        setExportError(getZenithTeamQueryErrorMessage(error));
     } finally {
       if (generation === exportGeneration.current) setExporting(false);
     }
@@ -1483,7 +1483,7 @@ function BreakdownTable({
       {exportError ? <p role="alert">{exportError}</p> : null}
       {details && page.error ? (
         <p role="alert">
-          {getBoardlyQueryErrorMessage(page.error)}{" "}
+          {getZenithTeamQueryErrorMessage(page.error)}{" "}
           <button type="button" onClick={() => void page.refetch()}>
             Retry
           </button>

@@ -19,27 +19,27 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
-// The Run channel is how the zen CLI and boardly-mcp work from inside an
+// The Run channel is how the zen CLI and zenith-team-mcp work from inside an
 // agent process.
 //
-// A Run's processes hold no Zenith Team credential: its BOARDLY_HOME is an
+// A Run's processes hold no Zenith Team credential: its ZENITH_TEAM_HOME is an
 // empty directory the daemon creates for that Run alone. What it does hold is
 // run.json, written there by the daemon, which names the daemon's loopback
 // endpoint and a Run-bound local capability. The CLI in Agent mode and
-// boardly-mcp read that file and send every product request to the daemon
+// zenith-team-mcp read that file and send every product request to the daemon
 // instead of the server (internal/runchannel is the wire). The daemon checks
 // the capability, checks the request against the Run's frozen policy, and
 // only then forwards it to the server with its own session plus the
-// X-Boardly-Run-Token proof. The agent therefore never sees a bearer token,
+// X-Zenith-Team-Run-Token proof. The agent therefore never sees a bearer token,
 // cannot widen its scope by editing flags or environment, and loses the
 // channel the moment its Run ends. See
-// docs/adr/0009-run-scoped-cli-channel.md and Access TECH B3b.
+// docs/adr/0009-run-scoped-cli-channel.md.
 
 const (
 	// runChannelMaxRequestBytes takes the largest body the server takes on a
@@ -50,7 +50,7 @@ const (
 	// of its own.
 	runChannelForwardTimeout = 60 * time.Second
 	// runChannelSocialTimeout covers a social read or publish, which waits
-	// on the provider; boardly-mcp gave its social client the same bound
+	// on the provider; zenith-team-mcp gave its social client the same bound
 	// before it moved onto the channel. It is the longest row, so it is
 	// runchannel.MaxForwardTimeout.
 	runChannelSocialTimeout = 130 * time.Second
@@ -130,7 +130,7 @@ func runCLIPatternMatches(pattern, path string) bool {
 	return true
 }
 
-// runCLICommand pairs one zen command, or one boardly-mcp tool, with the
+// runCLICommand pairs one zen command, or one zenith-team-mcp tool, with the
 // operation it needs. The catalog is the single place that knows which
 // command or tool maps to which server route, so the prompt, run.json and
 // the policy cannot drift. A tool row has no Use: the prompt and run.json
@@ -145,7 +145,7 @@ type runCLICommand struct {
 // are substituted here so a Run's policy admits its own Task, Project,
 // Conversation and Run and no other; the wildcard rows only appear for reads
 // the Run's frozen product authority grants Company-wide, or that the server
-// scopes to the Run itself. The rows of the boardly-mcp tools the Run is
+// scopes to the Run itself. The rows of the zenith-team-mcp tools the Run is
 // offered follow (runMCPCommands).
 func runCLICommands(run Run, doc RunContext) []runCLICommand {
 	if runToolPolicy(doc) != "" {
@@ -183,7 +183,7 @@ func runZenCommands(run Run, doc RunContext) []runCLICommand {
 	}
 
 	tools := make(map[string]struct{})
-	for _, tool := range boardlyMCPToolsForRun(doc) {
+	for _, tool := range zenithTeamMCPToolsForRun(doc) {
 		tools[tool] = struct{}{}
 	}
 	companyReads := runCompanyReadsAvailable(doc)
@@ -212,7 +212,7 @@ func runZenCommands(run Run, doc RunContext) []runCLICommand {
 	)
 	// `zen task create` files work for the member this Run works for: the
 	// daemon's session is theirs, so the server makes them the assignee and
-	// starts the Task when they have its Agent set up (ADR 0014 D6). It needs
+	// starts the Task when they have its Agent set up (ADR 0014). It needs
 	// a Project. A Task Run gets the lookup of its own; any other Run names
 	// one through the Company reads above and without them is not offered it.
 	if runTaskCreationAvailable(doc) {
@@ -239,10 +239,10 @@ func runZenCommands(run Run, doc RunContext) []runCLICommand {
 	return commands
 }
 
-// runMCPCommands are the routes the boardly-mcp tools offered to this Run
-// call (boardlyMCPToolsForRun). boardly-mcp holds no credential: every tool
+// runMCPCommands are the routes the zenith-team-mcp tools offered to this Run
+// call (zenithTeamMCPToolsForRun). zenith-team-mcp holds no credential: every tool
 // call is a channel request the daemon forwards with its own session and the
-// Run proof (Access TECH B3b), so a tool has exactly these rows and a tool
+// Run proof, so a tool has exactly these rows and a tool
 // the Run is not offered has none. The search_skills and
 // load_skill_reference tools read the Run's local snapshot and call nothing.
 // TestEveryMCPToolCallIsAdmittedByTheRunChannel calls every tool through a
@@ -260,7 +260,7 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 	// The Company Plan export and preview read the Company the member
 	// belongs to, its Projects, its Tasks and each Task's prerequisites. With
 	// the proof the server shows the root Agent's direct-chat Run every Task
-	// its person reads and any other Run its own (Access TECH B6).
+	// its person reads and any other Run its own.
 	planReads := []runCLIOperation{
 		row(http.MethodGet, "/companies"),
 		row(http.MethodGet, company+"/projects"),
@@ -317,7 +317,7 @@ func runMCPCommands(run Run, doc RunContext) []runCLICommand {
 		"wiki_write":     {row(http.MethodPost, ownRun+"/agent-wiki/pages")},
 	}
 	var commands []runCLICommand
-	for _, tool := range boardlyMCPToolsForRun(doc) {
+	for _, tool := range zenithTeamMCPToolsForRun(doc) {
 		for _, operation := range routes[tool] {
 			commands = append(commands, runCLICommand{Tool: tool, Operation: operation})
 		}
@@ -345,7 +345,7 @@ func runCLIPolicyFor(commands []runCLICommand) runCLIPolicy {
 }
 
 // runCLICommandUses lists the zen commands the catalog admits, once each, for
-// run.json and the prompt. A boardly-mcp tool row advertises nothing.
+// run.json and the prompt. A zenith-team-mcp tool row advertises nothing.
 func runCLICommandUses(commands []runCLICommand) []string {
 	uses := make([]string, 0, len(commands))
 	seen := make(map[string]struct{}, len(commands))
@@ -393,7 +393,7 @@ type RunOutputPresenter interface {
 
 // runCLIAppPreviewRegistrar keeps app registration in the daemon. The Run
 // identity and workspace stay daemon-owned, and so do the folders the Run's
-// sandbox hid, which every launch of its app hides too (Access TECH B7b).
+// sandbox hid, which every launch of its app hides too.
 type runCLIAppPreviewRegistrar struct {
 	previews *appPreviewService
 	run      Run
@@ -492,8 +492,8 @@ func runOutputNamesPresentation(body json.RawMessage) bool {
 // uploads and its output post carry the proof. It reads outside the Run's
 // sandbox, so it refuses a file the sandbox denies the Run (a workdir such as
 // the person's home holds the sign-in files and every Run's home; a tagged
-// Run's hidden folders hold its person's private work; Access TECH B3e,
-// B7b): launch is the Run's own and hidden folders, as its sandbox gets them.
+// Run's hidden folders hold its person's private work): launch is the Run's
+// own and hidden folders, as its sandbox gets them.
 // Nil when the Run's policy disables saved work or the workspace is unknown.
 func (d *Daemon) newRunOutputPresenter(
 	run Run,
@@ -545,7 +545,7 @@ func (d *Daemon) newRunOutputPresenter(
 // runChannelWorkspace is what the channel completes local calls against: the
 // presenter for present_output, and the Run's working directory with its
 // sandbox guard for artifact_fetch, which writes there from outside the
-// sandbox (Access TECH B3e).
+// sandbox.
 type runChannelWorkspace struct {
 	present RunOutputPresenter
 	path    string
@@ -922,7 +922,7 @@ func (d *Daemon) forwardRunChannelRequest(
 			return nil, err
 		}
 		httpRequest.Header.Set("Authorization", "Bearer "+token)
-		httpRequest.Header.Set("X-Boardly-Run-Token", channel.runToken)
+		httpRequest.Header.Set("X-Zenith-Team-Run-Token", channel.runToken)
 		httpRequest.Header.Set("Accept", "application/json")
 		if len(request.Body) != 0 {
 			httpRequest.Header.Set("Content-Type", "application/json")

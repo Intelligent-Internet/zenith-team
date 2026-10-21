@@ -28,7 +28,7 @@ and Cloudflare Pages proxy. Keep framework and API choices aligned with
 
 ## Data access
 
-There is one `boardlyApi`, one reducer, one middleware, and one shared RTK cache.
+There is one `zenithTeamApi`, one reducer, one middleware, and one shared RTK cache.
 Domain endpoint modules in `src/shared/api/` inject into that instance:
 `conversation-api`, `company-api`, `analytics-api`, `activity-api`, `task-api`,
 `resource-api`, `agent-api`, and `agent-runtime-api`. Feature-specific endpoint

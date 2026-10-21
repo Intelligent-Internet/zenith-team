@@ -37,7 +37,7 @@ export type PendingEmailVerificationInput = {
 };
 
 export const PENDING_EMAIL_VERIFICATION_STORAGE_KEY =
-  "boardly.pending-email-verification.v1";
+  "zenith-team.pending-email-verification.v1";
 
 function normalizeOptionalText(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;

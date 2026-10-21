@@ -6,10 +6,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
-// Access TECH D3: every active member reads a Company's Groups, so
+// Every active member reads a Company's Groups, so
 // group.changed and group.deleted go to the Company room, and carry the
 // Group and its revision only.
 func TestGroupFramesGoToTheCompanyRoom(t *testing.T) {

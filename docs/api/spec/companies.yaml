@@ -413,7 +413,7 @@ paths:
 
         Two gates, because this stores a person's statement but is written by an
         Agent: the session must be the Company owner, and the request must carry
-        `X-Boardly-Run-Token` proving a live Run in the same Company. An owner
+        `X-Zenith-Team-Run-Token` proving a live Run in the same Company. An owner
         session alone would let any client assert the founder's history outside
         the conversation where the founder was actually asked.
 
@@ -426,7 +426,7 @@ paths:
         attestations in its frozen Run brief.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           description: Proof of a live Run in this Company.
@@ -1165,7 +1165,7 @@ paths:
 
         The daemon serializes access to the selected path. A managed directory
         or Git worktree is not an OS sandbox guarantee. The managed-only
-        replacement is Planned in docs/specs/workspaces; this operation still
+        replacement is planned; this operation still
         describes the served directory-binding baseline.
 
         PostgreSQL generates the row `id`. Repeating the same `daemonId`,

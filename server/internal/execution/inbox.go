@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 type runInboxTarget struct {
@@ -143,7 +143,10 @@ func createRunTerminalInboxItem(
 		}
 		target.awaiting = awaiting
 	}
-	agent, err := queries.GetRunAgentBrief(ctx, db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID})
+	agent, err := queries.GetRunAgentBrief(
+		ctx,
+		db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID},
+	)
 	if err != nil {
 		return inbox.CreateResult{}, fmt.Errorf("read terminal Run Inbox agent: %w", err)
 	}
@@ -258,7 +261,10 @@ func createProjectAccessRevokedInboxItem(
 	if err != nil || !readable {
 		return inbox.CreateResult{}, err
 	}
-	agent, err := queries.GetRunAgentBrief(ctx, db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID})
+	agent, err := queries.GetRunAgentBrief(
+		ctx,
+		db.GetRunAgentBriefParams{AgentID: run.AgentID, RuntimeID: run.RuntimeID},
+	)
 	if err != nil {
 		return inbox.CreateResult{}, fmt.Errorf("read stopped Run Inbox agent: %w", err)
 	}

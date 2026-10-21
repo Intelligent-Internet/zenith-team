@@ -11,10 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func outputSource(id uuid.NullUUID) *uuid.UUID {
@@ -129,7 +129,6 @@ func importOutputDocumentInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	m mutation,
-	artifact generated.ProjectArtifact,
 ) (uuid.UUID, uuid.UUID, error) {
 	c, p := m.Input, m.Principal
 	source, err := q.GetCanvasOutputDocumentSource(ctx, generated.GetCanvasOutputDocumentSourceParams{

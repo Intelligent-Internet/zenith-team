@@ -17,11 +17,11 @@ import (
 	"github.com/reearth/ygo/crdt"
 	"golang.org/x/sync/errgroup"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func boardFixture(t *testing.T) (*DefaultBoardService, *pgxpool.Pool, auth.UserPrincipal, auth.UserPrincipal) {
@@ -352,7 +352,15 @@ func TestBoardAtomicCommandsReceiptsAndLifecycle(t *testing.T) {
 		t.Fatalf("replay = %+v, %v", replay, err)
 	}
 	request.Commands[0].Text = "different"
-	if _, err = s.Mutate(ctx, p, BoardScope{BoardID: board.ID}, request); !errors.Is(err, ErrBoardRequestKeyReused) {
+	if _, err = s.Mutate(
+		ctx,
+		p,
+		BoardScope{BoardID: board.ID},
+		request,
+	); !errors.Is(
+		err,
+		ErrBoardRequestKeyReused,
+	) {
 		t.Fatalf("key reuse = %v", err)
 	}
 	id := got.IDs["a"]

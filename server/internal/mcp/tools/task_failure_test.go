@@ -81,7 +81,10 @@ func TestMarkTaskFailedRejectsUnexpectedCloudStatus(t *testing.T) {
 	t.Parallel()
 	api := &taskFailureAPIStub{status: "running"}
 	service, err := NewTaskFailureService(api, RunContext{
-		CompanyID: "company", ConversationID: "conversation", RunID: "00000000-0000-4000-8000-000000000071", AgentID: "agent",
+		CompanyID:      "company",
+		ConversationID: "conversation",
+		RunID:          "00000000-0000-4000-8000-000000000071",
+		AgentID:        "agent",
 	})
 	if err != nil {
 		t.Fatal(err)

@@ -10,12 +10,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// No laundering (IA-FR32): a membership change or a delete never moves
+// No laundering: a membership change or a delete never moves
 // access its author could not move directly on a Project the Group reaches.
 func TestGroupChangePermittedIsNoLaundering(t *testing.T) {
 	t.Parallel()
@@ -243,7 +243,7 @@ func TestFoldGroupPreviewCountsWhatMoves(t *testing.T) {
 	}
 }
 
-// D4: each listed person's sources, own grant first, then each Group, the
+// Each listed person's sources, own grant first, then each Group, the
 // Company floor and the management bridge; granted stays their own rows.
 func TestFoldProjectGrantsStatesEverySource(t *testing.T) {
 	t.Parallel()

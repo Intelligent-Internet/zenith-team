@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func TestServiceRequiresStoreAndBus(t *testing.T) {
@@ -168,12 +168,18 @@ func TestAgentLifecycleFrameCarriesNoMembersSetup(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			agent := Response{
 				ID: uuid.New(), CompanyID: uuid.New(), Name: "Lyra", Provider: "codex",
-				Access: AgentAccess{Configure: true, Execute: true},
+				Access: Access{Configure: true, Execute: true},
 				Binding: &BindingRef{
 					ID: uuid.New(),
 					Runtime: RuntimeRef{
-						ID: runtimeID, Name: "Codex (DuongPhung)", Status: "online", Provider: "codex",
-						SignIn: &RuntimeSignIn{State: "signed_in", Detail: "Logged in using ChatGPT."},
+						ID:       runtimeID,
+						Name:     "Codex (AlexRivera)",
+						Status:   "online",
+						Provider: "codex",
+						SignIn: &RuntimeSignIn{
+							State:  "signed_in",
+							Detail: "Logged in using ChatGPT.",
+						},
 					},
 				},
 				RuntimeAvailable: true, ActiveRunCount: 2, ArchivedAt: archived,
@@ -200,9 +206,13 @@ func TestAgentLifecycleFrameCarriesNoMembersSetup(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for _, secret := range []string{runtimeID.String(), "DuongPhung", "Logged in using ChatGPT."} {
+			for _, secret := range []string{runtimeID.String(), "AlexRivera", "Logged in using ChatGPT."} {
 				if strings.Contains(string(encoded), secret) {
-					t.Fatalf("lifecycle frame names the acting member's machine (%q): %s", secret, encoded)
+					t.Fatalf(
+						"lifecycle frame names the acting member's machine (%q): %s",
+						secret,
+						encoded,
+					)
 				}
 			}
 			if agent.Binding == nil || !agent.RuntimeAvailable {

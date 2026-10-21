@@ -1,7 +1,7 @@
 .slateCanvas {
   --canvas-background: #e8edf2;
 }
-:global(html[data-boardly-color-mode="dark"]) .slateCanvas {
+:global(html[data-zenith-team-color-mode="dark"]) .slateCanvas {
   --canvas-background: #202a36;
 }
 .slateCanvas:global(.project-canvas),
@@ -211,11 +211,11 @@
   }
 }
 
-:global(.boardly-workspace-theme[data-desktop-mac="true"]) .fullscreenHeader {
+:global(.zenith-team-workspace-theme[data-desktop-mac="true"]) .fullscreenHeader {
   padding-left: 88px;
   -webkit-app-region: drag;
 }
-:global(.boardly-workspace-theme[data-desktop-mac="true"])
+:global(.zenith-team-workspace-theme[data-desktop-mac="true"])
   .fullscreenHeader
   button {
   -webkit-app-region: no-drag;

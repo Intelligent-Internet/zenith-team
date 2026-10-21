@@ -1,4 +1,12 @@
 {
   "title": "Developers",
-  "pages": ["architecture", "design", "contributing"]
+  "pages": [
+    "architecture",
+    "design",
+    "conventions",
+    "contributing",
+    "testing",
+    "releasing",
+    "maintaining"
+  ]
 }

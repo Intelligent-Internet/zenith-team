@@ -8,12 +8,12 @@ import (
 	"slices"
 	"time"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // localDirectoryResourceType is the only company-resource type a run context
@@ -426,7 +426,10 @@ func runContextExecutionProfile(
 		return nil, errors.New("run enqueue source is invalid")
 	}
 	profile := runExecutionProfile{Source: in.Source}
-	document, documentErr := q.GetDocumentAgentContext(ctx, db.GetDocumentAgentContextParams{CompanyID: in.CompanyID, ConversationID: in.ConversationID})
+	document, documentErr := q.GetDocumentAgentContext(
+		ctx,
+		db.GetDocumentAgentContextParams{CompanyID: in.CompanyID, ConversationID: in.ConversationID},
+	)
 	if documentErr == nil {
 		profile.DocumentThreadID = document.ThreadID.UUID.String()
 		profile.DocumentWriting = in.DocumentWriting

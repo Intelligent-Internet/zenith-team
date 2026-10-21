@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { canBrowseDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
 import { useBrowseWorkspaceAssetsInfiniteQuery } from "@/features/assets/api/workspace-assets-api";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 
 type UseWorkspaceAssetsOptions = {
   companyId: string;
@@ -70,7 +70,7 @@ export function useWorkspaceAssets({
         refresh();
       }, 500);
     };
-    const unsubscribeEvent = boardlyRealtimeClient.onEvent((event) => {
+    const unsubscribeEvent = zenithTeamRealtimeClient.onEvent((event) => {
       if (event.companyId !== companyId) return;
       if (
         event.type === "run.message" ||
@@ -82,7 +82,7 @@ export function useWorkspaceAssets({
       }
     });
     const unsubscribeRecovery =
-      boardlyRealtimeClient.onRecovery(scheduleRefresh);
+      zenithTeamRealtimeClient.onRecovery(scheduleRefresh);
     return () => {
       clearTimeout(refreshTimer);
       unsubscribeEvent();

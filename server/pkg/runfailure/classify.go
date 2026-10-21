@@ -244,14 +244,14 @@ func Classify(rawError string) Reason {
 // on the RESPONSE rather than as a 400 on the request: the provider accepts the
 // call and ends the turn with stop_reason "model_context_window_exceeded", which
 // Claude Code 2.1.x surfaces verbatim as "API Error: The model has reached its
-// context window limit." (GH #6360). Both are matched so an adapter forwarding
+// context window limit." Both are matched so an adapter forwarding
 // the raw stop reason classifies the same way as one forwarding the CLI's copy.
 //
 // Neither carries "token" nor any of rule 1's other phrases, so before this the
 // failure lands in agent_error.unknown — a reason no resume blacklist covers —
 // leaving the over-full session pinned as the resume pointer.
 //
-// terminal_reason=prompt_too_long joins them for GH #6402: it is the structured
+// terminal_reason=prompt_too_long joins them: it is the structured
 // enum value Claude Code puts on the result frame when the turn ended because
 // the context window is full, and the daemon quotes it verbatim into the error
 // it reports (see claudeTerminalReasonFailure in

@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func agentViewItem(id, kind string, x, y, w, h float64) BoardItem {

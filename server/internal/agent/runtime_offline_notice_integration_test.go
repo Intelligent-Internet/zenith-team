@@ -12,12 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // runtimeNoticeLog records the two surfaces an Inbox item reaches: the
@@ -80,8 +80,8 @@ func mustRuntimeNoticeService(
 	return service, agentLog, notices
 }
 
-// seedSecondCompanyOwner adds an active second owner to company A: DR-FR18's
-// "the company owner" is every active owner, not one seat.
+// seedSecondCompanyOwner adds an active second owner to company A: the
+// offline notice's "the company owner" is every active owner, not one seat.
 func seedSecondCompanyOwner(
 	t *testing.T,
 	ctx context.Context,
@@ -186,9 +186,9 @@ func seedOpenRuntimeNotice(
 		companyID, recipientID, runtimeID, "/settings/agents/"+runtimeID.String(), dedupeKey)
 }
 
-// TestMarkStaleRuntimesOfflineNotifiesOwnersOfInFlightRuns is DR-AC21's first
-// half: a machine that dies holding work tells the people who can restart it,
-// once each, with the machine's name and the count.
+// TestMarkStaleRuntimesOfflineNotifiesOwnersOfInFlightRuns is the offline
+// notice's first half: a machine that dies holding work tells the people who
+// can restart it, once each, with the machine's name and the count.
 func TestMarkStaleRuntimesOfflineNotifiesOwnersOfInFlightRuns(t *testing.T) {
 	pool, store := startAgentPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -246,11 +246,14 @@ func TestMarkStaleRuntimesOfflineNotifiesOwnersOfInFlightRuns(t *testing.T) {
 		t.Fatalf("inbox.created events = %d, want 1", len(created))
 	}
 	for _, event := range created {
-		if event.Payload.Item.Type != inbox.TypeRuntimeOffline {
-			t.Fatalf("inbox.created kind = %q, want runtime_offline", event.Payload.Item.Type)
+		if event.Payload.Type != inbox.TypeRuntimeOffline {
+			t.Fatalf("inbox.created kind = %q, want runtime_offline", event.Payload.Type)
 		}
-		if event.Payload.Item.RecipientUserID != fixture.UserA {
-			t.Fatalf("inbox.created recipient = %s, want the registrant", event.Payload.Item.RecipientUserID)
+		if event.Payload.RecipientUserID != fixture.UserA {
+			t.Fatalf(
+				"inbox.created recipient = %s, want the registrant",
+				event.Payload.RecipientUserID,
+			)
 		}
 	}
 	presented := notices.presentations()
@@ -367,9 +370,10 @@ func TestMarkStaleRuntimesOfflineSkipsAnIneligibleRecipient(t *testing.T) {
 	}
 }
 
-// TestHeartbeatResolvesRuntimeOfflineItems is DR-AC21's second half over the
-// ordinary return path: the machine beats again and every recipient's copy
-// resolves itself, in the same transaction that records the machine alive.
+// TestHeartbeatResolvesRuntimeOfflineItems is the offline notice's second
+// half over the ordinary return path: the machine beats again and every
+// recipient's copy resolves itself, in the same transaction that records the
+// machine alive.
 func TestHeartbeatResolvesRuntimeOfflineItems(t *testing.T) {
 	pool, store := startAgentPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -424,7 +428,7 @@ func TestHeartbeatResolvesRuntimeOfflineItems(t *testing.T) {
 		t.Fatalf("inbox.updated events = %d, want one per recipient", len(updated))
 	}
 	for _, event := range updated {
-		if event.Payload.Item.ArchivedAt == nil {
+		if event.Payload.ArchivedAt == nil {
 			t.Fatalf("inbox.updated carried an unarchived item: %+v", event.Payload.Item)
 		}
 	}
@@ -569,8 +573,8 @@ func waitForBlockedRuntimeWrite(t *testing.T, ctx context.Context, pool *pgxpool
 	}
 }
 
-// TestRegisterRuntimesResolvesRuntimeOfflineItems covers the return path the
-// spec's heartbeat-only wording misses: a restarted daemon registers the
+// TestRegisterRuntimesResolvesRuntimeOfflineItems covers the return path a
+// heartbeat-only rule misses: a restarted daemon registers the
 // runtime online BEFORE its first beat, so the heartbeat edge never fires.
 func TestRegisterRuntimesResolvesRuntimeOfflineItems(t *testing.T) {
 	pool, store := startAgentPostgres(t)

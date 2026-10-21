@@ -6,28 +6,28 @@
   --workspace-chat-column-width: 744px;
   --workspace-chat-gutter: var(--workspace-chat-inset);
 }
-html[data-boardly-color-mode="light"]
+html[data-zenith-team-color-mode="light"]
   :is(.workspace-chat-page, .workspace-chat-navigator, .member-profile-panel) {
   --workspace-composer-shadow: 0 2px 10px rgb(15 23 42 / 5%);
 }
 @media (prefers-contrast: no-preference) {
-  html[data-boardly-workspace-theme][data-boardly-color-mode="light"]:not(
-      [data-boardly-high-contrast="true"]
+  html[data-zenith-team-workspace-theme][data-zenith-team-color-mode="light"]:not(
+      [data-zenith-team-high-contrast="true"]
     )
-    .boardly-workspace-theme
+    .zenith-team-workspace-theme
     .workspace-chat-page
     .workspace-chat-composer {
     border-color: var(--workspace-divider) !important;
   }
-  html[data-boardly-color-mode="light"]:not([data-boardly-high-contrast="true"])
-    .boardly-workspace-theme
+  html[data-zenith-team-color-mode="light"]:not([data-zenith-team-high-contrast="true"])
+    .zenith-team-workspace-theme
     .workspace-chat-navigator {
     position: relative;
     z-index: 1;
     border-right: 1px solid var(--workspace-divider);
     box-shadow: none;
   }
-  html[data-boardly-color-mode="light"]:not([data-boardly-high-contrast="true"])
+  html[data-zenith-team-color-mode="light"]:not([data-zenith-team-high-contrast="true"])
     .workspace-chat-page
     :is(
       .discussion-thread-panel,
@@ -40,11 +40,11 @@ html[data-boardly-color-mode="light"]
     box-shadow: none;
   }
 }
-.boardly-workspace-theme .workspace-company-switcher {
+.zenith-team-workspace-theme .workspace-company-switcher {
   height: 37px;
   padding: 0 3px;
 }
-.boardly-workspace-theme .workspace-company-switcher .workspace-company-mark {
+.zenith-team-workspace-theme .workspace-company-switcher .workspace-company-mark {
   width: 27px;
   height: 27px;
   border-radius: 7px;
@@ -52,21 +52,21 @@ html[data-boardly-color-mode="light"]
   color: var(--workspace-nav-text);
   font-weight: 600;
 }
-.boardly-workspace-theme .workspace-utility-header .workspace-company-name {
+.zenith-team-workspace-theme .workspace-utility-header .workspace-company-name {
   font-weight: 600;
 }
-.boardly-workspace-theme .workspace-primary-nav-item.is-active::before {
+.zenith-team-workspace-theme .workspace-primary-nav-item.is-active::before {
   display: none;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator {
   width: 270px;
   background: var(--workspace-sidebar-bg) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__header {
   height: var(--workspace-conversation-header-height);
@@ -75,8 +75,8 @@ html[data-boardly-workspace-theme]
   border-bottom: 0;
   gap: 2px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__title {
   font-size: 18px;
@@ -84,14 +84,14 @@ html[data-boardly-workspace-theme]
   font-weight: 600;
   letter-spacing: -0.3px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__section {
   margin-bottom: 20px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__section-title {
   margin-bottom: 0;
@@ -103,8 +103,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-faint);
   text-transform: none;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__section-count {
   font-size: var(--workspace-text-micro);
@@ -164,8 +164,8 @@ html[data-boardly-workspace-theme]
     transition: none;
   }
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row {
   border: 0;
@@ -173,20 +173,20 @@ html[data-boardly-workspace-theme]
   padding-right: 3px;
   background: transparent;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row[data-active] {
   background: var(--workspace-selected-bg) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row:hover {
   background: var(--workspace-hover-bg);
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row
   > button:first-child {
@@ -220,8 +220,8 @@ html[data-boardly-workspace-theme]
   > svg:not(.workspace-chat-navigator__section-chevron) {
   display: none;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row-title {
   display: block;
@@ -233,8 +233,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-body);
   font-weight: 400;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__badge {
   flex-shrink: 0;
@@ -247,8 +247,8 @@ html[data-boardly-workspace-theme]
   text-transform: none;
   letter-spacing: normal;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__avatar {
   width: 22px;
@@ -399,8 +399,8 @@ html[data-boardly-workspace-theme]
   }
 }
 @media (hover: none), (pointer: coarse) {
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-chat-page
     .workspace-chat-navigator__row
     > button:first-child {
@@ -546,8 +546,8 @@ html[data-boardly-workspace-theme]
 .workspace-chat-context-action + .workspace-chat-context-action {
   margin-left: 0;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-timeline {
   width: calc(100% - 2 * var(--workspace-chat-gutter));
@@ -555,8 +555,8 @@ html[data-boardly-workspace-theme]
   margin-inline: auto;
   padding: 24px 0 12px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   [data-chat-message-id] {
   position: relative;
@@ -568,36 +568,36 @@ html[data-boardly-workspace-theme]
   align-self: flex-start;
   margin: 0 0 20px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   [data-chat-message-id].is-user {
   align-items: flex-end;
   padding-left: 0;
   margin-block: 12px 28px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .is-user
   .workspace-chat-actor {
   justify-content: flex-end;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .is-user
   .workspace-chat-actor__avatar {
   position: static;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   [data-chat-message-id]:not([data-actor-group-start]) {
   margin-block: 0 4px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor {
   width: 100%;
@@ -612,15 +612,15 @@ html[data-boardly-workspace-theme]
   font-weight: 400;
   color: var(--workspace-native-text-muted) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor
   > button {
   flex-direction: row;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor__avatar {
   display: grid;
@@ -632,23 +632,23 @@ html[data-boardly-workspace-theme]
   font-size: var(--workspace-text-micro);
   font-weight: 500;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor__avatar[data-actor-kind="agent"] {
   border-radius: 0;
   background: transparent;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor__avatar
   > .fold-avatar {
   width: 100% !important;
   height: 100% !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-actor__time {
   font-size: var(--workspace-text-caption);
@@ -678,13 +678,13 @@ html[data-boardly-workspace-theme]
     opacity: 1;
   }
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(
     .workspace-user-message-bubble,
     .workspace-assistant-message-content,
-    .boardly-chat-markdown,
+    .zenith-team-chat-markdown,
     .workspace-structured-chat-message
   ) {
   font-size: var(--workspace-chat-body-size) !important;
@@ -692,8 +692,8 @@ html[data-boardly-workspace-theme]
   font-weight: 400 !important;
   color: var(--workspace-native-text) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-user-message-bubble {
   width: fit-content;
@@ -705,8 +705,8 @@ html[data-boardly-workspace-theme]
   box-shadow: none !important;
   text-align: left;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-user-message-actions {
   position: absolute;
@@ -714,16 +714,16 @@ html[data-boardly-workspace-theme]
   right: 0;
   margin: 0;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(.workspace-chat-composer-accessory, .workspace-chat-suggestions) {
   width: calc(100% - 2 * var(--workspace-chat-gutter));
   max-width: var(--workspace-chat-column-width);
   margin-inline: auto;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer {
   width: calc(100% - 2 * var(--workspace-chat-gutter));
@@ -734,14 +734,14 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider-strong) !important;
   border-radius: var(--workspace-radius-composer) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer:focus-within {
   border-color: var(--workspace-divider-strong) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer
   textarea {
@@ -750,8 +750,8 @@ html[data-boardly-workspace-theme]
   margin-inline: 12px;
   margin-top: 12px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-composer-tools {
   align-items: center;
@@ -760,22 +760,22 @@ html[data-boardly-workspace-theme]
   min-height: 52px;
   gap: 8px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-composer-tools
   > div {
   gap: 8px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer[data-formatting-enabled]
   textarea {
   margin: 12px 12px 8px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer[data-formatting-enabled]
   .workspace-composer-tools {
@@ -783,8 +783,8 @@ html[data-boardly-workspace-theme]
   flex-shrink: 0;
   padding: 4px 12px 12px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-composer[data-formatting-enabled]
   .workspace-composer-tools
@@ -794,8 +794,8 @@ html[data-boardly-workspace-theme]
   height: var(--workspace-control-size);
   padding: 0;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(.workspace-chat-send-button, .workspace-chat-stop-button) {
   display: inline-flex;
@@ -820,23 +820,23 @@ html[data-boardly-workspace-theme]
   font-weight: 500;
   box-shadow: none !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(.workspace-chat-send-button, .workspace-chat-stop-button):not(
     :disabled
   ):hover {
   background: var(--workspace-accent-hover) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(.workspace-chat-send-button, .workspace-chat-stop-button):disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-composer-action {
   width: 32px;
@@ -847,15 +847,15 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
   background: transparent;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-composer-action:not(:disabled):hover {
   color: var(--workspace-native-text);
   background: var(--workspace-hover-bg);
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-scroll-latest {
   width: 32px;
@@ -868,8 +868,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
   box-shadow: none;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-scroll-latest:hover {
   background: var(--workspace-hover-bg);
@@ -894,23 +894,23 @@ html[data-boardly-workspace-theme]
   .workspace-chat-context-milestone {
     display: none !important;
   }
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-chat-page
     .workspace-chat-timeline {
     padding: 20px 0;
   }
 }
 @media (pointer: coarse) {
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-chat-page
     .workspace-chat-composer
     textarea {
     font-size: 16px;
   }
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-chat-page
     :is(
       .workspace-chat-send-button,
@@ -928,8 +928,8 @@ html[data-boardly-workspace-theme]
   }
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   :is(.workspace-chat-run-queue, .workspace-chat-research-notice) {
   width: calc(100% - 2 * var(--workspace-chat-gutter) - 24px);
@@ -938,13 +938,13 @@ html[data-boardly-workspace-theme]
   margin-inline: auto;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-run-queue
   + .workspace-chat-composer,
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-run-queue
   + input[type="file"]
@@ -952,14 +952,14 @@ html[data-boardly-workspace-theme]
   margin-top: 0;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row[data-channel] {
   border-radius: 6px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row[data-channel][data-active] {
   background: color-mix(
@@ -968,31 +968,31 @@ html[data-boardly-workspace-theme]
     transparent
   ) !important;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row[data-channel]
   > button:first-child {
   min-height: 32px;
   padding-block: 5px;
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row-title[data-channel] {
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row-title[data-channel]:not([data-unread]) {
   color: var(--workspace-native-text);
   font-weight: 400;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-page
   .workspace-chat-navigator__row-title[data-unread] {
   color: var(--workspace-native-text);

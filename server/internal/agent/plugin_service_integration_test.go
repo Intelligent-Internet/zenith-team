@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func TestPluginDiscoveryPersistsPresentationWithoutGrantingConnectorAuthority(t *testing.T) {
@@ -254,7 +254,7 @@ func TestPluginCatalogRejectsRuntimeWithIneligibleOwner(t *testing.T) {
 			mustAgentExec(t, ctx, pool,
 				`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Runtime Owner')`,
 				runtimeOwnerID,
-				runtimeOwnerID.String()+"@boardly.test",
+				runtimeOwnerID.String()+"@zenith-team.test",
 			)
 			mustAgentExec(t, ctx, pool, `
 				INSERT INTO company_members (company_id, user_id, role)
@@ -290,7 +290,7 @@ func TestPluginCatalogSelectsAnotherMembersRuntimeOnlyWhenShared(t *testing.T) {
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Registrant')`,
 		registrantID,
-		registrantID.String()+"@boardly.test",
+		registrantID.String()+"@zenith-team.test",
 	)
 	mustAgentExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)
@@ -425,7 +425,8 @@ func TestRuntimeCatalogsHonorExplicitRuntimeWithoutAnAssignedAgent(t *testing.T)
 				ConnectorListInput{RuntimeID: tc.runtimeID, Provider: tc.provider},
 			)
 			if tc.wantUnavailable {
-				if !errors.Is(pluginErr, ErrPluginProviderUnavailable) || !errors.Is(connectorErr, ErrConnectorProviderUnavailable) {
+				if !errors.Is(pluginErr, ErrPluginProviderUnavailable) ||
+					!errors.Is(connectorErr, ErrConnectorProviderUnavailable) {
 					t.Fatalf("catalog errors = %v / %v, want unavailable", pluginErr, connectorErr)
 				}
 				return
@@ -501,7 +502,7 @@ func TestCatalogRefreshIsTheRegistrantsWhateverTheirRole(t *testing.T) {
 	otherID := uuid.Must(uuid.NewV7())
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Other')`,
-		otherID, otherID.String()+"@boardly.test",
+		otherID, otherID.String()+"@zenith-team.test",
 	)
 	mustAgentExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)
@@ -525,7 +526,7 @@ func TestCatalogRefreshIsTheRegistrantsWhateverTheirRole(t *testing.T) {
 }
 
 // Codex lists the Claude marketplace's copies of many curated Plugins without
-// a logo or description (D26). The catalog leaves out a Plugin of a
+// a logo or description. The catalog leaves out a Plugin of a
 // marketplace outside OpenAI's that is not installed when the same Runtime
 // observes an openai-curated-remote Plugin with the same name, ignoring case,
 // spaces and punctuation, that is installed or can be installed, and
@@ -645,7 +646,8 @@ func TestPluginCatalogLeavesOutCuratedDuplicates(t *testing.T) {
 		t.Fatalf("listed = %v\nwant %v", got, wantListed)
 	}
 	wantCategories := []PluginCategoryCount{
-		{Category: "Productivity", Count: 8}, {Category: "Creativity", Count: 5},
+		{Category: "Productivity", Count: 8},
+		{Category: "Creativity", Count: 5},
 		{Category: "Developer Tools", Count: 9},
 	}
 	if page.TotalCount != int64(len(wantListed)) || page.InstalledCount != 2 ||

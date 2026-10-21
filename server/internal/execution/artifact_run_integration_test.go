@@ -7,10 +7,10 @@ import (
 	"errors"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -111,10 +111,10 @@ func (x artifactRunFixture) runOrigins(t *testing.T, ctx context.Context) map[st
 }
 
 // Every Run reads an Artifact exactly when its Authorizer reads it, with no
-// chat-audience limit (D31, Access TECH B10). Main's #493 required a Task
-// Run's whole Task chat to read the Artifact; D31 supersedes that, so Mia,
-// who reads the Task chat and the channel but not the Output, changes no
-// answer. The Authorizer's own access is rechecked on every read.
+// chat-audience limit. An earlier version required a Task Run's whole Task
+// chat to read the Artifact; that limit is gone, so Mia, who reads the Task
+// chat and the channel but not the Output, changes no answer. The
+// Authorizer's own access is rechecked on every read.
 func TestEveryRunReadsAnArtifactWithItsAuthorizersAccess(t *testing.T) {
 	ctx := t.Context()
 	x := newArtifactRunFixture(t, ctx)
@@ -191,12 +191,13 @@ func TestRunCannotReadAnArtifactItsAuthorizerCannotRead(t *testing.T) {
 	}
 }
 
-// The 2026-10-09 desktop finding (S1g): Payroll is restricted, Olivia holds
-// every permission there and Mia holds project.read. Eli runs Olivia's Task
-// and presents an Output, which is private to her, the Task's creator. In
-// the Task chat Olivia asks Eli to inspect and fetch it, and both must
-// answer though Mia, who reads the Task chat, cannot open the Output. This
-// is the path the agent-artifacts inspect and download routes take.
+// A Task Run reads its own Task's private Output. Payroll is restricted,
+// Olivia holds every permission there and Mia holds project.read. Eli runs
+// Olivia's Task and presents an Output, which is private to her, the Task's
+// creator. In the Task chat Olivia asks Eli to inspect and fetch it, and
+// both must answer though Mia, who reads the Task chat, cannot open the
+// Output. This is the path the agent-artifacts inspect and download routes
+// take.
 func TestTaskRunReadsItsOwnTasksPrivateOutputInARestrictedProject(t *testing.T) {
 	ctx := t.Context()
 	x := newArtifactRunFixture(t, ctx)

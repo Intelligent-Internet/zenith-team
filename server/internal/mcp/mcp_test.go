@@ -12,29 +12,29 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 func TestResolveRunContextUsesOnlyRunScopedIdentity(t *testing.T) {
 	t.Parallel()
 	values := map[string]string{
-		"BOARDLY_MCP_COMPANY_ID":      "01990ad8-0bb0-7de0-acfa-9f2821fc1a52",
-		"BOARDLY_MCP_CONVERSATION_ID": "01990ad8-0bb0-7de0-acfa-9f2821fc1a53",
-		"BOARDLY_MCP_TASK_ID":         "01990ad8-0bb0-7de0-acfa-9f2821fc1a55",
-		"BOARDLY_MCP_RUN_ID":          "00000000-0000-4000-8000-000000000071",
-		"BOARDLY_MCP_AGENT_ID":        "01990ad8-0bb0-7de0-acfa-9f2821fc1a54",
+		"ZENITH_TEAM_MCP_COMPANY_ID":      "01990ad8-0bb0-7de0-acfa-9f2821fc1a52",
+		"ZENITH_TEAM_MCP_CONVERSATION_ID": "01990ad8-0bb0-7de0-acfa-9f2821fc1a53",
+		"ZENITH_TEAM_MCP_TASK_ID":         "01990ad8-0bb0-7de0-acfa-9f2821fc1a55",
+		"ZENITH_TEAM_MCP_RUN_ID":          "00000000-0000-4000-8000-000000000071",
+		"ZENITH_TEAM_MCP_AGENT_ID":        "01990ad8-0bb0-7de0-acfa-9f2821fc1a54",
 	}
 	got, err := resolveRunContext(func(key string) string { return values[key] })
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.CompanyID != values["BOARDLY_MCP_COMPANY_ID"] ||
-		got.ConversationID != values["BOARDLY_MCP_CONVERSATION_ID"] ||
-		got.TaskID != values["BOARDLY_MCP_TASK_ID"] ||
-		got.RunID != values["BOARDLY_MCP_RUN_ID"] ||
-		got.AgentID != values["BOARDLY_MCP_AGENT_ID"] {
+	if got.CompanyID != values["ZENITH_TEAM_MCP_COMPANY_ID"] ||
+		got.ConversationID != values["ZENITH_TEAM_MCP_CONVERSATION_ID"] ||
+		got.TaskID != values["ZENITH_TEAM_MCP_TASK_ID"] ||
+		got.RunID != values["ZENITH_TEAM_MCP_RUN_ID"] ||
+		got.AgentID != values["ZENITH_TEAM_MCP_AGENT_ID"] {
 		t.Fatalf("resolveRunContext() = %+v", got)
 	}
 }
@@ -46,7 +46,7 @@ func TestResolveSkillSnapshotDirRequiresCanonicalAbsoluteDirectory(t *testing.T)
 		t.Fatal(err)
 	}
 	got, ok := resolveSkillSnapshotDir(func(key string) string {
-		if key == "BOARDLY_SKILL_SNAPSHOT_DIR" {
+		if key == "ZENITH_TEAM_SKILL_SNAPSHOT_DIR" {
 			return root
 		}
 		return ""
@@ -63,8 +63,8 @@ func TestResolveSkillSnapshotDirRequiresCanonicalAbsoluteDirectory(t *testing.T)
 }
 
 // The Company Plan draft and export live in the Run environment the daemon
-// hands over, never in the directory the Agent works in (Runs TECH §11.2:
-// deliverables stay in cwd, a Run's temporary artifacts do not). The process
+// hands over, never in the directory the Agent works in (deliverables stay
+// in cwd, a Run's temporary artifacts do not). The process
 // cwd is only the fallback for a hand-started MCP process.
 func TestResolveCompanyPlanRootPrefersTheRunEnvironment(t *testing.T) {
 	t.Parallel()
@@ -77,7 +77,7 @@ func TestResolveCompanyPlanRootPrefersTheRunEnvironment(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, err := resolveCompanyPlanRoot(func(key string) string {
-		if key == "BOARDLY_MCP_PLAN_ROOT" {
+		if key == "ZENITH_TEAM_MCP_PLAN_ROOT" {
 			return root
 		}
 		return ""
@@ -101,7 +101,7 @@ func TestTaskPlatformSkillsRequireBothToolsAndCanonicalRunIdentity(t *testing.T)
 	t.Parallel()
 
 	environment := map[string]string{
-		"BOARDLY_MCP_RUN_ID": "00000000-0000-4000-8000-000000000071",
+		"ZENITH_TEAM_MCP_RUN_ID": "00000000-0000-4000-8000-000000000071",
 	}
 	allowed := map[string]struct{}{
 		"search_skills":        {},
@@ -115,16 +115,16 @@ func TestTaskPlatformSkillsRequireBothToolsAndCanonicalRunIdentity(t *testing.T)
 		t.Fatal("partial Skill tool allowlist enabled platform Skills")
 	}
 	allowed["load_skill_reference"] = struct{}{}
-	environment["BOARDLY_MCP_RUN_ID"] = "071"
+	environment["ZENITH_TEAM_MCP_RUN_ID"] = "071"
 	if taskPlatformSkillsAvailable(allowed, func(key string) string { return environment[key] }) {
 		t.Fatal("non-canonical Run identity enabled platform Skills")
 	}
 }
 
-// boardly-mcp reaches the server only through the Run channel. With no
-// run.json in its BOARDLY_HOME it refuses to start: it never looks for
-// auth.json, in that home or in ~/.boardly, and never reads a Run token from
-// its environment (Access TECH B3b).
+// zenith-team-mcp reaches the server only through the Run channel. With no
+// run.json in its ZENITH_TEAM_HOME it refuses to start: it never looks for
+// auth.json, in that home or in ~/.zenith-team, and never reads a Run token from
+// its environment.
 func TestRunRefusesToStartWithoutTheRunChannel(t *testing.T) {
 	t.Parallel()
 	signedIn := t.TempDir()
@@ -136,13 +136,13 @@ func TestRunRefusesToStartWithoutTheRunChannel(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, home := range map[string]string{
-		"no BOARDLY_HOME":            "",
+		"no ZENITH_TEAM_HOME":        "",
 		"a home with only auth.json": signedIn,
 	} {
 		environment := map[string]string{
-			"BOARDLY_HOME":              home,
-			"BOARDLY_RUN_TOKEN":         "brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			"BOARDLY_MCP_ALLOWED_TOOLS": "ask_human",
+			"ZENITH_TEAM_HOME":              home,
+			"ZENITH_TEAM_RUN_TOKEN":         "brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"ZENITH_TEAM_MCP_ALLOWED_TOOLS": "ask_human",
 		}
 		err := Run(t.Context(), func(key string) string { return environment[key] })
 		if !runchannel.IsRunControlUnavailable(err) {
@@ -153,9 +153,9 @@ func TestRunRefusesToStartWithoutTheRunChannel(t *testing.T) {
 
 // The credential client (apiclient.New, which reads auth.json) and the
 // credential store serve the daemon's output presenter alone. Nothing
-// boardly-mcp runs may build or read them, so a later change cannot hand a
-// tool the person's session (Access TECH B3b).
-func TestBoardlyMcpNeverBuildsTheCredentialClient(t *testing.T) {
+// zenith-team-mcp runs may build or read them, so a later change cannot hand a
+// tool the person's session.
+func TestZenithTeamMcpNeverBuildsTheCredentialClient(t *testing.T) {
 	t.Parallel()
 	for _, dir := range []string{".", "tools", "companyplan", "../../cmd/mcp"} {
 		files, err := filepath.Glob(filepath.Join(dir, "*.go"))
@@ -178,7 +178,7 @@ func TestBoardlyMcpNeverBuildsTheCredentialClient(t *testing.T) {
 				if pkg, ok := selector.X.(*ast.Ident); ok &&
 					(pkg.Name == "authfile" || pkg.Name == "apiclient" && selector.Sel.Name == "New") {
 					t.Errorf(
-						"%s uses %s.%s; boardly-mcp holds no credential",
+						"%s uses %s.%s; zenith-team-mcp holds no credential",
 						file,
 						pkg.Name,
 						selector.Sel.Name,
@@ -222,9 +222,9 @@ func TestOpenTaskSkillsServesThePinnedPlaybooks(t *testing.T) {
 }
 
 // A pin that fails verification, or a pinned skill that fails to load, costs
-// only that skill: boardly-mcp still starts and serves zenith-platform.
+// only that skill: zenith-team-mcp still starts and serves zenith-platform.
 // Before ADR 0016 either fault made
-// boardly-mcp exit for every Run with skill tools.
+// zenith-team-mcp exit for every Run with skill tools.
 func TestOpenTaskSkillsKeepsPlatformSkillWhenAPinFails(t *testing.T) {
 	drifted := []byte("---\nname: zenith-workflows\ndescription: Drifted.\n---\n")
 	brokenSkill := tools.PlatformBundle{
@@ -262,13 +262,13 @@ func TestOpenTaskSkillsKeepsPlatformSkillWhenAPinFails(t *testing.T) {
 			}); err == nil {
 				t.Fatal("a failed pin was served")
 			}
-			if !strings.Contains(diagnostics.String(), "boardly-mcp: dropped") {
+			if !strings.Contains(diagnostics.String(), "zenith-team-mcp: dropped") {
 				t.Fatalf("diagnostics = %q, want the drop reported", diagnostics.String())
 			}
 			// Every line keeps the prefix, even for a joined error.
 			for _, line := range strings.Split(strings.TrimSpace(diagnostics.String()), "\n") {
-				if !strings.HasPrefix(line, "boardly-mcp: ") {
-					t.Fatalf("diagnostics line %q lacks the boardly-mcp: prefix", line)
+				if !strings.HasPrefix(line, "zenith-team-mcp: ") {
+					t.Fatalf("diagnostics line %q lacks the zenith-team-mcp: prefix", line)
 				}
 			}
 		})

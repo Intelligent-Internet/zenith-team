@@ -10,10 +10,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestCreateResourceUsesDatabaseIDAndDaemonNaturalKey(t *testing.T) {
@@ -38,8 +38,8 @@ func TestCreateResourceUsesDatabaseIDAndDaemonNaturalKey(t *testing.T) {
 	}
 	input := CreateLocalDirectoryResourceInput{
 		DaemonID: fixture.DaemonA,
-		Path:     "/workspace/boardly",
-		Label:    "Boardly",
+		Path:     "/workspace/zenith-team",
+		Label:    "Zenith Team",
 		Position: 3,
 	}
 

@@ -586,7 +586,7 @@
             "description": "The Whiteboard Artifact."
           },
           {
-            "name": "X-Boardly-Run-Token",
+            "name": "X-Zenith-Team-Run-Token",
             "in": "header",
             "required": true,
             "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
@@ -674,7 +674,7 @@
             "description": "The Whiteboard Artifact."
           },
           {
-            "name": "X-Boardly-Run-Token",
+            "name": "X-Zenith-Team-Run-Token",
             "in": "header",
             "required": true,
             "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
@@ -762,7 +762,7 @@
             "description": "The Whiteboard Artifact."
           },
           {
-            "name": "X-Boardly-Run-Token",
+            "name": "X-Zenith-Team-Run-Token",
             "in": "header",
             "required": true,
             "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
@@ -850,7 +850,7 @@
             "description": "The Whiteboard Artifact."
           },
           {
-            "name": "X-Boardly-Run-Token",
+            "name": "X-Zenith-Team-Run-Token",
             "in": "header",
             "required": true,
             "description": "Proof of the running Run the path names; its member must be the caller (`401 run_token_invalid`).",
@@ -2106,7 +2106,7 @@
           "items": {
             "$ref": "#/schemas/BoardAgentRef"
           },
-          "description": "Each listed object's ID, revisions, and an item's geometry and properties, so boardly-mcp fills edit revisions itself and keeps the fields an edit does not name."
+          "description": "Each listed object's ID, revisions, and an item's geometry and properties, so zenith-team-mcp fills edit revisions itself and keeps the fields an edit does not name."
         },
         "area": {
           "anyOf": [

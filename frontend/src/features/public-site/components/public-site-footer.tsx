@@ -1,5 +1,7 @@
 import { Link } from "react-router";
 
+import { deployment } from "@/shared/lib/deployment";
+
 const publicFooterLinkClassName =
   "rounded-sm text-sm font-medium text-white/68 transition hover:text-white";
 
@@ -30,12 +32,14 @@ export function PublicSiteFooter() {
             <Link className={publicFooterLinkClassName} to="/terms">
               Terms of Service
             </Link>
-            <a
-              className={publicFooterLinkClassName}
-              href="mailto:support@ii.inc"
-            >
-              Support
-            </a>
+            {deployment.supportEmail ? (
+              <a
+                className={publicFooterLinkClassName}
+                href={`mailto:${deployment.supportEmail}`}
+              >
+                Support
+              </a>
+            ) : null}
           </nav>
         </div>
         <div className="border-t border-white/8 pt-5 text-xs leading-5 text-white/42">

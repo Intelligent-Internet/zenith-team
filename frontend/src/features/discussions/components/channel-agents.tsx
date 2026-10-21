@@ -143,7 +143,7 @@ export function ChannelAgentsProvider({
           )
         )
           return;
-        // The panel lists the viewer's own Runs only (Access TECH B11), so
+        // The panel lists the viewer's own Runs only, so
         // it opens at one of theirs, never at another member's request.
         const own = items.filter(
           (item) => item.agentId === agentId && item.callerUserId === viewerId,
@@ -266,8 +266,8 @@ export function ChannelInvocationStatus({
           (agent) => agent.agentId === item.agentId,
         );
         const label = `${agent?.name ?? "Agent"} · ${invocationLabel(item)}`;
-        // Only the member who tagged the Agent opens its Run's activity
-        // (Access TECH B11); another member's request is plain text.
+        // Only the member who tagged the Agent opens its Run's activity;
+        // another member's request is plain text.
         const own = item.callerUserId === runtime.session.userId;
         return (
           <div key={item.id} data-status={item.status}>

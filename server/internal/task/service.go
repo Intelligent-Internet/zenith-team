@@ -1,4 +1,4 @@
-// Package task owns Boardly's durable product Task contract. Product Tasks are
+// Package task owns Zenith Team's durable product Task contract. Product Tasks are
 // deliberately separate from queued agent Runs.
 package task
 
@@ -12,15 +12,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // TaskService owns the product Task lifecycle — creation, listing, mutation
@@ -29,8 +29,6 @@ import (
 // The name keeps the Task prefix on purpose: AGENTS.md pins every service to
 // the trio XService / DefaultXService / NewXService and forbids a bare
 // Service, so revive's stutter advice is the one thing we cannot follow here.
-//
-//nolint:revive // AGENTS.md service-naming trio; bare Service is forbidden.
 type TaskService interface {
 	SubmitHuddleNotes(context.Context, auth.UserPrincipal, SubmitHuddleNotesInput) (HuddleNotesSubmission, error)
 	FinalizeResults(
@@ -60,7 +58,7 @@ type TaskService interface {
 	) (MutationResult, error)
 	MarkFailed(context.Context, auth.UserPrincipal, execution.RunOrigin, FailureInput) (Response, error)
 	ListDependencies(context.Context, auth.UserPrincipal, uuid.UUID, *RunScope) (DependencySet, error)
-	ListDependencyGraph(context.Context, auth.UserPrincipal, DependencyGraphOptions) (DependencyGraph, error)
+	ListDependencyGraph(context.Context, auth.UserPrincipal) (DependencyGraph, error)
 	Workspace(context.Context, auth.UserPrincipal, uuid.UUID, WorkspaceOptions, *RunScope) (Workspace, error)
 }
 
@@ -210,8 +208,8 @@ func (s *DefaultTaskService) createTaskWithExecutionInTx(
 	if err := requireProjectPermission(access, auth.ProjectPermissionTasksWrite); err != nil {
 		return effects, err
 	}
-	// A Run's create also passes the delegate rule for project.tasks.write
-	// (IA-FR10), decided under the Project lock: only where its Authorizer
+	// A Run's create also passes the delegate rule for project.tasks.write,
+	// decided under the Project lock: only where its Authorizer
 	// may, and a Task Run only in its Task chat's Project.
 	if err := normalized.Run.admitCreateProject(ctx, tx, principal.CompanyID, project.ID); err != nil {
 		return effects, err
@@ -1146,7 +1144,7 @@ type taskRunOptions struct {
 	prompt        string
 	// run is the scope of the Run whose proof started this Run, when a Run
 	// creates a Task for its member with an Agent: the new Run, its prompt
-	// and its Activity then name that Run's Agent, for the member (D31).
+	// and its Activity then name that Run's Agent, for the member.
 	run *RunScope
 }
 
@@ -1163,7 +1161,7 @@ type taskRunOptions struct {
 // and the item is what carries run_id. TriggerPrompt is the same text the
 // item is about to hold — there is no row to read it back from yet.
 // attachmentIDs are a create's files, frozen into the Run with the prompt;
-// the caller links them on a files message the Run owns (D25).
+// the caller links them on a files message the Run owns.
 func startTaskRunInTx(
 	ctx context.Context,
 	tx *generated.Queries,
@@ -1225,8 +1223,8 @@ func startTaskRunInTx(
 }
 
 // runTriggerActor is who a started Run's run.queued names: the Agent of the
-// Run that started it, for the member (D31), or the zero Actor, which keeps
-// the member.
+// Run that started it, for the member, or the zero Actor, which keeps the
+// member.
 func runTriggerActor(run *RunScope, userID uuid.UUID) events.Actor {
 	if run == nil {
 		return events.Actor{}
@@ -1254,7 +1252,7 @@ func allocateTaskKey(
 	chosen string,
 ) (allocatedTaskKey, error) {
 	const mintAttempts = 64
-	for attempt := 0; attempt < mintAttempts; attempt++ {
+	for range mintAttempts {
 		allocated, err := tx.AllocateTaskNumber(ctx, companyID)
 		if err != nil {
 			return allocatedTaskKey{}, mapTaskMutationError("allocate Task number", err)
@@ -1305,7 +1303,7 @@ func mapRunEnqueueError(err error) error {
 // stages the conversation.updated event carrying the recomputed list summary,
 // so clients following the summary see the freshly-enqueued run. actorID is
 // the member whose summary the frame carries; actor is who the Activity row
-// names: the member, or a Run's Agent acting for them (D31).
+// names: the member, or a Run's Agent acting for them.
 func stageBumpedTaskConversation(
 	ctx context.Context,
 	q *generated.Queries,

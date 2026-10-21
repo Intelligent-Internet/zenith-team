@@ -1,5 +1,5 @@
 // Command wsobserve is the e2e smoke observer: it connects two clients to the
-// boardly client WebSocket and prints one line per received frame
+// zenith-team client WebSocket and prints one line per received frame
 // (<client> <unix-ms> <event type>), proving multi-socket fanout ordering.
 //
 // Usage: wsobserve 'ws://host/api/v1/ws?company_id=<uuid>' <bearer-token>

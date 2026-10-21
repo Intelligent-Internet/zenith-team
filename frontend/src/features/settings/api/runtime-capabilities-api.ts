@@ -1,4 +1,4 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { connectorService } from "@/shared/api/connector.service";
 import { platformSkillService } from "@/shared/api/platform-skill.service";
 import { pluginService } from "@/shared/api/plugin.service";
@@ -21,11 +21,11 @@ export const runtimeCatalogQueryOptions = {
   refetchOnMountOrArgChange: 60,
 };
 
-export const runtimeCapabilitiesApi = boardlyApi.injectEndpoints({
+export const runtimeCapabilitiesApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     platformSkills: builder.query<{ items: PlatformSkill[] }, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => platformSkillService.list(companyId),
           "Built-in skills could not be loaded.",
         ),
@@ -35,7 +35,7 @@ export const runtimeCapabilitiesApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Plugin" },
       ],
       queryFn: ({ companyId, provider, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             pluginService.listAllPlugins(companyId, {
               provider,
@@ -53,7 +53,7 @@ export const runtimeCapabilitiesApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Connector" },
       ],
       queryFn: ({ companyId, provider, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             connectorService.listAllConnectors(companyId, {
               provider,

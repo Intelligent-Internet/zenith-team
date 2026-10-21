@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// Files contains the complete Boardly schema migration set.
+// Files contains the complete Zenith Team schema migration set.
 //
 //go:embed *.sql
 var Files embed.FS

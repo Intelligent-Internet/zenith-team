@@ -9,17 +9,27 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestHuddleCardConcurrentChannelStartsAndEmptyCall(t *testing.T) {
 	f := newDiscussionFixture(t)
-	service, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}})
+	service, err := NewHuddleService(
+		HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	channel, err := f.conversations.CreateChannel(f.ctx, f.a, CreateChannelInput{RequestKey: uuid.New(), Name: "Huddle cards", MemberUserIDs: []uuid.UUID{f.b.UserID}})
+	channel, err := f.conversations.CreateChannel(
+		f.ctx,
+		f.a,
+		CreateChannelInput{
+			RequestKey:    uuid.New(),
+			Name:          "Huddle cards",
+			MemberUserIDs: []uuid.UUID{f.b.UserID},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +39,12 @@ func TestHuddleCardConcurrentChannelStartsAndEmptyCall(t *testing.T) {
 	errs := make(chan error, 4)
 	for range 4 {
 		wg.Go(func() {
-			result, err := service.Start(f.ctx, f.a, channel.Conversation.ID, StartHuddleRequest{RequestKey: uuid.New()})
+			result, err := service.Start(
+				f.ctx,
+				f.a,
+				channel.Conversation.ID,
+				StartHuddleRequest{RequestKey: uuid.New()},
+			)
 			if err != nil {
 				errs <- err
 				return
@@ -64,10 +79,17 @@ func TestHuddleCardConcurrentChannelStartsAndEmptyCall(t *testing.T) {
 			continue
 		}
 		count++
-		if message.Huddle.ID != id || message.Huddle.State != HuddleStateEnded || message.Huddle.ParticipantCount != 0 || message.Huddle.DurationSeconds != 0 || message.Huddle.ChatConversationID != nil {
+		if message.Huddle.ID != id || message.Huddle.State != HuddleStateEnded ||
+			message.Huddle.ParticipantCount != 0 ||
+			message.Huddle.DurationSeconds != 0 ||
+			message.Huddle.ChatConversationID != nil {
 			t.Fatalf("empty ended card = %+v", message.Huddle)
 		}
-		if _, err := f.pool.Exec(f.ctx, `UPDATE conversation_items SET metadata='{"action":"channel_updated","actorUserId":null}' WHERE id=$1`, message.ID); err == nil {
+		if _, err := f.pool.Exec(
+			f.ctx,
+			`UPDATE conversation_items SET metadata='{"action":"channel_updated","actorUserId":null}' WHERE id=$1`,
+			message.ID,
+		); err == nil {
 			t.Fatal("immutable call card accepted a metadata rewrite")
 		}
 	}
@@ -78,11 +100,17 @@ func TestHuddleCardConcurrentChannelStartsAndEmptyCall(t *testing.T) {
 
 func TestHuddleCardLifecycleAndHistoryAccess(t *testing.T) {
 	f := newDiscussionFixture(t)
-	service, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}})
+	service, err := NewHuddleService(
+		HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +137,8 @@ func TestHuddleCardLifecycleAndHistoryAccess(t *testing.T) {
 		return cards[0]
 	}
 	initial := readCard(f.a)
-	if initial.Huddle == nil || initial.Huddle.ParticipantCount != 0 || initial.Huddle.DurationSeconds != 0 || initial.Huddle.ChatConversationID != nil {
+	if initial.Huddle == nil || initial.Huddle.ParticipantCount != 0 || initial.Huddle.DurationSeconds != 0 ||
+		initial.Huddle.ChatConversationID != nil {
 		t.Fatalf("initial card = %+v", initial.Huddle)
 	}
 	for _, retry := range []StartHuddleRequest{request, {RequestKey: uuid.New()}} {
@@ -133,10 +162,21 @@ func TestHuddleCardLifecycleAndHistoryAccess(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := service.Join(f.ctx, f.b, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); err != nil {
+	if _, err := service.Join(
+		f.ctx,
+		f.b,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `UPDATE huddle_connections SET connected_at=now()-interval '2 minutes',ended_at=now()-interval '30 seconds' WHERE huddle_id=$1 AND connected_at IS NOT NULL`, started.Huddle.ID)
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`UPDATE huddle_connections SET connected_at=now()-interval '2 minutes',ended_at=now()-interval '30 seconds' WHERE huddle_id=$1 AND connected_at IS NOT NULL`,
+		started.Huddle.ID,
+	)
 	if err := service.EndFromMedia(f.ctx, f.a.CompanyID, HuddleRoomName(started.Huddle.ID)); err != nil {
 		t.Fatal(err)
 	}
@@ -144,22 +184,47 @@ func TestHuddleCardLifecycleAndHistoryAccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	ended := readCard(f.a)
-	if ended.ID != initial.ID || ended.Huddle.State != HuddleStateEnded || ended.Huddle.ParticipantCount != 1 || ended.Huddle.DurationSeconds != 90 {
+	if ended.ID != initial.ID || ended.Huddle.State != HuddleStateEnded || ended.Huddle.ParticipantCount != 1 ||
+		ended.Huddle.DurationSeconds != 90 {
 		t.Fatalf("ended card = %+v", ended.Huddle)
 	}
-	if ended.Huddle.ChatConversationID == nil || *ended.Huddle.ChatConversationID != started.Huddle.ChatConversationID {
+	if ended.Huddle.ChatConversationID == nil ||
+		*ended.Huddle.ChatConversationID != started.Huddle.ChatConversationID {
 		t.Fatalf("participant history link = %+v", ended.Huddle)
 	}
 	if got := readCard(f.b); got.Huddle.ChatConversationID != nil {
 		t.Fatal("reservation granted history access")
 	}
-	if _, err := f.discussion.ListMessages(f.ctx, f.b, started.Huddle.ChatConversationID, DiscussionPageOptions{}); !errors.Is(err, ErrDiscussionNotFound) {
+	if _, err := f.discussion.ListMessages(
+		f.ctx,
+		f.b,
+		started.Huddle.ChatConversationID,
+		DiscussionPageOptions{},
+	); !errors.Is(
+		err,
+		ErrDiscussionNotFound,
+	) {
 		t.Fatalf("nonparticipant history error = %v, want not found", err)
 	}
-	if _, err := f.discussion.ListMessages(f.ctx, f.c, direct.Conversation.ID, DiscussionPageOptions{}); !errors.Is(err, ErrDiscussionNotFound) {
+	if _, err := f.discussion.ListMessages(
+		f.ctx,
+		f.c,
+		direct.Conversation.ID,
+		DiscussionPageOptions{},
+	); !errors.Is(
+		err,
+		ErrDiscussionNotFound,
+	) {
 		t.Fatalf("outsider source error = %v, want not found", err)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `UPDATE conversation_members SET status='revoked',revoked_at=now() WHERE conversation_id=$1 AND user_id=$2`, started.Huddle.ChatConversationID, f.a.UserID)
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`UPDATE conversation_members SET status='revoked',revoked_at=now() WHERE conversation_id=$1 AND user_id=$2`,
+		started.Huddle.ChatConversationID,
+		f.a.UserID,
+	)
 	if got := readCard(f.a); got.Huddle.ChatConversationID != nil {
 		t.Fatal("revoked participant retained history link")
 	}

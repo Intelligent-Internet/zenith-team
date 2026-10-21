@@ -12,30 +12,45 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
 	"github.com/reearth/ygo/crdt"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func TestWikiDraftPublicationBoundary(t *testing.T) {
 	h := startWiki(t)
 	ctx := t.Context()
-	page, err := h.service.DefaultWikiService.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Working", Body: "Unpublished research"})
+	page, err := h.service.DefaultWikiService.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "Working", Body: "Unpublished research"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if page.CurrentRevisionID != nil {
 		t.Fatal("new page was published")
 	}
-	draft, err := h.service.DefaultWikiService.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1})
+	draft, err := h.service.ReadDocument(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(draft.Markdown, "Unpublished research") {
 		t.Fatal("import lost content")
 	}
-	published, err := h.service.DefaultWikiService.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: draft.Sequence})
+	published, err := h.service.PublishPage(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: draft.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,29 +61,58 @@ func TestWikiDraftPublicationBoundary(t *testing.T) {
 	old := root.Content[0]
 	replacement := old
 	replacement.Content = []wiki.BlockNode{{Type: "text", Text: "Draft changed AKIAIOSFODNN7EXAMPLE"}}
-	update, _, err := wiki.ApplyBlockOperations(draft.State, []wiki.BlockOperation{{Type: "update", BlockID: old.Attrs["blockId"].(string), ExpectedHash: wiki.BlockHash(old), Content: &replacement}})
+	update, _, err := wiki.ApplyBlockOperations(
+		draft.State,
+		[]wiki.BlockOperation{
+			{
+				Type:         "update",
+				BlockID:      old.Attrs["blockId"].(string),
+				ExpectedHash: wiki.BlockHash(old),
+				Content:      &replacement,
+			},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	saved, err := h.service.DefaultWikiService.SyncDocument(ctx, h.owner, page.ID, wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence})
+	saved, err := h.service.SyncDocument(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	read, err := h.service.DefaultWikiService.GetPage(ctx, h.owner, page.ID)
+	read, err := h.service.GetPage(ctx, h.owner, page.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if read.Body != published.Body || strings.Contains(read.Body, "Draft changed") {
 		t.Fatal("draft leaked into published read")
 	}
-	if _, err = h.service.DefaultWikiService.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: published.Revision, ExpectedSequence: draft.Sequence}); !errors.Is(err, wiki.ErrPageConflict) {
+	if _, err = h.service.PublishPage(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: published.Revision, ExpectedSequence: draft.Sequence},
+	); !errors.Is(
+		err,
+		wiki.ErrPageConflict,
+	) {
 		t.Fatalf("stale draft publish = %v", err)
 	}
-	final, err := h.service.DefaultWikiService.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: published.Revision, ExpectedSequence: saved.Sequence})
+	final, err := h.service.PublishPage(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: published.Revision, ExpectedSequence: saved.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(final.Body, "AKIAIOSFODNN7EXAMPLE") || strings.Contains(string(final.Content), "AKIAIOSFODNN7EXAMPLE") {
+	if strings.Contains(final.Body, "AKIAIOSFODNN7EXAMPLE") ||
+		strings.Contains(string(final.Content), "AKIAIOSFODNN7EXAMPLE") {
 		t.Fatal("published content bypassed credential redaction")
 	}
 	var publishedRoot wiki.BlockNode
@@ -78,11 +122,17 @@ func TestWikiDraftPublicationBoundary(t *testing.T) {
 	if strings.TrimRight(wiki.BlocksMarkdown(publishedRoot), "\n") != final.Body {
 		t.Fatal("published projections diverged")
 	}
-	restored, err := h.service.DefaultWikiService.RestoreRevision(ctx, h.owner, page.ID, *published.CurrentRevisionID, wiki.RestoreRevisionInput{ExpectedRevision: final.Revision, ExpectedSequence: saved.Sequence})
+	restored, err := h.service.DefaultWikiService.RestoreRevision(
+		ctx,
+		h.owner,
+		page.ID,
+		*published.CurrentRevisionID,
+		wiki.RestoreRevisionInput{ExpectedRevision: final.Revision, ExpectedSequence: saved.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	read, err = h.service.DefaultWikiService.GetPage(ctx, h.owner, page.ID)
+	read, err = h.service.GetPage(ctx, h.owner, page.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,8 +145,19 @@ func TestWikiDraftConcurrentEditingAndReaderIsolation(t *testing.T) {
 	h := startWiki(t)
 	ctx := t.Context()
 	s := h.service.DefaultWikiService
-	dbtest.MustExec(t, ctx, h.pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, h.fixture.CompanyA, h.fixture.UserB)
-	reader := auth.UserPrincipal{CompanyID: h.fixture.CompanyA, UserID: h.fixture.UserB, Role: auth.CompanyRoleMember}
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		h.fixture.CompanyA,
+		h.fixture.UserB,
+	)
+	reader := auth.UserPrincipal{
+		CompanyID: h.fixture.CompanyA,
+		UserID:    h.fixture.UserB,
+		Role:      auth.CompanyRoleMember,
+	}
 	page, err := s.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Secret draft title", Body: "Hello"})
 	if err != nil {
 		t.Fatal(err)
@@ -131,7 +192,12 @@ func TestWikiDraftConcurrentEditingAndReaderIsolation(t *testing.T) {
 	}
 	var saved wiki.Document
 	for _, update := range updates {
-		saved, err = s.SyncDocument(ctx, h.owner, page.ID, wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence})
+		saved, err = s.SyncDocument(
+			ctx,
+			h.owner,
+			page.ID,
+			wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -147,15 +213,35 @@ func TestWikiDraftConcurrentEditingAndReaderIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	replacement := wiki.BlockNode{Type: "paragraph", Attrs: map[string]any{"blockId": ids[0].String()}, Content: []wiki.BlockNode{{Type: "text", Text: "Stale insertion"}}}
-	structural, _, err := wiki.ApplyBlockOperations(draft.State, []wiki.BlockOperation{{Type: "insert", Content: &replacement}})
+	replacement := wiki.BlockNode{
+		Type:    "paragraph",
+		Attrs:   map[string]any{"blockId": ids[0].String()},
+		Content: []wiki.BlockNode{{Type: "text", Text: "Stale insertion"}},
+	}
+	structural, _, err := wiki.ApplyBlockOperations(
+		draft.State,
+		[]wiki.BlockOperation{{Type: "insert", Content: &replacement}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.SyncDocument(ctx, h.owner, page.ID, wiki.SyncDocumentInput{Update: structural, BaseSequence: draft.Sequence}); !errors.Is(err, wiki.ErrPageConflict) {
+	if _, err = s.SyncDocument(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.SyncDocumentInput{Update: structural, BaseSequence: draft.Sequence},
+	); !errors.Is(
+		err,
+		wiki.ErrPageConflict,
+	) {
 		t.Fatalf("stale structure=%v", err)
 	}
-	published, err := s.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: saved.Sequence})
+	published, err := s.PublishPage(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: saved.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,10 +249,26 @@ func TestWikiDraftConcurrentEditingAndReaderIsolation(t *testing.T) {
 	if err != nil || read.Body != published.Body {
 		t.Fatalf("published reader=%+v %v", read, err)
 	}
-	if _, err = s.ReadDocument(ctx, reader, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageForbidden) {
+	if _, err = s.ReadDocument(
+		ctx,
+		reader,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageForbidden,
+	) {
 		t.Fatalf("reader draft access=%v", err)
 	}
-	if _, err = s.PublishPage(ctx, h.owner, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: saved.Sequence}); !errors.Is(err, wiki.ErrPageConflict) {
+	if _, err = s.PublishPage(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: saved.Sequence},
+	); !errors.Is(
+		err,
+		wiki.ErrPageConflict,
+	) {
 		t.Fatalf("stale published revision=%v", err)
 	}
 }
@@ -193,7 +295,11 @@ func TestReadDocumentDoesNotWaitForPageLocksOfUpgradedDrafts(t *testing.T) {
 	if _, err := tx.Exec(t.Context(), `SELECT id FROM wiki_pages WHERE id=$1 FOR UPDATE`, page.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := tx.Exec(t.Context(), `SELECT page_id FROM wiki_canvas_drafts WHERE page_id=$1 FOR UPDATE`, page.ID); err != nil {
+	if _, err := tx.Exec(
+		t.Context(),
+		`SELECT page_id FROM wiki_canvas_drafts WHERE page_id=$1 FOR UPDATE`,
+		page.ID,
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -208,7 +314,8 @@ func TestReadDocumentDoesNotWaitForPageLocksOfUpgradedDrafts(t *testing.T) {
 		t.Fatalf("read = %+v, want the same draft as %+v", got, first)
 	}
 	unchanged, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: first.Sequence})
-	if err != nil || unchanged.State != nil || unchanged.Content != nil || unchanged.Markdown != "" || unchanged.Sequence != first.Sequence {
+	if err != nil || unchanged.State != nil || unchanged.Content != nil || unchanged.Markdown != "" ||
+		unchanged.Sequence != first.Sequence {
 		t.Fatalf("unchanged read = %+v, %v", unchanged, err)
 	}
 	projection, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1, Projection: true})
@@ -228,16 +335,51 @@ func TestReadDocumentKeepsAccessErrorsOnTheLockFreePath(t *testing.T) {
 	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, h.pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, h.fixture.CompanyA, h.fixture.UserB)
-	plain := auth.UserPrincipal{CompanyID: h.fixture.CompanyA, UserID: h.fixture.UserB, Role: auth.CompanyRoleMember}
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+		h.fixture.CompanyA,
+		h.fixture.UserB,
+	)
+	plain := auth.UserPrincipal{
+		CompanyID: h.fixture.CompanyA,
+		UserID:    h.fixture.UserB,
+		Role:      auth.CompanyRoleMember,
+	}
 
-	if _, err := s.ReadDocument(ctx, plain, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageForbidden) {
+	if _, err := s.ReadDocument(
+		ctx,
+		plain,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageForbidden,
+	) {
 		t.Fatalf("non-publisher = %v, want ErrPageForbidden", err)
 	}
-	if _, err := s.ReadDocument(ctx, h.owner, uuid.New(), wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+	if _, err := s.ReadDocument(
+		ctx,
+		h.owner,
+		uuid.New(),
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageNotFound,
+	) {
 		t.Fatalf("unknown page = %v, want ErrPageNotFound", err)
 	}
-	if _, err := s.ReadDocument(ctx, h.foreign, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+	if _, err := s.ReadDocument(
+		ctx,
+		h.foreign,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageNotFound,
+	) {
 		t.Fatalf("other Company's member = %v, want ErrPageNotFound", err)
 	}
 
@@ -245,15 +387,38 @@ func TestReadDocumentKeepsAccessErrorsOnTheLockFreePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageArchived) {
+	if _, err := s.ReadDocument(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageArchived,
+	) {
 		t.Fatalf("archived page = %v, want ErrPageArchived", err)
 	}
 	if _, err := s.RestorePage(ctx, h.owner, page.ID, archived.Revision); err != nil {
 		t.Fatal(err)
 	}
 
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, h.owner.CompanyID, h.owner.UserID)
-	if _, err := s.ReadDocument(ctx, h.owner, page.ID, wiki.DocumentReadInput{Since: -1}); !errors.Is(err, wiki.ErrPageNotFound) {
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		h.owner.CompanyID,
+		h.owner.UserID,
+	)
+	if _, err := s.ReadDocument(
+		ctx,
+		h.owner,
+		page.ID,
+		wiki.DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		wiki.ErrPageNotFound,
+	) {
 		t.Fatalf("revoked member = %v, want ErrPageNotFound", err)
 	}
 }

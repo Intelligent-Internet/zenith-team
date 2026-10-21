@@ -489,10 +489,13 @@ func TestTheRowReferencesReachTheConsumer(t *testing.T) {
 	})
 
 	staged := eventOf("run.completed", SystemActor(), taskChange{})
-	staged.RunID, staged.TaskID, staged.ConversationID = uuid.MustParse("00000000-0000-4000-8000-000000000042"), taskID, conversationID
+	staged.RunID, staged.TaskID, staged.ConversationID = uuid.MustParse(
+		"00000000-0000-4000-8000-000000000042",
+	), taskID, conversationID
 	bus.Publish(context.Background(), "run", staged)
 
-	if seen.RunID != uuid.MustParse("00000000-0000-4000-8000-000000000042") || seen.TaskID != taskID || seen.ConversationID != conversationID {
+	if seen.RunID != uuid.MustParse("00000000-0000-4000-8000-000000000042") || seen.TaskID != taskID ||
+		seen.ConversationID != conversationID {
 		t.Fatalf("references = %v/%v/%v, want 42/%v/%v",
 			seen.RunID, seen.TaskID, seen.ConversationID, taskID, conversationID)
 	}

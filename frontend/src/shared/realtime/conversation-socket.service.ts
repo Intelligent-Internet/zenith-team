@@ -18,10 +18,10 @@ import type {
 } from "@/shared/api/types";
 import { generateUuidV7 } from "@/shared/lib/uuid-v7";
 import {
-  boardlyRealtimeClient,
+  zenithTeamRealtimeClient,
   realtimeEventConversationId,
-  type BoardlyRealtimeEvent,
-  type BoardlyRealtimeSnapshot,
+  type ZenithTeamRealtimeEvent,
+  type ZenithTeamRealtimeSnapshot,
 } from "@/shared/realtime/realtime-client.service";
 import {
   FrozenConversationTranscriptCatchUp,
@@ -266,7 +266,10 @@ export class ConversationSocketSession {
     Promise<ConversationMessageReceipt>,
     string
   >();
-  private readonly deferredQueuedRuns = new Map<string, BoardlyRealtimeEvent>();
+  private readonly deferredQueuedRuns = new Map<
+    string,
+    ZenithTeamRealtimeEvent
+  >();
   private recoveryPendingAfterSend = false;
   private conversationCatchUp:
     | {
@@ -305,19 +308,21 @@ export class ConversationSocketSession {
     private readonly taskId?: string,
     private readonly conversationId?: string,
   ) {
-    this.removeEventListener = boardlyRealtimeClient.onEvent((event) => {
+    this.removeEventListener = zenithTeamRealtimeClient.onEvent((event) => {
       this.handleEvent(event);
     });
     this.removeLocalPreviewListener = subscribeToLocalRunPreview((frame) => {
       this.handleLocalPreview(frame);
     });
-    this.removeRecoveryListener = boardlyRealtimeClient.onRecovery(() => {
+    this.removeRecoveryListener = zenithTeamRealtimeClient.onRecovery(() => {
       this.handleRecovery();
     });
-    this.removeStatusListener = boardlyRealtimeClient.onStatus((snapshot) => {
-      const status = conversationStatus(snapshot);
-      this.statusHandlers.forEach((handler) => handler(status));
-    });
+    this.removeStatusListener = zenithTeamRealtimeClient.onStatus(
+      (snapshot) => {
+        const status = conversationStatus(snapshot);
+        this.statusHandlers.forEach((handler) => handler(status));
+      },
+    );
   }
 
   onRunEvent(handler: (event: ConversationRunStreamEvent) => void): () => void {
@@ -332,14 +337,14 @@ export class ConversationSocketSession {
 
   onStatus(handler: (status: ConversationRealtimeStatus) => void): () => void {
     this.statusHandlers.add(handler);
-    handler(conversationStatus(boardlyRealtimeClient.getSnapshot()));
+    handler(conversationStatus(zenithTeamRealtimeClient.getSnapshot()));
     return () => this.statusHandlers.delete(handler);
   }
 
   async connect(): Promise<void> {
     const companyId = this.activeCompanyId();
     if (!companyId) throw new Error("Active Company is unavailable");
-    await boardlyRealtimeClient.ensureReady(companyId);
+    await zenithTeamRealtimeClient.ensureReady(companyId);
     if (!this.disposed) {
       this.statusHandlers.forEach((handler) => handler("connected"));
     }
@@ -456,7 +461,8 @@ export class ConversationSocketSession {
       ...(appended ? { message: appended } : {}),
       ok: true,
       ...(result.queueItem ? { queueItem: result.queueItem } : {}),
-      realtimeConnected: boardlyRealtimeClient.getSnapshot().status === "ready",
+      realtimeConnected:
+        zenithTeamRealtimeClient.getSnapshot().status === "ready",
     };
   }
 
@@ -544,7 +550,7 @@ export class ConversationSocketSession {
     });
   }
 
-  private handleEvent(event: BoardlyRealtimeEvent): void {
+  private handleEvent(event: ZenithTeamRealtimeEvent): void {
     // Who reads a Project changed (ADR 0017): a Project file on a message in
     // this history may now show or be withheld, and no message frame says
     // so. Reload the history; the read decides what this viewer sees.
@@ -731,7 +737,7 @@ export class ConversationSocketSession {
   }
 
   private recoverConversation(
-    bufferedEvent?: BoardlyRealtimeEvent,
+    bufferedEvent?: ZenithTeamRealtimeEvent,
   ): Promise<void> {
     const existing = this.conversationCatchUp;
     if (existing) {
@@ -860,7 +866,7 @@ export class ConversationSocketSession {
     return state.promise;
   }
 
-  private applyEvent(event: BoardlyRealtimeEvent): boolean {
+  private applyEvent(event: ZenithTeamRealtimeEvent): boolean {
     const identity = runIdentity(event);
     if (!identity || !this.acceptsConversation(identity.conversationId)) {
       return false;
@@ -1058,7 +1064,7 @@ export class ConversationSocketSession {
 }
 
 function runIdentity(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): { conversationId: string; runId: string } | undefined {
   if (!event.type.startsWith("run.")) return undefined;
   const runId = canonicalUuid(
@@ -1081,7 +1087,7 @@ function previewCharacterCount(
 }
 
 export function runMessageFromEvent(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): ConversationTranscriptEntryDto | undefined {
   if (event.type !== "run.message_created") return undefined;
   const id = stringValue(event.payload.id);
@@ -1118,7 +1124,7 @@ export function runMessageFromEvent(
 }
 
 function runStatusFromEvent(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): RunDto["status"] | undefined {
   if (!isRunStatusEventType(event.type)) return undefined;
   const expectedStatus = RUN_STATUS_BY_EVENT[event.type];
@@ -1131,7 +1137,7 @@ function isRunStatusEventType(
   return Object.prototype.hasOwnProperty.call(RUN_STATUS_BY_EVENT, value);
 }
 
-export function isTerminalRunEvent(event: BoardlyRealtimeEvent): boolean {
+export function isTerminalRunEvent(event: ZenithTeamRealtimeEvent): boolean {
   return (
     TERMINAL_RUN_EVENT_TYPES.has(event.type) &&
     runStatusFromEvent(event) !== undefined
@@ -1140,7 +1146,7 @@ export function isTerminalRunEvent(event: BoardlyRealtimeEvent): boolean {
 
 export function terminalEventFromRunProjection(
   projection: RunDto,
-): BoardlyRealtimeEvent | undefined {
+): ZenithTeamRealtimeEvent | undefined {
   if (
     projection.status !== "completed" &&
     projection.status !== "failed" &&
@@ -1231,7 +1237,7 @@ function numberOrUndefined(value: unknown): number | undefined {
 }
 
 function conversationStatus(
-  snapshot: BoardlyRealtimeSnapshot,
+  snapshot: ZenithTeamRealtimeSnapshot,
 ): ConversationRealtimeStatus {
   if (snapshot.status === "ready") return "connected";
   if (snapshot.status === "connecting" || snapshot.status === "reconnecting") {

@@ -1357,7 +1357,7 @@ paths:
         schema:
           type: string
           format: uuid
-      - name: X-Boardly-Run-Token
+      - name: X-Zenith-Team-Run-Token
         in: header
         required: true
         schema:

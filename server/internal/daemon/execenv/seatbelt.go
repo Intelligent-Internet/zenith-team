@@ -10,24 +10,22 @@ import (
 	"strconv"
 	"strings"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // RunHomePrefix starts the name of every Run's isolated home: the folder the
-// daemon makes in the Run's env root for its BOARDLY_HOME and run.json
-// (Access TECH B3b). The sandbox finds every Run's home on
-// this computer by this name (B3e).
-const RunHomePrefix = ".boardly-home-"
+// daemon makes in the Run's env root for its ZENITH_TEAM_HOME and run.json.
+// The sandbox finds every Run's home on this computer by this name.
+const RunHomePrefix = ".zenith-team-home-"
 
 // sandboxDeniedPrograms are the programs no launch may start, because each
 // asks macOS to start something later, outside the sandbox: a launchd job,
-// an app or document, or AppleScript (Access TECH B3e). crontab and at need
+// an app or document, or AppleScript. crontab and at need
 // no rule: they are setuid, and macOS starts no setuid program inside a
 // Seatbelt.
 var sandboxDeniedPrograms = []string{"/bin/launchctl", "/usr/bin/open", "/usr/bin/osascript"}
 
-// SeatbeltOptions is what one launch's macOS sandbox denies and allows
-// (Access TECH B3d, B3e, B3f, B7b).
+// SeatbeltOptions is what one launch's macOS sandbox denies and allows.
 type SeatbeltOptions struct {
 	// Protected lists the absolute paths that can hold a Zenith Team
 	// sign-in. The provider and every process it starts can neither read
@@ -57,8 +55,8 @@ type SeatbeltOptions struct {
 	// Shared lists the folders that hold every Run's work on this computer:
 	// the workspaces root. A launch reads everything in them but writes only
 	// inside its own folders there (Writable), so it cannot leave code or
-	// notes in another Run's folders for that Run to run later (Access TECH
-	// B3f). The folders above a shared folder cannot be renamed either, as
+	// notes in another Run's folders for that Run to run later. The folders
+	// above a shared folder cannot be renamed either, as
 	// for a protected path.
 	Shared []string
 	// Writable lists the launch's own folders inside Shared: a Run's env root
@@ -75,7 +73,7 @@ type SeatbeltOptions struct {
 	// root, which holds the Company main with its memory and every other Run's
 	// folders, and every local folder the Company bound: a channel answer
 	// never draws on the tagger's local folders, bound folders or private
-	// Memory, which no Project access governs (Access TECH B7b). The launch's
+	// Memory, which no Project access governs. The launch's
 	// own folders inside a hidden folder (RunHome, RunDirs, Writable) stay
 	// open where their path puts them: it reads them and starts programs
 	// there, writes the Writable ones, and may look up the folders on the way
@@ -198,7 +196,7 @@ func Seatbelt(opts SeatbeltOptions) (*agent.Sandbox, error) {
 		// and a started program shows what it holds. The launch's own folders
 		// there open again, and the folders on the way to them answer a lookup
 		// (their own details, not their contents), without which no process
-		// could enter its own working folder (Access TECH B7b).
+		// could enter its own working folder.
 		writeSubpathRule(&profile, "(deny file-read* file-write* process-exec*", hiddenNames, "HIDDEN_", param)
 		if len(onTheWay) != 0 {
 			profile.WriteString("(allow file-read-metadata")
@@ -262,7 +260,7 @@ func Seatbelt(opts SeatbeltOptions) (*agent.Sandbox, error) {
 // home; a protected path, anything under it, or a temporary sibling of it;
 // or a path in a hidden folder outside the launch's own folders there. The
 // daemon itself runs outside the sandbox, so it asks this before it reads a
-// file a Run named (Access TECH B3e, B7b). It denies at least what the
+// file a Run named. It denies at least what the
 // profile denies, and it opens no Run's own home either. It reads only
 // Protected, Hidden, RunDirs and Writable.
 func SandboxDeniesRead(opts SeatbeltOptions, path string) bool {

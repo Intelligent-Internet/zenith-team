@@ -493,7 +493,7 @@ export function ChatComposer({
             ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
             : "mx-4 w-[calc(100%-32px)]",
         )}
-        data-boardly-desktop-drop-active={isFileDropActive ? "true" : "false"}
+        data-zenith-team-desktop-drop-active={isFileDropActive ? "true" : "false"}
         data-formatting-enabled={formattingEnabled || undefined}
         style={{ height: formattingEnabled ? "auto" : promptInputHeight }}
         multiple

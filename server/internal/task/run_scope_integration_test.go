@@ -12,17 +12,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// A Run reads only its own Tasks (owner decision, 2026-09-26): the ones its
-// Agent does for the member the Run works for. Alice's Run of Agent A
-// (Lyra, in the live report) lists and reads her Tasks that Agent A does;
-// Bob's Task that Agent A does for him, and Alice's own Task that another
-// Agent does, are refused with the plain sentinel — never their content,
-// label, member or Agent. The prerequisites of a Task it can read stay
+// A Run reads only its own Tasks: the ones its Agent does for the member the
+// Run works for. Alice's Run of Agent A lists and reads her Tasks that Agent
+// A does; Bob's Task that Agent A does for him, and Alice's own Task that
+// another Agent does, are refused with the plain sentinel — never their
+// content, label, member or Agent. The prerequisites of a Task it can read stay
 // readable as that Task's dependencies; of the Tasks waiting on it, only
 // the Run's own are. A member's own read, with no Run, sees every Task.
 func TestTaskReadsUnderARunScopeSeeOnlyTheRunsOwnTasks(t *testing.T) {
@@ -63,12 +62,25 @@ func TestTaskReadsUnderARunScopeSeeOnlyTheRunsOwnTasks(t *testing.T) {
 				INSERT INTO conversations (id, company_id, kind, task_id, title, project_id)
 				VALUES ($1, $2, 'task', $3, $4, (SELECT id FROM projects WHERE company_id=$2 AND key='work'))`,
 				conversation, fixture.CompanyA, id, key)
-			dbtest.MustExecTx(t, ctx, tx, `
+			dbtest.MustExecTx(
+				t,
+				ctx,
+				tx,
+				`
 				INSERT INTO tasks
 					(project_id, id, company_id, conversation_id, milestone_type, number, key,
 					 title, description, executed_by_agent_id, assignee_user_id, creator_user_id)
 				VALUES ($1, $2, $3, $4, 'product', $5, $6, $6, 'ask the user: red or blue?', $7, $8, $9)`,
-				fixture.ProjectA, id, fixture.CompanyA, conversation, number, key, agent, assignee, fixture.UserA)
+				fixture.ProjectA,
+				id,
+				fixture.CompanyA,
+				conversation,
+				number,
+				key,
+				agent,
+				assignee,
+				fixture.UserA,
+			)
 		}
 		seed(bobsTask, 2, "SCA-2", bob, fixture.AgentA)
 		seed(elisTask, 3, "SCA-3", fixture.UserA, eli)
@@ -169,8 +181,15 @@ func TestTaskReadsUnderARunScopeSeeOnlyTheRunsOwnTasks(t *testing.T) {
 	} else {
 		onlyOwnDependents("own Workspace()", workspace.Dependencies)
 	}
-	if workspace, err := service.Workspace(ctx, alice, bobsTask, window, scope); !errors.Is(err, ErrOutsideRunScope) ||
-		workspace.Task.Description != "" || len(workspace.Messages) != 0 {
+	if workspace, err := service.Workspace(
+		ctx,
+		alice,
+		bobsTask,
+		window,
+		scope,
+	); !errors.Is(err, ErrOutsideRunScope) ||
+		workspace.Task.Description != "" ||
+		len(workspace.Messages) != 0 {
 		t.Fatalf("out-of-scope Workspace() = %+v, %v; want a refusal and nothing else", workspace, err)
 	}
 	if workspace, err := service.Workspace(ctx, alice, bobsTask, window, nil); err != nil ||

@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func projectIDs(projects []ProjectResponse) []uuid.UUID {
@@ -26,9 +26,8 @@ func projectIDs(projects []ProjectResponse) []uuid.UUID {
 // is management, and a Run never manages, so that Project is not found. A
 // Task Run reads only its Task chat's Project. Any other Run, in its
 // person's direct chat or tagged in a channel, reads and lists what its
-// Authorizer reads, and a channel member outside a Project narrows nothing
-// (D31, revised 2026-10-06). The bounds are the delegate rule, read from
-// each Run's own row.
+// Authorizer reads, and a channel member outside a Project narrows nothing.
+// The bounds are the delegate rule, read from each Run's own row.
 func TestProjectReadsForARunAreReaderOnlyAndBoundedByTheAuthorizer(t *testing.T) {
 	ctx, w := newProjectAccessWorld(t)
 	taskRunID := dbtest.SeedRun(t, ctx, w.pool, dbtest.RunSeed{

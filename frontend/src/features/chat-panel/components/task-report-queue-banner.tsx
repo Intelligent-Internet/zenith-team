@@ -55,7 +55,7 @@ export function TaskReportQueueBanner({
       }
     } catch (cause) {
       setError(
-        boardlyErrorCode(cause) === "task_report_agent_busy"
+        zenithTeamErrorCode(cause) === "task_report_agent_busy"
           ? "CEO Agent started other work. Send these updates when it finishes."
           : "Unable to send task updates. Check your connection and try again.",
       );
@@ -148,7 +148,7 @@ export function TaskReportQueueBanner({
   );
 }
 
-function boardlyErrorCode(error: unknown) {
+function zenithTeamErrorCode(error: unknown) {
   const apiCode = getApiErrorCode(error);
   if (apiCode) return apiCode;
   if (error && typeof error === "object" && "code" in error) {

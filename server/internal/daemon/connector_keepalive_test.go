@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type connectorPublisherCall struct {
@@ -581,9 +581,9 @@ func TestConnectorDiscoveryIntervalClampsInsideTheFreshWindow(t *testing.T) {
 func TestLoadConfigReadsTheConnectorDiscoveryInterval(t *testing.T) {
 	isolateProviderDiscovery(t, t.TempDir())
 	stubLoginShellResolver(t, nil)
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_WORKSPACES_ROOT", t.TempDir())
-	t.Setenv("BOARDLY_DAEMON_ID", "pinned-id")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_WORKSPACES_ROOT", t.TempDir())
+	t.Setenv("ZENITH_TEAM_DAEMON_ID", "pinned-id")
 
 	for _, test := range []struct {
 		value string
@@ -594,7 +594,7 @@ func TestLoadConfigReadsTheConnectorDiscoveryInterval(t *testing.T) {
 		{value: "20m", want: 3*time.Minute + 30*time.Second},
 		{value: "5s", want: time.Minute},
 	} {
-		t.Setenv("BOARDLY_CONNECTOR_DISCOVERY_INTERVAL", test.value)
+		t.Setenv("ZENITH_TEAM_CONNECTOR_DISCOVERY_INTERVAL", test.value)
 		cfg, err := LoadConfig(Overrides{AllowNoAgents: true})
 		if err != nil {
 			t.Fatalf("LoadConfig(%q) error = %v", test.value, err)
@@ -603,7 +603,7 @@ func TestLoadConfigReadsTheConnectorDiscoveryInterval(t *testing.T) {
 			t.Fatalf("interval for %q = %v, want %v", test.value, cfg.ConnectorDiscoveryInterval, test.want)
 		}
 	}
-	t.Setenv("BOARDLY_CONNECTOR_DISCOVERY_INTERVAL", "soon")
+	t.Setenv("ZENITH_TEAM_CONNECTOR_DISCOVERY_INTERVAL", "soon")
 	if _, err := LoadConfig(Overrides{AllowNoAgents: true}); err == nil {
 		t.Fatal("LoadConfig() accepted an invalid connector discovery interval")
 	}
@@ -867,7 +867,10 @@ func TestConnectorClaimGuardStopsWaitingForASlowDiscover(t *testing.T) {
 	deadline := time.Now().Add(5 * time.Second)
 	for !fixture.assignment(t, "runtime-1").confirmedAt.Equal(now) {
 		if time.Now().After(deadline) {
-			t.Fatalf("background refresh never renewed the assignment: %+v", fixture.assignment(t, "runtime-1"))
+			t.Fatalf(
+				"background refresh never renewed the assignment: %+v",
+				fixture.assignment(t, "runtime-1"),
+			)
 		}
 		time.Sleep(5 * time.Millisecond)
 	}

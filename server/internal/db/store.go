@@ -23,7 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type Store struct {
@@ -130,7 +130,7 @@ func (s *Store) WithinRawTx(
 // the same name and silently undo too little. Every attempt therefore ends by
 // destroying its marker (RELEASE on both paths below), and there is exactly
 // one attempt in flight per transaction.
-const attemptSavepointName = "boardly_attempt"
+const attemptSavepointName = "zenith_team_attempt"
 
 // TryWithinSavepoint runs fn behind a savepoint on the transaction tx already
 // belongs to, and returns fn's error unchanged so the caller can classify it.

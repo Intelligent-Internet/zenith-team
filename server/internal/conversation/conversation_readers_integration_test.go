@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // conversation_readers (migration 000086) restates, per chat kind, who reads
@@ -33,10 +33,22 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 	var disabled, revoked uuid.UUID
 	for _, person := range []*uuid.UUID{&disabled, &revoked} {
 		*person = dbtest.NewUUID(t)
-		dbtest.MustExec(t, f.ctx, f.pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Reader')`,
-			*person, person.String()+"@readers.example.test")
-		dbtest.MustExec(t, f.ctx, f.pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
-			companyID, *person)
+		dbtest.MustExec(
+			t,
+			f.ctx,
+			f.pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Reader')`,
+			*person,
+			person.String()+"@readers.example.test",
+		)
+		dbtest.MustExec(
+			t,
+			f.ctx,
+			f.pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+			companyID,
+			*person,
+		)
 	}
 	people := []uuid.UUID{f.a.UserID, f.b.UserID, f.c.UserID, f.owner.UserID, disabled, revoked}
 
@@ -51,10 +63,19 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := f.conversations.LeaveChannel(f.ctx, f.c, channel.Conversation.ID, management.ConfigurationRevision); err != nil {
+	if err := f.conversations.LeaveChannel(
+		f.ctx,
+		f.c,
+		channel.Conversation.ID,
+		management.ConfigurationRevision,
+	); err != nil {
 		t.Fatal(err)
 	}
-	pair, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	pair, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,8 +155,17 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 	discussionAccess := func(conversationID, userID uuid.UUID) bool {
 		t.Helper()
 		rows, err := q.ListDiscussionAccess(f.ctx, generated.ListDiscussionAccessParams{
-			ManageRoles: auth.RolesWith(auth.PermissionChannelsManage), ActorUserID: userID, CompanyID: companyID,
-			ConversationIds: []uuid.UUID{conversationID}, IncludeArchived: true, IncludeHidden: true, PageLimit: 10,
+			ManageRoles: auth.RolesWith(
+				auth.PermissionChannelsManage,
+			),
+			ActorUserID: userID,
+			CompanyID:   companyID,
+			ConversationIds: []uuid.UUID{
+				conversationID,
+			},
+			IncludeArchived: true,
+			IncludeHidden:   true,
+			PageLimit:       10,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -149,10 +179,11 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer func() { _ = tx.Rollback(f.ctx) }()
-		_, err = generated.New(tx).LockHumanInputOriginConversation(f.ctx, generated.LockHumanInputOriginConversationParams{
-			ConversationID: conversationID, CompanyID: companyID, ConversationKind: "channel_agent",
-			AgentID: f.seed.AgentA, OriginUserID: uuid.NullUUID{UUID: userID, Valid: true},
-		})
+		_, err = generated.New(tx).
+			LockHumanInputOriginConversation(f.ctx, generated.LockHumanInputOriginConversationParams{
+				ConversationID: conversationID, CompanyID: companyID, ConversationKind: "channel_agent",
+				AgentID: f.seed.AgentA, OriginUserID: uuid.NullUUID{UUID: userID, Valid: true},
+			})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatal(err)
 		}
@@ -163,9 +194,20 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 	checked := 0
 	for _, person := range people {
 		for _, conversationID := range []uuid.UUID{channel.Conversation.ID, pair.Conversation.ID, group.Conversation.ID} {
-			if got, want := reads(conversationID, person), discussionAccess(conversationID, person); got != want {
-				t.Errorf("discussion %s, person %s: conversation_readers = %t, ListDiscussionAccess = %t",
-					conversationID, person, got, want)
+			if got, want := reads(
+				conversationID,
+				person,
+			), discussionAccess(
+				conversationID,
+				person,
+			); got != want {
+				t.Errorf(
+					"discussion %s, person %s: conversation_readers = %t, ListDiscussionAccess = %t",
+					conversationID,
+					person,
+					got,
+					want,
+				)
 			}
 			checked++
 		}
@@ -176,7 +218,13 @@ func TestConversationReadersMatchEachKindsOwnRule(t *testing.T) {
 		}
 		for chat, creator := range map[uuid.UUID]uuid.UUID{f.seed.DirectConversationA: f.a.UserID, scheduleChat: f.b.UserID} {
 			if got, want := reads(chat, person), active[person] && person == creator; got != want {
-				t.Errorf("chat %s, person %s: conversation_readers = %t, want the creator rule %t", chat, person, got, want)
+				t.Errorf(
+					"chat %s, person %s: conversation_readers = %t, want the creator rule %t",
+					chat,
+					person,
+					got,
+					want,
+				)
 			}
 		}
 	}
@@ -223,12 +271,21 @@ func TestScheduleChatFilesOpenToItsCreator(t *testing.T) {
 		companyID, f.c.UserID).Scan(&file); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-		VALUES ($1, $2, $3, 0)`, companyID, message, file)
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+		VALUES ($1, $2, $3, 0)`,
+		companyID,
+		message,
+		file,
+	)
 	for person, want := range map[uuid.UUID]bool{f.b.UserID: true, f.c.UserID: false, f.a.UserID: false} {
-		_, err := generated.New(f.pool).AuthorizeAttachmentDownload(f.ctx, generated.AuthorizeAttachmentDownloadParams{
-			CompanyID: companyID, AttachmentID: file, ActorUserID: person,
-		})
+		_, err := generated.New(f.pool).
+			AuthorizeAttachmentDownload(f.ctx, generated.AuthorizeAttachmentDownloadParams{
+				CompanyID: companyID, AttachmentID: file, ActorUserID: person,
+			})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatal(err)
 		}

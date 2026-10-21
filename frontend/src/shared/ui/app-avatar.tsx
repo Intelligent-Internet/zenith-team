@@ -17,7 +17,7 @@ export type AppAvatarProps = {
   name: string;
   /** A remote logo; only a URL that passes safePluginIconUrl is loaded. */
   iconUrl?: string | null;
-  /** A local plugin logo served by the desktop app's boardly-plugin-icon:// scheme. */
+  /** A local plugin logo served by the desktop app's zenith-team-plugin-icon:// scheme. */
   local?: {
     provider: PluginProvider;
     nativeId: string;

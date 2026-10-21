@@ -9,8 +9,20 @@ import (
 
 func TestExpandPreservesWallClockAcrossDST(t *testing.T) {
 	t.Parallel()
-	event := Event{ID: "test", Type: "event", Title: "Morning", StartLocal: "2026-03-07T09:00", EndLocal: "2026-03-07T10:00", TimeZone: "America/New_York", Recurrence: "daily"}
-	items, err := expand(event, time.Date(2026, 3, 7, 0, 0, 0, 0, time.UTC), time.Date(2026, 3, 10, 0, 0, 0, 0, time.UTC))
+	event := Event{
+		ID:         "test",
+		Type:       "event",
+		Title:      "Morning",
+		StartLocal: "2026-03-07T09:00",
+		EndLocal:   "2026-03-07T10:00",
+		TimeZone:   "America/New_York",
+		Recurrence: "daily",
+	}
+	items, err := expand(
+		event,
+		time.Date(2026, 3, 7, 0, 0, 0, 0, time.UTC),
+		time.Date(2026, 3, 10, 0, 0, 0, 0, time.UTC),
+	)
 	if err != nil || len(items) != 3 {
 		t.Fatalf("expand() = %v, %v", items, err)
 	}
@@ -21,8 +33,20 @@ func TestExpandPreservesWallClockAcrossDST(t *testing.T) {
 
 func TestMonthlyRecurrenceSkipsMissingDates(t *testing.T) {
 	t.Parallel()
-	event := Event{ID: "test", Type: "event", Title: "Review", StartLocal: "2026-01-31T09:00", EndLocal: "2026-01-31T10:00", TimeZone: "UTC", Recurrence: "monthly"}
-	items, err := expand(event, time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC), time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC))
+	event := Event{
+		ID:         "test",
+		Type:       "event",
+		Title:      "Review",
+		StartLocal: "2026-01-31T09:00",
+		EndLocal:   "2026-01-31T10:00",
+		TimeZone:   "UTC",
+		Recurrence: "monthly",
+	}
+	items, err := expand(
+		event,
+		time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+	)
 	if err != nil || len(items) != 1 || items[0].OccurrenceDate != "2026-03-31" {
 		t.Fatalf("expand() = %v, %v", items, err)
 	}
@@ -41,7 +65,18 @@ func TestCalendarInputRejectsInvalidTimes(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := normalize(Input{Type: "event", Title: "Test", StartLocal: tc.start, EndLocal: tc.end, TimeZone: tc.zone, AllDay: tc.allDay, Recurrence: "none", Color: "sage"})
+			_, err := normalize(
+				Input{
+					Type:       "event",
+					Title:      "Test",
+					StartLocal: tc.start,
+					EndLocal:   tc.end,
+					TimeZone:   tc.zone,
+					AllDay:     tc.allDay,
+					Recurrence: "none",
+					Color:      "sage",
+				},
+			)
 			if err == nil {
 				t.Fatal("normalize() accepted invalid time")
 			}
@@ -51,8 +86,21 @@ func TestCalendarInputRejectsInvalidTimes(t *testing.T) {
 
 func TestAllDayKeepsExclusiveDates(t *testing.T) {
 	t.Parallel()
-	event := Event{ID: "test", Type: "event", Title: "Away", AllDay: true, StartLocal: "2026-09-24", EndLocal: "2026-09-26", TimeZone: "Asia/Ho_Chi_Minh", Recurrence: "none"}
-	items, err := expand(event, time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC), time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC))
+	event := Event{
+		ID:         "test",
+		Type:       "event",
+		Title:      "Away",
+		AllDay:     true,
+		StartLocal: "2026-09-24",
+		EndLocal:   "2026-09-26",
+		TimeZone:   "Asia/Ho_Chi_Minh",
+		Recurrence: "none",
+	}
+	items, err := expand(
+		event,
+		time.Date(2026, 9, 25, 0, 0, 0, 0, time.UTC),
+		time.Date(2026, 9, 26, 0, 0, 0, 0, time.UTC),
+	)
 	if err != nil || len(items) != 1 || items[0].EndLocal != "2026-09-26" {
 		t.Fatalf("expand() = %v, %v", items, err)
 	}
@@ -91,7 +139,17 @@ func TestCustomRecurrenceExpansion(t *testing.T) {
 			}
 			from, _ := time.Parse(time.DateOnly, tt.from)
 			to, _ := time.Parse(time.DateOnly, tt.to)
-			event := Event{StartLocal: tt.start, EndLocal: tt.end, TimeZone: zone, Recurrence: tt.frequency, RecurrenceInterval: tt.interval, RecurrenceWeekdays: tt.weekdays, RecurrenceMonthlyMode: tt.monthly, RecurrenceCount: tt.count, RecurrenceUntil: tt.until}
+			event := Event{
+				StartLocal:            tt.start,
+				EndLocal:              tt.end,
+				TimeZone:              zone,
+				Recurrence:            tt.frequency,
+				RecurrenceInterval:    tt.interval,
+				RecurrenceWeekdays:    tt.weekdays,
+				RecurrenceMonthlyMode: tt.monthly,
+				RecurrenceCount:       tt.count,
+				RecurrenceUntil:       tt.until,
+			}
 			items, err := expand(event, from, to)
 			if err != nil {
 				t.Fatal(err)
@@ -132,7 +190,15 @@ func TestNormalizeCustomRecurrence(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			input := Input{Type: "event", Title: "Weekly meeting", Color: "sage", StartLocal: "2026-09-23T09:00", EndLocal: "2026-09-23T10:00", TimeZone: "UTC", Recurrence: "weekly"}
+			input := Input{
+				Type:       "event",
+				Title:      "Weekly meeting",
+				Color:      "sage",
+				StartLocal: "2026-09-23T09:00",
+				EndLocal:   "2026-09-23T10:00",
+				TimeZone:   "UTC",
+				Recurrence: "weekly",
+			}
 			tt.change(&input)
 			if _, err := normalize(input); !errors.Is(err, ErrInvalid) {
 				t.Fatalf("normalize error = %v, want ErrInvalid", err)

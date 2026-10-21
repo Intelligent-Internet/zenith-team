@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/repocache"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
 )
 
 func TestMainMutationGuardWaitRespectsContext(t *testing.T) {
@@ -122,10 +122,10 @@ func TestMainMutationGuardCoordinatesProcesses(t *testing.T) {
 	)
 	command.Env = append(
 		os.Environ(),
-		"BOARDLY_TEST_MAIN_MUTATION_HELPER=1",
-		"BOARDLY_TEST_MAIN_MUTATION_ROOT="+root,
-		"BOARDLY_TEST_MAIN_MUTATION_CACHE_ROOT="+cacheRoot,
-		"BOARDLY_TEST_MAIN_MUTATION_MARKER="+marker,
+		"ZENITH_TEAM_TEST_MAIN_MUTATION_HELPER=1",
+		"ZENITH_TEAM_TEST_MAIN_MUTATION_ROOT="+root,
+		"ZENITH_TEAM_TEST_MAIN_MUTATION_CACHE_ROOT="+cacheRoot,
+		"ZENITH_TEAM_TEST_MAIN_MUTATION_MARKER="+marker,
 	)
 	stdin, err := command.StdinPipe()
 	if err != nil {
@@ -163,17 +163,17 @@ func TestMainMutationGuardCoordinatesProcesses(t *testing.T) {
 }
 
 func TestMainMutationGuardHelperProcess(t *testing.T) {
-	if os.Getenv("BOARDLY_TEST_MAIN_MUTATION_HELPER") != "1" {
+	if os.Getenv("ZENITH_TEAM_TEST_MAIN_MUTATION_HELPER") != "1" {
 		return
 	}
 	manager := newMainMutationTestManager(
 		t,
-		os.Getenv("BOARDLY_TEST_MAIN_MUTATION_ROOT"),
-		os.Getenv("BOARDLY_TEST_MAIN_MUTATION_CACHE_ROOT"),
+		os.Getenv("ZENITH_TEAM_TEST_MAIN_MUTATION_ROOT"),
+		os.Getenv("ZENITH_TEAM_TEST_MAIN_MUTATION_CACHE_ROOT"),
 	)
 	if err := manager.withMainMutation(t.Context(), func(context.Context) error {
 		if err := os.WriteFile(
-			os.Getenv("BOARDLY_TEST_MAIN_MUTATION_MARKER"),
+			os.Getenv("ZENITH_TEAM_TEST_MAIN_MUTATION_MARKER"),
 			[]byte("held"),
 			0o600,
 		); err != nil {

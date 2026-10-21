@@ -1,6 +1,6 @@
 const path = require("node:path");
 const { app, BrowserWindow, dialog } = require("electron");
-const { BOARDLY_APP_INDEX_URL } = require("./app-protocol.cjs");
+const { ZENITH_TEAM_APP_INDEX_URL } = require("./app-protocol.cjs");
 const { attachWindowDiagnostics } = require("./diagnostics.cjs");
 const { isAppNavigationUrl, openExternalUrl } = require("./external-links.cjs");
 const { isTrustedMainFrame } = require("./trusted-frame.cjs");
@@ -158,11 +158,11 @@ function isTrustedHuddleFrame(event) {
 }
 
 function getRendererUrl() {
-  if (!app.isPackaged && process.env.BOARDLY_ELECTRON_DEV_SERVER_URL) {
-    return process.env.BOARDLY_ELECTRON_DEV_SERVER_URL;
+  if (!app.isPackaged && process.env.ZENITH_TEAM_ELECTRON_DEV_SERVER_URL) {
+    return process.env.ZENITH_TEAM_ELECTRON_DEV_SERVER_URL;
   }
 
-  return BOARDLY_APP_INDEX_URL;
+  return ZENITH_TEAM_APP_INDEX_URL;
 }
 
 module.exports = {

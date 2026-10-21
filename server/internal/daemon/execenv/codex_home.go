@@ -223,7 +223,7 @@ var codexSessionStateGlobs = []string{
 // holds the per-conversation session stores. It sits beside the user's own
 // sessions/ so it shares that volume (rollout hard links stay zero-copy) but
 // is never enumerated by a plain `codex` run.
-const codexSessionStoreRoot = "boardly-sessions"
+const codexSessionStoreRoot = "zenith-team-sessions"
 
 // codexSessionStoreDir returns the persistent per-(agent, conversation)
 // session store for key. Empty key → "" (sessions stay run-local).

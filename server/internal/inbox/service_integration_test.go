@@ -12,12 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // This test stays in-package because it pins authorizeActivePrincipal itself:
@@ -162,8 +162,15 @@ func TestReadConversationFencesVisibilityAndUpdatesOnlyMatchingUnreadItems(t *te
 	taskConversationID := uuid.Must(uuid.NewV7())
 	// A Task chat names its Project (ADR 0017).
 	projectID := uuid.Must(uuid.NewV7())
-	mustInboxExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, $3, 'Inbox fence')`,
-		projectID, owner.CompanyID, "inbox-fence-"+projectID.String())
+	mustInboxExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, $3, 'Inbox fence')`,
+		projectID,
+		owner.CompanyID,
+		"inbox-fence-"+projectID.String(),
+	)
 	// The owner reads it, so its chat is theirs to read.
 	mustInboxExec(t, ctx, pool, `
 		INSERT INTO project_grants (company_id, project_id, user_id, permission, granted_by_user_id)
@@ -315,7 +322,8 @@ func TestReadConversationFencesVisibilityAndUpdatesOnlyMatchingUnreadItems(t *te
 		}
 		// Routing rides the payload: this frame is for one recipient in one
 		// company, and the bridge reads both off the item itself.
-		if (payload.CompanyID == nil || *payload.CompanyID != owner.CompanyID) || payload.RecipientUserID != owner.UserID {
+		if (payload.CompanyID == nil || *payload.CompanyID != owner.CompanyID) ||
+			payload.RecipientUserID != owner.UserID {
 			t.Fatalf("Inbox event routing = company %v recipient %v, want %v / %v",
 				payload.CompanyID, payload.RecipientUserID, owner.CompanyID, owner.UserID)
 		}
@@ -346,7 +354,7 @@ func seedInboxCompany(
 			pool,
 			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, $3)`,
 			userID,
-			fmt.Sprintf("inbox-%d-%s@boardly.test", index, userID),
+			fmt.Sprintf("inbox-%d-%s@zenith-team.test", index, userID),
 			fmt.Sprintf("Inbox User %d", index),
 		)
 	}

@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // message.updated (ADR 0017) is an opaque "refetch this message's
@@ -26,9 +26,13 @@ func TestMessageUpdatedFollowsTheConversation(t *testing.T) {
 	} {
 		publish(t, bus, companyID, conversation.TopicMessage, conversation.EventMessageUpdated,
 			conversation.MessageUpdated{
-				ConversationID: uuid.New(), MessageID: uuid.New(),
-				ConversationKind: kind, ConversationCreatedByUserID: &creator,
-				ProjectFrame: auth.ProjectFrame{Audience: &auth.ProjectAudience{UserIDs: []uuid.UUID{reader}}},
+				ConversationID:              uuid.New(),
+				MessageID:                   uuid.New(),
+				ConversationKind:            kind,
+				ConversationCreatedByUserID: &creator,
+				ProjectFrame: auth.ProjectFrame{
+					Audience: &auth.ProjectAudience{UserIDs: []uuid.UUID{reader}},
+				},
 			})
 	}
 	want := []string{
@@ -58,7 +62,7 @@ func TestDiscussionDispatcherCarriesMessageUpdatesPerMessage(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	jobs := d.take(8)
+	jobs := d.take()
 	got := map[uuid.UUID]bool{}
 	for _, job := range jobs {
 		got[job.messageID] = true

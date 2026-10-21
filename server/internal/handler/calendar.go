@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/middleware"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 type calendarOccurrenceCollection struct {
@@ -16,24 +17,24 @@ type calendarOccurrenceCollection struct {
 }
 
 type calendarInputRequest struct {
-	CalendarID            string   `json:"calendarId" binding:"omitempty,uuid"`
-	AttendeeUserIDs       []string `json:"attendeeUserIds" binding:"max=100,dive,uuid"`
-	Type                  string   `json:"type" binding:"required,oneof=event reminder"`
-	Title                 string   `json:"title" binding:"required,max=240"`
-	Description           string   `json:"description" binding:"max=16000"`
-	Location              string   `json:"location" binding:"max=1000"`
-	Color                 string   `json:"color" binding:"required,oneof=sage sky lavender rose sand"`
+	CalendarID            string   `json:"calendarId"            binding:"omitempty,uuid"`
+	AttendeeUserIDs       []string `json:"attendeeUserIds"       binding:"max=100,dive,uuid"`
+	Type                  string   `json:"type"                  binding:"required,oneof=event reminder"`
+	Title                 string   `json:"title"                 binding:"required,max=240"`
+	Description           string   `json:"description"           binding:"max=16000"`
+	Location              string   `json:"location"              binding:"max=1000"`
+	Color                 string   `json:"color"                 binding:"required,oneof=sage sky lavender rose sand"`
 	AllDay                bool     `json:"allDay"`
-	StartLocal            string   `json:"startLocal" binding:"required,max=16"`
-	EndLocal              string   `json:"endLocal" binding:"required,max=16"`
-	TimeZone              string   `json:"timeZone" binding:"required,max=100"`
-	Recurrence            string   `json:"recurrence" binding:"required,oneof=none daily weekly monthly yearly"`
-	RecurrenceInterval    *int32   `json:"recurrenceInterval" binding:"omitempty,min=1,max=999"`
-	RecurrenceWeekdays    []int32  `json:"recurrenceWeekdays" binding:"max=7,unique,dive,min=0,max=6"`
+	StartLocal            string   `json:"startLocal"            binding:"required,max=16"`
+	EndLocal              string   `json:"endLocal"              binding:"required,max=16"`
+	TimeZone              string   `json:"timeZone"              binding:"required,max=100"`
+	Recurrence            string   `json:"recurrence"            binding:"required,oneof=none daily weekly monthly yearly"`
+	RecurrenceInterval    *int32   `json:"recurrenceInterval"    binding:"omitempty,min=1,max=999"`
+	RecurrenceWeekdays    []int32  `json:"recurrenceWeekdays"    binding:"max=7,unique,dive,min=0,max=6"`
 	RecurrenceMonthlyMode string   `json:"recurrenceMonthlyMode" binding:"omitempty,oneof=day_of_month day_of_week"`
-	RecurrenceCount       *int32   `json:"recurrenceCount" binding:"omitempty,min=1,max=1000"`
-	RecurrenceUntil       *string  `json:"recurrenceUntil" binding:"omitempty,datetime=2006-01-02"`
-	ReminderMinutes       *int32   `json:"reminderMinutes" binding:"omitempty,min=0,max=10080"`
+	RecurrenceCount       *int32   `json:"recurrenceCount"       binding:"omitempty,min=1,max=1000"`
+	RecurrenceUntil       *string  `json:"recurrenceUntil"       binding:"omitempty,datetime=2006-01-02"`
+	ReminderMinutes       *int32   `json:"reminderMinutes"       binding:"omitempty,min=0,max=10080"`
 }
 
 func (request calendarInputRequest) input() calendar.Input {
@@ -42,13 +43,24 @@ func (request calendarInputRequest) input() calendar.Input {
 		interval = *request.RecurrenceInterval
 	}
 	return calendar.Input{
-		CalendarID: request.CalendarID, AttendeeUserIDs: request.AttendeeUserIDs,
-		Type: request.Type, Title: request.Title, Description: request.Description,
-		Location: request.Location, Color: request.Color, AllDay: request.AllDay,
-		StartLocal: request.StartLocal, EndLocal: request.EndLocal, TimeZone: request.TimeZone,
-		Recurrence: request.Recurrence, RecurrenceUntil: request.RecurrenceUntil,
-		ReminderMinutes:    request.ReminderMinutes,
-		RecurrenceInterval: interval, RecurrenceWeekdays: request.RecurrenceWeekdays, RecurrenceMonthlyMode: request.RecurrenceMonthlyMode, RecurrenceCount: request.RecurrenceCount,
+		CalendarID:            request.CalendarID,
+		AttendeeUserIDs:       request.AttendeeUserIDs,
+		Type:                  request.Type,
+		Title:                 request.Title,
+		Description:           request.Description,
+		Location:              request.Location,
+		Color:                 request.Color,
+		AllDay:                request.AllDay,
+		StartLocal:            request.StartLocal,
+		EndLocal:              request.EndLocal,
+		TimeZone:              request.TimeZone,
+		Recurrence:            request.Recurrence,
+		RecurrenceUntil:       request.RecurrenceUntil,
+		ReminderMinutes:       request.ReminderMinutes,
+		RecurrenceInterval:    interval,
+		RecurrenceWeekdays:    request.RecurrenceWeekdays,
+		RecurrenceMonthlyMode: request.RecurrenceMonthlyMode,
+		RecurrenceCount:       request.RecurrenceCount,
 	}
 }
 
@@ -64,8 +76,8 @@ type calendarUpdateRequest struct {
 
 type calendarOccurrenceRequest struct {
 	ExpectedRevision int64  `json:"expectedRevision" binding:"revision"`
-	OccurrenceDate   string `json:"occurrenceDate" binding:"required,datetime=2006-01-02"`
-	Action           string `json:"action" binding:"required,oneof=cancel complete reopen"`
+	OccurrenceDate   string `json:"occurrenceDate"   binding:"required,datetime=2006-01-02"`
+	Action           string `json:"action"           binding:"required,oneof=cancel complete reopen"`
 }
 
 func (h *Handler) registerCalendarRoutes(api *gin.RouterGroup) {
@@ -75,9 +87,18 @@ func (h *Handler) registerCalendarRoutes(api *gin.RouterGroup) {
 	group := api.Group("/me/calendar", middleware.RequireUserAuth(h.AuthService), middleware.RequireHumanActor())
 	h.registerCalendarHumanRoutes(group)
 	if h.CompanyService != nil {
-		company := api.Group("/companies/:companyId/calendar", middleware.RequireUserAuth(h.AuthService), middleware.RequireCompanyMember(h.CompanyService), middleware.RequireHumanActor())
+		company := api.Group(
+			"/companies/:companyId/calendar",
+			middleware.RequireUserAuth(h.AuthService),
+			middleware.RequireCompanyMember(h.CompanyService),
+			middleware.RequireHumanActor(),
+		)
 		h.registerCalendarHumanRoutes(company)
-		run := api.Group("/companies/:companyId/conversations/:conversationId/calendar", middleware.RequireUserAuth(h.AuthService), middleware.RequireCompanyMember(h.CompanyService))
+		run := api.Group(
+			"/companies/:companyId/conversations/:conversationId/calendar",
+			middleware.RequireUserAuth(h.AuthService),
+			middleware.RequireCompanyMember(h.CompanyService),
+		)
 		run.GET("", h.readAgentCalendar)
 		run.POST("", h.writeAgentCalendar)
 	}
@@ -181,9 +202,19 @@ func (h *Handler) changeCalendarOccurrence(c *gin.Context) {
 var calendarErrorMappings = []errorMapping{
 	runTokenInvalidMapping,
 	{calendar.ErrNotFound, http.StatusNotFound, "calendar event not found", "calendar_not_found"},
-	{calendar.ErrInvalid, http.StatusUnprocessableEntity, "check the event fields, time zone and date range", "calendar_invalid"},
+	{
+		calendar.ErrInvalid,
+		http.StatusUnprocessableEntity,
+		"check the event fields, time zone and date range",
+		"calendar_invalid",
+	},
 	{calendar.ErrConflict, http.StatusConflict, "this event changed; refresh before saving", "calendar_conflict"},
-	{calendar.ErrRange, http.StatusUnprocessableEntity, "choose a smaller calendar date range", "calendar_range_exceeded"},
+	{
+		calendar.ErrRange,
+		http.StatusUnprocessableEntity,
+		"choose a smaller calendar date range",
+		"calendar_range_exceeded",
+	},
 }
 
 func writeCalendarError(c *gin.Context, err error) {
@@ -192,7 +223,7 @@ func writeCalendarError(c *gin.Context, err error) {
 
 type calendarResponseRequest struct {
 	ExpectedRevision int64  `json:"expectedRevision" binding:"revision"`
-	ResponseStatus   string `json:"responseStatus" binding:"required,oneof=accepted tentative declined"`
+	ResponseStatus   string `json:"responseStatus"   binding:"required,oneof=accepted tentative declined"`
 }
 
 func (h *Handler) calendarCatalog(c *gin.Context) {
@@ -212,7 +243,13 @@ func (h *Handler) respondCalendarInvitation(c *gin.Context) {
 		return
 	}
 	principal, _ := auth.UserPrincipalFromContext(c.Request.Context())
-	if err = h.CalendarService.Respond(c.Request.Context(), principal, c.Param("eventId"), request.ExpectedRevision, request.ResponseStatus); err != nil {
+	if err = h.CalendarService.Respond(
+		c.Request.Context(),
+		principal,
+		c.Param("eventId"),
+		request.ExpectedRevision,
+		request.ResponseStatus,
+	); err != nil {
 		writeCalendarError(c, err)
 		return
 	}

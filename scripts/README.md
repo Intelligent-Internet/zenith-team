@@ -30,13 +30,13 @@ defaulting to `~/.codex`.
 
 ## Desktop debugging
 
-`make debug-app` builds the current `zen` and `boardly-mcp` binaries and
+`make debug-app` builds the current `zen` and `zenith-team-mcp` binaries and
 starts the Electron app with its Desktop-owned daemon environment. The daemon
-is detached, so inspect it with the bundled CLI and the exact `BOARDLY_HOME`
+is detached, so inspect it with the bundled CLI and the exact `ZENITH_TEAM_HOME`
 shown by Desktop diagnostics. For example:
 
 ```bash
-BOARDLY_HOME=/path/from/desktop/diagnostics zen daemon logs -f
+ZENITH_TEAM_HOME=/path/from/desktop/diagnostics zen daemon logs -f
 ```
 
 The retired process shim and its Delve/log wrappers have no replacement: they

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { deployment } from "@/shared/lib/deployment";
 import { X } from "@/shared/ui/icons";
 import {
   detectMacosArchitecture,
@@ -132,12 +133,14 @@ export function StudioHelpDialog({ onClose }: { onClose: () => void }) {
           </details>
         ))}
       </div>
-      <a
-        className="inline-block text-[#2f6a8a]! text-[length:13px] mt-[16px] [text-decoration:underline]! [text-underline-offset:3px]"
-        href="mailto:support@ii.inc"
-      >
-        Talk to us: support@ii.inc
-      </a>
+      {deployment.supportEmail ? (
+        <a
+          className="inline-block text-[#2f6a8a]! text-[length:13px] mt-[16px] [text-decoration:underline]! [text-underline-offset:3px]"
+          href={`mailto:${deployment.supportEmail}`}
+        >
+          Talk to us: {deployment.supportEmail}
+        </a>
+      ) : null}
     </StudioDialog>
   );
 }

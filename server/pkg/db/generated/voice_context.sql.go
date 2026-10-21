@@ -29,7 +29,7 @@ type GetVoiceCompanyContextRow struct {
 
 // Company-shared projections only. Huddle authority is checked by the caller
 // in the same transaction. Never join private conversation items or Run output.
-// The voice assistant is a delegate (D31): Projects and their Tasks are
+// The voice assistant is a delegate: Projects and their Tasks are
 // bounded by the delegate rule (delegate_permission_held), once per candidate
 // Project. The person who switched Company context on is its Authorizer: it
 // reads with that person's access alone, and everyone in the call hears the

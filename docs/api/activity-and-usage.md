@@ -102,7 +102,8 @@ the calendar counts the same rows:
   `project_grant` row also carries `projectTitle`, and a Group's row
   `groupName`, as they were when the change was made, so the row still reads
   after the Group is deleted or the Project is renamed or archived. Rows
-  written before 2026-10-08 carry neither; read the live names for them.
+  written before these fields existed carry neither; read the live names for
+  them.
 - A `group` row (`group.created`, `group.updated`, `group.deleted`,
   `group.member_added`, `group.member_removed`) names no Project and is
   listed for every active member, as the Team page is ([groups.md](groups.md)).
@@ -123,7 +124,7 @@ Authorizer), and `runId` is the Run; clients read the row as "Eli for Mia".
 The person's name is frozen when the row is written, like the actor's, and is
 also kept in `details.context` as `onBehalfOfDisplayName`. A person's own
 action, a system action, an Agent row that names no Run, and every row
-written before this change carry `null` in both. A Task a Run creates also
+written before these fields existed carry `null` in both. A Task a Run creates also
 names both creators: the person stays the Task's creator, and the Agent is
 recorded beside them.
 
@@ -153,11 +154,20 @@ creator-private, including after subject deletion and for Company admins.
 Unknown scope is excluded. `activity.created` reaches exactly the members whose
 feed shows the row ([ADR 0017](../adr/0017-project-access-scopes.md)).
 
-For examples, source revision semantics and Agent execution history, see the
-[consumer contract](run-tracking-history.md#company-activity),
-[Activity TECH](../specs/activity/TECH.md) and served
-[OpenAPI](spec/activity-and-usage.yaml). The Agent actor filter records actions
-by that Agent; use the Run list's `agent_id` for executions by that Agent.
+The Agent actor filter (`actor_type=agent&actor_id=…`) lists actions *by*
+that Agent. It is not execution history, because a Run's lifecycle changes can
+have a System actor; use the [Run list's](runs.md#list-the-companys-runs)
+`agent_id` for Runs executed by that Agent. A Run subject
+(`entity_type=run&entity_id=…`) lists the Run's own actions, not the changes
+it caused to Tasks or other subjects.
+
+The state of a Task or Conversation before a change is in the row's
+`details.before`. To read the row before it, query
+`before_revision=<revision>&limit=1` on the same subject. That returns the
+previous *retained* revision, which may skip a gap, so never assume it is the
+current revision minus one. A cursor belongs to its filters and ordering mode:
+start again from the first page when either changes. The served
+[OpenAPI](spec/activity-and-usage.yaml) has the full schema.
 
 ## Read the activity calendar
 

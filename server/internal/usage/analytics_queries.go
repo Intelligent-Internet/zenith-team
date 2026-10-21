@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Every Analytics page read is the sqlc query ListAnalyticsGroups grouped one
@@ -41,8 +41,8 @@ type analyticsGroup struct {
 	Metrics AnalyticsMetrics
 }
 
-// analyticsAuthorizer is the Runs' authorizer filter: the caller on Mine
-// (D20), otherwise the optional member filter.
+// analyticsAuthorizer is the Runs' authorizer filter: the caller on Mine,
+// otherwise the optional member filter.
 func analyticsAuthorizer(p auth.UserPrincipal, q AnalyticsQuery) uuid.NullUUID {
 	if q.Scope == AnalyticsScopeMine {
 		return uuid.NullUUID{UUID: p.UserID, Valid: true}

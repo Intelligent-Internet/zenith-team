@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // DiscussionPresenceInput combines the current client's activity heartbeat and
@@ -71,7 +72,10 @@ func (s *DefaultDiscussionService) Presence(
 
 		rows, err := q.ListCompanyMemberPresence(
 			ctx,
-			generated.ListCompanyMemberPresenceParams{CompanyID: p.CompanyID, UserIds: append(input.UserIDs, p.UserID)},
+			generated.ListCompanyMemberPresenceParams{
+				CompanyID: p.CompanyID,
+				UserIds:   append(input.UserIDs, p.UserID),
+			},
 		)
 		if err != nil {
 			return err
@@ -79,7 +83,11 @@ func (s *DefaultDiscussionService) Presence(
 		for _, row := range rows {
 			result = append(
 				result,
-				DiscussionMemberPresence{UserID: row.UserID, Online: row.Online, ManualAway: row.ManualAway},
+				DiscussionMemberPresence{
+					UserID:     row.UserID,
+					Online:     row.Online,
+					ManualAway: row.ManualAway,
+				},
 			)
 		}
 		return nil

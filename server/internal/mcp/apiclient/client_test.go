@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
 )
 
 func TestPostRunJSONSendsRunProofAndReturnsTypedAPIError(t *testing.T) {
@@ -24,8 +24,8 @@ func TestPostRunJSONSendsRunProofAndReturnsTypedAPIError(t *testing.T) {
 		if got := request.Header.Get("Authorization"); got != "Bearer access" {
 			t.Fatalf("Authorization = %q", got)
 		}
-		if got := request.Header.Get("X-Boardly-Run-Token"); got != "brt_run-proof" {
-			t.Fatalf("X-Boardly-Run-Token = %q", got)
+		if got := request.Header.Get("X-Zenith-Team-Run-Token"); got != "brt_run-proof" {
+			t.Fatalf("X-Zenith-Team-Run-Token = %q", got)
 		}
 		if got := request.Header.Get("Idempotency-Key"); got != "request-key" {
 			t.Fatalf("Idempotency-Key = %q", got)
@@ -97,8 +97,8 @@ func TestPostRunJSONRefreshesExpiredAccessTokenAndPersistsRotation(t *testing.T)
 			if authorization := request.Header.Get("Authorization"); authorization != "Bearer new-access" {
 				t.Fatalf("Authorization = %q", authorization)
 			}
-			if proof := request.Header.Get("X-Boardly-Run-Token"); proof != "brt_run-proof" {
-				t.Fatalf("X-Boardly-Run-Token = %q", proof)
+			if proof := request.Header.Get("X-Zenith-Team-Run-Token"); proof != "brt_run-proof" {
+				t.Fatalf("X-Zenith-Team-Run-Token = %q", proof)
 			}
 			response.Header().Set("Content-Type", "application/json")
 			_, _ = response.Write([]byte(`{"outputId":"output-id"}`))
@@ -163,7 +163,7 @@ func TestNewUsesSizeAppropriateAttachmentUploadBudget(t *testing.T) {
 
 // The presenter's upload start and completion both carry the Run proof, so
 // the server checks the session is the Run's authorizer and records the
-// upload as the Run's (Access TECH B1, B2, B3b).
+// upload as the Run's.
 func TestUploadAttachmentUsesFreshSizeAppropriateCompletionBudget(t *testing.T) {
 	t.Parallel()
 
@@ -173,8 +173,8 @@ func TestUploadAttachmentUsesFreshSizeAppropriateCompletionBudget(t *testing.T) 
 		if !ok {
 			t.Fatalf("%s has no request deadline", request.URL.Path)
 		}
-		if proof := request.Header.Get("X-Boardly-Run-Token"); proof != "brt_run-proof" {
-			t.Fatalf("%s X-Boardly-Run-Token = %q, want the Run proof", request.URL.Path, proof)
+		if proof := request.Header.Get("X-Zenith-Team-Run-Token"); proof != "brt_run-proof" {
+			t.Fatalf("%s X-Zenith-Team-Run-Token = %q, want the Run proof", request.URL.Path, proof)
 		}
 		if _, err := io.Copy(io.Discard, request.Body); err != nil {
 			t.Fatalf("read %s body: %v", request.URL.Path, err)

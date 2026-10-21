@@ -9,11 +9,12 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type HuddleTranscriptEntry struct {
@@ -33,7 +34,12 @@ type HuddleTranscriptReceipt struct {
 
 // AppendTranscript accepts only the current invitation's live capture authority.
 // Accounting's revoked-capability exception deliberately does not apply here.
-func (s *DefaultHuddleAIService) AppendTranscript(ctx context.Context, id uuid.UUID, token string, in HuddleTranscriptBatch) (HuddleTranscriptReceipt, error) {
+func (s *DefaultHuddleAIService) AppendTranscript(
+	ctx context.Context,
+	id uuid.UUID,
+	token string,
+	in HuddleTranscriptBatch,
+) (HuddleTranscriptReceipt, error) {
 	if in.Sequence < 1 || in.Sequence > 9007199254740991 || len(in.Entries) > 32 {
 		return HuddleTranscriptReceipt{}, ErrHuddleInvalid
 	}
@@ -49,76 +55,90 @@ func (s *DefaultHuddleAIService) AppendTranscript(ctx context.Context, id uuid.U
 	}
 	hash := sha256.Sum256(encoded)
 	var result HuddleTranscriptReceipt
-	err = s.withAttempt(ctx, id, func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
-		if h.NotesMode {
-			return ErrHuddleNotesUnavailable
-		}
-		if err := checkHuddleAICapability(a, token); err != nil {
-			return err
-		}
-		if err := s.authorized(ctx, q, h, state, a); err != nil {
-			return err
-		}
-		if a.State != "claimed" || a.InvitationRevision != state.Revision {
-			return ErrHuddleUnavailable
-		}
-		if in.Sequence != a.TranscriptSequence+1 &&
-			(in.Sequence != a.TranscriptSequence || !bytes.Equal(hash[:], a.TranscriptHash)) {
-			return ErrHuddleRequestConflict
-		}
-		row, err := q.EnsureHuddleTranscript(ctx, generated.EnsureHuddleTranscriptParams{
-			CompanyID: h.CompanyID, HuddleID: h.ID, InvitationRevision: a.InvitationRevision,
-			AgentName: voice.FromSnapshot(state.AgentProfile).Name,
-		})
-		if err != nil {
-			return err
-		}
-		if row.EndedAt.Valid {
-			return ErrHuddleUnavailable
-		}
-		result.Truncated = row.Truncated
-		if in.Sequence == a.TranscriptSequence {
-			return nil
-		}
-		// A new attempt is a coverage gap, never a new invitation/card.
-		if a.TranscriptSequence == 0 && row.Content != "" && !row.Truncated {
-			row.Content += "\n\n[Connection interrupted; some speech may be missing.]\n"
-			row.LastSpeaker = ""
-		}
-		for _, entry := range in.Entries {
-			if row.Truncated {
-				break
+	err = s.withAttempt(
+		ctx,
+		id,
+		func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+			if h.NotesMode {
+				return ErrHuddleNotesUnavailable
 			}
-			next := row.Content
-			if row.LastSpeaker != entry.Speaker {
-				label := "Participants"
-				if entry.Speaker == "agent" {
-					label = row.AgentName + " (generated speech)"
-				}
-				next += "\n\n" + label + ": "
+			if err := checkHuddleAICapability(a, token); err != nil {
+				return err
 			}
-			next += entry.Text
-			body, err := json.Marshal(next)
+			if err := s.authorized(ctx, q, h, state, a); err != nil {
+				return err
+			}
+			if a.State != "claimed" || a.InvitationRevision != state.Revision {
+				return ErrHuddleUnavailable
+			}
+			if in.Sequence != a.TranscriptSequence+1 &&
+				(in.Sequence != a.TranscriptSequence || !bytes.Equal(hash[:], a.TranscriptHash)) {
+				return ErrHuddleRequestConflict
+			}
+			row, err := q.EnsureHuddleTranscript(ctx, generated.EnsureHuddleTranscriptParams{
+				CompanyID: h.CompanyID, HuddleID: h.ID, InvitationRevision: a.InvitationRevision,
+				AgentName: voice.FromSnapshot(state.AgentProfile).Name,
+			})
 			if err != nil {
 				return err
 			}
-			// Leave room inside the discussion body's 64 KiB budget for metadata
-			// and the visible coverage/truncation notice. Never truncate UTF-8.
-			if len(body) > 48*1024 {
-				row.Truncated = true
-				break
+			if row.EndedAt.Valid {
+				return ErrHuddleUnavailable
 			}
-			row.Content, row.LastSpeaker = next, entry.Speaker
-		}
-		row.Truncated = row.Truncated || in.Truncated
-		if err = q.UpdateHuddleTranscript(ctx, generated.UpdateHuddleTranscriptParams{
-			ID: row.ID, Content: row.Content, LastSpeaker: row.LastSpeaker, Truncated: row.Truncated,
-		}); err != nil {
-			return err
-		}
-		result.Truncated = row.Truncated
-		return q.AdvanceHuddleTranscript(ctx, generated.AdvanceHuddleTranscriptParams{ID: a.ID, TranscriptSequence: in.Sequence, TranscriptHash: hash[:]})
-	})
+			result.Truncated = row.Truncated
+			if in.Sequence == a.TranscriptSequence {
+				return nil
+			}
+			// A new attempt is a coverage gap, never a new invitation/card.
+			if a.TranscriptSequence == 0 && row.Content != "" && !row.Truncated {
+				row.Content += "\n\n[Connection interrupted; some speech may be missing.]\n"
+				row.LastSpeaker = ""
+			}
+			for _, entry := range in.Entries {
+				if row.Truncated {
+					break
+				}
+				next := row.Content
+				if row.LastSpeaker != entry.Speaker {
+					label := "Participants"
+					if entry.Speaker == "agent" {
+						label = row.AgentName + " (generated speech)"
+					}
+					next += "\n\n" + label + ": "
+				}
+				next += entry.Text
+				body, err := json.Marshal(next)
+				if err != nil {
+					return err
+				}
+				// Leave room inside the discussion body's 64 KiB budget for metadata
+				// and the visible coverage/truncation notice. Never truncate UTF-8.
+				if len(body) > 48*1024 {
+					row.Truncated = true
+					break
+				}
+				row.Content, row.LastSpeaker = next, entry.Speaker
+			}
+			row.Truncated = row.Truncated || in.Truncated
+			if err = q.UpdateHuddleTranscript(ctx, generated.UpdateHuddleTranscriptParams{
+				ID:          row.ID,
+				Content:     row.Content,
+				LastSpeaker: row.LastSpeaker,
+				Truncated:   row.Truncated,
+			}); err != nil {
+				return err
+			}
+			result.Truncated = row.Truncated
+			return q.AdvanceHuddleTranscript(
+				ctx,
+				generated.AdvanceHuddleTranscriptParams{
+					ID:                 a.ID,
+					TranscriptSequence: in.Sequence,
+					TranscriptHash:     hash[:],
+				},
+			)
+		},
+	)
 	return result, err
 }
 
@@ -158,14 +178,20 @@ func (s *DefaultHuddleAIService) publishTranscripts(ctx context.Context) error {
 func (s *DefaultHuddleAIService) publishTranscript(ctx context.Context, candidate generated.HuddleTranscript) error {
 	var pending []events.Event
 	err := s.options.Store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		h, err := q.LockHuddle(ctx, generated.LockHuddleParams{CompanyID: candidate.CompanyID, HuddleID: candidate.HuddleID})
+		h, err := q.LockHuddle(
+			ctx,
+			generated.LockHuddleParams{CompanyID: candidate.CompanyID, HuddleID: candidate.HuddleID},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
 		if err != nil {
 			return err
 		}
-		row, err := q.LockHuddleTranscript(ctx, generated.LockHuddleTranscriptParams{CompanyID: h.CompanyID, ID: candidate.ID})
+		row, err := q.LockHuddleTranscript(
+			ctx,
+			generated.LockHuddleTranscriptParams{CompanyID: h.CompanyID, ID: candidate.ID},
+		)
 		if err != nil {
 			return err
 		}
@@ -187,21 +213,40 @@ func (s *DefaultHuddleAIService) publishTranscript(ctx context.Context, candidat
 		if err != nil {
 			return err
 		}
-		seq, err := q.AllocateDiscussionSequence(ctx, generated.AllocateDiscussionSequenceParams{CompanyID: h.CompanyID, ConversationID: h.ChatConversationID})
+		seq, err := q.AllocateDiscussionSequence(
+			ctx,
+			generated.AllocateDiscussionSequenceParams{
+				CompanyID:      h.CompanyID,
+				ConversationID: h.ChatConversationID,
+			},
+		)
 		if err != nil {
 			return err
 		}
 		if err = q.InsertHuddleTranscriptMessage(ctx, generated.InsertHuddleTranscriptMessageParams{
-			CompanyID: h.CompanyID, ConversationID: h.ChatConversationID, Seq: seq, Body: body, Metadata: metadata,
+			CompanyID:      h.CompanyID,
+			ConversationID: h.ChatConversationID,
+			Seq:            seq,
+			Body:           body,
+			Metadata:       metadata,
 		}); err != nil {
 			return err
 		}
-		conversation, err := q.BumpDiscussionConversation(ctx, generated.BumpDiscussionConversationParams{CompanyID: h.CompanyID, ConversationID: h.ChatConversationID})
+		conversation, err := q.BumpDiscussionConversation(
+			ctx,
+			generated.BumpDiscussionConversationParams{
+				CompanyID:      h.CompanyID,
+				ConversationID: h.ChatConversationID,
+			},
+		)
 		if err != nil {
 			return err
 		}
 		pending = append(pending, discussionChangedEvent(conversation))
-		return q.MarkHuddleTranscriptPosted(ctx, generated.MarkHuddleTranscriptPostedParams{CompanyID: h.CompanyID, ID: row.ID})
+		return q.MarkHuddleTranscriptPosted(
+			ctx,
+			generated.MarkHuddleTranscriptPostedParams{CompanyID: h.CompanyID, ID: row.ID},
+		)
 	})
 	if err == nil && s.options.Bus != nil {
 		publishDiscussionEvents(ctx, s.options.Bus, pending)

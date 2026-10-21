@@ -453,7 +453,6 @@ func executedByFromFlags(cmd *cobra.Command, client *apiClient) (map[string]stri
 // assignee the same body sets, else the one it already has.
 func taskAssigneeUserID(
 	ctx context.Context,
-	cmd *cobra.Command,
 	client *apiClient,
 	body map[string]any,
 	path string,
@@ -520,7 +519,7 @@ func runTaskCreate(cmd *cobra.Command, _ []string) error {
 	// it the caller: the signed-in member, or in Agent mode the member the
 	// Run works for, whose daemon session carries the request. Naming a
 	// colleague needs tasks.assign, which the server checks; a Run never
-	// names one, since the work it files is its member's (D6).
+	// names one, since the work it files is its member's.
 	if assigneeUserID := flag("assignee-user"); assigneeUserID != "" {
 		if client.context.mode == modeAgent && flag("run-at") == "" && flag("cron") == "" {
 			return usagef(
@@ -632,7 +631,7 @@ func runTaskUpdate(cmd *cobra.Command, args []string) error {
 	case cmd.Flags().Changed("executed-by-self"):
 		// Whoever ends up holding the Task does the work: the assignee this
 		// same write sets, or the one it already has.
-		assigneeID, err := taskAssigneeUserID(ctx, cmd, client, body, path)
+		assigneeID, err := taskAssigneeUserID(ctx, client, body, path)
 		if err != nil {
 			return err
 		}
@@ -644,7 +643,7 @@ func runTaskUpdate(cmd *cobra.Command, args []string) error {
 	if len(body) == 0 {
 		return usagef("nothing to update: pass at least one field flag")
 	}
-	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	revision, err := resolveRevision(ctx, cmd, client, path)
 	if err != nil {
 		return err
 	}
@@ -667,7 +666,7 @@ func runTaskStart(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	revision, err := resolveRevision(cmd, ctx, client, client.companyPath("tasks", taskID), "")
+	revision, err := resolveRevision(ctx, cmd, client, client.companyPath("tasks", taskID))
 	if err != nil {
 		return err
 	}
@@ -797,7 +796,7 @@ func runTaskSend(cmd *cobra.Command, args []string) error {
 	}
 	var raw json.RawMessage
 	body := map[string]any{
-		"requestKey": client.bodyRequestKey("POST", messagesPath("tasks", taskID), []byte(content)),
+		"requestKey": client.bodyRequestKey(messagesPath("tasks", taskID), []byte(content)),
 		"content":    content,
 	}
 	if err := client.post(ctx, messagesPath("tasks", taskID), body, &raw); err != nil {

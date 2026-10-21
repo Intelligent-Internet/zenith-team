@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 // projectServiceStub answers the route guard from authorize and every other
@@ -80,35 +80,71 @@ func (s *projectServiceStub) GetForRun(
 	return s.getForRun(ctx, p, id, run)
 }
 
-func (s *projectServiceStub) Authorize(ctx context.Context, p auth.UserPrincipal, id uuid.UUID) (auth.ProjectAccess, error) {
+func (s *projectServiceStub) Authorize(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+) (auth.ProjectAccess, error) {
 	return s.authorize(ctx, p, id)
 }
 
-func (s *projectServiceStub) Create(ctx context.Context, p auth.UserPrincipal, input company.ProjectCreateInput) (company.ProjectResponse, error) {
+func (s *projectServiceStub) Create(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	input company.ProjectCreateInput,
+) (company.ProjectResponse, error) {
 	return s.create(ctx, p, input)
 }
 
-func (s *projectServiceStub) List(ctx context.Context, p auth.UserPrincipal, include bool) ([]company.ProjectResponse, error) {
+func (s *projectServiceStub) List(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	include bool,
+) ([]company.ProjectResponse, error) {
 	return s.list(ctx, p, include)
 }
 
-func (s *projectServiceStub) ListForManageView(ctx context.Context, p auth.UserPrincipal, include bool) ([]company.ProjectResponse, error) {
+func (s *projectServiceStub) ListForManageView(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	include bool,
+) ([]company.ProjectResponse, error) {
 	return s.manageView(ctx, p, include)
 }
 
-func (s *projectServiceStub) Get(ctx context.Context, p auth.UserPrincipal, id uuid.UUID) (company.ProjectResponse, error) {
+func (s *projectServiceStub) Get(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+) (company.ProjectResponse, error) {
 	return s.get(ctx, p, id)
 }
 
-func (s *projectServiceStub) Update(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, input company.ProjectUpdateInput) (company.ProjectResponse, error) {
+func (s *projectServiceStub) Update(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	input company.ProjectUpdateInput,
+) (company.ProjectResponse, error) {
 	return s.update(ctx, p, id, input)
 }
 
-func (s *projectServiceStub) Archive(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, revision int64) (company.ProjectResponse, error) {
+func (s *projectServiceStub) Archive(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	revision int64,
+) (company.ProjectResponse, error) {
 	return s.archive(ctx, p, id, revision)
 }
 
-func (s *projectServiceStub) ReplaceFiles(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, input company.ProjectFilesInput, revision int64) (company.ProjectResponse, error) {
+func (s *projectServiceStub) ReplaceFiles(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	input company.ProjectFilesInput,
+	revision int64,
+) (company.ProjectResponse, error) {
 	return s.replaceFiles(ctx, p, id, input, revision)
 }
 
@@ -118,11 +154,21 @@ func (s *projectServiceStub) ListGrants(
 	return s.listGrants(ctx, p, id)
 }
 
-func (s *projectServiceStub) SetGrants(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, input company.ProjectGrantInput) (company.ProjectGrantResult, error) {
+func (s *projectServiceStub) SetGrants(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	input company.ProjectGrantInput,
+) (company.ProjectGrantResult, error) {
 	return s.setGrants(ctx, p, id, input)
 }
 
-func (s *projectServiceStub) RemoveGrants(ctx context.Context, p auth.UserPrincipal, id, userID uuid.UUID, revision int64) (company.ProjectGrantResult, error) {
+func (s *projectServiceStub) RemoveGrants(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id, userID uuid.UUID,
+	revision int64,
+) (company.ProjectGrantResult, error) {
 	return s.removeGrants(ctx, p, id, userID, revision)
 }
 
@@ -132,11 +178,19 @@ func (s *projectServiceStub) PreviewGrant(
 	return s.previewGrant(ctx, p, id, userID, permissions)
 }
 
-func (s *projectServiceStub) AccessReport(ctx context.Context, p auth.UserPrincipal) (company.ProjectAccessReport, error) {
+func (s *projectServiceStub) AccessReport(
+	ctx context.Context,
+	p auth.UserPrincipal,
+) (company.ProjectAccessReport, error) {
 	return s.accessReport(ctx, p)
 }
 
-func (s *projectServiceStub) Join(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, revision int64) (company.ProjectResponse, error) {
+func (s *projectServiceStub) Join(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	revision int64,
+) (company.ProjectResponse, error) {
 	return s.join(ctx, p, id, revision)
 }
 
@@ -360,7 +414,12 @@ func TestProjectListSelectsTheManageView(t *testing.T) {
 	if result := serveBearerJSON(h, http.MethodGet, root, nil); result.Code != 200 {
 		t.Fatalf("list = %d %s", result.Code, result.Body.String())
 	}
-	if result := serveBearerJSON(h, http.MethodGet, root+"?view=manage&include_archived=true", nil); result.Code != 200 {
+	if result := serveBearerJSON(
+		h,
+		http.MethodGet,
+		root+"?view=manage&include_archived=true",
+		nil,
+	); result.Code != 200 {
 		t.Fatalf("manage view = %d %s", result.Code, result.Body.String())
 	}
 	for _, query := range []string{"?view=all", "?view=manage&view=manage", "?include_archived=yes"} {
@@ -417,7 +476,8 @@ func TestProjectRoutesRejectAnyQueryString(t *testing.T) {
 				body = []byte(route.body)
 			}
 			result := serveBearerJSON(h, route.method, route.path+query, body)
-			if result.Code != http.StatusUnprocessableEntity || !strings.Contains(result.Body.String(), `"code":"validation_failed"`) {
+			if result.Code != http.StatusUnprocessableEntity ||
+				!strings.Contains(result.Body.String(), `"code":"validation_failed"`) {
 				t.Errorf("%s %s%s = %d %s, want 422 validation_failed", route.method, route.path, query,
 					result.Code, result.Body.String())
 			}

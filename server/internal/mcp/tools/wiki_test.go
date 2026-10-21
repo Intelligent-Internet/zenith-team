@@ -38,7 +38,10 @@ func (s *wikiAPIStub) FetchRunJSON(_ context.Context, path string, destination a
 
 func newTestWikiService(t *testing.T, api *wikiAPIStub) *DefaultWikiToolService {
 	t.Helper()
-	service, err := NewWikiToolService(api, RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"})
+	service, err := NewWikiToolService(
+		api,
+		RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,9 +50,14 @@ func newTestWikiService(t *testing.T, api *wikiAPIStub) *DefaultWikiToolService 
 
 func TestWikiToolsUseTheRunProvenRoutesBoundToTheRun(t *testing.T) {
 	t.Parallel()
-	api := &wikiAPIStub{body: `{"items":[{"pageId":"p1","title":"Refunds","summary":"","snippet":"…","collectionName":null,"revision":4,"updatedAt":"2026-09-29T00:00:00Z"}],"total":1}`}
+	api := &wikiAPIStub{
+		body: `{"items":[{"pageId":"p1","title":"Refunds","summary":"","snippet":"…","collectionName":null,"revision":4,"updatedAt":"2026-09-29T00:00:00Z"}],"total":1}`,
+	}
 	service := newTestWikiService(t, api)
-	result, err := service.SearchWiki(context.Background(), WikiSearchInput{Query: "  refund policy & fees ", Limit: 3})
+	result, err := service.SearchWiki(
+		context.Background(),
+		WikiSearchInput{Query: "  refund policy & fees ", Limit: 3},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,9 +97,14 @@ func TestWikiToolsUseTheRunProvenRoutesBoundToTheRun(t *testing.T) {
 
 func TestWikiListUsesTheRunProvenRouteAndSendsOnlyWhatWasAsked(t *testing.T) {
 	t.Parallel()
-	api := &wikiAPIStub{body: `{"collections":[{"id":"c1","name":"Policies","pageCount":2}],"items":[{"pageId":"p1","title":"Refunds","summary":"","collectionName":"Policies","revision":4,"updatedAt":"2026-09-29T00:00:00Z"}],"total":30,"nextOffset":25}`}
+	api := &wikiAPIStub{
+		body: `{"collections":[{"id":"c1","name":"Policies","pageCount":2}],"items":[{"pageId":"p1","title":"Refunds","summary":"","collectionName":"Policies","revision":4,"updatedAt":"2026-09-29T00:00:00Z"}],"total":30,"nextOffset":25}`,
+	}
 	service := newTestWikiService(t, api)
-	result, err := service.ListWiki(context.Background(), WikiListInput{CollectionID: " c1 ", Offset: 25, Limit: 10})
+	result, err := service.ListWiki(
+		context.Background(),
+		WikiListInput{CollectionID: " c1 ", Offset: 25, Limit: 10},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +188,9 @@ func TestWikiToolsWrapServerRefusals(t *testing.T) {
 
 func TestWikiWritePostsTheBatchToTheRunRouteWithAConvergingKey(t *testing.T) {
 	t.Parallel()
-	api := &wikiAPIStub{body: `{"pages":[{"key":"company-overview","pageId":"p1","title":"Company overview","revision":1,"status":"created"}],"warnings":["w"],"totalPages":1}`}
+	api := &wikiAPIStub{
+		body: `{"pages":[{"key":"company-overview","pageId":"p1","title":"Company overview","revision":1,"status":"created"}],"warnings":["w"],"totalPages":1}`,
+	}
 	service := newTestWikiService(t, api)
 	input := WikiWriteInput{Pages: []WikiWritePage{
 		{Key: "company-overview", Title: "Company overview", Summary: "s", Markdown: "See [[products]]"},

@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type PlanBaseEntity struct {
@@ -95,10 +95,10 @@ type PlanArtifact struct {
 	Desired         PlanDocument `json:"desired"`
 }
 
-// CompanyPlanApprovalPresentation is the safe, structured projection shown to
+// PlanApprovalPresentation is the safe, structured projection shown to
 // the human reviewer. It deliberately excludes the frozen authoritative base;
 // that private action remains available only to the Approval executor.
-type CompanyPlanApprovalPresentation struct {
+type PlanApprovalPresentation struct {
 	Kind         string       `json:"kind"`
 	CompanySlug  string       `json:"companySlug"`
 	DraftDigest  string       `json:"draftDigest"`
@@ -230,7 +230,8 @@ func validateCompanyPlanArtifact(value PlanArtifact, companyID uuid.UUID) error 
 		if _, exists := projects[project.Key]; exists {
 			return ErrPlanInvalidInput
 		}
-		if !validPlanText(project.Title, 240, 0, false) || !validPlanText(project.Description, 0, 64*1024, true) {
+		if !validPlanText(project.Title, 240, 0, false) ||
+			!validPlanText(project.Description, 0, 64*1024, true) {
 			return ErrPlanInvalidInput
 		}
 		projects[project.Key] = project
@@ -301,7 +302,8 @@ func validCompanyPlanDependencyReferences(tasks map[string]PlanTask) bool {
 	for key, task := range tasks {
 		for _, dependency := range task.DependsOn {
 			prerequisite, prerequisiteExists := tasks[dependency.TaskKey]
-			if dependency.TaskKey == key || !prerequisiteExists || prerequisite.ProjectKey != task.ProjectKey {
+			if dependency.TaskKey == key || !prerequisiteExists ||
+				prerequisite.ProjectKey != task.ProjectKey {
 				return false
 			}
 		}

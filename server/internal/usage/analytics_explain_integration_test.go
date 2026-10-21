@@ -13,10 +13,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // analyticsExplainRecorder runs every statement against the pool and keeps
@@ -98,10 +98,21 @@ func TestAnalyticsGroupsProbeProjectAccessPerProject(t *testing.T) {
 		SELECT id, 'codex', 'gpt-5.6-luna', 10, 1, '{}' FROM inserted`,
 		fixture.CompanyA, fixture.AgentA, fixture.RuntimeA, fixture.UserA, start.Add(time.Hour))
 	memberID := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, 'analytics-explain@example.com', 'Explain')`, memberID)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'admin')`, fixture.CompanyA, memberID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'analytics-explain@example.com', 'Explain')`,
+		memberID,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'admin')`,
+		fixture.CompanyA,
+		memberID,
+	)
 	var readable string
 	if err := pool.QueryRow(ctx, `SELECT id::text FROM projects WHERE company_id = $1 AND key = 'bulk_7'`,
 		fixture.CompanyA).Scan(&readable); err != nil {

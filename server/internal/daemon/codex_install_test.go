@@ -290,7 +290,7 @@ func TestDiscoverAgentCLIsAsksTheShellForCodexOnlyWhenPATHHasNone(t *testing.T) 
 	})
 }
 
-// BOARDLY_CODEX_PATH pins one copy: it is used exactly as written, link and
+// ZENITH_TEAM_CODEX_PATH pins one copy: it is used exactly as written, link and
 // all, and nothing is ranked. A pinned path that is missing stays a miss
 // rather than quietly becoming some other copy. Pinning the bare name
 // "codex" is the default and ranks as usual.
@@ -303,17 +303,17 @@ func TestDiscoverAgentCLIsUsesAPinnedCodexPathAsWritten(t *testing.T) {
 	stubCodexInstallLocations(t, newer)
 	stubLoginShellResolver(t, nil)
 
-	t.Setenv("BOARDLY_CODEX_PATH", pinned)
+	t.Setenv("ZENITH_TEAM_CODEX_PATH", pinned)
 	if entry, ok := discoverCodex(t, noVersionProbe(t)); !ok || entry.Path != pinned {
 		t.Fatalf("codex = %+v (found %v), want the pinned path %s as written", entry, ok, pinned)
 	}
 
-	t.Setenv("BOARDLY_CODEX_PATH", filepath.Join(root, "missing", "codex"))
+	t.Setenv("ZENITH_TEAM_CODEX_PATH", filepath.Join(root, "missing", "codex"))
 	if entry, ok := discoverCodex(t, noVersionProbe(t)); ok {
 		t.Fatalf("codex = %+v, want a miss for a pinned path that does not exist", entry)
 	}
 
-	t.Setenv("BOARDLY_CODEX_PATH", "codex")
+	t.Setenv("ZENITH_TEAM_CODEX_PATH", "codex")
 	if entry, ok := discoverCodex(t, noVersionProbe(t)); !ok || entry.Path != newer {
 		t.Fatalf("codex = %+v (found %v), want the default search to find %s", entry, ok, newer)
 	}

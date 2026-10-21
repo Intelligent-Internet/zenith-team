@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/storage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/storage"
 )
 
 func TestAttachmentCleanupWorkerDeletesExpiredPendingUpload(t *testing.T) {
@@ -229,7 +229,11 @@ func seedAttachmentCleanupMessage(
 		t.Fatalf("begin attachment conversation fixture: %v", err)
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
-	if _, err := tx.Exec(ctx, `INSERT INTO projects(company_id,key,title) VALUES ($1,'work','Work') ON CONFLICT (company_id,key) DO NOTHING`, fixture.companyID); err != nil {
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO projects(company_id,key,title) VALUES ($1,'work','Work') ON CONFLICT (company_id,key) DO NOTHING`,
+		fixture.companyID,
+	); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := tx.Exec(ctx, `

@@ -2,7 +2,7 @@ import type {
   DesktopGlobalLike,
   DesktopRunPreviewFrame,
 } from "../../../electron/shared/desktop-bridge.types";
-import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export type LocalRunPreviewFrame = DesktopRunPreviewFrame;
 
@@ -11,6 +11,7 @@ export function subscribeToLocalRunPreview(
   globalScope: DesktopGlobalLike = globalThis,
 ): () => void {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onRunPreview?.(listener) ?? (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onRunPreview?.(listener) ??
+    (() => {})
   );
 }

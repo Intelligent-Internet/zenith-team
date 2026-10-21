@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useGetTaskResultSelectionQuery } from "../api/task-result-selection-api";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { TaskDto } from "@/shared/api/types";
 import type { ConversationArtifact } from "@/features/chat-panel/api/conversation-artifacts-api";
 import type { components } from "@/shared/api/generated/api.generated";
@@ -92,7 +92,7 @@ function SelectionForm({
       }).unwrap();
     } catch (cause) {
       setError(
-        getBoardlyQueryErrorMessage(
+        getZenithTeamQueryErrorMessage(
           cause,
           "The Task has changed or execution has started. Refresh before changing its review policy.",
         ),
@@ -128,7 +128,7 @@ function SelectionForm({
       }).unwrap();
     } catch (cause) {
       setError(
-        getBoardlyQueryErrorMessage(
+        getZenithTeamQueryErrorMessage(
           cause,
           "Could not save this selection. Required changes must be accepted before approval; refresh if the Task has changed.",
         ),

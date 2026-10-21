@@ -19,7 +19,7 @@ var (
 
 type Command struct {
 	WritingTarget    *DocumentWritingTarget `json:"writingTarget,omitempty"`
-	AgentIDs         []uuid.UUID            `json:"agentIds,omitempty" binding:"omitempty,max=5,dive,required"`
+	AgentIDs         []uuid.UUID            `json:"agentIds,omitempty"         binding:"omitempty,max=5,dive,required"`
 	PageID           *uuid.UUID             `json:"pageId,omitempty"`
 	Content          json.RawMessage        `json:"content,omitempty"`
 	RequestKey       uuid.UUID              `json:"requestKey"                 binding:"required"`

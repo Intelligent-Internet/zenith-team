@@ -1,4 +1,4 @@
-// Package conversation owns Boardly's creator-private direct chats and shared
+// Package conversation owns Zenith Team's creator-private direct chats and shared
 // immutable product Message stream.
 package conversation
 
@@ -10,13 +10,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // conversationWriteTxOptions is the isolation contract for Conversation mutations.
@@ -25,12 +25,17 @@ var conversationWriteTxOptions = pgx.TxOptions{IsoLevel: pgx.ReadCommitted, Acce
 // ConversationService owns the creator-private direct Conversations, the
 // per-user state and Run queue each one carries, and the Message stream they
 // append to.
-type ConversationService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type ConversationService interface {
 	FetchModelSettings(context.Context, auth.UserPrincipal, uuid.UUID) (ModelSettings, error)
 	UpdateModelSettings(context.Context, auth.UserPrincipal, uuid.UUID, ModelSettingsInput) (ModelSettings, error)
 	CreateHumanDirect(context.Context, auth.UserPrincipal, CreateHumanDirectInput) (HumanDirectResult, error)
 	ListHumanDirects(context.Context, auth.UserPrincipal, DiscussionListOptions) (DiscussionList, error)
-	InviteHumanDirectMembers(context.Context, auth.UserPrincipal, uuid.UUID, InviteHumanDirectInput) (HumanDirectDetail, error)
+	InviteHumanDirectMembers(
+		context.Context,
+		auth.UserPrincipal,
+		uuid.UUID,
+		InviteHumanDirectInput,
+	) (HumanDirectDetail, error)
 	FetchHumanDirect(context.Context, auth.UserPrincipal, uuid.UUID) (HumanDirectDetail, error)
 	CreateChannel(context.Context, auth.UserPrincipal, CreateChannelInput) (ChannelReceipt, error)
 	ListChannels(context.Context, auth.UserPrincipal, DiscussionListOptions) (DiscussionList, error)
@@ -309,9 +314,14 @@ func (s *DefaultConversationService) RenameDirect(
 		if err := lockActiveMembership(ctx, tx, principal.CompanyID, principal.UserID); err != nil {
 			return err
 		}
-		current, err := tx.LockConversationForActiveUserMutation(ctx, generated.LockConversationForActiveUserMutationParams{
-			ActorUserID: principal.UserID, ConversationID: conversationID, CompanyID: principal.CompanyID,
-		})
+		current, err := tx.LockConversationForActiveUserMutation(
+			ctx,
+			generated.LockConversationForActiveUserMutationParams{
+				ActorUserID:    principal.UserID,
+				ConversationID: conversationID,
+				CompanyID:      principal.CompanyID,
+			},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrNotFound
 		}

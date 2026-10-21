@@ -19,7 +19,7 @@ import {
   type BindingRuntimeChoice,
 } from "@/features/agents/model/agent-binding";
 import { RuntimeNeededNotice } from "@/features/settings/components/runtime-needed-notice";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { AgentDto } from "@/shared/api/types";
 import { publicAssetPath } from "@/shared/lib/public-assets";
 import {
@@ -345,9 +345,9 @@ function BindingChoice({
 }
 
 // The two refusals a member can actually act on, in their own words. The
-// mutation rejects with the BoardlyApiError itself, whose `code` is the API's.
+// mutation rejects with the ZenithTeamApiError itself, whose `code` is the API's.
 function bindErrorMessage(caught: unknown): string {
-  const code = (caught as BoardlyApiError | undefined)?.code;
+  const code = (caught as ZenithTeamApiError | undefined)?.code;
   if (code === "agent_binding_provider_mismatch") {
     return "That computer runs a different provider. Pick one that matches this agent.";
   }

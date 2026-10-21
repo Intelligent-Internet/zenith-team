@@ -5,7 +5,7 @@ import type {
   AgentMailDraftVersion,
   UpdateAgentMailDraftInput,
 } from "@/features/agent-mail/model/agent-mail";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 
 type ConversationIdentity = {
   companyId: string;
@@ -51,7 +51,7 @@ export function agentMailInvalidationTags(
   ];
 }
 
-export const agentMailApi = boardlyApi.injectEndpoints({
+export const agentMailApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listAgentMailDraftGroups: builder.query<
       AgentMailDraftGroup[],
@@ -68,7 +68,7 @@ export const agentMailApi = boardlyApi.injectEndpoints({
         ]) ?? []),
       ],
       queryFn: ({ companyId, conversationId, sourceRunIds }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentMailService.listGroups(
               companyId,
@@ -91,7 +91,7 @@ export const agentMailApi = boardlyApi.injectEndpoints({
           argument.draftId,
         ),
       queryFn: ({ companyId, conversationId, draftId, ...input }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentMailService.updateDraft(
               companyId,
@@ -114,7 +114,7 @@ export const agentMailApi = boardlyApi.injectEndpoints({
           argument.draftId,
         ),
       queryFn: ({ companyId, conversationId, draftId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentMailService.deleteDraft(
               companyId,
@@ -137,7 +137,7 @@ export const agentMailApi = boardlyApi.injectEndpoints({
           argument.draftId,
         ),
       queryFn: ({ companyId, conversationId, draftId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentMailService.sendDraft(
               companyId,
@@ -159,7 +159,7 @@ export const agentMailApi = boardlyApi.injectEndpoints({
           argument.groupId,
         ),
       queryFn: ({ companyId, conversationId, drafts, groupId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentMailService.sendGroup(
               companyId,

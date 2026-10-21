@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 func TestRenameCompanyConversationReturnsFlatEntity(t *testing.T) {
@@ -246,7 +246,11 @@ func TestListCompanyConversationsFlattensRows(t *testing.T) {
 	item.Summary.Runs.QueuedCount = 2
 	item.Summary.Runs.ActiveCount = 1
 	item.Summary.Runs.Latest = &conversation.LatestRunSummary{
-		RunID: uuid.MustParse("00000000-0000-4000-8000-000000004711"), AgentID: agentID, Status: conversation.RunStatusRunning,
+		RunID: uuid.MustParse(
+			"00000000-0000-4000-8000-000000004711",
+		),
+		AgentID: agentID,
+		Status:  conversation.RunStatusRunning,
 	}
 	item.Summary.LastMessage = &conversation.LastMessageSummary{
 		Seq: 41, Content: "ship it", Type: conversation.ItemTypeUserMessage,
@@ -340,17 +344,33 @@ func TestListCompanyConversationsValidatesArchiveFilter(t *testing.T) {
 			t.Parallel()
 			principal := phase4Principal(uuid.New(), uuid.New())
 			called := false
-			service := &conversationServiceStub{listDirect: func(_ context.Context, _ auth.UserPrincipal, includeArchived bool) (conversation.DirectPage, error) {
-				called = true
-				if includeArchived != testCase.wantArchived {
-					t.Fatalf("includeArchived = %t, want %t", includeArchived, testCase.wantArchived)
-				}
-				return conversation.DirectPage{}, nil
-			}}
+			service := &conversationServiceStub{
+				listDirect: func(_ context.Context, _ auth.UserPrincipal, includeArchived bool) (conversation.DirectPage, error) {
+					called = true
+					if includeArchived != testCase.wantArchived {
+						t.Fatalf(
+							"includeArchived = %t, want %t",
+							includeArchived,
+							testCase.wantArchived,
+						)
+					}
+					return conversation.DirectPage{}, nil
+				},
+			}
 			handler := phase4ConversationHandler(t, principal, service)
-			response := serveBearerRequest(handler, http.MethodGet, "/api/v1/companies/"+principal.CompanyID.String()+"/conversations"+testCase.query, nil)
+			response := serveBearerRequest(
+				handler,
+				http.MethodGet,
+				"/api/v1/companies/"+principal.CompanyID.String()+"/conversations"+testCase.query,
+				nil,
+			)
 			if response.Code != testCase.wantStatus || called != (testCase.wantStatus == http.StatusOK) {
-				t.Fatalf("response = %d, called %t, want status %d", response.Code, called, testCase.wantStatus)
+				t.Fatalf(
+					"response = %d, called %t, want status %d",
+					response.Code,
+					called,
+					testCase.wantStatus,
+				)
 			}
 		})
 	}

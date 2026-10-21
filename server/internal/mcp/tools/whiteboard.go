@@ -17,7 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
 )
 
 // ArtifactEditInput changes a Whiteboard Artifact: ops add content by intent
@@ -427,7 +427,8 @@ func (s *DefaultWhiteboardToolService) wholeImages(
 	if visuals.HasMore && visuals.NextOffset != nil {
 		notes = append(notes, fmt.Sprintf(
 			"More regions remain: artifact_inspect area=all image=true visualOffset=%d expectedSequence=%d.",
-			*visuals.NextOffset, *in.ExpectedSequence,
+			*visuals.NextOffset,
+			*in.ExpectedSequence,
 		))
 	}
 	if len(notes) > 0 {

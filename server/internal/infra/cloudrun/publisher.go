@@ -256,11 +256,11 @@ func (p *PublisherService) uploadSource(
 	request Request,
 	prepared *preparedSource,
 ) (string, int64, error) {
-	objectName := "boardly/publications/" + request.PublicationID + "/source.zip"
+	objectName := "zenith-team/publications/" + request.PublicationID + "/source.zip"
 	md5Hash := base64.StdEncoding.EncodeToString(prepared.MD5)
 	object := &storageapi.Object{
 		Name: objectName, ContentType: "application/zip", Md5Hash: md5Hash,
-		Metadata: map[string]string{"managed-by": "boardly", "publication-id": request.PublicationID},
+		Metadata: map[string]string{"managed-by": "zenith-team", "publication-id": request.PublicationID},
 	}
 	created, err := p.storage.Objects.Insert(target.SourceBucket, object).
 		Name(objectName).
@@ -326,7 +326,7 @@ func (p *PublisherService) buildImage(
 			SourceProvenanceHash: []string{"SHA256"},
 		},
 		Timeout: googleDuration(cloudBuildTimeout),
-		Tags:    []string{"boardly-publication"},
+		Tags:    []string{"zenith-team-publication"},
 	}
 	build.ServiceAccount = "projects/" + target.ProjectID +
 		"/serviceAccounts/" + target.BuildServiceAccount
@@ -433,7 +433,7 @@ func (p *PublisherService) deployService(
 	name := parent + "/services/" + request.ServiceName
 	service := &runapi.GoogleCloudRunV2Service{
 		Description: "Zenith Team Output publication " + request.PublicationID,
-		Labels:      map[string]string{"managed-by": "boardly"},
+		Labels:      map[string]string{"managed-by": "zenith-team"},
 		Ingress:     "INGRESS_TRAFFIC_ALL", InvokerIamDisabled: true,
 		Template: &runapi.GoogleCloudRunV2RevisionTemplate{
 			Containers: []*runapi.GoogleCloudRunV2Container{{
@@ -576,7 +576,7 @@ func (p *PublisherService) deleteImages(
 }
 
 func (p *PublisherService) deleteSource(ctx context.Context, bucket, publicationID string) error {
-	object := "boardly/publications/" + publicationID + "/source.zip"
+	object := "zenith-team/publications/" + publicationID + "/source.zip"
 	err := p.storage.Objects.Delete(bucket, object).Context(ctx).Do()
 	if googleAPIStatus(err) == http.StatusNotFound {
 		return nil

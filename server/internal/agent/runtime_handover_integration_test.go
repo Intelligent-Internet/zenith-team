@@ -13,12 +13,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // handoverActivity is one runtime.handed_over Activity row as stored.
@@ -135,7 +135,7 @@ func runtimeIDsOf(runtimes []Runtime) map[uuid.UUID]bool {
 	return ids
 }
 
-// D33: a second person signing in on the same computer gets runtimes of
+// A second person signing in on the same computer gets runtimes of
 // their own, and the first person's setup stays exactly where it was. The
 // computer is one person's at a time, so the first person's rows go offline,
 // and they are told by an Inbox notice and a private Activity row that names

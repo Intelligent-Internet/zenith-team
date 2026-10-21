@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 const appPreviewSupervisorScript = `
@@ -73,8 +73,7 @@ func (b *unixAppPreviewBackend) CheckSupported() error {
 // Launch starts each command under a small shell supervisor in its own
 // process group. With a sandbox, sandbox-exec starts the supervisor and
 // replaces itself with it, so the group, the pid and fd 3 stay the
-// supervisor's and every process the command starts inherits the sandbox
-// (Access TECH B3e).
+// supervisor's and every process the command starts inherits the sandbox.
 func (b *unixAppPreviewBackend) Launch(
 	ctx context.Context,
 	manifest appPreviewManifest,

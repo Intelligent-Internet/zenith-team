@@ -3,7 +3,7 @@ import type {
   DesktopWorkspaceAssetListRequest,
 } from "../../../../electron/shared/desktop-bridge.types";
 import { listDesktopWorkspaceAssets } from "@/shared/desktop/desktop-environment.service";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 
 export type WorkspaceAssetListQuery = Omit<
   DesktopWorkspaceAssetListRequest,
@@ -22,7 +22,7 @@ async function readWorkspaceAssets(request: DesktopWorkspaceAssetListRequest) {
   } as const;
 }
 
-export const workspaceAssetsApi = boardlyApi.injectEndpoints({
+export const workspaceAssetsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkspaceAssets: builder.query<
       DesktopWorkspaceAssetList,

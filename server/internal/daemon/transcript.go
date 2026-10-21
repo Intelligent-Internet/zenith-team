@@ -17,11 +17,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 // runStreamOutcome is everything the Run orchestrator needs after the deep
@@ -38,8 +38,7 @@ type runStreamOutcome struct {
 
 // runStreamPresentation is how a Run's generated files reach its chat: the
 // workdir the daemon copies them into, the presenter, and the Run's own and
-// hidden folders, which bound what the daemon reads for it (Access TECH B3e,
-// B7b).
+// hidden folders, which bound what the daemon reads for it.
 type runStreamPresentation struct {
 	workDir   string
 	presenter RunOutputPresenter
@@ -253,9 +252,7 @@ func (d *Daemon) executeRunStream(
 					}, activityErr
 				}
 			case agent.CompletedItem:
-				if err := d.presentGeneratedFiles(
-					streamCtx, generated, event, runLog,
-				); err != nil {
+				if err := d.presentGeneratedFiles(streamCtx, generated, event); err != nil {
 					// Artifact publication must not turn a successful provider image
 					// into a failed Run; the image remains in the provider transcript.
 					runLog.Warn("publish generated image artifact failed", "error", err)
@@ -339,7 +336,6 @@ func (d *Daemon) presentGeneratedFiles(
 	ctx context.Context,
 	presentation runStreamPresentation,
 	item agent.CompletedItem,
-	runLog *slog.Logger,
 ) error {
 	if presentation.presenter == nil || presentation.workDir == "" || item.Role != agent.RoleTool {
 		return nil
@@ -366,7 +362,7 @@ func presentGeneratedFile(
 	sourcePath := result.FilePath
 	// The provider writes the image in folders the Agent can change, and the
 	// daemon reads it outside the sandbox, so it opens only a file the Run
-	// itself may read (Access TECH B3e, B7b).
+	// itself may read.
 	source, err := openRunFile(sourcePath, presentation.launch)
 	if err != nil {
 		return fmt.Errorf("open generated image: %w", err)
@@ -428,7 +424,11 @@ func presentGeneratedFile(
 	return err
 }
 
-func generatedArtifactMetadata(item agent.CompletedItem, result agent.ToolResultPart, fallback string) (string, string) {
+func generatedArtifactMetadata(
+	item agent.CompletedItem,
+	result agent.ToolResultPart,
+	fallback string,
+) (string, string) {
 	label := strings.TrimSuffix(fallback, filepath.Ext(fallback))
 	summary := "File generated outside Zenith Studio and saved to this chat."
 	if result.Name == "image_generation" {

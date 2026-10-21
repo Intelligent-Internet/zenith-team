@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 type Schemas = components["schemas"];
@@ -13,14 +13,14 @@ const tags = (companyId: string) => [
   { type: "Task" as const, id: companyId },
   { type: "Calendar" as const, id: `${companyId}:tasks` },
 ];
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (build) => ({
     calendarTasks: build.query<
       Schemas["TaskCalendarPage"],
       { companyId: string; from: string; to: string }
     >({
       queryFn: ({ companyId, ...params }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schemas["TaskCalendarPage"]>(
               `/companies/${companyId}/calendar/tasks`,
@@ -33,7 +33,7 @@ const api = boardlyApi.injectEndpoints({
     }),
     taskSchedule: build.query<TaskCalendarSchedule, TaskArgs>({
       queryFn: (args) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<TaskCalendarSchedule>(`${path(args)}/schedule`),
           "Could not load the task schedule.",
         ),
@@ -44,7 +44,7 @@ const api = boardlyApi.injectEndpoints({
       TaskArgs & { input: Schemas["TaskScheduleInput"] }
     >({
       queryFn: ({ input, ...args }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Schemas["TaskMutationResult"]>(
               `${path(args)}/schedule`,
@@ -59,7 +59,7 @@ const api = boardlyApi.injectEndpoints({
       TaskArgs & { input: Schemas["TaskOccurrenceInput"] }
     >({
       queryFn: ({ input, ...args }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schemas["TaskMutationResult"]>(
               `${path(args)}/schedule/occurrences`,
@@ -74,7 +74,7 @@ const api = boardlyApi.injectEndpoints({
       TaskArgs & { input: Schemas["TaskAssignmentInput"] }
     >({
       queryFn: ({ input, ...args }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schemas["TaskMutationResult"]>(
               `${path(args)}/assignment`,

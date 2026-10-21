@@ -22,11 +22,21 @@ func TestPlanBuildsVersionedArtifactAndChanges(t *testing.T) {
 		},
 		"/companies/" + companyID + "/tasks": taskPage{Items: []taskResponse{}},
 	}}
-	desired := Document{Projects: []Project{{Key: "work", Title: "Work"}},
-		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{{ProjectKey: "work",
-			Key: "task", AgentID: planAgentID, MilestoneType: "product", Title: "Task", Description: "Do the task.", Status: "todo", Priority: "high",
-			DependsOn: []TaskDependency{},
-		}},
+	desired := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
+		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
+			{
+				ProjectKey:    "work",
+				Key:           "task",
+				AgentID:       planAgentID,
+				MilestoneType: "product",
+				Title:         "Task",
+				Description:   "Do the task.",
+				Status:        "todo",
+				Priority:      "high",
+				DependsOn:     []TaskDependency{},
+			},
+		},
 	}
 	now := time.Date(2026, time.July, 21, 10, 0, 0, 0, time.UTC)
 	artifact, err := Plan(context.Background(), api, desired, now)
@@ -125,9 +135,11 @@ func TestPlanBuildsDependencyBaseFromCurrentTaskDependencyResponse(t *testing.T)
 			"blocks": []any{},
 		},
 	}}
-	desired := Document{Projects: []Project{{Key: "work", Title: "Work"}},
+	desired := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
 		FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{
-			{ProjectKey: "work",
+			{
+				ProjectKey:    "work",
 				Key:           "design_frontend",
 				AgentID:       agentID,
 				MilestoneType: "product", Title: "Design frontend",
@@ -136,7 +148,8 @@ func TestPlanBuildsDependencyBaseFromCurrentTaskDependencyResponse(t *testing.T)
 				Priority:    "high",
 				DependsOn:   []TaskDependency{},
 			},
-			{ProjectKey: "work",
+			{
+				ProjectKey:    "work",
 				Key:           "build_backend",
 				AgentID:       agentID,
 				MilestoneType: "product", Title: "Build backend",
@@ -250,8 +263,9 @@ actions:
 
 func TestDiffPlansProtectsTerminalEntities(t *testing.T) {
 	t.Parallel()
-	current := flatten(Document{Projects: []Project{{Key: "work", Title: "Work"}}, Tasks: []Task{{ProjectKey: "work",
-		Key: "done", Title: "Done", Status: "done", Priority: "medium",
+	current := flatten(Document{Projects: []Project{{Key: "work", Title: "Work"}}, Tasks: []Task{{
+		ProjectKey: "work",
+		Key:        "done", Title: "Done", Status: "done", Priority: "medium",
 	}}})
 	omitted := flatten(Document{Projects: []Project{{Key: "work", Title: "Work"}}, Tasks: []Task{}})
 	changes, err := diffPlans(current, omitted)
@@ -259,7 +273,13 @@ func TestDiffPlansProtectsTerminalEntities(t *testing.T) {
 		t.Fatalf("diffPlans(terminal omitted) = %+v, %v", changes, err)
 	}
 	modified := omitted
-	modified.Tasks["done"] = Task{ProjectKey: "work", Key: "done", Title: "Changed", Status: "done", Priority: "medium"}
+	modified.Tasks["done"] = Task{
+		ProjectKey: "work",
+		Key:        "done",
+		Title:      "Changed",
+		Status:     "done",
+		Priority:   "medium",
+	}
 	if _, err := diffPlans(current, modified); err == nil || !strings.Contains(err.Error(), "terminal") {
 		t.Fatalf("diffPlans(terminal modified) error = %v", err)
 	}
@@ -268,15 +288,35 @@ func TestDiffPlansProtectsTerminalEntities(t *testing.T) {
 func TestDiffPlansAllowsOnlyDependencyRemovalFromFailedTask(t *testing.T) {
 	t.Parallel()
 	plans := func() (FlatPlan, FlatPlan) {
-		currentTask := Task{ProjectKey: "work",
-			Key: "failed", AgentID: planAgentID, MilestoneType: "product", Title: "Failed", Description: "Attempt the work.",
-			Status: "failed", Priority: "medium",
-			DependsOn: []TaskDependency{{TaskKey: "prerequisite"}},
+		currentTask := Task{
+			ProjectKey:    "work",
+			Key:           "failed",
+			AgentID:       planAgentID,
+			MilestoneType: "product",
+			Title:         "Failed",
+			Description:   "Attempt the work.",
+			Status:        "failed",
+			Priority:      "medium",
+			DependsOn:     []TaskDependency{{TaskKey: "prerequisite"}},
 		}
 		desiredTask := currentTask
 		desiredTask.DependsOn = []TaskDependency{}
-		current := flatten(Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{currentTask}})
-		desired := flatten(Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{desiredTask}})
+		current := flatten(
+			Document{
+				Projects:      []Project{{Key: "work", Title: "Work"}},
+				FormatVersion: FormatVersion,
+				Company:       "acme",
+				Tasks:         []Task{currentTask},
+			},
+		)
+		desired := flatten(
+			Document{
+				Projects:      []Project{{Key: "work", Title: "Work"}},
+				FormatVersion: FormatVersion,
+				Company:       "acme",
+				Tasks:         []Task{desiredTask},
+			},
+		)
 		return current, desired
 	}
 
@@ -338,7 +378,12 @@ func TestBaseDependenciesAreDeterministicAndVersioned(t *testing.T) {
 		base[0].Revision+base[1].Revision != 6 {
 		t.Fatalf("baseDependencies() = %+v", base)
 	}
-	desired := Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{}}
+	desired := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
+		FormatVersion: FormatVersion,
+		Company:       "acme",
+		Tasks:         []Task{},
+	}
 	artifact := Artifact{
 		ArtifactVersion: 1, CompanyID: uuid.Must(uuid.NewV7()).String(), CompanySlug: "acme",
 		CreatedAt: time.Now().UTC(), Desired: desired,
@@ -356,7 +401,12 @@ func TestBaseDependenciesAreDeterministicAndVersioned(t *testing.T) {
 func TestApplyUsesCanonicalCompanyEndpoint(t *testing.T) {
 	t.Parallel()
 	companyID := uuid.Must(uuid.NewV7()).String()
-	desired := Document{Projects: []Project{{Key: "work", Title: "Work"}}, FormatVersion: FormatVersion, Company: "acme", Tasks: []Task{}}
+	desired := Document{
+		Projects:      []Project{{Key: "work", Title: "Work"}},
+		FormatVersion: FormatVersion,
+		Company:       "acme",
+		Tasks:         []Task{},
+	}
 	artifact := Artifact{
 		ArtifactVersion: 1,
 		CompanyID:       companyID,

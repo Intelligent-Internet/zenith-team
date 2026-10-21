@@ -5,7 +5,7 @@ package daemon
 import (
 	"context"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 type unsupportedAppPreviewBackend struct{}

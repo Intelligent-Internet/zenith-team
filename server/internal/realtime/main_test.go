@@ -27,7 +27,7 @@ import (
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		goleak.IgnoreTopFunction(
-			"boardly.dev/boardly/server/internal/realtime.(*Hub).Run",
+			"github.com/Intelligent-Internet/zenith-team/server/internal/realtime.(*Hub).Run",
 		),
 		goleak.IgnoreAnyFunction(
 			"github.com/redis/go-redis/v9/maintnotifications.(*CircuitBreakerManager).cleanupLoop",

@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // Topic carries the Company facts.
@@ -178,7 +178,7 @@ type ResourceRemoval struct {
 	CompanyID uuid.UUID `json:"-"`
 }
 
-// TopicGroup carries the Group facts (Access TECH D3): a Group's name,
+// TopicGroup carries the Group facts: a Group's name,
 // members or revision moved, or the Group is gone.
 const TopicGroup = "group"
 

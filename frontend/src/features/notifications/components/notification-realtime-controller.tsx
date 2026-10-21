@@ -29,18 +29,18 @@ import {
   namedDiscussionNotice,
   type NotificationKind,
 } from "@/features/notifications/model/notification";
-import { isRetryableBoardlyQueryError } from "@/shared/api/boardly-api";
+import { isRetryableZenithTeamQueryError } from "@/shared/api/zenith-team-api";
 import {
-  boardlyRealtimeClient,
+  zenithTeamRealtimeClient,
   realtimeEventConversationId,
-  type BoardlyRealtimeEvent,
+  type ZenithTeamRealtimeEvent,
 } from "@/shared/realtime/realtime-client.service";
 import { toast } from "@/shared/ui/sonner";
 import store from "@/state/store";
 
 const MAX_RECENT_PRESENTATION_IDS = 100;
 const RECENT_PRESENTATION_STORAGE_PREFIX =
-  "boardly.desktop.notifications.presented.v2";
+  "zenith-team.desktop.notifications.presented.v2";
 
 type NotificationPresentation = {
   body: string;
@@ -104,7 +104,7 @@ export function NotificationRealtimeController() {
       store.dispatch(notificationsApi.util.invalidateTags(["Inbox"]));
     };
 
-    const handlePresentation = async (event: BoardlyRealtimeEvent) => {
+    const handlePresentation = async (event: ZenithTeamRealtimeEvent) => {
       const targetCompanyId = event.companyId;
       const presentation = parseNotificationPresentation(event);
       const accessAtStart = accessRevision;
@@ -294,7 +294,7 @@ export function NotificationRealtimeController() {
             return;
           nativeCopy = preview;
         } catch (error) {
-          if (!isRetryableBoardlyQueryError(error)) {
+          if (!isRetryableZenithTeamQueryError(error)) {
             refreshAuthoritativeInbox();
             return;
           }
@@ -329,7 +329,7 @@ export function NotificationRealtimeController() {
           const preview = await request.unwrap();
           if (preview) nativeCopy = preview;
         } catch (error) {
-          if (!isRetryableBoardlyQueryError(error)) {
+          if (!isRetryableZenithTeamQueryError(error)) {
             refreshAuthoritativeInbox();
             return;
           }
@@ -394,7 +394,7 @@ export function NotificationRealtimeController() {
         });
     };
 
-    const unsubscribeEvent = boardlyRealtimeClient.onEvent((event) => {
+    const unsubscribeEvent = zenithTeamRealtimeClient.onEvent((event) => {
       if (event.type === "conversation.discussion_changed") {
         const conversationId = realtimeEventConversationId(event);
         const revision = event.payload.revision;
@@ -455,7 +455,7 @@ export function NotificationRealtimeController() {
 }
 
 function parseNotificationPresentation(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): NotificationPresentation | null {
   if (event.type !== "notification.issued") {
     return null;
@@ -476,7 +476,7 @@ function parseNotificationPresentation(
   }
   const params = new URL(
     sanitizeNotificationPath(deepLink, kind),
-    "https://boardly.internal",
+    "https://zenith-team.internal",
   ).searchParams;
   const conversationId =
     kind === "run_completed" ||

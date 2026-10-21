@@ -15,7 +15,7 @@ const (
 	maxOutboundTextBytes  = 64 << 10
 )
 
-// OutboundMessage is one provider-neutral, plain-text email. Boardly domains
+// OutboundMessage is one provider-neutral, plain-text email. Zenith Team domains
 // own authorization and From construction; adapters only transport this exact
 // immutable payload.
 type OutboundMessage struct {

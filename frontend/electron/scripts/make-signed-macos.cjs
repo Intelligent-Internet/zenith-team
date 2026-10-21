@@ -14,10 +14,10 @@ function createSignedMacBuildEnv({
   const buildEnv = { ...env };
   loadElectronEnvFiles({ cwd, env: buildEnv, files: PROD_ENV_FILES });
 
-  buildEnv.BOARDLY_DESKTOP_RELEASE_PACKAGE = "true";
-  buildEnv.BOARDLY_DESKTOP_TARGET_PLATFORM = "darwin";
-  buildEnv.BOARDLY_DESKTOP_MAC_SIGN = "true";
-  buildEnv.BOARDLY_DESKTOP_MAC_NOTARIZE = "true";
+  buildEnv.ZENITH_TEAM_DESKTOP_RELEASE_PACKAGE = "true";
+  buildEnv.ZENITH_TEAM_DESKTOP_TARGET_PLATFORM = "darwin";
+  buildEnv.ZENITH_TEAM_DESKTOP_MAC_SIGN = "true";
+  buildEnv.ZENITH_TEAM_DESKTOP_MAC_NOTARIZE = "true";
 
   validateSignedMacBuildEnv(buildEnv);
   return buildEnv;
@@ -26,13 +26,13 @@ function createSignedMacBuildEnv({
 function validateSignedMacBuildEnv(env) {
   const missing = [];
 
-  if (!hasValue(env.BOARDLY_DESKTOP_MAC_SIGN_IDENTITY)) {
-    missing.push("BOARDLY_DESKTOP_MAC_SIGN_IDENTITY");
+  if (!hasValue(env.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY)) {
+    missing.push("ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY");
   }
 
   if (!getNotarizationCredentialKind(env)) {
     missing.push(
-      "one notarization credential set: BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE, or BOARDLY_DESKTOP_MAC_NOTARY_API_KEY + BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID + BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER, or BOARDLY_DESKTOP_MAC_NOTARY_APPLE_ID + BOARDLY_DESKTOP_MAC_NOTARY_APP_PASSWORD + BOARDLY_DESKTOP_MAC_NOTARY_TEAM_ID",
+      "one notarization credential set: ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE, or ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY + ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID + ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER, or ZENITH_TEAM_DESKTOP_MAC_NOTARY_APPLE_ID + ZENITH_TEAM_DESKTOP_MAC_NOTARY_APP_PASSWORD + ZENITH_TEAM_DESKTOP_MAC_NOTARY_TEAM_ID",
     );
   }
 
@@ -44,22 +44,22 @@ function validateSignedMacBuildEnv(env) {
 }
 
 function getNotarizationCredentialKind(env) {
-  if (hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE)) {
+  if (hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE)) {
     return "keychain profile";
   }
 
   if (
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY) &&
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID) &&
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER)
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY) &&
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID) &&
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER)
   ) {
     return "App Store Connect API key";
   }
 
   if (
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_APPLE_ID) &&
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_APP_PASSWORD) &&
-    hasValue(env.BOARDLY_DESKTOP_MAC_NOTARY_TEAM_ID)
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APPLE_ID) &&
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APP_PASSWORD) &&
+    hasValue(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_TEAM_ID)
   ) {
     return "Apple ID";
   }
@@ -76,7 +76,7 @@ function makeSignedMacos({ cwd = process.cwd(), env = process.env } = {}) {
 
   console.log("[electron] Building signed and notarized macOS package.");
   console.log(
-    `[electron] Signing identity: ${buildEnv.BOARDLY_DESKTOP_MAC_SIGN_IDENTITY}`,
+    `[electron] Signing identity: ${buildEnv.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY}`,
   );
   console.log(
     `[electron] Notarization credential: ${getNotarizationCredentialKind(buildEnv)}`,
@@ -84,7 +84,11 @@ function makeSignedMacos({ cwd = process.cwd(), env = process.env } = {}) {
 
   runNodeScript(cwd, buildEnv, "electron/scripts/clean-output.cjs");
   runNodeScript(cwd, buildEnv, "electron/scripts/build-preload.cjs");
-  runNodeScript(cwd, buildEnv, "electron/scripts/build-boardly-binaries.cjs");
+  runNodeScript(
+    cwd,
+    buildEnv,
+    "electron/scripts/build-zenith-team-binaries.cjs",
+  );
   runNodeScript(cwd, buildEnv, "electron/scripts/build-renderer.cjs");
   runNodeScript(cwd, buildEnv, "electron/scripts/run-forge.cjs", [
     "make",

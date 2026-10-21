@@ -57,7 +57,7 @@ func TestClassifyRules(t *testing.T) {
 			ReasonAgentContextOverflow,
 		},
 		{"token limit", "Hit the token limit for this conversation", ReasonAgentContextOverflow},
-		// GH #6360, verbatim from Claude Code 2.1.x. The turn is not
+		// Verbatim from Claude Code 2.1.x. The turn is not
 		// rejected with a 400 — the response comes back with stop_reason
 		// "model_context_window_exceeded" and the CLI prints this line.
 		{

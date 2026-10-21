@@ -34,9 +34,15 @@ func TestPresentOutputStudioFreezesCanvasAlongsideMedia(t *testing.T) {
 			if _, err := service.PresentOutput(t.Context(), input); err != nil {
 				t.Fatal(err)
 			}
-			if api.output.Type != "media" || len(api.output.Items) != 2 || api.output.Items[0].Role != "primary" ||
-				api.output.Items[1].Role != "supporting" || api.upload.Filename != studioCanvasFilename {
-				t.Fatalf("output = %+v, upload = %+v, want primary media and supporting canvas", api.output, api.upload)
+			if api.output.Type != "media" || len(api.output.Items) != 2 ||
+				api.output.Items[0].Role != "primary" ||
+				api.output.Items[1].Role != "supporting" ||
+				api.upload.Filename != studioCanvasFilename {
+				t.Fatalf(
+					"output = %+v, upload = %+v, want primary media and supporting canvas",
+					api.output,
+					api.upload,
+				)
 			}
 			var canvas StudioCanvas
 			if err := json.Unmarshal(api.uploadedContents[1], &canvas); err != nil {
@@ -49,12 +55,24 @@ func TestPresentOutputStudioFreezesCanvasAlongsideMedia(t *testing.T) {
 				t.Fatalf("canvas = %+v, want frozen positions, dependencies and media ordinal", canvas)
 			}
 			key := api.upload.RequestKey
-			if _, err := service.PresentOutput(t.Context(), input); err != nil || api.upload.RequestKey != key {
+			if _, err := service.PresentOutput(
+				t.Context(),
+				input,
+			); err != nil ||
+				api.upload.RequestKey != key {
 				t.Fatalf("replay key = %q, %v, want %q", api.upload.RequestKey, err, key)
 			}
 			input.Studio.Nodes[1].Prompt = "Changed prompt"
-			if _, err := service.PresentOutput(t.Context(), input); err != nil || api.upload.RequestKey == key {
-				t.Fatalf("changed canvas key = %q, %v, want distinct identity", api.upload.RequestKey, err)
+			if _, err := service.PresentOutput(
+				t.Context(),
+				input,
+			); err != nil ||
+				api.upload.RequestKey == key {
+				t.Fatalf(
+					"changed canvas key = %q, %v, want distinct identity",
+					api.upload.RequestKey,
+					err,
+				)
 			}
 		})
 	}

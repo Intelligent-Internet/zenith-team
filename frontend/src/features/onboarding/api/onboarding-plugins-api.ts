@@ -1,4 +1,4 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { pluginService } from "@/shared/api/plugin.service";
 import type { PluginCatalogResponseV1 } from "@/shared/api/types";
 import { onboardingSources } from "@/features/onboarding/model/onboarding-sources";
@@ -12,7 +12,7 @@ const onboardingNativeIds = new Set<string>(
 // Only the plugins the connections step offers: a Codex catalog is several
 // thousand rows, which the full listing pages through one request at a time.
 // One name search per source runs in parallel and keeps the exact identities.
-export const onboardingPluginsApi = boardlyApi.injectEndpoints({
+export const onboardingPluginsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     onboardingPlugins: builder.query<
       PluginCatalogResponseV1,
@@ -22,7 +22,7 @@ export const onboardingPluginsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Plugin" },
       ],
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           async () => {
             const pages = await Promise.all(
               onboardingSources.map((choice) =>

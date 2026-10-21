@@ -27,9 +27,9 @@ import {
 import { initializationStatus } from "@/features/onboarding/model/initialization-status";
 import { lunaModelId } from "@/features/onboarding/model/research-model";
 import {
-  boardlyApi,
-  getBoardlyQueryErrorMessage,
-} from "@/shared/api/boardly-api";
+  zenithTeamApi,
+  getZenithTeamQueryErrorMessage,
+} from "@/shared/api/zenith-team-api";
 import { useAppDispatch } from "@/state";
 
 const InitializationContext = createContext<ReturnType<
@@ -129,7 +129,7 @@ function useInitializationController() {
     if (completed && !completionObserved.current) {
       completionObserved.current = true;
       setError("");
-      dispatch(boardlyApi.util.invalidateTags(["Company", "Conversation"]));
+      dispatch(zenithTeamApi.util.invalidateTags(["Company", "Conversation"]));
     }
   }, [
     companyId,
@@ -193,7 +193,7 @@ function useInitializationController() {
         ]);
       }
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     } finally {
       actionInFlight.current = false;
       setRequesting(false);
@@ -228,7 +228,7 @@ function useInitializationController() {
     })
       .unwrap()
       .then(() => setDiscoveryEnabled(false))
-      .catch((cause) => setError(getBoardlyQueryErrorMessage(cause)))
+      .catch((cause) => setError(getZenithTeamQueryErrorMessage(cause)))
       .finally(() => {
         actionInFlight.current = false;
       });
@@ -256,9 +256,9 @@ function useInitializationController() {
     ? ""
     : error ||
       modelError ||
-      (progress.error ? getBoardlyQueryErrorMessage(progress.error) : "") ||
-      (roster.error ? getBoardlyQueryErrorMessage(roster.error) : "") ||
-      (runtimes.error ? getBoardlyQueryErrorMessage(runtimes.error) : "") ||
+      (progress.error ? getZenithTeamQueryErrorMessage(progress.error) : "") ||
+      (roster.error ? getZenithTeamQueryErrorMessage(roster.error) : "") ||
+      (runtimes.error ? getZenithTeamQueryErrorMessage(runtimes.error) : "") ||
       (needsModel && !roster.isLoading && roster.currentData && !ceo?.binding
         ? "Your CEO needs a Codex connection before continuing."
         : "") ||

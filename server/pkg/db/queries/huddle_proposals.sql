@@ -35,7 +35,7 @@ WHERE company_id=$1 AND huddle_id=$2 AND id=$3 RETURNING *;
 -- automatic retries and explicit human-input continuations, capped defensively.
 -- No runtime identity, private transcript, reasoning or raw error is exposed.
 -- A submitted Task's work is kept only where reader_user_id may read its
--- Project by the delegate rule (D31): the person who shared Company context
+-- Project by the delegate rule: the person who shared Company context
 -- for the voice tools and spoken notices, the viewer for the status a person
 -- reads. Go binds the permissions and the default set.
 -- name: ReadHuddleWork :many

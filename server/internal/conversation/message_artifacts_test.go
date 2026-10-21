@@ -21,7 +21,13 @@ func TestNormalizeArtifactMessageInput(t *testing.T) {
 		{name: "too many", ids: make([]uuid.UUID, 11)},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := normalizeSendInput(SendInput{RequestKey: uuid.New(), ArtifactIDs: test.ids, SuppressUserMessage: test.suppressed})
+			got, err := normalizeSendInput(
+				SendInput{
+					RequestKey:          uuid.New(),
+					ArtifactIDs:         test.ids,
+					SuppressUserMessage: test.suppressed,
+				},
+			)
 			if (err == nil) != test.valid {
 				t.Fatalf("normalize = %+v, %v; valid=%v", got, err, test.valid)
 			}

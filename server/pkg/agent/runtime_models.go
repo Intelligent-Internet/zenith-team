@@ -45,7 +45,7 @@ type RuntimeReasoningLevel struct {
 
 // NormalizeRuntimeModels validates and clones an untrusted model catalog at
 // the daemon/CLI boundary. It is intentionally independent of transport and
-// Boardly domains so every discovery source applies the same limits.
+// Zenith Team domains so every discovery source applies the same limits.
 func NormalizeRuntimeModels(models []RuntimeModel) ([]RuntimeModel, error) {
 	if models == nil || len(models) > runtimeModelCatalogMaxModels {
 		return nil, errors.New("model catalog size is invalid")

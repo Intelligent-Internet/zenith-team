@@ -14,16 +14,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
-// Groups (Access TECH Part D, D31). A Group is a named, flat set of Team
+// Groups. A Group is a named, flat set of Team
 // members in one Company: people only, never an Agent or another Group. It
 // never acts and never starts a Run; it only holds Project grants, which
 // every member holds too. A person's access is the union of their own grant,
@@ -40,7 +40,7 @@ import (
 // grant managers once when it opens a restricted Project to someone, and ends
 // the Runs and queued items of anyone who lost read, write or execute. The
 // trail is per Project, not per person, so a change of many people stays a
-// few rows and notices per Project (Access TECH, the trail, 2026-10-07).
+// few rows and notices per Project.
 
 var (
 	ErrGroupInvalidInput = errors.New("invalid Group input")
@@ -63,8 +63,8 @@ var (
 	ErrGroupGrantPermissionRequired = errors.New("Group change moves access its author cannot change")
 )
 
-// The Group caps (IA-FR34): placeholders until D7 measures a change at the
-// caps under the Company lock.
+// The Group caps: placeholders until a change at the caps is measured under
+// the Company lock.
 const (
 	maxCompanyGroups      = 100
 	maxGroupMembers       = 500
@@ -74,8 +74,7 @@ const (
 	maxGroupChangeIDs = 500
 )
 
-// Activity actions of group and project_grant rows a Group change writes
-// (Access TECH, the trail).
+// Activity actions of group and project_grant rows a Group change writes.
 const (
 	groupCreated                   = "group.created"
 	groupUpdated                   = "group.updated"
@@ -183,8 +182,8 @@ type GroupPreviewPerson struct {
 	RunsStopping int                      `json:"runsStopping"`
 }
 
-// GroupService manages a Company's Groups (Access TECH D3). Group grants on
-// a Project are the ProjectService's (D4).
+// GroupService manages a Company's Groups. Group grants on a Project are the
+// ProjectService's.
 type GroupService interface {
 	List(context.Context, auth.UserPrincipal) ([]Group, error)
 	Get(context.Context, auth.UserPrincipal, uuid.UUID) (GroupDetail, error)
@@ -1224,7 +1223,7 @@ func groupNoticeLabel(value string, maximum int) string {
 }
 
 // leaveCompanyGroupsInTx ends every Group membership of a person leaving the
-// Company (D5), advancing each Group's revision and staging group.changed.
+// Company, advancing each Group's revision and staging group.changed.
 // A rejoin restores none. The caller holds the Company and member locks and
 // has taken no Project lock.
 func leaveCompanyGroupsInTx(
@@ -1400,8 +1399,7 @@ type projectGroupGrantChange struct {
 // project_grant.group_member_added or _removed row: one row per Project and
 // change, naming every person (sorted) whose stored set there moved, and how
 // many they are. What each holds is read from the Project's access, not the
-// row (Access TECH, the trail, 2026-10-07). ProjectTitle and GroupName are
-// as they were when the change was made.
+// row. ProjectTitle and GroupName are as they were when the change was made.
 type projectGroupMembersChange struct {
 	ProjectID    uuid.UUID   `json:"projectId"`
 	ProjectTitle string      `json:"projectTitle"`

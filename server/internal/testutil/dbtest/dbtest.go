@@ -22,7 +22,7 @@ import (
 
 // SharedDatabaseURLEnv carries the parent-owned PostgreSQL server URL to test
 // processes.
-const SharedDatabaseURLEnv = "BOARDLY_TEST_DATABASE_URL"
+const SharedDatabaseURLEnv = "ZENITH_TEAM_TEST_DATABASE_URL"
 
 // ErrSharedDatabaseUnavailable means the test process was not given a shared
 // server URL.
@@ -181,7 +181,7 @@ func closeAdminConnection(ctx context.Context, conn *pgx.Conn) error {
 }
 
 func isolatedDatabaseName(id uuid.UUID) string {
-	return "boardly_test_" + strings.ReplaceAll(id.String(), "-", "")
+	return "zenith_team_test_" + strings.ReplaceAll(id.String(), "-", "")
 }
 
 func databaseURLForName(adminURL, databaseName string) (string, error) {
@@ -277,7 +277,13 @@ func SeedFixture(
 		INSERT INTO companies (id, name, slug, task_prefix) VALUES
 			($1, 'Schema A', 'schema-a', 'SCA'),
 			($2, 'Schema B', 'schema-b', 'SCA')`, f.CompanyA, f.CompanyB)
-	mustExecTx(`INSERT INTO projects(id,company_id,key,title) VALUES ($1,$2,'work','Work'),($3,$4,'work','Work')`, f.ProjectA, f.CompanyA, f.ProjectB, f.CompanyB)
+	mustExecTx(
+		`INSERT INTO projects(id,company_id,key,title) VALUES ($1,$2,'work','Work'),($3,$4,'work','Work')`,
+		f.ProjectA,
+		f.CompanyA,
+		f.ProjectB,
+		f.CompanyB,
+	)
 	mustExecTx(`
 		INSERT INTO company_members (company_id, user_id, role) VALUES
 			($1, $2, 'owner'), ($3, $4, 'owner')`, f.CompanyA, f.UserA, f.CompanyB, f.UserB)

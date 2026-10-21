@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // 000086's cutover (ADR 0017) stops the work its backfill left without
@@ -36,8 +36,15 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 	for id, role := range map[uuid.UUID]string{memberID: "member", adminID: "admin"} {
 		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
 			id, role+"@cutover.example.com")
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
-			f.CompanyA, id, role)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
+			f.CompanyA,
+			id,
+			role,
+		)
 	}
 
 	// Two Tasks the member is running in Project A: one whose Run still owns
@@ -47,11 +54,24 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
 			dbtest.MustExecTx(t, ctx, tx, `INSERT INTO conversations (id, company_id, kind, task_id, title)
 				VALUES ($1, $2, 'task', $3, $4)`, conversationID, f.CompanyA, taskID, key)
-			dbtest.MustExecTx(t, ctx, tx, `INSERT INTO tasks
+			dbtest.MustExecTx(
+				t,
+				ctx,
+				tx,
+				`INSERT INTO tasks
 				(id, company_id, conversation_id, project_id, milestone_type, number, key, title,
 				 assignee_user_id, executed_by_agent_id, creator_user_id, status, execution_generation)
 				VALUES ($1, $2, $3, $4, 'product', $5, $6, $6, $7, $8, $7, 'in_progress', $9)`,
-				taskID, f.CompanyA, conversationID, f.ProjectA, number, key, memberID, f.AgentA, generation)
+				taskID,
+				f.CompanyA,
+				conversationID,
+				f.ProjectA,
+				number,
+				key,
+				memberID,
+				f.AgentA,
+				generation,
+			)
 		})
 		return taskID, conversationID
 	}
@@ -73,7 +93,8 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM tasks WHERE id = $1`, legacyTask)
 
 	seedRun := func(companyID, agentID, runtimeID, conversationID uuid.UUID, taskID, authorizer any,
-		runType, status string, generation any) uuid.UUID {
+		runType, status string, generation any,
+	) uuid.UUID {
 		var id uuid.UUID
 		if err := pool.QueryRow(ctx, `INSERT INTO runs
 			(company_id, agent_id, task_id, conversation_id, runtime_id, run_type, status,
@@ -88,7 +109,17 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		return id
 	}
 	taskRun := func(conversationID uuid.UUID, taskID, authorizer any, status string, generation any) uuid.UUID {
-		return seedRun(f.CompanyA, f.AgentA, f.RuntimeA, conversationID, taskID, authorizer, "task", status, generation)
+		return seedRun(
+			f.CompanyA,
+			f.AgentA,
+			f.RuntimeA,
+			conversationID,
+			taskID,
+			authorizer,
+			"task",
+			status,
+			generation,
+		)
 	}
 	ownerQueued := taskRun(f.ConversationA, nil, f.UserA, "queued", nil)
 	ownerWaiting := taskRun(f.ConversationA, nil, f.UserA, "waiting_local_directory", nil)
@@ -112,7 +143,8 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 
 	// Decisions raised before the migration, addressed under the old rules.
 	seedApproval := func(companyID, conversationID, agentID, runID uuid.UUID, taskID, originUserID any,
-		status string) uuid.UUID {
+		status string,
+	) uuid.UUID {
 		var continuation any
 		if status != "pending" {
 			continuation = "not_required"
@@ -136,7 +168,7 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		if err := pool.QueryRow(ctx, `INSERT INTO questions
 			(company_id, title, asked_by_agent_id, origin_run_id, request_key, task_id, conversation_id,
 			 prompts, request_sha256, expires_at)
-			VALUES ($1, 'Which colour?', $2, $3, gen_random_uuid(), $4, $5, '[]'::jsonb,
+			VALUES ($1, 'Which color?', $2, $3, gen_random_uuid(), $4, $5, '[]'::jsonb,
 			 decode(repeat('ef', 32), 'hex'), now() + interval '1 day')
 			RETURNING id`, companyID, agentID, runID, taskID, conversationID).Scan(&id); err != nil {
 			t.Fatalf("seed Question: %v", err)
@@ -144,7 +176,8 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		return id
 	}
 	seedInbox := func(companyID, recipient, conversationID uuid.UUID, kind, entityType string, entityID uuid.UUID,
-		dedupe string, read bool) uuid.UUID {
+		dedupe string, read bool,
+	) uuid.UUID {
 		var id uuid.UUID
 		if err := pool.QueryRow(ctx, `INSERT INTO inbox_items
 			(company_id, recipient_user_id, conversation_id, kind, entity_type, entity_id, title, body,
@@ -233,7 +266,8 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		var status, runError string
 		var fireAtCleared bool
 		if err := pool.QueryRow(ctx, `SELECT status, COALESCE(error, ''), fire_at IS NULL FROM runs WHERE id = $1`,
-			test.id).Scan(&status, &runError, &fireAtCleared); err != nil {
+			test.id).
+			Scan(&status, &runError, &fireAtCleared); err != nil {
 			t.Fatalf("%s: read Run: %v", test.name, err)
 		}
 		if status != test.status || runError != test.error {
@@ -267,7 +301,8 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		var version int64
 		var completed bool
 		if err := pool.QueryRow(ctx, `SELECT status, version, completed_at IS NOT NULL FROM tasks WHERE id = $1`,
-			test.id).Scan(&status, &version, &completed); err != nil {
+			test.id).
+			Scan(&status, &version, &completed); err != nil {
 			t.Fatalf("%s: read Task: %v", test.name, err)
 		}
 		if status != test.status || version != test.version || completed != test.completed {
@@ -289,10 +324,12 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		var version int64
 		var removedAt bool
 		if err := pool.QueryRow(ctx, `SELECT state, COALESCE(removal_reason, ''), version, removed_at IS NOT NULL
-			FROM conversation_run_queue_items WHERE id = $1`, test.id).Scan(&state, &reason, &version, &removedAt); err != nil {
+			FROM conversation_run_queue_items WHERE id = $1`, test.id).
+			Scan(&state, &reason, &version, &removedAt); err != nil {
 			t.Fatalf("%s: read queued item: %v", test.name, err)
 		}
-		if state != test.state || reason != test.reason || version != test.version || removedAt != (test.state == "removed") {
+		if state != test.state || reason != test.reason || version != test.version ||
+			removedAt != (test.state == "removed") {
 			t.Errorf("%s = %s/%q v%d removedAt=%v, want %s/%q v%d",
 				test.name, state, reason, version, removedAt, test.state, test.reason, test.version)
 		}
@@ -354,8 +391,18 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 		}
 		items, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (addressed, error) {
 			var item addressed
-			err := row.Scan(&item.recipient, &item.conversation, &item.project, &item.kind, &item.entityType,
-				&item.title, &item.body, &item.deepLink, &item.dedupe, &item.open)
+			err := row.Scan(
+				&item.recipient,
+				&item.conversation,
+				&item.project,
+				&item.kind,
+				&item.entityType,
+				&item.title,
+				&item.body,
+				&item.deepLink,
+				&item.dedupe,
+				&item.open,
+			)
 			return item, err
 		})
 		if err != nil {
@@ -381,7 +428,7 @@ func TestProjectAccessCutoverCancelsRunsAndReaddressesDecisions(t *testing.T) {
 	orphanItems := addressedOf("question", orphanQuestion)
 	wantOrphan := addressed{
 		recipient: f.UserB, conversation: f.ConversationB, project: f.ProjectB,
-		kind: "question_request", entityType: "question", title: "Which colour?",
+		kind: "question_request", entityType: "question", title: "Which color?",
 		body: "An agent needs your answer before it can continue.",
 		deepLink: "/app?agentId=" + f.AgentB.String() + "&conversationId=" + f.ConversationB.String() +
 			"&conversationKind=task&taskId=" + f.TaskB.String() + "&questionId=" + orphanQuestion.String(),

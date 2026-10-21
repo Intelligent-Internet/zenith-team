@@ -197,7 +197,7 @@ func runScheduleRunNow(cmd *cobra.Command, args []string) error {
 	ctx, cancel := apiContext()
 	defer cancel()
 	path := client.companyPath("schedules", scheduleID, "runs")
-	body := map[string]any{"schemaVersion": 1, "requestKey": client.bodyRequestKey("POST", path, nil)}
+	body := map[string]any{"schemaVersion": 1, "requestKey": client.bodyRequestKey(path, nil)}
 	var raw json.RawMessage
 	if err := client.post(ctx, path, body, &raw); err != nil {
 		return err
@@ -223,7 +223,7 @@ func runScheduleLifecycle(cmd *cobra.Command, args []string, operation string) e
 	ctx, cancel := apiContext()
 	defer cancel()
 	path := client.companyPath("schedules", scheduleID)
-	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	revision, err := resolveRevision(ctx, cmd, client, path)
 	if err != nil {
 		return err
 	}

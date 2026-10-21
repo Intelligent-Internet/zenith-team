@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 // RunProofResolver resolves supplemental Run scope without introducing a
@@ -47,7 +47,7 @@ func writeRunProofError(c *gin.Context, err error) {
 }
 
 // runOriginResolver hands RunProofPolicy the proof resolver, which the
-// credential guards use to admit a daemon's own session as a Run (D31). With
+// credential guards use to admit a daemon's own session as a Run. With
 // no resolver no daemon session is admitted off the daemon plane.
 func (h *Handler) runOriginResolver() middleware.RunOriginResolver {
 	if h.RunProofResolver == nil {
@@ -116,8 +116,8 @@ func (h *Handler) runOwnReadAdmitted(
 // uploads the files a Run presents on the member's session; with a proof,
 // the Run must be that member's live Run in the Company the upload names
 // (runProofBearer), or the upload is run_token_invalid before any byte is
-// stored. It returns that Run, whose upload is then recorded as the Run's
-// (D31). Without a proof the upload is the member's own, as before, and the
+// stored. It returns that Run, whose upload is then recorded as the Run's.
+// Without a proof the upload is the member's own, as before, and the
 // Run is nil.
 func (h *Handler) runUploadAdmitted(
 	c *gin.Context,
@@ -205,7 +205,7 @@ func (h *Handler) runReadScope(
 // runProofScope turns a borne Run's origin into the scope its reads are
 // made under (task.RunScope). The reads are made with the authorizer's
 // session and so with their Project access; the scope narrows them by the
-// delegate rule, which the database reads from the Run's own row (D31): the
+// delegate rule, which the database reads from the Run's own row: the
 // Authorizer's access, and a Task Run only in its Task chat's Project. A
 // tagged Run is bounded by its Authorizer's access alone. A Task chat with
 // no Project admits no Run (the claim fence), so a proof for one is
@@ -226,7 +226,7 @@ func runProofScope(origin execution.RunOrigin) (*task.RunScope, error) {
 }
 
 // runIsPlanner reports whether a borne Run reads as the Company's planner
-// (task.RunScope.Planner, IA-FR12): the root Agent's Run, with its Company
+// (task.RunScope.Planner): the root Agent's Run, with its Company
 // Plan tools on, in its own person's direct chat, with no Task and no
 // tagging channel. Its answer reaches only that person, so it reads every
 // Task that person reads, which its Company Plan export needs. The server

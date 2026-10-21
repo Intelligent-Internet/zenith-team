@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // BoardFocus is where the person a Run works for is looking, read from their
@@ -42,7 +42,7 @@ type BoardAgentViewInput struct {
 
 // BoardAgentView is that reading: Text is what the model reads, one line per
 // object with a short ref; Refs carries each listed object's ID and revisions
-// for boardly-mcp, which fills edit revisions so the model never copies them.
+// for zenith-team-mcp, which fills edit revisions so the model never copies them.
 type BoardAgentView struct {
 	Sequence int64           `json:"sequence"`
 	Text     string          `json:"text"`

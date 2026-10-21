@@ -1,4 +1,4 @@
--- The keys that match one Codex Plugin to another (D26). Codex lists the
+-- The keys that match one Codex Plugin to another. Codex lists the
 -- Claude marketplace's copies of many curated Plugins without a logo or
 -- description, so the Plugins list leaves out such a copy, and a Plugin
 -- without a loadable logo borrows one by name, then by website host, then by

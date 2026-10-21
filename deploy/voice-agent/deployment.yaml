@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: zenith-helia
 spec:
-  replicas: 0 # Enable only after the Phase 5 staging checklist and model-access check.
+  replicas: 0 # Scale up after the image, the zenith-helia Secret and a real test call are ready (voice-agent/README.md).
   selector:
     matchLabels: { app: zenith-helia }
   strategy:

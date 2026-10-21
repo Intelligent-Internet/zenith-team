@@ -132,7 +132,7 @@
   }
 
   /* Streamdown also puts the wrapper marker on the table itself. */
-  .boardly-chat-markdown div[data-streamdown="table-wrapper"] {
+  .zenith-team-chat-markdown div[data-streamdown="table-wrapper"] {
     margin-block: 0.75rem;
     max-width: 100%;
     overflow-x: auto;
@@ -142,30 +142,30 @@
     scrollbar-width: thin;
   }
 
-  .boardly-chat-markdown table {
+  .zenith-team-chat-markdown table {
     width: 100%;
     min-width: 36rem;
     border-collapse: collapse;
     text-align: left;
   }
 
-  .boardly-chat-markdown thead {
+  .zenith-team-chat-markdown thead {
     background: rgb(255 255 255 / 10%);
   }
 
-  .boardly-chat-markdown th,
-  .boardly-chat-markdown td {
+  .zenith-team-chat-markdown th,
+  .zenith-team-chat-markdown td {
     padding: 0.625rem 0.75rem;
     border-bottom: 1px solid rgb(255 255 255 / 12%);
     vertical-align: top;
   }
 
-  .boardly-chat-markdown th {
+  .zenith-team-chat-markdown th {
     white-space: nowrap;
     font-weight: 700;
   }
 
-  .boardly-chat-markdown tbody tr:last-child td {
+  .zenith-team-chat-markdown tbody tr:last-child td {
     border-bottom: 0;
   }
 
@@ -181,8 +181,8 @@
     border-width: 0 !important;
   }
 
-  .boardly-light-surface,
-  .boardly-light-overlay {
+  .zenith-team-light-surface,
+  .zenith-team-light-overlay {
     --surface-primary: #f2eee2;
     --surface-secondary: #ebedee;
     --surface-tertiary: #e8ede5;
@@ -204,7 +204,7 @@
     --input-text: #0f233f;
   }
 
-  .boardly-light-overlay {
+  .zenith-team-light-overlay {
     color: var(--text-primary);
   }
 }
@@ -411,23 +411,23 @@
 }
 
 @layer components {
-  .boardly-premium-panel-surface {
-    --boardly-premium-panel-accent-rgb: 170, 194, 216;
+  .zenith-team-premium-panel-surface {
+    --zenith-team-premium-panel-accent-rgb: 170, 194, 216;
   }
 
-  .boardly-premium-panel-surface--amber {
-    --boardly-premium-panel-accent-rgb: 255, 195, 88;
+  .zenith-team-premium-panel-surface--amber {
+    --zenith-team-premium-panel-accent-rgb: 255, 195, 88;
   }
 
-  .boardly-premium-panel-surface--cyan {
-    --boardly-premium-panel-accent-rgb: 112, 218, 255;
+  .zenith-team-premium-panel-surface--cyan {
+    --zenith-team-premium-panel-accent-rgb: 112, 218, 255;
   }
 
-  .boardly-premium-panel-surface--violet {
-    --boardly-premium-panel-accent-rgb: 165, 139, 255;
+  .zenith-team-premium-panel-surface--violet {
+    --zenith-team-premium-panel-accent-rgb: 165, 139, 255;
   }
 
-  .boardly-premium-panel-surface {
+  .zenith-team-premium-panel-surface {
     border: 1px solid rgba(255, 255, 255, 0.18);
     background:
       radial-gradient(
@@ -437,7 +437,7 @@
       ),
       radial-gradient(
         circle at 94% -12%,
-        rgba(var(--boardly-premium-panel-accent-rgb), 0.1),
+        rgba(var(--zenith-team-premium-panel-accent-rgb), 0.1),
         transparent 34%
       ),
       linear-gradient(
@@ -455,7 +455,7 @@
     backdrop-filter: blur(17px) saturate(114%) contrast(105%);
   }
 
-  .boardly-toast [data-sonner-toast] {
+  .zenith-team-toast [data-sonner-toast] {
     width: min(420px, calc(100vw - 32px)) !important;
     min-height: 56px !important;
     border-radius: 12px !important;
@@ -472,50 +472,50 @@
     font-family: var(--font-sans);
   }
 
-  .boardly-toast [data-sonner-toast] [data-icon],
-  .boardly-toast [data-sonner-toast] svg {
+  .zenith-team-toast [data-sonner-toast] [data-icon],
+  .zenith-team-toast [data-sonner-toast] svg {
     color: currentColor !important;
   }
 
-  .boardly-toast [data-sonner-toast][data-type="success"] {
+  .zenith-team-toast [data-sonner-toast][data-type="success"] {
     border-color: var(--success-border) !important;
     background: var(--success-bg) !important;
     color: var(--success-text) !important;
   }
 
-  .boardly-toast [data-sonner-toast][data-type="error"] {
+  .zenith-team-toast [data-sonner-toast][data-type="error"] {
     border-color: var(--error-border) !important;
     background: var(--error-bg) !important;
     color: var(--error-text) !important;
   }
 
-  .boardly-toast [data-sonner-toast][data-type="warning"] {
+  .zenith-team-toast [data-sonner-toast][data-type="warning"] {
     border-color: var(--warning-border) !important;
     background: var(--warning-bg) !important;
     color: var(--warning-text) !important;
   }
 
-  .boardly-toast [data-sonner-toast][data-type="info"] {
+  .zenith-team-toast [data-sonner-toast][data-type="info"] {
     border-color: var(--info-border) !important;
     background: var(--info-bg) !important;
     color: var(--info-text) !important;
   }
 
-  .boardly-toast [data-title] {
+  .zenith-team-toast [data-title] {
     color: currentColor !important;
     font-size: 14px !important;
     font-weight: 700 !important;
     line-height: 1.25 !important;
   }
 
-  .boardly-toast [data-description] {
+  .zenith-team-toast [data-description] {
     color: color-mix(in srgb, currentColor 74%, transparent) !important;
     font-size: 12px !important;
     font-weight: 600 !important;
     line-height: 1.35 !important;
   }
 
-  .boardly-toast [data-button] {
+  .zenith-team-toast [data-button] {
     border-radius: 8px !important;
     background: var(--brand-primary) !important;
     color: var(--text-inverse) !important;
@@ -523,7 +523,7 @@
     font-weight: 700 !important;
   }
 
-  .boardly-toast [data-close-button] {
+  .zenith-team-toast [data-close-button] {
     left: auto !important;
     right: 10px !important;
     top: 12px !important;
@@ -537,19 +537,19 @@
     box-shadow: none !important;
   }
 
-  .boardly-toast [data-close-button]:hover {
+  .zenith-team-toast [data-close-button]:hover {
     background: color-mix(in srgb, currentColor 12%, transparent) !important;
   }
 
-  .boardly-toast [data-close-button]:focus-visible {
+  .zenith-team-toast [data-close-button]:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
   }
 
-  .boardly-auth-input:-webkit-autofill,
-  .boardly-auth-input:-webkit-autofill:hover,
-  .boardly-auth-input:-webkit-autofill:focus,
-  .boardly-auth-input:-webkit-autofill:active {
+  .zenith-team-auth-input:-webkit-autofill,
+  .zenith-team-auth-input:-webkit-autofill:hover,
+  .zenith-team-auth-input:-webkit-autofill:focus,
+  .zenith-team-auth-input:-webkit-autofill:active {
     -webkit-text-fill-color: currentColor;
     caret-color: currentColor;
     -webkit-box-shadow: 0 0 0 1000px transparent inset;
@@ -748,7 +748,7 @@
 }
 
 /* Authenticated workspace layout; appearance owns its colors and typography. */
-.boardly-workspace-theme {
+.zenith-team-workspace-theme {
   height: 100vh;
   height: 100dvh;
   width: 100vw;
@@ -758,7 +758,7 @@
   font-family: var(--workspace-font-body);
 }
 
-.boardly-workspace-theme[data-desktop-mac="true"] {
+.zenith-team-workspace-theme[data-desktop-mac="true"] {
   --workspace-header-height: 40px;
 }
 
@@ -1116,7 +1116,7 @@
   margin-inline: auto;
 }
 
-.boardly-workspace-theme .workspace-more-page .workspace-page-frame__header {
+.zenith-team-workspace-theme .workspace-more-page .workspace-page-frame__header {
   align-items: flex-start;
   padding-inline: 3px;
 }
@@ -1218,7 +1218,7 @@
 }
 
 @media (max-width: 899px) {
-  .boardly-workspace-theme {
+  .zenith-team-workspace-theme {
     --workspace-bottom-nav-height: calc(62px + env(safe-area-inset-bottom));
   }
 
@@ -1301,16 +1301,16 @@
   }
 }
 
-html[data-boardly-reduced-transparency="true"] .workspace-utility-header,
-html[data-boardly-reduced-transparency="true"] .workspace-rail,
-html[data-boardly-reduced-transparency="true"] .workspace-bottom-nav {
+html[data-zenith-team-reduced-transparency="true"] .workspace-utility-header,
+html[data-zenith-team-reduced-transparency="true"] .workspace-rail,
+html[data-zenith-team-reduced-transparency="true"] .workspace-bottom-nav {
   background: var(--workspace-chrome-strong);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
 
-html[data-boardly-reduced-transparency="true"]
-  .boardly-workspace-theme
+html[data-zenith-team-reduced-transparency="true"]
+  .zenith-team-workspace-theme
   [class*="backdrop-blur"] {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
@@ -1327,8 +1327,8 @@ html[data-boardly-reduced-transparency="true"]
     transition: none;
   }
 
-  .boardly-workspace-theme .animate-pulse,
-  .boardly-workspace-theme .animate-spin {
+  .zenith-team-workspace-theme .animate-pulse,
+  .zenith-team-workspace-theme .animate-spin {
     animation: none !important;
   }
 }

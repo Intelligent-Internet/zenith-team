@@ -43,7 +43,11 @@ func newAnalyticsSummaryCmd() *cobra.Command {
 }
 
 func newAnalyticsBreakdownCmd() *cobra.Command {
-	cmd := &cobra.Command{Use: "breakdown", Short: "Show analytics dimension breakdown", RunE: runAnalyticsBreakdown}
+	cmd := &cobra.Command{
+		Use:   "breakdown",
+		Short: "Show analytics dimension breakdown",
+		RunE:  runAnalyticsBreakdown,
+	}
 	analyticsFlags(cmd)
 	cmd.Flags().String("by", "agent", "dimension: agent, model, member, project, task, run_type, runtime")
 	cmd.Flags().String("sort", "tokens", "sort: tokens, cost, runs, run_time, failures")
@@ -71,10 +75,14 @@ func runAnalyticsSummary(cmd *cobra.Command, _ []string) error {
 			return err
 		}
 		printKeyValues(cmd.OutOrStdout(), [][2]string{
-			{"Scope", report.Scope}, {"Window", report.PeriodStartAt + " → " + report.PeriodEndAt},
-			{"Runs", report.Current.Runs.Total}, {"Completed", report.Current.Runs.Completed},
-			{"Failed", report.Current.Runs.Failed}, {"Input tokens", report.Current.Tokens.Input},
-			{"Output tokens", report.Current.Tokens.Output}, {"Reported USD ticks", dashIfEmpty(pointerValue(report.Current.Cost.ReportedUsdTicks))},
+			{"Scope", report.Scope},
+			{"Window", report.PeriodStartAt + " → " + report.PeriodEndAt},
+			{"Runs", report.Current.Runs.Total},
+			{"Completed", report.Current.Runs.Completed},
+			{"Failed", report.Current.Runs.Failed},
+			{"Input tokens", report.Current.Tokens.Input},
+			{"Output tokens", report.Current.Tokens.Output},
+			{"Reported USD ticks", dashIfEmpty(pointerValue(report.Current.Cost.ReportedUsdTicks))},
 			{"Estimated USD ticks", dashIfEmpty(pointerValue(report.Current.Cost.EstimatedUsdTicks))},
 		})
 		return nil
@@ -122,9 +130,24 @@ func runAnalyticsBreakdown(cmd *cobra.Command, _ []string) error {
 		}
 		rows := make([][]string, 0, len(report.Rows))
 		for _, row := range report.Rows {
-			rows = append(rows, []string{row.Key.Label, row.Runs.Total, row.Runs.Failed, row.Tokens.Input, row.Tokens.Output, dashIfEmpty(pointerValue(row.Cost.Reported)), dashIfEmpty(pointerValue(row.Cost.Estimated))})
+			rows = append(
+				rows,
+				[]string{
+					row.Key.Label,
+					row.Runs.Total,
+					row.Runs.Failed,
+					row.Tokens.Input,
+					row.Tokens.Output,
+					dashIfEmpty(pointerValue(row.Cost.Reported)),
+					dashIfEmpty(pointerValue(row.Cost.Estimated)),
+				},
+			)
 		}
-		printTable(cmd.OutOrStdout(), []string{"NAME", "RUNS", "FAILED", "INPUT", "OUTPUT", "REPORTED TICKS", "ESTIMATED TICKS"}, rows)
+		printTable(
+			cmd.OutOrStdout(),
+			[]string{"NAME", "RUNS", "FAILED", "INPUT", "OUTPUT", "REPORTED TICKS", "ESTIMATED TICKS"},
+			rows,
+		)
 		noteCursor(cmd, report.NextCursor)
 		return nil
 	})
@@ -227,7 +250,12 @@ func analyticsQueryValues(cmd *cobra.Command) (url.Values, error) {
 			return nil, usagef("--end-at must be RFC3339")
 		}
 	}
-	values := url.Values{"scope": {scope}, "start_at": {start.UTC().Format(time.RFC3339Nano)}, "end_at": {end.UTC().Format(time.RFC3339Nano)}, "time_zone": {zone}}
+	values := url.Values{
+		"scope":     {scope},
+		"start_at":  {start.UTC().Format(time.RFC3339Nano)},
+		"end_at":    {end.UTC().Format(time.RFC3339Nano)},
+		"time_zone": {zone},
+	}
 	for _, flag := range []struct{ name, query string }{{"provider", "provider"}, {"model", "model"}, {"agent-id", "agent_id"}, {"member-id", "member_id"}, {"project-id", "project_id"}, {"task-id", "task_id"}, {"runtime-id", "runtime_id"}, {"run-type", "run_type"}} {
 		if value, _ := cmd.Flags().GetString(flag.name); value != "" {
 			values.Set(flag.query, value)

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func TestEventBroadcasterSingleNodeAddsEventID(t *testing.T) {

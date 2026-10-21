@@ -11,20 +11,20 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestLifecycleReconcilerDeliversContinuationExactlyOnce(t *testing.T) {
@@ -531,29 +531,49 @@ func TestLifecycleReconcilerPreparesTaskContinuationForExecution(t *testing.T) {
 			}
 			origin := seedTaskRunningOrigin(t, ctx, pool, fixture)
 			if humanWork {
-				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET executed_by_agent_id=NULL WHERE id=$1`, fixture.TaskA)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE tasks SET executed_by_agent_id=NULL WHERE id=$1`,
+					fixture.TaskA,
+				)
 			}
 			dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET status='in_review' WHERE id=$1`, fixture.TaskA)
-			asked, _, err := questions.Ask(ctx, principal, origin, uuid.Must(uuid.NewV7()), QuestionAskInput{
-				Title: "Deployment target",
-				Prompts: []QuestionPrompt{{
-					ID:            "target",
-					Prompt:        "Which target?",
-					SelectionMode: QuestionSelectionSingle,
-					Required:      true,
-					Options: []QuestionOption{
-						{ID: "staging", Label: "Staging"},
-						{ID: "production", Label: "Production"},
-					},
-				}},
-			})
+			asked, _, err := questions.Ask(
+				ctx,
+				principal,
+				origin,
+				uuid.Must(uuid.NewV7()),
+				QuestionAskInput{
+					Title: "Deployment target",
+					Prompts: []QuestionPrompt{{
+						ID:            "target",
+						Prompt:        "Which target?",
+						SelectionMode: QuestionSelectionSingle,
+						Required:      true,
+						Options: []QuestionOption{
+							{ID: "staging", Label: "Staging"},
+							{ID: "production", Label: "Production"},
+						},
+					}},
+				},
+			)
 			if err != nil {
 				t.Fatalf("Ask() error = %v", err)
 			}
-			dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='completed', updated_at=now() WHERE id=$1`, origin.RunID)
+			dbtest.MustExec(
+				t,
+				ctx,
+				pool,
+				`UPDATE runs SET status='completed', updated_at=now() WHERE id=$1`,
+				origin.RunID,
+			)
 			if _, err := questions.Answer(ctx, principal, asked.ID, QuestionAnswerInput{
 				ExpectedRevision: asked.Revision,
-				Answers:          []QuestionAnswer{{PromptID: "target", OptionIDs: []string{"staging"}}},
+				Answers: []QuestionAnswer{
+					{PromptID: "target", OptionIDs: []string{"staging"}},
+				},
 			}); err != nil {
 				t.Fatalf("Answer() error = %v", err)
 			}
@@ -755,7 +775,8 @@ func TestLifecycleReconcilerAbandonsAContinuationTheAssigneeMayNoLongerRun(t *te
 		fixture.CompanyA, fixture.ProjectA, fixture.UserA)
 	runsBefore := countCompanyRuns(t, ctx, pool, fixture.CompanyA)
 	var taskVersion int64
-	if err := pool.QueryRow(ctx, `SELECT version FROM tasks WHERE id=$1`, fixture.TaskA).Scan(&taskVersion); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT version FROM tasks WHERE id=$1`, fixture.TaskA).
+		Scan(&taskVersion); err != nil {
 		t.Fatal(err)
 	}
 
@@ -772,7 +793,8 @@ func TestLifecycleReconcilerAbandonsAContinuationTheAssigneeMayNoLongerRun(t *te
 		t.Fatalf("Runs after a continuation the assignee may not run = %d, want %d", after, runsBefore)
 	}
 	var versionAfter int64
-	if err := pool.QueryRow(ctx, `SELECT version FROM tasks WHERE id=$1`, fixture.TaskA).Scan(&versionAfter); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT version FROM tasks WHERE id=$1`, fixture.TaskA).
+		Scan(&versionAfter); err != nil {
 		t.Fatal(err)
 	}
 	if versionAfter != taskVersion {
@@ -803,6 +825,7 @@ func TestLifecycleReconcilerExplainsOnlyATaskTheAssigneeCanStillMove(t *testing.
 		{
 			name: "done",
 			setup: func(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) {
+				t.Helper()
 				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET status='done' WHERE id=$1`, fixture.TaskA)
 			},
 			reason: abandonTaskClosed,
@@ -810,6 +833,7 @@ func TestLifecycleReconcilerExplainsOnlyATaskTheAssigneeCanStillMove(t *testing.
 		{
 			name: "cancelled",
 			setup: func(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) {
+				t.Helper()
 				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET status='cancelled' WHERE id=$1`, fixture.TaskA)
 			},
 			reason: abandonTaskClosed,
@@ -817,6 +841,7 @@ func TestLifecycleReconcilerExplainsOnlyATaskTheAssigneeCanStillMove(t *testing.
 		{
 			name: "failed",
 			setup: func(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) {
+				t.Helper()
 				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET status='failed' WHERE id=$1`, fixture.TaskA)
 			},
 			reason: abandonTaskFailed,
@@ -826,6 +851,7 @@ func TestLifecycleReconcilerExplainsOnlyATaskTheAssigneeCanStillMove(t *testing.
 		{
 			name: "waiting on a prerequisite",
 			setup: func(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) {
+				t.Helper()
 				conversationID, prerequisiteID := dbtest.NewUUID(t), dbtest.NewUUID(t)
 				dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
 					dbtest.MustExecTx(t, ctx, tx, `
@@ -852,6 +878,7 @@ func TestLifecycleReconcilerExplainsOnlyATaskTheAssigneeCanStillMove(t *testing.
 		{
 			name: "archived Project",
 			setup: func(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) {
+				t.Helper()
 				dbtest.MustExec(t, ctx, pool, `UPDATE projects SET archived_at=now() WHERE id=$1`, fixture.ProjectA)
 			},
 			reason: abandonProjectArchived,

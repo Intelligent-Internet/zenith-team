@@ -48,11 +48,11 @@ CREATE INDEX company_members_active_user_idx ON company_members USING btree (use
 
 -- company_resources: external things a company's runs work against. One
 -- concrete type today — local_directory: a folder on one machine that runs
--- execute inside — stored as flat, typed columns (owner decision: no
+-- execute inside — stored as flat, typed columns (no
 -- polymorphic ref payload; a future type widens this table in a migration).
 --
 -- daemon_id is the registering machine's persistent identity
--- (~/.boardly/daemon.id). Machines are deliberately not an entity: the same
+-- (~/.zenith-team/daemon.id). Machines are deliberately not an entity: the same
 -- daemon_id appears in runtimes (000005_execution) up to once per provider
 -- per company, and in every company its owner registered it in, so there is
 -- nothing for a FOREIGN KEY to point at — consistency is enforced in Go.

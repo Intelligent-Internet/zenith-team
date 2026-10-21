@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 // newStorelessOAuthService builds an OAuth service over a store that owns no
@@ -27,7 +27,7 @@ func newStorelessOAuthService(t *testing.T, provider OAuthProvider) *DefaultOAut
 		Store:          &db.Store{},
 		Provider:       provider,
 		Tokens:         &fakeOAuthTokenIssuer{},
-		WebRedirectURI: "https://api.boardly.test/api/v1/auth/google/web/callback",
+		WebRedirectURI: "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 		Now:            func() time.Time { return time.Date(2026, time.July, 11, 2, 30, 0, 0, time.UTC) },
 		Random:         bytes.NewReader(make([]byte, 96)),
 	})
@@ -52,10 +52,10 @@ func TestOAuthServiceRequiresExplicitLoopbackPolicyForHTTPWebCallback(t *testing
 		allowHTTP bool
 		wantError bool
 	}{
-		{name: "HTTPS callback remains valid", redirect: "https://api.boardly.test/api/v1/auth/google/web/callback"},
+		{name: "HTTPS callback remains valid", redirect: "https://api.zenith-team.test/api/v1/auth/google/web/callback"},
 		{name: "loopback HTTP requires explicit policy", redirect: "http://127.0.0.1:8788/api/v1/auth/google/web/callback", wantError: true},
 		{name: "explicit loopback HTTP policy", redirect: "http://127.0.0.1:8788/api/v1/auth/google/web/callback", allowHTTP: true},
-		{name: "policy never permits remote HTTP", redirect: "http://api.boardly.test/api/v1/auth/google/web/callback", allowHTTP: true, wantError: true},
+		{name: "policy never permits remote HTTP", redirect: "http://api.zenith-team.test/api/v1/auth/google/web/callback", allowHTTP: true, wantError: true},
 		{name: "policy never permits callback query", redirect: "http://127.0.0.1:8788/api/v1/auth/google/web/callback?code=sentinel", allowHTTP: true, wantError: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -78,18 +78,18 @@ func TestNewOAuthServiceRequiresStoreAndTokenIssuer(t *testing.T) {
 	t.Parallel()
 
 	if _, err := NewOAuthService(OAuthServiceOptions{
-		Tokens: &fakeOAuthTokenIssuer{}, WebRedirectURI: "https://api.boardly.test/callback",
+		Tokens: &fakeOAuthTokenIssuer{}, WebRedirectURI: "https://api.zenith-team.test/callback",
 	}); err == nil {
 		t.Fatal("NewOAuthService() without store error = nil")
 	}
 	if _, err := NewOAuthService(OAuthServiceOptions{
-		Store: &db.Store{}, WebRedirectURI: "https://api.boardly.test/callback",
+		Store: &db.Store{}, WebRedirectURI: "https://api.zenith-team.test/callback",
 	}); err == nil {
 		t.Fatal("NewOAuthService() without token issuer error = nil")
 	}
 	if _, err := NewOAuthService(OAuthServiceOptions{
 		Store: &db.Store{}, Tokens: &fakeOAuthTokenIssuer{},
-		WebRedirectURI: "https://api.boardly.test/callback", FlowTTL: -time.Second,
+		WebRedirectURI: "https://api.zenith-team.test/callback", FlowTTL: -time.Second,
 	}); err == nil {
 		t.Fatal("NewOAuthService() with negative flow TTL error = nil")
 	}
@@ -116,7 +116,7 @@ func TestOAuthServiceProviderCapabilityIsNilSafe(t *testing.T) {
 		Store:          &db.Store{},
 		Provider:       &fakeOAuthProvider{},
 		Tokens:         &fakeOAuthTokenIssuer{},
-		WebRedirectURI: "https://api.boardly.test/api/v1/auth/google/web/callback",
+		WebRedirectURI: "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 	})
 	if err != nil {
 		t.Fatalf("NewOAuthService(enabled) error = %v", err)
@@ -538,7 +538,7 @@ func TestNormalizeOAuthIdentityFallsBackForInvalidProviderNameWithoutMutatingSna
 		strings.Repeat("n", 121),
 	} {
 		identity := VerifiedOAuthIdentity{
-			Provider: googleOAuthProvider, Subject: "subject", Email: "fallback.user@boardly.test",
+			Provider: googleOAuthProvider, Subject: "subject", Email: "fallback.user@zenith-team.test",
 			Profile: OAuthProfileSnapshot{Name: providerName},
 		}
 		normalized, displayName, err := normalizeOAuthIdentity(identity)
@@ -559,7 +559,7 @@ func TestNormalizeOAuthIdentityFallsBackForInvalidProviderNameWithoutMutatingSna
 	_, _, err := normalizeOAuthIdentity(VerifiedOAuthIdentity{
 		Provider: googleOAuthProvider,
 		Subject:  "subject",
-		Email:    strings.Repeat("a", 121) + "@boardly.test",
+		Email:    strings.Repeat("a", 121) + "@zenith-team.test",
 	})
 	if !errors.Is(err, ErrOAuthIdentityInvalid) {
 		t.Fatalf("overlong email-local fallback error = %v", err)

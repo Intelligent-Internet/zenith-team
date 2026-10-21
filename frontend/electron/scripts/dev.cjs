@@ -10,17 +10,17 @@ const { LOCAL_ENV_FILES, loadElectronEnvFiles } = require("./env-files.cjs");
 loadElectronEnvFiles({ files: LOCAL_ENV_FILES });
 
 const DEV_SERVER_URL =
-  process.env.BOARDLY_ELECTRON_DEV_SERVER_URL ?? "http://127.0.0.1:5173";
-// BOARDLY_DEV_HOST is the one host seam: vite.config.ts reads it for both
+  process.env.ZENITH_TEAM_ELECTRON_DEV_SERVER_URL ?? "http://127.0.0.1:5173";
+// ZENITH_TEAM_DEV_HOST is the one host seam: vite.config.ts reads it for both
 // server.host and HMR. Passing --host on the CLI as well once corrupted the
 // argument list (pnpm forwards a literal "--" to Vite), leaving Vite on
 // localhost while Electron waited on 127.0.0.1.
 const devServer = spawnPnpm(["dev"], {
   env: {
     ...process.env,
-    BOARDLY_DEV_HOST: "127.0.0.1",
-    BOARDLY_DESKTOP_ENV: "local",
-    VITE_BOARDLY_DESKTOP_ENV: "local",
+    ZENITH_TEAM_DEV_HOST: "127.0.0.1",
+    ZENITH_TEAM_DESKTOP_ENV: "local",
+    VITE_ZENITH_TEAM_DESKTOP_ENV: "local",
   },
 });
 let electronProcess = null;
@@ -57,12 +57,12 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
-// BOARDLY_ELECTRON_DEV_ARGS: extra Chromium/Electron switches for the dev
+// ZENITH_TEAM_ELECTRON_DEV_ARGS: extra Chromium/Electron switches for the dev
 // window, space-separated — e.g. `--remote-debugging-port=9223` so a smoke
 // run can drive the renderer over CDP. Electron reads switches from argv
 // alone, so this is the one seam; it is never read by the packaged app.
 function electronDevArgs() {
-  return (process.env.BOARDLY_ELECTRON_DEV_ARGS ?? "")
+  return (process.env.ZENITH_TEAM_ELECTRON_DEV_ARGS ?? "")
     .split(/\s+/u)
     .filter(Boolean);
 }
@@ -71,8 +71,8 @@ function startElectron() {
   const nextProcess = spawn(electronBinary, [".", ...electronDevArgs()], {
     env: {
       ...process.env,
-      BOARDLY_ELECTRON_DEV_SERVER_URL: DEV_SERVER_URL,
-      BOARDLY_DESKTOP_ENV: "local",
+      ZENITH_TEAM_ELECTRON_DEV_SERVER_URL: DEV_SERVER_URL,
+      ZENITH_TEAM_DESKTOP_ENV: "local",
     },
     stdio: "inherit",
   });

@@ -11,16 +11,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const deletionReason = "account_deleted"
@@ -34,7 +34,7 @@ type ServiceOptions struct {
 }
 
 // AccountService owns self-service deletion of the caller's own account.
-type AccountService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type AccountService interface {
 	Delete(context.Context, auth.UserPrincipal, string) (DeleteResult, error)
 }
 
@@ -175,9 +175,12 @@ func (s *DefaultAccountService) Delete(
 			if err != nil {
 				return fmt.Errorf("lock account Run queue Conversations: %w", err)
 			}
-			historyRunIDs, err := tx.ListActiveRunIDsInConversationsForUpdate(ctx, generated.ListActiveRunIDsInConversationsForUpdateParams{
-				CompanyID: companyID, ConversationIds: lockedConversationIDs,
-			})
+			historyRunIDs, err := tx.ListActiveRunIDsInConversationsForUpdate(
+				ctx,
+				generated.ListActiveRunIDsInConversationsForUpdateParams{
+					CompanyID: companyID, ConversationIds: lockedConversationIDs,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -196,7 +199,16 @@ func (s *DefaultAccountService) Delete(
 			cancelledForCompany := make([]generated.Run, 0, len(cancelled))
 			for _, row := range cancelled {
 				run := generated.Run(row)
-				if err := activity.RecordInTx(ctx, tx, &pending, events.UserActor(principal.UserID.String()), execution.EventRunCancelled, beforeHistory[run.ID], execution.Topic, run.ID); err != nil {
+				if err := activity.RecordInTx(
+					ctx,
+					tx,
+					&pending,
+					events.UserActor(principal.UserID.String()),
+					execution.EventRunCancelled,
+					beforeHistory[run.ID],
+					execution.Topic,
+					run.ID,
+				); err != nil {
 					return err
 				}
 				cancelledForCompany = append(cancelledForCompany, run)

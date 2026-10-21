@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // paramsNaming returns the profile parameter names whose value is path.
@@ -32,7 +32,7 @@ func paramsNaming(params map[string]string, path string) []string {
 // reaches sandbox-exec as its own argv entry, unescaped.
 func TestSeatbeltDeniesEveryProtectedPathThroughParameters(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "Application Support", "Zenith Team")
-	home := filepath.Join(root, "boardly-home")
+	home := filepath.Join(root, "zenith-team-home")
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestSeatbeltDeniesEveryProtectedPathThroughParameters(t *testing.T) {
 	if err := os.WriteFile(store, []byte("sealed"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	missing := filepath.Join(root, "not-yet", ".boardly")
+	missing := filepath.Join(root, "not-yet", ".zenith-team")
 
 	sandbox, err := Seatbelt(SeatbeltOptions{Protected: []string{home, store, missing}})
 	if err != nil {
@@ -168,7 +168,7 @@ func TestSeatbeltKeepsTheParentsOfAProtectedPathInPlace(t *testing.T) {
 	base := t.TempDir()
 	support := filepath.Join(base, "Application Support")
 	app := filepath.Join(support, "Zenith Team")
-	home := filepath.Join(app, "boardly-home")
+	home := filepath.Join(app, "zenith-team-home")
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestSeatbeltKeepsTheParentsOfAProtectedPathInPlace(t *testing.T) {
 		"rename the app folder":      `mv "$1" "$3/moved"`,
 		"rename Application Support": `mv "$2" "$3/moved"`,
 		"rename the temp folder":     `mv "$3" "$3.moved"`,
-		"read the session":           `cat "$1/boardly-home/daemon-auth.json"`,
+		"read the session":           `cat "$1/zenith-team-home/daemon-auth.json"`,
 	} {
 		if err := run(script); err == nil {
 			t.Errorf("%s: allowed inside the sandbox", name)
@@ -209,7 +209,7 @@ func TestSeatbeltKeepsTheParentsOfAProtectedPathInPlace(t *testing.T) {
 func TestSeatbeltRefusesALayoutThatWouldDenyTheRunItsWork(t *testing.T) {
 	home := t.TempDir()
 	// Every provider keeps its own files in the person's home folder and the
-	// temporary folder, so no hidden folder may hold either (B7b).
+	// temporary folder, so no hidden folder may hold either.
 	person := filepath.Join(t.TempDir(), "person")
 	if err := os.MkdirAll(person, 0o700); err != nil {
 		t.Fatal(err)
@@ -239,7 +239,7 @@ func TestSeatbeltRefusesALayoutThatWouldDenyTheRunItsWork(t *testing.T) {
 			RunHome:   filepath.Join(home, "workspaces", RunHomePrefix+"1"),
 		},
 		"nothing to protect":     {RunDirs: []string{home}},
-		"relative protected":     {Protected: []string{"relative/.boardly"}},
+		"relative protected":     {Protected: []string{"relative/.zenith-team"}},
 		"relative no-write path": {Protected: []string{home}, NoWrite: []string{".zshrc"}},
 		"relative run home":      {Protected: []string{home}, RunHome: RunHomePrefix + "1"},
 		"relative writable root": {Protected: []string{home}, WritableRoots: []string{"scratch"}},
@@ -266,7 +266,7 @@ func TestSeatbeltRefusesALayoutThatWouldDenyTheRunItsWork(t *testing.T) {
 	// So is a hidden folder inside the person's home.
 	if _, err := Seatbelt(SeatbeltOptions{
 		Protected: []string{home},
-		Hidden:    []string{filepath.Join(person, "boardly_workspaces")},
+		Hidden:    []string{filepath.Join(person, "zenith_team_workspaces")},
 	}); err != nil {
 		t.Fatalf("seatbelt with a hidden folder in the person's home: %v", err)
 	}
@@ -286,7 +286,7 @@ func TestSeatbeltDeniesEveryRunHomeButTheRunsOwn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seatbelt: %v", err)
 	}
-	everyHome := `(deny file-read* file-write* (regex #"/\.boardly-home-[^/]*(/|$)"))`
+	everyHome := `(deny file-read* file-write* (regex #"/\.zenith-team-home-[^/]*(/|$)"))`
 	denyAt := strings.Index(sandbox.Profile, everyHome)
 	allowAt := strings.Index(sandbox.Profile, "(allow file-read* file-write*")
 	protectedAt := strings.Index(sandbox.Profile, "(deny file-read* file-write*\n")
@@ -321,7 +321,7 @@ func TestSeatbeltDeniesLaunchPointsAndThePrograms(t *testing.T) {
 		t.Fatal(err)
 	}
 	sandbox, err := Seatbelt(SeatbeltOptions{
-		Protected: []string{filepath.Join(person, ".boardly")},
+		Protected: []string{filepath.Join(person, ".zenith-team")},
 		NoWrite:   []string{zshrc},
 	})
 	if err != nil {
@@ -393,7 +393,7 @@ func TestSeatbeltKeepsARunOutOfAnotherRunsHome(t *testing.T) {
 	runSandbox := func(t *testing.T, own, work string) *agent.Sandbox {
 		t.Helper()
 		sandbox, err := Seatbelt(SeatbeltOptions{
-			Protected: []string{filepath.Join(t.TempDir(), ".boardly")},
+			Protected: []string{filepath.Join(t.TempDir(), ".zenith-team")},
 			RunHome:   own,
 			RunDirs:   []string{filepath.Dir(own), work},
 		})
@@ -453,7 +453,7 @@ func TestSeatbeltKeepsARunOutOfAnotherRunsHome(t *testing.T) {
 
 	own, other, work := runHomeLayout(t)
 	preview, err := Seatbelt(SeatbeltOptions{
-		Protected: []string{filepath.Join(t.TempDir(), ".boardly")},
+		Protected: []string{filepath.Join(t.TempDir(), ".zenith-team")},
 		RunDirs:   []string{work},
 	})
 	if err != nil {
@@ -507,7 +507,7 @@ func TestSeatbeltStopsALaunchFromStartingProgramsLater(t *testing.T) {
 	launchSandbox := func(t *testing.T, person string, noWrite []string) *agent.Sandbox {
 		t.Helper()
 		sandbox, err := Seatbelt(SeatbeltOptions{
-			Protected: []string{filepath.Join(person, ".boardly")},
+			Protected: []string{filepath.Join(person, ".zenith-team")},
 			NoWrite:   noWrite,
 		})
 		if err != nil {
@@ -578,7 +578,7 @@ func TestSeatbeltStopsALaunchFromStartingProgramsLater(t *testing.T) {
 // every Run's home wherever it lies, a protected folder and everything in
 // it, a protected file and its temporary siblings, a protected path that
 // does not exist yet, under the real path as well; and for a launch with
-// hidden folders (a tagged Run, Access TECH B7b) everything in them but the
+// hidden folders (a tagged Run) everything in them but the
 // launch's own folders, a link put in place of an own folder included. On
 // macOS each answer is checked against the real sandbox-exec: whatever a
 // launch cannot read, the daemon must not read for it.
@@ -602,7 +602,7 @@ func TestSandboxDeniesReadCoversWhatTheProfileDenies(t *testing.T) {
 		filepath.Join(root, "work", "session.bin.txt"):                            "notes",
 		filepath.Join(workspaces, "run-b", RunHomePrefix+"2222", "run.json"):      "capability",
 		filepath.Join(workspaces, "run-b", RunHomePrefix+"2222", "deep", "x.txt"): "capability",
-		filepath.Join(workspaces, "run-b", "boardly-home-2222.txt"):               "notes",
+		filepath.Join(workspaces, "run-b", "zenith-team-home-2222.txt"):           "notes",
 		filepath.Join(own, "answer.md"):                                           "mine",
 		memory:                                                                    "private",
 		filepath.Join(bound, "secret.md"):                                         "private",
@@ -640,7 +640,7 @@ func TestSandboxDeniesReadCoversWhatTheProfileDenies(t *testing.T) {
 		filepath.Join(workspaces, "run-b", RunHomePrefix+"2222", "run.json"):      true,
 		filepath.Join(workspaces, "run-b", RunHomePrefix+"2222", "deep", "x.txt"): true,
 		filepath.Join(workspaces, "run-b", RunHomePrefix+"2222"):                  true,
-		filepath.Join(workspaces, "run-b", "boardly-home-2222.txt"):               true,
+		filepath.Join(workspaces, "run-b", "zenith-team-home-2222.txt"):           true,
 		filepath.Join(root, "work", "notes.txt"):                                  false,
 		filepath.Join(root, "work", "session.bin.txt"):                            false,
 		filepath.Join(own, "answer.md"):                                           false,
@@ -658,7 +658,7 @@ func TestSandboxDeniesReadCoversWhatTheProfileDenies(t *testing.T) {
 	}
 	// A launch with no hidden folder reads them, as before.
 	untagged := SeatbeltOptions{Protected: protected, RunDirs: tagged.RunDirs, Writable: tagged.Writable}
-	for _, path := range []string{memory, filepath.Join(bound, "secret.md"), filepath.Join(workspaces, "run-b", "boardly-home-2222.txt")} {
+	for _, path := range []string{memory, filepath.Join(bound, "secret.md"), filepath.Join(workspaces, "run-b", "zenith-team-home-2222.txt")} {
 		if SandboxDeniesRead(untagged, path) {
 			t.Errorf("SandboxDeniesRead(untagged, %s) = true, want false", path)
 		}
@@ -716,8 +716,8 @@ func TestSeatbeltFencesWritesToTheWritableRoots(t *testing.T) {
 	}
 }
 
-// Under the workspaces root a launch writes only its own folders (Access
-// TECH B3f). The profile closes every shared folder to writes first and
+// Under the workspaces root a launch writes only its own folders. The
+// profile closes every shared folder to writes first and
 // opens the launch's own folders there after that, before the Run-home and
 // sign-in rules, which therefore still win inside them; the folders above a
 // shared folder cannot be renamed. A folder outside the shared folders needs
@@ -741,7 +741,7 @@ func TestSeatbeltOpensOnlyTheLaunchsOwnFoldersInTheSharedFolders(t *testing.T) {
 		t.Fatal(err)
 	}
 	sandbox, err := Seatbelt(SeatbeltOptions{
-		Protected: []string{filepath.Join(base, ".boardly")},
+		Protected: []string{filepath.Join(base, ".zenith-team")},
 		RunHome:   filepath.Join(envRoot, RunHomePrefix+"1"),
 		RunDirs:   []string{envRoot, workDir},
 		Shared:    []string{workspaces},
@@ -804,9 +804,9 @@ func TestSeatbeltOpensOnlyTheLaunchsOwnFoldersInTheSharedFolders(t *testing.T) {
 		}
 	}
 
-	// A launch with no shared folder keeps B3e's profile: no wall.
+	// A launch with no shared folder gets the profile without the write wall.
 	plain, err := Seatbelt(
-		SeatbeltOptions{Protected: []string{filepath.Join(base, ".boardly")}, Writable: []string{envRoot}},
+		SeatbeltOptions{Protected: []string{filepath.Join(base, ".zenith-team")}, Writable: []string{envRoot}},
 	)
 	if err != nil {
 		t.Fatalf("seatbelt without a shared folder: %v", err)
@@ -837,7 +837,7 @@ func (f otherRunsFolders) args() []string {
 func (f otherRunsFolders) untouched() map[string]string {
 	return map[string]string{
 		filepath.Join(f.other, "notes.md"):                            "theirs\n",
-		filepath.Join(f.other, ".boardly-bin-1", "zen"):               "#!/bin/sh\n",
+		filepath.Join(f.other, ".zenith-team-bin-1", "zen"):           "#!/bin/sh\n",
 		filepath.Join(f.workspaces, "company", "README.md"):           "shared\n",
 		filepath.Join(f.own, "nested", RunHomePrefix+"9", "run.json"): "capability\n",
 		filepath.Join(f.own, "sign-in", "daemon-auth.json"):           "secret\n",
@@ -870,7 +870,7 @@ func otherRunsLayout(t *testing.T) otherRunsFolders {
 }
 
 // On this Mac, under the real sandbox-exec: a launch writes its own folder in
-// the workspaces root and nothing else there (Access TECH B3f). It cannot
+// the workspaces root and nothing else there. It cannot
 // create, change, remove or rename anything in another Run's folder: not
 // through a link it makes, not by renaming the workspaces root or a folder
 // above it, and not through a link that an earlier launch put in place of a
@@ -888,10 +888,13 @@ func TestSeatbeltKeepsALaunchOutOfOtherRunsFolders(t *testing.T) {
 	launch := func(t *testing.T, f otherRunsFolders) *agent.Sandbox {
 		t.Helper()
 		sandbox, err := Seatbelt(SeatbeltOptions{
-			Protected: []string{filepath.Join(t.TempDir(), ".boardly"), filepath.Join(f.own, "sign-in")},
-			RunDirs:   []string{f.own},
-			Shared:    []string{f.workspaces},
-			Writable:  []string{f.own, f.swapped},
+			Protected: []string{
+				filepath.Join(t.TempDir(), ".zenith-team"),
+				filepath.Join(f.own, "sign-in"),
+			},
+			RunDirs:  []string{f.own},
+			Shared:   []string{f.workspaces},
+			Writable: []string{f.own, f.swapped},
 		})
 		if err != nil {
 			t.Fatalf("seatbelt: %v", err)
@@ -911,11 +914,11 @@ func TestSeatbeltKeepsALaunchOutOfOtherRunsFolders(t *testing.T) {
 	}
 
 	for _, step := range []struct{ name, script string }{
-		{"write a Run home inside its own folder", `echo planted > "$1/nested/.boardly-home-9/run.json"`},
+		{"write a Run home inside its own folder", `echo planted > "$1/nested/.zenith-team-home-9/run.json"`},
 		{"read a sign-in file inside its own folder", `cat "$1/sign-in/daemon-auth.json"`},
 		{"create a file in another Run's folder", `echo planted > "$2/planted.md"`},
 		{"change another Run's note", `echo planted >> "$2/notes.md"`},
-		{"replace another Run's program", `echo planted > "$1/zen" && mv "$1/zen" "$2/.boardly-bin-1/zen"`},
+		{"replace another Run's program", `echo planted > "$1/zen" && mv "$1/zen" "$2/.zenith-team-bin-1/zen"`},
 		{"remove another Run's note", `rm "$2/notes.md"`},
 		{"take another Run's folder", `mv "$2" "$1/stolen"`},
 		{"write through a link it makes", `ln -s "$2" "$1/link" && echo planted > "$1/link/planted.md"`},
@@ -947,8 +950,8 @@ func TestSeatbeltKeepsALaunchOutOfOtherRunsFolders(t *testing.T) {
 	}
 }
 
-// taggedLayout is what a Run tagged in a chat finds on its person's computer
-// (Access TECH B7b): a workspaces root holding its own scratch (a workdir and
+// taggedLayout is what a Run tagged in a chat finds on its person's computer:
+// a workspaces root holding its own scratch (a workdir and
 // an isolated home beside it, as the desktop places them), the Company main
 // with its Memory and its business context folder, another Run's workdir and
 // a reviewed Tool installation; the repository cache beside the root; a
@@ -997,7 +1000,7 @@ func (l taggedLayout) hidden() []string {
 func (l taggedLayout) launch(t *testing.T, hidden []string) *agent.Sandbox {
 	t.Helper()
 	opts := SeatbeltOptions{
-		Protected: []string{filepath.Join(filepath.Dir(l.workspaces), ".boardly")},
+		Protected: []string{filepath.Join(filepath.Dir(l.workspaces), ".zenith-team")},
 		RunHome:   l.runHome,
 		RunDirs:   []string{l.envRoot, l.workDir, l.businessContext, l.tool, l.swapped},
 		Shared:    []string{l.workspaces},
@@ -1018,7 +1021,7 @@ func newTaggedLayout(t *testing.T) taggedLayout {
 	if err != nil {
 		t.Fatal(err)
 	}
-	workspaces := filepath.Join(base, "boardly_workspaces")
+	workspaces := filepath.Join(base, "zenith_team_workspaces")
 	envRoot := filepath.Join(workspaces, "0198aa00-0000-7000-8000-0000000000c6")
 	companyMain := filepath.Join(workspaces, "company", "main")
 	l := taggedLayout{
@@ -1073,15 +1076,16 @@ func newTaggedLayout(t *testing.T) taggedLayout {
 	return l
 }
 
-// A tagged Run's launch hides the folders its answer must not draw on (Access
-// TECH B7b). The profile denies reads, writes and starting programs in every
-// hidden folder first, lets the folders on the way to the launch's own
-// folders answer a lookup, opens its own folders for reading and starting
-// programs and its writable ones for writing, and only then applies the B3f write wall, the Run-home rule and
-// the sign-in paths, which therefore still win inside them. A link put in
-// place of an own folder, and a folder outside every hidden one, get no rule.
-// The folders above a hidden folder cannot be renamed. A launch with no
-// hidden folder keeps the B3f profile.
+// A tagged Run's launch hides the folders its answer must not draw on. The
+// profile denies reads, writes and starting programs in every hidden folder
+// first, lets the folders on the way to the launch's own folders answer a
+// lookup, opens its own folders for reading and starting programs and its
+// writable ones for writing, and only then applies the shared-folder write
+// wall, the Run-home rule and the sign-in paths, which therefore still win
+// inside them. A link put in place of an own folder, and a folder outside
+// every hidden one, get no rule. The folders above a hidden folder cannot be
+// renamed. A launch with no hidden folder keeps the profile with just the
+// write wall.
 func TestSeatbeltHidesTheHiddenFoldersButTheLaunchsOwn(t *testing.T) {
 	l := newTaggedLayout(t)
 	sandbox := l.launch(t, l.hidden())
@@ -1152,7 +1156,7 @@ func TestSeatbeltHidesTheHiddenFoldersButTheLaunchsOwn(t *testing.T) {
 
 // A hidden folder may be named through a link (a workspaces root under a
 // linked folder, say) while the launch names its own folder there by its
-// real path, as an app preview's registration does (Access TECH B7b). The own
+// real path, as an app preview's registration does. The own
 // folder still opens, the daemon still reads it for the launch, and the rest
 // of the hidden folder stays closed. On macOS the launch works there under the
 // real sandbox-exec.
@@ -1177,7 +1181,7 @@ func TestSeatbeltOpensAnOwnFolderSpelledByItsRealPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	opts := SeatbeltOptions{
-		Protected: []string{filepath.Join(base, ".boardly")},
+		Protected: []string{filepath.Join(base, ".zenith-team")},
 		RunDirs:   []string{own},
 		Shared:    []string{linked},
 		Writable:  []string{own},
@@ -1219,7 +1223,7 @@ func TestSeatbeltOpensAnOwnFolderSpelledByItsRealPath(t *testing.T) {
 // not by walking up from its own folder, not through a link in place of a
 // folder of its own, and not by renaming a folder above them. Each refused
 // step works without the sandbox, and a launch with no hidden folder (a
-// direct chat's or a Task's Run) still reads them (Access TECH B7b).
+// direct chat's or a Task's Run) still reads them.
 func TestSeatbeltKeepsATaggedLaunchOutOfItsHiddenFolders(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("sandbox-exec is macOS only")

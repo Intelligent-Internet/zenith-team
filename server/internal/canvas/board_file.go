@@ -26,10 +26,10 @@ import (
 	"golang.org/x/sync/semaphore"
 	"golang.org/x/sync/singleflight"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // BoardFile is an ordinary Company attachment placed on a Board. Images render
@@ -182,7 +182,10 @@ func (s *DefaultBoardMediaService) AttachFile(
 	if err != nil {
 		return BoardFile{}, err
 	}
-	prepared := shared.(boardPreparedFile)
+	prepared, ok := shared.(boardPreparedFile)
+	if !ok {
+		return BoardFile{}, errors.New("board upload preparation returned an unexpected value")
+	}
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		var done bool
 		var err error

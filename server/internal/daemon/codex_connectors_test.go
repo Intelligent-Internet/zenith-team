@@ -273,7 +273,9 @@ func TestReadCodexConnectorCatalogWaitsForFinalStartupStatusNotification(t *test
 					t.Errorf("method = %q, want %q", request.Method, response.method)
 					return
 				}
-				message, err := json.Marshal(map[string]any{"id": request.ID, "result": json.RawMessage(response.result)})
+				message, err := json.Marshal(
+					map[string]any{"id": request.ID, "result": json.RawMessage(response.result)},
+				)
 				if err != nil {
 					t.Error(err)
 					return
@@ -366,11 +368,25 @@ func TestReadCodexConnectorCatalogRetriesAFailedPage(t *testing.T) {
 		}
 
 		var rpcErr *codexRPCError
-		if _, err := readCodexConnectorCatalog(t.Context(), newSession(3, nil), true); !errors.As(err, &rpcErr) {
+		if _, err := readCodexConnectorCatalog(
+			t.Context(),
+			newSession(3, nil),
+			true,
+		); !errors.As(
+			err,
+			&rpcErr,
+		) {
 			t.Fatalf("error after three failures = %v, want the app-server error", err)
 		}
 		broken := newSession(1, io.ErrUnexpectedEOF)
-		if _, err := readCodexConnectorCatalog(t.Context(), broken, true); !errors.Is(err, io.ErrUnexpectedEOF) {
+		if _, err := readCodexConnectorCatalog(
+			t.Context(),
+			broken,
+			true,
+		); !errors.Is(
+			err,
+			io.ErrUnexpectedEOF,
+		) {
 			t.Fatalf("broken session error = %v, want it final", err)
 		}
 		if broken.appFailures != 0 || broken.appIndex != 0 {
@@ -472,7 +488,12 @@ func TestReadCodexConnectorCatalogReusesTheAppDirectory(t *testing.T) {
 				t.Context(), session, test.refresh, directory, now.Add(test.age),
 			)
 			if err != nil || !listed(session) || next == directory {
-				t.Fatalf("%s read: listed %v, error %v; want a new listing", test.name, listed(session), err)
+				t.Fatalf(
+					"%s read: listed %v, error %v; want a new listing",
+					test.name,
+					listed(session),
+					err,
+				)
 			}
 		}
 
@@ -554,7 +575,7 @@ func TestCodexConnectorBackendListsTheFirstDirectoryInTheBackground(t *testing.T
 	if len(previous) != 3 {
 		t.Fatalf("reads = %d, want the cold read, the background listing and the linked read", len(previous))
 	}
-	var standIn, background int = -1, -1
+	standIn, background := -1, -1
 	for index := range 2 {
 		if previous[index] == nil {
 			background = index
@@ -917,7 +938,7 @@ func (s *codexInstalledAppsTransportStub) ReadInstalledApps(
 	return maps.Clone(s.installed), nil
 }
 
-// A connect page in the browser has no callback into Boardly, so the desktop
+// A connect page in the browser has no callback into Zenith Team, so the desktop
 // asks whether the app is connected yet; checks in quick succession share one
 // live read. The answer follows discovery's rule: a linked app Codex cannot
 // call yet is installed_not_ready there, so it is not connected here.

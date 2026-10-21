@@ -18,12 +18,12 @@ type strictJSONNested struct {
 func TestBindStrictJSONRejectsAmbiguousOrAdditiveInput(t *testing.T) {
 	t.Parallel()
 
-	valid := []byte(`{"name":"Boardly","nested":{"enabled":true},"labels":{"env":"test"}}`)
+	valid := []byte(`{"name":"Zenith Team","nested":{"enabled":true},"labels":{"env":"test"}}`)
 	var decoded strictJSONFixture
 	if err := BindStrictJSON(bytes.NewReader(valid), &decoded); err != nil {
 		t.Fatalf("BindStrictJSON(valid) error = %v", err)
 	}
-	if decoded.Name != "Boardly" || !decoded.Nested.Enabled || decoded.Labels["env"] != "test" {
+	if decoded.Name != "Zenith Team" || !decoded.Nested.Enabled || decoded.Labels["env"] != "test" {
 		t.Fatalf("decoded = %#v", decoded)
 	}
 	for name, body := range map[string][]byte{
@@ -48,7 +48,7 @@ func TestBindStrictJSONRejectsAmbiguousOrAdditiveInput(t *testing.T) {
 func TestBindStrictJSONRequiresPointerToStruct(t *testing.T) {
 	t.Parallel()
 
-	body := []byte(`{"name":"Boardly","nested":{"enabled":true},"labels":{}}`)
+	body := []byte(`{"name":"Zenith Team","nested":{"enabled":true},"labels":{}}`)
 	if err := BindStrictJSON(bytes.NewReader(body), strictJSONFixture{}); err == nil {
 		t.Fatal("BindStrictJSON(value) error = nil")
 	}

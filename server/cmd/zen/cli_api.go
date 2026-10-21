@@ -17,9 +17,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 // apiClient performs product API calls for every command family. The
@@ -292,10 +292,10 @@ func (c *apiClient) requestKey(method, path string, body []byte) string {
 	return ""
 }
 
-// bodyRequestKey feeds the `requestKey` field some endpoints carry in their
-// body (messages, direct conversations, schedule firings).
-func (c *apiClient) bodyRequestKey(method, path string, body []byte) string {
-	if key := c.requestKey(method, path, body); key != "" {
+// bodyRequestKey feeds the `requestKey` field some POST endpoints carry in
+// their body (messages, direct conversations, schedule firings).
+func (c *apiClient) bodyRequestKey(path string, body []byte) string {
+	if key := c.requestKey(http.MethodPost, path, body); key != "" {
 		return key
 	}
 	return uuid.NewString()

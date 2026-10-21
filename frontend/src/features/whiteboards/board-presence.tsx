@@ -8,7 +8,7 @@ import { ArrowRight, MousePointer } from "@/shared/ui/icons";
 import { apiClient, getApiErrorCode } from "@/lib/api-client";
 import type { components } from "@/shared/api/generated/api.generated";
 import { boardPath, type BoardScope, type BoardItem } from "./board-api";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import { usePresenceHeartbeat } from "@/shared/canvas/use-presence-heartbeat";
 type Participant = components["schemas"]["BoardParticipant"];
 type Preview = components["schemas"]["BoardDragPreview"];
@@ -191,7 +191,7 @@ export function BoardPresence({
   });
   useEffect(
     () =>
-      boardlyRealtimeClient.onEvent((event) => {
+      zenithTeamRealtimeClient.onEvent((event) => {
         if (
           event.companyId !== scope.companyId ||
           !event.type.startsWith("whiteboard.presence") ||

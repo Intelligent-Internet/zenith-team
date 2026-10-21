@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	provideragent "boardly.dev/boardly/server/pkg/agent"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 func TestInMemoryModelDiscoveryStoreCoalescesAndClaimsAtomically(t *testing.T) {

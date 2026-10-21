@@ -1,6 +1,6 @@
 -- name: LockTaskDependencyGraph :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/task-dependency-graph/v1/' || sqlc.arg(company_id)::uuid::text,
+    'zenith-team/task-dependency-graph/v1/' || sqlc.arg(company_id)::uuid::text,
     0
 ));
 

@@ -231,7 +231,7 @@
   box-shadow: var(--workspace-overlay-shadow, 0 24px 72px rgb(0 0 0 / 16%));
   font-size: 14px;
 }
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .artifact-sharing-dialog,
     .artifact-recipient-popover
@@ -373,7 +373,7 @@ html[data-boardly-workspace-theme]
   color: inherit;
   background: var(--workspace-hover-bg, var(--state-hover-bg));
 }
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .artifact-recipient-popover
   [cmdk-item]:focus-visible {
   outline: none;

@@ -79,8 +79,8 @@ export function neutralNotice(kind: NotificationKind): boolean {
 }
 
 // A channel notice is stored naming only who wrote — "Mai Owner wrote in a
-// channel." — because a notice never keeps a channel's title (C0-CONTRACT
-// §5). The app names the channel when it shows the notice, from the channel
+// channel." — because a notice never keeps a channel's title. The app names
+// the channel when it shows the notice, from the channel
 // list the viewer can see now; without a title the stored words stand.
 export function namedDiscussionNotice(
   body: string,

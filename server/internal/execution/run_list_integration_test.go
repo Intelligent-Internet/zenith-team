@@ -12,12 +12,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 func TestListRunsForCompanyAppliesDocumentedFilters(t *testing.T) {
@@ -269,8 +269,13 @@ func TestRunCancelIsTheAuthorizersOrATasksAssignHolders(t *testing.T) {
 	}
 	fixture := dbtest.SeedFixture(t, ctx, pool)
 	colleague := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, 'colleague@example.com', 'Colleague')`, colleague)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'colleague@example.com', 'Colleague')`,
+		colleague,
+	)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)
 		VALUES ($1, $2, 'member'), ($1, $3, 'member')`, fixture.CompanyA, fixture.UserB, colleague)
@@ -429,7 +434,12 @@ func TestRunReadsNameTheRuntimeOnlyToItsRegistrant(t *testing.T) {
 			}
 			for _, view := range append(page.Items, got) {
 				if !equalRuntimeIDs(view.ViewerRuntimeID, test.want) {
-					t.Fatalf("run %s runtimeId = %v, want %v", view.ID, view.ViewerRuntimeID, test.want)
+					t.Fatalf(
+						"run %s runtimeId = %v, want %v",
+						view.ID,
+						view.ViewerRuntimeID,
+						test.want,
+					)
 				}
 				encoded, err := json.Marshal(view)
 				if err != nil {
@@ -441,12 +451,19 @@ func TestRunReadsNameTheRuntimeOnlyToItsRegistrant(t *testing.T) {
 			}
 			// The runtime filter is "what is my machine working on": another
 			// member's runtime matches nothing, so it ties no Run to it.
-			onRuntime, err := service.List(ctx, principal, ListOptions{Limit: 100, RuntimeID: &fixture.RuntimeA})
+			onRuntime, err := service.List(
+				ctx,
+				principal,
+				ListOptions{Limit: 100, RuntimeID: &fixture.RuntimeA},
+			)
 			if err != nil {
 				t.Fatalf("List(runtime_id) error = %v", err)
 			}
 			if (len(onRuntime.Items) > 0) != (test.want != nil) {
-				t.Fatalf("List(runtime_id) = %d runs, want runs only for the registrant", len(onRuntime.Items))
+				t.Fatalf(
+					"List(runtime_id) = %d runs, want runs only for the registrant",
+					len(onRuntime.Items),
+				)
 			}
 		})
 	}
@@ -595,7 +612,11 @@ func TestRunReadsRejectStaleMembershipForTaskAndDirectHistory(t *testing.T) {
 	ctx := t.Context()
 	directID := h.seedDirectConversation(t)
 	directRunID := h.seedQueuedRun(t, directID)
-	principal := auth.UserPrincipal{CompanyID: h.fixture.CompanyA, UserID: h.fixture.UserA, Role: auth.CompanyRoleOwner}
+	principal := auth.UserPrincipal{
+		CompanyID: h.fixture.CompanyA,
+		UserID:    h.fixture.UserA,
+		Role:      auth.CompanyRoleOwner,
+	}
 	for _, runID := range []uuid.UUID{h.fixture.RunA, directRunID} {
 		if _, err := h.svc.Get(ctx, principal, runID); err != nil {
 			t.Fatalf("active member Get = %v", err)

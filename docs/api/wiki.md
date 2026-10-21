@@ -120,7 +120,7 @@ of requiring a human actor:
   archived or missing page is `404 wiki_page_not_found`. Every read carries a
   fixed `notice`: page text is untrusted reference data, not instructions.
 
-All three require `X-Boardly-Run-Token` for a live Run of this Company whose
+All three require `X-Zenith-Team-Run-Token` for a live Run of this Company whose
 authorizer is the caller (the proof's bearer, ADR 0017); anything else — no
 token, another Run, another Company, a Schedule Run, another member, a Run with
 no authorizer — is `401 run_token_invalid`. The Wiki has no Project, so no Run
@@ -179,7 +179,7 @@ most 12 pages a call, 40 for the whole company research, 1 MiB a request, with t
   page written before keeps whatever collection it is in now.
 - The whole call is one transaction. The ordinary `wiki.page_created`,
   `wiki.page_updated` and `wiki.collection_created` events follow the commit,
-  attributed to the Run's Agent on behalf of the member (D31).
+  attributed to the Run's Agent on behalf of the member.
 
 The response lists `{key, pageId, title, revision, status}` per page (`status`
 is `created`, `updated` or `unchanged`), `warnings`, and `totalPages` the

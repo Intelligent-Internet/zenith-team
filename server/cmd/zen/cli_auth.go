@@ -23,8 +23,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // The auth family owns the operator's session: sign in, sign out, and
@@ -41,7 +41,7 @@ func newAuthCmd() *cobra.Command {
 		RunE:  runLogin,
 	}
 	f := login.Flags()
-	f.String("server", "", "Zenith Team server URL (default: BOARDLY_SERVER_URL or the saved config)")
+	f.String("server", "", "Zenith Team server URL (default: ZENITH_TEAM_SERVER_URL or the saved config)")
 	f.String("email", "", "account email (prompted when omitted)")
 	f.String(
 		"password",
@@ -96,12 +96,21 @@ func runLogout(cmd *cobra.Command, _ []string) error {
 	// local copy, which is what the operator asked for.
 	if endpoint, err := authfile.SessionURL(credential.APIBaseURL, "/auth/logout"); err == nil {
 		body := mustJSON(map[string]any{"client": "desktop", "refreshToken": credential.RefreshToken})
-		request, err := http.NewRequestWithContext(cmd.Context(), http.MethodPost, endpoint, strings.NewReader(body))
+		request, err := http.NewRequestWithContext(
+			cmd.Context(),
+			http.MethodPost,
+			endpoint,
+			strings.NewReader(body),
+		)
 		if err == nil {
 			request.Header.Set("Content-Type", "application/json")
 			request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
 			if response, err := (&http.Client{Timeout: 15 * time.Second}).Do(request); err != nil {
-				fmt.Fprintf(cmd.ErrOrStderr(), "warning: the server could not be told about the logout: %v\n", err)
+				fmt.Fprintf(
+					cmd.ErrOrStderr(),
+					"warning: the server could not be told about the logout: %v\n",
+					err,
+				)
 			} else {
 				_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, 1<<20))
 				_ = response.Body.Close()
@@ -117,7 +126,7 @@ func runLogout(cmd *cobra.Command, _ []string) error {
 	}); err != nil {
 		return fmt.Errorf("forget Zenith Team session: %w", err)
 	}
-	// The daemon's own session is this person's too (D31): signing out
+	// The daemon's own session is this person's too: signing out
 	// ends it, so a running daemon stops acting for them.
 	if err := forgetDaemonSession(cmd.Context()); err != nil {
 		fmt.Fprintf(cmd.ErrOrStderr(), "warning: %v\n", err)
@@ -387,8 +396,8 @@ func resolveServerBaseWithSource(serverURL string) (string, string, error) {
 	}
 	source := "--server flag"
 	if serverURL == "" {
-		serverURL = os.Getenv("BOARDLY_SERVER_URL")
-		source = "BOARDLY_SERVER_URL"
+		serverURL = os.Getenv("ZENITH_TEAM_SERVER_URL")
+		source = "ZENITH_TEAM_SERVER_URL"
 	}
 	if serverURL == "" {
 		serverURL = saved.ServerURL
@@ -410,7 +419,7 @@ func resolveServerBaseWithSource(serverURL string) (string, string, error) {
 // the credential path for the success message. A credential the server
 // refuses must never reach disk: the daemon would fail mid-run instead of
 // at login. A daemon session left by another person is ended, so the next
-// `zen daemon start` gives the daemon one for this person (D31).
+// `zen daemon start` gives the daemon one for this person.
 func persistLogin(
 	ctx context.Context,
 	warn io.Writer,
@@ -606,7 +615,7 @@ func runGoogleLogin(ctx context.Context, base string, out io.Writer) (authfile.C
 }
 
 // runHandoffLogin exchanges a desktop handoff code — minted by an
-// already-authenticated Boardly session — for a bearer session. It is the
+// already-authenticated Zenith Team session — for a bearer session. It is the
 // paste-a-credential path for machines where a browser flow is impractical
 // (SSH boxes, containers).
 func runHandoffLogin(ctx context.Context, base, code string) (authfile.Credential, error) {

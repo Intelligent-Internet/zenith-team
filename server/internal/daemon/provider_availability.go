@@ -9,15 +9,15 @@ import (
 
 // Provider re-detection: a running daemon adopts a provider CLI that was
 // installed — or fixed — after it started, without a restart. Discovery
-// otherwise happens once, in LoadConfig, and the version refresh (§9.8,
-// register.go) only compares providers a company has already registered; a
+// otherwise happens once, in LoadConfig, and the version refresh
+// (register.go) only compares providers a company has already registered; a
 // CLI that appeared later, or one present at start whose probe never
 // succeeded, would wait for the next restart. The loop here re-runs
 // discovery every providerAvailabilityProbeInterval, adopts what it finds,
 // and registers it for every tracked company through the same payload path
 // the version refresh uses.
 //
-// The same loop notices the other direction (DR-FR9a). A provider that
+// The same loop notices the other direction. A provider that
 // disappears is never deregistered and stays in the availability set until
 // restart, so a re-install is picked up without one; but the round that finds
 // it gone re-registers every company that recorded it with a payload that
@@ -26,8 +26,8 @@ import (
 // sweep takes it offline ~180 s later.
 
 // providerAvailabilityProbeInterval is how often the daemon looks for a
-// provider CLI it has not registered yet — the "within two minutes" of
-// DR-AC20. One discovery pass per tick; a login-shell fork only when a bare
+// provider CLI it has not registered yet — a new CLI is found within two
+// minutes. One discovery pass per tick; a login-shell fork only when a bare
 // command name misses PATH. Overridable for tests.
 var providerAvailabilityProbeInterval = 2 * time.Minute
 
@@ -250,7 +250,7 @@ func (d *Daemon) providersWithoutRecord(found map[string]AgentEntry) []string {
 // A company qualifies for two reasons: it lacks a record for a provider the
 // payload carries — the newly usable CLI adoption exists for — or it records
 // a provider that is gone from disk and therefore absent from the payload,
-// which is the uninstall DR-FR9a drops. Both are the same write: the register
+// which is the uninstall drop. Both are the same write: the register
 // response replaces the company's runtime ids, so registering without a
 // provider is exactly what stops its runtime being heartbeated.
 //

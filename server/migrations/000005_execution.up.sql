@@ -22,7 +22,7 @@
 CREATE TABLE runtimes (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     company_id uuid NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-    -- The registering daemon's persistent UUID (~/.boardly/daemon.id). Every
+    -- The registering daemon's persistent UUID (~/.zenith-team/daemon.id). Every
     -- runtime is registered by a machine, so this is the other half of the
     -- natural identity below and is never absent.
     daemon_id text NOT NULL,
@@ -157,7 +157,7 @@ CREATE TABLE runs (
     -- AppendRunItem holds the conversation row lock, StartRun is fenced by
     -- runtime_id, conversation_items rows are never UPDATEd, and (run_id,
     -- item_key) is unique, so two different histories cannot share a
-    -- through_seq. See docs/adr/0005-one-conversation-stream.md.
+    -- through_seq.
     transcript_through_seq bigint DEFAULT 0 NOT NULL,
     CONSTRAINT runs_pkey PRIMARY KEY (id),
     CONSTRAINT runs_company_id_id_key UNIQUE (company_id, id),
@@ -323,7 +323,7 @@ CREATE INDEX task_merge_jobs_company_task_created_idx
 -- run_messages_run_id_item_key_key used to be.
 
 -- brt_ run tokens, minted at claim (24h), used by the agent process
--- (boardly-mcp) against the server; revoked when the run fails.
+-- (zenith-team-mcp) against the server; revoked when the run fails.
 CREATE TABLE run_tokens (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     -- No key into runs: nothing deletes a run, and this table has no

@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // A Run reads a Project only as a reader (ADR 0017): the metadata view a
@@ -213,10 +213,20 @@ func TestSameProjectFilesComparesTheSelection(t *testing.T) {
 			}
 		})
 	}
-	if _, err := projectFileIDs(ProjectFilesInput{DocumentIDs: []uuid.UUID{first, first}}); !errors.Is(err, ErrProjectInvalidInput) {
+	if _, err := projectFileIDs(
+		ProjectFilesInput{DocumentIDs: []uuid.UUID{first, first}},
+	); !errors.Is(
+		err,
+		ErrProjectInvalidInput,
+	) {
 		t.Fatalf("repeated document = %v", err)
 	}
-	if _, err := projectFileIDs(ProjectFilesInput{LogoID: &first, DocumentIDs: []uuid.UUID{first}}); !errors.Is(err, ErrProjectInvalidInput) {
+	if _, err := projectFileIDs(
+		ProjectFilesInput{LogoID: &first, DocumentIDs: []uuid.UUID{first}},
+	); !errors.Is(
+		err,
+		ErrProjectInvalidInput,
+	) {
 		t.Fatalf("logo repeated as a document = %v", err)
 	}
 }
@@ -227,7 +237,8 @@ func TestProjectAccessChangedFrameSortsItsRecipients(t *testing.T) {
 	b := uuid.MustParse("00000000-0000-4000-8000-00000000000b")
 	event := projectAccessChangedEvent(uuid.New(), events.SystemActor(), uuid.New(), 3, []uuid.UUID{b, a, b}, false)
 	change, ok := event.Payload.(ProjectAccessChanged)
-	if !ok || len(change.RecipientUserIDs) != 2 || change.RecipientUserIDs[0] != a || change.RecipientUserIDs[1] != b {
+	if !ok || len(change.RecipientUserIDs) != 2 || change.RecipientUserIDs[0] != a ||
+		change.RecipientUserIDs[1] != b {
 		t.Fatalf("recipients = %+v", event.Payload)
 	}
 	if !event.ActivityRecorded || event.Name != EventProjectAccessChanged {

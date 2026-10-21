@@ -224,7 +224,7 @@ RETURNING auth_sessions.id, auth_sessions.user_id, auth_sessions.revoked_at,
 
 -- GetActiveSessionUser also reads who holds the session (client): a person
 -- or a daemon, which the server admits only on the daemon plane and beside a
--- live Run proof (D31).
+-- live Run proof.
 -- name: GetActiveSessionUser :one
 SELECT sqlc.embed(users), auth_sessions.client
 FROM auth_sessions

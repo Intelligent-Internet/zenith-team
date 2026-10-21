@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/golang-migrate/migrate/v4"
 	migratedb "github.com/golang-migrate/migrate/v4/database"
@@ -503,7 +503,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 		"connector_catalog_items_company_provider_status_idx",
 		"connector_runtime_observations_company_provider_idx",
 		"plugin_runtime_observations_company_provider_runtime_idx",
-		// 000063: the Plugins list's duplicate probe and logo borrowing (D26).
+		// 000063: the Plugins list's duplicate probe and logo borrowing.
 		"plugin_runtime_observations_company_provider_name_key_idx",
 		"plugin_runtime_observations_company_provider_website_host_idx",
 		"plugin_runtime_observations_company_provider_developer_idx",
@@ -813,7 +813,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"device_name",
 			// 000059 dropped visibility: a runtime is always private, and
 			// only its registrant can see or use it (ADR 0014).
-			// 000103: when another person took the machine over (D33).
+			// 000103: when another person took the machine over.
 			"handed_over_at",
 		})
 	})
@@ -859,7 +859,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"id", "user_id", "token_prefix", "token_hash", "expires_at", "last_used_at",
 			"revoked_at", "revocation_reason", "revoked_by_user_id", "rotated_from_session_id",
 			"client_metadata", "created_at", "updated_at", "rotation_id",
-			// 000098 (D31): a session is a person's or a daemon's.
+			// 000098: a session is a person's or a daemon's.
 			"client",
 		})
 	})
@@ -868,7 +868,7 @@ func TestMigrationUpAndCutoverDowngradeRefusal(t *testing.T) {
 			"id", "company_id", "actor_type", "actor_id", "action", "entity_type", "entity_id",
 			"agent_id", "task_id", "conversation_id", "details", "created_at",
 			"revision", "visibility", "visibility_user_id", "schema_version", "project_id",
-			// 000097 (D31): an Agent's row in a Run names the person it
+			// 000097: an Agent's row in a Run names the person it
 			// acted for and the Run.
 			"on_behalf_of_user_id", "run_id",
 		})
@@ -1049,7 +1049,7 @@ func TestOutputMigrationsUpgradeAndRollbackFromVersionEight(t *testing.T) {
 	if err := pool.QueryRow(ctx, `
 		WITH owner AS (
 			INSERT INTO users (email, display_name)
-			VALUES ('output-migration@boardly.test', 'Migration Owner') RETURNING id
+			VALUES ('output-migration@zenith-team.test', 'Migration Owner') RETURNING id
 		), company AS (
 			INSERT INTO companies (name, slug, task_prefix)
 			VALUES ('Existing Company', 'output-migration', 'OUT') RETURNING id
@@ -1110,7 +1110,7 @@ func seedPasswordResetRevokedSession(t *testing.T, ctx context.Context, pool *pg
 	const userID = "01990d25-3d7a-7000-8000-000000000001"
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO users (id, email, display_name)
-		VALUES ($1, 'migration-password-reset@boardly.test', 'Migration Password Reset')`, userID); err != nil {
+		VALUES ($1, 'migration-password-reset@zenith-team.test', 'Migration Password Reset')`, userID); err != nil {
 		t.Fatalf("insert migration password-reset User: %v", err)
 	}
 	if _, err := pool.Exec(ctx, `
@@ -2082,7 +2082,7 @@ func TestHuddleDefaultBudgetMigrationKeepsConfiguredBudgets(t *testing.T) {
 	}
 }
 
-// 000103 makes the person part of a runtime's identity (D33), so one machine
+// 000103 makes the person part of a runtime's identity, so one machine
 // can hold several people's rows. Rolling back must restore the old
 // (company, daemon, provider) key without deleting anyone's row, since a
 // delete would cascade into its Run history: the most recently seen row keeps
@@ -2698,7 +2698,12 @@ func TestCommerceRetirementPreservesHistoryAndStopsPendingWork(t *testing.T) {
 					CompanyID: f.CompanyA, ApprovalID: test.id,
 				})
 			if retired && !errors.Is(projectionErr, pgx.ErrNoRows) {
-				t.Errorf("%s / %s projection error = %v, want pgx.ErrNoRows", step.name, test.name, projectionErr)
+				t.Errorf(
+					"%s / %s projection error = %v, want pgx.ErrNoRows",
+					step.name,
+					test.name,
+					projectionErr,
+				)
 			} else if !retired && projectionErr != nil {
 				t.Errorf("%s / %s projection error = %v, want nil", step.name, test.name, projectionErr)
 			}

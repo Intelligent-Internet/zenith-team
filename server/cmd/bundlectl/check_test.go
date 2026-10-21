@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
-	"boardly.dev/boardly/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
 )
 
 // unpackPin returns the files and the lock of the pinned zenith-workflows

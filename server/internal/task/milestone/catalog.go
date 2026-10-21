@@ -53,7 +53,7 @@ const (
 // plan generation only — persisted Task dependencies remain execution
 // authority, and a founder attestation can satisfy either kind.
 //
-// Description carries the boundary against neighbouring milestones. With ten
+// Description carries the boundary against neighboring milestones. With ten
 // outcomes the overlaps are real, so each description states what the milestone
 // is *not*; without that the planner's choice of milestone_type is arbitrary.
 type Definition struct {

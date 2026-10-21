@@ -9,18 +9,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// RunScope is what a Run may read of its Company's Tasks (owner decision,
-// 2026-09-26): only its own, the Tasks its Agent does for the member the Run
-// works for. A Task runs only as its own Task Run, which its assignee starts
-// on their computer with the Agent the Task names (ADR 0014); an Agent that
-// could read a colleague's Task was one prompt away from acting it out on
-// the wrong computer while the Task itself never moved.
+// RunScope is what a Run may read of its Company's Tasks: only its own, the
+// Tasks its Agent does for the member the Run works for. A Task runs only as
+// its own Task Run, which its assignee starts on their computer with the
+// Agent the Task names (ADR 0014); an Agent that could read a colleague's
+// Task was one prompt away from acting it out on the wrong computer while the
+// Task itself never moved.
 //
 // The reads and creates a Run sends through its channel carry the Run's
 // proof, and the handler turns that proof into this scope. A member's own
@@ -30,7 +30,7 @@ import (
 // handler has checked is the Run's authorizer, so they already pass only
 // the Projects that member reads (ADR 0017). What a Run may do in a Project
 // is the delegate rule, which the database states once for every Run
-// (run_permission_held, D31, IA-FR10): its Authorizer holds the permission
+// (run_permission_held): its Authorizer holds the permission
 // and read there, never more, and a Task Run reads and files work only in
 // its Task chat's Project, because only that Project's readers read the
 // Task chat. A Run tagged in a channel or group DM uses its Authorizer's
@@ -38,8 +38,8 @@ import (
 // The rule reads all of that from the Run's own row, so the scope carries
 // only the Run.
 //
-// One Run reads more: the Planner (ADR 0014 rule 14's one exception,
-// IA-FR12). The root Agent plans the Company, so in its person's direct
+// One Run reads more: the Planner (ADR 0014 rule 14's one exception). The
+// root Agent plans the Company, so in its person's direct
 // chat, with its Company Plan tools on, it reads every Task its person
 // reads. Its answer reaches only that person, and the delegate rule still
 // applies.
@@ -49,7 +49,7 @@ type RunScope struct {
 	UserID uuid.UUID
 	// RunID is the Run whose proof made the request. The delegate rule reads
 	// this Run's row, so a scope without a real Run reads no Project. A Task
-	// it creates is recorded as the Agent's, for UserID, in this Run (D31).
+	// it creates is recorded as the Agent's, for UserID, in this Run.
 	RunID uuid.UUID
 	// TaskID is a Task Run's own Task, nil for any other Run. A human Task the
 	// Run's Agent assists is the Run's own only through it.
@@ -66,7 +66,7 @@ type RunScope struct {
 }
 
 // actor is who a write made under the scope is attributed to: the Run's
-// Agent acting for its authorizer in the Run (D31), or, with no scope, the
+// Agent acting for its authorizer in the Run, or, with no scope, the
 // member themself. The handler always names the Run; a scope built without
 // one still names the Agent and its person.
 func (scope *RunScope) actor(userID uuid.UUID) events.Actor {
@@ -82,7 +82,7 @@ func (scope *RunScope) actor(userID uuid.UUID) events.Actor {
 }
 
 // creatorAgentID is the Agent a Task created under the scope also names as
-// its creator, beside the member (IA-FR5); none without a scope.
+// its creator, beside the member; none without a scope.
 func (scope *RunScope) creatorAgentID() uuid.NullUUID {
 	if scope == nil {
 		return uuid.NullUUID{}
@@ -102,7 +102,7 @@ func (scope *RunScope) admits(value Response) bool {
 }
 
 // ReadableProjects reports which of projectIDs the Run may read: the
-// delegate rule asked for project.read (run_permission_held, D31). A Task
+// delegate rule asked for project.read (run_permission_held). A Task
 // Run reads only its own Task chat's Project, and every Run only what its
 // Authorizer reads. A nil scope is a member's own request and reads them
 // all: the read itself already checked their access.
@@ -281,8 +281,9 @@ func (scope *RunScope) admitRead(ctx context.Context, q *generated.Queries, valu
 // member's, or in a Project the Run may not read. An ordinary create names
 // the member it works for. A scheduled create may name another member, but
 // waits for that assignee's acceptance and executes only on their binding.
-// Both require the delegate rule to admit the Project (run_permission_held, D31): a Task Run only in its own Task's
-// Project, any other Run where its Authorizer may write. Either refusal is
+// Both require the delegate rule to admit the Project (run_permission_held):
+// a Task Run only in its own Task's Project, any other Run where its
+// Authorizer may write. Either refusal is
 // the plain ErrOutsideRunScope a read gets, asked before the Project is
 // locked or the member's own access to it is read, so a create in a Project
 // the Run may not read learns nothing of it, not even whether its member
@@ -304,7 +305,7 @@ func (scope *RunScope) admitCreate(
 }
 
 // admitCreateProject asks the delegate rule for project.tasks.write
-// (run_permission_held, D31) under the Project lock, after Create's own
+// (run_permission_held) under the Project lock, after Create's own
 // check of the member's project.tasks.write there, so a member without it
 // is told project_permission_required in a Project the Run may read. It is
 // the create's deciding check; admitCreate's read only refuses early. The

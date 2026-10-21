@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 func newConfigCmd() *cobra.Command {
@@ -32,9 +32,9 @@ func newConfigCmd() *cobra.Command {
 			"codex_semantic_inactivity_timeout, codex_handshake_timeout, log_level, " +
 			"disable_auto_reload.\n\n" +
 			"server_url and company_id are the CLI's own defaults. The daemon keys " +
-			"mirror their `daemon start` --flag / BOARDLY_* env counterparts and are " +
+			"mirror their `daemon start` --flag / ZENITH_TEAM_* env counterparts and are " +
 			"read by `daemon start` when neither the flag nor the env var is set. " +
-			"Precedence: --flag > BOARDLY_* env > config.json > built-in default. " +
+			"Precedence: --flag > ZENITH_TEAM_* env > config.json > built-in default. " +
 			"Duration keys take a positive Go duration (e.g. '10s', '1m30s'); " +
 			"agent_timeout also accepts '0s', which disables the wall-clock cap. " +
 			"log_level takes debug, info, warn or error and defaults to info. " +
@@ -47,7 +47,7 @@ func newConfigCmd() *cobra.Command {
 	}
 	path := &cobra.Command{
 		Use:   "path",
-		Short: "Print the state directory (BOARDLY_HOME) and the files zen keeps there",
+		Short: "Print the state directory (ZENITH_TEAM_HOME) and the files zen keeps there",
 		Args:  cobra.NoArgs,
 		RunE:  runConfigPath,
 	}
@@ -57,7 +57,7 @@ func newConfigCmd() *cobra.Command {
 }
 
 func runConfigPath(cmd *cobra.Command, _ []string) error {
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func runConfigShow(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}

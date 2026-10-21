@@ -2,10 +2,10 @@ import { getApiErrorMessage } from "@/lib/api-client";
 import { agentBindingService } from "@/shared/api/agent-binding.service";
 import { agentDirectoryService } from "@/shared/api/agent-directory.service";
 import {
-  boardlyApi,
-  executeBoardlyQuery,
-  type BoardlyApiError,
-} from "@/shared/api/boardly-api";
+  zenithTeamApi,
+  executeZenithTeamQuery,
+  type ZenithTeamApiError,
+} from "@/shared/api/zenith-team-api";
 import { runService } from "@/shared/api/run.service";
 import { runtimeService } from "@/shared/api/runtime.service";
 import type {
@@ -54,9 +54,9 @@ export type RuntimeModelCatalogArgs = RuntimeArgs &
     signInState: NonNullable<RuntimeDto["signIn"]>["state"];
   };
 
-export type CeoAgentApiError = BoardlyApiError;
+export type CeoAgentApiError = ZenithTeamApiError;
 
-export const agentRuntimeApi = boardlyApi.injectEndpoints({
+export const agentRuntimeApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listAgentRecentRuns: builder.infiniteQuery<
       RunPageDto,
@@ -71,7 +71,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Run" },
       ],
       queryFn: ({ queryArg, pageParam }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runService.listRuns(queryArg.companyId, {
               agentId: queryArg.agentId,
@@ -87,7 +87,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Runtime" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.listRuntimes(companyId),
           "Agent runtimes could not be loaded.",
         ),
@@ -100,7 +100,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Runtime" },
       ],
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.getRuntime(companyId, runtimeId),
           "The runtime could not be loaded.",
         ),
@@ -114,7 +114,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "AgentBinding" },
       ],
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentBindingService.listMyBindings(companyId, { runtimeId }),
           "The agents on this runtime could not be loaded.",
         ),
@@ -125,7 +125,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Run" },
       ],
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runService.listAllRuns(companyId, { active: true, runtimeId }),
           "The runs on this runtime could not be loaded.",
         ),
@@ -183,7 +183,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: ({ companyId, payload, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.renameRuntime(companyId, runtimeId, payload),
           "The machine could not be renamed.",
         ),
@@ -196,7 +196,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
     deleteRuntime: builder.mutation<void, RuntimeArgs>({
       invalidatesTags: runtimeRemovalTags,
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.deleteRuntime(companyId, runtimeId),
           "The runtime could not be removed.",
         ),
@@ -204,7 +204,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
     removeRuntime: builder.mutation<RuntimeRemovalResponse, RemoveRuntimeArgs>({
       invalidatesTags: runtimeRemovalTags,
       queryFn: ({ companyId, payload, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.removeRuntime(companyId, runtimeId, payload),
           "The runtime could not be removed.",
         ),
@@ -215,7 +215,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Agent" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentDirectoryService.listAgents(companyId, {
               includeArchived: true,
@@ -229,7 +229,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
           ? [{ id: companyId, type: "Agent" }]
           : [],
       queryFn: ({ companyId, payload }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentDirectoryService.createAgent(companyId, payload),
           "CEO Agent request failed.",
         ),
@@ -244,7 +244,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
             ]
           : [],
       queryFn: ({ companyId, payload, agentId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => agentDirectoryService.updateAgent(companyId, agentId, payload),
           "CEO Agent request failed.",
         ),
@@ -254,7 +254,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
     // machine was asked.
     refreshRuntime: builder.mutation<void, RuntimeArgs>({
       queryFn: ({ companyId, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runtimeService.refreshRuntime(companyId, runtimeId),
           "The computer could not be asked to refresh its setup.",
         ),
@@ -267,7 +267,7 @@ export const agentRuntimeApi = boardlyApi.injectEndpoints({
       RuntimeModelCatalogArgs
     >({
       async queryFn({ companyId, runtimeId }, { signal }) {
-        const response = await executeBoardlyQuery(
+        const response = await executeZenithTeamQuery(
           () =>
             runtimeService.discoverModelCatalog(companyId, runtimeId, signal),
           "Runtime models could not be discovered. Your saved model is unchanged.",
@@ -315,7 +315,7 @@ export const {
 
 function runtimeRemovalTags(
   _result: unknown,
-  error: BoardlyApiError | undefined,
+  error: ZenithTeamApiError | undefined,
   { companyId }: RuntimeArgs,
 ) {
   if (!error) {

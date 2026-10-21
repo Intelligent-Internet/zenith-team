@@ -213,14 +213,15 @@ func runRunGet(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	runID := ""
-	if len(args) == 1 {
+	var runID string
+	switch {
+	case len(args) == 1:
 		if runID, err = uuidArg("run id", args[0]); err != nil {
 			return err
 		}
-	} else if client.context.mode == modeAgent {
+	case client.context.mode == modeAgent:
 		runID = client.context.run.RunID
-	} else {
+	default:
 		return usagef("a run id is required")
 	}
 	ctx, cancel := apiContext()
@@ -276,7 +277,9 @@ func runRunCancel(cmd *cobra.Command, args []string) error {
 func runRunContext(cmd *cobra.Command, _ []string) error {
 	context := resolveCommandContext()
 	if context.mode != modeAgent {
-		return &modeError{msg: "not inside a Zenith Team Run: this is an operator shell (see `zen auth status`)"}
+		return &modeError{
+			msg: "not inside a Zenith Team Run: this is an operator shell (see `zen auth status`)",
+		}
 	}
 	if context.channelErr != nil {
 		return context.channelErr

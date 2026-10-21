@@ -22,13 +22,13 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/execution"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type daemonRegisterDBTX struct {
@@ -605,7 +605,7 @@ func decodeErrorBody(t *testing.T, response *httptest.ResponseRecorder) map[stri
 	return payload
 }
 
-// DR-FR34: the one gate every runtime-scoped daemon route shares proves the
+// The one gate every runtime-scoped daemon route shares proves the
 // runtime was registered by the calling daemon, before membership and with
 // no extra statement; a mismatch is the non-disclosing 404 the route would
 // answer for a runtime that does not exist. The rollout knob decides what a
@@ -648,7 +648,7 @@ func TestRequireDaemonRuntimeAccessFencesOnTheDaemonID(t *testing.T) {
 			owner:           registrant,
 			wantStatus:      http.StatusBadRequest,
 			wantCode:        "invalid_request",
-			wantDetail:      "X-Boardly-Daemon-ID header is required",
+			wantDetail:      "X-Zenith-Team-Daemon-ID header is required",
 			wantStatements:  0,
 		},
 		{
@@ -694,7 +694,7 @@ func TestRequireDaemonRuntimeAccessFencesOnTheDaemonID(t *testing.T) {
 				http.MethodPost, "/api/v1/daemon/runtimes/"+runtimeID.String()+"/recover-orphans", nil,
 			)
 			if test.header != "" {
-				c.Request.Header.Set("X-Boardly-Daemon-ID", test.header)
+				c.Request.Header.Set("X-Zenith-Team-Daemon-ID", test.header)
 			}
 			c.Request = c.Request.WithContext(
 				auth.WithUserPrincipal(c.Request.Context(), daemonTestPrincipal()),
@@ -841,7 +841,7 @@ func TestRequireDaemonRunAccessFencesOnTheRunsRuntime(t *testing.T) {
 				http.MethodGet, "/api/v1/daemon/runs/"+runID.String()+"/status", nil,
 			)
 			if test.header != "" {
-				c.Request.Header.Set("X-Boardly-Daemon-ID", test.header)
+				c.Request.Header.Set("X-Zenith-Team-Daemon-ID", test.header)
 			}
 			c.Request = c.Request.WithContext(
 				auth.WithUserPrincipal(c.Request.Context(), daemonTestPrincipal()),
@@ -922,7 +922,7 @@ func TestDaemonRunRoutesAnswerAnotherMembersRunAsMissing(t *testing.T) {
 		request := httptest.NewRequest(method, "/api/v1/daemon/runs/"+runID.String()+"/"+route, body)
 		request.Header.Set("Content-Type", "application/json")
 		request.Header.Set("Authorization", "Bearer access-token")
-		request.Header.Set("X-Boardly-Daemon-ID", "daemon-a")
+		request.Header.Set("X-Zenith-Team-Daemon-ID", "daemon-a")
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
 		return response, database
@@ -981,7 +981,7 @@ func newDaemonRouteHandler(stub runtimeServiceStub, requireDaemonID bool) *Handl
 	})
 }
 
-// DR-AC25 over HTTP: heartbeat and deregister carry X-Boardly-Daemon-ID
+// Over HTTP, heartbeat and deregister carry X-Zenith-Team-Daemon-ID
 // into the domain, a daemon-mismatch denial is the same 404 runtime_not_found
 // a non-member gets, and the deregister batch still answers its receipt. The
 // rollout stages: a missing header is forwarded as the unfenced empty id, or
@@ -1003,7 +1003,7 @@ func TestDaemonHeartbeatAndDeregisterRoutesCarryTheDaemonID(t *testing.T) {
 		request.Header.Set("Authorization", "Bearer access-token")
 		request.Header.Set("Content-Type", "application/json")
 		if daemonID != "" {
-			request.Header.Set("X-Boardly-Daemon-ID", daemonID)
+			request.Header.Set("X-Zenith-Team-Daemon-ID", daemonID)
 		}
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -1060,7 +1060,7 @@ func TestDaemonHeartbeatAndDeregisterRoutesCarryTheDaemonID(t *testing.T) {
 		}, true)
 		response := post(handler, "/api/v1/daemon/heartbeat", "", heartbeatBody)
 		assertErrorResponse(t, response, http.StatusBadRequest, "invalid_request")
-		if detail := decodeErrorBody(t, response)["detail"]; detail != "X-Boardly-Daemon-ID header is required" {
+		if detail := decodeErrorBody(t, response)["detail"]; detail != "X-Zenith-Team-Daemon-ID header is required" {
 			t.Fatalf("detail = %v", detail)
 		}
 	})
@@ -1137,9 +1137,9 @@ func TestDaemonWSHeartbeatUsesTheConnectionDaemonID(t *testing.T) {
 	}
 }
 
-// A runtime reports its credential isolation on every heartbeat (Access
-// TECH B3d). Both transports take only the two reports, or none from an
-// older daemon, and never store the value.
+// A runtime reports its credential isolation on every heartbeat. Both
+// transports take only the two reports, or none from an older daemon, and
+// never store the value.
 func TestDaemonHeartbeatTakesOnlyAKnownCredentialIsolationReport(t *testing.T) {
 	t.Parallel()
 
@@ -1179,7 +1179,7 @@ func TestDaemonHeartbeatTakesOnlyAKnownCredentialIsolationReport(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/api/v1/daemon/heartbeat", strings.NewReader(body))
 		request.Header.Set("Authorization", "Bearer access-token")
 		request.Header.Set("Content-Type", "application/json")
-		request.Header.Set("X-Boardly-Daemon-ID", "daemon-m")
+		request.Header.Set("X-Zenith-Team-Daemon-ID", "daemon-m")
 		response := httptest.NewRecorder()
 		routes.ServeHTTP(response, request)
 		if response.Code != want {
@@ -1406,7 +1406,7 @@ func TestDaemonWebSocketScopesOnlyTheCallersRuntimes(t *testing.T) {
 	}
 	conn, _, err := websocket.DefaultDialer.Dial(
 		"ws"+strings.TrimPrefix(server.URL, "http")+"/ws?runtime_ids="+strings.Join(requested, ","),
-		http.Header{"X-Boardly-Daemon-ID": {"daemon-b"}},
+		http.Header{"X-Zenith-Team-Daemon-ID": {"daemon-b"}},
 	)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
@@ -1546,7 +1546,7 @@ func TestDaemonRegisterRejectsMalformedSignInBeforeDatabaseAccess(t *testing.T) 
 	}
 }
 
-// A runtime's credential-isolation report (Access TECH B3d) is enforced or
+// A runtime's credential-isolation report is enforced or
 // not_enforced, refused otherwise before any database access.
 func TestDaemonRegisterRejectsAnUnknownCredentialIsolationReport(t *testing.T) {
 	t.Parallel()
@@ -1649,7 +1649,7 @@ func TestDaemonDownloadRunAttachmentUsesFrozenAuthorizer(t *testing.T) {
 					{Key: "attachmentId", Value: attachmentID.String()},
 				}
 				request := httptest.NewRequest(http.MethodGet, "/", nil)
-				request.Header.Set("X-Boardly-Daemon-ID", "test-daemon")
+				request.Header.Set("X-Zenith-Team-Daemon-ID", "test-daemon")
 				c.Request = request.WithContext(
 					auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),
 				)

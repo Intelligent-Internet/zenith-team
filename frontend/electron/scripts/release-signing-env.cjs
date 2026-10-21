@@ -7,16 +7,16 @@ function applyLocalMacSigningDefaults({
     return env;
   }
 
-  if (env.BOARDLY_DESKTOP_RELEASE_PACKAGE === "true") {
+  if (env.ZENITH_TEAM_DESKTOP_RELEASE_PACKAGE === "true") {
     return env;
   }
 
-  if (!shellEnvKeys.has("BOARDLY_DESKTOP_MAC_SIGN")) {
-    env.BOARDLY_DESKTOP_MAC_SIGN = "false";
+  if (!shellEnvKeys.has("ZENITH_TEAM_DESKTOP_MAC_SIGN")) {
+    env.ZENITH_TEAM_DESKTOP_MAC_SIGN = "false";
   }
 
-  if (!shellEnvKeys.has("BOARDLY_DESKTOP_MAC_NOTARIZE")) {
-    env.BOARDLY_DESKTOP_MAC_NOTARIZE = "false";
+  if (!shellEnvKeys.has("ZENITH_TEAM_DESKTOP_MAC_NOTARIZE")) {
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARIZE = "false";
   }
 
   return env;

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ChatModelSettings } from "@/features/chat-panel/components/chat-model-settings";
 import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { ChevronDown } from "@/shared/ui/icons";
 
 export function NewChatModelSettings({
@@ -76,7 +76,7 @@ export function NewChatModelSettings({
       </button>
       {mutation.isError && (
         <p className="chat-model-error" role="alert">
-          {getBoardlyQueryErrorMessage(
+          {getZenithTeamQueryErrorMessage(
             mutation.error,
             "Could not load model settings. Try again.",
           )}

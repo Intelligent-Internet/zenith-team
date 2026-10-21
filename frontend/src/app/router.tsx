@@ -51,6 +51,7 @@ import {
   readStorageItem,
   writeStorageItem,
 } from "@/shared/lib/browser-storage";
+import { deployment } from "@/shared/lib/deployment";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 
 const AuthenticatedAppShell = lazy(() =>
@@ -310,7 +311,7 @@ function getDevSessionOverride(search: string): SessionSnapshot | null {
   }
 
   const params = new URLSearchParams(search);
-  const sessionOverride = params.get("boardly_qa_session");
+  const sessionOverride = params.get("zenith_team_qa_session");
 
   if (sessionOverride === "guest") {
     return unauthenticatedSession;
@@ -320,7 +321,7 @@ function getDevSessionOverride(search: string): SessionSnapshot | null {
     return {
       status: "authenticated",
       provider: "password",
-      email: "qa-founder@boardly.local",
+      email: "qa-founder@zenith-team.local",
       displayName: "QA Founder",
       user: {
         displayName: "QA Founder",
@@ -338,7 +339,7 @@ function getDevSessionOverride(search: string): SessionSnapshot | null {
     return {
       status: "authenticated",
       provider: "password",
-      email: "qa-founder@boardly.local",
+      email: "qa-founder@zenith-team.local",
       displayName: "QA Founder",
       user: {
         displayName: "QA Founder",
@@ -481,7 +482,7 @@ function AppShellRoute({ session }: { session: SessionSnapshot }) {
   }, [nextRoute, pendingReturnPath, requestedPath]);
 
   if (
-    !window.boardlyDesktop &&
+    !window.zenithTeamDesktop &&
     artifactPath &&
     browserArtifactPath !== location.pathname &&
     location.state?.artifactInBrowser !== true &&
@@ -562,6 +563,11 @@ function RootRoute({
 
   if (desktopTarget) {
     return <Navigate to={desktopTarget} replace />;
+  }
+
+  // Without a public site the web root is the app itself.
+  if (!deployment.publicSiteOrigin) {
+    return <Navigate to={getNextRoute(session)} replace />;
   }
 
   return <PublicLandingPage />;
@@ -750,8 +756,12 @@ function AppRoutes() {
           path="/onboarding/*"
           element={<Navigate to="/onboarding" replace />}
         />
-        <Route path="/privacy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms" element={<TermsOfServicePage />} />
+        {deployment.publicSiteOrigin ? (
+          <>
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsOfServicePage />} />
+          </>
+        ) : null}
         <Route
           path="/"
           element={
@@ -929,7 +939,7 @@ const appRouter = createAppRouter(
           </Suspense>
         }
       />
-      {!window.boardlyDesktop ? (
+      {!window.zenithTeamDesktop ? (
         <Route path="/invite/:token" element={<InvitationDesktopBridge />} />
       ) : null}
       <Route path="*" element={<AppRoutes />} />

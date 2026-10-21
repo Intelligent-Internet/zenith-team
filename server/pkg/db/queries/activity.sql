@@ -2,8 +2,8 @@
 -- Visibility is retained with each row and precedes filtering and pagination.
 
 -- name: CreateActivity :one
--- An Agent's row in a Run also names the person it acted for and the Run
--- (D31); every other row stores NULL in both.
+-- An Agent's row in a Run also names the person it acted for and the Run;
+-- every other row stores NULL in both.
 INSERT INTO activity_events (
     company_id, actor_type, actor_id, action, entity_type, entity_id, revision,
     visibility, visibility_user_id, agent_id, task_id, conversation_id, schema_version, details,

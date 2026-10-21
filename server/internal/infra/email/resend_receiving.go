@@ -100,7 +100,7 @@ func (p *ResendProvider) getJSON(ctx context.Context, path string, destination a
 	}
 	request.Header.Set("Authorization", "Bearer "+p.apiKey)
 	request.Header.Set("Accept", "application/json")
-	request.Header.Set("User-Agent", "Boardly-Mailbox/1")
+	request.Header.Set("User-Agent", "Zenith-Team-Mailbox/1")
 
 	response, err := p.httpClient.Do(request)
 	if err != nil {

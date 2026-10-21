@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type localToolService struct {
@@ -310,6 +310,17 @@ func (s *localToolService) probeAuth(ctx context.Context, job toolJob, release t
 		return
 	}
 	key := job.account()
+	if release.Key == "zenith-studio" && s.apiOrigin(release) == "" {
+		// Studio is off: never sign in to or probe a Studio API.
+		if isToolLogin(job.Action) {
+			s.mu.Lock()
+			s.accounts[key] = "error"
+			s.checkedAt[key] = time.Now().UTC().Format(time.RFC3339Nano)
+			s.mu.Unlock()
+			s.notify()
+		}
+		return
+	}
 	s.mu.Lock()
 	if !isToolLogin(job.Action) && s.loginPending(job.scope(), job.Key) {
 		s.mu.Unlock()
@@ -474,8 +485,11 @@ func (s *localToolService) cancelLogin(scope toolAuthScope, toolKey string) {
 	s.mu.Unlock()
 }
 
+// apiOrigin is the API a tool talks to. Zenith Studio uses only the origin
+// the server configured: empty means Studio is off on this server, and
+// nothing may contact any Studio API, including the release's default one.
 func (s *localToolService) apiOrigin(release toolRelease) string {
-	if release.Key == "zenith-studio" && s.studioOrigin != "" {
+	if release.Key == "zenith-studio" {
 		return s.studioOrigin
 	}
 	return release.APIURL

@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 const maxPluginMutationBodyBytes = 1024
@@ -42,7 +42,7 @@ func (h *Handler) registerPluginRoutes(group *gin.RouterGroup) {
 	reads.GET("/:pluginId", h.getPlugin)
 	reads.POST("/refresh", h.refreshPlugins)
 	// Install and uninstall take plugins.manage, which every role holds:
-	// they reach only the caller's own computer (owner decision, 2026-09-29).
+	// they reach only the caller's own computer.
 	routes := group.Group(
 		"/companies/:companyId/plugins",
 		middleware.RequireUserAuth(h.AuthService),

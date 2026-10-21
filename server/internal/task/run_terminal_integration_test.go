@@ -11,10 +11,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestApplyRunTerminalInTxUpdatesOnlyTheOwningTaskGeneration(t *testing.T) {
@@ -138,7 +138,13 @@ func TestApplyRunTerminalInTxKeepsHumanInputWorkInProgress(t *testing.T) {
 			}
 			fixture := dbtest.SeedFixture(t, ctx, pool)
 			if test.humanWork {
-				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET executed_by_agent_id=NULL WHERE id=$1`, fixture.TaskA)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE tasks SET executed_by_agent_id=NULL WHERE id=$1`,
+					fixture.TaskA,
+				)
 			}
 			dbtest.MustExec(t, ctx, pool, `
 				UPDATE tasks SET status='in_progress', execution_generation=7

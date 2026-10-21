@@ -12,7 +12,7 @@ func TestRunWithDatabaseOwnsOneServerForTheWholeChildCommand(t *testing.T) {
 
 	var events []string
 	server := databaseServer{
-		url: "postgres://boardly:boardly@127.0.0.1:54321/boardly?sslmode=disable",
+		url: "postgres://zenith_team:zenith_team@127.0.0.1:54321/zenith_team?sslmode=disable",
 		close: func(context.Context) error {
 			events = append(events, "close")
 			return nil
@@ -95,13 +95,13 @@ func TestCommandEnvironmentReplacesSharedDatabaseURL(t *testing.T) {
 
 	base := []string{
 		"PATH=/usr/bin",
-		"BOARDLY_TEST_DATABASE_URL=postgres://stale",
+		"ZENITH_TEAM_TEST_DATABASE_URL=postgres://stale",
 		"CI=true",
 	}
 	got := commandEnvironment(base, "postgres://shared")
 	want := []string{
 		"PATH=/usr/bin",
-		"BOARDLY_TEST_DATABASE_URL=postgres://shared",
+		"ZENITH_TEAM_TEST_DATABASE_URL=postgres://shared",
 		"CI=true",
 	}
 	if !reflect.DeepEqual(got, want) {

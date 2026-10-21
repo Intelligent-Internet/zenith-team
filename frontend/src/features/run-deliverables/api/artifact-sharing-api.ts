@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 type Schema = components["schemas"];
 type Artifact = { companyId: string; artifactId: string };
@@ -8,7 +8,7 @@ const base = (companyId: string) =>
 const artifactPath = (a: Artifact) =>
   `${base(a.companyId)}/artifacts/${encodeURIComponent(a.artifactId)}`;
 const tags = [{ type: "Artifact" as const }, { type: "Deliverable" as const }];
-export const artifactSharingApi = boardlyApi.injectEndpoints({
+export const artifactSharingApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     setArtifactVisibility: builder.mutation<
       Schema["ArtifactAccess"],
@@ -16,7 +16,7 @@ export const artifactSharingApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: tags,
       queryFn: (a) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Schema["ArtifactAccess"]>(
               `${artifactPath(a)}/visibility`,
@@ -31,7 +31,7 @@ export const artifactSharingApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: tags,
       queryFn: (a) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<Schema["ArtifactAccess"]>(
               `${artifactPath(a)}/conversations/${encodeURIComponent(a.conversationId)}?expectedRevision=${a.expectedRevision}`,
@@ -44,7 +44,7 @@ export const artifactSharingApi = boardlyApi.injectEndpoints({
       string
     >({
       queryFn: (companyId) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const result: Schema["DiscussionSummary"][] = [];
           for (const path of ["channels", "human-conversations"]) {
             let cursor: string | undefined;
@@ -68,7 +68,7 @@ export const artifactSharingApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: tags,
       queryFn: (a) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["DiscussionReceipt"]>(
               `${base(a.companyId)}/conversations/${encodeURIComponent(a.conversationId)}/discussion-messages`,
@@ -83,7 +83,7 @@ export const artifactSharingApi = boardlyApi.injectEndpoints({
     }),
     getPublicArtifact: builder.query<Schema["PublicArtifact"], string>({
       queryFn: (token) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["PublicArtifact"]>(
               `/public/artifacts/${encodeURIComponent(token)}`,

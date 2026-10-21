@@ -19,10 +19,20 @@ func newVersionCmd() *cobra.Command {
 			}
 			if format == outputJSON {
 				return printJSON(cmd.OutOrStdout(), map[string]string{
-					"version": version, "go": runtime.Version(), "os": runtime.GOOS, "arch": runtime.GOARCH,
+					"version": version,
+					"go":      runtime.Version(),
+					"os":      runtime.GOOS,
+					"arch":    runtime.GOARCH,
 				})
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "zen %s (%s, %s/%s)\n", version, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+			fmt.Fprintf(
+				cmd.OutOrStdout(),
+				"zen %s (%s, %s/%s)\n",
+				version,
+				runtime.Version(),
+				runtime.GOOS,
+				runtime.GOARCH,
+			)
 			return nil
 		},
 	}

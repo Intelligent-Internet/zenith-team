@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // The goldens under testdata/run_turn are the specification of what the
@@ -46,9 +46,17 @@ func turnRun() Run {
 }
 
 var (
-	turnAlice = RunConversationAuthor{ID: "0197f5b0-4000-7000-8000-000000000031", Kind: protocol.ActorKindUser, Name: "Alice Nguyen"}
-	turnAda   = RunConversationAuthor{ID: turnAgentID, Kind: protocol.ActorKindAgent, Name: "Ada"}
-	turnBob   = RunConversationAuthor{ID: "0197f5b0-4000-7000-8000-000000000033", Kind: protocol.ActorKindUser, Name: "Bob Tran"}
+	turnAlice = RunConversationAuthor{
+		ID:   "0197f5b0-4000-7000-8000-000000000031",
+		Kind: protocol.ActorKindUser,
+		Name: "Alice Nguyen",
+	}
+	turnAda = RunConversationAuthor{ID: turnAgentID, Kind: protocol.ActorKindAgent, Name: "Ada"}
+	turnBob = RunConversationAuthor{
+		ID:   "0197f5b0-4000-7000-8000-000000000033",
+		Kind: protocol.ActorKindUser,
+		Name: "Bob Tran",
+	}
 )
 
 func turnAt(minute int) time.Time {
@@ -61,12 +69,30 @@ func turnSnapshot() *RunConversationSnapshot {
 	return &RunConversationSnapshot{
 		SchemaVersion: 1, Kind: "task", ConversationID: turnConversationID, ThroughSeq: 12,
 		Items: []RunConversationItem{
-			{ID: "0197f5b0-4000-7000-8000-000000000011", Seq: 10, RunID: "0197f5b0-4000-7000-8000-000000000021",
-				Author: turnAlice, CreatedAt: turnAt(10), Content: "Can we ship the customer import by Friday?"},
-			{ID: "0197f5b0-4000-7000-8000-000000000012", Seq: 11, RunID: "0197f5b0-4000-7000-8000-000000000021",
-				Author: turnAda, CreatedAt: turnAt(11), Content: "I can, if the file format is fixed.\nWhich fields are required?"},
-			{ID: "0197f5b0-4000-7000-8000-000000000013", Seq: 12, RunID: "0197f5b0-4000-7000-8000-000000000022",
-				Author: turnBob, CreatedAt: turnAt(12), Content: "Email and name. Phone is optional."},
+			{
+				ID:        "0197f5b0-4000-7000-8000-000000000011",
+				Seq:       10,
+				RunID:     "0197f5b0-4000-7000-8000-000000000021",
+				Author:    turnAlice,
+				CreatedAt: turnAt(10),
+				Content:   "Can we ship the customer import by Friday?",
+			},
+			{
+				ID:        "0197f5b0-4000-7000-8000-000000000012",
+				Seq:       11,
+				RunID:     "0197f5b0-4000-7000-8000-000000000021",
+				Author:    turnAda,
+				CreatedAt: turnAt(11),
+				Content:   "I can, if the file format is fixed.\nWhich fields are required?",
+			},
+			{
+				ID:        "0197f5b0-4000-7000-8000-000000000013",
+				Seq:       12,
+				RunID:     "0197f5b0-4000-7000-8000-000000000022",
+				Author:    turnBob,
+				CreatedAt: turnAt(12),
+				Content:   "Email and name. Phone is optional.",
+			},
 		},
 	}
 }
@@ -124,7 +150,10 @@ func TestRenderTurnInputResumeWithEmptyDeltaSendsOnlyTheNewMessage(t *testing.T)
 	}
 	if !strings.HasPrefix(turn.continuityNotice, conversationContinuityNotice+"\n\n") ||
 		!strings.HasSuffix(turn.continuityNotice, "\n\n") {
-		t.Fatalf("notice must start with the loss statement and end with a blank line:\n%q", turn.continuityNotice)
+		t.Fatalf(
+			"notice must start with the loss statement and end with a blank line:\n%q",
+			turn.continuityNotice,
+		)
 	}
 	for _, seq := range []string{"[seq 10]", "[seq 11]", "[seq 12]"} {
 		if !strings.Contains(turn.continuityNotice, seq) {
@@ -180,12 +209,19 @@ func TestRenderTurnInputContinuityLostEqualsNoticePlusResumedPrompt(t *testing.T
 				t.Fatalf("lost continuity still carries a notice to prepend: %q", lost.continuityNotice)
 			}
 			if lost.prompt != resumed.continuityNotice+resumed.prompt {
-				t.Fatalf("lost prompt is not notice + resumed prompt.\n--- lost ---\n%s\n--- notice+prompt ---\n%s",
-					lost.prompt, resumed.continuityNotice+resumed.prompt)
+				t.Fatalf(
+					"lost prompt is not notice + resumed prompt.\n--- lost ---\n%s\n--- notice+prompt ---\n%s",
+					lost.prompt,
+					resumed.continuityNotice+resumed.prompt,
+				)
 			}
 			for _, seq := range []string{"[seq 10]", "[seq 11]", "[seq 12]"} {
 				if strings.Count(lost.prompt, seq) != 1 {
-					t.Fatalf("%s appears %d times in the fallback prompt, want once", seq, strings.Count(lost.prompt, seq))
+					t.Fatalf(
+						"%s appears %d times in the fallback prompt, want once",
+						seq,
+						strings.Count(lost.prompt, seq),
+					)
 				}
 			}
 		})
@@ -194,7 +230,13 @@ func TestRenderTurnInputContinuityLostEqualsNoticePlusResumedPrompt(t *testing.T
 		continuityLost: true, priorSessionThroughSeq: 11,
 	})
 	assertTurnGolden(t, "fallback", lost.prompt)
-	unknown := renderTurnInput(turnPrompt, turnRun(), turnDoc(), turnSnapshot(), turnContinuity{continuityLost: true})
+	unknown := renderTurnInput(
+		turnPrompt,
+		turnRun(),
+		turnDoc(),
+		turnSnapshot(),
+		turnContinuity{continuityLost: true},
+	)
 	assertTurnGolden(t, "fallback_unknown_watermark", unknown.prompt)
 	fresh := turnContinuity{resumeExpected: true, priorSessionThroughSeq: 11}.afterRefusedResume()
 	if fresh.resumeExpected || !fresh.continuityLost || fresh.priorSessionThroughSeq != 11 {
@@ -225,7 +267,11 @@ func TestRenderTurnInputLabelsAuthorsByKindAndSelf(t *testing.T) {
 	t.Parallel()
 
 	snapshot := turnSnapshot()
-	other := RunConversationAuthor{ID: "0197f5b0-4000-7000-8000-000000000099", Kind: protocol.ActorKindAgent, Name: "Eli"}
+	other := RunConversationAuthor{
+		ID:   "0197f5b0-4000-7000-8000-000000000099",
+		Kind: protocol.ActorKindAgent,
+		Name: "Eli",
+	}
 	snapshot.Items = append(snapshot.Items,
 		RunConversationItem{ID: "x1", Seq: 13, Author: other, Content: "  \n"},
 		RunConversationItem{ID: "x2", Seq: 14, Author: turnAlice, Content: "line one\r\nline two\n"},
@@ -251,7 +297,9 @@ func TestRenderTurnInputLeavesNonChatTriggersUnchanged(t *testing.T) {
 	agentTrigger.Trigger = &RunTriggerContext{Author: turnAda}
 	noTrigger := turnDoc()
 	noTrigger.Trigger = nil
-	assignment := RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{Title: "Customer import"}}}
+	assignment := RunContext{
+		ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{Title: "Customer import"}},
+	}
 	for _, tc := range []struct {
 		name     string
 		doc      RunContext
@@ -268,12 +316,26 @@ func TestRenderTurnInputLeavesNonChatTriggersUnchanged(t *testing.T) {
 			if plain.prompt != "the prompt" || plain.continuityNotice != "" {
 				t.Fatalf("fresh = %+v, want the prompt untouched", plain)
 			}
-			resumed := renderTurnInput("the prompt", turnRun(), tc.doc, tc.snapshot, turnContinuity{resumeExpected: true, priorSessionThroughSeq: 11})
-			if resumed.prompt != "the prompt" || resumed.continuityNotice != conversationContinuityNotice+"\n\n" {
+			resumed := renderTurnInput(
+				"the prompt",
+				turnRun(),
+				tc.doc,
+				tc.snapshot,
+				turnContinuity{resumeExpected: true, priorSessionThroughSeq: 11},
+			)
+			if resumed.prompt != "the prompt" ||
+				resumed.continuityNotice != conversationContinuityNotice+"\n\n" {
 				t.Fatalf("resumed = %+v, want the prompt untouched and the bare notice", resumed)
 			}
-			lost := renderTurnInput("the prompt", turnRun(), tc.doc, tc.snapshot, turnContinuity{continuityLost: true, priorSessionThroughSeq: 11})
-			if lost.prompt != conversationContinuityNotice+"\n\n"+"the prompt" || lost.continuityNotice != "" {
+			lost := renderTurnInput(
+				"the prompt",
+				turnRun(),
+				tc.doc,
+				tc.snapshot,
+				turnContinuity{continuityLost: true, priorSessionThroughSeq: 11},
+			)
+			if lost.prompt != conversationContinuityNotice+"\n\n"+"the prompt" ||
+				lost.continuityNotice != "" {
 				t.Fatalf("lost = %+v, want the notice before the prompt", lost)
 			}
 		})
@@ -324,7 +386,13 @@ func TestDecodeConversationSnapshotRejectsSchemaIdentityAndLimits(t *testing.T) 
 
 	oversizeItems := make([]map[string]any, 65)
 	for i := range oversizeItems {
-		oversizeItems[i] = map[string]any{"id": fmt.Sprint(i), "seq": i + 1, "runId": "r", "author": map[string]any{"id": "a", "kind": "user", "name": "A"}, "content": "x"}
+		oversizeItems[i] = map[string]any{
+			"id":      fmt.Sprint(i),
+			"seq":     i + 1,
+			"runId":   "r",
+			"author":  map[string]any{"id": "a", "kind": "user", "name": "A"},
+			"content": "x",
+		}
 	}
 	for _, tc := range []struct {
 		name   string
@@ -362,8 +430,16 @@ func TestDecodeConversationSnapshotRejectsSchemaIdentityAndLimits(t *testing.T) 
 	t.Run("over the byte budget", func(t *testing.T) {
 		t.Parallel()
 		doc := turnDoc()
-		doc.ConversationSnapshot = json.RawMessage(`{"schemaVersion":1,"pad":"` + strings.Repeat("p", 64<<10) + `"}`)
-		if _, err := decodeConversationSnapshot(turnRun(), doc); !errors.Is(err, errConversationSnapshotInvalid) {
+		doc.ConversationSnapshot = json.RawMessage(
+			`{"schemaVersion":1,"pad":"` + strings.Repeat("p", 64<<10) + `"}`,
+		)
+		if _, err := decodeConversationSnapshot(
+			turnRun(),
+			doc,
+		); !errors.Is(
+			err,
+			errConversationSnapshotInvalid,
+		) {
 			t.Fatalf("error = %v, want errConversationSnapshotInvalid", err)
 		}
 	})
@@ -439,7 +515,10 @@ func TestWriteRunConversationSnapshotIsAtomicAndPrivate(t *testing.T) {
 func TestRunFailureReasonNamesAnInvalidRunContext(t *testing.T) {
 	t.Parallel()
 
-	err := wrapRunPreparationError(runPreparationPhasePrepare, fmt.Errorf("decode: %w", errConversationSnapshotInvalid))
+	err := wrapRunPreparationError(
+		runPreparationPhasePrepare,
+		fmt.Errorf("decode: %w", errConversationSnapshotInvalid),
+	)
 	if got := runFailureReason(err); got != string(runfailure.ReasonRunContextInvalid) {
 		t.Fatalf("runFailureReason() = %q, want %q", got, runfailure.ReasonRunContextInvalid)
 	}

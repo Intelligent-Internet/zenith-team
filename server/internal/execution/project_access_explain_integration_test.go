@@ -18,10 +18,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // explainRecorder runs every statement against the pool and keeps the last
@@ -112,8 +112,14 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 	memberID := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, 'explain@example.com', 'Explain')`, memberID)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, memberID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		memberID,
+	)
 	var readable uuid.UUID
 	if err := pool.QueryRow(ctx, `SELECT id FROM projects WHERE company_id = $1 AND key = 'bulk_7'`,
 		fixture.CompanyA).Scan(&readable); err != nil {
@@ -217,19 +223,30 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 	// the per-row reader probe: no scan of every chat or every grant.
 	sets := auth.ProjectPermissionHeldSets()
 	if _, err := queries.ListApprovalProjections(ctx, db.ListApprovalProjectionsParams{
-		CompanyID: fixture.CompanyA, ActorUserID: memberID, Statuses: []string{}, PageSize: 50,
-		DecideView: true, DecidePermission: string(auth.ProjectPermissionApprovalsResolve),
-		CompanyDefaultPermissions: sets.CompanyDefaultPermissions, ManagementPermissions: sets.ManagementPermissions,
-		ManagementRoles: sets.ManagementRoles, ActorRoles: auth.RolesWith(auth.PermissionApprovalsResolve),
+		CompanyID:                 fixture.CompanyA,
+		ActorUserID:               memberID,
+		Statuses:                  []string{},
+		PageSize:                  50,
+		DecideView:                true,
+		DecidePermission:          string(auth.ProjectPermissionApprovalsResolve),
+		CompanyDefaultPermissions: sets.CompanyDefaultPermissions,
+		ManagementPermissions:     sets.ManagementPermissions,
+		ManagementRoles:           sets.ManagementRoles,
+		ActorRoles:                auth.RolesWith(auth.PermissionApprovalsResolve),
 	}); err != nil {
 		t.Fatalf("Approval decide view: %v", err)
 	}
 	assertGrantsByIndex("the Approval decide view", true, "readable")
 	if _, err := queries.ListQuestionProjections(ctx, db.ListQuestionProjectionsParams{
-		CompanyID: fixture.CompanyA, ActorUserID: memberID, Statuses: []string{}, PageSize: 50,
-		DecideView: true, DecidePermission: string(auth.ProjectPermissionApprovalsResolve),
-		CompanyDefaultPermissions: sets.CompanyDefaultPermissions, ManagementPermissions: sets.ManagementPermissions,
-		ManagementRoles: sets.ManagementRoles,
+		CompanyID:                 fixture.CompanyA,
+		ActorUserID:               memberID,
+		Statuses:                  []string{},
+		PageSize:                  50,
+		DecideView:                true,
+		DecidePermission:          string(auth.ProjectPermissionApprovalsResolve),
+		CompanyDefaultPermissions: sets.CompanyDefaultPermissions,
+		ManagementPermissions:     sets.ManagementPermissions,
+		ManagementRoles:           sets.ManagementRoles,
 	}); err != nil {
 		t.Fatalf("Question decide view: %v", err)
 	}
@@ -239,11 +256,14 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 	// every row since a time, so joining each row's origin chat may scan the
 	// Company's chats; that is a join, not a readable set.
 	if _, err := queries.ApprovalStatsByRule(ctx, db.ApprovalStatsByRuleParams{
-		CompanyID: fixture.CompanyA, ActorUserID: memberID,
+		CompanyID:                 fixture.CompanyA,
+		ActorUserID:               memberID,
 		Since:                     pgtype.Timestamptz{Time: time.Now().Add(-time.Hour), Valid: true},
 		DecidePermission:          string(auth.ProjectPermissionApprovalsResolve),
-		CompanyDefaultPermissions: sets.CompanyDefaultPermissions, ManagementPermissions: sets.ManagementPermissions,
-		ManagementRoles: sets.ManagementRoles, ActorRoles: auth.RolesWith(auth.PermissionApprovalsResolve),
+		CompanyDefaultPermissions: sets.CompanyDefaultPermissions,
+		ManagementPermissions:     sets.ManagementPermissions,
+		ManagementRoles:           sets.ManagementRoles,
+		ActorRoles:                auth.RolesWith(auth.PermissionApprovalsResolve),
 	}); err != nil {
 		t.Fatalf("Approval stats: %v", err)
 	}
@@ -259,14 +279,18 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 		CompanyID: fixture.CompanyA, ActorUserID: memberID, PageID: wikiPage, ResultLimit: 50,
 	})
 	if err != nil || len(reads) != 50 || reads[0].Total != 100 || !reads[0].TaskReadable {
-		t.Fatalf("Wiki page Agent reads = %d rows, %v; want a full page of the readable Project's 100 Runs", len(reads), err)
+		t.Fatalf(
+			"Wiki page Agent reads = %d rows, %v; want a full page of the readable Project's 100 Runs",
+			len(reads),
+			err,
+		)
 	}
 	if text := assertGrantsByIndex("the Wiki page's Agent reads", false); hashedSubplanOutside(text, nil) {
 		t.Errorf("the Wiki page's Agent reads build a readable set instead of probing per row:\n%s", text)
 	}
 }
 
-// The claim asks the delegate rule (run_permission_held, B4) once for each
+// The claim asks the delegate rule (run_permission_held) once for each
 // queued candidate in a Task chat. Neither delegate function is inlined, so
 // the claim's plan names run_permission_held once and reads no grant itself:
 // it never builds anyone's readable set from project_grants or the chats. The

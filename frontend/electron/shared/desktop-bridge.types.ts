@@ -727,7 +727,7 @@ export type DesktopArtifactFileReference = {
   runId?: string;
 };
 
-export type BoardlyDesktopBridge = {
+export type ZenithTeamDesktopBridge = {
   readArtifactFile?: (
     request: DesktopArtifactFileReference & { requestId: string },
   ) => Promise<
@@ -1017,7 +1017,7 @@ export type BoardlyDesktopBridge = {
 };
 
 type BrowserWindowLike = {
-  boardlyDesktop?: BoardlyDesktopBridge;
+  zenithTeamDesktop?: ZenithTeamDesktopBridge;
   open?: (
     url?: string | URL,
     target?: string,
@@ -1026,6 +1026,6 @@ type BrowserWindowLike = {
 };
 
 export type DesktopGlobalLike = {
-  boardlyDesktop?: BoardlyDesktopBridge;
+  zenithTeamDesktop?: ZenithTeamDesktopBridge;
   window?: BrowserWindowLike;
 };

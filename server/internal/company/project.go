@@ -13,15 +13,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var (
@@ -106,7 +106,7 @@ type ProjectService interface {
 	ListForManageView(context.Context, auth.UserPrincipal, bool) ([]ProjectResponse, error)
 	Get(context.Context, auth.UserPrincipal, uuid.UUID) (ProjectResponse, error)
 	// ListForRun and GetForRun serve a request that carries a Run's proof
-	// (ADR 0017): readers only, bounded by the delegate rule (D31).
+	// (ADR 0017): readers only, bounded by the delegate rule.
 	ListForRun(context.Context, auth.UserPrincipal, bool, *task.RunScope) ([]ProjectResponse, error)
 	GetForRun(context.Context, auth.UserPrincipal, uuid.UUID, *task.RunScope) (ProjectResponse, error)
 	Create(context.Context, auth.UserPrincipal, ProjectCreateInput) (ProjectResponse, error)
@@ -120,7 +120,7 @@ type ProjectService interface {
 	// the Runs it stops and whether the person loses the Project.
 	PreviewGrant(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, []string) (ProjectGrantPreview, error)
 	// SetGroupGrant, RemoveGroupGrant and PreviewGroupGrant change, remove
-	// and preview one Group's grant on a Project (Access TECH D4).
+	// and preview one Group's grant on a Project.
 	SetGroupGrant(
 		context.Context, auth.UserPrincipal, uuid.UUID, ProjectGroupGrantInput,
 	) (ProjectGroupGrantResult, error)
@@ -146,7 +146,11 @@ type DefaultProjectService struct {
 // Inbox items an access change writes still reach their readers through
 // their inbox.created frames, and only the after-commit presentation is
 // skipped.
-func NewProjectService(store *db.Store, bus *events.Bus, inboxPresenter inbox.Presenter) (*DefaultProjectService, error) {
+func NewProjectService(
+	store *db.Store,
+	bus *events.Bus,
+	inboxPresenter inbox.Presenter,
+) (*DefaultProjectService, error) {
 	if store == nil || bus == nil {
 		return nil, errors.New("Project store and event bus are required")
 	}
@@ -161,10 +165,20 @@ func projectResponse(row generated.Project, access auth.ProjectAccess) ProjectRe
 		permissions = []auth.ProjectPermission{}
 	}
 	value := ProjectResponse{
-		ID: row.ID, CompanyID: row.CompanyID, Key: row.Key, Title: row.Title, Description: row.Description,
-		Visibility: auth.ProjectVisibility(row.Visibility),
-		Access:     ProjectAccessView{Permissions: permissions, Management: access.Management, Revision: row.AccessVersion},
-		Revision:   row.Version, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
+		ID:          row.ID,
+		CompanyID:   row.CompanyID,
+		Key:         row.Key,
+		Title:       row.Title,
+		Description: row.Description,
+		Visibility:  auth.ProjectVisibility(row.Visibility),
+		Access: ProjectAccessView{
+			Permissions: permissions,
+			Management:  access.Management,
+			Revision:    row.AccessVersion,
+		},
+		Revision:  row.Version,
+		CreatedAt: row.CreatedAt.Time,
+		UpdatedAt: row.UpdatedAt.Time,
 	}
 	if row.ArchivedAt.Valid {
 		v := row.ArchivedAt.Time
@@ -192,12 +206,20 @@ func readableProjectResponse(
 	return result[0], nil
 }
 
-func (s *DefaultProjectService) Authorize(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID) (auth.ProjectAccess, error) {
+func (s *DefaultProjectService) Authorize(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+) (auth.ProjectAccess, error) {
 	return auth.RequireProjectVisible(ctx, s.store.Queries(), principal, id)
 }
 
 // List returns the Projects the caller reads, each with the caller's access.
-func (s *DefaultProjectService) List(ctx context.Context, principal auth.UserPrincipal, includeArchived bool) ([]ProjectResponse, error) {
+func (s *DefaultProjectService) List(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	includeArchived bool,
+) ([]ProjectResponse, error) {
 	rows, err := s.store.Queries().ListProjectsForActiveMember(ctx, generated.ListProjectsForActiveMemberParams{
 		CompanyID: principal.CompanyID, ActorUserID: principal.UserID, IncludeArchived: includeArchived,
 		ManagementRoles: auth.RolesWith(auth.PermissionProjectsManage),
@@ -250,7 +272,11 @@ func (s *DefaultProjectService) ListForManageView(
 
 // Get reads one Project the caller can see. A reader gets the whole
 // projection; a projects.manage holder who cannot read gets metadata only.
-func (s *DefaultProjectService) Get(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID) (ProjectResponse, error) {
+func (s *DefaultProjectService) Get(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+) (ProjectResponse, error) {
 	q := s.store.Queries()
 	row, err := q.GetProjectForActiveMember(ctx, generated.GetProjectForActiveMemberParams{
 		CompanyID: principal.CompanyID, ActorUserID: principal.UserID, ProjectID: id,
@@ -274,7 +300,7 @@ func (s *DefaultProjectService) Get(ctx context.Context, principal auth.UserPrin
 // The handler has checked that the session is the Run's authorizer, so the
 // list is already the Projects that member reads. It lists only the
 // Projects the delegate rule lets the Run read
-// (task.RunScope.ReadableProjects, D31): a Task Run its own Project, and any
+// (task.RunScope.ReadableProjects): a Task Run its own Project, and any
 // other Run, in a direct chat or tagged in a channel or group DM, those its
 // Authorizer reads.
 func (s *DefaultProjectService) ListForRun(
@@ -307,7 +333,7 @@ func (s *DefaultProjectService) ListForRun(
 // GetForRun is Get for a request that carries a Run's proof (ADR 0017). A
 // Run reads a Project only as a reader (runReadsProject), so a Project the
 // member only manages answers like a missing one. A Project the delegate
-// rule keeps the Run out of (D31) is refused with the Run-scope sentence
+// rule keeps the Run out of is refused with the Run-scope sentence
 // that names nothing.
 func (s *DefaultProjectService) GetForRun(
 	ctx context.Context,
@@ -339,7 +365,9 @@ func runReadsProject(value ProjectResponse) bool {
 func normalizeProjectText(title, description string) (string, string, error) {
 	title = protocol.TrimContractWhitespace(title)
 	description = protocol.TrimContractWhitespace(description)
-	if title == "" || !utf8.ValidString(title) || utf8.RuneCountInString(title) > 240 || !utf8.ValidString(description) || len(description) > 64*1024 {
+	if title == "" || !utf8.ValidString(title) || utf8.RuneCountInString(title) > 240 ||
+		!utf8.ValidString(description) ||
+		len(description) > 64*1024 {
 		return "", "", ErrProjectInvalidInput
 	}
 	return title, description, nil
@@ -349,7 +377,12 @@ func normalizeProjectText(title, description string) (string, string, error) {
 // and rechecks the Company permission beside it; an empty permission admits
 // any active member. Lock order: company -> member -> project ->
 // conversation -> run.
-func lockProjectMutation(ctx context.Context, q *generated.Queries, principal auth.UserPrincipal, required auth.Permission) error {
+func lockProjectMutation(
+	ctx context.Context,
+	q *generated.Queries,
+	principal auth.UserPrincipal,
+	required auth.Permission,
+) error {
 	if _, err := q.LockCompanyForMembershipMutation(ctx, principal.CompanyID); errors.Is(err, pgx.ErrNoRows) {
 		return ErrProjectNotFound
 	} else if err != nil {
@@ -375,7 +408,10 @@ func lockProjectForChange(
 	principal auth.UserPrincipal,
 	id uuid.UUID,
 ) (generated.Project, auth.ProjectAccess, error) {
-	row, err := q.GetProjectForUpdate(ctx, generated.GetProjectForUpdateParams{CompanyID: principal.CompanyID, ProjectID: id})
+	row, err := q.GetProjectForUpdate(
+		ctx,
+		generated.GetProjectForUpdateParams{CompanyID: principal.CompanyID, ProjectID: id},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return generated.Project{}, auth.ProjectAccess{}, auth.ErrProjectNotVisible
 	}
@@ -417,7 +453,11 @@ func mapProjectError(err error) error {
 
 // Create writes a restricted Project whose creator holds every Project
 // permission (ADR 0017), recorded as the creator's own grant.
-func (s *DefaultProjectService) Create(ctx context.Context, principal auth.UserPrincipal, input ProjectCreateInput) (ProjectResponse, error) {
+func (s *DefaultProjectService) Create(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	input ProjectCreateInput,
+) (ProjectResponse, error) {
 	if !projectKeyPattern.MatchString(input.Key) {
 		return ProjectResponse{}, ErrProjectInvalidInput
 	}
@@ -432,11 +472,26 @@ func (s *DefaultProjectService) Create(ctx context.Context, principal auth.UserP
 		if err := lockProjectMutation(ctx, q, principal, auth.PermissionProjectsManage); err != nil {
 			return err
 		}
-		row, err := q.CreateProject(ctx, generated.CreateProjectParams{CompanyID: principal.CompanyID, Key: input.Key, Title: title, Description: description})
+		row, err := q.CreateProject(
+			ctx,
+			generated.CreateProjectParams{
+				CompanyID:   principal.CompanyID,
+				Key:         input.Key,
+				Title:       title,
+				Description: description,
+			},
+		)
 		if err != nil {
 			return mapProjectError(err)
 		}
-		if err := grantProjectCreatorInTx(ctx, q, &pending, principal, events.UserActor(principal.UserID.String()), row); err != nil {
+		if err := grantProjectCreatorInTx(
+			ctx,
+			q,
+			&pending,
+			principal,
+			events.UserActor(principal.UserID.String()),
+			row,
+		); err != nil {
 			return err
 		}
 		if err := canvas.EnsureOverviewInTx(ctx, q, principal, row); err != nil {
@@ -466,7 +521,12 @@ func (s *DefaultProjectService) Create(ctx context.Context, principal auth.UserP
 // visibility (project.visibility.update) in one PATCH. Both are checked
 // before the revision, so a caller without the permission learns nothing
 // about the Project's state.
-func (s *DefaultProjectService) Update(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID, input ProjectUpdateInput) (ProjectResponse, error) {
+func (s *DefaultProjectService) Update(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+	input ProjectUpdateInput,
+) (ProjectResponse, error) {
 	if input.Title == nil && input.Description == nil && input.Visibility == nil {
 		return ProjectResponse{}, ErrProjectInvalidInput
 	}
@@ -523,12 +583,29 @@ func (s *DefaultProjectService) Update(ctx context.Context, principal auth.UserP
 		if err != nil {
 			return err
 		}
-		row, err := q.UpdateProject(ctx, generated.UpdateProjectParams{CompanyID: principal.CompanyID, ID: id, Title: title, Description: description, ExpectedRevision: input.ExpectedRevision})
+		row, err := q.UpdateProject(
+			ctx,
+			generated.UpdateProjectParams{
+				CompanyID:        principal.CompanyID,
+				ID:               id,
+				Title:            title,
+				Description:      description,
+				ExpectedRevision: input.ExpectedRevision,
+			},
+		)
 		if err != nil {
 			return mapProjectError(err)
 		}
 		if input.Visibility != nil && *input.Visibility != auth.ProjectVisibility(current.Visibility) {
-			if row, err = setProjectVisibilityInTx(ctx, q, &pending, &notices, principal, row, *input.Visibility); err != nil {
+			if row, err = setProjectVisibilityInTx(
+				ctx,
+				q,
+				&pending,
+				&notices,
+				principal,
+				row,
+				*input.Visibility,
+			); err != nil {
 				return err
 			}
 		}
@@ -540,7 +617,15 @@ func (s *DefaultProjectService) Update(ctx context.Context, principal auth.UserP
 		if err != nil {
 			return err
 		}
-		return stageProjectEventInTx(ctx, q, &pending, principal, EventProjectUpdated, value, projectChangedFields(current, row))
+		return stageProjectEventInTx(
+			ctx,
+			q,
+			&pending,
+			principal,
+			EventProjectUpdated,
+			value,
+			projectChangedFields(current, row),
+		)
 	})
 	if err != nil {
 		return ProjectResponse{}, fmt.Errorf("update Project: %w", err)
@@ -552,7 +637,12 @@ func (s *DefaultProjectService) Update(ctx context.Context, principal auth.UserP
 
 // Archive needs project.archive, which projects.manage holders hold through
 // the management bridge.
-func (s *DefaultProjectService) Archive(ctx context.Context, principal auth.UserPrincipal, id uuid.UUID, revision int64) (ProjectResponse, error) {
+func (s *DefaultProjectService) Archive(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	id uuid.UUID,
+	revision int64,
+) (ProjectResponse, error) {
 	if id == uuid.Nil || revision < 1 {
 		return ProjectResponse{}, ErrProjectInvalidInput
 	}
@@ -576,14 +666,24 @@ func (s *DefaultProjectService) Archive(ctx context.Context, principal auth.User
 		if current.ArchivedAt.Valid {
 			return ErrProjectArchived
 		}
-		open, err := q.ProjectHasOpenTasks(ctx, generated.ProjectHasOpenTasksParams{CompanyID: principal.CompanyID, ProjectID: id})
+		open, err := q.ProjectHasOpenTasks(
+			ctx,
+			generated.ProjectHasOpenTasksParams{CompanyID: principal.CompanyID, ProjectID: id},
+		)
 		if err != nil {
 			return err
 		}
 		if open {
 			return ErrProjectOpenTasks
 		}
-		row, err := q.ArchiveProject(ctx, generated.ArchiveProjectParams{CompanyID: principal.CompanyID, ID: id, ExpectedRevision: revision})
+		row, err := q.ArchiveProject(
+			ctx,
+			generated.ArchiveProjectParams{
+				CompanyID:        principal.CompanyID,
+				ID:               id,
+				ExpectedRevision: revision,
+			},
+		)
 		if err != nil {
 			return mapProjectError(err)
 		}
@@ -647,7 +747,7 @@ func stageProjectEventInTx(
 
 // stageProjectEventAsInTx is stageProjectEventInTx for a change the actor
 // names in full: a Run applying its Company Plan names its Agent, the
-// person it acts for and the Run (D31).
+// person it acts for and the Run.
 func stageProjectEventAsInTx(
 	ctx context.Context,
 	q *generated.Queries,

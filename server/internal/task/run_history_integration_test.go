@@ -11,15 +11,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestTaskHistoryKeepsBusinessChangesAndRollsBackFailedTerminalCapture(t *testing.T) {
@@ -159,10 +159,12 @@ func TestTaskHistoryKeepsBusinessChangesAndRollsBackFailedTerminalCapture(t *tes
 	}
 	proof := execution.TerminalTranscriptProof{ThroughSeq: receipt.ThroughSeq, FinalItemKey: receipt.ItemKey}
 	// Fail the final Task capture after Run, Conversation and merge writes have staged.
-	dbtest.MustExec(t,
+	dbtest.MustExec(
+		t,
 		ctx,
 		pool,
-		`ALTER TABLE activity_events ADD CONSTRAINT reject_terminal_task_history CHECK (entity_type<>'task' OR revision<>3)`)
+		`ALTER TABLE activity_events ADD CONSTRAINT reject_terminal_task_history CHECK (entity_type<>'task' OR revision<>3)`,
+	)
 	announcedBefore := len(announcements)
 	var conversationRevision int64
 	if err := pool.QueryRow(ctx,
@@ -176,11 +178,13 @@ func TestTaskHistoryKeepsBusinessChangesAndRollsBackFailedTerminalCapture(t *tes
 	var runStatus, taskStatus string
 	var taskRevision, afterConversationRevision int64
 	var mergeJobs int
-	if err := pool.QueryRow(ctx,
+	if err := pool.QueryRow(
+		ctx,
 		`SELECT (SELECT status FROM runs WHERE id=$1),(SELECT status FROM tasks WHERE id=$2),(SELECT version FROM tasks WHERE id=$2),(SELECT version FROM conversations WHERE id=$3),(SELECT count(*) FROM task_merge_jobs WHERE run_id=$1)`,
 		run.ID,
 		fixture.TaskA,
-		fixture.ConversationA).Scan(&runStatus,
+		fixture.ConversationA,
+	).Scan(&runStatus,
 		&taskStatus,
 		&taskRevision,
 		&afterConversationRevision,

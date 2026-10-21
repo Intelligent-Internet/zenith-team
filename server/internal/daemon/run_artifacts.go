@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 type runArtifactAPI interface {
@@ -29,7 +29,7 @@ type runArtifactAPI interface {
 // Artifact on the server with the daemon's session and the Run proof, so the
 // server allows only what the Run's Authorizer may read, and it writes a
 // fetched file into the Run's workspace only where the sandbox would let the
-// Run write it (Access TECH B3b, B3e).
+// Run write it.
 type runArtifactReader struct {
 	api            runArtifactAPI
 	workDir, runID string
@@ -271,7 +271,7 @@ func (a *runArtifactRemote) download(ctx context.Context, id string, ordinal int
 	if err != nil {
 		return err
 	}
-	req.Header.Set("X-Boardly-Run-Token", a.channel.runToken)
+	req.Header.Set("X-Zenith-Team-Run-Token", a.channel.runToken)
 	c.setIdentityHeaders(req)
 	client := *c.bundleClient
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }

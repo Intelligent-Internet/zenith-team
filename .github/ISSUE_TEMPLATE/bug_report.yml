@@ -1,0 +1,112 @@
+name: Bug report
+description: Something in Zenith Team does not work as expected.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please search [existing issues](https://github.com/Intelligent-Internet/zenith-team/issues) first.
+
+        **Found a security problem?** Do not open an issue. [Report it privately](https://github.com/Intelligent-Internet/zenith-team/security/advisories/new) instead.
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      description: How do you run Zenith Team?
+      options:
+        - Hosted service
+        - Self-hosted
+        - Desktop app
+        - From source
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of Zenith Team is affected?
+      options:
+        - Server/API
+        - Web app
+        - Desktop app
+        - Daemon/CLI
+        - Agents & providers
+        - Docs
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug in a few sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest set of steps that shows the bug.
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: The release version, the desktop app version (Help → Copy Diagnostics Summary), or `git rev-parse --short HEAD`.
+      placeholder: "0.1.8 or a1b2c3d"
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.5, Windows 11, Ubuntu 24.04"
+    validations:
+      required: false
+
+  - type: input
+    id: agent-cli
+    attributes:
+      label: Agent CLI and version
+      description: Run `codex --version` or `claude --version`.
+      placeholder: "codex-cli 0.148.0"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Paste relevant output, for example from `zen doctor` or `zen daemon logs`.
+        **Remove tokens, passwords, API keys and other secrets before you paste.**
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images or recordings here if they help show the bug.
+    validations:
+      required: false

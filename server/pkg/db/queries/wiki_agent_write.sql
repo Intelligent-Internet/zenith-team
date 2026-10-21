@@ -53,7 +53,7 @@ WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(revision_id)::uu
 -- AgentWriteService takes it, always right after the member lock, so it cannot
 -- join a cycle with an editor's locks.
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/wiki-research-writes/v1/' || sqlc.arg(company_id)::uuid::text,
+    'zenith-team/wiki-research-writes/v1/' || sqlc.arg(company_id)::uuid::text,
     0
 ));
 

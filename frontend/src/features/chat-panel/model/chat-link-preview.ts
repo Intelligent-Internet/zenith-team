@@ -1,5 +1,5 @@
 import type { DesktopLinkPreview } from "../../../../electron/shared/desktop-bridge.types";
-import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export type ChatLinkPreview = DesktopLinkPreview;
 
@@ -46,7 +46,7 @@ export function messagePreviewLinks(text: string) {
 const previews = new Map<string, Promise<ChatLinkPreview>>();
 
 export function loadChatLinkPreview(url: string): Promise<ChatLinkPreview> {
-  const desktop = getBoardlyDesktopBridge();
+  const desktop = getZenithTeamDesktopBridge();
   // Desktop owns its bounded cache; retaining its image data here would duplicate it.
   if (desktop?.loadLinkPreview)
     return desktop.loadLinkPreview(url).catch(() => ({}));

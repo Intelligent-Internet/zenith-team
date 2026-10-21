@@ -1,21 +1,21 @@
 /* Shared workspace component structure, independent of the selected palette. */
 @media (prefers-contrast: no-preference) {
-  html:not([data-boardly-high-contrast="true"])
-    .boardly-workspace-theme
+  html:not([data-zenith-team-high-contrast="true"])
+    .zenith-team-workspace-theme
     :is([data-iconsax="3-dots-more"], [data-iconsax="more-vertical"]) {
     fill-opacity: 0.8;
   }
 }
 
-.boardly-workspace-theme .workspace-shell {
+.zenith-team-workspace-theme .workspace-shell {
   background: var(--workspace-app-bg) var(--workspace-shell-gradient);
 }
 
-.boardly-workspace-theme .workspace-shell::before {
+.zenith-team-workspace-theme .workspace-shell::before {
   display: none;
 }
 
-.boardly-workspace-theme .workspace-utility-header {
+.zenith-team-workspace-theme .workspace-utility-header {
   gap: 12px;
   border-color: var(--workspace-divider);
   padding-right: 10px;
@@ -25,54 +25,54 @@
   backdrop-filter: none;
 }
 
-.boardly-workspace-theme .workspace-utility-brand {
+.zenith-team-workspace-theme .workspace-utility-brand {
   gap: 10px;
 }
 
-.boardly-workspace-theme .workspace-wordmark-image {
+.zenith-team-workspace-theme .workspace-wordmark-image {
   width: 98px;
 }
 
-.boardly-workspace-theme .workspace-company-name {
+.zenith-team-workspace-theme .workspace-company-name {
   color: var(--workspace-native-text-muted);
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
   font-weight: 600;
 }
 
-.boardly-workspace-theme .workspace-header-action,
-.boardly-workspace-theme .workspace-profile-button,
-.boardly-workspace-theme .workspace-icon-button {
+.zenith-team-workspace-theme .workspace-header-action,
+.zenith-team-workspace-theme .workspace-profile-button,
+.zenith-team-workspace-theme .workspace-icon-button {
   width: 32px !important;
   height: 32px !important;
   border-radius: var(--workspace-radius-control) !important;
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-header-action:hover,
-.boardly-workspace-theme .workspace-profile-button:hover,
-.boardly-workspace-theme .workspace-icon-button:hover {
+.zenith-team-workspace-theme .workspace-header-action:hover,
+.zenith-team-workspace-theme .workspace-profile-button:hover,
+.zenith-team-workspace-theme .workspace-icon-button:hover {
   border-color: transparent !important;
   background: var(--workspace-hover-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-icon-button[aria-current="page"] {
+.zenith-team-workspace-theme .workspace-icon-button[aria-current="page"] {
   background: var(--workspace-selected-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-profile-avatar {
+.zenith-team-workspace-theme .workspace-profile-avatar {
   width: 26px !important;
   height: 26px !important;
   background: var(--workspace-control-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-shell-content {
+.zenith-team-workspace-theme .workspace-shell-content {
   background: var(--workspace-content-bg);
 }
 
-.boardly-workspace-theme .workspace-rail {
+.zenith-team-workspace-theme .workspace-rail {
   gap: 3px;
   border-color: var(--workspace-divider);
   padding: 9px 7px;
@@ -81,7 +81,7 @@
   backdrop-filter: none;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-item {
+.zenith-team-workspace-theme .workspace-primary-nav-item {
   width: 50px;
   min-height: 46px;
   gap: 2px;
@@ -96,21 +96,21 @@
     color 120ms ease;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-item:hover {
+.zenith-team-workspace-theme .workspace-primary-nav-item:hover {
   border-color: transparent;
   background: var(--workspace-hover-bg);
   color: var(--workspace-native-text);
   transform: none;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-item.is-active {
+.zenith-team-workspace-theme .workspace-primary-nav-item.is-active {
   border-color: transparent;
   background: var(--workspace-selected-bg);
   color: var(--workspace-native-text);
   box-shadow: none;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-item.is-active::before {
+.zenith-team-workspace-theme .workspace-primary-nav-item.is-active::before {
   left: -8px;
   width: 3px;
   height: 24px;
@@ -119,73 +119,73 @@
   box-shadow: none;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-icon {
+.zenith-team-workspace-theme .workspace-primary-nav-icon {
   width: 23px;
   height: 23px;
 }
 
-.boardly-workspace-theme .workspace-primary-nav-icon svg {
+.zenith-team-workspace-theme .workspace-primary-nav-icon svg {
   width: 20px;
   height: 20px;
 }
 
-.boardly-workspace-theme .workspace-matte-panel,
-.boardly-workspace-theme .workspace-matte-panel-raised {
+.zenith-team-workspace-theme .workspace-matte-panel,
+.zenith-team-workspace-theme .workspace-matte-panel-raised {
   border-color: var(--workspace-divider);
   border-radius: var(--workspace-radius-panel) !important;
   background: var(--workspace-panel-bg);
   box-shadow: none;
 }
 
-.boardly-workspace-theme .workspace-matte-panel-raised {
+.zenith-team-workspace-theme .workspace-matte-panel-raised {
   background: var(--workspace-panel-raised-bg);
 }
 
 /* Chat uses continuous native panes instead of floating glass cards. */
-.boardly-workspace-theme .workspace-chat-layout {
+.zenith-team-workspace-theme .workspace-chat-layout {
   background: var(--workspace-chat-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-main {
+.zenith-team-workspace-theme .workspace-chat-main {
   padding: 0 !important;
   background: var(--workspace-chat-bg);
 }
 
-.boardly-workspace-theme .workspace-chat-navigator {
+.zenith-team-workspace-theme .workspace-chat-navigator {
   width: 264px !important;
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-sidebar-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__header {
+.zenith-team-workspace-theme .workspace-chat-navigator__header {
   height: 52px;
   border-color: var(--workspace-divider) !important;
   padding-inline: 12px;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__eyebrow,
-.boardly-workspace-theme .workspace-chat-navigator__description,
-.boardly-workspace-theme .workspace-chat-navigator__empty {
+.zenith-team-workspace-theme .workspace-chat-navigator__eyebrow,
+.zenith-team-workspace-theme .workspace-chat-navigator__description,
+.zenith-team-workspace-theme .workspace-chat-navigator__empty {
   color: var(--workspace-native-text-faint) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-chat-navigator__row:is(:hover, [data-active="true"])
   .workspace-chat-navigator__description {
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__title {
+.zenith-team-workspace-theme .workspace-chat-navigator__title {
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__toolbar {
+.zenith-team-workspace-theme .workspace-chat-navigator__toolbar {
   gap: 6px;
   border-color: var(--workspace-divider) !important;
   padding: 8px;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__action {
+.zenith-team-workspace-theme .workspace-chat-navigator__action {
   height: 32px;
   border-color: transparent !important;
   border-radius: var(--workspace-radius-control) !important;
@@ -193,17 +193,17 @@
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__action:hover {
+.zenith-team-workspace-theme .workspace-chat-navigator__action:hover {
   border-color: transparent !important;
   background: var(--workspace-hover-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__section {
+.zenith-team-workspace-theme .workspace-chat-navigator__section {
   margin-bottom: 12px;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__section-title {
+.zenith-team-workspace-theme .workspace-chat-navigator__section-title {
   margin-bottom: 3px;
   color: var(--workspace-native-text-faint) !important;
   font-size: var(--workspace-text-label);
@@ -213,55 +213,55 @@
   text-transform: none;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__row {
+.zenith-team-workspace-theme .workspace-chat-navigator__row {
   border-color: transparent !important;
   border-radius: var(--workspace-radius-control) !important;
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__row:hover {
+.zenith-team-workspace-theme .workspace-chat-navigator__row:hover {
   background: var(--workspace-hover-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__row[data-active="true"] {
+.zenith-team-workspace-theme .workspace-chat-navigator__row[data-active="true"] {
   background: var(--workspace-selected-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__need {
+.zenith-team-workspace-theme .workspace-chat-navigator__need {
   border-radius: var(--workspace-radius-control) !important;
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__need:hover {
+.zenith-team-workspace-theme .workspace-chat-navigator__need:hover {
   background: var(--workspace-hover-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__badge {
+.zenith-team-workspace-theme .workspace-chat-navigator__badge {
   background: var(--workspace-control-bg) !important;
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-navigator__avatar {
+.zenith-team-workspace-theme .workspace-chat-navigator__avatar {
   border-color: var(--workspace-divider) !important;
   border-radius: 6px !important;
   background: var(--workspace-control-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-conversation-surface,
-.boardly-workspace-theme .workspace-conversation-content {
+.zenith-team-workspace-theme .workspace-conversation-surface,
+.zenith-team-workspace-theme .workspace-conversation-content {
   border-radius: 0 !important;
 }
 
-.boardly-workspace-theme .workspace-conversation-surface {
+.zenith-team-workspace-theme .workspace-conversation-surface {
   border: 0 !important;
   background: var(--workspace-chat-bg) !important;
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-header {
   height: 52px !important;
@@ -270,7 +270,7 @@
   padding: 9px 16px !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-identity {
   width: auto !important;
@@ -280,24 +280,24 @@
   padding: 0 !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-avatar,
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-avatar__image {
   width: 40px !important;
   height: 40px !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-avatar:not(.fold-avatar) {
   border: 1px solid var(--workspace-divider);
   border-radius: 8px !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-subtitle {
   height: auto !important;
@@ -309,13 +309,13 @@
   font-weight: 500 !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-divider {
   display: none;
 }
 
-.boardly-workspace-theme .workspace-chat-composer {
+.zenith-team-workspace-theme .workspace-chat-composer {
   margin-bottom: 14px !important;
   border-color: var(--workspace-divider-strong) !important;
   border-radius: 8px !important;
@@ -325,15 +325,15 @@
   backdrop-filter: none !important;
 }
 
-.boardly-workspace-theme .workspace-chat-tagline {
+.zenith-team-workspace-theme .workspace-chat-tagline {
   display: none;
 }
 
-.boardly-workspace-theme .workspace-chat-composer > [aria-hidden="true"] {
+.zenith-team-workspace-theme .workspace-chat-composer > [aria-hidden="true"] {
   opacity: 0;
 }
 
-.boardly-workspace-theme .workspace-chat-composer:focus-within {
+.zenith-team-workspace-theme .workspace-chat-composer:focus-within {
   border-color: color-mix(
     in srgb,
     var(--workspace-native-accent) 64%,
@@ -341,13 +341,13 @@
   ) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-chat-composer
   [data-slot="input-group-control"]:focus-visible {
   outline: none;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-chat-composer
   > [data-slot="input-group"]:has(
     [data-slot="input-group-control"]:focus-visible
@@ -356,7 +356,7 @@
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-user-message-bubble {
+.zenith-team-workspace-theme .workspace-user-message-bubble {
   border: 0 !important;
   border-radius: 16px !important;
   background: var(--workspace-control-bg) !important;
@@ -364,7 +364,7 @@
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   :is(.workspace-chat-stop-button, .workspace-chat-send-button) {
   border: 1px solid var(--workspace-divider-strong) !important;
@@ -376,13 +376,13 @@
   backdrop-filter: none !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-chat-stop-button::before {
   display: none;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-chat-send-button[data-ready="true"] {
   border-color: var(--workspace-native-accent) !important;
@@ -390,28 +390,28 @@
   color: var(--workspace-accent-foreground) !important;
 }
 
-.boardly-workspace-theme .workspace-chat-empty-state {
+.zenith-team-workspace-theme .workspace-chat-empty-state {
   border-color: var(--workspace-divider) !important;
   border-radius: 0 !important;
   background: var(--workspace-chat-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-task-peek {
+.zenith-team-workspace-theme .workspace-task-peek {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-overlay-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-task-peek > header {
+.zenith-team-workspace-theme .workspace-task-peek > header {
   height: 52px;
   border-color: var(--workspace-divider) !important;
 }
 
-.boardly-workspace-theme .workspace-task-peek footer {
+.zenith-team-workspace-theme .workspace-task-peek footer {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-sidebar-bg) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-task-peek
   :is(
     [class~="text-white/28"],
@@ -427,7 +427,7 @@
   color: var(--workspace-native-text-faint) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-task-peek
   :is(
     [class~="text-white/48"],
@@ -438,12 +438,12 @@
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-task-peek [class~="bg-[#0B1A2B]"] {
+.zenith-team-workspace-theme .workspace-task-peek [class~="bg-[#0B1A2B]"] {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-panel-bg) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-chat-composer
   textarea::placeholder {
@@ -452,7 +452,7 @@
 }
 
 /* Work and Team keep their information density, with quieter native panels. */
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   :is(
     .work-workspace,
     .work-task-inspector,
@@ -465,45 +465,45 @@
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   :is(.work-workspace, .work-task-inspector, .team-directory-section) {
   background: var(--workspace-panel-bg) !important;
 }
 
-.boardly-workspace-theme :is(.team-directory-card) {
+.zenith-team-workspace-theme :is(.team-directory-card) {
   background: var(--workspace-panel-raised-bg) !important;
 }
 
-.boardly-workspace-theme .team-tabs {
+.zenith-team-workspace-theme .team-tabs {
   background: var(--workspace-control-bg) !important;
 }
 
-.boardly-workspace-theme .team-tab[data-active="true"] {
+.zenith-team-workspace-theme .team-tab[data-active="true"] {
   background: var(--workspace-selected-bg) !important;
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme :is(.agent-provider-logo) {
+.zenith-team-workspace-theme :is(.agent-provider-logo) {
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-work-board {
+.zenith-team-workspace-theme .workspace-work-board {
   border-color: var(--workspace-divider) !important;
   border-radius: var(--workspace-radius-panel);
   background: var(--workspace-panel-bg) !important;
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-work-board > article {
+.zenith-team-workspace-theme .workspace-work-board > article {
   border-color: var(--workspace-divider) !important;
 }
 
-.boardly-workspace-theme .workspace-work-board__column-header {
+.zenith-team-workspace-theme .workspace-work-board__column-header {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-sidebar-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-work-board__column-label {
+.zenith-team-workspace-theme .workspace-work-board__column-label {
   border-color: var(--workspace-divider-strong) !important;
   border-radius: var(--workspace-radius-control);
   background: var(--workspace-control-bg) !important;
@@ -511,19 +511,19 @@
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-work-task-card {
+.zenith-team-workspace-theme .workspace-work-task-card {
   border-color: var(--workspace-divider) !important;
   border-radius: var(--workspace-radius-panel);
   background: var(--workspace-panel-raised-bg) !important;
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-work-task-card:hover {
+.zenith-team-workspace-theme .workspace-work-task-card:hover {
   border-color: var(--workspace-divider-strong) !important;
   background: var(--workspace-hover-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-work-task-card.is-selected {
+.zenith-team-workspace-theme .workspace-work-task-card.is-selected {
   border-color: color-mix(
     in srgb,
     var(--workspace-native-accent) 58%,
@@ -532,24 +532,24 @@
   background: var(--workspace-selected-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-work-task-card__avatar {
+.zenith-team-workspace-theme .workspace-work-task-card__avatar {
   border-color: var(--workspace-divider-strong) !important;
   border-radius: var(--workspace-radius-control);
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme .workspace-work-lane {
+.zenith-team-workspace-theme .workspace-work-lane {
   border-color: var(--workspace-divider) !important;
   border-radius: var(--workspace-radius-panel);
   background: var(--workspace-panel-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-work-lane__header {
+.zenith-team-workspace-theme .workspace-work-lane__header {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-sidebar-bg) !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   :is(
     .workspace-work-lane__avatar,
     .workspace-work-task-card__icon,
@@ -560,7 +560,7 @@
   box-shadow: none !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   :is(
     .workspace-work-task-card__icon,
     .workspace-work-lane__role,
@@ -569,45 +569,45 @@
   background: var(--workspace-control-bg) !important;
 }
 
-.boardly-workspace-theme .workspace-work-lane__role,
-.boardly-workspace-theme .workspace-work-task-key,
-.boardly-workspace-theme .workspace-work-lane__empty {
+.zenith-team-workspace-theme .workspace-work-lane__role,
+.zenith-team-workspace-theme .workspace-work-task-key,
+.zenith-team-workspace-theme .workspace-work-lane__empty {
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-work-lane__empty {
+.zenith-team-workspace-theme .workspace-work-lane__empty {
   border-color: var(--workspace-divider) !important;
   border-radius: var(--workspace-radius-panel);
 }
 
-.boardly-workspace-theme .workspace-work-task-divider {
+.zenith-team-workspace-theme .workspace-work-task-divider {
   background: var(--workspace-divider) !important;
   opacity: 1 !important;
 }
 
-.boardly-workspace-theme
+.zenith-team-workspace-theme
   .workspace-work-task-card:is(:hover, .is-selected)
   .workspace-work-task-key {
   color: var(--workspace-native-text-muted) !important;
 }
 
-.boardly-workspace-theme .workspace-eyebrow {
+.zenith-team-workspace-theme .workspace-eyebrow {
   color: var(--workspace-native-text-faint);
 }
 
 @media (max-width: 1279px) {
-  .boardly-workspace-theme .workspace-chat-navigator {
+  .zenith-team-workspace-theme .workspace-chat-navigator {
     width: 240px !important;
   }
 
-  .boardly-workspace-theme .workspace-task-peek {
+  .zenith-team-workspace-theme .workspace-task-peek {
     border-radius: var(--workspace-radius-overlay) !important;
     box-shadow: var(--workspace-overlay-shadow) !important;
   }
 }
 
 @media (max-width: 899px) {
-  .boardly-workspace-theme .workspace-bottom-nav {
+  .zenith-team-workspace-theme .workspace-bottom-nav {
     border-color: var(--workspace-divider-strong);
     background: var(--workspace-rail-bg);
     box-shadow: 0 -8px 24px rgb(0 0 0 / 24%);
@@ -615,13 +615,13 @@
     backdrop-filter: none;
   }
 
-  .boardly-workspace-theme .workspace-bottom-nav .workspace-primary-nav-item {
+  .zenith-team-workspace-theme .workspace-bottom-nav .workspace-primary-nav-item {
     width: 100%;
     min-height: 52px;
     border-radius: var(--workspace-radius-control);
   }
 
-  .boardly-workspace-theme
+  .zenith-team-workspace-theme
     .workspace-bottom-nav
     .workspace-primary-nav-item.is-active::before {
     top: -6px;
@@ -632,25 +632,25 @@
     transform: translateX(-50%);
   }
 
-  .boardly-workspace-theme .workspace-task-peek {
+  .zenith-team-workspace-theme .workspace-task-peek {
     border-radius: 0 !important;
   }
 
-  .boardly-workspace-theme
+  .zenith-team-workspace-theme
     .workspace-conversation-surface
     .workspace-conversation-identity {
     padding-left: 64px !important;
   }
 
-  .boardly-workspace-theme .workspace-chat-navigator {
+  .zenith-team-workspace-theme .workspace-chat-navigator {
     width: min(264px, calc(100vw - 48px)) !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boardly-workspace-theme .workspace-chat-navigator,
-  .boardly-workspace-theme .workspace-chat-navigator__row,
-  .boardly-workspace-theme .workspace-chat-composer {
+  .zenith-team-workspace-theme .workspace-chat-navigator,
+  .zenith-team-workspace-theme .workspace-chat-navigator__row,
+  .zenith-team-workspace-theme .workspace-chat-composer {
     transition: none !important;
   }
 }
@@ -664,7 +664,7 @@
 }
 
 /* Titlebar portals inherit the active workspace tokens from the document. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .workspace-profile-menu,
     .workspace-notification-menu,
@@ -673,32 +673,32 @@ html[data-boardly-workspace-theme]
   border-radius: var(--workspace-radius-overlay) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(.workspace-profile-menu, .workspace-notification-menu) {
   background: var(--workspace-overlay-bg) !important;
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .content-panel:is(.workspace-profile-menu, .workspace-notification-menu) {
   border: 1px solid var(--workspace-divider-strong);
   box-shadow: var(--workspace-overlay-shadow) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-profile-menu
   :is([role="menuitem"], button),
-html[data-boardly-workspace-theme] .workspace-notification-menu button {
+html[data-zenith-team-workspace-theme] .workspace-notification-menu button {
   border-radius: var(--workspace-radius-control) !important;
 }
 
-html[data-boardly-workspace-theme] .workspace-command-palette {
+html[data-zenith-team-workspace-theme] .workspace-command-palette {
   border: 1px solid var(--workspace-divider-strong) !important;
   background: var(--workspace-overlay-bg) !important;
   box-shadow: var(--workspace-overlay-shadow) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-command-palette
   [data-slot="command-input-wrapper"] {
   border-color: var(--workspace-divider) !important;
@@ -706,7 +706,7 @@ html[data-boardly-workspace-theme]
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme] .workspace-command-palette__overlay {
+html[data-zenith-team-workspace-theme] .workspace-command-palette__overlay {
   background: rgb(3 8 13 / 58%) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;

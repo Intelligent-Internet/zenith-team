@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // HuddleCard is a read projection, not a mutable copy of the call's lifecycle.
@@ -109,9 +109,17 @@ func hydrateHuddleCards(
 // lifecycle transaction owns the Huddle lock. REST repairs lost hints.
 func huddleCardChangedEvent(h generated.Huddle) events.Event {
 	return events.Event{
-		EntityType: Topic, Name: EventDiscussionHuddleChanged, CompanyID: h.CompanyID,
-		ConversationID: h.SourceConversationID, CreatedAt: time.Now().UTC(), Actor: events.SystemActor(),
-		Payload: DiscussionHuddleChanged{ConversationID: h.SourceConversationID, HuddleID: h.ID, Revision: h.Revision},
+		EntityType:     Topic,
+		Name:           EventDiscussionHuddleChanged,
+		CompanyID:      h.CompanyID,
+		ConversationID: h.SourceConversationID,
+		CreatedAt:      time.Now().UTC(),
+		Actor:          events.SystemActor(),
+		Payload: DiscussionHuddleChanged{
+			ConversationID: h.SourceConversationID,
+			HuddleID:       h.ID,
+			Revision:       h.Revision,
+		},
 	}
 }
 

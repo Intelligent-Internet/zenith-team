@@ -1,4 +1,4 @@
--- C1 human discussion. Legacy execution history keeps its attribution and
+-- Human discussion. Legacy execution history keeps its attribution and
 -- allocator. Only discussion writers use head_seq; no later chat feature tables.
 ALTER TABLE conversations
     ADD COLUMN head_seq bigint NOT NULL DEFAULT 0 CHECK (head_seq BETWEEN 0 AND 9007199254740991),
@@ -223,7 +223,7 @@ BEGIN
 END $$;
 CREATE TRIGGER discussion_item_shape BEFORE INSERT OR UPDATE ON conversation_items FOR EACH ROW EXECUTE FUNCTION check_discussion_item_shape();
 
--- C1 discussions have no execution lane, including direct SQL callers.
+-- Discussions have no execution lane, including direct SQL callers.
 CREATE FUNCTION reject_discussion_run() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
     IF EXISTS(SELECT 1 FROM conversations WHERE id=NEW.conversation_id AND kind IN ('human_direct','channel')) THEN

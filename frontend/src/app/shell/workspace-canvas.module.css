@@ -1,15 +1,15 @@
 /* Keep full-screen layout ownership in the shell. */
-:global(.boardly-workspace-theme) .fullscreen {
+:global(.zenith-team-workspace-theme) .fullscreen {
   background: transparent;
 }
-:global(.boardly-workspace-theme) .fullscreen::before {
+:global(.zenith-team-workspace-theme) .fullscreen::before {
   display: none;
 }
-:global(.boardly-workspace-theme[data-boardly-theme]) .fullscreen .body {
+:global(.zenith-team-workspace-theme[data-zenith-team-theme]) .fullscreen .body {
   padding: 8px;
   background: transparent;
 }
-:global(.boardly-workspace-theme[data-boardly-theme]) .fullscreen .content {
+:global(.zenith-team-workspace-theme[data-zenith-team-theme]) .fullscreen .content {
   height: auto;
   overflow: hidden;
   border-radius: 22px;

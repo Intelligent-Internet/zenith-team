@@ -6,14 +6,16 @@ import (
 	"time"
 	"unicode/utf8"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func normalize(input Input) (generated.CreateCalendarEventParams, error) {
 	var result generated.CreateCalendarEventParams
 	input.Title = strings.TrimSpace(input.Title)
-	if input.Title == "" || utf8.RuneCountInString(input.Title) > 240 || len(input.Description) > 16000 || len(input.Location) > 1000 {
+	if input.Title == "" || utf8.RuneCountInString(input.Title) > 240 || len(input.Description) > 16000 ||
+		len(input.Location) > 1000 {
 		return result, ErrInvalid
 	}
 	if input.Type != "event" && input.Type != "reminder" {
@@ -45,7 +47,8 @@ func normalize(input Input) (generated.CreateCalendarEventParams, error) {
 		return result, ErrInvalid
 	}
 	end, err := time.Parse(layout, input.EndLocal)
-	if err != nil || !end.After(start) || end.Sub(start) > 366*24*time.Hour || start.Year() < 1900 || end.Year() > 2200 {
+	if err != nil || !end.After(start) || end.Sub(start) > 366*24*time.Hour || start.Year() < 1900 ||
+		end.Year() > 2200 {
 		return result, ErrInvalid
 	}
 	// ParseInLocation normalizes nonexistent DST times; reject that normalization.
@@ -55,7 +58,18 @@ func normalize(input Input) (generated.CreateCalendarEventParams, error) {
 			return result, ErrInvalid
 		}
 	}
-	result = generated.CreateCalendarEventParams{Type: input.Type, Title: input.Title, Description: strings.TrimSpace(input.Description), Location: strings.TrimSpace(input.Location), Color: input.Color, AllDay: input.AllDay, StartLocal: pgtype.Timestamp{Time: start, Valid: true}, EndLocal: pgtype.Timestamp{Time: end, Valid: true}, TimeZone: input.TimeZone, Recurrence: input.Recurrence}
+	result = generated.CreateCalendarEventParams{
+		Type:        input.Type,
+		Title:       input.Title,
+		Description: strings.TrimSpace(input.Description),
+		Location:    strings.TrimSpace(input.Location),
+		Color:       input.Color,
+		AllDay:      input.AllDay,
+		StartLocal:  pgtype.Timestamp{Time: start, Valid: true},
+		EndLocal:    pgtype.Timestamp{Time: end, Valid: true},
+		TimeZone:    input.TimeZone,
+		Recurrence:  input.Recurrence,
+	}
 	if input.RecurrenceInterval == 0 {
 		input.RecurrenceInterval = 1
 	}
@@ -89,7 +103,9 @@ func normalize(input Input) (generated.CreateCalendarEventParams, error) {
 	}
 	if input.RecurrenceUntil != nil {
 		until, parseErr := time.Parse(time.DateOnly, *input.RecurrenceUntil)
-		if parseErr != nil || until.Format(time.DateOnly) < start.Format(time.DateOnly) || until.Year() > 2200 || input.Recurrence == "none" {
+		if parseErr != nil || until.Format(time.DateOnly) < start.Format(time.DateOnly) ||
+			until.Year() > 2200 ||
+			input.Recurrence == "none" {
 			return result, ErrInvalid
 		}
 		result.RecurrenceUntil = pgtype.Date{Time: until, Valid: true}
@@ -145,18 +161,37 @@ func walkOccurrences(event Event, from, to time.Time, visit func(Occurrence) boo
 		if !recurrenceMatches(event, base, day) {
 			continue
 		}
-		localStart := time.Date(day.Year(), day.Month(), day.Day(), start.Hour(), start.Minute(), 0, 0, time.UTC)
+		localStart := time.Date(
+			day.Year(),
+			day.Month(),
+			day.Day(),
+			start.Hour(),
+			start.Minute(),
+			0,
+			0,
+			time.UTC,
+		)
 		localEnd := localStart.Add(duration)
 		actualStart, _ := time.ParseInLocation(layout, localStart.Format(layout), zone)
 		actualEnd, _ := time.ParseInLocation(layout, localEnd.Format(layout), zone)
-		if actualStart.Format(layout) != localStart.Format(layout) || actualEnd.Format(layout) != localEnd.Format(layout) {
+		if actualStart.Format(layout) != localStart.Format(layout) ||
+			actualEnd.Format(layout) != localEnd.Format(layout) {
 			continue
 		}
 		count++
 		if actualEnd.After(from) && actualStart.Before(to) {
 			value := event
 			value.StartLocal, value.EndLocal = localStart.Format(layout), localEnd.Format(layout)
-			if !visit(Occurrence{Event: value, SeriesStartLocal: event.StartLocal, SeriesEndLocal: event.EndLocal, OccurrenceDate: date, StartAt: actualStart.UTC(), EndAt: actualEnd.UTC()}) {
+			if !visit(
+				Occurrence{
+					Event:            value,
+					SeriesStartLocal: event.StartLocal,
+					SeriesEndLocal:   event.EndLocal,
+					OccurrenceDate:   date,
+					StartAt:          actualStart.UTC(),
+					EndAt:            actualEnd.UTC(),
+				},
+			) {
 				return nil
 			}
 		}

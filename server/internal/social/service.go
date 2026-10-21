@@ -20,13 +20,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/db"
-	adapter "boardly.dev/boardly/server/internal/infra/social"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	adapter "github.com/Intelligent-Internet/zenith-team/server/internal/infra/social"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -71,7 +71,6 @@ type (
 	CompleteInput struct{ Platform, State, Binding, Code, ProviderError string }
 )
 
-//nolint:revive // Repository service names include the domain noun.
 type SocialService interface {
 	Platforms() []Platform
 	MaintainCredentials(context.Context) error

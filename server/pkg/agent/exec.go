@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 // This file holds the subprocess plumbing shared by both adapters: child env
@@ -77,10 +77,10 @@ func mergeEnv(base []string, extra map[string]string) []string {
 	env := make([]string, 0, len(base)+len(extra))
 	for _, entry := range base {
 		key, _, _ := strings.Cut(entry, "=")
-		// BOARDLY_* in the daemon's own environment is not run context. Drop
-		// the inherited namespace for every backend and append only the values
-		// the daemon explicitly assembled for this run below.
-		if isFilteredChildEnvKey(key) || strings.HasPrefix(strings.ToUpper(key), "BOARDLY_") {
+		// The reserved namespaces in the daemon's own environment are not run
+		// context. Drop them for every backend and append only the values the
+		// daemon explicitly assembled for this run below.
+		if isFilteredChildEnvKey(key) || IsReservedEnvKey(key) {
 			continue
 		}
 		env = append(env, entry)
@@ -89,6 +89,13 @@ func mergeEnv(base []string, extra map[string]string) []string {
 		env = append(env, k+"="+v)
 	}
 	return env
+}
+
+// IsReservedEnvKey reports whether key belongs to ZENITH_TEAM_*, the namespace
+// only the daemon assigns. Inherited values in it never reach a child, and
+// agent configuration never overrides them.
+func IsReservedEnvKey(key string) bool {
+	return strings.HasPrefix(strings.ToUpper(key), "ZENITH_TEAM_")
 }
 
 // isFilteredChildEnvKey reports whether an inherited env var is an internal

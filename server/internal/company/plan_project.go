@@ -7,12 +7,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A Company Plan works inside the Projects its actor may reach (ADR 0017).
@@ -181,7 +181,9 @@ func lockPlanForApply(
 	}
 	locked.dependencies = make(map[string]persistedDependency, len(edges))
 	for _, edge := range edges {
-		locked.dependencies[dependencyIdentity(edge.DependentTaskID, edge.PrerequisiteTaskID)] = persistedDependency(edge)
+		locked.dependencies[dependencyIdentity(edge.DependentTaskID, edge.PrerequisiteTaskID)] = persistedDependency(
+			edge,
+		)
 	}
 	locked.setAsideLostProjects(artifact.Desired)
 	locked.desired, err = locked.scopeDesired(artifact.Desired, rule.actor.TaskProjectID.Valid)
@@ -284,7 +286,11 @@ func lockPlanProjects(
 		}
 		delete(read, project.ID)
 		standing := classifyPlanProject(
-			rule, project.ID, access.Can(auth.ProjectPermissionTasksWrite), entity, markedReadOnly[project.Key],
+			rule,
+			project.ID,
+			access.Can(auth.ProjectPermissionTasksWrite),
+			entity,
+			markedReadOnly[project.Key],
 		)
 		switch standing {
 		case planProjectInScope:
@@ -529,7 +535,11 @@ func projectBase(projects map[string]generated.Project) []PlanBaseEntity {
 	return result
 }
 
-func validatePlanProjects(desired PlanDocument, projects map[string]generated.Project, tasks map[string]persistedTask) error {
+func validatePlanProjects(
+	desired PlanDocument,
+	projects map[string]generated.Project,
+	tasks map[string]persistedTask,
+) error {
 	wanted := map[string]PlanProject{}
 	for _, p := range desired.Projects {
 		wanted[p.Key] = p
@@ -537,7 +547,8 @@ func validatePlanProjects(desired PlanDocument, projects map[string]generated.Pr
 		if !exists && p.Archived {
 			return ErrPlanInvalidInput
 		}
-		if exists && old.ArchivedAt.Valid && (!p.Archived || p.Title != old.Title || p.Description != old.Description) {
+		if exists && old.ArchivedAt.Valid &&
+			(!p.Archived || p.Title != old.Title || p.Description != old.Description) {
 			return ErrPlanConflict
 		}
 	}
@@ -603,7 +614,15 @@ func applyPlanProjects(
 		var err error
 		switch {
 		case !exists:
-			row, err = q.CreateProject(ctx, generated.CreateProjectParams{CompanyID: principal.CompanyID, Key: p.Key, Title: p.Title, Description: p.Description})
+			row, err = q.CreateProject(
+				ctx,
+				generated.CreateProjectParams{
+					CompanyID:   principal.CompanyID,
+					Key:         p.Key,
+					Title:       p.Title,
+					Description: p.Description,
+				},
+			)
 			if err == nil {
 				// The applier creates the Project and, like POST /projects, holds
 				// every Project permission on it (ADR 0017).
@@ -617,7 +636,16 @@ func applyPlanProjects(
 			result.skip("project", p.Key, "update", auth.ProjectPermissionSettingsUpdate)
 			continue
 		default:
-			row, err = q.UpdateProject(ctx, generated.UpdateProjectParams{CompanyID: principal.CompanyID, ID: row.ID, Title: p.Title, Description: p.Description, ExpectedRevision: row.Version})
+			row, err = q.UpdateProject(
+				ctx,
+				generated.UpdateProjectParams{
+					CompanyID:        principal.CompanyID,
+					ID:               row.ID,
+					Title:            p.Title,
+					Description:      p.Description,
+					ExpectedRevision: row.Version,
+				},
+			)
 			result.Updated++
 		}
 		if err != nil {
@@ -661,14 +689,24 @@ func archivePlanProjects(
 		if !p.Archived || row.ArchivedAt.Valid {
 			continue
 		}
-		open, err := q.ProjectHasOpenTasks(ctx, generated.ProjectHasOpenTasksParams{CompanyID: principal.CompanyID, ProjectID: row.ID})
+		open, err := q.ProjectHasOpenTasks(
+			ctx,
+			generated.ProjectHasOpenTasksParams{CompanyID: principal.CompanyID, ProjectID: row.ID},
+		)
 		if err != nil {
 			return err
 		}
 		if open {
 			return ErrPlanConflict
 		}
-		row, err = q.ArchiveProject(ctx, generated.ArchiveProjectParams{CompanyID: principal.CompanyID, ID: row.ID, ExpectedRevision: row.Version})
+		row, err = q.ArchiveProject(
+			ctx,
+			generated.ArchiveProjectParams{
+				CompanyID:        principal.CompanyID,
+				ID:               row.ID,
+				ExpectedRevision: row.Version,
+			},
+		)
 		if err != nil {
 			return mapPlanMutationError("archive Project", err)
 		}

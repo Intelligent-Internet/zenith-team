@@ -59,7 +59,7 @@ function isAppNavigationUrl(targetUrl, rendererUrl) {
       );
     }
 
-    if (parsedRenderer.protocol === "boardly-app:") {
+    if (parsedRenderer.protocol === "zenith-team-app:") {
       return (
         parsedTarget.protocol === parsedRenderer.protocol &&
         parsedTarget.hostname === parsedRenderer.hostname

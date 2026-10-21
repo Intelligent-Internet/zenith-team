@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // Every fact a domain publishes has to reach someone. The browser plane is

@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
-// The daemon's own session (D31) lives in daemon-auth.json beside the
+// The daemon's own session lives in daemon-auth.json beside the
 // person's auth.json. The server accepts it only on the daemon plane and
 // beside a live Run proof of the same person, so the daemon never runs on
 // the person's session. These helpers mint it, check it and end it.

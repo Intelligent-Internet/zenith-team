@@ -25,7 +25,8 @@ import {
   RefreshCw,
   type IconComponent,
 } from "@/shared/ui/icons";
-import { boardlyPublicLegalUrls } from "@/features/auth/model/public-legal-links";
+import { zenithTeamPublicLegalUrls } from "@/features/auth/model/public-legal-links";
+import { deployment } from "@/shared/lib/deployment";
 import "@/features/settings/styles/support-settings.css";
 
 export function SupportSettingsPage() {
@@ -223,7 +224,7 @@ export function SupportSettingsPage() {
             ) : (
               <a
                 className="support-settings-button support-settings-button--primary"
-                href="https://app.example.com/#download"
+                href={deployment.downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -290,23 +291,25 @@ export function SupportSettingsPage() {
         aria-labelledby="support-help-heading"
       >
         <h2 id="support-help-heading">Help & diagnostics</h2>
-        <SupportRow
-          icon={Mail}
-          title="Contact support"
-          description="Tell us what happened and how to reproduce it."
-          action={
-            <div className="support-settings-contact-action">
-              <a
-                className="support-settings-button"
-                href="mailto:support@ii.inc"
-              >
-                <Mail size={16} aria-hidden="true" />
-                Email support
-              </a>
-              <span>support@ii.inc</span>
-            </div>
-          }
-        />
+        {deployment.supportEmail ? (
+          <SupportRow
+            icon={Mail}
+            title="Contact support"
+            description="Tell us what happened and how to reproduce it."
+            action={
+              <div className="support-settings-contact-action">
+                <a
+                  className="support-settings-button"
+                  href={`mailto:${deployment.supportEmail}`}
+                >
+                  <Mail size={16} aria-hidden="true" />
+                  Email support
+                </a>
+                <span>{deployment.supportEmail}</span>
+              </div>
+            }
+          />
+        ) : null}
         <SupportRow
           icon={FileText}
           title="Diagnostic files"
@@ -356,22 +359,24 @@ export function SupportSettingsPage() {
 
       <footer className="support-settings-footer">
         <span>Zenith Team</span>
-        <nav aria-label="Legal">
-          <a
-            href={boardlyPublicLegalUrls.privacy}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy
-          </a>
-          <a
-            href={boardlyPublicLegalUrls.terms}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Terms
-          </a>
-        </nav>
+        {zenithTeamPublicLegalUrls ? (
+          <nav aria-label="Legal">
+            <a
+              href={zenithTeamPublicLegalUrls.privacy}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy
+            </a>
+            <a
+              href={zenithTeamPublicLegalUrls.terms}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms
+            </a>
+          </nav>
+        ) : null}
       </footer>
     </div>
   );

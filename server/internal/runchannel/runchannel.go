@@ -1,12 +1,12 @@
 // Package runchannel is the wire of the Run channel (ADR 0009): run.json in
-// a Run's isolated BOARDLY_HOME, the request and answer documents, and the
+// a Run's isolated ZENITH_TEAM_HOME, the request and answer documents, and the
 // client that posts them to the daemon's loopback endpoint. zen in Agent mode
-// and boardly-mcp are its clients; the daemon serves it, checks each request
+// and zenith-team-mcp are its clients; the daemon serves it, checks each request
 // against the Run's policy and forwards it with its own session and the Run
 // proof. Neither client ever holds a bearer.
 //
 // It is its own leaf package, importing only the standard library and uuid,
-// because boardly-mcp is mcp-sealed and must never link the daemon.
+// because zenith-team-mcp is mcp-sealed and must never link the daemon.
 package runchannel
 
 import (
@@ -32,7 +32,7 @@ import (
 
 const (
 	// ControlFileName is the document a Run's clients read from its isolated
-	// BOARDLY_HOME to learn they work inside a Run. An operator home never
+	// ZENITH_TEAM_HOME to learn they work inside a Run. An operator home never
 	// carries one, so Agent mode cannot be entered by accident.
 	ControlFileName = "run.json"
 	// Path is the daemon loopback route clients post Request documents to.
@@ -41,7 +41,7 @@ const (
 	// of every channel request.
 	AuthorizationScheme = "ZenithRun"
 	// MaxResponseBytes bounds the server body the daemon relays. It is the
-	// bound boardly-mcp read with before it moved onto the channel: the
+	// bound zenith-team-mcp read with before it moved onto the channel: the
 	// Company Plan export reads every Task in one answer. The daemon refuses
 	// a larger answer rather than relay part of it.
 	MaxResponseBytes = 16 << 20
@@ -105,9 +105,9 @@ type ErrorBody struct {
 	Reason        string `json:"reason"`
 }
 
-var errRunControlUnavailable = errors.New("not inside a Zenith Team Run: no run.json in BOARDLY_HOME")
+var errRunControlUnavailable = errors.New("not inside a Zenith Team Run: no run.json in ZENITH_TEAM_HOME")
 
-// LoadRunControlConfig reads run.json from home, the BOARDLY_HOME the daemon
+// LoadRunControlConfig reads run.json from home, the ZENITH_TEAM_HOME the daemon
 // gave the Run. It is how a client decides it works inside a Run; an operator
 // home has no such file and returns an error IsRunControlUnavailable reports.
 func LoadRunControlConfig(home string) (RunControlConfig, error) {

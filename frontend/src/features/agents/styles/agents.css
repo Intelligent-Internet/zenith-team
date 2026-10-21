@@ -35,7 +35,7 @@
   outline: 2px solid var(--workspace-native-text-muted);
   outline-offset: 2px;
 }
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .agents-directory-search
   input:focus-visible {
   outline: none;
@@ -489,7 +489,7 @@ html[data-boardly-workspace-theme]
   z-index: 1;
   border-radius: inherit;
 }
-html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
+html[data-zenith-team-workspace-theme] .agents-directory-row-link:focus-visible {
   outline: none;
 }
 .agents-directory-setup {
@@ -736,11 +736,11 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   background: var(--workspace-accent-soft);
   color: var(--workspace-native-accent);
 }
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   :is(.agents-directory-page, .agent-profile-page).workspace-page-frame {
   padding: 0;
 }
-.boardly-workspace-theme[data-boardly-theme] .agent-profile-page > header {
+.zenith-team-workspace-theme[data-zenith-team-theme] .agent-profile-page > header {
   padding: 18px 24px;
   min-height: 96px;
   border-bottom: 0;
@@ -750,7 +750,7 @@ html[data-boardly-workspace-theme] .agents-directory-row-link:focus-visible {
   container: agent-profile / inline-size;
   padding: 0;
 }
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .agent-profile-page
   .workspace-page-frame__title {
   display: flex;

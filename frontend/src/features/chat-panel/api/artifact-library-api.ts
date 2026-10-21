@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 type Result = components["schemas"]["ArtifactRunResult"];
 export type LibraryArtifact = Result["artifact"] &
@@ -23,7 +23,7 @@ export type LibraryQuery = {
   ownership?: "owned" | "shared";
   source?: "channel" | "direct" | "task" | "schedule";
 };
-export const artifactLibraryApi = boardlyApi.injectEndpoints({
+export const artifactLibraryApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getArtifactSelection: builder.query<
       Page,
@@ -31,7 +31,7 @@ export const artifactLibraryApi = boardlyApi.injectEndpoints({
     >({
       providesTags: [{ type: "Artifact" }],
       queryFn: ({ companyId, ids }, { signal }) =>
-        executeBoardlyQuery<Page>(
+        executeZenithTeamQuery<Page>(
           () =>
             apiClient
               .get<components["schemas"]["ResolvedArtifacts"]>(
@@ -57,7 +57,7 @@ export const artifactLibraryApi = boardlyApi.injectEndpoints({
         { queryArg: { companyId, q, ...filters }, pageParam },
         { signal },
       ) =>
-        executeBoardlyQuery<Page>(
+        executeZenithTeamQuery<Page>(
           () =>
             apiClient
               .get<components["schemas"]["ConversationArtifactPage"]>(

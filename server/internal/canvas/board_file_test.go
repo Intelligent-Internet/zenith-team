@@ -21,7 +21,9 @@ func TestBoardImageDecodesStayWithinTheMemoryBudget(t *testing.T) {
 		{color.NRGBA64Model, 8 * 100 * 100},
 		{color.YCbCrModel, 16 * 100 * 100},
 	} {
-		if got := boardDecodeWeight(image.Config{ColorModel: tt.model, Width: 100, Height: 100}); got != tt.want {
+		if got := boardDecodeWeight(
+			image.Config{ColorModel: tt.model, Width: 100, Height: 100},
+		); got != tt.want {
 			t.Errorf("weight of %T = %d, want %d", tt.model, got, tt.want)
 		}
 	}

@@ -78,7 +78,7 @@ info:
 
     ## Operations that lead the implementation
 
-    An operation carrying `x-boardly-status: planned` is contracted before it is
+    An operation carrying `x-zenith-team-status: planned` is contracted before it is
     served. The route-table gate allows it to have no route and reports it as
     awaiting implementation; the marker is removed in the commit that serves it.
 
@@ -86,10 +86,10 @@ info:
 
     One credential in two containers, one per request:
 
-    - `sessionCookie` — `boardly_access`, set by the auth endpoints. Used by the
+    - `sessionCookie` — `zenith_team_access`, set by the auth endpoints. Used by the
       web app. Cookie-authenticated unsafe methods additionally require
-      `X-CSRF-Token` matching the `boardly_csrf` cookie (`/auth/refresh` and
-      `/auth/logout` validate against `boardly_refresh_csrf`); a mismatch is
+      `X-CSRF-Token` matching the `zenith_team_csrf` cookie (`/auth/refresh` and
+      `/auth/logout` validate against `zenith_team_refresh_csrf`); a mismatch is
       `403 csrf_invalid`. Bearer callers never encounter CSRF.
     - `bearerToken` — `Authorization: Bearer <accessToken>`. Used by the desktop
       shell and by the machine-side daemon.
@@ -104,6 +104,9 @@ info:
 
   contact:
     name: Zenith Team engineering
+  license:
+    name: MIT
+    identifier: MIT
 servers:
   - url: http://localhost:8788
     description: Local development
@@ -191,7 +194,7 @@ components:
     sessionCookie:
       type: apiKey
       in: cookie
-      name: boardly_access
+      name: zenith_team_access
       description: |
         Web session cookie issued by `/auth/login`, `/auth/signup`, and
         `/auth/refresh`. Unsafe methods additionally require the `X-CSRF-Token`
@@ -207,7 +210,7 @@ components:
       description: |
         The bearer token as the daemon plane accepts it: from the
         `Authorization` header only. It is the daemon's own session
-        (`POST /auth/daemon-session`, D31) or, as older daemons send, the
+        (`POST /auth/daemon-session`) or, as older daemons send, the
         person's `bearerToken`, authenticated by the same service. This
         scheme exists to state the header-only rule for `/api/v1/daemon/*`:
         cookies are never read there, so CSRF never applies. A daemon's own

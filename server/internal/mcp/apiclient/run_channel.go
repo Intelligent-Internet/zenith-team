@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
-// RunChannel is boardly-mcp's transport. Every call is one request on the
+// RunChannel is zenith-team-mcp's transport. Every call is one request on the
 // daemon's Run channel, named by run.json in the Run's isolated home; the
 // daemon checks it against the Run's policy and forwards it with its own
-// session and the Run proof. boardly-mcp holds no bearer and no path to one,
-// so a tool can never call the server as the person (Access TECH B3b).
+// session and the Run proof. zenith-team-mcp holds no bearer and no path to one,
+// so a tool can never call the server as the person.
 type RunChannel struct {
 	channel *runchannel.Client
 }

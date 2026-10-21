@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // Each migration below moves a value that SQL used to read out of a jsonb
@@ -56,8 +56,11 @@ func TestRuntimeDeviceNameMigrationMovesTheNameOutOfMetadata(t *testing.T) {
 	} {
 		var device *string
 		var metadata string
-		if err := pool.QueryRow(ctx,
-			`SELECT device_name, metadata::text FROM runtimes WHERE id = $1`, want.id).Scan(&device, &metadata); err != nil {
+		if err := pool.QueryRow(
+			ctx,
+			`SELECT device_name, metadata::text FROM runtimes WHERE id = $1`,
+			want.id,
+		).Scan(&device, &metadata); err != nil {
 			t.Fatal(err)
 		}
 		if (device == nil) != (want.device == nil) || (device != nil && *device != *want.device) ||
@@ -69,8 +72,11 @@ func TestRuntimeDeviceNameMigrationMovesTheNameOutOfMetadata(t *testing.T) {
 	// Rolling back puts the name back into the document.
 	migrateTo(t, ctx, pool, 48)
 	var metadata string
-	if err := pool.QueryRow(ctx,
-		`SELECT metadata->>'deviceName' FROM runtimes WHERE id = $1`, fixture.RuntimeA).Scan(&metadata); err != nil ||
+	if err := pool.QueryRow(
+		ctx,
+		`SELECT metadata->>'deviceName' FROM runtimes WHERE id = $1`,
+		fixture.RuntimeA,
+	).Scan(&metadata); err != nil ||
 		metadata != "Owner Laptop" {
 		t.Fatalf("rolled back deviceName = %q, %v", metadata, err)
 	}
@@ -86,19 +92,43 @@ func TestRunSourceTaskMigrationKeepsTheTaskIdentity(t *testing.T) {
 	insertRun := func(companyID, agentID, runtimeID, conversationID, taskID any, runType, runContext string) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		if err := pool.QueryRow(ctx, `
+		if err := pool.QueryRow(
+			ctx,
+			`
 			INSERT INTO runs (company_id, agent_id, runtime_id, conversation_id, task_id, status, run_type, context)
 			VALUES ($1, $2, $3, $4, $5, 'completed', $6, $7::jsonb) RETURNING id`,
-			companyID, agentID, runtimeID, conversationID, taskID, runType, runContext).Scan(&id); err != nil {
+			companyID,
+			agentID,
+			runtimeID,
+			conversationID,
+			taskID,
+			runType,
+			runContext,
+		).Scan(&id); err != nil {
 			t.Fatal(err)
 		}
 		return id
 	}
 	frozen := insertRun(fixture.CompanyA, fixture.AgentA, fixture.RuntimeA, fixture.ConversationA, fixture.TaskA,
 		"task", `{"source":{"entityType":"task","entityId":"`+fixture.TaskA.String()+`"}}`)
-	legacy := insertRun(fixture.CompanyB, fixture.AgentB, fixture.RuntimeB, fixture.ConversationB, fixture.TaskB, "task", `{}`)
-	direct := insertRun(fixture.CompanyA, fixture.AgentA, fixture.RuntimeA, fixture.DirectConversationA, nil,
-		"direct_chat", `{"source":{"entityType":"conversation","entityId":"`+fixture.DirectConversationA.String()+`"}}`)
+	legacy := insertRun(
+		fixture.CompanyB,
+		fixture.AgentB,
+		fixture.RuntimeB,
+		fixture.ConversationB,
+		fixture.TaskB,
+		"task",
+		`{}`,
+	)
+	direct := insertRun(
+		fixture.CompanyA,
+		fixture.AgentA,
+		fixture.RuntimeA,
+		fixture.DirectConversationA,
+		nil,
+		"direct_chat",
+		`{"source":{"entityType":"conversation","entityId":"`+fixture.DirectConversationA.String()+`"}}`,
+	)
 	// The deleted Task survives only in the frozen source.
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM tasks WHERE id = $1`, fixture.TaskA)
 	migrateTo(t, ctx, pool, 50)
@@ -112,7 +142,8 @@ func TestRunSourceTaskMigrationKeepsTheTaskIdentity(t *testing.T) {
 		{name: "direct", id: direct},
 	} {
 		var got uuid.NullUUID
-		if err := pool.QueryRow(ctx, `SELECT source_task_id FROM runs WHERE id = $1`, want.id).Scan(&got); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT source_task_id FROM runs WHERE id = $1`, want.id).
+			Scan(&got); err != nil {
 			t.Fatal(err)
 		}
 		if got != want.task {
@@ -131,10 +162,16 @@ func TestRunFinalAnswerMigrationRecordsTheLatestProvenAnswer(t *testing.T) {
 	insertRun := func() uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		if err := pool.QueryRow(ctx, `
+		if err := pool.QueryRow(
+			ctx,
+			`
 			INSERT INTO runs (company_id, agent_id, runtime_id, conversation_id, status, run_type, context)
 			VALUES ($1, $2, $3, $4, 'completed', 'direct_chat', '{}') RETURNING id`,
-			fixture.CompanyA, fixture.AgentA, fixture.RuntimeA, fixture.DirectConversationA).Scan(&id); err != nil {
+			fixture.CompanyA,
+			fixture.AgentA,
+			fixture.RuntimeA,
+			fixture.DirectConversationA,
+		).Scan(&id); err != nil {
 			t.Fatal(err)
 		}
 		return id
@@ -164,7 +201,8 @@ func TestRunFinalAnswerMigrationRecordsTheLatestProvenAnswer(t *testing.T) {
 		{name: "unproven", id: unproven},
 	} {
 		var got *string
-		if err := pool.QueryRow(ctx, `SELECT final_answer_item_key FROM runs WHERE id = $1`, want.id).Scan(&got); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT final_answer_item_key FROM runs WHERE id = $1`, want.id).
+			Scan(&got); err != nil {
 			t.Fatal(err)
 		}
 		if (got == nil) != (want.key == nil) || (got != nil && *got != *want.key) {
@@ -189,10 +227,17 @@ func TestAgentToolMigrationCopiesDisabledPluginsAndStudioAccess(t *testing.T) {
 	insertRun := func(runContext string) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		if err := pool.QueryRow(ctx, `
+		if err := pool.QueryRow(
+			ctx,
+			`
 			INSERT INTO runs (company_id, agent_id, runtime_id, conversation_id, status, run_type, context)
 			VALUES ($1, $2, $3, $4, 'completed', 'direct_chat', $5::jsonb) RETURNING id`,
-			fixture.CompanyA, fixture.AgentA, fixture.RuntimeA, fixture.DirectConversationA, runContext).Scan(&id); err != nil {
+			fixture.CompanyA,
+			fixture.AgentA,
+			fixture.RuntimeA,
+			fixture.DirectConversationA,
+			runContext,
+		).Scan(&id); err != nil {
 			t.Fatal(err)
 		}
 		return id
@@ -201,17 +246,22 @@ func TestAgentToolMigrationCopiesDisabledPluginsAndStudioAccess(t *testing.T) {
 	withoutStudio := insertRun(`{"agent":{"capabilities":{"enabledTools":[]}}}`)
 	migrateTo(t, ctx, pool, 52)
 	var disabled, untouched []uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT disabled_plugin_ids FROM agents WHERE id = $1`, fixture.AgentA).Scan(&disabled); err != nil ||
-		len(disabled) != 1 || disabled[0] != pluginID {
+	if err := pool.QueryRow(ctx, `SELECT disabled_plugin_ids FROM agents WHERE id = $1`, fixture.AgentA).
+		Scan(&disabled); err != nil ||
+		len(disabled) != 1 ||
+		disabled[0] != pluginID {
 		t.Fatalf("configured Agent disabled_plugin_ids = %v, %v", disabled, err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT disabled_plugin_ids FROM agents WHERE id = $1`, fixture.AgentB).Scan(&untouched); err != nil ||
+	if err := pool.QueryRow(ctx, `SELECT disabled_plugin_ids FROM agents WHERE id = $1`, fixture.AgentB).
+		Scan(&untouched); err != nil ||
 		len(untouched) != 0 {
 		t.Fatalf("unconfigured Agent disabled_plugin_ids = %v, %v", untouched, err)
 	}
 	for id, want := range map[uuid.UUID]bool{withStudio: true, withoutStudio: false} {
 		var got bool
-		if err := pool.QueryRow(ctx, `SELECT studio_enabled FROM runs WHERE id = $1`, id).Scan(&got); err != nil || got != want {
+		if err := pool.QueryRow(ctx, `SELECT studio_enabled FROM runs WHERE id = $1`, id).
+			Scan(&got); err != nil ||
+			got != want {
 			t.Fatalf("run %s studio_enabled = %v, %v; want %v", id, got, err, want)
 		}
 	}
@@ -242,7 +292,11 @@ func TestRunConnectorScopeMigrationMovesTheDocumentsIntoRows(t *testing.T) {
 	frozenSnapshot := `{"schemaVersion":1,"connectors":[` + entry + `]}`
 	exact := insertRun(`{"schemaVersion":1,"mode":"exact","connectors":[`+entry+`]}`, frozenSnapshot,
 		`{"connectorSnapshot":`+frozenSnapshot+`}`)
-	defaults := insertRun(`{"schemaVersion":1,"mode":"all","connectors":[]}`, `{"schemaVersion":1,"connectors":[]}`, `{}`)
+	defaults := insertRun(
+		`{"schemaVersion":1,"mode":"all","connectors":[]}`,
+		`{"schemaVersion":1,"connectors":[]}`,
+		`{}`,
+	)
 	migrateTo(t, ctx, pool, 54)
 	for _, want := range []struct {
 		name               string
@@ -266,7 +320,8 @@ func TestRunConnectorScopeMigrationMovesTheDocumentsIntoRows(t *testing.T) {
 			FROM runs WHERE id = $1`, want.id, connectorID).Scan(&mode, &frozen, &selected, &snapshot); err != nil {
 			t.Fatal(err)
 		}
-		if mode != want.mode || selected != want.selected || snapshot != want.snapshot || frozen != want.frozen {
+		if mode != want.mode || selected != want.selected || snapshot != want.snapshot ||
+			frozen != want.frozen {
 			t.Fatalf("%s run: mode %q, selected %d, snapshot %d, frozen %v; want %+v",
 				want.name, mode, selected, snapshot, frozen, want)
 		}

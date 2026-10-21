@@ -52,7 +52,7 @@ import type {
   DesktopDaemonLogsResult,
   DesktopToolRequest,
   DesktopToolResult,
-  BoardlyDesktopBridge,
+  ZenithTeamDesktopBridge,
   DesktopGlobalLike,
 } from "../../../electron/shared/desktop-bridge.types";
 type DesktopAgentVerificationCacheEntry = {
@@ -72,7 +72,7 @@ const desktopAgentVerificationInFlight = new Map<
 export async function operateDesktopTool(
   request: Omit<DesktopToolRequest, "schemaVersion">,
 ): Promise<DesktopToolResult> {
-  const bridge = getBoardlyDesktopBridge(globalThis);
+  const bridge = getZenithTeamDesktopBridge(globalThis);
   if (!bridge?.operateTool)
     return desktopOperationFailure(
       "desktop_required",
@@ -90,7 +90,7 @@ export async function operateDesktopTool(
 
 declare global {
   interface Window {
-    boardlyDesktop?: BoardlyDesktopBridge;
+    zenithTeamDesktop?: ZenithTeamDesktopBridge;
   }
 }
 
@@ -179,22 +179,22 @@ export const WEB_DESKTOP_DAEMON_STATUS_FALLBACK: DesktopDaemonStatus = {
   state: "unavailable",
 };
 
-export function getBoardlyDesktopBridge(
+export function getZenithTeamDesktopBridge(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  return globalScope.window?.boardlyDesktop ?? globalScope.boardlyDesktop;
+  return globalScope.window?.zenithTeamDesktop ?? globalScope.zenithTeamDesktop;
 }
 
 export function shouldUseDesktopHashRouter(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  return Boolean(getBoardlyDesktopBridge(globalScope));
+  return Boolean(getZenithTeamDesktopBridge(globalScope));
 }
 
 export async function getDesktopEnvironment(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopEnvironment> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge) {
     return WEB_DESKTOP_ENVIRONMENT_FALLBACK;
@@ -210,7 +210,7 @@ export async function getDesktopEnvironment(
 export async function discoverDesktopAgents(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopAgentDiscoveryResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.discoverAgents) {
     return {
       ok: false,
@@ -238,7 +238,7 @@ export async function connectDesktopConnector(
   request: Omit<DesktopConnectorActionRequest, "schemaVersion">,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopPluginResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.connectConnector) {
     return desktopOperationFailure(
       "desktop_required",
@@ -264,7 +264,7 @@ export async function readDesktopConnectorStatus(
   request: Omit<DesktopConnectorActionRequest, "schemaVersion">,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopConnectorStatusResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.readConnectorStatus) {
     return desktopOperationFailure(
       "daemon_update_required",
@@ -285,7 +285,7 @@ export async function refreshDesktopConnectors(
   request: Omit<DesktopPluginRefreshRequest, "schemaVersion" | "force">,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopPluginResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.refreshConnectors) {
     return desktopOperationFailure(
       "desktop_required",
@@ -313,7 +313,7 @@ export async function refreshDesktopPlugins(
   request: Omit<DesktopPluginRefreshRequest, "schemaVersion">,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopPluginResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.refreshPlugins) {
     return desktopOperationFailure(
       "desktop_required",
@@ -356,7 +356,7 @@ export async function readDesktopPlugin(
   },
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopPluginDetail> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.readPlugin) {
     throw new DesktopPluginReadError(
       "desktop_required",
@@ -416,7 +416,7 @@ async function requestDesktopPlugin(
   request: Omit<DesktopPluginActionRequest, "schemaVersion">,
   globalScope: DesktopGlobalLike,
 ): Promise<DesktopPluginResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   const operation = bridge?.[method];
   if (!operation) {
     return desktopOperationFailure(
@@ -489,7 +489,7 @@ async function requestDesktopAgentVerification(
   provider: import("@/shared/api/types").AgentProvider,
   globalScope: DesktopGlobalLike,
 ): Promise<DesktopAgentVerificationResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.verifyAgent) {
     return {
       schemaVersion: 1,
@@ -518,7 +518,7 @@ export async function openDesktopExternal(
   url: string,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   // Never rejects: callers wait on the answer to leave a launching state.
   if (bridge) {
@@ -549,14 +549,15 @@ export function subscribeToDesktopMenuCommands(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onMenuCommand(listener) ?? (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onMenuCommand(listener) ??
+    (() => {})
   );
 }
 
 export async function getDesktopNativeTheme(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopNativeTheme> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getNativeTheme) {
     return WEB_DESKTOP_NATIVE_THEME_FALLBACK;
@@ -574,7 +575,7 @@ export function subscribeToDesktopNativeTheme(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onNativeThemeUpdated?.(listener) ??
+    getZenithTeamDesktopBridge(globalScope)?.onNativeThemeUpdated?.(listener) ??
     (() => {})
   );
 }
@@ -583,7 +584,7 @@ export async function showDesktopContextMenu(
   payload: DesktopContextMenuPayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.showContextMenu) {
     return {
@@ -598,14 +599,14 @@ export async function showDesktopContextMenu(
 export function canPreviewDesktopGeneratedFiles(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  return Boolean(getBoardlyDesktopBridge(globalScope)?.previewGeneratedFile);
+  return Boolean(getZenithTeamDesktopBridge(globalScope)?.previewGeneratedFile);
 }
 
 export async function resolveDesktopGeneratedFileLink(
   reference: DesktopGeneratedFileLinkReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopGeneratedFileLinkResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.resolveGeneratedFileLink) {
     return {
       code: "desktop_required",
@@ -628,7 +629,7 @@ export async function previewDesktopGeneratedFile(
   reference: DesktopGeneratedFileReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopGeneratedFilePreviewResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.previewGeneratedFile) {
     return {
       code: "desktop_required",
@@ -643,7 +644,7 @@ export async function saveDesktopGeneratedFile(
   reference: DesktopGeneratedFileReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopGeneratedFileActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.saveGeneratedFile) {
     return {
       code: "desktop_required",
@@ -658,7 +659,7 @@ export async function revealDesktopGeneratedFile(
   reference: DesktopGeneratedFileReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopGeneratedFileActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.revealGeneratedFile) {
     return {
       code: "desktop_required",
@@ -672,7 +673,7 @@ export async function revealDesktopGeneratedFile(
 export function canBrowseDesktopWorkspaceAssets(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return Boolean(
     bridge?.listWorkspaceAssets &&
     bridge.previewWorkspaceAsset &&
@@ -685,7 +686,7 @@ export async function listDesktopWorkspaceAssets(
   request: DesktopWorkspaceAssetListRequest,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopWorkspaceAssetListResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.listWorkspaceAssets) {
     return {
       code: "desktop_required",
@@ -700,7 +701,7 @@ export async function previewDesktopWorkspaceAsset(
   reference: DesktopWorkspaceAssetReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopWorkspaceAssetPreviewResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.previewWorkspaceAsset) {
     return {
       code: "desktop_required",
@@ -715,7 +716,7 @@ export async function saveDesktopWorkspaceAsset(
   reference: DesktopWorkspaceAssetReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopWorkspaceAssetActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.saveWorkspaceAsset) {
     return {
       code: "desktop_required",
@@ -730,7 +731,7 @@ export async function revealDesktopWorkspaceAsset(
   reference: DesktopWorkspaceAssetReference,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopWorkspaceAssetActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.revealWorkspaceAsset) {
     return {
       code: "desktop_required",
@@ -745,7 +746,7 @@ export async function reviewDesktopTaskWorkspace(
   request: DesktopTaskReviewRequest,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopTaskReviewResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   if (!bridge?.reviewTaskWorkspace) {
     return {
       code: "desktop_required",
@@ -760,7 +761,7 @@ export async function openDesktopResourceFile(
   payload: DesktopResourceFilePayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.openResourceFile) {
     return {
@@ -776,7 +777,7 @@ export async function revealDesktopResourceFile(
   payload: DesktopResourceFilePayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.revealResourceFile) {
     return {
@@ -792,7 +793,7 @@ export async function saveDesktopResourceFile(
   payload: DesktopResourceFilePayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.saveResourceFile) {
     return {
@@ -808,13 +809,13 @@ export function startDesktopResourceDrag(
   payload: DesktopResourceFilePayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  getBoardlyDesktopBridge(globalScope)?.startResourceDrag?.(payload);
+  getZenithTeamDesktopBridge(globalScope)?.startResourceDrag?.(payload);
 }
 
 export async function getDesktopWorkbenchState(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopWorkbenchState> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getWorkbenchState) {
     return WEB_DESKTOP_WORKBENCH_STATE_FALLBACK;
@@ -831,7 +832,7 @@ export async function setDesktopWorkbenchStatus(
   status: DesktopWorkbenchStatusPatch,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.setWorkbenchStatus) {
     return {
@@ -847,7 +848,7 @@ export async function setDesktopWorkbenchStatus(
 export async function getDesktopPowerLifecycleState(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopPowerLifecycleState> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getPowerLifecycleState) {
     return WEB_DESKTOP_POWER_LIFECYCLE_STATE_FALLBACK;
@@ -865,8 +866,9 @@ export function subscribeToDesktopPowerLifecycle(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onPowerLifecycleUpdated?.(listener) ??
-    (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onPowerLifecycleUpdated?.(
+      listener,
+    ) ?? (() => {})
   );
 }
 
@@ -874,7 +876,7 @@ export async function captureDesktopSupportDiagnostics(
   request: DesktopSupportDiagnosticsCaptureRequest = {},
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopSupportDiagnosticsCaptureResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.captureSupportDiagnostics) {
     return {
@@ -891,7 +893,7 @@ export async function captureDesktopSupportDiagnostics(
 export async function getDesktopStartupSettings(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopStartupSettingsState> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getStartupSettings) {
     return WEB_DESKTOP_STARTUP_SETTINGS_FALLBACK;
@@ -908,7 +910,7 @@ export async function setDesktopOpenAtLogin(
   enabled: boolean,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopStartupSettingsResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.setOpenAtLogin) {
     return {
@@ -924,7 +926,7 @@ export async function setDesktopOpenAtLogin(
 export async function getDesktopUpdateState(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopUpdateState> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getUpdateState) {
     return WEB_DESKTOP_UPDATE_STATE_FALLBACK;
@@ -940,7 +942,7 @@ export async function getDesktopUpdateState(
 export async function checkDesktopUpdates(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopUpdateCheckResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.checkForUpdates) {
     return {
@@ -957,7 +959,7 @@ export async function checkDesktopUpdates(
 export async function downloadDesktopUpdate(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopUpdateDownloadResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.downloadUpdate) {
     return {
@@ -974,7 +976,7 @@ export async function downloadDesktopUpdate(
 export async function restartDesktopUpdate(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopUpdateRestartResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.restartToUpdate) {
     return {
@@ -990,7 +992,7 @@ export async function setDesktopAutomaticUpdates(
   enabled: boolean,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopAutomaticUpdatesResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.setAutomaticUpdates) {
     return {
@@ -1008,7 +1010,7 @@ export function subscribeToDesktopUpdateState(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onUpdateStateUpdated?.(listener) ??
+    getZenithTeamDesktopBridge(globalScope)?.onUpdateStateUpdated?.(listener) ??
     (() => {})
   );
 }
@@ -1018,8 +1020,9 @@ export function subscribeToDesktopUpdateDialogRequests(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onUpdateDialogRequested?.(listener) ??
-    (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onUpdateDialogRequested?.(
+      listener,
+    ) ?? (() => {})
   );
 }
 
@@ -1038,7 +1041,7 @@ const DESKTOP_DAEMON_LOGS_UNAVAILABLE: DesktopDaemonLogsResult = {
 export async function getDesktopDaemonStatus(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonStatus> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.getDaemonStatus) {
     return WEB_DESKTOP_DAEMON_STATUS_FALLBACK;
@@ -1075,7 +1078,7 @@ async function runDesktopDaemonAction(
 export function startDesktopDaemon(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonAction(
     bridge?.startDaemon ? () => bridge.startDaemon!() : undefined,
   );
@@ -1085,7 +1088,7 @@ export function stopDesktopDaemon(
   options: DesktopDaemonStopOptions = {},
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonAction(
     bridge?.stopDaemon ? () => bridge.stopDaemon!(options) : undefined,
   );
@@ -1094,7 +1097,7 @@ export function stopDesktopDaemon(
 export function restartDesktopDaemon(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonActionResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonAction(
     bridge?.restartDaemon ? () => bridge.restartDaemon!() : undefined,
   );
@@ -1121,7 +1124,7 @@ async function runDesktopDaemonLogsAction(
 export function startDesktopDaemonLogs(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonLogsResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonLogsAction(
     bridge?.startDaemonLogs ? () => bridge.startDaemonLogs!() : undefined,
   );
@@ -1130,7 +1133,7 @@ export function startDesktopDaemonLogs(
 export function stopDesktopDaemonLogs(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonLogsResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonLogsAction(
     bridge?.stopDaemonLogs ? () => bridge.stopDaemonLogs!() : undefined,
   );
@@ -1139,7 +1142,7 @@ export function stopDesktopDaemonLogs(
 export function revealDesktopDaemonLog(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopDaemonLogsResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
   return runDesktopDaemonLogsAction(
     bridge?.revealDaemonLog ? () => bridge.revealDaemonLog!() : undefined,
   );
@@ -1150,8 +1153,9 @@ export function subscribeToDesktopDaemonStatus(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onDaemonStatusUpdated?.(listener) ??
-    (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onDaemonStatusUpdated?.(
+      listener,
+    ) ?? (() => {})
   );
 }
 
@@ -1160,7 +1164,7 @@ export function subscribeToDesktopDaemonLogLines(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onDaemonLogLines?.(listener) ??
+    getZenithTeamDesktopBridge(globalScope)?.onDaemonLogLines?.(listener) ??
     (() => {})
   );
 }
@@ -1169,7 +1173,7 @@ export async function setDesktopGlobalShortcutEnabled(
   enabled: boolean,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.setGlobalShortcutEnabled) {
     return {
@@ -1186,7 +1190,7 @@ export async function showDesktopNotification(
   payload: DesktopNotificationPayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.showNotification) {
     return {
@@ -1202,7 +1206,7 @@ export async function showDesktopHuddleCallNotification(
   payload: DesktopHuddleCallNotification,
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<DesktopNotificationResult> {
-  const bridge = getBoardlyDesktopBridge(globalScope);
+  const bridge = getZenithTeamDesktopBridge(globalScope);
 
   if (!bridge?.showHuddleCallNotification) {
     return {
@@ -1218,7 +1222,7 @@ export function closeDesktopHuddleCallNotification(
   invitationId: string,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  void getBoardlyDesktopBridge(globalScope)
+  void getZenithTeamDesktopBridge(globalScope)
     ?.closeHuddleCallNotification?.(invitationId)
     .catch(() => {});
 }
@@ -1228,7 +1232,7 @@ export function subscribeToDesktopHuddleCallActions(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onHuddleCallAction?.(listener) ??
+    getZenithTeamDesktopBridge(globalScope)?.onHuddleCallAction?.(listener) ??
     (() => {})
   );
 }
@@ -1238,7 +1242,9 @@ export function subscribeToDesktopHuddleCallActions(
 export function canPickDesktopScreenShareSource(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  return Boolean(getBoardlyDesktopBridge(globalScope)?.listScreenShareSources);
+  return Boolean(
+    getZenithTeamDesktopBridge(globalScope)?.listScreenShareSources,
+  );
 }
 
 // DesktopScreenSharePermissionError means the OS, not Zenith, is refusing
@@ -1249,7 +1255,7 @@ export async function listDesktopScreenShareSources(
   globalScope: DesktopGlobalLike = globalThis,
 ): Promise<{ sources: DesktopScreenShareSource[]; audio: boolean }> {
   const result =
-    await getBoardlyDesktopBridge(globalScope)?.listScreenShareSources?.();
+    await getZenithTeamDesktopBridge(globalScope)?.listScreenShareSources?.();
   if (!result) throw new Error("Screen sharing is not available here.");
   if (!result.ok) {
     throw result.blocked
@@ -1265,7 +1271,7 @@ export function reportDesktopScreenShareState(
   state: DesktopScreenShareState,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  void getBoardlyDesktopBridge(globalScope)
+  void getZenithTeamDesktopBridge(globalScope)
     ?.reportScreenShareState?.(state)
     .catch(() => {});
 }
@@ -1275,7 +1281,7 @@ export function subscribeToDesktopScreenShareActions(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onScreenShareAction?.(listener) ??
+    getZenithTeamDesktopBridge(globalScope)?.onScreenShareAction?.(listener) ??
     (() => {})
   );
 }
@@ -1283,7 +1289,7 @@ export function subscribeToDesktopScreenShareActions(
 export function openDesktopScreenShareSettings(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  void getBoardlyDesktopBridge(globalScope)
+  void getZenithTeamDesktopBridge(globalScope)
     ?.openScreenShareSettings?.()
     .catch(() => {});
 }
@@ -1293,7 +1299,7 @@ export async function selectDesktopScreenShareSource(
   shareAudio: boolean,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  const result = await getBoardlyDesktopBridge(
+  const result = await getZenithTeamDesktopBridge(
     globalScope,
   )?.selectScreenShareSource?.(sourceId, shareAudio);
   if (!result) throw new Error("Screen sharing is not available here.");
@@ -1305,7 +1311,7 @@ export function subscribeToDesktopWorkbenchState(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onWorkbenchStatusUpdated?.(
+    getZenithTeamDesktopBridge(globalScope)?.onWorkbenchStatusUpdated?.(
       listener,
     ) ?? (() => {})
   );
@@ -1315,17 +1321,17 @@ export function applyDesktopNativeThemeAttributes(
   theme: DesktopNativeTheme,
   documentElement: Pick<HTMLElement, "dataset">,
 ) {
-  documentElement.dataset.boardlyNativeTheme = theme.colorScheme;
-  documentElement.dataset.boardlyHighContrast = String(
+  documentElement.dataset.zenithTeamNativeTheme = theme.colorScheme;
+  documentElement.dataset.zenithTeamHighContrast = String(
     theme.shouldUseHighContrastColors || theme.inForcedColorsMode,
   );
-  documentElement.dataset.boardlyInvertedColors = String(
+  documentElement.dataset.zenithTeamInvertedColors = String(
     theme.shouldUseInvertedColorScheme,
   );
-  documentElement.dataset.boardlyReducedTransparency = String(
+  documentElement.dataset.zenithTeamReducedTransparency = String(
     theme.prefersReducedTransparency,
   );
-  documentElement.dataset.boardlyDifferentiateWithoutColor = String(
+  documentElement.dataset.zenithTeamDifferentiateWithoutColor = String(
     theme.shouldDifferentiateWithoutColor,
   );
 }
@@ -1335,8 +1341,9 @@ export function subscribeToDesktopGoogleOAuthCallback(
   globalScope: DesktopGlobalLike = globalThis,
 ) {
   return (
-    getBoardlyDesktopBridge(globalScope)?.onGoogleOAuthCallback?.(listener) ??
-    (() => {})
+    getZenithTeamDesktopBridge(globalScope)?.onGoogleOAuthCallback?.(
+      listener,
+    ) ?? (() => {})
   );
 }
 
@@ -1344,5 +1351,5 @@ export function reportDesktopDiagnostic(
   payload: DesktopDiagnosticPayload,
   globalScope: DesktopGlobalLike = globalThis,
 ) {
-  getBoardlyDesktopBridge(globalScope)?.reportDiagnostic?.(payload);
+  getZenithTeamDesktopBridge(globalScope)?.reportDiagnostic?.(payload);
 }

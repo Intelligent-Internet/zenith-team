@@ -273,7 +273,7 @@ type ListRunChannelAttachmentsRow struct {
 // Run's Authorizer, may open (attachment_access, row by row). That already
 // hides a Project file from someone who reads none of its Projects (ADR 0017
 // decision 8). The Run uses its Authorizer's access and nothing else narrows
-// it (D31): the person who tagged the Agent answers for what it shares.
+// it: the person who tagged the Agent answers for what it shares.
 func (q *Queries) ListRunChannelAttachments(ctx context.Context, arg ListRunChannelAttachmentsParams) ([]ListRunChannelAttachmentsRow, error) {
 	rows, err := q.db.Query(ctx, listRunChannelAttachments, arg.ActorUserID, arg.CompanyID, arg.MessageIds)
 	if err != nil {

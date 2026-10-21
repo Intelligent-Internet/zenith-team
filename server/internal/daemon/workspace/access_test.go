@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/repocache"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
 )
 
 func TestManagerResolveRunWorkDirUsesAuthenticatedLatestRun(t *testing.T) {
@@ -42,10 +42,20 @@ func TestManagerResolveRunWorkDirUsesAuthenticatedLatestRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AcquireScratch(reuse) error = %v", err)
 	}
-	if _, err := manager.ResolveRunWorkDir(t.Context(), uuid.MustParse("00000000-0000-4000-8000-000000001401")); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := manager.ResolveRunWorkDir(
+		t.Context(),
+		uuid.MustParse("00000000-0000-4000-8000-000000001401"),
+	); !errors.Is(
+		err,
+		fs.ErrNotExist,
+	) {
 		t.Fatalf("ResolveRunWorkDir(previous) error = %v, want fs.ErrNotExist", err)
 	}
-	if got, err := manager.ResolveRunWorkDir(t.Context(), uuid.MustParse("00000000-0000-4000-8000-000000001402")); err != nil || got != second.WorkDir {
+	if got, err := manager.ResolveRunWorkDir(
+		t.Context(),
+		uuid.MustParse("00000000-0000-4000-8000-000000001402"),
+	); err != nil ||
+		got != second.WorkDir {
 		t.Fatalf("ResolveRunWorkDir(latest) = %q, %v, want %q", got, err, second.WorkDir)
 	}
 }
@@ -67,7 +77,13 @@ func TestManagerResolveRunWorkDirHonorsRetention(t *testing.T) {
 	}
 	now = now.Add(24 * time.Hour)
 
-	if _, err := manager.ResolveRunWorkDir(t.Context(), uuid.MustParse("00000000-0000-4000-8000-000000001403")); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := manager.ResolveRunWorkDir(
+		t.Context(),
+		uuid.MustParse("00000000-0000-4000-8000-000000001403"),
+	); !errors.Is(
+		err,
+		fs.ErrNotExist,
+	) {
 		t.Fatalf("ResolveRunWorkDir(expired) error = %v, want fs.ErrNotExist", err)
 	}
 }

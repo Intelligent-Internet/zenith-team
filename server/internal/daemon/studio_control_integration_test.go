@@ -24,15 +24,15 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/handler"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/handler"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // This lane uses two disposable PostgreSQL databases, production HTTP auth,
@@ -41,7 +41,7 @@ import (
 func TestStudioProductionControlChain(t *testing.T) {
 	source, cli := os.Getenv("STUDIO_P1D_SOURCE"), os.Getenv("STUDIO_P1D_CLI")
 	// testpostgres owns the disposable database and exposes it through the
-	// shared Boardly test variable; allow the Studio fixture to consume that
+	// shared Zenith Team test variable; allow the Studio fixture to consume that
 	// same production-shaped database without a second service double.
 	if os.Getenv("STUDIO_P1D_TEST_DATABASE_URL") == "" {
 		if shared := os.Getenv(dbtest.SharedDatabaseURLEnv); shared != "" {

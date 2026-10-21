@@ -19,9 +19,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 func newDaemonCmd() *cobra.Command {
@@ -37,42 +37,42 @@ func newDaemonCmd() *cobra.Command {
 	}
 	f := start.Flags()
 	f.Bool("foreground", false, "run the daemon in this process instead of detaching")
-	f.String("server", "", "Zenith Team server URL (env: BOARDLY_SERVER_URL)")
+	f.String("server", "", "Zenith Team server URL (env: ZENITH_TEAM_SERVER_URL)")
 	f.String(
 		"daemon-id",
 		"",
-		"unique daemon identifier (env: BOARDLY_DAEMON_ID; default: persisted ~/.boardly/daemon.id)",
+		"unique daemon identifier (env: ZENITH_TEAM_DAEMON_ID; default: persisted ~/.zenith-team/daemon.id)",
 	)
-	f.String("device-name", "", "human-readable device name (env: BOARDLY_DEVICE_NAME; default: hostname)")
-	f.String("workspaces-root", "", "base path for run workspaces (env: BOARDLY_WORKSPACES_ROOT)")
-	f.Duration("poll-interval", 0, "run poll interval (env: BOARDLY_POLL_INTERVAL)")
-	f.Duration("heartbeat-interval", 0, "heartbeat interval (env: BOARDLY_HEARTBEAT_INTERVAL)")
-	f.Int("max-concurrent-runs", 0, "max runs executing in parallel (env: BOARDLY_MAX_CONCURRENT_RUNS)")
+	f.String("device-name", "", "human-readable device name (env: ZENITH_TEAM_DEVICE_NAME; default: hostname)")
+	f.String("workspaces-root", "", "base path for run workspaces (env: ZENITH_TEAM_WORKSPACES_ROOT)")
+	f.Duration("poll-interval", 0, "run poll interval (env: ZENITH_TEAM_POLL_INTERVAL)")
+	f.Duration("heartbeat-interval", 0, "heartbeat interval (env: ZENITH_TEAM_HEARTBEAT_INTERVAL)")
+	f.Int("max-concurrent-runs", 0, "max runs executing in parallel (env: ZENITH_TEAM_MAX_CONCURRENT_RUNS)")
 	f.Duration(
 		"agent-timeout",
 		0,
-		"absolute per-run wall-clock cap; 0 disables the cap and relies on the watchdogs (env: BOARDLY_AGENT_TIMEOUT)",
+		"absolute per-run wall-clock cap; 0 disables the cap and relies on the watchdogs (env: ZENITH_TEAM_AGENT_TIMEOUT)",
 	)
 	f.Duration(
 		"codex-semantic-inactivity-timeout",
 		0,
-		"codex semantic inactivity timeout (env: BOARDLY_CODEX_SEMANTIC_INACTIVITY)",
+		"codex semantic inactivity timeout (env: ZENITH_TEAM_CODEX_SEMANTIC_INACTIVITY)",
 	)
 	f.Duration(
 		"codex-handshake-timeout",
 		0,
-		"codex app-server startup RPC timeout (env: BOARDLY_CODEX_HANDSHAKE_TIMEOUT)",
+		"codex app-server startup RPC timeout (env: ZENITH_TEAM_CODEX_HANDSHAKE_TIMEOUT)",
 	)
 	f.String(
 		"log-level",
 		"",
-		"daemon log verbosity: debug, info, warn or error (env: BOARDLY_LOG_LEVEL; default: info)",
+		"daemon log verbosity: debug, info, warn or error (env: ZENITH_TEAM_LOG_LEVEL; default: info)",
 	)
 	f.Bool(
 		"no-auto-reload",
 		false,
 		"keep running this binary even after it is replaced on disk "+
-			"(env: BOARDLY_AUTO_RELOAD=false; config: disable_auto_reload)",
+			"(env: ZENITH_TEAM_AUTO_RELOAD=false; config: disable_auto_reload)",
 	)
 
 	stop := &cobra.Command{
@@ -140,11 +140,17 @@ func runDaemonRestart(cmd *cobra.Command, _ []string) error {
 	if _, err := daemonLogLevel(cmd); err != nil {
 		return err
 	}
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "restarting daemon (pid %d, version %s) into version %s\n", health.PID, health.CLIVersion, version)
+	fmt.Fprintf(
+		out,
+		"restarting daemon (pid %d, version %s) into version %s\n",
+		health.PID,
+		health.CLIVersion,
+		version,
+	)
 	stopped, exited, err := stopDaemonProcess(ctx, out, home, daemonRestartWait)
 	if err != nil {
 		return err
@@ -160,7 +166,7 @@ func runDaemonRestart(cmd *cobra.Command, _ []string) error {
 }
 
 // runDaemonForeground runs the daemon in this process until SIGINT/SIGTERM,
-// or until the daemon asks to be restarted into a replaced boardly binary —
+// or until the daemon asks to be restarted into a replaced zenith-team binary —
 // then this process starts the replacement detached and exits once it is
 // ready.
 func runDaemonForeground(cmd *cobra.Command) error {
@@ -180,7 +186,7 @@ func runDaemonForeground(cmd *cobra.Command) error {
 		return err
 	}
 	cfg.CLIVersion = version
-	// The daemon runs on its own session (D31); a foreground start from a
+	// The daemon runs on its own session; a foreground start from a
 	// terminal mints it from `zen auth login` as a detached start does.
 	if err := ensureDaemonSession(cmd.Context()); err != nil {
 		return err
@@ -200,12 +206,12 @@ func runDaemonForeground(cmd *cobra.Command) error {
 	if binary == "" {
 		return nil
 	}
-	logger.Info("restarting into the replaced boardly binary", "binary", binary)
+	logger.Info("restarting into the replaced zenith-team binary", "binary", binary)
 	return restartIntoBinary(ctx, cmd.OutOrStdout(), binary, forwardedStartFlags(cmd))
 }
 
 // daemonOverrides builds the LoadConfig overrides from `daemon start` flags
-// and the saved config file, honoring the flag > BOARDLY_* env > config.json
+// and the saved config file, honoring the flag > ZENITH_TEAM_* env > config.json
 // > built-in default ladder. LoadConfig itself prefers a non-zero override
 // over the env, so a knob contributes an override only when its flag is set,
 // or when the env is unset and config.json carries a value.
@@ -239,32 +245,32 @@ func daemonOverrides(cmd *cobra.Command) (daemonpkg.Overrides, error) {
 	}
 
 	overrides := daemonpkg.Overrides{
-		ServerURL:      stringSetting("server", "BOARDLY_SERVER_URL", saved.ServerURL),
-		DaemonID:       stringSetting("daemon-id", "BOARDLY_DAEMON_ID", ""),
-		DeviceName:     stringSetting("device-name", "BOARDLY_DEVICE_NAME", saved.DeviceName),
-		WorkspacesRoot: stringSetting("workspaces-root", "BOARDLY_WORKSPACES_ROOT", saved.WorkspacesRoot),
+		ServerURL:      stringSetting("server", "ZENITH_TEAM_SERVER_URL", saved.ServerURL),
+		DaemonID:       stringSetting("daemon-id", "ZENITH_TEAM_DAEMON_ID", ""),
+		DeviceName:     stringSetting("device-name", "ZENITH_TEAM_DEVICE_NAME", saved.DeviceName),
+		WorkspacesRoot: stringSetting("workspaces-root", "ZENITH_TEAM_WORKSPACES_ROOT", saved.WorkspacesRoot),
 	}
 	if overrides.PollInterval, err = durationSetting(
-		"poll-interval", "BOARDLY_POLL_INTERVAL", "poll_interval", saved.PollInterval,
+		"poll-interval", "ZENITH_TEAM_POLL_INTERVAL", "poll_interval", saved.PollInterval,
 	); err != nil {
 		return daemonpkg.Overrides{}, err
 	}
 	if overrides.HeartbeatInterval, err = durationSetting(
 		"heartbeat-interval",
-		"BOARDLY_HEARTBEAT_INTERVAL",
+		"ZENITH_TEAM_HEARTBEAT_INTERVAL",
 		"heartbeat_interval",
 		saved.HeartbeatInterval,
 	); err != nil {
 		return daemonpkg.Overrides{}, err
 	}
 	if overrides.CodexSemanticInactivityTimeout, err = durationSetting(
-		"codex-semantic-inactivity-timeout", "BOARDLY_CODEX_SEMANTIC_INACTIVITY",
+		"codex-semantic-inactivity-timeout", "ZENITH_TEAM_CODEX_SEMANTIC_INACTIVITY",
 		"codex_semantic_inactivity_timeout", saved.CodexSemanticInactivityTimeout,
 	); err != nil {
 		return daemonpkg.Overrides{}, err
 	}
 	if overrides.CodexHandshakeTimeout, err = durationSetting(
-		"codex-handshake-timeout", "BOARDLY_CODEX_HANDSHAKE_TIMEOUT",
+		"codex-handshake-timeout", "ZENITH_TEAM_CODEX_HANDSHAKE_TIMEOUT",
 		"codex_handshake_timeout", saved.CodexHandshakeTimeout,
 	); err != nil {
 		return daemonpkg.Overrides{}, err
@@ -272,7 +278,7 @@ func daemonOverrides(cmd *cobra.Command) (daemonpkg.Overrides, error) {
 
 	if n, _ := cmd.Flags().GetInt("max-concurrent-runs"); n > 0 {
 		overrides.MaxConcurrentRuns = n
-	} else if os.Getenv("BOARDLY_MAX_CONCURRENT_RUNS") == "" && saved.MaxConcurrentRuns > 0 {
+	} else if os.Getenv("ZENITH_TEAM_MAX_CONCURRENT_RUNS") == "" && saved.MaxConcurrentRuns > 0 {
 		overrides.MaxConcurrentRuns = saved.MaxConcurrentRuns
 	}
 
@@ -281,7 +287,7 @@ func daemonOverrides(cmd *cobra.Command) (daemonpkg.Overrides, error) {
 	if cmd.Flags().Changed("agent-timeout") {
 		d, _ := cmd.Flags().GetDuration("agent-timeout")
 		overrides.AgentTimeout = &d
-	} else if os.Getenv("BOARDLY_AGENT_TIMEOUT") == "" && saved.AgentTimeout != "" {
+	} else if os.Getenv("ZENITH_TEAM_AGENT_TIMEOUT") == "" && saved.AgentTimeout != "" {
 		d, err := time.ParseDuration(saved.AgentTimeout)
 		if err != nil || d < 0 {
 			return daemonpkg.Overrides{}, fmt.Errorf(
@@ -292,19 +298,19 @@ func daemonOverrides(cmd *cobra.Command) (daemonpkg.Overrides, error) {
 	}
 
 	// The binary watch is single-direction: the flag and the saved value can
-	// only turn it off. An explicit BOARDLY_AUTO_RELOAD is honored by
+	// only turn it off. An explicit ZENITH_TEAM_AUTO_RELOAD is honored by
 	// LoadConfig itself, so the saved value applies only when the env is
 	// unset — the same ladder as every other knob.
 	if noReload, _ := cmd.Flags().GetBool("no-auto-reload"); noReload {
 		overrides.DisableAutoReload = true
-	} else if os.Getenv("BOARDLY_AUTO_RELOAD") == "" && saved.DisableAutoReload {
+	} else if os.Getenv("ZENITH_TEAM_AUTO_RELOAD") == "" && saved.DisableAutoReload {
 		overrides.DisableAutoReload = true
 	}
 	return overrides, nil
 }
 
 // daemonLogLevel resolves the daemon's log verbosity from the same
-// --flag > BOARDLY_* env > config.json > built-in default ladder as
+// --flag > ZENITH_TEAM_* env > config.json > built-in default ladder as
 // daemonOverrides. It walks the whole ladder itself because logging is a
 // process concern rather than a daemon config field, so there is no
 // LoadConfig stage behind it reading the env.
@@ -312,7 +318,7 @@ func daemonLogLevel(cmd *cobra.Command) (slog.Level, error) {
 	source := "--log-level"
 	value, _ := cmd.Flags().GetString("log-level")
 	if value == "" {
-		source, value = "BOARDLY_LOG_LEVEL", os.Getenv("BOARDLY_LOG_LEVEL")
+		source, value = "ZENITH_TEAM_LOG_LEVEL", os.Getenv("ZENITH_TEAM_LOG_LEVEL")
 	}
 	if value == "" {
 		saved, err := daemonpkg.LoadCLIConfig()
@@ -334,7 +340,7 @@ func daemonLogLevel(cmd *cobra.Command) (slog.Level, error) {
 // daemonLogDestination is where the daemon writes its structured log.
 //
 // Stdout, because `daemon start` redirects the detached child's stdout into
-// $BOARDLY_HOME/daemon.log — the file `daemon logs` tails and the product
+// $ZENITH_TEAM_HOME/daemon.log — the file `daemon logs` tails and the product
 // page points troubleshooting at. Stderr is left to the crash sink
 // (daemon.err.log): what the runtime prints when it dies without logging.
 // Sending the log to stderr instead left daemon.log empty for the life of
@@ -370,7 +376,7 @@ func parseLogLevel(value string) (slog.Level, bool) {
 func startDaemonDetached(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 	out := cmd.OutOrStdout()
-	// Give the daemon its own session here (D31), minted from the person's
+	// Give the daemon its own session here, minted from the person's
 	// `zen auth login` when it has none: a detached child that cannot
 	// authenticate exits into its log file, leaving `daemon start` to report
 	// a readiness timeout instead of the real cause.
@@ -382,20 +388,23 @@ func startDaemonDetached(cmd *cobra.Command) error {
 	if _, err := daemonLogLevel(cmd); err != nil {
 		return err
 	}
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(home, 0o755); err != nil {
-		return fmt.Errorf("create boardly home: %w", err)
+		return fmt.Errorf("create zenith-team home: %w", err)
 	}
 
 	if health, err := fetchDaemonHealth(ctx); err == nil {
 		fmt.Fprintf(out, "daemon already running (pid %d, status %s, version %s)\n",
 			health.PID, health.Status, health.CLIVersion)
 		if health.CLIVersion != version {
-			fmt.Fprintf(out, "this boardly binary is version %s; run `zen daemon restart` to switch the daemon to it\n",
-				version)
+			fmt.Fprintf(
+				out,
+				"this zenith-team binary is version %s; run `zen daemon restart` to switch the daemon to it\n",
+				version,
+			)
 		}
 		return nil
 	}
@@ -404,8 +413,7 @@ func startDaemonDetached(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("resolve own executable: %w", err)
 	}
-	_, err = spawnDetachedDaemon(ctx, out, home, self, forwardedStartFlags(cmd))
-	return err
+	return spawnDetachedDaemon(ctx, out, home, self, forwardedStartFlags(cmd))
 }
 
 // forwardedStartFlags re-serializes the start flags the user set so the
@@ -426,7 +434,7 @@ func forwardedStartFlags(cmd *cobra.Command) []string {
 // in-flight runs is reported as still stopping, not as a failure.
 func runDaemonStop(cmd *cobra.Command, _ []string) error {
 	out := cmd.OutOrStdout()
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
@@ -542,7 +550,7 @@ func runDaemonLogs(cmd *cobra.Command, _ []string) error {
 	follow, _ := cmd.Flags().GetBool("follow")
 	lines, _ := cmd.Flags().GetInt("lines")
 
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
@@ -648,7 +656,7 @@ func requireSession() error {
 		return errors.New("not authenticated: run `zen auth login` first")
 	}
 	if err != nil {
-		return fmt.Errorf("read boardly session: %w", err)
+		return fmt.Errorf("read zenith-team session: %w", err)
 	}
 	if credential.State(time.Now()) == authfile.StateExpired {
 		return errors.New("Zenith Team session has expired: run `zen auth login` again")
@@ -657,7 +665,7 @@ func requireSession() error {
 }
 
 // sessionStatus renders the state of the daemon's own session
-// (daemon-auth.json, D31) for `daemon status`.
+// (daemon-auth.json) for `daemon status`.
 func sessionStatus() string {
 	path, err := daemonpkg.OwnCredentialPath()
 	if err != nil {

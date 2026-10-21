@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 export type ConversationArtifactsContext = {
@@ -11,7 +11,7 @@ export type ConversationArtifactPage =
   components["schemas"]["ConversationArtifactPage"];
 export type ConversationArtifact = ConversationArtifactPage["items"][number];
 
-export const conversationArtifactsApi = boardlyApi.injectEndpoints({
+export const conversationArtifactsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getConversationArtifacts: builder.infiniteQuery<
       ConversationArtifactPage,
@@ -34,7 +34,7 @@ export const conversationArtifactsApi = boardlyApi.injectEndpoints({
         ) ?? []),
       ],
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ConversationArtifactPage>(
               `/companies/${encodeURIComponent(queryArg.companyId)}/conversations/${encodeURIComponent(queryArg.conversationId)}/artifacts`,
@@ -60,7 +60,7 @@ export const conversationArtifactsApi = boardlyApi.injectEndpoints({
         { type: "Artifact", id: `${companyId}:${conversationId}` },
       ],
       queryFn: ({ conversationId, title }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<ConversationArtifact>(
               `/conversations/${encodeURIComponent(conversationId)}/whiteboards`,

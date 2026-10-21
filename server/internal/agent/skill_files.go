@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/contentbundle"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // SkillFileChange replaces the UTF-8 content of an existing package file.
@@ -80,8 +80,12 @@ func (s *DefaultSkillService) EditFiles(
 			return err
 		}
 		record, err := q.CreateSkillEdit(ctx, generated.CreateSkillEditParams{
-			CompanyID: principal.CompanyID, AgentID: agentID, CreatedByUserID: principal.UserID,
-			SourceType: version.SourceType, SourceUrl: version.SourceUrl, SourceCommit: version.SourceCommit,
+			CompanyID:       principal.CompanyID,
+			AgentID:         agentID,
+			CreatedByUserID: principal.UserID,
+			SourceType:      version.SourceType,
+			SourceUrl:       version.SourceUrl,
+			SourceCommit:    version.SourceCommit,
 		})
 		if err != nil {
 			return err

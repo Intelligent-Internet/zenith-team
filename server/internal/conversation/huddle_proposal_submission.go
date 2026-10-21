@@ -7,13 +7,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // LockHuddleProposalInTx participates in a human-confirmed Task mutation.
 // The caller locks Company and acting membership first and owns commit.
-func LockHuddleProposalInTx(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, huddleID, proposalID uuid.UUID) (generated.HuddleWorkProposal, HuddleProposal, error) {
+func LockHuddleProposalInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	huddleID, proposalID uuid.UUID,
+) (generated.HuddleWorkProposal, HuddleProposal, error) {
 	h, role, err := lockHuddleAIActor(ctx, q, p, huddleID)
 	if err != nil {
 		return generated.HuddleWorkProposal{}, HuddleProposal{}, err
@@ -21,7 +26,10 @@ func LockHuddleProposalInTx(ctx context.Context, q *generated.Queries, p auth.Us
 	if h.StartedByUserID != p.UserID && !role.Can(auth.PermissionCompanyProfileUpdate) {
 		return generated.HuddleWorkProposal{}, HuddleProposal{}, ErrHuddleForbidden
 	}
-	row, err := q.GetHuddleProposal(ctx, generated.GetHuddleProposalParams{CompanyID: p.CompanyID, HuddleID: huddleID, ID: proposalID})
+	row, err := q.GetHuddleProposal(
+		ctx,
+		generated.GetHuddleProposalParams{CompanyID: p.CompanyID, HuddleID: huddleID, ID: proposalID},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return row, HuddleProposal{}, ErrHuddleNotFound
 	}
@@ -32,7 +40,11 @@ func LockHuddleProposalInTx(ctx context.Context, q *generated.Queries, p auth.Us
 }
 
 // RecordHuddleProposalSubmissionInTx saves the receipt beside the Task.
-func RecordHuddleProposalSubmissionInTx(ctx context.Context, q *generated.Queries, in generated.SubmitHuddleProposalParams) (HuddleProposal, error) {
+func RecordHuddleProposalSubmissionInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	in generated.SubmitHuddleProposalParams,
+) (HuddleProposal, error) {
 	row, err := q.SubmitHuddleProposal(ctx, in)
 	if err != nil {
 		return HuddleProposal{}, err

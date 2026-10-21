@@ -25,7 +25,9 @@ func TestSettingsDefaultsAndValidation(t *testing.T) {
 }
 
 func TestStoredVoiceOverridesDefaults(t *testing.T) {
-	settings := FromSettings([]byte(`{"voice":{"enabled":true,"voice":"stone","greet":false,"participation":"natural"}}`))
+	settings := FromSettings(
+		[]byte(`{"voice":{"enabled":true,"voice":"stone","greet":false,"participation":"natural"}}`),
+	)
 	if !settings.Enabled || settings.Voice != "stone" || settings.Greet || settings.Participation != "natural" {
 		t.Fatalf("settings = %+v", settings)
 	}

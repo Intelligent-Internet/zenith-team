@@ -1,7 +1,7 @@
 -- 000006_platform: platform services — the activity feed, the user inbox,
 -- and crash reports.
 --
--- Reshape in this migration (Phase 6): inbox_user_state is gone. Unread
+-- Reshape in this migration: inbox_user_state is gone. Unread
 -- counts are derived by COUNT(*) over the partial unread index, and the
 -- realtime counts ordering token is max(inbox_items.updated_at) per
 -- recipient. There is no realtime_outbox: wire events publish post-commit on
@@ -324,7 +324,7 @@ CREATE INDEX mailbox_draft_deliveries_draft_idx
 
 -- Company Commerce: Company-owned Stripe Connect account projections,
 -- durable provider-operation recovery, an append-only cluster terms catalog,
--- and append-only acceptance receipts for the Boardly Commerce Addendum.
+-- and append-only acceptance receipts for the Zenith Team Commerce Addendum.
 -- Provider secrets, AccountSession client secrets, bank details, raw KYC data,
 -- and raw webhook payloads never enter PostgreSQL.
 
@@ -525,7 +525,7 @@ CREATE INDEX commerce_operations_company_idx
 -- Thin Commerce Gateway: the Company-owned Site authority, immutable
 -- manifests and Offers, opaque customer mappings, durable Stripe operations,
 -- payment/subscription/entitlement projections, and replay-safe webhook
--- receipts used by the thin Boardly Commerce Gateway.
+-- receipts used by the thin Zenith Team Commerce Gateway.
 --
 -- Raw customer subjects, private Site signing keys, Stripe keys,
 -- hosted-session URLs, raw webhook payloads, bank details, and KYC data are
@@ -585,7 +585,7 @@ CREATE UNIQUE INDEX commerce_sites_active_origin_key
 	WHERE status = 'active'
 	  AND (environment <> 'sandbox' OR origin LIKE 'https://%');
 
--- Boardly stores public P-256 keys only. Partial unique indexes enforce the
+-- Zenith Team stores public P-256 keys only. Partial unique indexes enforce the
 -- one-active/one-retiring rotation window for each Site.
 CREATE TABLE commerce_site_signing_keys (
     id uuid DEFAULT gen_random_uuid() NOT NULL,

@@ -10,14 +10,14 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/internal/runchannel"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
-// Credential isolation (Access TECH B3d, B3e, B3f, B7b, D31). On macOS the
+// Credential isolation. On macOS the
 // daemon starts every process that runs Agent-written code, a Run's provider
 // and an app preview's commands, inside a Seatbelt sandbox. It can neither
 // read nor write a Zenith Team sign-in on this computer nor another Run's
@@ -38,10 +38,10 @@ import (
 // passes again raises the report only once the unwrapped launches have
 // ended.
 
-// credentialIsolationEnv is the owner-named test switch. Its one value,
+// credentialIsolationEnv is the test switch. Its one value,
 // not_enforced, lowers the report and drops the wrapper (LoadConfig refuses
 // any other value).
-const credentialIsolationEnv = "BOARDLY_DAEMON_CREDENTIAL_ISOLATION"
+const credentialIsolationEnv = "ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION"
 
 // credentialIsolationVerdict is one probe round's answer for this computer.
 type credentialIsolationVerdict struct {
@@ -120,10 +120,10 @@ func (d *Daemon) recordCredentialIsolation(verdict credentialIsolationVerdict) {
 }
 
 // appPreviewIsolation decides the sandbox for one launch of an app preview's
-// commands (Access TECH B3e). They are code an Agent wrote, so they start in
+// commands. They are code an Agent wrote, so they start in
 // the same sandbox as a Run's provider, with no Run home of their own, and
 // hide what the Run that presented the app hid (hidden, from the preview's
-// manifest; B7b). A preview that cannot be wrapped, because the computer is
+// manifest). A preview that cannot be wrapped, because the computer is
 // not enforced or its folders lie in a denied path, still starts, and holds
 // the report at not_enforced until release, which the supervisor calls once
 // every process it started has stopped.
@@ -133,7 +133,7 @@ func (d *Daemon) appPreviewIsolation(workingDirectories, hidden []string) (*agen
 		return nil, release
 	}
 	// Under the workspaces root a preview writes only its own working
-	// folders (Access TECH B3f).
+	// folders.
 	sandbox, err := d.launchSandbox(execenv.SeatbeltOptions{
 		RunDirs:  workingDirectories,
 		Writable: workingDirectories,
@@ -153,8 +153,8 @@ func (d *Daemon) appPreviewIsolation(workingDirectories, hidden []string) (*agen
 // not open, runHiddenFolders) and WritableRoots (when set, a fence on every
 // write). This computer adds the rest: the sign-in paths, the launch points,
 // and the workspaces root and the repository cache beside it, which every
-// launch reads and writes only in its own folders (Access TECH B3d, B3e,
-// B3f, B7b). No Run writes the cache; the daemon's own Git does.
+// launch reads and writes only in its own folders. No Run writes the cache;
+// the daemon's own Git does.
 func (d *Daemon) launchSandbox(launch execenv.SeatbeltOptions) (*agent.Sandbox, error) {
 	launch.Protected = sandboxProtectedPaths()
 	launch.NoWrite = sandboxNoWritePaths()
@@ -163,7 +163,7 @@ func (d *Daemon) launchSandbox(launch execenv.SeatbeltOptions) (*agent.Sandbox, 
 }
 
 // runHiddenFolders is what a Run may neither read nor write on this computer,
-// apart from its own folders there (Access TECH B7b). A channel answer never
+// apart from its own folders there. A channel answer never
 // draws on the tagger's local folders, bound folders or private Memory, which
 // no Project access governs, so a Run tagged in a channel or group DM hides
 // the workspaces root, which holds the Company main with its memory and
@@ -191,7 +191,7 @@ func (d *Daemon) runHiddenFolders(doc RunContext) []string {
 // moves cannot drop it.
 func sandboxProtectedPaths() []string {
 	paths := protectedCredentialPaths()
-	if home, err := BoardlyHome(); err == nil {
+	if home, err := ZenithTeamHome(); err == nil {
 		if absolute, err := filepath.Abs(home); err == nil {
 			paths = append(paths, filepath.Join(absolute, "local-preview.json"))
 		}
@@ -212,8 +212,8 @@ var errSandboxDeniedRead = errors.New(
 // not open, as its sandbox gets them. The guard refuses, by real path, what
 // that sandbox denies the Run itself: the sign-in files, every Run's isolated
 // home and, for a tagged Run, everything in its hidden folders but its own
-// folders, so no Run can have the daemon carry them into a chat (Access TECH
-// B3e, B7b). It holds on every computer, sandboxed or not.
+// folders, so no Run can have the daemon carry them into a chat. It holds on
+// every computer, sandboxed or not.
 func runFileGuard(launch execenv.SeatbeltOptions) func(realPath string) error {
 	return func(realPath string) error {
 		opts := launch
@@ -313,8 +313,7 @@ func (d *Daemon) probeCredentialIsolation(ctx context.Context) credentialIsolati
 		return credentialIsolationNotEnforced("the daemon cannot make a stand-in Run home: " + err.Error())
 	}
 	// A stand-in workspaces root with a folder of the launch's own and one
-	// of another Run's: the sandbox must let it write only its own (Access
-	// TECH B3f).
+	// of another Run's: the sandbox must let it write only its own.
 	standIn, err := os.MkdirTemp("", "zenith-probe-workspaces-")
 	if err != nil {
 		return credentialIsolationNotEnforced(
@@ -352,8 +351,7 @@ func (d *Daemon) probeCredentialIsolation(ctx context.Context) credentialIsolati
 	if err != nil {
 		return credentialIsolationNotEnforced(err.Error())
 	}
-	// A tagged Run's sandbox hides the stand-in root but for its own folder
-	// (Access TECH B7b).
+	// A tagged Run's sandbox hides the stand-in root but for its own folder.
 	tagged, err := d.launchSandbox(execenv.SeatbeltOptions{
 		RunDirs:  []string{ownFolder},
 		Shared:   []string{standIn},

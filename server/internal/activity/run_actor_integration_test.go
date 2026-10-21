@@ -16,23 +16,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // runActorWorld is the fixture Company with the Activity recorder on its
 // bus, the real Run proof resolver, and Eli, an Agent reporting to the root
-// Agent that the owner (Schema A, "Mia" in the spec) has bound to their
+// Agent that the owner (Schema A) has bound to their
 // computer. Every Run here works for the owner.
 type runActorWorld struct {
 	ctx     context.Context
@@ -209,7 +209,7 @@ func (w runActorWorld) assertTheRunWroteThem(
 	}
 }
 
-// IA-FR4, IA-AC4: a Question asked in Eli's Run for the owner stores Eli as
+// A Question asked in Eli's Run for the owner stores Eli as
 // the actor, the owner and the Run, and the feed and its frame read them
 // back as "Eli for Schema A" with the Run.
 func TestQuestionAskedInARunStoresTheAgentThePersonAndTheRun(t *testing.T) {
@@ -279,7 +279,7 @@ func lastFrame(t *testing.T, frames []activity.Entry, action string) activity.En
 	return activity.Entry{}
 }
 
-// IA-FR4, IA-FR5, IA-AC4: a Task Eli's Run files for the owner stores the
+// A Task Eli's Run files for the owner stores the
 // Run's three identities on every row, names both creators, and its chat
 // still runs with the Company's root Agent, not with Eli. A Task Eli is to
 // do starts its Run at once with its files, and that start, the files
@@ -383,7 +383,7 @@ func (w runActorWorld) startEliTask(t *testing.T) execution.RunOrigin {
 	return w.prove(t, w.eli, w.fixture.ConversationA, &w.fixture.TaskA)
 }
 
-// IA-FR4, IA-AC4: Eli's Task Run fails its Task. The Task change and the
+// Eli's Task Run fails its Task. The Task change and the
 // report to Eli's manager are the Run's, for the owner.
 func TestTaskFailedInARunStoresTheRun(t *testing.T) {
 	t.Parallel()
@@ -404,8 +404,7 @@ func TestTaskFailedInARunStoresTheRun(t *testing.T) {
 	w.assertTheRunWroteThem(t, rows, origin, "task.updated", "task.report_ready")
 }
 
-// IA-FR4, IA-AC4: a Company Plan Eli's Task Run raises is the Run's, for the
-// owner.
+// A Company Plan Eli's Task Run raises is the Run's, for the owner.
 func TestCompanyPlanRaisedInARunStoresTheRun(t *testing.T) {
 	t.Parallel()
 	w := newRunActorWorld(t)
@@ -429,7 +428,7 @@ func TestCompanyPlanRaisedInARunStoresTheRun(t *testing.T) {
 	w.assertTheRunWroteThem(t, rows, origin, "approval.requested")
 }
 
-// IA-FR4, IA-FR5: in Proactive Mode the root Agent's Run applies the plan it
+// In Proactive Mode the root Agent's Run applies the plan it
 // raises at once. The Approval's resolution, the new Project, its grant, the
 // new Task and its chat are all the Run's, for the owner, and the new Task
 // names the owner and the root Agent as its creators.

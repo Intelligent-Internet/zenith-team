@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 // maxWikiPageRequestBytes admits the largest valid page write however it is
@@ -25,7 +26,7 @@ import (
 const maxWikiPageRequestBytes = 12*(240+2048+262144) + 4<<10
 
 type wikiPageRequest struct {
-	Title        string     `json:"title" binding:"required"`
+	Title        string     `json:"title"        binding:"required"`
 	Body         string     `json:"body"`
 	Summary      string     `json:"summary"`
 	CollectionID *uuid.UUID `json:"collectionId"`
@@ -33,8 +34,8 @@ type wikiPageRequest struct {
 
 type wikiDraftMetadataRequest struct {
 	ExpectedSequence optional[int64]  `json:"expectedSequence" binding:"omitnil,required,gte=0,max=9007199254740991"`
-	Title            string           `json:"title" binding:"required"`
-	Summary          optional[string] `json:"summary" binding:"omitnil,required"`
+	Title            string           `json:"title"            binding:"required"`
+	Summary          optional[string] `json:"summary"          binding:"omitnil,required"`
 	CollectionID     json.RawMessage  `json:"collectionId"`
 }
 
@@ -46,7 +47,12 @@ func (request wikiDraftMetadataRequest) domainInput() (wiki.DraftMetadataInput, 
 	if err := json.Unmarshal(request.CollectionID, &collectionID); err != nil {
 		return wiki.DraftMetadataInput{}, errors.New("collectionId must be a UUID or null")
 	}
-	return wiki.DraftMetadataInput{ExpectedSequence: *request.ExpectedSequence.ptr(), Title: request.Title, Summary: *request.Summary.ptr(), CollectionID: collectionID}, nil
+	return wiki.DraftMetadataInput{
+		ExpectedSequence: *request.ExpectedSequence.ptr(),
+		Title:            request.Title,
+		Summary:          *request.Summary.ptr(),
+		CollectionID:     collectionID,
+	}, nil
 }
 
 type wikiPublishRequest struct {
@@ -64,7 +70,7 @@ type wikiRevisionRequest struct {
 
 type wikiRestoreRevisionRequest struct {
 	ExpectedRevision optional[int64] `json:"expectedRevision" binding:"omitnil,required,min=0,max=9007199254740991"`
-	RevisionID       uuid.UUID       `json:"revisionId" binding:"required"`
+	RevisionID       uuid.UUID       `json:"revisionId"       binding:"required"`
 	ExpectedSequence optional[int64] `json:"expectedSequence" binding:"omitnil,required,gte=0,max=9007199254740991"`
 }
 
@@ -73,7 +79,7 @@ type wikiCollectionRequest struct {
 }
 
 type wikiRenameCollectionRequest struct {
-	Name             string `json:"name" binding:"required"`
+	Name             string `json:"name"             binding:"required"`
 	ExpectedRevision int64  `json:"expectedRevision" binding:"revision"`
 }
 
@@ -170,7 +176,13 @@ func (h *Handler) renameWikiCollection(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.WikiService.RenameCollection(c.Request.Context(), principal, id, request.ExpectedRevision, request.Name)
+	result, err := h.WikiService.RenameCollection(
+		c.Request.Context(),
+		principal,
+		id,
+		request.ExpectedRevision,
+		request.Name,
+	)
 	if err != nil {
 		writeWikiError(c, err)
 		return
@@ -192,7 +204,12 @@ func (h *Handler) deleteWikiCollection(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	if err := h.WikiService.DeleteCollection(c.Request.Context(), principal, id, request.ExpectedRevision); err != nil {
+	if err := h.WikiService.DeleteCollection(
+		c.Request.Context(),
+		principal,
+		id,
+		request.ExpectedRevision,
+	); err != nil {
 		writeWikiError(c, err)
 		return
 	}
@@ -338,6 +355,7 @@ func (h *Handler) updateWikiDraftMetadata(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) publishWikiPage(c *gin.Context) {
 	principal, ok := taskPrincipal(c)
 	if !ok {
@@ -352,13 +370,22 @@ func (h *Handler) publishWikiPage(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.WikiService.PublishPage(c.Request.Context(), principal, id, wiki.PublishPageInput{ExpectedRevision: *request.ExpectedRevision.ptr(), ExpectedSequence: *request.ExpectedSequence.ptr()})
+	result, err := h.WikiService.PublishPage(
+		c.Request.Context(),
+		principal,
+		id,
+		wiki.PublishPageInput{
+			ExpectedRevision: *request.ExpectedRevision.ptr(),
+			ExpectedSequence: *request.ExpectedSequence.ptr(),
+		},
+	)
 	if err != nil {
 		writeWikiError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) wikiDocument(c *gin.Context) {
 	principal, ok := taskPrincipal(c)
 	if !ok {
@@ -392,6 +419,7 @@ func (h *Handler) wikiDocument(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) syncWikiDocument(c *gin.Context) {
 	principal, ok := taskPrincipal(c)
 	if !ok {
@@ -410,7 +438,12 @@ func (h *Handler) syncWikiDocument(c *gin.Context) {
 		writeWikiError(c, wiki.ErrPageInvalidInput)
 		return
 	}
-	result, err := h.WikiService.SyncDocument(c.Request.Context(), principal, id, wiki.SyncDocumentInput{Update: input.Update, BaseSequence: input.BaseSequence})
+	result, err := h.WikiService.SyncDocument(
+		c.Request.Context(),
+		principal,
+		id,
+		wiki.SyncDocumentInput{Update: input.Update, BaseSequence: input.BaseSequence},
+	)
 	if err != nil {
 		writeWikiError(c, err)
 		return
@@ -426,6 +459,7 @@ func (h *Handler) syncWikiDocument(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
 func (h *Handler) reserveWikiBlockIDs(c *gin.Context) {
 	principal, ok := taskPrincipal(c)
 	if !ok {
@@ -471,9 +505,19 @@ func (h *Handler) setWikiArchive(c *gin.Context, archive bool) {
 	}
 	var result wiki.PageResponse
 	if archive {
-		result, err = h.WikiService.ArchivePage(c.Request.Context(), principal, id, *request.ExpectedRevision.ptr())
+		result, err = h.WikiService.ArchivePage(
+			c.Request.Context(),
+			principal,
+			id,
+			*request.ExpectedRevision.ptr(),
+		)
 	} else {
-		result, err = h.WikiService.RestorePage(c.Request.Context(), principal, id, *request.ExpectedRevision.ptr())
+		result, err = h.WikiService.RestorePage(
+			c.Request.Context(),
+			principal,
+			id,
+			*request.ExpectedRevision.ptr(),
+		)
 	}
 	if err != nil {
 		writeWikiError(c, err)
@@ -522,7 +566,16 @@ func (h *Handler) restoreWikiRevision(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.WikiService.RestoreRevision(c.Request.Context(), principal, id, request.RevisionID, wiki.RestoreRevisionInput{ExpectedRevision: *request.ExpectedRevision.ptr(), ExpectedSequence: *request.ExpectedSequence.ptr()})
+	result, err := h.WikiService.RestoreRevision(
+		c.Request.Context(),
+		principal,
+		id,
+		request.RevisionID,
+		wiki.RestoreRevisionInput{
+			ExpectedRevision: *request.ExpectedRevision.ptr(),
+			ExpectedSequence: *request.ExpectedSequence.ptr(),
+		},
+	)
 	if err != nil {
 		writeWikiError(c, err)
 		return
@@ -554,17 +607,52 @@ func (h *Handler) favoriteWikiPage(c *gin.Context) {
 var wikiErrorMappings = []errorMapping{
 	{wiki.ErrPageInvalidInput, http.StatusUnprocessableEntity, "Invalid Wiki input", "validation_failed"},
 	{wiki.ErrPageBodyTooLarge, http.StatusRequestEntityTooLarge, "Wiki page is too large", "request_too_large"},
-	{wiki.ErrPageForbidden, http.StatusForbidden, "Your Company role does not allow Wiki publishing", "company_permission_required"},
+	{
+		wiki.ErrPageForbidden,
+		http.StatusForbidden,
+		"Your Company role does not allow Wiki publishing",
+		"company_permission_required",
+	},
 	{wiki.ErrPageNotFound, http.StatusNotFound, "Wiki page not found", "wiki_page_not_found"},
 	{wiki.ErrCollectionNotFound, http.StatusNotFound, "Wiki collection not found", "wiki_collection_not_found"},
 	{wiki.ErrPageConflict, http.StatusConflict, "Wiki page changed since you opened it", "wiki_page_conflict"},
 	{wiki.ErrPageArchived, http.StatusConflict, "Wiki page is archived", "wiki_page_archived"},
-	{wiki.ErrCollectionConflict, http.StatusConflict, "Wiki collection changed or name is already used", "wiki_collection_conflict"},
-	{wiki.ErrArtifactRefUnavailable, http.StatusUnprocessableEntity, "A cited Artifact is missing or you cannot open it", "wiki_artifact_ref_unavailable"},
-	{wiki.ErrArtifactRefLimit, http.StatusUnprocessableEntity, "A Wiki page can cite at most 50 Artifacts", "wiki_artifact_ref_limit"},
-	{wiki.ErrAgentAccessDisabled, http.StatusForbidden, "Company Wiki reading is switched off for this Agent", "wiki_agent_access_disabled"},
-	{wiki.ErrAgentWriteForbidden, http.StatusForbidden, "This Run may not write the Company Wiki", "wiki_agent_write_forbidden"},
-	{wiki.ErrAgentWriteLimit, http.StatusUnprocessableEntity, "A Run can write at most 40 Wiki pages", "wiki_agent_write_limit"},
+	{
+		wiki.ErrCollectionConflict,
+		http.StatusConflict,
+		"Wiki collection changed or name is already used",
+		"wiki_collection_conflict",
+	},
+	{
+		wiki.ErrArtifactRefUnavailable,
+		http.StatusUnprocessableEntity,
+		"A cited Artifact is missing or you cannot open it",
+		"wiki_artifact_ref_unavailable",
+	},
+	{
+		wiki.ErrArtifactRefLimit,
+		http.StatusUnprocessableEntity,
+		"A Wiki page can cite at most 50 Artifacts",
+		"wiki_artifact_ref_limit",
+	},
+	{
+		wiki.ErrAgentAccessDisabled,
+		http.StatusForbidden,
+		"Company Wiki reading is switched off for this Agent",
+		"wiki_agent_access_disabled",
+	},
+	{
+		wiki.ErrAgentWriteForbidden,
+		http.StatusForbidden,
+		"This Run may not write the Company Wiki",
+		"wiki_agent_write_forbidden",
+	},
+	{
+		wiki.ErrAgentWriteLimit,
+		http.StatusUnprocessableEntity,
+		"A Run can write at most 40 Wiki pages",
+		"wiki_agent_write_limit",
+	},
 	{wiki.ErrRunNotFound, http.StatusNotFound, "Run not found", "run_not_found"},
 	{execution.ErrRunProofInvalid, http.StatusUnauthorized, "Run token is invalid", "run_token_invalid"},
 }

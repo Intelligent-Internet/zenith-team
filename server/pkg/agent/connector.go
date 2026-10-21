@@ -19,7 +19,7 @@ const (
 	maxAllowedMCPServers      = maxConnectorApps + 1
 	maxConnectorTools         = 128
 	maxConnectorToolNameBytes = 240
-	connectorToolDomain       = "boardly.connector-tool-contract.v1\x00"
+	connectorToolDomain       = "zenith-team.connector-tool-contract.v1\x00"
 )
 
 var (
@@ -290,7 +290,7 @@ func applyCodexConnectorOnlyThreadPolicy(params map[string]any, opts ExecOptions
 	if opts.Sandbox != nil {
 		// Codex's read-only mode is its own Seatbelt, which cannot start
 		// inside the daemon's. The daemon's profile fences writes to the
-		// Run's scratch and Codex's home instead (Access TECH B3d).
+		// Run's scratch and Codex's home instead.
 		params["sandbox"] = "danger-full-access"
 	}
 	params["ephemeral"] = true

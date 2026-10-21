@@ -152,8 +152,8 @@
   overflow: hidden;
 }
 /* Document editing uses the caret; toolbar controls retain their focus rings. */
-html[data-boardly-workspace-theme] .pc-document-title-field textarea:focus,
-html[data-boardly-workspace-theme] .pc-block-editor .tiptap:focus {
+html[data-zenith-team-workspace-theme] .pc-document-title-field textarea:focus,
+html[data-zenith-team-workspace-theme] .pc-block-editor .tiptap:focus {
   outline: none;
   box-shadow: none;
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	adapter "boardly.dev/boardly/server/internal/infra/social"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	adapter "github.com/Intelligent-Internet/zenith-team/server/internal/infra/social"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (s *DefaultSocialService) claim(ctx context.Context, userID, id uuid.UUID) (generated.SocialConnection, error) {

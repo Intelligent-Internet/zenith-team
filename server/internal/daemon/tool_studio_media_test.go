@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func studioMediaLauncher(t *testing.T) (string, func(...string) ([]byte, error), *atomic.Int32) {

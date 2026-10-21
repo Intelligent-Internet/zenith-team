@@ -14,17 +14,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestApplyCompanyPlanDeletesOmittedEntitiesAndRetainsExecutionHistory(t *testing.T) {
@@ -110,7 +109,12 @@ func TestApplyCompanyPlanDeletesOmittedEntitiesAndRetainsExecutionHistory(t *tes
 		}); err != nil {
 		t.Fatal(err)
 	}
-	desired := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}}, FormatVersion: planFormatVersion, Company: "schema-a", Tasks: []PlanTask{}}
+	desired := PlanDocument{
+		Projects:      []PlanProject{{Key: "work", Title: "Work"}},
+		FormatVersion: planFormatVersion,
+		Company:       "schema-a",
+		Tasks:         []PlanTask{},
+	}
 	result, err := service.ApplyCompanyPlan(ctx, auth.UserPrincipal{
 		UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner,
 	}, PlanArtifact{
@@ -331,17 +335,19 @@ func TestApplyCompanyPlanRecordsFirstApplicationWhenTasksAlreadyExist(t *testing
 		t.Fatalf("NewPlanService() error = %v", err)
 	}
 
-	desired := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+	desired := PlanDocument{
+		Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 		FormatVersion: planFormatVersion,
 		Company:       "schema-a",
 		Tasks: []PlanTask{
-			{ProjectKey: "work",
+			{
+				ProjectKey:    "work",
 				Key:           "task_a",
 				Title:         "Task A",
 				Status:        "backlog",
 				Priority:      "medium",
 				AgentID:       fixture.AgentA.String(),
-				MilestoneType: task.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
+				MilestoneType: taskdomain.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
 			},
 		},
 	}
@@ -431,7 +437,7 @@ func TestApplyCompanyPlanAcceptsBaseWithoutConversationID(t *testing.T) {
 					Status:        "backlog",
 					Priority:      "medium",
 					AgentID:       fixture.AgentA.String(),
-					MilestoneType: task.MilestoneTypeProduct,
+					MilestoneType: taskdomain.MilestoneTypeProduct,
 					DependsOn:     []PlanTaskDependency{},
 				},
 			},
@@ -469,14 +475,23 @@ func TestApplyCompanyPlanResolvesAgentAndReassignsTask(t *testing.T) {
 	dbtest.SeedBoundAgent(t, ctx, pool, engineeringAgentID, fixture.CompanyA,
 		"Engineering", "codex", &fixture.AgentA, fixture.UserA, fixture.RuntimeA)
 
-	desired := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+	desired := PlanDocument{
+		Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 		FormatVersion: planFormatVersion,
 		Company:       "schema-a",
-		Tasks: []PlanTask{{ProjectKey: "work",
-			Key: "task_a", Title: "Task A", Status: "backlog", Priority: "medium",
-			Description: "Deliver the launch task.",
-			AgentID:     engineeringAgentID.String(), MilestoneType: taskdomain.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
-		}},
+		Tasks: []PlanTask{
+			{
+				ProjectKey:    "work",
+				Key:           "task_a",
+				Title:         "Task A",
+				Status:        "backlog",
+				Priority:      "medium",
+				Description:   "Deliver the launch task.",
+				AgentID:       engineeringAgentID.String(),
+				MilestoneType: taskdomain.MilestoneTypeProduct,
+				DependsOn:     []PlanTaskDependency{},
+			},
+		},
 	}
 	result, err := service.ApplyCompanyPlan(ctx, auth.UserPrincipal{
 		UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner,
@@ -596,12 +611,18 @@ func TestApplyCompanyPlanHandsOffATaskThatHasRun(t *testing.T) {
 			Desired: PlanDocument{
 				Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 				FormatVersion: planFormatVersion, Company: "schema-a",
-				Tasks: []PlanTask{{
-					ProjectKey: "work", Key: "task_a", Title: title,
-					Status: "in_progress", Priority: "medium",
-					AgentID:       agentID.String(),
-					MilestoneType: taskdomain.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
-				}},
+				Tasks: []PlanTask{
+					{
+						ProjectKey:    "work",
+						Key:           "task_a",
+						Title:         title,
+						Status:        "in_progress",
+						Priority:      "medium",
+						AgentID:       agentID.String(),
+						MilestoneType: taskdomain.MilestoneTypeProduct,
+						DependsOn:     []PlanTaskDependency{},
+					},
+				},
 			},
 		})
 		if err != nil {
@@ -628,7 +649,8 @@ func TestApplyCompanyPlanHandsOffATaskThatHasRun(t *testing.T) {
 	// The plan restated the Task as in progress, but the handoff fenced the
 	// earlier Run out of any merge: the work starts fresh from To do.
 	var taskStatus string
-	if err := pool.QueryRow(ctx, `SELECT status FROM tasks WHERE id=$1`, fixture.TaskA).Scan(&taskStatus); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT status FROM tasks WHERE id=$1`, fixture.TaskA).
+		Scan(&taskStatus); err != nil {
 		t.Fatalf("read Task status: %v", err)
 	}
 	if taskStatus != "todo" {
@@ -713,7 +735,12 @@ func TestApplyCompanyPlanCancelsTheRunsOfADeletedTask(t *testing.T) {
 		t.Fatalf("read the deleted Task's Run: %v", err)
 	}
 	if status != "cancelled" || reason != execution.RunReasonTaskDeleted || tokens != 0 {
-		t.Fatalf("deleted Task's Run = %s / %q / %d tokens, want cancelled with task_deleted", status, reason, tokens)
+		t.Fatalf(
+			"deleted Task's Run = %s / %q / %d tokens, want cancelled with task_deleted",
+			status,
+			reason,
+			tokens,
+		)
 	}
 }
 
@@ -894,7 +921,7 @@ func TestApplyCompanyPlanKeepsAnArchivedAgentOnItsFinishedTask(t *testing.T) {
 	planTask := func(key, title, status string, agentID uuid.UUID) PlanTask {
 		return PlanTask{
 			ProjectKey: "work", Key: key, Title: title, Status: status, Priority: "medium",
-			AgentID: agentID.String(), MilestoneType: task.MilestoneTypeProduct,
+			AgentID: agentID.String(), MilestoneType: taskdomain.MilestoneTypeProduct,
 			DependsOn: []PlanTaskDependency{},
 		}
 	}
@@ -918,7 +945,12 @@ func TestApplyCompanyPlanKeepsAnArchivedAgentOnItsFinishedTask(t *testing.T) {
 		var prepared approval.PreparedCompanyPlanAction
 		err = store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 			var err error
-			prepared, err = service.PrepareCompanyPlanApply(ctx, q, approval.CompanyPlanActor{Principal: principal}, encoded)
+			prepared, err = service.PrepareCompanyPlanApply(
+				ctx,
+				q,
+				approval.CompanyPlanActor{Principal: principal},
+				encoded,
+			)
 			return err
 		})
 		return prepared, err
@@ -940,7 +972,7 @@ func TestApplyCompanyPlanKeepsAnArchivedAgentOnItsFinishedTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PrepareCompanyPlanApply() error = %v, want the finished Task kept as it is", err)
 	}
-	var presentation CompanyPlanApprovalPresentation
+	var presentation PlanApprovalPresentation
 	if err := json.Unmarshal(prepared.Presentation, &presentation); err != nil {
 		t.Fatal(err)
 	}
@@ -1039,18 +1071,23 @@ func TestApplyCompanyPlanLocksTaskConversationBeforeTask(t *testing.T) {
 				}},
 				Dependencies: []PlanBaseDependency{},
 			},
-			Desired: PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+			Desired: PlanDocument{
+				Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 				FormatVersion: planFormatVersion,
 				Company:       "schema-a",
-				Tasks: []PlanTask{{ProjectKey: "work",
-					Key:           "task_a",
-					Title:         "Renamed Task A",
-					Status:        "backlog",
-					Priority:      "medium",
-					Description:   "Deliver the renamed task.",
-					AgentID:       fixture.AgentA.String(),
-					MilestoneType: taskdomain.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
-				}},
+				Tasks: []PlanTask{
+					{
+						ProjectKey:    "work",
+						Key:           "task_a",
+						Title:         "Renamed Task A",
+						Status:        "backlog",
+						Priority:      "medium",
+						Description:   "Deliver the renamed task.",
+						AgentID:       fixture.AgentA.String(),
+						MilestoneType: taskdomain.MilestoneTypeProduct,
+						DependsOn:     []PlanTaskDependency{},
+					},
+				},
 			},
 		})
 		done <- applyErr
@@ -1201,7 +1238,9 @@ func TestApplyCompanyPlanDependencyChangesRespectExecutingTaskMergeFence(t *test
 				CompanySlug:     "schema-a",
 				CreatedAt:       time.Now().UTC(),
 				Base: PlanBase{
-					Projects: []PlanBaseEntity{{ID: fixture.ProjectA.String(), Key: "work", Revision: 1}},
+					Projects: []PlanBaseEntity{
+						{ID: fixture.ProjectA.String(), Key: "work", Revision: 1},
+					},
 					Tasks: []PlanBaseEntity{
 						{
 							ID: fixture.TaskA.String(), Key: "task_a", Revision: 1,
@@ -1216,26 +1255,33 @@ func TestApplyCompanyPlanDependencyChangesRespectExecutingTaskMergeFence(t *test
 					},
 					Dependencies: baseDependencies,
 				},
-				Desired: PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+				Desired: PlanDocument{
+					Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 					FormatVersion: planFormatVersion,
 					Company:       "schema-a",
-					Tasks: []PlanTask{{ProjectKey: "work",
-						Key:           "task_a",
-						AgentID:       fixture.AgentA.String(),
-						MilestoneType: taskdomain.MilestoneTypeProduct, Title: "Task A",
-						Description: "Deliver the reviewed task.",
-						Status:      "in_review",
-						Priority:    "medium",
-						DependsOn:   dependsOn,
-					}, {ProjectKey: "work",
-						Key:           "prerequisite",
-						AgentID:       fixture.AgentA.String(),
-						MilestoneType: taskdomain.MilestoneTypeProduct, Title: "Prerequisite Task",
-						Description: "Prepare the dependency.",
-						Status:      "backlog",
-						Priority:    "medium",
-						DependsOn:   []PlanTaskDependency{},
-					}},
+					Tasks: []PlanTask{
+						{
+							ProjectKey:    "work",
+							Key:           "task_a",
+							AgentID:       fixture.AgentA.String(),
+							MilestoneType: taskdomain.MilestoneTypeProduct, Title: "Task A",
+							Description: "Deliver the reviewed task.",
+							Status:      "in_review",
+							Priority:    "medium",
+							DependsOn:   dependsOn,
+						},
+						{
+							ProjectKey:    "work",
+							Key:           "prerequisite",
+							AgentID:       fixture.AgentA.String(),
+							MilestoneType: taskdomain.MilestoneTypeProduct,
+							Title:         "Prerequisite Task",
+							Description:   "Prepare the dependency.",
+							Status:        "backlog",
+							Priority:      "medium",
+							DependsOn:     []PlanTaskDependency{},
+						},
+					},
 				},
 			}
 
@@ -1415,14 +1461,24 @@ func TestApplyCompanyPlanRefusesNewSlugsShapedLikeLabels(t *testing.T) {
 				Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 				Tasks: []PlanTask{
 					{
-						ProjectKey: "work",
-						Key:        "task_a", Title: "Task A", Status: "backlog", Priority: "medium",
-						AgentID: fixture.AgentA.String(), MilestoneType: task.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
+						ProjectKey:    "work",
+						Key:           "task_a",
+						Title:         "Task A",
+						Status:        "backlog",
+						Priority:      "medium",
+						AgentID:       fixture.AgentA.String(),
+						MilestoneType: taskdomain.MilestoneTypeProduct,
+						DependsOn:     []PlanTaskDependency{},
 					},
 					{
-						ProjectKey: "work",
-						Key:        key, Title: "Shaped like a label", Status: "backlog", Priority: "medium",
-						AgentID: fixture.AgentA.String(), MilestoneType: task.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
+						ProjectKey:    "work",
+						Key:           key,
+						Title:         "Shaped like a label",
+						Status:        "backlog",
+						Priority:      "medium",
+						AgentID:       fixture.AgentA.String(),
+						MilestoneType: taskdomain.MilestoneTypeProduct,
+						DependsOn:     []PlanTaskDependency{},
 					},
 				},
 			},
@@ -1431,7 +1487,14 @@ func TestApplyCompanyPlanRefusesNewSlugsShapedLikeLabels(t *testing.T) {
 
 	// The fixture company's prefix is SCA.
 	for _, shaped := range []string{"SCA-7", "sca-7"} {
-		if _, err := service.ApplyCompanyPlan(ctx, principal, planWith(shaped)); !errors.Is(err, ErrPlanInvalidInput) {
+		if _, err := service.ApplyCompanyPlan(
+			ctx,
+			principal,
+			planWith(shaped),
+		); !errors.Is(
+			err,
+			ErrPlanInvalidInput,
+		) {
 			t.Fatalf("ApplyCompanyPlan(slug %q) error = %v, want %v", shaped, err, ErrPlanInvalidInput)
 		}
 		encoded, err := json.Marshal(planWith(shaped))
@@ -1439,15 +1502,26 @@ func TestApplyCompanyPlanRefusesNewSlugsShapedLikeLabels(t *testing.T) {
 			t.Fatal(err)
 		}
 		err = store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-			_, err := service.PrepareCompanyPlanApply(ctx, q, approval.CompanyPlanActor{Principal: principal}, encoded)
+			_, err := service.PrepareCompanyPlanApply(
+				ctx,
+				q,
+				approval.CompanyPlanActor{Principal: principal},
+				encoded,
+			)
 			return err
 		})
 		if !errors.Is(err, ErrPlanInvalidInput) {
-			t.Fatalf("PrepareCompanyPlanApply(slug %q) error = %v, want %v", shaped, err, ErrPlanInvalidInput)
+			t.Fatalf(
+				"PrepareCompanyPlanApply(slug %q) error = %v, want %v",
+				shaped,
+				err,
+				ErrPlanInvalidInput,
+			)
 		}
 	}
 	var count int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM tasks WHERE company_id = $1`, fixture.CompanyA).Scan(&count); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM tasks WHERE company_id = $1`, fixture.CompanyA).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 1 {
@@ -1485,7 +1559,7 @@ func TestApplyCompanyPlanPrerequisiteCrossingDonePublishesDependentTaskUpdated(t
 	if err != nil {
 		t.Fatalf("NewPlanService() error = %v", err)
 	}
-	taskChanges := recordTopic(t, bus, task.Topic)
+	taskChanges := recordTopic(t, bus, taskdomain.Topic)
 	dependentTaskID := dbtest.NewUUID(t)
 	dependentConversationID := dbtest.NewUUID(t)
 	dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
@@ -1517,7 +1591,7 @@ func TestApplyCompanyPlanPrerequisiteCrossingDonePublishesDependentTaskUpdated(t
 		return PlanTask{
 			ProjectKey: "work", Key: key, Title: title, Description: description, Status: status,
 			Priority: "medium", AgentID: fixture.AgentA.String(),
-			MilestoneType: task.MilestoneTypeProduct,
+			MilestoneType: taskdomain.MilestoneTypeProduct,
 			DependsOn:     dependsOn,
 		}
 	}
@@ -1563,10 +1637,10 @@ func TestApplyCompanyPlanPrerequisiteCrossingDonePublishesDependentTaskUpdated(t
 	if countsOf(result) != (planCounts{Updated: 2}) {
 		t.Fatalf("ApplyCompanyPlan() = %+v, want the prerequisite and its dependent updated", result)
 	}
-	var dependentUpdates []task.Response
+	var dependentUpdates []taskdomain.Response
 	for _, event := range taskChanges.snapshot() {
-		if event.Name == task.EventUpdated && event.TaskID == dependentTaskID {
-			dependentUpdates = append(dependentUpdates, event.Payload.(task.Response))
+		if event.Name == taskdomain.EventUpdated && event.TaskID == dependentTaskID {
+			dependentUpdates = append(dependentUpdates, event.Payload.(taskdomain.Response))
 		}
 	}
 	if len(dependentUpdates) != 1 || !dependentUpdates[0].DependenciesResolved ||
@@ -1613,7 +1687,7 @@ func TestApplyCompanyPlanCreatedTerminalTaskCarriesItsOutcomeTime(t *testing.T) 
 	planTask := func(key, status string) PlanTask {
 		return PlanTask{
 			ProjectKey: "work", Key: key, Title: key, Status: status, Priority: "medium",
-			MilestoneType: task.MilestoneTypeProduct,
+			MilestoneType: taskdomain.MilestoneTypeProduct,
 			DependsOn:     []PlanTaskDependency{},
 		}
 	}

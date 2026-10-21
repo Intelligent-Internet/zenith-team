@@ -14,11 +14,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/pkg/studiocanvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/studiocanvas"
 )
 
 func TestPresentRunOutputResolvesCompanyFromProof(t *testing.T) {
@@ -27,8 +27,17 @@ func TestPresentRunOutputResolvesCompanyFromProof(t *testing.T) {
 		t.Run(scenario, func(t *testing.T) {
 			t.Parallel()
 			userID, companyID, runID := uuid.New(), uuid.New(), uuid.New()
-			principal := auth.UserPrincipal{UserID: userID, SessionID: uuid.New(), AuthKind: auth.TokenKindBearer}
-			origin := execution.RunOrigin{RunID: runID, CompanyID: companyID, AgentID: uuid.New(), AuthorizedByUserID: &userID}
+			principal := auth.UserPrincipal{
+				UserID:    userID,
+				SessionID: uuid.New(),
+				AuthKind:  auth.TokenKindBearer,
+			}
+			origin := execution.RunOrigin{
+				RunID:              runID,
+				CompanyID:          companyID,
+				AgentID:            uuid.New(),
+				AuthorizedByUserID: &userID,
+			}
 			want := http.StatusCreated
 			switch scenario {
 			case "other member":
@@ -41,37 +50,62 @@ func TestPresentRunOutputResolvesCompanyFromProof(t *testing.T) {
 			}
 			presented := false
 			h := &Handler{
-				AuthService: &authServiceStub{authenticate: func(context.Context, string, auth.TokenKind) (auth.UserPrincipal, error) {
-					return principal, nil
-				}},
-				CompanyService: &companyServiceStub{authorize: func(_ context.Context, got auth.UserPrincipal, id uuid.UUID) (auth.UserPrincipal, error) {
-					if scenario == "other member" || scenario == "missing authorizer" {
-						t.Fatal("foreign Run proof reached Company authorization")
-					}
-					if got != principal || id != companyID {
-						t.Fatalf("Company authorization = %+v, %s", got, id)
-					}
-					if scenario == "revoked membership" {
-						return auth.UserPrincipal{}, company.ErrNotFound
-					}
-					got.CompanyID, got.Role = companyID, auth.CompanyRoleMember
-					return got, nil
-				}},
+				AuthService: &authServiceStub{
+					authenticate: func(context.Context, string, auth.TokenKind) (auth.UserPrincipal, error) {
+						return principal, nil
+					},
+				},
+				CompanyService: &companyServiceStub{
+					authorize: func(_ context.Context, got auth.UserPrincipal, id uuid.UUID) (auth.UserPrincipal, error) {
+						if scenario == "other member" || scenario == "missing authorizer" {
+							t.Fatal("foreign Run proof reached Company authorization")
+						}
+						if got != principal || id != companyID {
+							t.Fatalf("Company authorization = %+v, %s", got, id)
+						}
+						if scenario == "revoked membership" {
+							return auth.UserPrincipal{}, company.ErrNotFound
+						}
+						got.CompanyID, got.Role = companyID, auth.CompanyRoleMember
+						return got, nil
+					},
+				},
 				RunProofResolver: runProofResolverStub{origin: origin},
-				DeliverableService: &deliverableDownloadStub{present: func(_ context.Context, got auth.UserPrincipal, proof execution.RunOrigin, _ execution.DeliverablePresentRequest) (execution.DeliverablePresentResult, error) {
-					presented = true
-					if got.UserID != userID || got.CompanyID != companyID || got.Role != auth.CompanyRoleMember || proof.RunID != runID {
-						t.Fatalf("presentation scope = %+v / %+v", got, proof)
-					}
-					return execution.DeliverablePresentResult{OutputID: uuid.New(), Created: true}, nil
-				}},
+				DeliverableService: &deliverableDownloadStub{
+					present: func(_ context.Context, got auth.UserPrincipal, proof execution.RunOrigin, _ execution.DeliverablePresentRequest) (execution.DeliverablePresentResult, error) {
+						presented = true
+						if got.UserID != userID || got.CompanyID != companyID ||
+							got.Role != auth.CompanyRoleMember ||
+							proof.RunID != runID {
+							t.Fatalf("presentation scope = %+v / %+v", got, proof)
+						}
+						return execution.DeliverablePresentResult{
+							OutputID: uuid.New(),
+							Created:  true,
+						}, nil
+					},
+				},
 			}
 			router := gin.New()
 			h.registerDeliverableRoutes(router.Group("/api/v1"))
-			body := []byte(`{"type":"text","title":"Review","summary":"Review findings","items":[{"role":"primary","label":"Report","assetVersionId":"00000000-0000-4000-8000-000000000071"}]}`)
-			response := serveHITLJSON(router, http.MethodPost, "/api/v1/runs/"+runID.String()+"/output", uuid.New(), body)
+			body := []byte(
+				`{"type":"text","title":"Review","summary":"Review findings","items":[{"role":"primary","label":"Report","assetVersionId":"00000000-0000-4000-8000-000000000071"}]}`,
+			)
+			response := serveHITLJSON(
+				router,
+				http.MethodPost,
+				"/api/v1/runs/"+runID.String()+"/output",
+				uuid.New(),
+				body,
+			)
 			if response.Code != want || presented != (want == http.StatusCreated) {
-				t.Fatalf("presentation = %d, called %v, body %s; want %d", response.Code, presented, response.Body.String(), want)
+				t.Fatalf(
+					"presentation = %d, called %v, body %s; want %d",
+					response.Code,
+					presented,
+					response.Body.String(),
+					want,
+				)
 			}
 		})
 	}
@@ -468,6 +502,11 @@ func (*deliverableDownloadStub) ResolvePublicArtifactFile(
 	return uuid.Nil, uuid.Nil, execution.ErrDeliverableNotFound
 }
 
-func (*deliverableDownloadStub) ReadArtifactForRun(context.Context, auth.UserPrincipal, execution.RunOrigin, uuid.UUID) (execution.DeliverableOutput, error) {
+func (*deliverableDownloadStub) ReadArtifactForRun(
+	context.Context,
+	auth.UserPrincipal,
+	execution.RunOrigin,
+	uuid.UUID,
+) (execution.DeliverableOutput, error) {
 	return execution.DeliverableOutput{}, nil
 }

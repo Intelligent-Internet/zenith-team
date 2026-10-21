@@ -484,8 +484,8 @@ type ListChannelAgentActivityRow struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
-// A tagged Run works for the person who tagged the Agent, with their access
-// (D31), so each viewer reads only the items of the Runs they started: never
+// A tagged Run works for the person who tagged the Agent, with their access,
+// so each viewer reads only the items of the Runs they started: never
 // another tagger's requests or tool output, whoever created the Agent.
 func (q *Queries) ListChannelAgentActivity(ctx context.Context, arg ListChannelAgentActivityParams) ([]ListChannelAgentActivityRow, error) {
 	rows, err := q.db.Query(ctx, listChannelAgentActivity,

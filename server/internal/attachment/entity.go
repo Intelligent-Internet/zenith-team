@@ -11,10 +11,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 type Status string
@@ -42,7 +42,7 @@ type CompleteInput struct {
 	// RunActor, when set, is the Run whose proof the upload carried: the
 	// daemon uploads a Run's presented files on its member's session, and
 	// the completion is then recorded as the Run's Agent acting for that
-	// member in the Run (D31). The zero value records the uploader.
+	// member in the Run. The zero value records the uploader.
 	RunActor events.Actor
 }
 

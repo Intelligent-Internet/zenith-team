@@ -273,7 +273,7 @@ var errorCodeRegistry = map[string]int{
 
 	// Project access (ADR 0017). no_eligible_resolver refuses a Task-origin
 	// Approval or Question that no reader of the Project may decide;
-	// project_grant_exceeds_own is the self-grant cap (D31);
+	// project_grant_exceeds_own is the self-grant cap;
 	// project_permission_unknown names a permission outside the catalog.
 	"project_permission_required":     http.StatusForbidden,
 	"project_permission_unknown":      http.StatusUnprocessableEntity,
@@ -282,7 +282,7 @@ var errorCodeRegistry = map[string]int{
 	"project_grant_exceeds_own":       http.StatusForbidden,
 	"project_visibility_floor":        http.StatusConflict,
 	"no_eligible_resolver":            http.StatusConflict,
-	// Groups (Access TECH D3, D4).
+	// Groups.
 	"group_not_found":                 http.StatusNotFound,
 	"group_conflict":                  http.StatusConflict,
 	"group_member_required":           http.StatusConflict,

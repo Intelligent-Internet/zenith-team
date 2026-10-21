@@ -3,7 +3,7 @@ package mcp
 import (
 	"context"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )

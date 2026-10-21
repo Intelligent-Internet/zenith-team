@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 // `zen project list` and `get` reach the Project reads through a Run's
@@ -20,7 +20,7 @@ import (
 // live in this Company and carried by the Run's authorizer's own session,
 // else run_token_invalid before anything is read. A live proof reads through
 // ListForRun / GetForRun under the Run's scope, which names the Run whose
-// row the delegate rule reads (D31); the Run-scope refusal is the one fixed
+// row the delegate rule reads; the Run-scope refusal is the one fixed
 // sentence.
 // A member's own read carries no proof and is unchanged.
 func TestProjectReadsThroughARunAreScoped(t *testing.T) {
@@ -64,7 +64,10 @@ func TestProjectReadsThroughARunAreScoped(t *testing.T) {
 		getForRun: func(_ context.Context, _ auth.UserPrincipal, _ uuid.UUID, run *task.RunScope) (company.ProjectResponse, error) {
 			calls, scopes = append(calls, "getForRun"), append(scopes, run)
 			if refuse {
-				return company.ProjectResponse{}, fmt.Errorf("Project work, which Bob cannot read: %w", task.ErrOutsideRunScope)
+				return company.ProjectResponse{}, fmt.Errorf(
+					"Project work, which Bob cannot read: %w",
+					task.ErrOutsideRunScope,
+				)
 			}
 			return project, nil
 		},
@@ -81,7 +84,11 @@ func TestProjectReadsThroughARunAreScoped(t *testing.T) {
 			ProjectService:   service,
 			RunProofResolver: runProofResolverStub{origin: origin},
 		})
-		request := httptest.NewRequest(http.MethodGet, "/api/v1/companies/"+companyID.String()+"/projects"+path, nil)
+		request := httptest.NewRequest(
+			http.MethodGet,
+			"/api/v1/companies/"+companyID.String()+"/projects"+path,
+			nil,
+		)
 		request.Header.Set("Authorization", "Bearer access-token")
 		if proof != "" {
 			request.Header.Set(runTokenHeader, proof)
@@ -96,7 +103,7 @@ func TestProjectReadsThroughARunAreScoped(t *testing.T) {
 			t.Fatalf("%s: service calls %v, want %v", name, calls, want)
 		}
 		// The scope names the Run; the delegate rule reads its chat and
-		// audience from the Run's own row (D31).
+		// audience from the Run's own row.
 		for _, run := range scopes {
 			if run == nil || run.AgentID != wantScope.AgentID || run.UserID != wantScope.UserID ||
 				run.RunID != wantScope.RunID {
@@ -131,7 +138,12 @@ func TestProjectReadsThroughARunAreScoped(t *testing.T) {
 		"another member's Run":  {origin: othersRun, proof: token},
 	} {
 		for _, path := range []string{"", "/" + projectID.String()} {
-			assertErrorResponse(t, serve(test.origin, path, test.proof), http.StatusUnauthorized, "run_token_invalid")
+			assertErrorResponse(
+				t,
+				serve(test.origin, path, test.proof),
+				http.StatusUnauthorized,
+				"run_token_invalid",
+			)
 			assertCalls(name + " GET " + path)
 		}
 	}

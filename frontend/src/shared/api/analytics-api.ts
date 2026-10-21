@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { companyService } from "@/shared/api/company.service";
 import type {
   CompanyUsagePeriod,
@@ -15,7 +18,7 @@ import type {
   AnalyticsHeatmap,
 } from "@/shared/api/types";
 
-export const analyticsApi = boardlyApi.injectEndpoints({
+export const analyticsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getWorkspaceAgentUsage: builder.query<
       AgentUsageReport,
@@ -40,7 +43,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Agent" },
       ],
       queryFn: ({ companyId, agentId, ...period }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAgentUsage(companyId, agentId, period),
           "Compute usage could not be loaded.",
         ),
@@ -54,7 +57,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Agent" },
       ],
       queryFn: ({ companyId, period, timeZone }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getCompanyUsage(companyId, period, timeZone),
           "Company usage could not be loaded.",
         ),
@@ -69,7 +72,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsSummary(companyId, query),
           "Analytics summary could not be loaded.",
         ),
@@ -84,7 +87,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsSeries(companyId, query),
           "Analytics trend could not be loaded.",
         ),
@@ -99,7 +102,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsBreakdown(companyId, query),
           "Analytics breakdown could not be loaded.",
         ),
@@ -114,7 +117,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsFailures(companyId, query),
           "Analytics reliability could not be loaded.",
         ),
@@ -128,7 +131,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: taskId, type: "Task" },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getTaskUsage(companyId, taskId),
           "Task usage could not be loaded.",
         ),
@@ -138,7 +141,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsBudgets(companyId),
           "Analytics budgets could not be loaded.",
         ),
@@ -153,7 +156,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getAnalyticsHeatmap(companyId, query),
           "Analytics heatmap could not be loaded.",
         ),
@@ -166,7 +169,7 @@ export const analyticsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Analytics" },
       ],
       queryFn: ({ companyId, payload }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.putAnalyticsBudget(companyId, payload),
           "Analytics budget could not be saved.",
         ),

@@ -22,7 +22,10 @@ func TestAgentDispatchTimeoutRetryObservesExistingJob(t *testing.T) {
 				case "/twirp/livekit.AgentDispatchService/ListDispatch":
 					rows := []map[string]string{}
 					if exists {
-						rows = append(rows, map[string]string{"id": "dispatch", "metadata": id.String()})
+						rows = append(
+							rows,
+							map[string]string{"id": "dispatch", "metadata": id.String()},
+						)
 					}
 					if err := json.NewEncoder(w).Encode(map[string]any{field: rows}); err != nil {
 						t.Error(err)
@@ -34,7 +37,8 @@ func TestAgentDispatchTimeoutRetryObservesExistingJob(t *testing.T) {
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 						t.Error(err)
 					}
-					if payload["metadata"] != id.String() || payload["agentName"] != "zenith-helia" {
+					if payload["metadata"] != id.String() ||
+						payload["agentName"] != "zenith-helia" {
 						t.Errorf("unexpected dispatch payload: %+v", payload)
 					}
 					http.Error(w, "ambiguous provider timeout", http.StatusGatewayTimeout)
@@ -43,7 +47,9 @@ func TestAgentDispatchTimeoutRetryObservesExistingJob(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			issuer, err := NewTokenIssuer(TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute})
+			issuer, err := NewTokenIssuer(
+				TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -85,7 +91,10 @@ func TestRemoveHuddleAIDisconnectsOnlyItsParticipant(t *testing.T) {
 				case "/twirp/livekit.AgentDispatchService/ListDispatch":
 					rows := []map[string]string{{"id": "other", "metadata": uuid.NewString()}}
 					if dispatchExists && !deleted {
-						rows = append(rows, map[string]string{"id": "target", "metadata": id.String()})
+						rows = append(
+							rows,
+							map[string]string{"id": "target", "metadata": id.String()},
+						)
 					}
 					response = map[string]any{"agentDispatches": rows}
 				case "/twirp/livekit.AgentDispatchService/DeleteDispatch":
@@ -98,7 +107,10 @@ func TestRemoveHuddleAIDisconnectsOnlyItsParticipant(t *testing.T) {
 					}
 					deleted = true
 				case "/twirp/livekit.RoomService/ListParticipants":
-					rows := []map[string]string{{"identity": "human"}, {"identity": "helia:another-attempt"}}
+					rows := []map[string]string{
+						{"identity": "human"},
+						{"identity": "helia:another-attempt"},
+					}
 					if !removed {
 						rows = append(rows, map[string]string{"identity": identity})
 					}
@@ -109,7 +121,11 @@ func TestRemoveHuddleAIDisconnectsOnlyItsParticipant(t *testing.T) {
 						t.Error(err)
 					}
 					if payload["identity"] != identity || payload["room"] != "room" || removed {
-						t.Errorf("unexpected removal: %v, already removed: %v", payload, removed)
+						t.Errorf(
+							"unexpected removal: %v, already removed: %v",
+							payload,
+							removed,
+						)
 					}
 					removed = true
 				default:
@@ -120,7 +136,9 @@ func TestRemoveHuddleAIDisconnectsOnlyItsParticipant(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			issuer, err := NewTokenIssuer(TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute})
+			issuer, err := NewTokenIssuer(
+				TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -7,9 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 type huddleAIHTTPStub struct {
@@ -19,7 +20,12 @@ type huddleAIHTTPStub struct {
 	setErr    error
 }
 
-func (s *huddleAIHTTPStub) Heartbeat(_ context.Context, _ uuid.UUID, _ string, input conversation.HuddleAIHeartbeat) (conversation.HuddleAILease, error) {
+func (s *huddleAIHTTPStub) Heartbeat(
+	_ context.Context,
+	_ uuid.UUID,
+	_ string,
+	input conversation.HuddleAIHeartbeat,
+) (conversation.HuddleAILease, error) {
 	s.heartbeat = input
 	return conversation.HuddleAILease{}, nil
 }
@@ -39,7 +45,12 @@ func TestHuddleWorkNoticeHeartbeatBoundary(t *testing.T) {
 			t.Parallel()
 			service := &huddleAIHTTPStub{}
 			h := New(Handler{HuddleAIService: service})
-			response := serveBearerJSON(h, http.MethodPost, "/api/v1/internal/huddle-ai/"+uuid.NewString()+"/heartbeat", []byte(tt.body))
+			response := serveBearerJSON(
+				h,
+				http.MethodPost,
+				"/api/v1/internal/huddle-ai/"+uuid.NewString()+"/heartbeat",
+				[]byte(tt.body),
+			)
 			if response.Code != tt.want {
 				t.Fatalf("status = %d %s, want %d", response.Code, response.Body, tt.want)
 			}
@@ -53,7 +64,12 @@ func TestHuddleWorkNoticeHeartbeatBoundary(t *testing.T) {
 	}
 }
 
-func (s *huddleAIHTTPStub) SetEnabled(_ context.Context, _ auth.UserPrincipal, _ uuid.UUID, input conversation.SetHuddleAIInput) (conversation.HuddleAIStatus, error) {
+func (s *huddleAIHTTPStub) SetEnabled(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	_ uuid.UUID,
+	input conversation.SetHuddleAIInput,
+) (conversation.HuddleAIStatus, error) {
 	s.input = input
 	return conversation.HuddleAIStatus{}, s.setErr
 }
@@ -88,14 +104,20 @@ func TestSetHuddleAIContextDefault(t *testing.T) {
 			service := &huddleAIHTTPStub{}
 			response := serveSetHuddleAI(service, tt.fields)
 			if response.Code != http.StatusOK || service.input.AllowCompanyContext != tt.want {
-				t.Fatalf("response = %d %s, context = %v, want %v", response.Code, response.Body, service.input.AllowCompanyContext, tt.want)
+				t.Fatalf(
+					"response = %d %s, context = %v, want %v",
+					response.Code,
+					response.Body,
+					service.input.AllowCompanyContext,
+					tt.want,
+				)
 			}
 		})
 	}
 }
 
-// Sharing Company context from outside the call is refused by the service
-// (D31, B5); the client sees 403 huddle_operation_forbidden.
+// Sharing Company context from outside the call is refused by the service;
+// the client sees 403 huddle_operation_forbidden.
 func TestSetHuddleAIContextOutsideTheCallIsForbidden(t *testing.T) {
 	t.Parallel()
 	service := &huddleAIHTTPStub{setErr: conversation.ErrHuddleForbidden}

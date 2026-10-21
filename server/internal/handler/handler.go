@@ -12,23 +12,23 @@ import (
 	"net/netip"
 	"slices"
 
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/social"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/wiki"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +37,7 @@ type Readiness interface {
 	Ping(context.Context) error
 }
 
-// Handler owns one fully composed Boardly HTTP API. The application
+// Handler owns one fully composed Zenith Team HTTP API. The application
 // composition root assigns its transport configuration and consumer-side
 // service interfaces before New installs the private Gin engine.
 type Handler struct {
@@ -135,7 +135,7 @@ type Handler struct {
 	// RealtimeMetricsToken admits non-loopback readers of /health/realtime.
 	RealtimeMetricsToken string
 	StudioAPIOrigin      string
-	// RequireDaemonID is the X-Boardly-Daemon-ID rollout stage for the
+	// RequireDaemonID is the X-Zenith-Team-Daemon-ID rollout stage for the
 	// daemon plane's runtime-scoped routes: false admits a missing header
 	// with a warning log, true refuses it with 400 invalid_request before
 	// any database access.
@@ -176,7 +176,7 @@ func New(h Handler) *Handler {
 		// Before authentication and every route guard: a Run proof on a
 		// route that does not accept a Run is 403 human_actor_required. It
 		// also tells the credential guards how to admit a daemon's own
-		// session off the daemon plane: only as a live Run (D31).
+		// session off the daemon plane: only as a live Run.
 		middleware.RunProofPolicy(routeActorTypes, h.runOriginResolver()),
 	)
 	// Gin's own miss is plain-text "404 page not found". Every failure the

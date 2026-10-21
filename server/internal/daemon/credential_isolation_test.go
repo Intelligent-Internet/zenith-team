@@ -18,17 +18,17 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // The test switch has one value and only lowers the report: any other
 // value refuses to start the daemon rather than being read as "raise".
 func TestCredentialIsolationSwitchOnlyLowers(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_WORKSPACES_ROOT", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_WORKSPACES_ROOT", t.TempDir())
 	for _, value := range []string{"enforced", "off", "NOT_ENFORCED"} {
 		t.Setenv(credentialIsolationEnv, value)
 		if _, err := LoadConfig(Overrides{AllowNoAgents: true}); err == nil ||
@@ -237,7 +237,7 @@ func (r *execOptionsRecorder) launchPrompts() []string {
 	return append([]string(nil), r.prompts...)
 }
 
-// writeDaemonSession puts a daemon session file in the current BOARDLY_HOME,
+// writeDaemonSession puts a daemon session file in the current ZENITH_TEAM_HOME,
 // the file the probe must find the sandbox hiding.
 func writeDaemonSession(t *testing.T) string {
 	t.Helper()
@@ -323,7 +323,7 @@ func TestRunLaunchesInTheSandboxExactlyWhenEnforced(t *testing.T) {
 			stubAgentProvider(t, recorder)
 			var home, workspaces string
 			handleOneTaskRun(t, "claude", executable, func(d *Daemon) {
-				home = os.Getenv("BOARDLY_HOME")
+				home = os.Getenv("ZENITH_TEAM_HOME")
 				workspaces = d.cfg.WorkspacesRoot
 				d.recordCredentialIsolation(credentialIsolationVerdict{Value: report})
 			})
@@ -350,7 +350,7 @@ func TestRunLaunchesInTheSandboxExactlyWhenEnforced(t *testing.T) {
 				t.Fatalf("sandbox params %v do not name the daemon's home %s", sandbox.Params, home)
 			}
 			// The profile opens this Run's isolated home, in its env root
-			// under the workspaces root, and no other (B3e).
+			// under the workspaces root, and no other.
 			var runHomes []string
 			for _, value := range sandbox.Params {
 				if strings.HasPrefix(filepath.Base(value), execenv.RunHomePrefix) {
@@ -366,7 +366,7 @@ func TestRunLaunchesInTheSandboxExactlyWhenEnforced(t *testing.T) {
 			// It closes the workspaces root and the repository cache beside
 			// it to writes and opens only this Run's own folders there: its
 			// env root, which holds its workdir, and its worktree's own folder
-			// in the Project main's repository (B3f).
+			// in the Project main's repository.
 			closed := sandboxRuleFolders(sandbox, "(deny file-write*\n")
 			cache := repositoryCacheRoot(workspaces)
 			if !slices.Contains(closed, workspaces) || !slices.Contains(closed, cache) {
@@ -423,7 +423,7 @@ func sandboxRuleFolders(sandbox *agent.Sandbox, rule string) []string {
 
 // An app preview runs commands an Agent wrote, so it starts in the Runs'
 // sandbox, with no Run home of its own, exactly when the computer reports
-// enforced (Access TECH B3e). One that cannot be wrapped, because the
+// enforced. One that cannot be wrapped, because the
 // computer was not enforced or the preview's folder lies in a denied path,
 // still starts, and holds the report at not_enforced until its processes
 // have stopped, even when the next round's probe passes. Runs on every
@@ -453,7 +453,7 @@ func TestAnUnwrappedAppPreviewHoldsTheReportAtNotEnforcedUntilItStops(t *testing
 			t.Cleanup(func() { _ = service.Close() })
 			manifest := testAppPreviewManifest(t, 4301)
 			if tc.folderInHome {
-				manifest.WorkDir = filepath.Join(os.Getenv("BOARDLY_HOME"), "preview")
+				manifest.WorkDir = filepath.Join(os.Getenv("ZENITH_TEAM_HOME"), "preview")
 				if err := os.MkdirAll(manifest.WorkDir, 0o700); err != nil {
 					t.Fatal(err)
 				}
@@ -507,8 +507,8 @@ func TestAnUnwrappedAppPreviewHoldsTheReportAtNotEnforcedUntilItStops(t *testing
 // sign-in files and every other Run's home as workspace files, or link to
 // them where its provider saves an image. The daemon reads those outside
 // the sandbox, so its output presenter and its copy of a generated image
-// refuse what the sandbox denies the Run and still take an ordinary file
-// (Access TECH B3e). Runs on every platform: no sandbox is started.
+// refuse what the sandbox denies the Run and still take an ordinary file.
+// Runs on every platform: no sandbox is started.
 func TestTheDaemonReadsForARunOnlyWhatItsSandboxAllows(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1:1")
 	person, err := filepath.EvalSymlinks(t.TempDir())
@@ -516,12 +516,12 @@ func TestTheDaemonReadsForARunOnlyWhatItsSandboxAllows(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("HOME", person)
-	t.Setenv("BOARDLY_HOME", filepath.Join(person, "Library", "Application Support", "Zenith Team"))
+	t.Setenv("ZENITH_TEAM_HOME", filepath.Join(person, "Library", "Application Support", "Zenith Team"))
 	denied := []string{
 		filepath.Join("Library", "Application Support", "Zenith Team", "daemon-auth.json"),
-		filepath.Join(".boardly", "auth.json"),
+		filepath.Join(".zenith-team", "auth.json"),
 		filepath.Join(
-			"boardly_workspaces", ".local-scratch", "run-b", execenv.RunHomePrefix+"2222", "run.json",
+			"zenith_team_workspaces", ".local-scratch", "run-b", execenv.RunHomePrefix+"2222", "run.json",
 		),
 	}
 	for _, name := range append([]string{"notes.txt", "image.png"}, denied...) {
@@ -607,7 +607,7 @@ func taggedRunContext(resources ...RunResourceContext) RunContext {
 // repository cache beside it and every local folder the Company bound, this
 // daemon's and another's (which may run on this computer too). A relative
 // path or another kind of resource names no folder. Every other Run hides
-// nothing (Access TECH B7b).
+// nothing.
 func TestRunHiddenFoldersHideOnlyForATaggedRun(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1:1")
 	here := filepath.Join(t.TempDir(), "projects", "acme")
@@ -641,7 +641,7 @@ func TestRunHiddenFoldersHideOnlyForATaggedRun(t *testing.T) {
 }
 
 // A tagged Run on a computer that reports enforced starts in a sandbox that
-// hides its person's private folders (Access TECH B7b): the workspaces root,
+// hides its person's private folders: the workspaces root,
 // which holds the Company main with its Memory and every other Run's
 // folders, the repository cache and every bound local folder. It opens its
 // own scratch (its workdir in <root>/<id>/workdir, the env root beside it with
@@ -785,8 +785,8 @@ func TestATaggedRunsSandboxHidesItsPersonsPrivateFolders(t *testing.T) {
 	}
 }
 
-// The daemon reads for a tagged Run only what its sandbox shows it (Access
-// TECH B7b). A provider's generated image is copied from the Run's own
+// The daemon reads for a tagged Run only what its sandbox shows it.
+// A provider's generated image is copied from the Run's own
 // folder, and refused from the Company main's Memory, a bound folder, another
 // Run's folder, or through a link in its own folder that names one of them;
 // the output presenter takes the same guard. A direct chat's Run, which hides
@@ -885,7 +885,7 @@ func TestTheDaemonReadsForATaggedRunOnlyWhatItsSandboxShows(t *testing.T) {
 }
 
 // The app a tagged Run presents runs its commands, which the Agent wrote, with
-// the folders the Run's sandbox hid (Access TECH B7b): the registration keeps
+// the folders the Run's sandbox hid: the registration keeps
 // them, a daemon that starts again reads them back, and each launch of the
 // preview hides them while it opens the preview's own folder. A direct
 // chat's app hides nothing. Runs on every platform: the profile is built in

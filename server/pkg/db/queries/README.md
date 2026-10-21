@@ -56,7 +56,7 @@
   list predicates join the views instead. Bind its three sets from
   `auth.ProjectPermissionHeldSets()`.
 - What a Run or the Huddle voice assistant may do on a Project is the
-  delegate rule (D31): `delegate_permission_held(...)`, or
+  delegate rule: `delegate_permission_held(...)`, or
   `run_permission_held(...)` for one Run from its own row. Enqueue, the
   claim, the Run-proof reads, the voice reads and the Huddle work reads ask
   it; a new Run check asks it too rather than restating it. Two file checks

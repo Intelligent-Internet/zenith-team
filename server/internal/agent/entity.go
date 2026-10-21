@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -350,8 +350,8 @@ type Response struct {
 	// CreatedBy is the member who created the Agent (ADR 0013), nil for
 	// Agents that predate the record. Access is the viewer's standing on
 	// the Agent: whether they may configure it, and whether they can run it.
-	CreatedBy *OwnerRef   `json:"createdBy"`
-	Access    AgentAccess `json:"access"`
+	CreatedBy *OwnerRef `json:"createdBy"`
+	Access    Access    `json:"access"`
 	// Binding is the VIEWER's placement of the Agent on one of their own
 	// runtimes, nil when they have not set it up (ADR 0014). Availability
 	// and its reason are the viewer's too.

@@ -1,0 +1,118 @@
+---
+title: Conventions
+description: A short digest of the house rules for code, data, the API, the UI and pull requests, with links to the files that own each rule.
+---
+
+This page is a digest. Each rule is owned by a file in the repository, and the link says which one. When the two disagree, the file wins.
+
+- [`AGENTS.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/AGENTS.md): the engineering rulebook.
+- [`server/CODEMAP.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/server/CODEMAP.md): where server code lives, and how to add an endpoint.
+- [`frontend/ARCHITECTURE.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/frontend/ARCHITECTURE.md) and [`frontend/AGENTS.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/frontend/AGENTS.md): the client tree.
+- [`docs/api/conventions.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/api/conventions.md): the HTTP and realtime contract.
+- [`docs/branding.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/branding.md): names and technical identities.
+
+## Names
+
+- The product is **Zenith Team**. **Zenith** is fine as a short form.
+- Technical identities use `ZENITH_TEAM_` (environment variables), `zenith-team` (binaries, paths, the MCP server) and `zenith_team` (cookies, metrics, database names). The CLI is `zen`. The full table is in [`docs/branding.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/branding.md#technical-identities).
+- Use the vocabulary in [`AGENTS.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/AGENTS.md#server-domain-map-serverinternal): **company**, **task**, **run**, **agent**, **runtime**, **binding**, **daemon**, and **provider** (`claude` or `codex`). Do not bring back retired words such as "executor" or "mission".
+
+## Where Go code goes
+
+- Find the domain package that owns the noun, and **add a file, not a package**. A newcomer should be able to guess the file from the concept.
+- A new package needs a real reason: an import cycle, keeping the `zen` CLI's link set small, or one package that would otherwise hold two domains. Write the reason in the package comment and in `server/CODEMAP.md`.
+- The data path is `handler → <Domain>Service → sqlc queries`. Handlers are the only code that sees Gin.
+
+Details: [Adding code to a domain package](https://github.com/Intelligent-Internet/zenith-team/blob/main/AGENTS.md#adding-code-to-a-domain-package).
+
+## Go naming
+
+- **Services come as a trio:** the interface `XService`, the implementation `DefaultXService`, and the constructor `NewXService`, with `var _ XService = (*DefaultXService)(nil)` under the interface. Bare `Service` and `NewService` are not allowed.
+- **Prefix by subject, never by package:** `company.SearchPage`, not `company.CompanySearchPage`.
+- **Closed enums are called `Type`, not `Kind`**, and their constants start with the type name.
+- **Error sentinels belong to one surface.** Add an `ErrX*` family when the HTTP answer differs.
+- **Cross-domain writes** are exported `…InTx` functions that take the caller's `*generated.Queries`. The caller owns the transaction.
+- No `doc.go` files, no identifiers that start with `Postgres`, and no named constant for a value used once.
+
+## Errors and validation
+
+- Validate in two places only: at the API boundary (request DTOs, `binding:` tags) and just before a database write. Never re-check a row you read back from the database.
+- Errors are translated by table: a domain sentinel maps to `{status, detail, code}` through `errorMapping` and `writeMappedError`. Handlers never build an error body by hand.
+- Every error code is listed in `docs/api/errors.md`. A test compares that file with the server in both directions.
+
+## Database
+
+- Migrations live in `server/migrations` as `NNNNNN_name.up.sql` and `NNNNNN_name.down.sql`. They are append-only: never edit one that is on `main`.
+- Entity ids are UUIDs made by the database (`gen_random_uuid()`).
+- Use real foreign keys: `CASCADE` for owned children, `SET NULL` for optional pointers, and none on attribution columns or usage facts.
+- Queries are hand-written SQL in `server/pkg/db/queries`, generated into typed Go in `server/pkg/db/generated` with sqlc. Commit the generated code.
+- Transactions go through `db.Store.WithinTx`, `db.Store.WithinRawTx`, or `execution.Transactor` with `Queries.WithTx`. There is no fourth way.
+
+Details: [Data access in `server/CODEMAP.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/server/CODEMAP.md#data-access).
+
+## HTTP API and wire format
+
+- Every route is under `/api/v1`. The contract is written first, in `docs/api/spec/`, and the TypeScript types are generated from it with `make api-generate`.
+- Every JSON field Zenith Team writes is **camelCase**. There are two exceptions: the sqlc models in `server/pkg/db/generated`, and `server/pkg/agent`, which reads other vendors' formats.
+- Long feeds return `{ "items": [...], "nextCursor": null }`. Short lists return the whole set.
+- Every error uses one envelope: `{ "detail", "code", "requestId" }`. Clients branch on `code`.
+- Another company's data answers `404`, never `403`.
+
+Details: [`docs/api/conventions.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/api/conventions.md) and [Adding an HTTP endpoint](https://github.com/Intelligent-Internet/zenith-team/blob/main/server/CODEMAP.md#adding-an-http-endpoint).
+
+## Events
+
+- Build events inside the transaction. **Publish them only after it commits**, on the in-process bus.
+- Each domain declares its topic and event names in `internal/<domain>/events.go`.
+- `server/cmd/server/realtime_routing.go` is the one list of what reaches a browser.
+
+## Frontend
+
+- Layers: `src/app` (routes and shell), `src/features` (product workflows), `src/shared` (shared UI and data access), `src/state` (store and UI slices), `src/lib` (the HTTP transport). `shared` never imports from `app` or `features`. `pnpm lint` checks this.
+- **RTK Query owns server state**; plain Redux slices own UI-only state. Never hand-write a type the server owns.
+- Style with **Tailwind** in the component, using `cx` and `cva` for variants. Keep authored CSS for themes and integrations.
+- Icons come from **Iconsax**, through `@/shared/ui/icons` or `@/shared/ui/icon`. Never add another icon library.
+- File names are **kebab-case**.
+
+Details: [`frontend/ARCHITECTURE.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/frontend/ARCHITECTURE.md) and [`frontend/AGENTS.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/frontend/AGENTS.md).
+
+## Tests
+
+- Write the test first when you change server behavior.
+- Go tests sit beside the code they test. Tests that need PostgreSQL, Redis or object storage go in `*_integration_test.go` files that start with `//go:build integration`.
+- A helper used by both kinds of test goes in an untagged `*_test.go` file.
+- **Do not add frontend tests**, and do not run frontend test commands. Check frontend changes with lint, typecheck, build and a look in the running app.
+
+The commands are on [Testing](/developers/testing).
+
+## Commits and pull requests
+
+- Write commit messages and pull request titles as [Conventional Commits](https://www.conventionalcommits.org/) with a scope, for example `fix(daemon): retry the claim after a dropped connection`.
+- Sign off every commit with `git commit -s` ([DCO](https://developercertificate.org/)).
+- Keep a pull request to one topic.
+
+Details: [CONTRIBUTING.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/CONTRIBUTING.md).
+
+## Comments and design notes
+
+- Write code comments in English.
+- State every design choice as Zenith Team's own, with its reason. Never cite another product as the source.
+- Cite decision records as `ADR 00NN`. They live in [`docs/adr`](https://github.com/Intelligent-Internet/zenith-team/tree/main/docs/adr).
+
+## UI copy
+
+- Use plain, short sentences.
+- Prefer icons over text labels.
+- Do not add helper paragraphs, counts or headings that only repeat what the control already shows.
+- Confirm dialogs ask the question. They do not add a sentence about the consequences.
+- Error messages name the provider and the cause. Never show a generic "run failed".
+- Add screenshots of every changed screen to the pull request, at a wide and a narrow window size.
+
+## Settings
+
+- Configuration is environment variables only. There are no config files.
+- A new server setting goes into [`deploy/production.env.example`](https://github.com/Intelligent-Internet/zenith-team/blob/main/deploy/production.env.example) and the [Environment variables](/self-hosting/environment-variables) page **in the same change**. A test fails when the template and the server disagree.
+
+## When this page is wrong
+
+`AGENTS.md` wins. If you find a difference, fix this page in the same change.

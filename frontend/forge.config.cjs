@@ -7,19 +7,25 @@ const packageVersion = require("./package.json").version;
 const desktopVariant = getDesktopVariant(process.env);
 const appIconRootPath = path.join(__dirname, "electron", "assets", "icons");
 const targetPlatform =
-  process.env.BOARDLY_DESKTOP_TARGET_PLATFORM ?? process.platform;
+  process.env.ZENITH_TEAM_DESKTOP_TARGET_PLATFORM ?? process.platform;
 const appIconPath = getPackagerIconPath(targetPlatform);
-const boardlyResourcePath = path.join(
+const zenithTeamResourcePath = path.join(
   __dirname,
   ".vite",
   "bin",
   targetPlatform === "win32" ? "zen.exe" : "zen",
 );
-const boardlyMCPResourcePath = path.join(
+const zenithTeamMCPResourcePath = path.join(
   __dirname,
   ".vite",
   "bin",
-  targetPlatform === "win32" ? "boardly-mcp.exe" : "boardly-mcp",
+  targetPlatform === "win32" ? "zenith-team-mcp.exe" : "zenith-team-mcp",
+);
+const licensePath = path.join(__dirname, "..", "LICENSE");
+const thirdPartyNoticesPath = path.join(
+  __dirname,
+  "..",
+  "THIRD_PARTY_NOTICES.md",
 );
 const macEntitlementsPath = path.join(
   __dirname,
@@ -29,16 +35,16 @@ const macEntitlementsPath = path.join(
 );
 const shouldSignMac =
   targetPlatform === "darwin" &&
-  process.env.BOARDLY_DESKTOP_MAC_SIGN === "true";
+  process.env.ZENITH_TEAM_DESKTOP_MAC_SIGN === "true";
 const shouldSignWindows =
   targetPlatform === "win32" &&
-  process.env.BOARDLY_DESKTOP_WINDOWS_SIGN === "true";
+  process.env.ZENITH_TEAM_DESKTOP_WINDOWS_SIGN === "true";
 const macNotarizeConfig =
   targetPlatform === "darwin" ? getMacNotarizeConfig(process.env) : null;
 
 if (macNotarizeConfig && !shouldSignMac) {
   throw new Error(
-    "BOARDLY_DESKTOP_MAC_NOTARIZE=true requires BOARDLY_DESKTOP_MAC_SIGN=true.",
+    "ZENITH_TEAM_DESKTOP_MAC_NOTARIZE=true requires ZENITH_TEAM_DESKTOP_MAC_SIGN=true.",
   );
 }
 
@@ -59,7 +65,13 @@ module.exports = {
         "Zenith Team shares system audio only when you choose to share it in a Huddle.",
     },
     asar: true,
-    extraResource: [boardlyResourcePath, boardlyMCPResourcePath],
+    extraResource: [
+      zenithTeamResourcePath,
+      zenithTeamMCPResourcePath,
+      // The MIT license and third-party notices travel with every install.
+      licensePath,
+      thirdPartyNoticesPath,
+    ],
     icon: appIconPath,
     protocols: [
       {
@@ -73,7 +85,7 @@ module.exports = {
             entitlements: macEntitlementsPath,
             "entitlements-inherit": macEntitlementsPath,
             "hardened-runtime": true,
-            identity: process.env.BOARDLY_DESKTOP_MAC_SIGN_IDENTITY,
+            identity: process.env.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY,
           },
         }
       : {}),
@@ -148,45 +160,45 @@ module.exports = {
 };
 
 function getMacNotarizeConfig(env) {
-  if (env.BOARDLY_DESKTOP_MAC_NOTARIZE !== "true") {
+  if (env.ZENITH_TEAM_DESKTOP_MAC_NOTARIZE !== "true") {
     return null;
   }
 
-  if (env.BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE) {
+  if (env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE) {
     return {
-      keychainProfile: env.BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE,
-      ...(env.BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN
-        ? { keychain: env.BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN }
+      keychainProfile: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE,
+      ...(env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN
+        ? { keychain: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN }
         : {}),
     };
   }
 
   if (
-    env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY &&
-    env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID &&
-    env.BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY &&
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID &&
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER
   ) {
     return {
-      appleApiKey: env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY,
-      appleApiKeyId: env.BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID,
-      appleApiIssuer: env.BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER,
+      appleApiKey: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY,
+      appleApiKeyId: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID,
+      appleApiIssuer: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER,
     };
   }
 
   if (
-    env.BOARDLY_DESKTOP_MAC_NOTARY_APPLE_ID &&
-    env.BOARDLY_DESKTOP_MAC_NOTARY_APP_PASSWORD &&
-    env.BOARDLY_DESKTOP_MAC_NOTARY_TEAM_ID
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APPLE_ID &&
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APP_PASSWORD &&
+    env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_TEAM_ID
   ) {
     return {
-      appleId: env.BOARDLY_DESKTOP_MAC_NOTARY_APPLE_ID,
-      appleIdPassword: env.BOARDLY_DESKTOP_MAC_NOTARY_APP_PASSWORD,
-      teamId: env.BOARDLY_DESKTOP_MAC_NOTARY_TEAM_ID,
+      appleId: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APPLE_ID,
+      appleIdPassword: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_APP_PASSWORD,
+      teamId: env.ZENITH_TEAM_DESKTOP_MAC_NOTARY_TEAM_ID,
     };
   }
 
   throw new Error(
-    "BOARDLY_DESKTOP_MAC_NOTARIZE=true requires keychain, API key, or Apple ID notarization credentials.",
+    "ZENITH_TEAM_DESKTOP_MAC_NOTARIZE=true requires keychain, API key, or Apple ID notarization credentials.",
   );
 }
 
@@ -203,20 +215,20 @@ function getPackagerIconPath(platform) {
 }
 
 function getWindowsSigningConfig(env) {
-  if (env.BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_FILE) {
+  if (env.ZENITH_TEAM_DESKTOP_WINDOWS_CERTIFICATE_FILE) {
     return {
-      certificateFile: env.BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_FILE,
-      certificatePassword: env.BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_PASSWORD,
+      certificateFile: env.ZENITH_TEAM_DESKTOP_WINDOWS_CERTIFICATE_FILE,
+      certificatePassword: env.ZENITH_TEAM_DESKTOP_WINDOWS_CERTIFICATE_PASSWORD,
     };
   }
 
-  if (env.BOARDLY_DESKTOP_WINDOWS_SIGN_WITH_PARAMS) {
+  if (env.ZENITH_TEAM_DESKTOP_WINDOWS_SIGN_WITH_PARAMS) {
     return {
-      signWithParams: env.BOARDLY_DESKTOP_WINDOWS_SIGN_WITH_PARAMS,
+      signWithParams: env.ZENITH_TEAM_DESKTOP_WINDOWS_SIGN_WITH_PARAMS,
     };
   }
 
   throw new Error(
-    "BOARDLY_DESKTOP_WINDOWS_SIGN=true requires BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_FILE or BOARDLY_DESKTOP_WINDOWS_SIGN_WITH_PARAMS.",
+    "ZENITH_TEAM_DESKTOP_WINDOWS_SIGN=true requires ZENITH_TEAM_DESKTOP_WINDOWS_CERTIFICATE_FILE or ZENITH_TEAM_DESKTOP_WINDOWS_SIGN_WITH_PARAMS.",
   );
 }

@@ -8,15 +8,18 @@ import (
 	"net"
 	"os"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 func newMigrateRunHistoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "migrate-run-history", Short: "Convert retained workspace Run identities from a database mapping (daemon stopped)", Args: cobra.NoArgs,
-		RunE: runMigrateRunHistory,
+		Use:   "migrate-run-history",
+		Short: "Convert retained workspace Run identities from a database mapping (daemon stopped)",
+		Args:  cobra.NoArgs,
+		RunE:  runMigrateRunHistory,
 	}
 	flags := cmd.Flags()
 	flags.String("mapping", "", "JSON object mapping old decimal Run IDs to database UUIDs")
@@ -58,7 +61,7 @@ func runMigrateRunHistory(cmd *cobra.Command, _ []string) error {
 	}
 	// The daemon reserves this same port before accepting execution. Holding it
 	// closes the check/start race while managed Git mutations hold their file lock.
-	lease, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	lease, err := (&net.ListenConfig{}).Listen(cmd.Context(), "tcp", fmt.Sprintf("127.0.0.1:%d", port))
 	if err != nil {
 		return fmt.Errorf("stop the daemon before workspace migration: %w", err)
 	}

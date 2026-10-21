@@ -533,7 +533,7 @@ func validateSkillRelativePath(value string) error {
 		return ErrSkillSnapshotUnavailable
 	}
 	nestedInstructions := value != "SKILL.md" && parts[len(parts)-1] == "SKILL.md"
-	if nestedInstructions || value == ".boardly.json" {
+	if nestedInstructions || value == ".zenith-team.json" {
 		return ErrSkillSnapshotUnavailable
 	}
 	return nil

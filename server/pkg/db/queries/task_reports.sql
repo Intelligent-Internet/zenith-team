@@ -193,7 +193,7 @@ WHERE task_report_batches.confirmed_by_user_id = sqlc.arg(actor_user_id)::uuid
 
 -- name: LockTaskReportRequest :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/task-report-send/v1/' ||
+    'zenith-team/task-report-send/v1/' ||
     sqlc.arg(company_id)::uuid::text || '/' ||
     sqlc.arg(actor_user_id)::uuid::text || '/' ||
     sqlc.arg(request_key)::uuid::text,

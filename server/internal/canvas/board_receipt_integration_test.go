@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // Receipts keep the acknowledgement (hash, draft mapping and sequence), not
@@ -64,8 +64,11 @@ func TestBoardReceiptsKeepOnlyTheAcknowledgement(t *testing.T) {
 		t.Fatal(err)
 	}
 	replay, err := s.Mutate(ctx, p, scope, create)
-	if err != nil || !replay.Replayed || replay.Sequence != created.Sequence || replay.IDs["b"] != created.IDs["b"] ||
-		replay.IDs["a"] != created.IDs["a"] || len(replay.Items) != 1 || replay.Items[0].ID != created.IDs["b"] {
+	if err != nil || !replay.Replayed || replay.Sequence != created.Sequence ||
+		replay.IDs["b"] != created.IDs["b"] ||
+		replay.IDs["a"] != created.IDs["a"] ||
+		len(replay.Items) != 1 ||
+		replay.Items[0].ID != created.IDs["b"] {
 		t.Fatalf("replay = %+v, %v; want only the untouched note", replay, err)
 	}
 	if err := pool.QueryRow(

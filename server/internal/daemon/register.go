@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,7 @@ type cliProbes struct {
 	version    func(ctx context.Context, path string) (string, error)
 	signIn     func(ctx context.Context, provider, path string) protocol.RuntimeSignIn
 	retryDelay time.Duration
-	// isolation tests the macOS sandbox once per round (Access TECH B3d).
+	// isolation tests the macOS sandbox once per round.
 	// New wires the daemon's own probeCredentialIsolation.
 	isolation func(ctx context.Context) credentialIsolationVerdict
 }

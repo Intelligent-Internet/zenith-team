@@ -8,11 +8,11 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // maxMilestoneAttestationNote bounds the founder's own explanation of what was
@@ -131,7 +131,7 @@ func authorizeMilestoneMutation(
 	return nil
 }
 
-// normalizeMilestoneAttestations rejects anything outside the catalogue and any
+// normalizeMilestoneAttestations rejects anything outside the catalog and any
 // repeat, so a mistyped or duplicated value fails loudly instead of quietly
 // marking the wrong outcome done.
 func normalizeMilestoneAttestations(

@@ -13,10 +13,10 @@ import {
   type DiscussionSummary,
   type SendDiscussionRequest,
 } from "@/features/discussions/api/discussions-api";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import store from "@/state/store";
 import {
-  boardlyRealtimeClient,
+  zenithTeamRealtimeClient,
   realtimeEventConversationId,
 } from "@/shared/realtime/realtime-client.service";
 import { subscribeToRefetchSignals } from "@/shared/realtime/refetch-signals";
@@ -154,7 +154,7 @@ export class DiscussionRuntime {
     this.epoch += 1;
     this.stopped = false;
     this.cleanupSignals = subscribeToRefetchSignals((reason) => {
-      const connected = boardlyRealtimeClient.getSnapshot().status === "ready";
+      const connected = zenithTeamRealtimeClient.getSnapshot().status === "ready";
       // DevTools/renderer focus is not a recovery event. Visibility and
       // reconnect still revalidate access, without clearing an authorized view.
       if (reason === "focus" && connected) return;
@@ -169,7 +169,7 @@ export class DiscussionRuntime {
         this.visibleIds.forEach((id) => this.hintedIds.add(id));
       this.schedule(reason === "recovery" || this.listsNeedRefresh());
     });
-    this.cleanupEvents = boardlyRealtimeClient.onEvent((event) => {
+    this.cleanupEvents = zenithTeamRealtimeClient.onEvent((event) => {
       if (event.companyId !== this.session.companyId) return;
       const id = realtimeEventConversationId(event);
       if (event.type === "conversation.discussion_access_revoked" && id) {
@@ -219,7 +219,7 @@ export class DiscussionRuntime {
       }
     });
     let wasReady = false;
-    this.cleanupStatus = boardlyRealtimeClient.onStatus((snapshot) => {
+    this.cleanupStatus = zenithTeamRealtimeClient.onStatus((snapshot) => {
       if (snapshot.status === "ready" && !wasReady) {
         this.visibleIds.forEach((id) => this.hintedIds.add(id));
         this.artifactRevision += 1;
@@ -309,7 +309,7 @@ export class DiscussionRuntime {
     if (
       entry.phase !== "ready" ||
       !entry.lease ||
-      boardlyRealtimeClient.getSnapshot().status !== "ready" ||
+      zenithTeamRealtimeClient.getSnapshot().status !== "ready" ||
       entry.artifactRevision !== this.artifactRevision ||
       !state?.capabilities.readHistory ||
       !pages?.length ||
@@ -833,7 +833,7 @@ export class DiscussionRuntime {
       if (!this.stopped && guard === entry.guard) {
         if (
           cursor &&
-          (error as BoardlyApiError)?.code === "discussion_cursor_expired"
+          (error as ZenithTeamApiError)?.code === "discussion_cursor_expired"
         ) {
           this.revoke(entry.scope.conversationId);
           this.schedule(true);
@@ -922,7 +922,7 @@ export class DiscussionRuntime {
       }
     } catch (error) {
       if (!this.stopped && guard === entry.guard) {
-        if ((error as BoardlyApiError)?.code === "discussion_cursor_expired") {
+        if ((error as ZenithTeamApiError)?.code === "discussion_cursor_expired") {
           this.revoke(entry.scope.conversationId);
           this.schedule(true);
         } else this.readFailed(entry, error);
@@ -938,8 +938,8 @@ export class DiscussionRuntime {
 
   private readFailed(entry: HistoryLease, error: unknown) {
     if (
-      (error as BoardlyApiError)?.status === 404 ||
-      (error as BoardlyApiError)?.status === 403
+      (error as ZenithTeamApiError)?.status === 404 ||
+      (error as ZenithTeamApiError)?.status === 403
     ) {
       if (!entry.scope.rootId) {
         this.revoke(entry.scope.conversationId);
@@ -1297,7 +1297,7 @@ export class DiscussionRuntime {
       await this.replaceWindow(id, context.refreshCursor, rootId);
       return { rootId };
     } catch (error) {
-      if ([403, 404].includes(Number((error as BoardlyApiError)?.status)))
+      if ([403, 404].includes(Number((error as ZenithTeamApiError)?.status)))
         this.schedule();
       throw error;
     } finally {
@@ -1433,7 +1433,7 @@ export class DiscussionRuntime {
 }
 
 export function discussionError(error: unknown) {
-  const value = error as Partial<BoardlyApiError> | undefined;
+  const value = error as Partial<ZenithTeamApiError> | undefined;
   if (value?.code === "discussion_revision_conflict")
     return "This message or conversation changed. Review the latest version, then try again.";
   if (value?.code === "discussion_unavailable")

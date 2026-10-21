@@ -5,14 +5,14 @@ description: The per-company directory tree on your computer where every run exe
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-Every [run](/runs) executes in exactly one workspace on the connected computer. The [daemon](/daemon-and-runtimes) owns a per-company directory tree, picks one placement per run, and keeps the tree — and everything in it — on your machine. Zenith Team's cloud stores conversations, statuses, and usage; it never stores the workspace itself.
+Every [run](/runs) executes in exactly one workspace on the connected computer. The [daemon](/daemon-and-runtimes) owns a per-company directory tree, picks one placement per run, and keeps the tree — and everything in it — on your machine. Your Zenith Team server stores conversations, statuses, and usage; it never stores the workspace itself.
 
 ## The company workspace tree
 
-The tree lives under the daemon's workspaces root — `~/boardly_workspaces` by default (override it with `BOARDLY_WORKSPACES_ROOT` or the `workspaces-root` daemon setting). Inside it, each company gets one container holding a single `company` scope — shared by every [agent](/agents), the CEO Agent included — with a durable `main` workspace and a `worktrees` area for task work:
+The tree lives under the daemon's workspaces root — `~/zenith_team_workspaces` by default (override it with `ZENITH_TEAM_WORKSPACES_ROOT` or the `workspaces-root` daemon setting). Inside it, each company gets one container holding a single `company` scope — shared by every [agent](/agents), the CEO Agent included — with a durable `main` workspace and a `worktrees` area for task work:
 
 ```text
-~/boardly_workspaces/
+~/zenith_team_workspaces/
 ├── .metadata/                        signed workspace lifecycle records
 ├── .skill-cache/                     resolved skill bundles
 ├── .local-scratch/<run-id>/          provider homes for execute-in-place runs
@@ -27,7 +27,7 @@ The tree lives under the daemon's workspaces root — `~/boardly_workspaces` by 
 └── <isolated-id>/                    single-use workspaces for schedule and tagged runs
     └── workdir/
 
-~/boardly_workspaces-repos/           shared repository cache
+~/zenith_team_workspaces-repos/           shared repository cache
 ```
 
 An installation from before agents-only may still hold `<department-key>/` containers beside `company/`; a task worktree created there keeps running there until it merges, and nothing new is created under them.
@@ -64,7 +64,7 @@ Because the main workspace persists across runs, it accumulates: files an agent 
 
 ### Task worktrees
 
-A task run gets a Git worktree of the Company `main`, on a branch named `boardly/task-<run-id>`. The worktree is created once per task conversation and reused across the task's runs: a later run's branch is cut from the previous run's branch when it still exists, so work on the task accumulates until it merges. Reusing the same directory is what lets the provider resume the task's session.
+A task run gets a Git worktree of the Company `main`, on a branch named `zenith-team/task-<run-id>`. The worktree is created once per task conversation and reused across the task's runs: a later run's branch is cut from the previous run's branch when it still exists, so work on the task accumulates until it merges. Reusing the same directory is what lets the provider resume the task's session.
 
 A signed metadata record binds each worktree to the exact run that populated it, and completed or orphaned worktrees are garbage-collected on a retention schedule. The `main` workspace is never collected.
 
@@ -80,16 +80,16 @@ Workspace preparation creates a `.memory/` directory in the `main` workspace and
 
 ## Merging task work back
 
-Task work stays on its `boardly/task-<run-id>` branch until a merge is requested — proactively after completion, or manually from the task. The merge is performed by the daemon that ran the completed run, on the machine where the worktree lives: it merges the task branch into the Company `main` workspace. When a task is finished and merged, its outcome is durable in `main`; the worktree itself is disposable. The product-side flow — who requests a merge and when — is described in [Tasks](/tasks#merging-task-work).
+Task work stays on its `zenith-team/task-<run-id>` branch until a merge is requested — proactively after completion, or manually from the task. The merge is performed by the daemon that ran the completed run, on the machine where the worktree lives: it merges the task branch into the Company `main` workspace. When a task is finished and merged, its outcome is durable in `main`; the worktree itself is disposable. The product-side flow — who requests a merge and when — is described in [Tasks](/tasks#merging-task-work).
 
 ## What never leaves your computer
 
-- **The tree itself.** Zenith Team's cloud has no copy of your workspaces, and local paths never appear in the product surface.
+- **The tree itself.** Your Zenith Team server has no copy of your workspaces, and local paths never appear in the product surface.
 - **Your code and files.** Only what an agent explicitly says in a conversation — its messages and transcript — is stored by Zenith Team.
 - **Provider credentials and native configuration.** Sign-in belongs to the vendor CLIs; connector secrets stay with the daemon. See [Connectors and plugins](/connectors-and-plugins).
 
 <Callout type="warning">
-The workspaces root is daemon-managed state. Deleting directories under `~/boardly_workspaces` while the daemon is running can strand in-flight runs, and deleting a scope's `main` workspace permanently discards every file agents accumulated there, including its `.memory/`. Stop the daemon first, and treat `main` directories as durable data.
+The workspaces root is daemon-managed state. Deleting directories under `~/zenith_team_workspaces` while the daemon is running can strand in-flight runs, and deleting a scope's `main` workspace permanently discards every file agents accumulated there, including its `.memory/`. Stop the daemon first, and treat `main` directories as durable data.
 </Callout>
 
 ## Next steps

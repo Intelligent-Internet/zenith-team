@@ -1,9 +1,9 @@
-import type { BoardlyDesktopBridge } from "../../../../electron/shared/desktop-bridge.types";
+import type { ZenithTeamDesktopBridge } from "../../../../electron/shared/desktop-bridge.types";
 
 import type { AuthProviderCapabilitiesResponse } from "@/shared/api/types";
 
 export function requestDesktopGoogleProviders(
-  bridge: BoardlyDesktopBridge | undefined,
+  bridge: ZenithTeamDesktopBridge | undefined,
   apiBaseUrl: string,
 ): Promise<AuthProviderCapabilitiesResponse> | null {
   if (!bridge?.getAuthProviders) {

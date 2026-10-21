@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func listedTaskIDs(page Page) []uuid.UUID {
@@ -25,7 +25,7 @@ func listedTaskIDs(page Page) []uuid.UUID {
 }
 
 // fixtureTaskRun is the fixture owner's Task Run of Task A, as the handler
-// scopes its proof: the delegate rule reads the Run's own row (D31), so the
+// scopes its proof: the delegate rule reads the Run's own row, so the
 // scope names a real Run.
 func fixtureTaskRun(t *testing.T, ctx context.Context, pool *pgxpool.Pool, fixture dbtest.Fixture) *RunScope {
 	t.Helper()
@@ -128,10 +128,27 @@ func TestTaskRunReadsOnlyItsOwnProject(t *testing.T) {
 	if _, err := service.Get(ctx, owner, elsewhere.Task.ID, taskRun); !errors.Is(err, ErrOutsideRunScope) {
 		t.Fatalf("Get(own Task in another Project) = %v, want ErrOutsideRunScope", err)
 	}
-	if _, err := service.ListDependencies(ctx, owner, elsewhere.Task.ID, taskRun); !errors.Is(err, ErrOutsideRunScope) {
+	if _, err := service.ListDependencies(
+		ctx,
+		owner,
+		elsewhere.Task.ID,
+		taskRun,
+	); !errors.Is(
+		err,
+		ErrOutsideRunScope,
+	) {
 		t.Fatalf("ListDependencies(own Task in another Project) = %v, want ErrOutsideRunScope", err)
 	}
-	if _, err := service.Workspace(ctx, owner, elsewhere.Task.ID, WorkspaceOptions{}, taskRun); !errors.Is(err, ErrOutsideRunScope) {
+	if _, err := service.Workspace(
+		ctx,
+		owner,
+		elsewhere.Task.ID,
+		WorkspaceOptions{},
+		taskRun,
+	); !errors.Is(
+		err,
+		ErrOutsideRunScope,
+	) {
 		t.Fatalf("Workspace(own Task in another Project) = %v, want ErrOutsideRunScope", err)
 	}
 	for name, options := range map[string]ListOptions{
@@ -141,7 +158,12 @@ func TestTaskRunReadsOnlyItsOwnProject(t *testing.T) {
 	} {
 		page, err := service.List(ctx, owner, options, taskRun)
 		if err != nil || slices.Contains(listedTaskIDs(page), elsewhere.Task.ID) {
-			t.Fatalf("List(%s) = %v, %v; want the other Project's Task left out", name, listedTaskIDs(page), err)
+			t.Fatalf(
+				"List(%s) = %v, %v; want the other Project's Task left out",
+				name,
+				listedTaskIDs(page),
+				err,
+			)
 		}
 	}
 	// The same member's own read, with no proof, still sees both.
@@ -151,7 +173,7 @@ func TestTaskRunReadsOnlyItsOwnProject(t *testing.T) {
 }
 
 // A Run tagged in a channel or group DM uses its Authorizer's access, never
-// more, and nothing else narrows it (D31, revised 2026-10-06): the person
+// more, and nothing else narrows it: the person
 // who tags the Agent answers for what its answer shares with the chat. A
 // colleague in the channel who cannot read the Project no longer refuses
 // the Run's get, list, dependencies or create, and neither does someone

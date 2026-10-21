@@ -1,25 +1,25 @@
 /* Shared theme integration for setup, settings, and secondary surfaces. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-command-palette
   [cmdk-group-heading] {
   color: var(--workspace-native-text-muted) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-command-palette
   [data-slot="command-input"] {
   color: var(--workspace-native-text) !important;
   caret-color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-command-palette
   [data-slot="command-input"]::placeholder {
   color: var(--workspace-native-text-muted) !important;
   opacity: 1;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-command-palette
   [data-slot="command-input-wrapper"]
   > svg {
@@ -27,13 +27,13 @@ html[data-boardly-workspace-theme]
   opacity: 1;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme.workspace-onboarding {
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme.workspace-onboarding {
   background: var(--workspace-content-bg);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-onboarding__titlebar {
   --workspace-native-text: var(--workspace-nav-text);
   --workspace-native-text-muted: var(--workspace-nav-muted);
@@ -46,31 +46,31 @@ html[data-boardly-workspace-theme]
   color-scheme: var(--workspace-nav-color-scheme);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-onboarding__submit, .agent-setup-save-button) {
   color: var(--workspace-accent-foreground) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-onboarding__field {
   font-size: var(--workspace-text-body);
   line-height: var(--workspace-leading-body);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.settings-shell, .agent-onboarding-panel) {
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .agent-onboarding-panel
   :is(h2, h3, strong, input, textarea, select, button, a),
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .profile-settings-page,
     .agent-settings-page,
@@ -92,12 +92,12 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .agent-onboarding-panel
   :is(p, small),
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .profile-phone-field select,
     .profile-identity__field input[readonly],
@@ -124,24 +124,24 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.settings-shell, .agent-onboarding-panel)
   :is(input, textarea)::placeholder {
   color: var(--workspace-native-text-faint);
   opacity: 1;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.settings-shell, .agent-onboarding-panel)
   option {
   background: var(--workspace-overlay-bg);
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .settings-card,
     .support-secondary-card,
@@ -159,8 +159,8 @@ html[data-boardly-workspace-theme]
   backdrop-filter: none !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .general-secret-form input,
     .general-domain-add__form input,
@@ -185,8 +185,8 @@ html[data-boardly-workspace-theme]
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .agent-onboarding-refresh,
     .agent-onboarding-connection-control button,
@@ -197,20 +197,20 @@ html[data-boardly-workspace-theme]
   background: var(--workspace-hover-bg);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.general-divider, .support-section-divider) {
   border-color: var(--workspace-divider);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.general-divider, .support-section-divider) {
   background: var(--workspace-divider);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .settings-progress,
     .profile-activity-card__skeleton,
@@ -222,16 +222,16 @@ html[data-boardly-workspace-theme]
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .settings-progress
   > span {
   background: var(--workspace-native-accent);
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .profile-field-save,
     .profile-biography > p.profile-biography__feedback,
@@ -249,8 +249,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-success);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .agent-model-discovery-warning,
     .agent-onboarding-provider-status[data-tone="warning"],
@@ -261,8 +261,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-approval);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .profile-biography > p.profile-biography__feedback.is-error,
     .profile-daily-connector__status.is-disconnected,
@@ -275,8 +275,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-danger);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .general-domain-card__copy > div > span,
     .general-domain-add__help,
@@ -286,8 +286,8 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-info);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .agent-onboarding-notice {
   border-color: color-mix(
     in srgb,
@@ -301,8 +301,8 @@ html[data-boardly-workspace-theme]
   );
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .agent-setup-save-button.gradient-cta-button {
   border-color: transparent;
   background: var(--workspace-accent-fill) !important;
@@ -310,51 +310,51 @@ html[data-boardly-workspace-theme]
   box-shadow: none !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .agent-setup-save-button.gradient-cta-button:disabled {
   border-color: var(--workspace-divider);
   background: var(--workspace-control-bg) !important;
   color: var(--workspace-native-text-faint) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .profile-system__button--delete {
   color: var(--workspace-native-danger) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .subscription-plan__current-label {
   background: var(--workspace-accent-fill);
   color: var(--workspace-accent-foreground);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .subscription-plan__price {
   font-family: var(--font-heading);
   font-weight: 600;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.profile-activity-card > small, .profile-activity__error) {
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(.profile-delete-dialog, .profile-delete-dialog__surface) {
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme] .profile-delete-dialog__glass {
+html[data-zenith-team-workspace-theme] .profile-delete-dialog__glass {
   filter: none;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .profile-delete-dialog__header [data-slot="dialog-title"],
     .profile-delete-dialog__confirmation strong,
@@ -364,7 +364,7 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .profile-delete-dialog__header [data-slot="dialog-description"],
     .profile-delete-dialog__confirmation
@@ -372,7 +372,7 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .profile-delete-dialog__confirmation input,
     .profile-delete-dialog__button--cancel
@@ -381,7 +381,7 @@ html[data-boardly-workspace-theme]
   background: var(--workspace-input-bg);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .profile-delete-dialog__confirmation
   input::placeholder {
   color: var(--workspace-native-text-faint);
@@ -389,18 +389,18 @@ html[data-boardly-workspace-theme]
 
 /* Outlines are removed globally, so keyboard focus on the confirmation's
    buttons shows as a border and background. */
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .profile-delete-dialog__button:focus-visible {
   border-color: var(--workspace-native-accent);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .profile-delete-dialog__button--cancel:focus-visible {
   border-color: var(--workspace-native-accent);
   background: var(--workspace-hover-bg);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .profile-delete-dialog__button--delete:focus-visible {
   border-color: var(--workspace-native-text);
   background: color-mix(
@@ -410,13 +410,13 @@ html[data-boardly-workspace-theme]
   );
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .profile-delete-dialog__button[aria-disabled="true"] {
   cursor: progress;
   opacity: 0.7;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
     .profile-delete-dialog__icon:not(.runtime-dialog__icon),
     .profile-delete-dialog__error
@@ -426,23 +426,23 @@ html[data-boardly-workspace-theme]
 
 /* Runtime dialogs (rename, set up, hand off) borrow the shell but are not
    destructive, so their icon stays neutral. */
-html[data-boardly-workspace-theme] .runtime-dialog__icon {
+html[data-zenith-team-workspace-theme] .runtime-dialog__icon {
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-profile-menu
   .workspace-profile-menu__logout {
   color: var(--workspace-native-danger);
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-profile-menu
   .workspace-profile-menu__logout:is(:hover, :focus, [data-highlighted]) {
   background: var(--workspace-danger-soft);
   color: var(--workspace-native-danger);
 }
 
-html[data-boardly-workspace-theme] .workspace-profile-menu p {
+html[data-zenith-team-workspace-theme] .workspace-profile-menu p {
   filter: none;
 }

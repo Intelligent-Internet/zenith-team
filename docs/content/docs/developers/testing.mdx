@@ -1,0 +1,143 @@
+---
+title: Testing
+description: What each Make target checks, how the unit and PostgreSQL integration suites differ, and what CI and the security workflow run.
+---
+
+Run every command on this page from the repository root. `make help` lists all targets. Setup is in [Contributing](/developers/contributing).
+
+## Go server
+
+| Target | What it runs | Needs Docker |
+| --- | --- | --- |
+| `make go-unit` | The shape checks, the sqlc drift check, `go build`, `go vet` (with and without the `integration` tag) and `go test -race` on every package. Integration files are not compiled in. | No |
+| `make go-integration` | The tagged suites, plus the unit tests again, with `-race`, on one shared PostgreSQL container. | Yes |
+| `make go-test` | Like `go-integration`, without `-race`, for the packages and flags in `GO_TEST_ARGS`. | Yes |
+| `make go-gate` | `go build`, `go vet` and the complete tagged suite with `-race`, plus the shape and sqlc checks. | Yes |
+| `make go-lint` | `golangci-lint` at the pinned version, installed into `.tools/bin` on first use. `make go-lint-fix` applies fixes. `GO_LINT_ARGS` adds flags. | No |
+| `make go-fmt` | Formats all Go code. `make go-fmt-check` only reports, and fails when a file needs formatting. | No |
+| `make go-sqlc` | Regenerates `server/pkg/db/generated` with the pinned sqlc, installed into `.tools/bin`. Run it after you change a migration or a query. | No |
+| `make go-vuln` | Scans the Go dependencies for known vulnerabilities with `govulncheck`. The release workflow runs it fail-closed. | No |
+
+What the extra checks in `go-unit` do:
+
+- **Shape checks** (`make go-shape`) guard a few repository rules a linter cannot express. For example, PostgreSQL test containers may only be started from `server/tests/testpostgres`, and the `zen` CLI must never link the Workflow bundle.
+- **sqlc drift check** (`make go-sqlc-check`) regenerates the database code into a temporary folder with the pinned sqlc and fails when the committed code is stale. It never skips: it installs the pinned sqlc into `.tools/bin` when it is missing.
+- **Build assets.** Both the shape checks and the integration targets first run `make tools-prepare`, which downloads checksum-pinned npm packages into git-ignored build assets. The first run needs the network; later runs reuse the cache.
+
+### Unit and integration suites
+
+Unit tests sit beside the code they test and need nothing but Go.
+
+Tests that need PostgreSQL, Redis or object storage live in `*_integration_test.go` files that start with `//go:build integration`. A plain `go test ./...` does not compile them. Adding `-tags=integration` adds them on top of the unit tests, so the tagged run is a superset.
+
+For the tagged suites, Docker must be running:
+
+- `server/tests/testpostgres` starts one PostgreSQL container for the whole run and removes it at the end. Each test gets its own database on it.
+- A few suites start their own Redis container.
+- The S3 storage suite runs only when you point it at a bucket with `ZENITH_TEAM_TEST_S3_ENDPOINT`, `ZENITH_TEAM_TEST_S3_BUCKET`, `ZENITH_TEAM_TEST_S3_ACCESS_KEY_ID` and `ZENITH_TEAM_TEST_S3_SECRET_ACCESS_KEY`. Otherwise it skips.
+
+A tagged test run without the shared database skips instead of failing. In CI, or with `TEST_REQUIRE_DOCKER=1`, a missing database is a failure.
+
+The Makefile sets `GOFLAGS=-p=2`, so at most two packages hit the shared database at once.
+
+### Run one test
+
+A unit test, with no Docker:
+
+```bash
+cd server && go test ./internal/task -run TestName
+```
+
+A test that needs PostgreSQL, through the shared container:
+
+```bash
+make go-test GO_TEST_ARGS='./internal/task -run TestName'
+```
+
+Run `make go-integration` before you open a pull request that changes migrations, sqlc queries or test fixtures. CI does not run these suites on pull requests; it runs them every night.
+
+## Frontend
+
+All of these run inside `frontend/`, its own pnpm workspace. Run `cd frontend && pnpm install` once first.
+
+| Target | What it runs |
+| --- | --- |
+| `make lint` | The import-cycle and layer check, then the Prettier format check (`pnpm lint`). |
+| `make typecheck` | TypeScript type check of the app. |
+| `make build` | Type check, then the production Vite build. |
+| `pnpm --dir frontend electron:security:scan` | Static checks of the Electron hardening rules: fuses, CSP, IPC exposure, permissions and `webPreferences`. |
+
+The project adds no other frontend tests. Check UI changes in the running app, and add screenshots to the pull request.
+
+## API contract
+
+The HTTP contract lives in `docs/api/spec/`, with `openapi.yaml` as the index.
+
+| Target | What it runs |
+| --- | --- |
+| `make api-lint` | Validates the spec: schemas, `$ref` links and operation IDs. |
+| `make api-types-check` | Regenerates the TypeScript API types into a temporary file and fails when the committed file is stale. |
+| `make api-generate` | Regenerates `frontend/src/shared/api/generated/api.generated.ts`. Run it after you change the spec, and commit the result. |
+
+A Go unit test, `TestOpenAPISpecMatchesRouteTable`, also fails `make go-unit` when the spec and the server's routes disagree.
+
+## Voice worker
+
+`make voice-gate` runs the voice worker's lint, format check and tests in `voice-agent/`. It needs `uv`.
+
+## Everything at once
+
+`make gate` runs `api-lint`, `api-types-check`, `voice-gate`, `go-gate`, `lint`, `typecheck` and `build`. It needs Docker and `uv`.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request, on every push to `main`, every night, and by hand.
+
+### Which lanes run
+
+A first job, `changes`, looks at the changed files and picks the lanes. Each lane lists every file its checks read, including shared files outside its folder, so a change to one of those alone still runs the lane:
+
+| Lane | Runs when these change | What it runs |
+| --- | --- | --- |
+| `server` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-fmt-check`; `make go-lint` (on a pull request, only findings new since its merge base fail); `make go-unit`, which includes the unit tests with `-race` and the pinned sqlc drift check; and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
+| `server-windows` | `server/**`, or the pinned platform content and `.gitattributes` | On Windows: the platform-content tests, a few `zenith-team-mcp` tests, and a build of `zenith-team-mcp` |
+| `server-macos` | `server/internal/daemon/**` | On macOS: the daemon's sandbox tests, which keep agents away from sign-in files and other runs' folders |
+| `frontend` | `frontend/**`, `docs/api/spec/**`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | `make lint typecheck`, `make api-lint api-types-check`, the production build (`make build`) and the Electron security scan |
+| `voice` | `voice-agent/**` | `ruff check`, `ruff format --check`, the Python tests, and a Docker build |
+| `selfhost` | `deploy/**`, a Dockerfile, `LICENSE`, `THIRD_PARTY_NOTICES.md` | Builds both images, runs `make selfhost-env`, boots the Compose stack, and checks that `/readyz` and the web app answer |
+| `server-integration` | Nightly and manual runs only | `make go-integration` |
+
+A change to `ci.yml` itself runs every lane. A change to the `Makefile` runs every lane except `server-macos`.
+
+### Nightly and manual runs
+
+Every night, CI runs every lane plus `server-integration`, so drift that no single change touched still shows up within a day. A failed nightly run opens an issue titled **Nightly CI failed**, or comments on the open one.
+
+You can also start the CI workflow by hand from the Actions tab. A manual run runs every lane, and runs the integration suites unless you clear **run_integration**.
+
+### The required check
+
+**`ci-gate`** is the one required check. It compares every lane with what the `changes` job picked: a picked lane must succeed, and a lane that was not picked must be skipped. Anything else, including a lane that failed, was cancelled, or is missing from its table, fails the gate.
+
+Pull requests from forks run with a read-only token and no secrets.
+
+### Pull request titles
+
+`.github/workflows/pr-title.yml` checks that a pull request title is a Conventional Commit, such as `fix(daemon): retry the first claim`, because titles become the squash-merge commit message. The allowed types are `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert` and `security`. Add `!` before the colon for a breaking change, and leave off the trailing period.
+
+## Security workflow
+
+`.github/workflows/security.yml` runs on every pull request, on pushes to `main`, every Monday, and on demand.
+
+| Job | What it runs | Blocks a pull request |
+| --- | --- | --- |
+| `secrets` | `gitleaks` over the checked-out tree, with `.gitleaks.toml` | Yes |
+| `workflows` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows | Yes |
+| `dependencies` | `govulncheck` for Go and `pnpm audit --prod` (high and above) for the frontend. Findings go to the job summary. | No: Dependabot opens the upgrade pull requests |
+
+Dependabot checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week. It skips versions younger than a week.
+
+## Next steps
+
+- **[Contributing](/developers/contributing)**: set up the stack and check your change.
+- **[Releasing](/developers/releasing)**: how a tag becomes images and binaries.

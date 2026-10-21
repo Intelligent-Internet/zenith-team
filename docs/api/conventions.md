@@ -38,7 +38,7 @@ projection rather than a second event-only copy.
 
 Disposable provider deltas are not client-plane events. Desktop may consume
 them from the daemon's capability-authenticated loopback NDJSON stream; web and
-other cloud clients receive only the completed `run.message_created`. Local preview is
+other server clients receive only the completed `run.message_created`. Local preview is
 rendering scratch, not a cache or recovery source.
 
 Timestamps serialize as UTC RFC 3339 with nanosecond precision. Domain mappers
@@ -62,7 +62,7 @@ One credential per request.
 
 | Credential | Presented as | Used by |
 |---|---|---|
-| Session cookie | `boardly_access` | The web app |
+| Session cookie | `zenith_team_access` | The web app |
 | Bearer token | `Authorization: Bearer <accessToken>` | The desktop app and the machine-side daemon |
 
 The web and desktop transports are the same credential in different containers.
@@ -76,13 +76,13 @@ spec names that header-only rule `daemonToken`.
 
 CSRF applies **only when an auth cookie is present**; bearer callers —
 desktop and daemon alike — never encounter it. Unsafe methods require
-`X-CSRF-Token` matching the `boardly_csrf` cookie; `/auth/refresh` and
-`/auth/logout` validate against `boardly_refresh_csrf`.
+`X-CSRF-Token` matching the `zenith_team_csrf` cookie; `/auth/refresh` and
+`/auth/logout` validate against `zenith_team_refresh_csrf`.
 
 ### Runs
 
 A Run of an Agent calls the API with its member's session plus the Run's
-proof, `X-Boardly-Run-Token`. The proof is not a second credential: it
+proof, `X-Zenith-Team-Run-Token`. The proof is not a second credential: it
 narrows what the session may do. Every route says whether it accepts a Run:
 
 | Route says | With a Run proof |
@@ -335,7 +335,7 @@ Three fences make a retried request safe, and each has a fixed home:
   concurrent update from clobbering a newer revision.
 
 The one header-borne fence is the agent plane's `Idempotency-Key`, required
-wherever a request carries the live-run proof `X-Boardly-Run-Token`: the
+wherever a request carries the live-run proof `X-Zenith-Team-Run-Token`: the
 approval-request branch of company-plan apply, and Question ask. It is a
 header because those request bodies are the domain artifact itself, which the
 server compares on replay; a token inside the body would perturb the very
@@ -455,3 +455,43 @@ enormous response.
 session composite is read once when a company is opened; a screen composite is
 read when that screen opens. Splitting one paint across two composites, or
 folding two paints into one, both cost more than they save.
+
+## Client integration
+
+The web and Electron renderers share one client under `frontend/`. It speaks
+only the current API: it keeps no old route, event or payload shape, with the
+one exception at the end of this section.
+
+- **One HTTP transport.** The axios client in `frontend/src/lib/api-client.ts`
+  makes every `/api/v1` call. It owns credentials, CSRF, session refresh and
+  error handling. RTK Query uses `fakeBaseQuery` with a `queryFn` per
+  endpoint, so RTK owns cache lifetimes and axios owns the wire.
+- **Retries.** Only idempotent `GET` and `HEAD` requests are retried, once,
+  after a network failure or a `5xx`. A `401` refreshes the session and
+  replays the request once; no other `4xx` is retried. A network failure has
+  no status, so it never looks like a server `404`, and a server error keeps
+  its `{detail, code, requestId}` body.
+- **Mutations converge from their response.** The client applies the
+  entity or typed receipt a mutation returns. It sends no confirming read.
+- **Generated types.** Server-owned types are generated from
+  `docs/api/spec/openapi.yaml` into
+  `frontend/src/shared/api/generated/api.generated.ts` by `make api-generate`.
+  `make api-types-check` regenerates into a temporary file and fails on drift.
+- **One socket.** The authenticated shell opens one realtime socket,
+  `GET /api/v1/ws?company_id={companyId}`, and drops repeated frames by
+  `eventId`. After a reconnect it catches up over REST, as
+  [realtime.md](realtime.md#catch-up-after-a-disconnect) describes.
+- **Agent replies arrive as `run.message_created`.** There is no
+  `message.created` for agent text; see
+  [realtime.md](realtime.md#there-is-no-messagecreated-for-agent-text).
+- **Desktop preview stays local.** Electron may render the daemon's loopback
+  preview ([realtime.md](realtime.md#local-desktop-preview)). That scratch
+  never enters the RTK Query cache and never reaches the server, so it is
+  never in Redis or PostgreSQL. The matching `run.message_created` replaces
+  it.
+
+The one exception is in the Electron main process. Its `/auth/providers`
+parser, in `frontend/electron/main/desktop-auth-api.cjs`, also accepts an
+older response shape (a single `enabled` flag under `providers.google`), so a
+newer desktop app can still talk to an older server. Callers always receive
+the current `items[]` shape.

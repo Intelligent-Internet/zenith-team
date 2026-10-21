@@ -482,7 +482,7 @@ paths:
         it answers an empty window carrying the real `throughSeq`.
 
         A Run reads its own chat here with its proof (`zen conversation
-        get`). With `X-Boardly-Run-Token` the path must name the token's own
+        get`). With `X-Zenith-Team-Run-Token` the path must name the token's own
         chat, and a Run tagged in a channel or group DM reads none
         (`403 task_outside_run_scope`).
       parameters:
@@ -536,7 +536,7 @@ paths:
         Conversation only to its creator.
 
         A Run reads its own chat's transcript with its proof (`zen
-        conversation transcript`). With `X-Boardly-Run-Token` the path must
+        conversation transcript`). With `X-Zenith-Team-Run-Token` the path must
         name the token's own chat, and a Run tagged in a channel or group DM
         reads none (`403 task_outside_run_scope`).
       parameters:
@@ -1330,7 +1330,7 @@ paths:
         `POST .../complete` marks it `ready`.
 
         The daemon uploads the files a Run presents on the member's session.
-        When it sends the Run's `X-Boardly-Run-Token`, the token is checked
+        When it sends the Run's `X-Zenith-Team-Run-Token`, the token is checked
         right after the metadata part, before the file is stored.
 
         Served `Cache-Control: no-store`.
@@ -1414,7 +1414,7 @@ paths:
         Moves the attachment from `pending` to `ready` and raises
         `attachment.completed`. Only then can it be referenced by a message.
         The daemon completes a Run's upload with the Run's
-        `X-Boardly-Run-Token`, checked against the `companyId` in the body
+        `X-Zenith-Team-Run-Token`, checked against the `companyId` in the body
         before the attachment changes.
         Served `Cache-Control: no-store`.
       parameters:
@@ -1494,7 +1494,7 @@ paths:
   # ===================================================================== runs
 
 
-  # C1 human discussions. Legacy Agent/Task contracts remain separate.
+  # Human discussions. Legacy Agent/Task contracts remain separate.
   companies_companyId_human_conversations:
     post:
       tags:

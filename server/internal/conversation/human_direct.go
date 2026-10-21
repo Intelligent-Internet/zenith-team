@@ -6,10 +6,10 @@ import (
 	"errors"
 	"slices"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -29,7 +29,7 @@ func (s *DefaultConversationService) CreateHumanDirect(
 	slices.SortFunc(participants, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
 	agentIDs := append([]uuid.UUID{}, input.AgentIDs...)
 	slices.SortFunc(agentIDs, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
-	for attempt := 0; attempt < 3; attempt++ {
+	for range 3 {
 		retry := false
 		var result HumanDirectResult
 		var pending []events.Event
@@ -69,7 +69,13 @@ func (s *DefaultConversationService) CreateHumanDirect(
 					eligible[userID] = true
 				}
 			}
-			agents, err := q.LockDiscussionEligibleAgents(ctx, generated.LockDiscussionEligibleAgentsParams{CompanyID: p.CompanyID, AgentIds: agentIDs})
+			agents, err := q.LockDiscussionEligibleAgents(
+				ctx,
+				generated.LockDiscussionEligibleAgentsParams{
+					CompanyID: p.CompanyID,
+					AgentIds:  agentIDs,
+				},
+			)
 			if err != nil {
 				return err
 			}
@@ -104,7 +110,7 @@ func (s *DefaultConversationService) CreateHumanDirect(
 					return err
 				}
 				for _, userID := range participants {
-					if _, err = grantDiscussionHuman(
+					if err = grantDiscussionHuman(
 						ctx,
 						q,
 						discussionGrant{
@@ -144,7 +150,13 @@ func (s *DefaultConversationService) CreateHumanDirect(
 				if err = lockDiscussion(ctx, q, p, id); err != nil {
 					return err
 				}
-				identity, err := q.GetHumanDirectIdentity(ctx, generated.GetHumanDirectIdentityParams{CompanyID: p.CompanyID, ConversationID: id})
+				identity, err := q.GetHumanDirectIdentity(
+					ctx,
+					generated.GetHumanDirectIdentityParams{
+						CompanyID:      p.CompanyID,
+						ConversationID: id,
+					},
+				)
 				if err != nil {
 					return err
 				}
@@ -182,7 +194,7 @@ func (s *DefaultConversationService) CreateHumanDirect(
 						if previous.Status == "active" {
 							continue
 						}
-						if _, err = grantDiscussionHuman(
+						if err = grantDiscussionHuman(
 							ctx,
 							q,
 							discussionGrant{
@@ -199,17 +211,31 @@ func (s *DefaultConversationService) CreateHumanDirect(
 						changed = true
 					}
 					for _, agent := range agents {
-						previous, err := q.GetDiscussionAgent(ctx, generated.GetDiscussionAgentParams{ConversationID: id, AgentID: agent.ID})
+						previous, err := q.GetDiscussionAgent(
+							ctx,
+							generated.GetDiscussionAgentParams{
+								ConversationID: id,
+								AgentID:        agent.ID,
+							},
+						)
 						if err != nil {
 							return err
 						}
 						if previous.Status == "active" {
 							continue
 						}
-						if _, err = q.GrantDiscussionAgent(ctx, generated.GrantDiscussionAgentParams{
-							CompanyID: p.CompanyID, ConversationID: id, AgentID: agent.ID,
-							ActorUserID: uuid.NullUUID{UUID: p.UserID, Valid: true},
-						}); err != nil {
+						if _, err = q.GrantDiscussionAgent(
+							ctx,
+							generated.GrantDiscussionAgentParams{
+								CompanyID:      p.CompanyID,
+								ConversationID: id,
+								AgentID:        agent.ID,
+								ActorUserID: uuid.NullUUID{
+									UUID:  p.UserID,
+									Valid: true,
+								},
+							},
+						); err != nil {
 							return err
 						}
 						changed = true
@@ -259,16 +285,16 @@ func grantDiscussionHuman(
 	ctx context.Context,
 	q *generated.Queries,
 	input discussionGrant,
-) (generated.ConversationMember, error) {
+) error {
 	existing, err := q.GetDiscussionMember(
 		ctx,
 		generated.GetDiscussionMemberParams{ConversationID: input.ConversationID, UserID: input.UserID},
 	)
 	if err == nil && existing.Status == "active" {
-		return existing, nil
+		return nil
 	}
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return generated.ConversationMember{}, err
+		return err
 	}
 	row, err := q.GrantDiscussionMember(
 		ctx,
@@ -282,9 +308,9 @@ func grantDiscussionHuman(
 		},
 	)
 	if err != nil {
-		return row, err
+		return err
 	}
-	err = q.ResetDiscussionUserState(
+	return q.ResetDiscussionUserState(
 		ctx,
 		generated.ResetDiscussionUserStateParams{
 			CompanyID:       input.CompanyID,
@@ -293,5 +319,4 @@ func grantDiscussionHuman(
 			GrantGeneration: row.Generation,
 		},
 	)
-	return row, err
 }

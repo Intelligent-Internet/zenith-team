@@ -1008,7 +1008,9 @@ async function revealWorkspaceFile(
 }
 
 async function createRevealSnapshot(filename) {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "boardly-reveal-"));
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "zenith-team-reveal-"),
+  );
   await fs.chmod(directory, 0o700);
   return {
     directory,
@@ -1023,7 +1025,7 @@ function safeRevealFilename(filename) {
     sanitized.length > 0 &&
     Buffer.byteLength(sanitized, "utf8") <= 240
     ? sanitized
-    : "boardly-export";
+    : "zenith-team-export";
 }
 
 function retainRevealSnapshot(directory) {
@@ -1692,7 +1694,7 @@ function getDesktopPlatform() {
 
 function getDesktopEnvironmentName() {
   return normalizeDesktopEnvironment(
-    desktopEnv?.BOARDLY_DESKTOP_ENV,
+    desktopEnv?.ZENITH_TEAM_DESKTOP_ENV,
     app.isPackaged ? "prod" : "local",
   );
 }

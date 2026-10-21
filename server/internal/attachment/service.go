@@ -15,12 +15,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/storage"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/storage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ObjectStorage is the attachment domain port for durable object bytes.
@@ -44,7 +44,7 @@ const (
 // AttachmentService owns the attachment lifecycle after caller
 // authorization: initiation, completion, download, deletion, and the
 // terminal cleanup of a deleting row.
-type AttachmentService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type AttachmentService interface {
 	Initiate(context.Context, InitiateInput, io.Reader) (InitiateResult, error)
 	Complete(context.Context, CompleteInput) (CompleteResult, error)
 	Download(context.Context, DownloadInput) (DownloadResult, error)
@@ -327,7 +327,9 @@ func (s *DefaultAttachmentService) DownloadResolved(
 	if !input.OutputAccessResolved {
 		inaccessible, err := s.store.Queries().HasInaccessibleOutputAttachment(ctx,
 			generated.HasInaccessibleOutputAttachmentParams{
-				AttachmentID: input.ID, CompanyID: input.CompanyID, ActorUserID: input.RequestedByUserID,
+				AttachmentID: input.ID,
+				CompanyID:    input.CompanyID,
+				ActorUserID:  input.RequestedByUserID,
 			})
 		if err != nil {
 			return DownloadResult{}, safeRepositoryError(ctx, err)
@@ -345,7 +347,10 @@ func (s *DefaultAttachmentService) DownloadResolved(
 		return DownloadResult{}, safeRepositoryError(ctx, err)
 	}
 	if record.Status == StatusReady && input.KnownRevision > 0 && input.KnownRevision == record.Revision {
-		return DownloadResult{Attachment: attachmentDTOFromRecord(record, PublicStatusReady), NotModified: true}, nil
+		return DownloadResult{
+			Attachment:  attachmentDTOFromRecord(record, PublicStatusReady),
+			NotModified: true,
+		}, nil
 	}
 	return s.downloadRecord(ctx, record)
 }
@@ -362,11 +367,12 @@ func (s *DefaultAttachmentService) DownloadForRun(ctx context.Context, input Run
 		!util.ValidUUID(input.RunID) || !util.ValidUUID(input.AuthorizedByUserID) {
 		return DownloadResult{}, ErrNotFound
 	}
-	row, err := s.store.Queries().AuthorizeRunAttachmentDownload(ctx, generated.AuthorizeRunAttachmentDownloadParams{
-		AttachmentID: input.ID, CompanyID: input.CompanyID,
-		RunID: input.RunID, AuthorizerUserID: input.AuthorizedByUserID,
-		FrozenProjectDocument: input.FrozenProjectDocument,
-	})
+	row, err := s.store.Queries().
+		AuthorizeRunAttachmentDownload(ctx, generated.AuthorizeRunAttachmentDownloadParams{
+			AttachmentID: input.ID, CompanyID: input.CompanyID,
+			RunID: input.RunID, AuthorizerUserID: input.AuthorizedByUserID,
+			FrozenProjectDocument: input.FrozenProjectDocument,
+		})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return DownloadResult{}, ErrNotFound
 	}

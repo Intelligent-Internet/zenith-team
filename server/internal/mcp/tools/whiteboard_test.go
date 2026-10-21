@@ -17,8 +17,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const (
@@ -41,7 +41,7 @@ func whiteboardChannelServer(
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != runchannel.Path || r.Method != http.MethodPost ||
 			r.Header.Get("Authorization") != runchannel.AuthorizationScheme+" "+capability ||
-			r.Header.Get("X-Boardly-Run-Token") != "" {
+			r.Header.Get("X-Zenith-Team-Run-Token") != "" {
 			t.Error("whiteboard tool must use only the Run channel capability")
 		}
 		var request runchannel.Request

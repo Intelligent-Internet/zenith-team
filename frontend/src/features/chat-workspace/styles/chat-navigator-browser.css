@@ -30,7 +30,7 @@
 .workspace-chat-navigator__search input::placeholder {
   color: var(--workspace-native-text-muted);
 }
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .workspace-chat-navigator__search
   input:focus-visible {
   outline: none;

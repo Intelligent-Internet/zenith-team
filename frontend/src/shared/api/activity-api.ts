@@ -5,19 +5,22 @@ import {
   type ActivityListOptions,
   type ActivityPage,
 } from "@/shared/api/activity.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { companyService } from "@/shared/api/company.service";
 import { cockpitService } from "@/shared/api/cockpit.service";
 import type { ActivityInsight } from "@/shared/api/types";
 
-export const activityApi = boardlyApi.injectEndpoints({
+export const activityApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getWorkspaceActivityInsight: builder.query<ActivityInsight, string>({
       providesTags: (_result, _error, companyId) => [
         { id: companyId, type: "Run" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => companyService.getActivityInsight(companyId),
           "Activity insight could not be loaded.",
         ),
@@ -31,7 +34,7 @@ export const activityApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Conversation" },
       ],
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => cockpitService.getCockpit(companyId),
           `Cockpit for Company ${companyId} could not be loaded.`,
         ),
@@ -44,7 +47,7 @@ export const activityApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Activity" },
       ],
       queryFn: (companyId: string) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => activityService.listCompanyActivity(companyId),
           "Activity could not be loaded.",
         ),
@@ -62,7 +65,7 @@ export const activityApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Activity" },
       ],
       queryFn: ({ queryArg: { companyId, options }, pageParam }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             activityService.listCompanyActivityPage(companyId, {
               ...options,
@@ -80,7 +83,7 @@ export const activityApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Activity" },
       ],
       queryFn: (request) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => activityService.getCompanyActivityCalendar(request),
           "Activity calendar could not be loaded.",
         ),

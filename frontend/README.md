@@ -5,8 +5,6 @@ React 19, Vite, and Electron-capable frontend for the Zenith Team founder cockpi
 ## Canonical Specs
 
 - Frontend architecture: [Frontend architecture](ARCHITECTURE.md)
-- UI design references: [design handoff](../docs/design/README.md) and
-  [accepted chat visual refinement](../docs/design/chat-visual-refinement.md)
 - Root architecture: `../ARCHITECTURE.md`
 - HTTP contracts and generated types: `../docs/api/spec/openapi.yaml` and
   `src/shared/api/generated/api.generated.ts`
@@ -48,10 +46,13 @@ Public Tailwind utilities scan only the landing components and shared logo;
 the font stacks are shared with the application. Static landing avatars use
 the Clay renderer directly, and the WebP atlas loads as they approach the viewport.
 
-`public/llms.txt` describes public product information and links. The public
-`/.well-known/ai-catalog.json` advertises no callable resources: Company-scoped
+`public-site/llms.txt` describes public product information and links. The
+`/.well-known/ai-catalog.json` built from `public-site/ai-catalog.json`
+advertises no callable resources: Company-scoped
 MCP tools and authenticated workspace APIs are not anonymous public endpoints.
 Keep its entries empty until there is an actual public discovery contract.
+Both files are emitted only by builds that set
+`VITE_ZENITH_TEAM_PUBLIC_SITE_ORIGIN`.
 These files must be served as text/JSON rather than the SPA fallback.
 
 Vite keeps React, state, routing, shared Iconsax assets, editor dependencies and
@@ -79,14 +80,14 @@ Reporting is disabled by default. To enable it, set these values in `.env.local`
 for `pnpm electron:dev`, or `.env.dev` for a packaged dev build:
 
 ```dotenv
-BOARDLY_DESKTOP_CRASH_REPORTS_ENABLED=true
-BOARDLY_DESKTOP_CRASH_REPORT_PROVIDER=sentry
-BOARDLY_DESKTOP_SENTRY_DSN=https://public-key@your-ingest-host/project-id
+ZENITH_TEAM_DESKTOP_CRASH_REPORTS_ENABLED=true
+ZENITH_TEAM_DESKTOP_CRASH_REPORT_PROVIDER=sentry
+ZENITH_TEAM_DESKTOP_SENTRY_DSN=https://public-key@your-ingest-host/project-id
 ```
 
-For CI, set the same GitHub Actions variables on the `desktop-dev` or
-`desktop-production` environment. Use separate Sentry projects for each
-environment. `write-release-env.cjs` embeds the public DSN and reporting policy
+For a packaged build, set the same values in the shell or in the selected
+`.env.dev` or `.env.prod` file. Use a separate Sentry project for each build
+variant. `write-release-env.cjs` embeds the public DSN and reporting policy
 in packaged builds; no Sentry authentication token belongs in runtime config.
 Events identify the desktop environment (`local`, `dev`, `prod`) and release
 (`zenith-team-desktop@<package version>`).
@@ -104,11 +105,10 @@ error and one renderer error, then confirm both in the intended Sentry project's
 Issues view.
 
 Desktop builds with Sentry reporting enabled upload renderer source maps when
-`SENTRY_AUTH_TOKEN` is present. Set the token as a GitHub environment **secret**,
-and `SENTRY_ORG` / `SENTRY_PROJECT` as variables on the same environment. The
-build workflow passes the token only to the renderer build step. Locally, export
-the token in the shell and set the org/project in the selected `.env.dev` or
-`.env.prod` file before running the desktop build.
+`SENTRY_AUTH_TOKEN` is present. Export the token in the shell and set
+`SENTRY_ORG` / `SENTRY_PROJECT` in the selected `.env.dev` or `.env.prod` file
+before running the desktop build. Only the renderer build step uses the token;
+keep it out of every env file. No repository workflow uploads source maps.
 
 The Vite plugin uploads hidden source maps with debug IDs, uses the same
 `zenith-team-desktop@<package version>` release as the SDK, and removes `.map`
@@ -394,12 +394,12 @@ its layer order in both the editor and public viewer.
   downloads use a scoped IPC bridge so the main process can revalidate its disk
   cache with the stored session; web downloads continue through `apiClient`.
   RTK Query owns server-state caches;
-  feature APIs extend the shared `boardlyApi` with `injectEndpoints`. Redux Toolkit
+  feature APIs extend the shared `zenithTeamApi` with `injectEndpoints`. Redux Toolkit
   slices own global UI state and React state owns component-local flows.
 - Task chat's **Results** panel reads paginated Outputs, publication URLs, and
   source attachments from `GET /companies/{companyId}/tasks/{taskId}/results`.
   It refreshes through scoped realtime invalidation, including every publication
-  transition and reconnect. Output files open in the cloud-backed file viewer; working
+  transition and reconnect. Output files open in the server-backed file viewer; working
   files from loaded messages use the existing desktop viewer. Image, PDF,
   Markdown, and text previews support downloading; websites use a sandboxed
   iframe with an external-browser fallback. Per-task open state, selection, and
@@ -500,7 +500,7 @@ its layer order in both the editor and public viewer.
   their task-specific instructions; login and signup use brief action-oriented copy.
 - Password auth uses the Go API's cookie-session routes: `/auth/signup`,
   `/auth/login`, `/auth/refresh`, `/auth/logout`, and `/me`. The browser sends
-  credentials and the matching `boardly_csrf`/`boardly_refresh_csrf` value in
+  credentials and the matching `zenith_team_csrf`/`zenith_team_refresh_csrf` value in
   `X-CSRF-Token`; it does not persist an access token in JavaScript storage.
   Inside the desktop shell, password auth instead routes through the Electron
   main-process bridge on the bearer transport. The app's own session lives in
@@ -512,16 +512,16 @@ its layer order in both the editor and public viewer.
   `kind: "session_not_saved"` after the main process signs out the session
   the server just started, and the sign-in screens say so in a few words
   (`getSessionNotSavedMessage` in `src/features/auth/model/auth-api-utils.ts`),
-  never as a wrong password (Access TECH B3c). The daemon has a session of
-  its own (D31):
+  never as a wrong password. The daemon has a session of
+  its own:
   after sign-in, and before each daemon launch that finds none, the main
   process calls `POST /auth/daemon-session` and hands the answer to
   `zen desktop-session install`, which writes `daemon-auth.json` in Desktop's
   private daemon home through the Go `authfile` implementation; sign-out runs
   `zen desktop-session clear`. The daemon is started with
-  `BOARDLY_DESKTOP_SESSION_PATH` naming the app's store, so its Runs are kept
+  `ZENITH_TEAM_DESKTOP_SESSION_PATH` naming the app's store, so its Runs are kept
   away from it. The first launch after this change moves the session the app
-  used to share with its daemon (`boardly-home/auth.json`) into the app's
+  used to share with its daemon (`zenith-team-home/auth.json`) into the app's
   store, under the CLI's lock and only once no older daemon still renews it;
   until then the app renews it in place under the same lock, as the CLI
   does, so the person stays signed in. The cookie-session flow remains
@@ -558,50 +558,46 @@ its layer order in both the editor and public viewer.
   Configure Google credentials and callback URLs on the Go server; no Google client
   secret or client ID is read by browser code.
   The public API proxy must also allow the packaged renderer origin
-  `boardly-app://renderer` with credentials; otherwise the desktop callback page
+  `zenith-team-app://renderer` with credentials; otherwise the desktop callback page
   reaches Google but the final `/auth/google/callback` API request is blocked by
   CORS and appears as a connection error.
 - Zenith Team desktop uses `local`, `dev`, and `prod` environments. `electron:dev`
   runs as `local`; `electron:package` and `electron:make` default to `prod`.
-  Cloud packages inject `https://api-dev.example.com` for `dev` or
-  `https://api.example.com` for `prod` unless overridden with a non-loopback
-  `VITE_API_URL`, `BOARDLY_DESKTOP_DEV_ORIGIN`, or
-  `BOARDLY_DESKTOP_PROD_ORIGIN`.
+  Dev and prod packages need their server's origin: set
+  `ZENITH_TEAM_DESKTOP_DEV_ORIGIN` for `dev` or
+  `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` for `prod` (or a non-loopback
+  `VITE_API_URL`). The build stops when none is set.
   A packaged local build must set `VITE_API_URL` to the local API origin and
-  `BOARDLY_DESKTOP_API_BASE_URL` to its normalized `/api/v1` base so the
+  `ZENITH_TEAM_DESKTOP_API_BASE_URL` to its normalized `/api/v1` base so the
   Electron main process trusts renderer authentication requests.
-  App data remains under `Boardly Local`, `Boardly Dev`, and `Boardly` for
+  App data remains under `Zenith Team Local`, `Zenith Team Dev`, and `Zenith Team` for
   local, dev, and prod respectively. The apps display as `Zenith Team` and
   `Zenith Team Dev`; the stable data directories preserve existing sessions.
-  Every variant owns `<userData>/boardly-home` and a non-default health port
+  Every variant owns `<userData>/zenith-team-home` and a non-default health port
   (`19714` prod, `19715` dev, `19716` local). Desktop never reads, starts,
-  stops, or overwrites the terminal CLI's default `~/.boardly` home or port.
+  stops, or overwrites the terminal CLI's default `~/.zenith-team` home or port.
   Settings, diagnostics, daemon state, credentials, and update preferences
   remain isolated by each variant's Electron `userData` directory.
   Electron scripts load separate env files: `electron:dev` reads `frontend/.env`
-  then `frontend/.env.local`; cloud packages read `frontend/.env.dev` or
-  `frontend/.env.prod` after `BOARDLY_DESKTOP_ENV` selects the variant. Shell
+  then `frontend/.env.local`; dev and prod packages read `frontend/.env.dev` or
+  `frontend/.env.prod` after `ZENITH_TEAM_DESKTOP_ENV` selects the variant. Shell
   environment variables still take priority over file values.
-- Packaged desktop CSP permits Studio HTTP and Socket.IO at
-  `https://studio-dev.example.com` for `dev` and `https://api-agent.ii.inc` for
-  `prod` and `local`. Set `ZENITH_STUDIO_API_URL` at build time (or in the
-  GitHub release environment's variable of the same name) when the Team
-  server uses another Studio origin. It must be a credential-free HTTPS
-  origin without paths, query strings, fragments or wildcards; packaged
-  `local` builds also permit HTTP loopback. This only configures the CSP
-  allowlist; the authenticated editor response still selects the Studio
-  connection. Changing the server's Studio origin requires rebuilding and
-  updating the desktop app with the matching allowlist. Studio must also
-  allow `boardly-app://renderer` through CORS.
-  Studio assets from `https://storage.googleapis.com` and `https://files.example.com`
-  are permitted by `img-src`, `media-src` and `connect-src` for image/audio/video
-  previews and direct signed uploads/downloads. Storage CORS still applies to
-  fetches; the desktop CSP allowlist does not replace bucket access policy.
-- Desktop Dev releases (`BOARDLY_DESKTOP_ENV=dev`) and unpackaged local runs
+- Zenith Studio is optional. When `ZENITH_STUDIO_API_URL` is set at build
+  time, the packaged CSP permits Studio HTTP and Socket.IO at that origin; it
+  must be a credential-free HTTPS origin without paths, query strings,
+  fragments or wildcards (packaged `local` builds also permit HTTP loopback).
+  This only configures the CSP allowlist; the authenticated editor response
+  still selects the Studio connection, and Studio must allow
+  `zenith-team-app://renderer` through CORS. With Studio on, assets from the
+  hosts in `ZENITH_STUDIO_MEDIA_ORIGINS` (comma separated, default
+  `https://storage.googleapis.com`) are permitted by `img-src`, `media-src` and
+  `connect-src`. Storage CORS still applies; the CSP does not replace bucket
+  access policy.
+- Desktop Dev releases (`ZENITH_TEAM_DESKTOP_ENV=dev`) and unpackaged local runs
   expose **View → Toggle Developer Tools**: **Cmd+Option+I** on macOS or
-  **Ctrl+Shift+I** on Windows/Linux. The dev release workflow embeds this
-  environment in the package, so users can open DevTools without setting any
-  environment variables. Packaged production builds omit this menu command.
+  **Ctrl+Shift+I** on Windows/Linux. A dev build embeds this environment in
+  the package, so users can open DevTools without setting any environment
+  variables. Packaged production builds omit this menu command.
 - Desktop builds must not open on the public web landing page. The Electron root
   route sends unauthenticated users to login, incomplete sessions to onboarding, and
   completed sessions to the app shell.
@@ -617,7 +613,7 @@ its layer order in both the editor and public viewer.
     On macOS this runs through Electron's development bundle, so the Dock may
     still show the Electron name and icon. Do not use `electron:dev` for Dock
     icon/name QA; use `electron:package` or `electron:make` to verify production
-    app identity from the packaged `.icns`. `BOARDLY_ELECTRON_DEV_ARGS` passes
+    app identity from the packaged `.icns`. `ZENITH_TEAM_ELECTRON_DEV_ARGS` passes
     extra switches to the dev window, space-separated — for example
     `--remote-debugging-port=9223` so a smoke run can drive the renderer over
     CDP. Only the dev script reads it; packaged apps never do.
@@ -636,14 +632,14 @@ its layer order in both the editor and public viewer.
     `out/make/zip/win32/x64/Zenith-Team-prod-win32-x64-0.1.0.zip` and
     `out/make/zip/linux/x64/Zenith-Team-prod-linux-x64-0.1.0.zip`.
 - Desktop `Check for Updates` uses a manual update/download link unless the packaged
-  build includes native auto-update release env. Set `BOARDLY_DESKTOP_UPDATE_URL` to
+  build includes native auto-update release env. Set `ZENITH_TEAM_DESKTOP_UPDATE_URL` to
   override the manual URL; otherwise local builds open `http://127.0.0.1:5173` and
-  prod builds open `https://app.example.com`. Signed release builds can enable native
-  update checks with `BOARDLY_DESKTOP_AUTO_UPDATE=true`, a credential-free HTTPS
+  dev and prod builds open the GitHub Releases page. Signed release builds can enable native
+  update checks with `ZENITH_TEAM_DESKTOP_AUTO_UPDATE=true`, a credential-free HTTPS
   native feed, and a release manifest. Static builds use
-  `BOARDLY_DESKTOP_AUTO_UPDATE_FEED_BASE_URL`,
-  `BOARDLY_DESKTOP_AUTO_UPDATE_MANIFEST_URL`, and
-  `BOARDLY_DESKTOP_AUTO_UPDATE_STATIC_FEED=true`. Supported native builds persist the
+  `ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL`,
+  `ZENITH_TEAM_DESKTOP_AUTO_UPDATE_MANIFEST_URL`, and
+  `ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED=true`. Supported native builds persist the
   installed version and the user's automatic-check preference under Electron
   `userData`, check ten seconds after startup and every four hours, and show a
   blue circular update button at the bottom of the left sidebar, above the account
@@ -657,87 +653,46 @@ its layer order in both the editor and public viewer.
   the full update flow in the desktop app. A newer release opens one continuous
   update dialog from download through restart. **Settings → Support** mirrors the
   same updater state but is not required to check, download, or install an update.
-- Public web desktop download CTAs fetch a public release manifest from
-  `VITE_BOARDLY_DESKTOP_RELEASE_MANIFEST_URL`, defaulting to
-  `https://storage.googleapis.com/my-public-bucket/boardly-dev/latest.json` while
-  the public download channel is Dev. The landing requests that manifest with
-  `cache: "no-store"` and uses its immutable, versioned installer URL, so every
-  page load resolves the latest successfully published Dev candidate. There is
-  deliberately no built-in version fallback: before the first candidate is
-  published, or when the manifest cannot be loaded, the affected CTA stays
-  disabled rather than downloading an old or Production build. Windows and Linux
-  CTAs are "Coming soon" until installers are present in the manifest. They can
-  still be enabled through
-  `VITE_BOARDLY_DESKTOP_WINDOWS_URL` and `VITE_BOARDLY_DESKTOP_LINUX_URL`. Keep signed
-  artifacts out of git; upload production files to Google Cloud Storage or equivalent
-  release storage. Apply the checked-in browser CORS policy with
-  `gcloud storage buckets update gs://my-public-bucket --cors-file=deploy/gcs-public-cors.json`
-  so the landing origin can fetch the runtime manifest.
-- Manual dev candidates use `.github/workflows/desktop-dev.yml`. Each run stamps
-  `0.<run_number>.<run_attempt>`, builds a signed/notarized macOS arm64
-  `Zenith Team Dev`, publishes its immutable tree and update feed under
-  `gs://<bucket>/boardly-dev/`, writes candidate evidence for the source SHA,
-  and creates a GitHub prerelease. The default API is
-  `https://api-dev.example.com`.
-- Tag-based production releases use `.github/workflows/desktop-release.yml`.
-  Before tagging, commit the intended production package version and build that
-  exact `main` commit as a final dev candidate. Push a matching tag such as
-  `desktop-v0.2.0`. Production verifies the candidate evidence, rebuilds the
-  source for `https://api.example.com`, creates macOS arm64/x64 and Windows
-  x64 installers, and publishes `gs://<bucket>/boardly/`. Both entry workflows
-  call `.github/workflows/desktop-build.yml`; Actions artifacts are retained for
-  30 days while GCS remains the auto-update authority.
-- Create GitHub environments `desktop-dev` and `desktop-production`, with a
-  required reviewer on production. Configure signing/notarization secrets plus
-  either Workload Identity variables `GCP_WORKLOAD_IDENTITY_PROVIDER` and
-  `GCP_SERVICE_ACCOUNT`, or the `GCP_SERVICE_ACCOUNT_KEY` secret. Dev destination
-  variables are `BOARDLY_DESKTOP_API_ORIGIN`,
-  `BOARDLY_DESKTOP_GCS_BUCKET`, `BOARDLY_DESKTOP_GCS_PREFIX`,
-  `BOARDLY_DESKTOP_RELEASE_BASE_URL`, and
-  `BOARDLY_DESKTOP_OAUTH_LOOPBACK_PORT`. Production also needs
-  `BOARDLY_DESKTOP_DEV_RELEASE_BASE_URL` so it can verify the exact source
-  candidate. Use the same variable names in both environments; the environment
-  boundary keeps the values separate.
+- Public web desktop download buttons read a public release manifest from
+  `VITE_ZENITH_TEAM_DESKTOP_RELEASE_MANIFEST_URL` with `cache: "no-store"` and
+  use its immutable, versioned installer URLs. There is no built-in channel:
+  without a manifest, or when it cannot be loaded, the buttons stay disabled.
+  `VITE_ZENITH_TEAM_DESKTOP_MAC_ARM64_URL`, `VITE_ZENITH_TEAM_DESKTOP_MAC_X64_URL`,
+  `VITE_ZENITH_TEAM_DESKTOP_WINDOWS_URL` and `VITE_ZENITH_TEAM_DESKTOP_LINUX_URL`
+  override single platforms. Keep signed artifacts out of git; host them in
+  release storage whose CORS policy lets the web origin read the manifest.
+- Unsigned packages need no secrets: run `corepack pnpm electron:make`, or
+  the manual **Desktop Smoke Build** workflow (`.github/workflows/desktop-smoke.yml`),
+  which builds unsigned macOS and Linux installers as workflow artifacts.
 - macOS signing is opt-in so unsigned local builds still work. Set
-  `BOARDLY_DESKTOP_MAC_SIGN=true` and optionally
-  `BOARDLY_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set
-  `BOARDLY_DESKTOP_MAC_NOTARIZE=true` with one notarization credential set:
-  `BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE` plus optional
-  `BOARDLY_DESKTOP_MAC_NOTARY_KEYCHAIN`, or
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_KEY`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER`, or
-  `BOARDLY_DESKTOP_MAC_NOTARY_APPLE_ID`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_APP_PASSWORD`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_TEAM_ID`.
+  `ZENITH_TEAM_DESKTOP_MAC_SIGN=true` and optionally
+  `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARIZE=true` with one notarization credential set:
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN_PROFILE` plus optional
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_KEYCHAIN`, or
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY`,
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID`,
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`, or
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_APPLE_ID`,
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_APP_PASSWORD`,
+  `ZENITH_TEAM_DESKTOP_MAC_NOTARY_TEAM_ID`.
   Local `electron:package` and `electron:make` ignore macOS signing/notarization values
   that only come from `.env.prod`; this prevents local packaging from failing on Apple
   notarization state. For a signed release package, set the signing variables in the
-  shell command or set `BOARDLY_DESKTOP_RELEASE_PACKAGE=true` to intentionally use the
+  shell command or set `ZENITH_TEAM_DESKTOP_RELEASE_PACKAGE=true` to intentionally use the
   release signing values from `.env.prod`. For the local signed macOS release path,
   run `corepack pnpm electron:make:mac:signed`; it forces `darwin`, signing,
   notarization, and release-package mode.
-- The desktop release workflow requires macOS signing/notarization secrets:
-  `BOARDLY_DESKTOP_MAC_CERTIFICATE_BASE64`,
-  `BOARDLY_DESKTOP_MAC_CERTIFICATE_PASSWORD`,
-  `BOARDLY_DESKTOP_MAC_SIGN_IDENTITY`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_BASE64`,
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_KEY_ID`, and
-  `BOARDLY_DESKTOP_MAC_NOTARY_API_ISSUER`. It also requires Windows signing secrets:
-  `BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_BASE64` and
-  `BOARDLY_DESKTOP_WINDOWS_CERTIFICATE_PASSWORD`. GCS upload can authenticate via
-  Workload Identity variables `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SERVICE_ACCOUNT`
-  or a `GCP_SERVICE_ACCOUNT_KEY` secret.
 - Desktop diagnostics write redacted main/renderer events to the app user data logs
-  folder, such as `~/Library/Application Support/Boardly/logs/boardly-main.log` on
+  folder, such as `~/Library/Application Support/Zenith Team/logs/zenith-team-main.log` on
   macOS. Electron crash dumps are reported from Electron's `crashDumps` app path.
   Use **Help -> Copy Diagnostics Summary** to copy support-safe app version,
   environment, platform, log path, and crash dump path metadata.
-- Windows release builds now include Squirrel.Windows artifacts for native update feeds
-  plus the zip fallback. Windows alpha still requires Windows-hosted launch QA and
-  code-signing secrets before external distribution.
-- Production registers `boardly://` for app links while the side-by-side dev
-  package registers `boardly-dev://`. Google OAuth desktop callbacks use isolated
+- On Windows, `electron:make` is set up to produce a Squirrel.Windows installer
+  plus a zip. Windows desktop builds are not supported yet, because the bundled
+  `zen` CLI does not build there.
+- Production registers `zenith-team://` for app links while the side-by-side dev
+  package registers `zenith-team-dev://`. Google OAuth desktop callbacks use isolated
   loopback ports and route into the existing hash router.
 - Public artifact links attempt to open the desktop app once after the link is
   resolved, and offer **Open in app** when the browser requires a click. The
@@ -753,7 +708,7 @@ its layer order in both the editor and public viewer.
   metadata. Renderer code does not receive filesystem access.
 - Chat link cards in Desktop load public page metadata and raster thumbnails in
   the main process through a trusted IPC bridge. Requests run on the member's
-  computer, without cookies, referrers, or a cloud preview endpoint. The loader
+  computer, without cookies, referrers, or a server preview endpoint. The loader
   checks and pins public DNS addresses on every redirect, accepts standard
   HTTP(S) ports, reads at most 512 KB of HTML and 5 MB per image, and gives each
   preview eight seconds. It runs three previews at a time, coalesces duplicate
@@ -764,7 +719,7 @@ its layer order in both the editor and public viewer.
   credential-free fetch and URL fallback when CORS prevents metadata retrieval.
 - Website result previews in Desktop use an isolated `WebContentsView` inside the
   result panel, with Back/Forward, Reload, and Open external. Each preview gets a
-  temporary session with no application preload, Node access, or Boardly cookies;
+  temporary session with no application preload, Node access, or Zenith Team cookies;
   closing the panel or reloading the app disposes the view and clears its storage.
   Website downloads use the native Save dialog. The native view follows the panel
   bounds and hides behind application dialogs and menus. The web client retains
@@ -1074,8 +1029,11 @@ Run the existing frontend checks and the generated-contract drift check:
 pnpm --dir frontend lint # Import cycles, layer boundaries, and formatting
 pnpm --dir frontend typecheck
 pnpm --dir frontend build
+pnpm --dir frontend electron:security:scan # Electron fuses, CSP, IPC and permissions
 make api-types-check
 ```
+
+CI's frontend lane runs the same checks, plus `make api-lint`.
 
 The repository-wide release gate is `make gate`. The static checks must also
 confirm that production source has no direct Zustand import:

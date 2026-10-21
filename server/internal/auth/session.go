@@ -12,10 +12,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // createUserWithSession creates the user and its first auth session in one
@@ -233,7 +233,7 @@ func rotateSession(
 		next.RotatedFromSessionID = &currentID
 		next.ClientMetadata = current.ClientMetadata
 		// A session keeps its holder for life: a daemon's refresh stays a
-		// daemon session (D31).
+		// daemon session.
 		next.Client = SessionClient(current.Client)
 		createdSession, err := queries.CreateAuthSession(ctx, createAuthSessionParams(next))
 		if err != nil {

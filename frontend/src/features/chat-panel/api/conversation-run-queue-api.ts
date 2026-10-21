@@ -1,5 +1,5 @@
 import { conversationService } from "@/shared/api/conversation.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { ConversationRunQueueProjection } from "@/shared/api/types";
 
 export type ConversationRunQueueArgument = {
@@ -7,7 +7,7 @@ export type ConversationRunQueueArgument = {
   conversationId: string;
 };
 
-export const conversationRunQueueApi = boardlyApi.injectEndpoints({
+export const conversationRunQueueApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getConversationRunQueue: builder.query<
       ConversationRunQueueProjection,
@@ -18,7 +18,7 @@ export const conversationRunQueueApi = boardlyApi.injectEndpoints({
         { id: conversationId, type: "Conversation" },
       ],
       queryFn: ({ conversationId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => conversationService.getRunQueue(conversationId),
           "The conversation queue could not be loaded.",
         ),

@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // runCheck validates unpacked plugin folders with exactly the rules the
-// server and boardly-mcp apply to a pin, merged with the bundles this build
+// server and zenith-team-mcp apply to a pin, merged with the bundles this build
 // pins for every other plugin, and prints every problem. A folder whose
 // plugin this build already pins is also held to the release rules against
 // that pin: no lower version, no removed key without a retirement, and no

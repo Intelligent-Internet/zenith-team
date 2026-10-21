@@ -112,7 +112,7 @@ function createDesktopAuthApi(dependencies) {
         "Zenith Team Desktop could not save the session on this computer",
       );
     }
-    // The daemon gets a fresh session of its own (D31). Sign-in does not
+    // The daemon gets a fresh session of its own. Sign-in does not
     // wait on it: the agent service asks again before it starts.
     void store.ensureDaemonSession?.({ replace: true });
     return {
@@ -323,7 +323,7 @@ function createDesktopAuthApi(dependencies) {
       if (stored.apiBaseUrl !== trustedBaseUrl) {
         throw new Error("Desktop authentication session origin changed");
       }
-      // The app holds its own refresh token (D31) and ends its own session;
+      // The app holds its own refresh token and ends its own session;
       // a server that refuses fails the sign-out so the app can say so.
       await store.signOutStoredSession();
     },
@@ -434,7 +434,7 @@ function trustedApiBaseUrl(rawValue, { app: electronApp, env }) {
     fallback: electronApp?.isPackaged ? "prod" : "local",
   });
   const configured = normalizeApiBaseUrl(
-    env.BOARDLY_DESKTOP_API_BASE_URL || `${variant.apiOrigin}/api/v1`,
+    env.ZENITH_TEAM_DESKTOP_API_BASE_URL || `${variant.apiOrigin}/api/v1`,
   );
   if (electronApp?.isPackaged) {
     if (candidate !== configured) {
@@ -492,8 +492,8 @@ async function safeJSON(response) {
 // used to collapse into one sentence ("Account could not be created."),
 // which hid whether the person mistyped, the email is taken, the server is
 // down, or the saved sign-in is gone — each needs a different next step
-// (docs/api/errors.md: retry once, then surface the requestId; UX.md: name
-// the target, the consequence and the recovery).
+// (docs/api/errors.md: retry once, then surface the requestId; a message
+// names the target, the consequence and the recovery).
 //   network           — the server could not be reached at all
 //   server            — the server answered 5xx or with an unusable body
 //   rejected          — the server refused the request with an error envelope

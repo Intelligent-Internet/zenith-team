@@ -19,7 +19,7 @@ export function Toaster({ className, style, icons, ...props }: ToasterProps) {
 
   return (
     <Sonner
-      className={cx("toaster group boardly-toast", className)}
+      className={cx("toaster group zenith-team-toast", className)}
       theme={isDark ? "dark" : "light"}
       icons={{
         success: <CheckCircle2 size={20} />,

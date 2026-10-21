@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { useCompanyPermissions } from "@/shared/permissions";
 import {
   Dialog,
@@ -68,7 +68,7 @@ export function HuddleInviteAgents({
       }).unwrap();
       setNotice(done);
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     } finally {
       await query.refetch();
       setPendingId("");

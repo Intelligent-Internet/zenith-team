@@ -7,7 +7,7 @@ import {
   milestoneTypes,
 } from "@/features/company-plan/model/milestone-catalog";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { TaskDto } from "@/shared/api/types";
 import { Button } from "@/shared/ui/core/button";
@@ -134,7 +134,7 @@ function SubmissionReview({
       }).unwrap();
       onClose();
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     } finally {
       onRefresh();
     }

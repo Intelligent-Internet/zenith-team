@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 
 	"github.com/google/uuid"
 )
@@ -85,7 +85,11 @@ func TestEmailVerificationValidatesVerificationIDAsAUUIDString(t *testing.T) {
 			) (auth.PendingEmailVerification, error) {
 				serviceCalls++
 				if input.VerificationID != verificationID {
-					t.Fatalf("ResendEmailVerification verificationId = %s, want %s", input.VerificationID, verificationID)
+					t.Fatalf(
+						"ResendEmailVerification verificationId = %s, want %s",
+						input.VerificationID,
+						verificationID,
+					)
 				}
 				return auth.PendingEmailVerification{}, auth.ErrInvalidInput
 			},
@@ -94,7 +98,11 @@ func TestEmailVerificationValidatesVerificationIDAsAUUIDString(t *testing.T) {
 			) (auth.EmailVerificationStatusResult, error) {
 				serviceCalls++
 				if input.VerificationID != verificationID {
-					t.Fatalf("EmailVerificationStatus verificationId = %s, want %s", input.VerificationID, verificationID)
+					t.Fatalf(
+						"EmailVerificationStatus verificationId = %s, want %s",
+						input.VerificationID,
+						verificationID,
+					)
 				}
 				return auth.EmailVerificationStatusResult{}, auth.ErrInvalidInput
 			},
@@ -248,7 +256,7 @@ func TestDesktopHandoffStartAnswersTheCredentialItWasGiven(t *testing.T) {
 	expiresAt := time.Date(2026, time.August, 16, 10, 13, 31, 114_882_000, time.UTC)
 	startCalls := 0
 	handler := New(Handler{
-		AllowedOrigins: []string{"https://app.boardly.test"},
+		AllowedOrigins: []string{"https://app.zenith-team.test"},
 		AuthService:    authenticatedAuthStub(userID),
 		DesktopHandoffService: &desktopHandoffServiceStub{
 			start: func(_ context.Context, gotUserID uuid.UUID) (auth.DesktopHandoffStartResult, error) {
@@ -281,11 +289,16 @@ func TestDesktopHandoffStartAnswersTheCredentialItWasGiven(t *testing.T) {
 
 	cookie := httptest.NewRequest(http.MethodPost, path, nil)
 	cookie.AddCookie(&http.Cookie{Name: middleware.AuthCookieName, Value: "web-access"})
-	cookie.Header.Set("Origin", "https://app.boardly.test")
+	cookie.Header.Set("Origin", "https://app.zenith-team.test")
 	response = httptest.NewRecorder()
 	handler.ServeHTTP(response, cookie)
 	if response.Code != http.StatusOK || startCalls != 1 {
-		t.Fatalf("cookie handoff start = %d %s (Start calls %d)", response.Code, response.Body.String(), startCalls)
+		t.Fatalf(
+			"cookie handoff start = %d %s (Start calls %d)",
+			response.Code,
+			response.Body.String(),
+			startCalls,
+		)
 	}
 	if body := response.Body.String(); !strings.Contains(body, `"code":"handoff-code"`) ||
 		!strings.Contains(body, `"expiresAt":"2026-08-16T10:13:31.114882Z"`) {
@@ -401,7 +414,7 @@ func TestWebLoginReturnsCookieAuthSuccess(t *testing.T) {
 		t.Fatalf("new CSRF: %v", err)
 	}
 	handler := New(Handler{
-		AllowedOrigins: []string{"https://app.boardly.test"},
+		AllowedOrigins: []string{"https://app.zenith-team.test"},
 		CSRF:           csrf,
 		AuthService: &authServiceStub{
 			login: func(context.Context, auth.LoginInput) (auth.LoginResult, error) {
@@ -423,7 +436,7 @@ func TestWebLoginReturnsCookieAuthSuccess(t *testing.T) {
 		bytes.NewBufferString(`{"email":"owner@example.com","password":"password-value","client":"web"}`),
 	)
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Origin", "https://app.boardly.test")
+	request.Header.Set("Origin", "https://app.zenith-team.test")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK {
@@ -463,7 +476,9 @@ func TestRefreshReturnsSessionRotationWithoutCompanies(t *testing.T) {
 	request := httptest.NewRequest(
 		http.MethodPost,
 		"/api/v1/auth/refresh",
-		bytes.NewBufferString(`{"client":"desktop","refreshToken":"refresh-current","rotationId":"0199a143-7ac0-7d4f-b93e-4be838f5772e"}`),
+		bytes.NewBufferString(
+			`{"client":"desktop","refreshToken":"refresh-current","rotationId":"0199a143-7ac0-7d4f-b93e-4be838f5772e"}`,
+		),
 	)
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -500,13 +515,13 @@ func TestLogoutWithoutACredentialIsANoContentOnBothTransports(t *testing.T) {
 		{name: "desktop with an empty refreshToken", body: `{"client":"desktop","refreshToken":""}`},
 		{
 			name: "web without a cookie", body: `{"client":"web"}`,
-			origin: "https://app.boardly.test", wantCookies: 4,
+			origin: "https://app.zenith-team.test", wantCookies: 4,
 		},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			handler := New(Handler{
-				AllowedOrigins: []string{"https://app.boardly.test"},
+				AllowedOrigins: []string{"https://app.zenith-team.test"},
 				AuthService:    unreachableAuthService(t),
 			})
 			request := httptest.NewRequest(
@@ -602,7 +617,7 @@ func TestClientIsValidatedBeforeTheTransportCheck(t *testing.T) {
 		{name: "web without Origin", client: `,"client":"web"`, code: "client_transport_mismatch"},
 		{
 			name: "desktop with Origin", client: `,"client":"desktop"`,
-			origin: "https://app.boardly.test", code: "client_transport_mismatch",
+			origin: "https://app.zenith-team.test", code: "client_transport_mismatch",
 		},
 	}
 	for _, route := range routes {
@@ -610,7 +625,7 @@ func TestClientIsValidatedBeforeTheTransportCheck(t *testing.T) {
 			t.Run(route.name+" "+testCase.name, func(t *testing.T) {
 				t.Parallel()
 				handler := New(Handler{
-					AllowedOrigins: []string{"https://app.boardly.test"},
+					AllowedOrigins: []string{"https://app.zenith-team.test"},
 					AuthService:    unreachableAuthService(t),
 				})
 				request := httptest.NewRequest(
@@ -730,7 +745,7 @@ func authWireCompany() company.Response {
 	createdAt := time.Date(2026, time.August, 19, 9, 0, 0, 0, time.UTC)
 	return company.Response{
 		ID:   uuid.MustParse("b04f1042-8c75-4e62-9d7f-f0cd090d0b45"),
-		Name: "Boardly", Slug: "boardly", TaskPrefix: "BRD", Role: auth.CompanyRoleOwner,
+		Name: "Zenith Team", Slug: "zenith-team", TaskPrefix: "BRD", Role: auth.CompanyRoleOwner,
 		Revision: 1, CreatedAt: createdAt, UpdatedAt: createdAt,
 	}
 }

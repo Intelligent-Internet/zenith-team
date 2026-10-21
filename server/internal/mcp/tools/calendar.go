@@ -9,37 +9,37 @@ import (
 
 type ReadCalendarInput struct {
 	From string `json:"from,omitempty" jsonschema:"Inclusive RFC3339 start with UTC offset. Omit both dates for the next 30 days and calendar/member discovery."`
-	To   string `json:"to,omitempty" jsonschema:"Exclusive RFC3339 end with UTC offset. Maximum range 93 days."`
+	To   string `json:"to,omitempty"   jsonschema:"Exclusive RFC3339 end with UTC offset. Maximum range 93 days."`
 }
 
 type CalendarEventInput struct {
-	CalendarID            string   `json:"calendarId" jsonschema:"ID returned by calendar_read. Choose the user's personal calendar unless they explicitly request company-wide visibility. Cannot change an existing event's calendar."`
-	Type                  string   `json:"type" jsonschema:"event or reminder"`
+	CalendarID            string   `json:"calendarId"                      jsonschema:"ID returned by calendar_read. Choose the user's personal calendar unless they explicitly request company-wide visibility. Cannot change an existing event's calendar."`
+	Type                  string   `json:"type"                            jsonschema:"event or reminder"`
 	Title                 string   `json:"title"`
 	Description           string   `json:"description"`
-	Location              string   `json:"location" jsonschema:"Place or meeting URL. This tool does not provision video calls."`
-	Color                 string   `json:"color" jsonschema:"sage, sky, lavender, rose or sand"`
+	Location              string   `json:"location"                        jsonschema:"Place or meeting URL. This tool does not provision video calls."`
+	Color                 string   `json:"color"                           jsonschema:"sage, sky, lavender, rose or sand"`
 	AllDay                bool     `json:"allDay"`
-	StartLocal            string   `json:"startLocal" jsonschema:"YYYY-MM-DDTHH:mm, or YYYY-MM-DD for all-day entries; interpreted in timeZone."`
-	EndLocal              string   `json:"endLocal" jsonschema:"Exclusive end in the same local format. A one-day all-day event ends on the following date."`
-	TimeZone              string   `json:"timeZone" jsonschema:"IANA zone such as Asia/Ho_Chi_Minh. Resolve ambiguous dates/time zones before writing."`
-	Recurrence            string   `json:"recurrence" jsonschema:"none, daily, weekly, monthly or yearly"`
-	RecurrenceInterval    int32    `json:"recurrenceInterval,omitempty" jsonschema:"Repeat every N frequency units, 1..999; omit for 1. Preserve existing custom fields when updating."`
-	RecurrenceWeekdays    []int32  `json:"recurrenceWeekdays,omitempty" jsonschema:"Weekly only: unique weekday numbers, Sunday 0 through Saturday 6; empty uses start weekday. Weeks start Monday."`
+	StartLocal            string   `json:"startLocal"                      jsonschema:"YYYY-MM-DDTHH:mm, or YYYY-MM-DD for all-day entries; interpreted in timeZone."`
+	EndLocal              string   `json:"endLocal"                        jsonschema:"Exclusive end in the same local format. A one-day all-day event ends on the following date."`
+	TimeZone              string   `json:"timeZone"                        jsonschema:"IANA zone such as Asia/Ho_Chi_Minh. Resolve ambiguous dates/time zones before writing."`
+	Recurrence            string   `json:"recurrence"                      jsonschema:"none, daily, weekly, monthly or yearly"`
+	RecurrenceInterval    int32    `json:"recurrenceInterval,omitempty"    jsonschema:"Repeat every N frequency units, 1..999; omit for 1. Preserve existing custom fields when updating."`
+	RecurrenceWeekdays    []int32  `json:"recurrenceWeekdays,omitempty"    jsonschema:"Weekly only: unique weekday numbers, Sunday 0 through Saturday 6; empty uses start weekday. Weeks start Monday."`
 	RecurrenceMonthlyMode string   `json:"recurrenceMonthlyMode,omitempty" jsonschema:"Monthly: day_of_month (default) or day_of_week for the start date ordinal weekday, fifth means last."`
-	RecurrenceCount       *int32   `json:"recurrenceCount,omitempty" jsonschema:"Stop after 1..1000 occurrences from series start; mutually exclusive with recurrenceUntil."`
-	RecurrenceUntil       *string  `json:"recurrenceUntil" jsonschema:"Last recurrence date YYYY-MM-DD, inclusive; null for no limit."`
-	ReminderMinutes       *int32   `json:"reminderMinutes" jsonschema:"In-app reminder lead time 0..10080, or null. Does not send email."`
-	AttendeeUserIDs       []string `json:"attendeeUserIds" jsonschema:"Active member IDs returned by calendar_read, excluding the organizer. Full replacement on update; retain existing guests unless asked to remove them. Never invent IDs or resolve ambiguous names silently."`
+	RecurrenceCount       *int32   `json:"recurrenceCount,omitempty"       jsonschema:"Stop after 1..1000 occurrences from series start; mutually exclusive with recurrenceUntil."`
+	RecurrenceUntil       *string  `json:"recurrenceUntil"                 jsonschema:"Last recurrence date YYYY-MM-DD, inclusive; null for no limit."`
+	ReminderMinutes       *int32   `json:"reminderMinutes"                 jsonschema:"In-app reminder lead time 0..10080, or null. Does not send email."`
+	AttendeeUserIDs       []string `json:"attendeeUserIds"                 jsonschema:"Active member IDs returned by calendar_read, excluding the organizer. Full replacement on update; retain existing guests unless asked to remove them. Never invent IDs or resolve ambiguous names silently."`
 }
 
 type WriteCalendarInput struct {
-	Action           string              `json:"action" jsonschema:"create, update, delete, respond, cancel, complete, or reopen. update/delete affect the entire series; cancel affects one occurrence."`
-	EventID          string              `json:"eventId,omitempty" jsonschema:"Existing ID from calendar_read, required except for create."`
+	Action           string              `json:"action"                     jsonschema:"create, update, delete, respond, cancel, complete, or reopen. update/delete affect the entire series; cancel affects one occurrence."`
+	EventID          string              `json:"eventId,omitempty"          jsonschema:"Existing ID from calendar_read, required except for create."`
 	ExpectedRevision int64               `json:"expectedRevision,omitempty" jsonschema:"Current revision from calendar_read for all existing-event actions. Omit for create. Refetch after conflict, never guess a newer revision."`
-	Input            *CalendarEventInput `json:"input,omitempty" jsonschema:"Complete event fields, required for create/update only."`
-	ResponseStatus   string              `json:"responseStatus,omitempty" jsonschema:"accepted, tentative or declined, required for respond."`
-	OccurrenceDate   string              `json:"occurrenceDate,omitempty" jsonschema:"YYYY-MM-DD occurrence date from calendar_read, required for cancel/complete/reopen."`
+	Input            *CalendarEventInput `json:"input,omitempty"            jsonschema:"Complete event fields, required for create/update only."`
+	ResponseStatus   string              `json:"responseStatus,omitempty"   jsonschema:"accepted, tentative or declined, required for respond."`
+	OccurrenceDate   string              `json:"occurrenceDate,omitempty"   jsonschema:"YYYY-MM-DD occurrence date from calendar_read, required for cancel/complete/reopen."`
 }
 
 type CalendarMember struct {
@@ -123,10 +123,17 @@ func NewCalendarToolService(api calendarAPI, run RunContext) (*DefaultCalendarTo
 }
 
 func (s *DefaultCalendarToolService) path() string {
-	return fmt.Sprintf("/companies/%s/conversations/%s/calendar", url.PathEscape(s.context.CompanyID), url.PathEscape(s.context.ConversationID))
+	return fmt.Sprintf(
+		"/companies/%s/conversations/%s/calendar",
+		url.PathEscape(s.context.CompanyID),
+		url.PathEscape(s.context.ConversationID),
+	)
 }
 
-func (s *DefaultCalendarToolService) ReadCalendar(ctx context.Context, input ReadCalendarInput) (ReadCalendarResult, error) {
+func (s *DefaultCalendarToolService) ReadCalendar(
+	ctx context.Context,
+	input ReadCalendarInput,
+) (ReadCalendarResult, error) {
 	query := url.Values{}
 	if input.From != "" {
 		query.Set("from", input.From)
@@ -144,7 +151,10 @@ func (s *DefaultCalendarToolService) ReadCalendar(ctx context.Context, input Rea
 	return result, nil
 }
 
-func (s *DefaultCalendarToolService) WriteCalendar(ctx context.Context, input WriteCalendarInput) (WriteCalendarResult, error) {
+func (s *DefaultCalendarToolService) WriteCalendar(
+	ctx context.Context,
+	input WriteCalendarInput,
+) (WriteCalendarResult, error) {
 	key, err := runRequestKey("calendar_write", s.context, input)
 	if err != nil {
 		return WriteCalendarResult{}, err

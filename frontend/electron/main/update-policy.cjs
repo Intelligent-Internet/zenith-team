@@ -11,7 +11,7 @@ const SUPPORTED_NATIVE_UPDATE_PLATFORMS = new Set(["darwin", "win32"]);
 const WINDOWS_NATIVE_UPDATE_PACKAGES = new Set(["msix", "squirrel"]);
 
 function getDesktopUpdateUrl(env = process.env) {
-  const configuredUrl = env.BOARDLY_DESKTOP_UPDATE_URL?.trim();
+  const configuredUrl = env.ZENITH_TEAM_DESKTOP_UPDATE_URL?.trim();
 
   if (configuredUrl) {
     return configuredUrl;
@@ -41,7 +41,7 @@ function getDesktopNativeUpdatePolicy({
     };
   }
 
-  if (env.BOARDLY_DESKTOP_AUTO_UPDATE !== "true") {
+  if (env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE !== "true") {
     return manual("Native auto-update is disabled.");
   }
 
@@ -57,7 +57,7 @@ function getDesktopNativeUpdatePolicy({
     return manual("Native auto-update requires an app version.");
   }
 
-  if (platform === "darwin" && env.BOARDLY_DESKTOP_MAC_SIGN !== "true") {
+  if (platform === "darwin" && env.ZENITH_TEAM_DESKTOP_MAC_SIGN !== "true") {
     return manual("Native auto-update requires signed macOS builds.");
   }
 
@@ -70,7 +70,7 @@ function getDesktopNativeUpdatePolicy({
     );
   }
 
-  if (platform === "win32" && env.BOARDLY_DESKTOP_WINDOWS_SIGN !== "true") {
+  if (platform === "win32" && env.ZENITH_TEAM_DESKTOP_WINDOWS_SIGN !== "true") {
     return manual("Native auto-update requires signed Windows builds.");
   }
 
@@ -85,14 +85,14 @@ function getDesktopNativeUpdatePolicy({
     arch,
     platform,
   });
-  const staticFeed = env.BOARDLY_DESKTOP_AUTO_UPDATE_STATIC_FEED === "true";
+  const staticFeed = env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED === "true";
   const manifestUrl = staticFeed
     ? getStaticUpdateManifestUrl(env, { feedUrl, platform })
     : null;
   const releaseChannelPolicy = getDesktopReleaseChannelPolicy(env);
 
   if (
-    env.BOARDLY_DESKTOP_RELEASE_CHANNELS_ENABLED === "true" &&
+    env.ZENITH_TEAM_DESKTOP_RELEASE_CHANNELS_ENABLED === "true" &&
     !releaseChannelPolicy.enabled
   ) {
     return manual(releaseChannelPolicy.reason);
@@ -122,11 +122,11 @@ function getDesktopNativeUpdatePolicy({
 }
 
 function getDesktopEnvironmentName(env = process.env) {
-  return normalizeDesktopEnvironment(env.BOARDLY_DESKTOP_ENV);
+  return normalizeDesktopEnvironment(env.ZENITH_TEAM_DESKTOP_ENV);
 }
 
 function getDesktopReleaseChannelPolicy(env = process.env) {
-  if (env.BOARDLY_DESKTOP_RELEASE_CHANNELS_ENABLED !== "true") {
+  if (env.ZENITH_TEAM_DESKTOP_RELEASE_CHANNELS_ENABLED !== "true") {
     return {
       channel: null,
       enabled: false,
@@ -135,7 +135,7 @@ function getDesktopReleaseChannelPolicy(env = process.env) {
   }
 
   const channel = normalizeReleaseChannel(
-    env.BOARDLY_DESKTOP_RELEASE_CHANNEL || DEFAULT_RELEASE_CHANNEL,
+    env.ZENITH_TEAM_DESKTOP_RELEASE_CHANNEL || DEFAULT_RELEASE_CHANNEL,
   );
 
   if (!RELEASE_CHANNELS.has(channel)) {
@@ -153,13 +153,13 @@ function getDesktopReleaseChannelPolicy(env = process.env) {
 }
 
 function getNativeUpdateFeedUrl(env, { appVersion, arch, platform }) {
-  const configuredUrl = normalizeHttpsUrl(env.BOARDLY_DESKTOP_AUTO_UPDATE_FEED_URL);
+  const configuredUrl = normalizeHttpsUrl(env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_URL);
   if (configuredUrl) {
     return configuredUrl;
   }
 
   const baseUrl = normalizeHttpsUrl(
-    env.BOARDLY_DESKTOP_AUTO_UPDATE_FEED_BASE_URL,
+    env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL,
     { stripTrailingSlash: true },
   );
   if (!baseUrl) {
@@ -170,7 +170,7 @@ function getNativeUpdateFeedUrl(env, { appVersion, arch, platform }) {
   const releaseChannel = releaseChannelPolicy.enabled
     ? releaseChannelPolicy.channel
     : null;
-  const staticFeed = env.BOARDLY_DESKTOP_AUTO_UPDATE_STATIC_FEED === "true";
+  const staticFeed = env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED === "true";
   const baseWithSlash = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   return new URL(
     [
@@ -192,7 +192,7 @@ function getNativeUpdateFeedUrl(env, { appVersion, arch, platform }) {
 
 function getStaticUpdateManifestUrl(env, { feedUrl, platform }) {
   const configuredUrl = normalizeHttpsUrl(
-    env.BOARDLY_DESKTOP_AUTO_UPDATE_MANIFEST_URL,
+    env.ZENITH_TEAM_DESKTOP_AUTO_UPDATE_MANIFEST_URL,
   );
   if (configuredUrl) {
     return configuredUrl;
@@ -235,7 +235,7 @@ function normalizeUpdateSegment(value) {
 }
 
 function normalizeWindowsUpdatePackage(env) {
-  const value = env.BOARDLY_DESKTOP_WINDOWS_UPDATE_PACKAGE;
+  const value = env.ZENITH_TEAM_DESKTOP_WINDOWS_UPDATE_PACKAGE;
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 

@@ -689,7 +689,7 @@ func (q *Queries) LockTaskReportRecipientAgent(ctx context.Context, arg LockTask
 
 const lockTaskReportRequest = `-- name: LockTaskReportRequest :exec
 SELECT pg_advisory_xact_lock(hashtextextended(
-    'boardly/task-report-send/v1/' ||
+    'zenith-team/task-report-send/v1/' ||
     $1::uuid::text || '/' ||
     $2::uuid::text || '/' ||
     $3::uuid::text,

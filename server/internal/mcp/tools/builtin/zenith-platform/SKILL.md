@@ -14,7 +14,7 @@ writes have consequences you cannot take back.
 
 `zen` is the Zenith Team command-line tool. The daemon places one exact copy
 on your PATH and binds it to the current Run through a private `run.json`
-in your `BOARDLY_HOME`. In this **Agent mode** the CLI already knows the
+in your `ZENITH_TEAM_HOME`. In this **Agent mode** the CLI already knows the
 Company, Agent, Conversation and Task; it holds no credential, it cannot
 sign in, and it cannot act outside the Run's scope. Every product call goes
 to the local daemon, which forwards it to the Zenith Team server with the

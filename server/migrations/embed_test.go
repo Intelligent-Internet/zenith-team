@@ -105,7 +105,7 @@ func statementSQL(content []byte) string {
 // LANGUAGE sql STABLE predicate function stating a single access rule is
 // allowed when it is pinned here (project_permission_held, ADR 0017, which
 // 000101 gives a Group arm and its down file restores;
-// delegate_permission_held and run_permission_held, the delegate rule of D31,
+// delegate_permission_held and run_permission_held, the delegate rule,
 // replaced by 000100; conversation_audience_reads, which 000100 drops and its
 // down file restores). Services still own product writes, lifecycle
 // transitions and events.
@@ -203,7 +203,8 @@ func TestMigrationsLimitProceduralObjectsToDiscussionConstraints(t *testing.T) {
 				match[1] == "check_discussion_shape" {
 				continue
 			}
-			if (name == "000046_direct_message_invitations.up.sql" || name == "000046_direct_message_invitations.down.sql") && match[1] == "preserve_discussion_identity" {
+			if (name == "000046_direct_message_invitations.up.sql" || name == "000046_direct_message_invitations.down.sql") &&
+				match[1] == "preserve_discussion_identity" {
 				continue
 			}
 			// General only revises the existing shape and identity constraints.
@@ -219,10 +220,12 @@ func TestMigrationsLimitProceduralObjectsToDiscussionConstraints(t *testing.T) {
 				(match[1] == "check_discussion_shape" || match[1] == "preserve_discussion_identity") {
 				continue
 			}
-			if (name == "000042_channel_agent_invocations.up.sql" || name == "000042_channel_agent_invocations.down.sql") && match[1] == "check_discussion_item_shape" {
+			if (name == "000042_channel_agent_invocations.up.sql" || name == "000042_channel_agent_invocations.down.sql") &&
+				match[1] == "check_discussion_item_shape" {
 				continue
 			}
-			if (name == "000043_channel_answer_collaboration.up.sql" || name == "000043_channel_answer_collaboration.down.sql") && match[1] == "check_discussion_collaboration_shape" {
+			if (name == "000043_channel_answer_collaboration.up.sql" || name == "000043_channel_answer_collaboration.down.sql") &&
+				match[1] == "check_discussion_collaboration_shape" {
 				continue
 			}
 			if (name == "000070_huddles.up.sql" || name == "000070_huddles.down.sql") &&
@@ -402,7 +405,7 @@ func TestDeliverableTablesRollbackChildrenFirst(t *testing.T) {
 	}
 }
 
-// D31 (000098): the session client is one typed column with a closed CHECK,
+// 000098: the session client is one typed column with a closed CHECK,
 // and its rollback ends every live daemon session before the column goes, so
 // a daemon session can never read as its person's own.
 func TestDaemonSessionRollbackEndsDaemonSessionsBeforeDroppingTheColumn(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 func TestStudioPreparationDisabledDoesNotInstallOrExposeSkills(t *testing.T) {
@@ -45,12 +45,18 @@ func TestStudioPreparationDeliversReviewedSkillToMCP(t *testing.T) {
 	}
 	root := t.TempDir()
 	entry := filepath.Join(root, "fake.cjs")
-	if err := os.WriteFile(entry, []byte(`if(process.argv.includes("auth")){console.log(JSON.stringify({ok:true,data:{authenticated:true}}));}else{console.log(JSON.stringify(process.argv.slice(2)));}`), 0o600); err != nil {
+	if err := os.WriteFile(
+		entry,
+		[]byte(
+			`if(process.argv.includes("auth")){console.log(JSON.stringify({ok:true,data:{authenticated:true}}));}else{console.log(JSON.stringify(process.argv.slice(2)));}`,
+		),
+		0o600,
+	); err != nil {
 		t.Fatal(err)
 	}
 	var installed []string
 	got, err := prepareStudioRun(t.Context(), studioRunInput{
-		Enabled: true, EnvRoot: root, CacheRoot: filepath.Join(root, "cache"),
+		Enabled: true, EnvRoot: root, CacheRoot: filepath.Join(root, "cache"), APIURL: testStudioOrigin,
 		Run: Run{ID: uuid.New(), CompanyID: uuid.NewString()},
 	}, func(_ context.Context, _ string, release toolRelease) (toolInstallation, error) {
 		installed = append(installed, release.Key)

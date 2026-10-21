@@ -6,8 +6,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/pkg/protocol"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // DateChange distinguishes omission from clearing a calendar date with null.
@@ -28,7 +29,8 @@ func normalizeLabels(labels []string) ([]string, error) {
 	seen := make(map[string]bool, len(labels))
 	for _, label := range labels {
 		label = protocol.TrimContractWhitespace(label)
-		if label == "" || !utf8.ValidString(label) || utf8.RuneCountInString(label) > MaxLabelRunes || strings.ContainsFunc(label, unicode.IsControl) {
+		if label == "" || !utf8.ValidString(label) || utf8.RuneCountInString(label) > MaxLabelRunes ||
+			strings.ContainsFunc(label, unicode.IsControl) {
 			return nil, ErrInvalidInput
 		}
 		key := strings.ToLower(label)

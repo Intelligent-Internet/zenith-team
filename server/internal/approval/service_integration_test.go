@@ -14,13 +14,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type planActionParticipantStub struct {
@@ -283,7 +283,7 @@ func TestProactiveCompanyPlanApprovalIsResolvedAtomically(t *testing.T) {
 			participant.executeCalls,
 		)
 	}
-	// The Run resolves the plan it raised, for its member (D31): nobody else
+	// The Run resolves the plan it raised, for its member: nobody else
 	// decided it.
 	resolvedEvents := changes.named(EventApprovalResolved)
 	if len(resolvedEvents) != 1 || resolvedEvents[0].Payload.ID != first.ID ||

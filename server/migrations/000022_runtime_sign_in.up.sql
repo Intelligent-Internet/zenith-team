@@ -3,7 +3,7 @@
 -- status` in the same probe round as the version. Typed columns rather than
 -- metadata keys because every roster and picker reads the state, and because
 -- the CHECK keeps state and check time together. A signed-out provider keeps
--- its runtime online (owner decision, 2026-09-16): runs on it fail with a
+-- its runtime online: runs on it fail with a
 -- readable provider_auth_or_access reason; the roster just says so first.
 -- NULL means the registration predates the probe.
 ALTER TABLE runtimes

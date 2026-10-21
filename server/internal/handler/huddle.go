@@ -9,10 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/infra/livekit"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/livekit"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 type startHuddleRequest struct {
@@ -24,7 +24,7 @@ type joinHuddleRequest struct {
 }
 type inviteHuddleRequest struct {
 	InviteeUserID string `json:"inviteeUserId" binding:"required,uuid"`
-	RequestKey    string `json:"requestKey" binding:"required,uuid"`
+	RequestKey    string `json:"requestKey"    binding:"required,uuid"`
 }
 type respondHuddleInvitationRequest struct {
 	Accept           bool  `json:"accept"`
@@ -66,11 +66,31 @@ func (h *Handler) registerHuddleRoutes(api *gin.RouterGroup) {
 		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
 		h.leaveHuddle,
 	)
-	group.GET("/huddles/capabilities", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.getHuddleCapabilities)
-	group.GET("/huddles/invitations", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.listHuddleInvitations)
-	group.GET("/huddles/invitations/history", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.listHuddleInvitationHistory)
-	group.POST("/huddles/:huddleId/invitations", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.inviteHuddle)
-	group.POST("/huddles/:huddleId/invitations/:invitationId/respond", middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss), h.respondHuddleInvitation)
+	group.GET(
+		"/huddles/capabilities",
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
+		h.getHuddleCapabilities,
+	)
+	group.GET(
+		"/huddles/invitations",
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
+		h.listHuddleInvitations,
+	)
+	group.GET(
+		"/huddles/invitations/history",
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
+		h.listHuddleInvitationHistory,
+	)
+	group.POST(
+		"/huddles/:huddleId/invitations",
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
+		h.inviteHuddle,
+	)
+	group.POST(
+		"/huddles/:huddleId/invitations/:invitationId/respond",
+		middleware.RequireCompanyPermission(h.CompanyService, auth.PermissionConversationsDiscuss),
+		h.respondHuddleInvitation,
+	)
 }
 
 func (h *Handler) listHuddleConnections(c *gin.Context) {
@@ -152,7 +172,12 @@ func (h *Handler) inviteHuddle(c *gin.Context) {
 	}
 	invitee, _ := uuid.Parse(body.InviteeUserID)
 	key, _ := uuid.Parse(body.RequestKey)
-	result, err := h.HuddleService.Invite(c.Request.Context(), p, huddleID, conversation.InviteHuddleRequest{InviteeUserID: invitee, RequestKey: key})
+	result, err := h.HuddleService.Invite(
+		c.Request.Context(),
+		p,
+		huddleID,
+		conversation.InviteHuddleRequest{InviteeUserID: invitee, RequestKey: key},
+	)
 	if err != nil {
 		writeHuddleError(c, err)
 		return
@@ -176,7 +201,15 @@ func (h *Handler) respondHuddleInvitation(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.HuddleService.RespondInvitation(c.Request.Context(), p, id, conversation.RespondHuddleInvitationRequest{Accept: body.Accept, ExpectedRevision: body.ExpectedRevision})
+	result, err := h.HuddleService.RespondInvitation(
+		c.Request.Context(),
+		p,
+		id,
+		conversation.RespondHuddleInvitationRequest{
+			Accept:           body.Accept,
+			ExpectedRevision: body.ExpectedRevision,
+		},
+	)
 	if err != nil {
 		writeHuddleError(c, err)
 		return
@@ -195,7 +228,8 @@ func (h *Handler) liveKitWebhook(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-	if event.Participant != nil && (strings.HasPrefix(event.Participant.Identity, "helia:") || strings.HasPrefix(event.Participant.Identity, "notes:")) {
+	if event.Participant != nil &&
+		(strings.HasPrefix(event.Participant.Identity, "helia:") || strings.HasPrefix(event.Participant.Identity, "notes:")) {
 		c.Status(http.StatusNoContent)
 		return
 	}
@@ -204,7 +238,11 @@ func (h *Handler) liveKitWebhook(c *gin.Context) {
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		if _, err := h.HuddleService.ConfirmConnectedByIdentityAnyCompany(c.Request.Context(), event.Room.Name, event.Participant.Identity); err != nil {
+		if _, err := h.HuddleService.ConfirmConnectedByIdentityAnyCompany(
+			c.Request.Context(),
+			event.Room.Name,
+			event.Participant.Identity,
+		); err != nil {
 			writeHuddleError(c, err)
 			return
 		}
@@ -224,7 +262,11 @@ func (h *Handler) liveKitWebhook(c *gin.Context) {
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		if err := h.HuddleService.EndParticipantFromMediaAnyCompany(c.Request.Context(), event.Room.Name, event.Participant.Identity); err != nil {
+		if err := h.HuddleService.EndParticipantFromMediaAnyCompany(
+			c.Request.Context(),
+			event.Room.Name,
+			event.Participant.Identity,
+		); err != nil {
 			writeHuddleError(c, err)
 			return
 		}
@@ -252,7 +294,12 @@ func (h *Handler) joinHuddle(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.HuddleService.Join(c.Request.Context(), p, huddleID, conversation.JoinHuddleRequest{RequestKey: uuid.MustParse(body.RequestKey)})
+	result, err := h.HuddleService.Join(
+		c.Request.Context(),
+		p,
+		huddleID,
+		conversation.JoinHuddleRequest{RequestKey: uuid.MustParse(body.RequestKey)},
+	)
 	if err != nil {
 		writeHuddleError(c, err)
 		return
@@ -319,12 +366,42 @@ func (h *Handler) startHuddle(c *gin.Context) {
 
 var huddleErrorMappings = []errorMapping{
 	{conversation.ErrHuddleNotFound, http.StatusNotFound, "Huddle not found", "huddle_not_found"},
-	{conversation.ErrHuddleForbidden, http.StatusForbidden, "This action is not allowed.", "huddle_operation_forbidden"},
-	{conversation.ErrHuddleInvalid, http.StatusUnprocessableEntity, "request validation failed", "validation_failed"},
-	{conversation.ErrHuddleRequestConflict, http.StatusConflict, "Request key was already used for a different Huddle.", "huddle_request_conflict"},
-	{conversation.ErrHuddleUnavailable, http.StatusServiceUnavailable, "Huddle is temporarily unavailable. Try again.", "huddle_unavailable"},
-	{conversation.ErrHuddleNotConfigured, http.StatusServiceUnavailable, "Calls are not set up on this server.", "huddle_not_configured"},
-	{conversation.ErrHuddleAlreadyConnected, http.StatusConflict, "You are already in this Huddle in another window or on another device. Leave there, then join here.", "huddle_already_connected"},
+	{
+		conversation.ErrHuddleForbidden,
+		http.StatusForbidden,
+		"This action is not allowed.",
+		"huddle_operation_forbidden",
+	},
+	{
+		conversation.ErrHuddleInvalid,
+		http.StatusUnprocessableEntity,
+		"request validation failed",
+		"validation_failed",
+	},
+	{
+		conversation.ErrHuddleRequestConflict,
+		http.StatusConflict,
+		"Request key was already used for a different Huddle.",
+		"huddle_request_conflict",
+	},
+	{
+		conversation.ErrHuddleUnavailable,
+		http.StatusServiceUnavailable,
+		"Huddle is temporarily unavailable. Try again.",
+		"huddle_unavailable",
+	},
+	{
+		conversation.ErrHuddleNotConfigured,
+		http.StatusServiceUnavailable,
+		"Calls are not set up on this server.",
+		"huddle_not_configured",
+	},
+	{
+		conversation.ErrHuddleAlreadyConnected,
+		http.StatusConflict,
+		"You are already in this Huddle in another window or on another device. Leave there, then join here.",
+		"huddle_already_connected",
+	},
 }
 
 func writeHuddleError(c *gin.Context, err error) {

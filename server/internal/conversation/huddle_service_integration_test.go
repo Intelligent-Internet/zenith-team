@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 type unavailableHuddleRoom struct{}
@@ -25,17 +25,24 @@ func (unavailableHuddleRoom) DeleteRoom(context.Context, string) error { return 
 func (unavailableHuddleRoom) ReadyRooms(context.Context, []string) (map[string]bool, error) {
 	return map[string]bool{}, nil
 }
+
 func (unavailableHuddleRoom) IssueParticipantToken(context.Context, string, string) (HuddleMediaToken, error) {
 	return HuddleMediaToken{}, nil
 }
 
 func TestHuddleInvitationsWaitForRoomAndRemainAcceptableAfterRinging(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: unavailableHuddleRoom{}})
+	service, err := NewHuddleService(
+		HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: unavailableHuddleRoom{}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +80,11 @@ func TestHuddleInvitationsWaitForRoomAndRemainAcceptableAfterRinging(t *testing.
 
 func TestHuddleEndingRevokesPendingCalls(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,14 +97,20 @@ func TestHuddleEndingRevokesPendingCalls(t *testing.T) {
 		t.Fatal(err)
 	}
 	roomName := HuddleRoomName(started.Huddle.ID)
-	if _, err := f.pool.Exec(f.ctx, `UPDATE huddles SET room_name=$1 WHERE id=$2`, roomName, started.Huddle.ID); err != nil {
+	if _, err := f.pool.Exec(
+		f.ctx,
+		`UPDATE huddles SET room_name=$1 WHERE id=$2`,
+		roomName,
+		started.Huddle.ID,
+	); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.EndFromMedia(f.ctx, f.a.CompanyID, roomName); err != nil {
 		t.Fatal(err)
 	}
 	var status string
-	if err := f.pool.QueryRow(f.ctx, `SELECT status FROM huddle_invitations WHERE huddle_id=$1`, started.Huddle.ID).Scan(&status); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT status FROM huddle_invitations WHERE huddle_id=$1`, started.Huddle.ID).
+		Scan(&status); err != nil {
 		t.Fatal(err)
 	}
 	if status != "revoked" {
@@ -103,7 +120,11 @@ func TestHuddleEndingRevokesPendingCalls(t *testing.T) {
 
 func TestHuddleAcceptedOutsideInvitationAdmitsOnlyInvitee(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,30 +147,76 @@ func TestHuddleAcceptedOutsideInvitationAdmitsOnlyInvitee(t *testing.T) {
 	if err != nil || len(initial) != 1 {
 		t.Fatalf("initial invitations = %+v, error = %v", initial, err)
 	}
-	repeated, err := service.Invite(f.ctx, f.a, started.Huddle.ID, InviteHuddleRequest{InviteeUserID: f.b.UserID, RequestKey: uuid.New()})
+	repeated, err := service.Invite(
+		f.ctx,
+		f.a,
+		started.Huddle.ID,
+		InviteHuddleRequest{InviteeUserID: f.b.UserID, RequestKey: uuid.New()},
+	)
 	if err != nil || repeated.ID != initial[0].ID {
 		t.Fatalf("repeated invitation = %+v, error = %v", repeated, err)
 	}
-	if _, err := service.RespondInvitation(f.ctx, f.b, initial[0].ID, RespondHuddleInvitationRequest{Accept: true, ExpectedRevision: initial[0].Revision}); err != nil {
+	if _, err := service.RespondInvitation(
+		f.ctx,
+		f.b,
+		initial[0].ID,
+		RespondHuddleInvitationRequest{Accept: true, ExpectedRevision: initial[0].Revision},
+	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.pool.Exec(f.ctx, `UPDATE conversation_members SET status='revoked', revoked_at=now() WHERE conversation_id=$1 AND user_id=$2`, direct.Conversation.ID, f.b.UserID); err != nil {
+	if _, err := f.pool.Exec(
+		f.ctx,
+		`UPDATE conversation_members SET status='revoked', revoked_at=now() WHERE conversation_id=$1 AND user_id=$2`,
+		direct.Conversation.ID,
+		f.b.UserID,
+	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Join(f.ctx, f.b, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleForbidden) {
+	if _, err := service.Join(
+		f.ctx,
+		f.b,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleForbidden,
+	) {
 		t.Fatalf("revoked source member join error = %v, want forbidden", err)
 	}
-	invite, err := service.Invite(f.ctx, f.a, started.Huddle.ID, InviteHuddleRequest{InviteeUserID: f.c.UserID, RequestKey: uuid.New()})
+	invite, err := service.Invite(
+		f.ctx,
+		f.a,
+		started.Huddle.ID,
+		InviteHuddleRequest{InviteeUserID: f.c.UserID, RequestKey: uuid.New()},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Join(f.ctx, f.c, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleForbidden) {
+	if _, err := service.Join(
+		f.ctx,
+		f.c,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleForbidden,
+	) {
 		t.Fatalf("unaccepted invite join error = %v, want forbidden", err)
 	}
-	if _, err := service.RespondInvitation(f.ctx, f.c, invite.ID, RespondHuddleInvitationRequest{Accept: true, ExpectedRevision: invite.Revision}); err != nil {
+	if _, err := service.RespondInvitation(
+		f.ctx,
+		f.c,
+		invite.ID,
+		RespondHuddleInvitationRequest{Accept: true, ExpectedRevision: invite.Revision},
+	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Join(f.ctx, f.c, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); err != nil {
+	if _, err := service.Join(
+		f.ctx,
+		f.c,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); err != nil {
 		t.Fatalf("accepted invite join error = %v", err)
 	}
 	if _, err := service.ListConnections(f.ctx, f.c, started.Huddle.ID); err != nil {
@@ -159,7 +226,11 @@ func TestHuddleAcceptedOutsideInvitationAdmitsOnlyInvitee(t *testing.T) {
 
 func TestHuddleStartIsIdempotentAndCreatesPrivateChat(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +243,7 @@ func TestHuddleStartIsIdempotentAndCreatesPrivateChat(t *testing.T) {
 	results := make(chan StartHuddleResult, callers)
 	errs := make(chan error, callers)
 	var group sync.WaitGroup
-	for i := 0; i < callers; i++ {
+	for i := range callers {
 		group.Add(1)
 		go func(i int) {
 			defer group.Done()
@@ -237,11 +308,19 @@ func TestHuddleStartIsIdempotentAndCreatesPrivateChat(t *testing.T) {
 
 func TestHuddleStartAuthorizationAndRequestReplay(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	other, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.c.UserID}})
+	other, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.c.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +340,15 @@ func TestHuddleStartAuthorizationAndRequestReplay(t *testing.T) {
 	if !replay.Replayed || replay.Created || replay.Huddle.ID != first.Huddle.ID {
 		t.Fatalf("replay = %+v", replay)
 	}
-	if _, err = service.Start(f.ctx, f.a, other.Conversation.ID, request); !errors.Is(err, ErrHuddleRequestConflict) {
+	if _, err = service.Start(
+		f.ctx,
+		f.a,
+		other.Conversation.ID,
+		request,
+	); !errors.Is(
+		err,
+		ErrHuddleRequestConflict,
+	) {
 		t.Fatalf("request key reused for another source: %v", err)
 	}
 	if _, err = service.Start(
@@ -276,7 +363,11 @@ func TestHuddleStartAuthorizationAndRequestReplay(t *testing.T) {
 
 func TestHuddleJoinReservationIsIdempotentAndChecksSourceAccess(t *testing.T) {
 	f := newDiscussionFixture(t)
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,11 +396,20 @@ func TestHuddleJoinReservationIsIdempotentAndChecksSourceAccess(t *testing.T) {
 		first.Connection.ID != otherKey.Connection.ID || !replay.Replayed {
 		t.Fatalf("reservation/replay = %+v %+v %+v", first, replay, otherKey)
 	}
-	if _, err := service.Join(f.ctx, f.c, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleForbidden) {
+	if _, err := service.Join(
+		f.ctx,
+		f.c,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleForbidden,
+	) {
 		t.Fatalf("outsider Join() error = %v", err)
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM huddle_connections WHERE huddle_id=$1`, started.Huddle.ID).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM huddle_connections WHERE huddle_id=$1`, started.Huddle.ID).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 1 {
@@ -323,10 +423,19 @@ func TestHuddleJoinReservationIsIdempotentAndChecksSourceAccess(t *testing.T) {
 		t.Fatalf("confirmed = %+v", confirmed)
 	}
 	reconfirmed, err := service.ConfirmConnected(f.ctx, f.a.CompanyID, first.Connection.ID)
-	if err != nil || reconfirmed.Connection.ID != confirmed.Connection.ID || reconfirmed.Connection.Revision != confirmed.Connection.Revision {
+	if err != nil || reconfirmed.Connection.ID != confirmed.Connection.ID ||
+		reconfirmed.Connection.Revision != confirmed.Connection.Revision {
 		t.Fatalf("reconfirmed = %+v, err=%v", reconfirmed, err)
 	}
-	if _, err := service.Join(f.ctx, f.b, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); !errors.Is(err, ErrHuddleAlreadyConnected) {
+	if _, err := service.Join(
+		f.ctx,
+		f.b,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); !errors.Is(
+		err,
+		ErrHuddleAlreadyConnected,
+	) {
 		t.Fatalf("second window Join() error = %v, want already connected", err)
 	}
 	sameWindow, err := service.Join(f.ctx, f.b, started.Huddle.ID, request)
@@ -334,7 +443,8 @@ func TestHuddleJoinReservationIsIdempotentAndChecksSourceAccess(t *testing.T) {
 		t.Fatalf("same window replay = %+v, err=%v", sameWindow, err)
 	}
 	var members int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_members WHERE conversation_id=$1 AND user_id=$2 AND source_type='huddle' AND status='active'`, started.Huddle.ChatConversationID, f.b.UserID).Scan(&members); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_members WHERE conversation_id=$1 AND user_id=$2 AND source_type='huddle' AND status='active'`, started.Huddle.ChatConversationID, f.b.UserID).
+		Scan(&members); err != nil {
 		t.Fatal(err)
 	}
 	if members != 1 {
@@ -357,7 +467,8 @@ func TestHuddleJoinReservationIsIdempotentAndChecksSourceAccess(t *testing.T) {
 		t.Fatalf("sweep count=%d err=%v", sweepCount, err)
 	}
 	var status string
-	if err := f.pool.QueryRow(f.ctx, `SELECT status FROM huddle_connections WHERE id=$1`, reserved.Connection.ID).Scan(&status); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT status FROM huddle_connections WHERE id=$1`, reserved.Connection.ID).
+		Scan(&status); err != nil {
 		t.Fatal(err)
 	}
 	if status != "revoked" {
@@ -413,11 +524,17 @@ func TestHuddleRosterChangesNotifyCallMembers(t *testing.T) {
 		changes = nil
 	}
 
-	service, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}})
+	service, err := NewHuddleService(
+		HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +559,12 @@ func TestHuddleRosterChangesNotifyCallMembers(t *testing.T) {
 	if len(changes) != 0 {
 		t.Fatalf("repeated confirmation published %d roster changes, want 0", len(changes))
 	}
-	if _, err := service.Join(f.ctx, f.b, started.Huddle.ID, JoinHuddleRequest{RequestKey: uuid.New()}); err != nil {
+	if _, err := service.Join(
+		f.ctx,
+		f.b,
+		started.Huddle.ID,
+		JoinHuddleRequest{RequestKey: uuid.New()},
+	); err != nil {
 		t.Fatal(err)
 	}
 	expect("B reserves", f.a.UserID, f.b.UserID)
@@ -460,11 +582,17 @@ func TestHuddleRosterChangesNotifyCallMembers(t *testing.T) {
 // discussion dispatcher delivers it to the chat's current (admitted) members.
 func TestHuddleChatMessageSignalsDiscussionChanged(t *testing.T) {
 	f := newDiscussionFixture(t)
-	service, err := NewHuddleService(HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}})
+	service, err := NewHuddleService(
+		HuddleServiceOptions{Store: f.store, Bus: f.bus, Media: &lifecycleHuddleMedia{}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	direct, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -488,7 +616,12 @@ func TestHuddleChatMessageSignalsDiscussionChanged(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = f.discussion.Send(f.ctx, f.a, started.Huddle.ChatConversationID, textSend("hello from the call")); err != nil {
+	if _, err = f.discussion.Send(
+		f.ctx,
+		f.a,
+		started.Huddle.ChatConversationID,
+		textSend("hello from the call"),
+	); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Contains(changed, started.Huddle.ChatConversationID) {

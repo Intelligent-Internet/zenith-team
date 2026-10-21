@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // TestRunSnapshotKeepsFailureTextAndRoutingFactsOffTheWire pins the two

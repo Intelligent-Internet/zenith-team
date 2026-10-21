@@ -11,7 +11,7 @@ import {
 } from "@/features/company-plan/projects/access/project-access-status";
 import { TaskMemberAvatar } from "@/features/company-plan/components/task-assignee";
 import { GROUP_CONFLICT_COPY, accessErrorCopy } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +45,7 @@ const NAME_MAX = 80;
 const DESCRIPTION_MAX = 500;
 const NAME_TAKEN = "Name already taken";
 
-// New group, or Edit group (Access DESIGN 6.2): a name, a description and
+// New group, or Edit group: a name, a description and
 // the people in it, then the Projects it can see when it has any. The
 // title never names the Group; its Name field does. Only
 // Team members are offered; Agents never are. A new Group reaches no
@@ -204,7 +204,7 @@ function GroupForm({
   };
   const failed = (reason: unknown, fallback: string) =>
     setFormError(
-      accessErrorCopy((reason as Partial<BoardlyApiError>).code) ?? fallback,
+      accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ?? fallback,
     );
 
   const saveDetails = async (id: string, revision: number) => {
@@ -248,7 +248,7 @@ function GroupForm({
       onCreated?.(created);
       onClose();
     } catch (reason) {
-      const failure = reason as Partial<BoardlyApiError>;
+      const failure = reason as Partial<ZenithTeamApiError>;
       setFormError(
         failure.code === "group_conflict"
           ? NAME_TAKEN
@@ -312,7 +312,7 @@ function GroupForm({
       }
       onClose();
     } catch (reason) {
-      const failure = reason as Partial<BoardlyApiError>;
+      const failure = reason as Partial<ZenithTeamApiError>;
       if (failure.code === "group_conflict") {
         setFormError(GROUP_CONFLICT_COPY);
         void detail.refetch();

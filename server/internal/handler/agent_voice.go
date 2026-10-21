@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
 )
 
 func parseAgentVoice(raw json.RawMessage) (*voice.Settings, error) {

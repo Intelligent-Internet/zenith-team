@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -9,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 type huddleLeaveHTTPStub struct {
@@ -17,7 +18,11 @@ type huddleLeaveHTTPStub struct {
 	calls int
 }
 
-func (s *huddleLeaveHTTPStub) Leave(_ context.Context, _ uuid.UUID, token string) (conversation.HuddleAILeaveResult, error) {
+func (s *huddleLeaveHTTPStub) Leave(
+	_ context.Context,
+	_ uuid.UUID,
+	token string,
+) (conversation.HuddleAILeaveResult, error) {
 	s.calls++
 	if token != "test-capability" {
 		return conversation.HuddleAILeaveResult{}, conversation.ErrHuddleForbidden
@@ -40,7 +45,11 @@ func TestHuddleLeaveHTTPBoundary(t *testing.T) {
 			h := &Handler{HuddleAIService: stub}
 			r := gin.New()
 			h.registerHuddleAIRoutes(r.Group("/api/v1"))
-			req := httptest.NewRequest("POST", "/api/v1/internal/huddle-ai/"+uuid.NewString()+"/leave", strings.NewReader(tt.body))
+			req := httptest.NewRequest(
+				http.MethodPost,
+				"/api/v1/internal/huddle-ai/"+uuid.NewString()+"/leave",
+				strings.NewReader(tt.body),
+			)
 			req.Header.Set("Content-Type", "application/json")
 			if tt.token != "" {
 				req.Header.Set("Authorization", "Bearer "+tt.token)

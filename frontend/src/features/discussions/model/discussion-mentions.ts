@@ -33,8 +33,8 @@ export function discussionTaggedAgentNames(
   return [...names.values()];
 }
 
-// The line above the message box while a draft tags an Agent (Access
-// DESIGN 12). A tag runs the Agent with the tagger's own access, and
+// The line above the message box while a draft tags an Agent. A tag runs
+// the Agent with the tagger's own access, and
 // everyone in the chat reads its answer. A chat with no channel name is a
 // DM or group DM. Undefined when the draft tags no Agent.
 export function discussionAgentHint(

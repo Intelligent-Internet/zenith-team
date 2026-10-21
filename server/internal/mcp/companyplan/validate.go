@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"sort"
 	"strings"
 	"unicode/utf8"
 
-	taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
+	"github.com/google/uuid"
+
+	taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
 
 	"gopkg.in/yaml.v3"
 )
@@ -80,7 +81,13 @@ func validateDocument(document Document) (Summary, error) {
 		if err := validateBoundedString("Project title", project.Title, 240, 0, false); err != nil {
 			return Summary{}, err
 		}
-		if err := validateBoundedString("Project description", project.Description, 0, 64*1024, true); err != nil {
+		if err := validateBoundedString(
+			"Project description",
+			project.Description,
+			0,
+			64*1024,
+			true,
+		); err != nil {
 			return Summary{}, err
 		}
 		projects[project.Key] = project
@@ -182,7 +189,8 @@ func validateDependencyGraph(document Document) error {
 			func(i, j int) bool { return dependencies[i].TaskKey < dependencies[j].TaskKey },
 		)
 		for _, dependency := range dependencies {
-			if target, exists := plan.Tasks[dependency.TaskKey]; exists && target.ProjectKey != plan.Tasks[taskKey].ProjectKey {
+			if target, exists := plan.Tasks[dependency.TaskKey]; exists &&
+				target.ProjectKey != plan.Tasks[taskKey].ProjectKey {
 				return fmt.Errorf("dependency_cross_project: %s -> %s", taskKey, dependency.TaskKey)
 			}
 			if dependency.TaskKey == taskKey {

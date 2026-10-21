@@ -62,7 +62,7 @@ export type GroupTools = {
 };
 
 // What a new member gets unless someone picks otherwise: they can edit and
-// run tasks (owner decision 2026-10-02).
+// run tasks.
 const DEFAULT_LEVEL: ProjectAccessLevelId = "work";
 
 // Adds people and Groups to a Project the way a team invite does: tick
@@ -70,7 +70,7 @@ const DEFAULT_LEVEL: ProjectAccessLevelId = "work";
 // picker as a row, set to "Edit and run" until changed, or to the lowest
 // preset the viewer may give when that one is out of reach. People already
 // listed and disabled accounts are not offered. Groups the Project has no
-// grant for come first, with no heading (Access DESIGN 7.2); a ticked
+// grant for come first, with no heading; a ticked
 // Group saves straight away unless its preview asks first, and then it is
 // reviewed. Whoever manages Groups can make a new one here, or edit one,
 // without leaving. In this dialog each picker opens beside it.

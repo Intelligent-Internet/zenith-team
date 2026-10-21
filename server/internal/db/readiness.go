@@ -10,7 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 const (

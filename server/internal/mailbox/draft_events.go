@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // DraftWireStatus is the small non-PII state projected by Agent Mail realtime

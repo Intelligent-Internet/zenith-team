@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func validateDiscussionReferences(
@@ -185,7 +185,7 @@ func validateDiscussionReferences(
 // createDiscussionMentionInboxItems freezes the recipient set in the same
 // transaction as the message. The existing Inbox dedupe key makes retries
 // safe, while the message body, private file names and the channel title
-// never enter the notice (C0-CONTRACT §5): it names only the sender.
+// never enter the notice: it names only the sender.
 func createDiscussionMentionInboxItems(
 	ctx context.Context,
 	q *generated.Queries,

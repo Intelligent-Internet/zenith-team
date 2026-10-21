@@ -6,11 +6,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type studioProjectRequest struct {
@@ -23,12 +22,6 @@ type studioProjectRequest struct {
 	BindingID     string `json:"bindingId,omitempty"     binding:"omitempty,uuid"`
 	ProjectID     string `json:"projectId,omitempty"     binding:"omitempty,uuid"`
 	APIOrigin     string `json:"apiOrigin,omitempty"     binding:"omitempty,max=512"`
-}
-
-type studioAgentResponse struct {
-	SchemaVersion int                                 `json:"schemaVersion"`
-	RequestID     uuid.UUID                           `json:"requestId"`
-	Binding       *conversation.StudioBindingResponse `json:"binding"`
 }
 
 func (h *Handler) daemonStudioProject(c *gin.Context) {

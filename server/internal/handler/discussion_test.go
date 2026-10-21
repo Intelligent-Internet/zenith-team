@@ -11,9 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 type discussionHTTPStub struct {
@@ -174,7 +174,7 @@ func TestDiscussionHTTPReceiptAndBoundary(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
 	request.Header.Set("Authorization", "Bearer access-token")
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("X-Boardly-Run-Token", "run-proof")
+	request.Header.Set("X-Zenith-Team-Run-Token", "run-proof")
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 	if recorder.Code != 403 || !strings.Contains(recorder.Body.String(), `"human_actor_required"`) || calls != 1 {

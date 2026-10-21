@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type localToolRequest struct {
@@ -119,7 +119,7 @@ func (d *Daemon) localToolHandler() http.HandlerFunc {
 
 // runtimeBindings is one of this daemon's runtimes as the server holds it,
 // and its person's Agent bindings there (GET /daemon/runtimes/{id}/agent-
-// bindings). The daemon plane answers it for the daemon's own session (D31).
+// bindings). The daemon plane answers it for the daemon's own session.
 type runtimeBindings struct {
 	Runtime struct {
 		ID        string `json:"id"`

@@ -16,12 +16,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 func (h *Handler) registerWhiteboardRoutes(api *gin.RouterGroup) {
@@ -68,19 +68,21 @@ func (h *Handler) registerWhiteboardRoutes(api *gin.RouterGroup) {
 	}
 }
 
-func whiteboardQuery(c *gin.Context, allowed ...string) (url.Values, bool) {
+// whiteboardQueryAllowed accepts only the allowed keys, each set once and
+// non-empty; otherwise it writes the error response and returns false.
+func whiteboardQueryAllowed(c *gin.Context, allowed ...string) bool {
 	values, err := url.ParseQuery(c.Request.URL.RawQuery)
 	if err != nil {
 		writeWhiteboardError(c, canvas.ErrBoardInvalid)
-		return nil, false
+		return false
 	}
 	for key, items := range values {
 		if !slices.Contains(allowed, key) || len(items) != 1 || items[0] == "" {
 			writeWhiteboardError(c, canvas.ErrBoardInvalid)
-			return nil, false
+			return false
 		}
 	}
-	return values, true
+	return true
 }
 
 func (h *Handler) whiteboardPath(c *gin.Context, allowed ...string) (auth.UserPrincipal, canvas.BoardScope, bool) {
@@ -93,7 +95,7 @@ func (h *Handler) whiteboardPath(c *gin.Context, allowed ...string) (auth.UserPr
 		writeWhiteboardError(c, canvas.ErrBoardNotFound)
 		return p, canvas.BoardScope{}, false
 	}
-	if _, ok = whiteboardQuery(c, allowed...); !ok {
+	if !whiteboardQueryAllowed(c, allowed...) {
 		return p, canvas.BoardScope{}, false
 	}
 	c.Header("Cache-Control", "private, no-store")
@@ -158,7 +160,8 @@ func gzipWhiteboardResponse(c *gin.Context) func() {
 	accepted := false
 	for _, part := range strings.Split(c.GetHeader("Accept-Encoding"), ",") {
 		coding, params, _ := strings.Cut(strings.TrimSpace(part), ";")
-		if strings.EqualFold(strings.TrimSpace(coding), "gzip") && strings.ReplaceAll(params, " ", "") != "q=0" {
+		if strings.EqualFold(strings.TrimSpace(coding), "gzip") &&
+			strings.ReplaceAll(params, " ", "") != "q=0" {
 			accepted = true
 		}
 	}
@@ -471,7 +474,14 @@ func (h *Handler) downloadWhiteboardFile(c *gin.Context) {
 	if !ok {
 		return
 	}
-	result, err := h.BoardMediaService.FileDownload(c.Request.Context(), p, id, file, preview, whiteboardKnownFile(c))
+	result, err := h.BoardMediaService.FileDownload(
+		c.Request.Context(),
+		p,
+		id,
+		file,
+		preview,
+		whiteboardKnownFile(c),
+	)
 	if err != nil {
 		writeWhiteboardError(c, err)
 		return
@@ -803,8 +813,18 @@ func whiteboardViewers(sessions []realtime.CanvasSession) []uuid.UUID {
 
 var whiteboardErrorMappings = []errorMapping{
 	{canvas.ErrBoardNotFound, 404, "Whiteboard or file is unavailable", "whiteboard_not_found"},
-	{canvas.ErrBoardItemNotFound, 404, "An object in this Whiteboard change no longer exists", "whiteboard_item_not_found"},
-	{canvas.ErrBoardForbidden, 403, "You do not have permission for this Whiteboard action", "whiteboard_forbidden"},
+	{
+		canvas.ErrBoardItemNotFound,
+		404,
+		"An object in this Whiteboard change no longer exists",
+		"whiteboard_item_not_found",
+	},
+	{
+		canvas.ErrBoardForbidden,
+		403,
+		"You do not have permission for this Whiteboard action",
+		"whiteboard_forbidden",
+	},
 	{canvas.ErrBoardInvalid, 422, "Invalid Whiteboard operation", "whiteboard_invalid"},
 	{
 		canvas.ErrBoardRequestKeyReused,
@@ -825,7 +845,12 @@ var whiteboardErrorMappings = []errorMapping{
 		"This Whiteboard object is locked. Unlock it before moving it.",
 		"whiteboard_locked",
 	},
-	{realtime.ErrCanvasPresenceFull, 409, "Too many people are present on this Whiteboard", "whiteboard_presence_full"},
+	{
+		realtime.ErrCanvasPresenceFull,
+		409,
+		"Too many people are present on this Whiteboard",
+		"whiteboard_presence_full",
+	},
 	{
 		attachment.ErrStorageUnavailable,
 		http.StatusServiceUnavailable,
@@ -859,7 +884,7 @@ func publicWhiteboardToken(c *gin.Context, allowed ...string) (uuid.UUID, bool) 
 	if !ok {
 		return token, false
 	}
-	if _, ok = whiteboardQuery(c, allowed...); !ok {
+	if !whiteboardQueryAllowed(c, allowed...) {
 		return token, false
 	}
 	c.Header("Cache-Control", "private, no-store")

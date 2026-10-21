@@ -8,7 +8,7 @@ import (
 
 var ErrInvalidPasswordResetConfig = errors.New("invalid password reset email configuration")
 
-// PasswordResetService owns Boardly's password-reset template contract while
+// PasswordResetService owns Zenith Team's password-reset template contract while
 // the provider-neutral email Service remains reusable across email providers.
 type PasswordResetService interface {
 	SendPasswordReset(context.Context, string, string, string, string) error

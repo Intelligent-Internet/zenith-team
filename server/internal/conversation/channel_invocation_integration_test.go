@@ -14,11 +14,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type channelInvocationFixture struct {
@@ -87,10 +87,12 @@ func (f channelInvocationFixture) send(t *testing.T, input DiscussionSendInput) 
 func (f channelInvocationFixture) invocation(t *testing.T, messageID uuid.UUID) generated.ChannelInvocation {
 	t.Helper()
 	var id uuid.UUID
-	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM channel_invocations WHERE trigger_message_id=$1`, messageID).Scan(&id); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM channel_invocations WHERE trigger_message_id=$1`, messageID).
+		Scan(&id); err != nil {
 		t.Fatal(err)
 	}
-	row, err := f.store.Queries().GetChannelInvocation(f.ctx, generated.GetChannelInvocationParams{CompanyID: f.a.CompanyID, InvocationID: id})
+	row, err := f.store.Queries().
+		GetChannelInvocation(f.ctx, generated.GetChannelInvocationParams{CompanyID: f.a.CompanyID, InvocationID: id})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +102,8 @@ func (f channelInvocationFixture) invocation(t *testing.T, messageID uuid.UUID) 
 func (f channelInvocationFixture) run(t *testing.T, id uuid.UUID) generated.Run {
 	t.Helper()
 	var runID uuid.UUID
-	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM runs WHERE invocation_id=$1 ORDER BY created_at DESC,id DESC LIMIT 1`, id).Scan(&runID); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT id FROM runs WHERE invocation_id=$1 ORDER BY created_at DESC,id DESC LIMIT 1`, id).
+		Scan(&runID); err != nil {
 		t.Fatal(err)
 	}
 	row, err := f.store.Queries().GetRun(f.ctx, runID)
@@ -191,7 +194,8 @@ func TestChannelInvocationAdmissionAndReplay(t *testing.T) {
 		t.Fatalf("invocation = %+v", invocation)
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE trigger_message_id=$1`, message.ID).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE trigger_message_id=$1`, message.ID).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 1 {
@@ -219,6 +223,7 @@ func TestChannelInvocationAdmissionRejectsForeignAuthorityAtomically(t *testing.
 			return auth.UserPrincipal{UserID: f.b.UserID, CompanyID: f.seed.CompanyB, Role: auth.CompanyRoleOwner}
 		}},
 		{name: "tagger has not set the Agent up", mutate: func(t *testing.T, f channelInvocationFixture) {
+			t.Helper()
 			dbtest.MustExec(t, f.ctx, f.pool, `DELETE FROM agent_runtime_bindings WHERE agent_id=$1 AND user_id=$2`, f.seed.AgentA, f.a.UserID)
 		}},
 	} {
@@ -237,7 +242,8 @@ func TestChannelInvocationAdmissionRejectsForeignAuthorityAtomically(t *testing.
 				t.Fatal("unauthorized send succeeded")
 			}
 			var count int
-			if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE request_key=$1`, input.RequestKey).Scan(&count); err != nil {
+			if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE request_key=$1`, input.RequestKey).
+				Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -262,7 +268,8 @@ func TestChannelInvocationPlainTextAndEditsDoNotInvoke(t *testing.T) {
 		t.Fatalf("adding Agent on edit = %v", err)
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE channel_id=$1`, f.channelID).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE channel_id=$1`, f.channelID).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
@@ -301,13 +308,15 @@ func TestChannelInvocationFIFOAndCanonicalThreadPublication(t *testing.T) {
 	var count int
 	var thread, author uuid.UUID
 	var runID *uuid.UUID
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE metadata->>'invocationId'=$1`, one.ID.String()).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE metadata->>'invocationId'=$1`, one.ID.String()).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 1 {
 		t.Fatalf("published replies = %d, want 1", count)
 	}
-	if err := f.pool.QueryRow(f.ctx, `SELECT thread_root_id,author_id,run_id FROM conversation_items WHERE metadata->>'invocationId'=$1`, one.ID.String()).Scan(&thread, &author, &runID); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT thread_root_id,author_id,run_id FROM conversation_items WHERE metadata->>'invocationId'=$1`, one.ID.String()).
+		Scan(&thread, &author, &runID); err != nil {
 		t.Fatal(err)
 	}
 	if thread != root.ID || author != f.seed.AgentA || runID != nil {
@@ -316,7 +325,8 @@ func TestChannelInvocationFIFOAndCanonicalThreadPublication(t *testing.T) {
 	if got := f.invocation(t, second.ID); got.Status != "active" {
 		t.Fatalf("successor status = %q", got.Status)
 	}
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE channel_id=$1`, f.channelID).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM channel_invocations WHERE channel_id=$1`, f.channelID).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 2 {
@@ -346,7 +356,8 @@ func TestChannelInvocationPublicationRequiresFinalProof(t *testing.T) {
 				t.Fatalf("publication = %q, want %q", got.PublicationStatus, tc.publication)
 			}
 			var count int
-			if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE metadata->>'invocationId'=$1`, v.ID.String()).Scan(&count); err != nil {
+			if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE metadata->>'invocationId'=$1`, v.ID.String()).
+				Scan(&count); err != nil {
 				t.Fatal(err)
 			}
 			if count != 0 {
@@ -442,7 +453,8 @@ func TestChannelInvocationRetryIsCallerOnlyAndIdempotent(t *testing.T) {
 		}
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM runs WHERE invocation_id=$1`, v.ID).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM runs WHERE invocation_id=$1`, v.ID).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 2 {
@@ -454,9 +466,9 @@ func TestChannelInvocationRetryIsCallerOnlyAndIdempotent(t *testing.T) {
 	}
 }
 
-// A tagged Run works for the person who tagged the Agent, with their access
-// (D31), so the channel Agent activity view shows each person only the Runs
-// they started (Access TECH B11). UserA created AgentA, and UserA and UserB
+// A tagged Run works for the person who tagged the Agent, with their access,
+// so the channel Agent activity view shows each person only the Runs
+// they started. UserA created AgentA, and UserA and UserB
 // each tag it in one channel: each reads only their own Run's items, so the
 // Agent's creator no longer reads UserB's. A member who never tagged it opens
 // the view too and reads an empty list; someone outside the chat is not
@@ -563,7 +575,8 @@ func TestChannelInvocationTagOfAnAgentOutsideTheChannelIsRefused(t *testing.T) {
 		t.Fatalf("tag of an Agent outside the channel = %v, want ErrDiscussionAgentRequired", err)
 	}
 	var count int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE request_key=$1`, input.RequestKey).Scan(&count); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM conversation_items WHERE request_key=$1`, input.RequestKey).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
@@ -578,7 +591,8 @@ func TestChannelInvocationRevocationDoesNotResurrectOnRegrant(t *testing.T) {
 	v := f.invocation(t, message.ID)
 	queued := f.send(t, taggedSend(t, f.seed.AgentA))
 	var revision int64
-	if err := f.pool.QueryRow(f.ctx, `SELECT configuration_revision FROM conversation_channels WHERE conversation_id=$1`, f.channelID).Scan(&revision); err != nil {
+	if err := f.pool.QueryRow(f.ctx, `SELECT configuration_revision FROM conversation_channels WHERE conversation_id=$1`, f.channelID).
+		Scan(&revision); err != nil {
 		t.Fatal(err)
 	}
 	removed, err := f.conversations.SetChannelAgent(
@@ -644,8 +658,7 @@ func TestChannelInvocationRunsOnTheCallersOwnBindingWithoutCreatorConstraint(t *
 		t.Fatalf("Run runtime = %s, want the caller's own %s", run.RuntimeID, callerRuntimeID)
 	}
 	roster, err := f.service.List(f.ctx, f.b, f.channelID)
-	// Every member may open the Agent's activity, which lists their own Runs
-	// (Access TECH B11).
+	// Every member may open the Agent's activity, which lists their own Runs.
 	if err != nil || len(roster.Agents) != 1 || !roster.Agents[0].CanInvoke || !roster.Agents[0].CanViewDetail {
 		t.Fatalf("member capabilities = %+v, %v", roster, err)
 	}
@@ -757,7 +770,8 @@ func TestBindingCancelClosesTheTagAndStartsTheNextOne(t *testing.T) {
 		t.Fatalf("next tag = %s, want active once the slot is free", started.Status)
 	}
 	run := f.run(t, started.ID)
-	if run.Status != "queued" || run.RuntimeID != callerRuntimeID || run.ExecutionAuthorizedByUserID.UUID != f.b.UserID {
+	if run.Status != "queued" || run.RuntimeID != callerRuntimeID ||
+		run.ExecutionAuthorizedByUserID.UUID != f.b.UserID {
 		t.Fatalf("next tag Run = %s on %s for %v, want queued on the caller's own %s",
 			run.Status, run.RuntimeID, run.ExecutionAuthorizedByUserID, callerRuntimeID)
 	}

@@ -19,12 +19,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	protocol "boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	protocol "github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ---- Item entities ----
@@ -402,7 +402,15 @@ func (s *DefaultService) ReadAll(
 				return err
 			}
 			for _, company := range companies {
-				if err := lockActiveMembership(ctx, tx, company, principal.UserID); errors.Is(err, ErrNotFound) {
+				if err := lockActiveMembership(
+					ctx,
+					tx,
+					company,
+					principal.UserID,
+				); errors.Is(
+					err,
+					ErrNotFound,
+				) {
 					continue
 				} else if err != nil {
 					return err
@@ -820,7 +828,9 @@ func stageClosedItems(
 		// no frame: it would carry the item's title. The row still closes.
 		if row.ProjectID.Valid {
 			reads, err := tx.InboxRecipientReadsProject(ctx, generated.InboxRecipientReadsProjectParams{
-				CompanyID: companyID, ProjectID: row.ProjectID.UUID, RecipientUserID: row.RecipientUserID,
+				CompanyID:       companyID,
+				ProjectID:       row.ProjectID.UUID,
+				RecipientUserID: row.RecipientUserID,
 			})
 			if err != nil {
 				return fmt.Errorf("check closed Inbox item reader: %w", err)
@@ -1130,7 +1140,7 @@ const (
 	TypeQuestionRequest Type = "question_request"
 	// TypeRuntimeOffline says a machine went offline for its owner: it
 	// stopped answering while it still held work, or another person signed
-	// in on it (D33). Its entity is the runtime, so the sweep or registration
+	// in on it. Its entity is the runtime, so the sweep or registration
 	// that raised it and the heartbeat or registration that resolves it
 	// address the same rows.
 	TypeRuntimeOffline    Type = "runtime_offline"
@@ -1148,7 +1158,7 @@ const (
 	TypeAnalyticsBudget Type = "analytics_budget"
 	TypeHuddleMissed    Type = "huddle_missed"
 	// TypeProjectAccessGranted tells the people who manage a Project's access
-	// that a Group membership let someone read it (D31). Its entity is the
+	// that a Group membership let someone read it. Its entity is the
 	// Project itself, so it reads for the Project's readers and for the
 	// members whose Company role holds projects.manage.
 	TypeProjectAccessGranted Type = "project_access_granted"
@@ -1200,5 +1210,8 @@ func readVisibleCounts(ctx context.Context, q *generated.Queries, p auth.UserPri
 	if err != nil {
 		return Counts{}, fmt.Errorf("read visible Inbox counts: %w", err)
 	}
-	return Counts{UnreadCount: row.UnreadCount, CountsVersion: countsVersionFromOrderingToken(row.OrderingToken)}, nil
+	return Counts{
+		UnreadCount:   row.UnreadCount,
+		CountsVersion: countsVersionFromOrderingToken(row.OrderingToken),
+	}, nil
 }

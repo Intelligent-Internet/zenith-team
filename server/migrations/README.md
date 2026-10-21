@@ -167,7 +167,7 @@ The additive migrations continue that sequence for existing databases:
     Item shape keeps tombstones immutable and forbids nesting or legacy Run items
     from acquiring discussion fields. Collaboration shape requires live human
     discussion messages for pins/reactions and root/current-grant thread writes.
-    The down migration refuses to discard retained C4 content or state.
+    The down migration refuses to discard retained collaboration content or state.
 34. `000034_social` — private social connections and targets, encrypted OAuth
     flows with web/desktop binding, credential maintenance leases, and durable
     immediate-publishing receipts. It upgrades main at version 33 by creating
@@ -276,8 +276,7 @@ backup.
 
 ## Schema doctrine
 
-Stated in the header of `000001_identity.up.sql` and held throughout
-(provenance: the reference architecture):
+Stated in the header of `000001_identity.up.sql` and held throughout:
 
 - DB-generated ids via `gen_random_uuid()`; sqlc maps UUID columns directly to
   `google/uuid` and uses `pgtype` for nullable scalar and timestamp columns.
@@ -297,7 +296,7 @@ Stated in the header of `000001_identity.up.sql` and held throughout
   invariants that the database can enforce. jsonb columns get object-shape checks.
   `created_at` on every table, `updated_at` wherever rows mutate.
 - No general stored procedures or trigger-driven product writes; seeding is
-  application code. The explicit exception in [C0 §3](../../docs/specs/conversations/C0-CONTRACT.md#3-proposed-schema-and-transaction-contract)
+  application code. The explicit exception
   is `000031` and `000033`'s discussion integrity checks: deferred detail/grant shape,
   immutable discussion identity/receipt, legacy versus discussion item shape,
   rejection of Runs on discussion Conversations, and scoped collaboration shape. Five trigger functions
@@ -411,7 +410,7 @@ credential to the canvas.
 
 ## Plugin presentation (000062)
 
-Adds the Codex presentation a Runtime observes for each Plugin (D26) to
+Adds the Codex presentation a Runtime observes for each Plugin to
 `plugin_runtime_observations`: the long description, up to three suggested
 prompts, the brand colour, the developer and the developer's links, with
 checks on the prompt count and colour format. A Claude observation leaves them
@@ -420,7 +419,7 @@ drops the columns, and the next discovery fills them again.
 
 ## Plugin catalog matching (000063)
 
-Adds the keys that match one Codex Plugin to another (D26 addendum) to
+Adds the keys that match one Codex Plugin to another to
 `plugin_runtime_observations`: `name_key` and `website_host`, stored generated
 columns, and `curated_duplicate`, which the backfill and every later discovery
 write set for a third-party copy of a curated Plugin that the list leaves out.
@@ -428,16 +427,9 @@ Three indexes on the keys replace 000062's name index. Presentation only;
 rollback drops the columns and restores that index.
 ## Huddles (000070–000084)
 
-The unmerged Huddle branch previously used versions 000048–000056, then
-000064–000078, then 000066–000080. Its migrations now follow main's 000069 as
-000070–000084, with company initialization at 000085; main's 000066–000069
-(company avatar, analytics, Wiki Artifact references, Output list indexes)
-are unchanged. 000074 (missed Huddle Inbox) keeps main's `analytics_budget`
-Inbox kind when it redefines `inbox_items_kind_check`.
-An existing development database on an older numbering cannot safely upgrade
-by changing its version marker alone: main's intervening migrations have not
-run under those numbers. Back up anything worth keeping outside the repository
-and recreate the local database; do not restart the API against it first.
+The Huddle migrations are 000070–000084, with company initialization at
+000085. 000074 (missed Huddle Inbox) keeps the `analytics_budget` Inbox kind
+when it redefines `inbox_items_kind_check`.
 
 Adds the durable Huddle session and its separate `huddle` chat Conversation.
 The migration enforces one active Huddle per human DM/channel source, supports
@@ -471,10 +463,7 @@ still an active Company member.
 
 ## Project access (000086)
 
-Project access scopes (ADR 0017). Its migrations were numbered 000068–000070,
-then 000070–000072, before main's Wiki and Huddle migrations took those
-numbers; a development database migrated under either numbering must be
-recreated. It runs after the data-only
+Project access scopes (ADR 0017). It runs after the data-only
 `000060_task_output_authorizer_grants`, whose Output grants the rewritten
 `output_access` view below then reads like any other grant, and after
 000061–000085, none of which redefines a view, function or CHECK it rewrites. `projects` gains `visibility`
@@ -566,13 +555,12 @@ column.
 
 ## Project Pages, Canvas and collaborative documents (000089)
 
-One unshipped migration upgrades main's schema at 000088. It combines Project
+One migration upgrades the schema at 000088. It combines Project
 artifact identities and versions, canvas placements and views, Task attribution,
 review annotations, native document blocks, structural sequence fences and
 ACL-preserving editable Output documents. It also includes Overview designation,
 managed blocks, contribution receipts, presentation captures and exact source
 pins, shared Wiki draft metadata, Wiki publication timestamps and Page comments.
-Migrations already on main remain unchanged.
 
 `project_attachment_scopes` unifies uploaded canvas assets with Project files for
 the existing attachment-access boundary. Page and canvas edits use the Project
@@ -587,11 +575,7 @@ service. The down file checks refusal guards before changing the schema and
 retains protection for authored Pages, Wiki drafts, native blocks, saved library
 state and Output-derived documents. Each direction executes atomically.
 
-Development databases that applied any earlier version of this branch's
-unshipped migrations (including the former 000089–000092 sequence) must be
-recreated after preserving needed content. Do not force migration metadata
-backward: the old 000089 does not contain the complete schema. Databases at main's
-000088 upgrade normally. The latest version is discovered
+Databases at 000088 upgrade normally. The latest version is discovered
 through `LatestVersion()`.
 
 ## Huddle AI default budget (000090)
@@ -626,7 +610,7 @@ that still query those removed columns.
 
 ## Agent custom skills (000093)
 
-Adds four tables for custom Agent skills (Skills TECH). `skill_imports`
+Adds four tables for custom Agent skills. `skill_imports`
 holds one GitHub, ZIP or Markdown import for an Agent, who made it, its
 source and commit, readiness and a 24-hour expiry. `skill_versions` holds
 each imported skill's immutable metadata: name, description, source path,
@@ -667,7 +651,7 @@ Editor grant exists (restore a backup), then restores the 000089
 
 ## Activity on behalf of (000097)
 
-Audit has three identities (D31). `activity_events` gains
+Audit has three identities. `activity_events` gains
 `on_behalf_of_user_id` and `run_id`: an Agent's row written in a Run names
 the person the Run works for and the Run. `activity_events_on_behalf_of_check`
 lets only an Agent row name a person, and `activity_events_run_check` names a
@@ -686,7 +670,7 @@ row keeps its Agent.
 
 ## Daemon sessions (000098)
 
-The daemon gets its own session (D31). `auth_sessions.client` is `person`
+The daemon gets its own session. `auth_sessions.client` is `person`
 (the default, so every existing session stays a person's) or `daemon`,
 closed by `auth_sessions_client_check`. Both session inserts take the value
 and a refresh copies it to the new row. Rollback ends every live daemon
@@ -695,7 +679,7 @@ because without it a daemon session would read as its person's own.
 
 ## Delegate rule (000099)
 
-The delegate rule in one place (D31). A delegate (a Run, or the Huddle voice
+The delegate rule in one place. A delegate (a Run, or the Huddle voice
 assistant) acts with one person's access, its Authorizer's, and never more.
 Two `LANGUAGE sql STABLE` functions state what it may do on a Project:
 `delegate_permission_held` (the Authorizer holds the permission and read
@@ -704,7 +688,7 @@ that chat's Project; a group chat's whole audience reads the Project, a
 term 000100 removes) and `run_permission_held`, the same rule for one Run
 read from its own row (its Authorizer, its chat, its invocation's channel
 and its Agent). The Agent argument was unused, kept for a per-Agent policy
-that the D31 revision of 2026-10-06 dropped; 000100 removes it too. Go binds
+that was later dropped; 000100 removes it too. Go binds
 every permission. The enqueue fence, both claim
 queries, the Run-proof reads (`ListRunReadableProjects`) and the voice reads
 call them; no row changes.
@@ -713,7 +697,7 @@ Rollback drops both functions. 000100 replaces both functions (below).
 ## Runs use their Authorizer's access (000100)
 
 A delegate uses its Authorizer's Project access, never more, and nothing
-else narrows it (D31, revised 2026-10-06): the person who tags an Agent
+else narrows it: the person who tags an Agent
 answers for what it shares with the chat. 000099 is never edited, so this
 migration drops its two functions and `conversation_audience_reads` (000086,
 which nothing calls any more) and creates the two again:
@@ -727,7 +711,7 @@ previous release's queries call.
 
 ## Groups (000101)
 
-Groups (D31, Access TECH Part D). A Group is a named set of Team members in
+A Group is a named set of Team members in
 one Company, flat and people only, that holds Project grants like a person.
 `company_groups` holds the Group: its name (trimmed, 1–80 characters, unique
 per Company ignoring case through `company_groups_name_key`), description
@@ -768,8 +752,7 @@ tables. A rejoin or a migration back up restores no membership.
 
 ## Remove "Review task results" (000102)
 
-The D31 revision (ruled 2026-10-07, built 2026-10-08) removes
-`project.results.review` from the
+Removes `project.results.review` from the
 Project catalog: nothing on the server checked it once result review was
 retired. Every `project_grants` and `project_group_grants` row holding it
 is deleted; every other row stays, `project.read` included. Each Project
@@ -794,12 +777,10 @@ requests and restores the previous Conversation access view; saved document
 history remains intact.
 ## Company Whiteboards (000107)
 
-One migration upgrades main's 000106 schema with Company Boards, object commands,
+One migration upgrades the 000106 schema with Company Boards, object commands,
 CRDT note state, lifecycle fences and file references. Board files are ordinary
 attachments referenced through `board_files`; `attachment_access` grants Board
-readers each file and its preview. Earlier shipped migrations remain unchanged.
-Because 000107 has not been deployed, it is edited in place: `board_files` is
-keyed by Company, Board and attachment; an item's frame reference is a
+readers each file and its preview. `board_files` is keyed by Company, Board and attachment; an item's frame reference is a
 deferrable `ON DELETE SET NULL` key, so purging a frame keeps its children; and
 indexes cover frame children, connector endpoints, tombstone retention and file
 release.
@@ -829,16 +810,11 @@ drops the notation columns, then deletes Board channels and restores the
 
 ## Scheduler and Calendar Tasks (000109)
 
-One additive upgrade from main's 000108 covers Scheduler retry receipts and
+One additive upgrade from 000108 covers Scheduler retry receipts and
 Calendar Task definitions, assignment acceptance and occurrences. Existing Tasks
 remain accepted and unscheduled; date-only planning fields never start work.
 History and authored content are retained. Downgrade refuses to discard linked
 retries, cancellation receipts, Calendar definitions or assignment decisions.
-
-Main's migrations through 000108 are unchanged. Developer databases that ran
-the unshipped scheduler 000095/000097/000108 or Calendar 000096 have a different schema at the
-same number: preserve a backup and reconcile that local schema before startup;
-do not force its migration number or use it as a production upgrade baseline.
 
 ## Run Wiki writes (000110)
 

@@ -141,7 +141,7 @@ const RUNTIME_ACTIVITY_GROUP_MINIMUM = 3;
 
 type SubagentNamesByThreadId = ReadonlyMap<string, string>;
 const chatMarkdownClassName = [
-  "boardly-chat-markdown h-auto w-full min-w-0 break-words text-xs font-medium leading-[22px] text-white",
+  "zenith-team-chat-markdown h-auto w-full min-w-0 break-words text-xs font-medium leading-[22px] text-white",
   "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
   "[&_a]:text-white [&_a]:underline [&_a]:underline-offset-2",
   "[&_blockquote]:my-3 [&_blockquote]:border-l-2 [&_blockquote]:border-white/30 [&_blockquote]:pl-3 [&_blockquote]:text-white/80",
@@ -460,15 +460,15 @@ function ChatMessageBubbleComponent({
         data-chat-message-id={message.id}
         data-actor-group-start={isActorGroupStart || undefined}
         data-focused-message-id={isFocused ? message.id : undefined}
-        data-boardly-desktop-context-copy={
+        data-zenith-team-desktop-context-copy={
           taskReportItems
             ? taskReportItems
                 .map((item) => `${item.outcome}: ${item.title}`)
                 .join("\n")
             : message.text
         }
-        data-boardly-desktop-context-kind="message"
-        data-boardly-desktop-context-label={
+        data-zenith-team-desktop-context-kind="message"
+        data-zenith-team-desktop-context-label={
           taskReportItems ? "Task report" : "Founder message"
         }
       >
@@ -513,11 +513,11 @@ function ChatMessageBubbleComponent({
         shouldShowRunHeader || isActorGroupStart || undefined
       }
       data-focused-message-id={isFocused ? message.id : undefined}
-      data-boardly-desktop-context-copy={
+      data-zenith-team-desktop-context-copy={
         runFailure ? runFailureCopyText(runFailure, displayText) : displayText
       }
-      data-boardly-desktop-context-kind="message"
-      data-boardly-desktop-context-label="Agent message"
+      data-zenith-team-desktop-context-kind="message"
+      data-zenith-team-desktop-context-label="Agent message"
     >
       {shouldShowRunHeader ? (
         <ChatMessageHeader

@@ -92,7 +92,7 @@ SELECT EXISTS(SELECT 1 FROM agents WHERE company_id=$1 AND id=$2
 AND archived_at IS NULL AND COALESCE(settings->'voice'->>'enabled','true')='true') AS enabled;
 
 -- The person who switched Company context on is the voice assistant's
--- Authorizer (D31). The grant holds only while they are an active member and
+-- Authorizer. The grant holds only while they are an active member and
 -- in the call: connected to the Huddle and an active member of its chat. The
 -- chat keeps a former participant's row for history, so the connection is
 -- what ends the grant when they leave.

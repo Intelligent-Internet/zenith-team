@@ -44,7 +44,7 @@ func stubLoginShellResolver(t *testing.T, resolved map[string]string) *atomic.In
 }
 
 // isolateProviderDiscovery points discovery at dir as the whole PATH with no
-// BOARDLY_* overrides, no Codex install locations off PATH and a fresh
+// ZENITH_TEAM_* overrides, no Codex install locations off PATH and a fresh
 // memory of Codex picks, so what it finds is exactly what the test placed
 // there or what the (stubbed) login shell answers.
 func isolateProviderDiscovery(t *testing.T, dir string) {
@@ -53,7 +53,7 @@ func isolateProviderDiscovery(t *testing.T, dir string) {
 	t.Setenv("CODEX_HOME", t.TempDir())
 	t.Setenv("FNM_MULTISHELL_PATH", "")
 	for _, key := range []string{
-		"BOARDLY_CLAUDE_PATH", "BOARDLY_CODEX_PATH", "BOARDLY_CLAUDE_MODEL", "BOARDLY_CODEX_MODEL",
+		"ZENITH_TEAM_CLAUDE_PATH", "ZENITH_TEAM_CODEX_PATH", "ZENITH_TEAM_CLAUDE_MODEL", "ZENITH_TEAM_CODEX_MODEL",
 	} {
 		t.Setenv(key, "")
 	}

@@ -17,7 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 const (
@@ -92,7 +92,7 @@ type PluginObservationInput struct {
 	ComponentCounts     PluginComponentCounts
 	ConnectorIdentities []PluginConnectorIdentity
 	InstallCount        *int64
-	// The Codex presentation (D26), sent only by a daemon that saw the
+	// The Codex presentation, sent only by a daemon that saw the
 	// server advertise plugin-presentation-v1.
 	LongDescription   string
 	DefaultPrompts    []string

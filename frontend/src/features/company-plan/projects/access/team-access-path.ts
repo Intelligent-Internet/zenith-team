@@ -1,12 +1,11 @@
-// Project access is managed on the Team page (owner decision 2026-10-02):
-// its "Project access" view, scoped to one Project. Every link to a
-// Project's access goes through here.
+// Project access is managed on the Team page: its "Project access" view,
+// scoped to one Project. Every link to a Project's access goes through here.
 export const TEAM_PROJECT_ACCESS_VIEW = "projects";
 
 /**
  * The other views that open Project access: the tab's own name, and the
- * Team page's former Groups view (Access TECH D6), since Groups are listed
- * in Project access (2026-10-07).
+ * Team page's former Groups view, since Groups are listed in Project
+ * access.
  */
 const TEAM_PROJECT_ACCESS_ALIASES: readonly string[] = [
   "project-access",

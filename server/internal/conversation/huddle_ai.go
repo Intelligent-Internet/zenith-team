@@ -10,15 +10,16 @@ import (
 	"errors"
 	"time"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/usage"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var ErrHuddleAIConflict = errors.New("huddle AI revision conflict")
@@ -34,7 +35,12 @@ type HuddleAIService interface {
 	Chat(context.Context, uuid.UUID, string) ([]HuddleAIChatItem, error)
 	ReadContext(context.Context, uuid.UUID, string, voice.ContextRequest) (voice.ContextResult, error)
 	ProposeWork(context.Context, uuid.UUID, string, HuddleProposalInput) (HuddleProposal, error)
-	UpdateWorkProposal(context.Context, auth.UserPrincipal, uuid.UUID, UpdateHuddleProposalInput) (HuddleProposal, error)
+	UpdateWorkProposal(
+		context.Context,
+		auth.UserPrincipal,
+		uuid.UUID,
+		UpdateHuddleProposalInput,
+	) (HuddleProposal, error)
 	Leave(context.Context, uuid.UUID, string) (HuddleAILeaveResult, error)
 	Finish(context.Context, uuid.UUID, string, HuddleAIUsage) error
 	AppendTranscript(context.Context, uuid.UUID, string, HuddleTranscriptBatch) (HuddleTranscriptReceipt, error)
@@ -146,12 +152,18 @@ func (s *DefaultHuddleAIService) Get(ctx context.Context, p auth.UserPrincipal, 
 		if err != nil {
 			return err
 		}
-		rows, err := q.ListHuddleProposals(ctx, generated.ListHuddleProposalsParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+		rows, err := q.ListHuddleProposals(
+			ctx,
+			generated.ListHuddleProposalsParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+		)
 		if err != nil {
 			return err
 		}
 		for _, row := range rows {
-			result.Proposals = append(result.Proposals, huddleProposalProjection(row, h, result.Revision, result.Disabled, result.CanModerate))
+			result.Proposals = append(
+				result.Proposals,
+				huddleProposalProjection(row, h, result.Revision, result.Disabled, result.CanModerate),
+			)
 		}
 		// A person sees work progress only in Projects they read themselves.
 		work, err := readHuddleWork(ctx, q, huddleWorkParams(h, p.UserID))
@@ -169,7 +181,13 @@ func (s *DefaultHuddleAIService) Get(ctx context.Context, p auth.UserPrincipal, 
 	})
 	return result, err
 }
-func lockHuddleAIActor(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, id uuid.UUID) (generated.Huddle, auth.CompanyRole, error) {
+
+func lockHuddleAIActor(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+) (generated.Huddle, auth.CompanyRole, error) {
 	role, err := lockDiscussionMembership(ctx, q, p)
 	if err != nil {
 		return generated.Huddle{}, role, err
@@ -196,8 +214,7 @@ type huddleAIViewer struct {
 	moderate bool
 	// inCall: connected to the Huddle and an active member of its chat.
 	// Switching Company context on makes the caller the assistant's
-	// Authorizer, so a moderator also needs this (D31, B5). Read only for a
-	// moderator.
+	// Authorizer, so a moderator also needs this. Read only for a moderator.
 	inCall bool
 }
 
@@ -292,7 +309,10 @@ func (s *DefaultHuddleAIService) status(
 		result.State = "unavailable"
 		result.UnavailableReason = "service_disabled"
 	}
-	a, err := q.GetActiveHuddleAISession(ctx, generated.GetActiveHuddleAISessionParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+	a, err := q.GetActiveHuddleAISession(
+		ctx,
+		generated.GetActiveHuddleAISessionParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+	)
 	if err == nil {
 		result.AttemptID = &a.ID
 		result.DeadlineAt = &a.DeadlineAt.Time
@@ -307,8 +327,12 @@ func (s *DefaultHuddleAIService) status(
 		if result.AttemptID == nil {
 			now := time.Now().UTC()
 			available, err := q.HuddleAIHasStartBudget(ctx, generated.HuddleAIHasStartBudgetParams{
-				CompanyID: h.CompanyID, HuddleID: h.ID,
-				PeriodStart:  pgtype.Timestamptz{Time: time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC), Valid: true},
+				CompanyID: h.CompanyID,
+				HuddleID:  h.ID,
+				PeriodStart: pgtype.Timestamptz{
+					Time:  time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC),
+					Valid: true,
+				},
 				MinimumTicks: s.options.ReasoningReserveTicks + s.options.TicksPerSecond,
 			})
 			if err != nil {
@@ -324,7 +348,10 @@ func (s *DefaultHuddleAIService) status(
 		result.UnavailableReason = ""
 	}
 	if result.State == "unavailable" {
-		latest, err := q.GetLatestHuddleAISession(ctx, generated.GetLatestHuddleAISessionParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+		latest, err := q.GetLatestHuddleAISession(
+			ctx,
+			generated.GetLatestHuddleAISessionParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+		)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return result, err
 		}
@@ -337,7 +364,13 @@ func (s *DefaultHuddleAIService) status(
 	}
 	return result, nil
 }
-func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrincipal, id uuid.UUID, in SetHuddleAIInput) (HuddleAIStatus, error) {
+
+func (s *DefaultHuddleAIService) SetEnabled(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	in SetHuddleAIInput,
+) (HuddleAIStatus, error) {
 	if in.RequestKey == uuid.Nil || in.ExpectedRevision < 1 ||
 		(in.Enabled && in.AgentID == uuid.Nil) || (!in.Enabled && (in.AgentID != uuid.Nil || in.AllowCompanyContext)) {
 		return HuddleAIStatus{}, ErrHuddleInvalid
@@ -360,7 +393,7 @@ func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrin
 			return ErrHuddleForbidden
 		}
 		// Company context makes the caller the assistant's Authorizer, so
-		// only someone in the call may switch it on (D31, B5). Switching
+		// only someone in the call may switch it on. Switching
 		// the assistant on without it keeps the moderator rule alone.
 		if in.AllowCompanyContext && !viewer.inCall {
 			return ErrHuddleForbidden
@@ -368,14 +401,28 @@ func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrin
 		if h.State != "open" {
 			return ErrHuddleUnavailable
 		}
-		if err = q.EnsureHuddleAIIntent(ctx, generated.EnsureHuddleAIIntentParams{CompanyID: p.CompanyID, HuddleID: id}); err != nil {
+		if err = q.EnsureHuddleAIIntent(
+			ctx,
+			generated.EnsureHuddleAIIntentParams{CompanyID: p.CompanyID, HuddleID: id},
+		); err != nil {
 			return err
 		}
-		state, err := q.LockHuddleAIState(ctx, generated.LockHuddleAIStateParams{CompanyID: p.CompanyID, HuddleID: id})
+		state, err := q.LockHuddleAIState(
+			ctx,
+			generated.LockHuddleAIStateParams{CompanyID: p.CompanyID, HuddleID: id},
+		)
 		if err != nil {
 			return err
 		}
-		receipt, err := q.GetHuddleAIOperation(ctx, generated.GetHuddleAIOperationParams{CompanyID: p.CompanyID, HuddleID: id, UserID: p.UserID, RequestKey: in.RequestKey})
+		receipt, err := q.GetHuddleAIOperation(
+			ctx,
+			generated.GetHuddleAIOperationParams{
+				CompanyID:  p.CompanyID,
+				HuddleID:   id,
+				UserID:     p.UserID,
+				RequestKey: in.RequestKey,
+			},
+		)
 		if err == nil {
 			if receipt.Enabled != in.Enabled || receipt.ExpectedRevision != in.ExpectedRevision ||
 				receipt.AgentID.UUID != in.AgentID || receipt.AllowCompanyContext != in.AllowCompanyContext {
@@ -412,7 +459,10 @@ func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrin
 		}); err != nil {
 			return err
 		}
-		a, err := q.GetActiveHuddleAISession(ctx, generated.GetActiveHuddleAISessionParams{CompanyID: p.CompanyID, HuddleID: id})
+		a, err := q.GetActiveHuddleAISession(
+			ctx,
+			generated.GetActiveHuddleAISessionParams{CompanyID: p.CompanyID, HuddleID: id},
+		)
 		if err == nil {
 			if err = q.StopHuddleAISession(ctx, a.ID); err != nil {
 				return err
@@ -435,6 +485,7 @@ func (s *DefaultHuddleAIService) SetEnabled(ctx context.Context, p auth.UserPrin
 	}
 	return result, err
 }
+
 func (s *DefaultHuddleAIService) Reconcile(ctx context.Context) error {
 	rows, err := s.options.Store.Queries().ListHuddleAIWork(ctx)
 	if err != nil {
@@ -451,6 +502,7 @@ func (s *DefaultHuddleAIService) Reconcile(ctx context.Context) error {
 	}
 	return errors.Join(failures...)
 }
+
 func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, id uuid.UUID) error {
 	var dispatch, remove *generated.HuddleAiSession
 	var room string
@@ -461,7 +513,10 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 			return err
 		}
 		room = h.RoomName.String
-		state, err := q.LockHuddleAIState(ctx, generated.LockHuddleAIStateParams{CompanyID: companyID, HuddleID: id})
+		state, err := q.LockHuddleAIState(
+			ctx,
+			generated.LockHuddleAIStateParams{CompanyID: companyID, HuddleID: id},
+		)
 		if err != nil {
 			return err
 		}
@@ -470,11 +525,17 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		grace, err := q.HuddleAIHasHumanGrace(ctx, generated.HuddleAIHasHumanGraceParams{CompanyID: companyID, HuddleID: id})
+		grace, err := q.HuddleAIHasHumanGrace(
+			ctx,
+			generated.HuddleAIHasHumanGraceParams{CompanyID: companyID, HuddleID: id},
+		)
 		if err != nil {
 			return err
 		}
-		revoked, err := q.HuddleAIHasRevokedListener(ctx, generated.HuddleAIHasRevokedListenerParams{CompanyID: companyID, HuddleID: id})
+		revoked, err := q.HuddleAIHasRevokedListener(
+			ctx,
+			generated.HuddleAIHasRevokedListenerParams{CompanyID: companyID, HuddleID: id},
+		)
 		if err != nil {
 			return err
 		}
@@ -502,7 +563,10 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 		if h.State != "open" {
 			observed = "ended"
 		}
-		a, err := q.GetActiveHuddleAISession(ctx, generated.GetActiveHuddleAISessionParams{CompanyID: companyID, HuddleID: id})
+		a, err := q.GetActiveHuddleAISession(
+			ctx,
+			generated.GetActiveHuddleAISessionParams{CompanyID: companyID, HuddleID: id},
+		)
 		if err == nil {
 			if !allowed || !a.DeadlineAt.Time.After(now) || a.State == "stopping" {
 				if err = q.StopHuddleAISession(ctx, a.ID); err != nil {
@@ -521,7 +585,16 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 				return nil
 			}
 			if now.Before(a.LeaseExpiresAt.Time.Add(5 * time.Second)) {
-				return s.setState(ctx, q, state, observed, state.Generation, state.Failures, now, &changed)
+				return s.setState(
+					ctx,
+					q,
+					state,
+					observed,
+					state.Generation,
+					state.Failures,
+					now,
+					&changed,
+				)
 			}
 			if err = q.FinalizeUnclaimedHuddleAIUsage(ctx, a.ID); err != nil {
 				return err
@@ -531,22 +604,43 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 			}
 			remove = &a
 			state.Failures++
-			state.RetryAt = pgtype.Timestamptz{Time: now.Add(time.Duration(min(state.Failures*5, 60)) * time.Second), Valid: true}
+			state.RetryAt = pgtype.Timestamptz{
+				Time:  now.Add(time.Duration(min(state.Failures*5, 60)) * time.Second),
+				Valid: true,
+			}
 		} else if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
 		if h.State == "ended" || h.State == "ending" {
-			uncertain, err := q.CountUncertainHuddleAISessions(ctx, generated.CountUncertainHuddleAISessionsParams{CompanyID: companyID, HuddleID: id})
+			uncertain, err := q.CountUncertainHuddleAISessions(
+				ctx,
+				generated.CountUncertainHuddleAISessionsParams{CompanyID: companyID, HuddleID: id},
+			)
 			if err != nil {
 				return err
 			}
 			if uncertain == 0 {
-				reservation, err := q.GetHuddleAIBudgetReservation(ctx, generated.GetHuddleAIBudgetReservationParams{CompanyID: companyID, HuddleID: id})
+				reservation, err := q.GetHuddleAIBudgetReservation(
+					ctx,
+					generated.GetHuddleAIBudgetReservationParams{
+						CompanyID: companyID,
+						HuddleID:  id,
+					},
+				)
 				if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 					return err
 				}
 				if err == nil && !reservation.SettledAt.Valid {
-					if err = usage.RecordHuddleSpendInTx(ctx, q, usage.RecordHuddleSpendInput{CompanyID: companyID, HuddleID: id, SpentUSDTicks: reservation.SpentUsdTicks, Final: true}); err != nil {
+					if err = usage.RecordHuddleSpendInTx(
+						ctx,
+						q,
+						usage.RecordHuddleSpendInput{
+							CompanyID:     companyID,
+							HuddleID:      id,
+							SpentUSDTicks: reservation.SpentUsdTicks,
+							Final:         true,
+						},
+					); err != nil {
 						return err
 					}
 				}
@@ -558,16 +652,38 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 					return err
 				}
 			}
-			return s.setState(ctx, q, state, observed, state.Generation, state.Failures, state.RetryAt.Time, &changed)
+			return s.setState(
+				ctx,
+				q,
+				state,
+				observed,
+				state.Generation,
+				state.Failures,
+				state.RetryAt.Time,
+				&changed,
+			)
 		}
-		humans, err := q.ListHuddleAIHumans(ctx, generated.ListHuddleAIHumansParams{CompanyID: companyID, HuddleID: id})
+		humans, err := q.ListHuddleAIHumans(
+			ctx,
+			generated.ListHuddleAIHumansParams{CompanyID: companyID, HuddleID: id},
+		)
 		if err != nil {
 			return err
 		}
 		if len(humans) == 0 {
 			return s.setState(ctx, q, state, "pending", state.Generation, state.Failures, now, &changed)
 		}
-		reservation, err := usage.ReserveHuddleBudgetInTx(ctx, q, usage.ReserveHuddleBudgetInput{CompanyID: companyID, HuddleID: id, Deadline: h.DeadlineAt.Time, TicksPerSecond: s.options.TicksPerSecond, AdditionalTicks: s.options.ReasoningReserveTicks})
+		reservation, err := usage.ReserveHuddleBudgetInTx(
+			ctx,
+			q,
+			usage.ReserveHuddleBudgetInput{
+				CompanyID:       companyID,
+				HuddleID:        id,
+				Deadline:        h.DeadlineAt.Time,
+				TicksPerSecond:  s.options.TicksPerSecond,
+				AdditionalTicks: s.options.ReasoningReserveTicks,
+			},
+		)
 		if errors.Is(err, usage.ErrHuddleBudgetExhausted) {
 			if err = endHuddleCapture(ctx, q, &state); err != nil {
 				return err
@@ -577,7 +693,15 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 		if err != nil {
 			return err
 		}
-		a, err = q.CreateHuddleAISession(ctx, generated.CreateHuddleAISessionParams{CompanyID: companyID, HuddleID: id, Generation: state.Generation + 1, DeadlineAt: reservation.DeadlineAt})
+		a, err = q.CreateHuddleAISession(
+			ctx,
+			generated.CreateHuddleAISessionParams{
+				CompanyID:  companyID,
+				HuddleID:   id,
+				Generation: state.Generation + 1,
+				DeadlineAt: reservation.DeadlineAt,
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -612,12 +736,32 @@ func (s *DefaultHuddleAIService) reconcileRoom(ctx context.Context, companyID, i
 // setState records the observed state. changed, when given, is set when a
 // client would see a different status, so callers signal only transitions:
 // the reconcile worker rewrites the same state every tick.
-func (s *DefaultHuddleAIService) setState(ctx context.Context, q *generated.Queries, state generated.HuddleAiState, observed string, generation int64, failures int32, retry time.Time, changed *bool) error {
+func (s *DefaultHuddleAIService) setState(
+	ctx context.Context,
+	q *generated.Queries,
+	state generated.HuddleAiState,
+	observed string,
+	generation int64,
+	failures int32,
+	retry time.Time,
+	changed *bool,
+) error {
 	if changed != nil && (state.State != observed || state.Generation != generation) {
 		*changed = true
 	}
-	return q.SetHuddleAIState(ctx, generated.SetHuddleAIStateParams{CompanyID: state.CompanyID, HuddleID: state.HuddleID, State: observed, Generation: generation, Failures: failures, RetryAt: pgtype.Timestamptz{Time: retry, Valid: true}})
+	return q.SetHuddleAIState(
+		ctx,
+		generated.SetHuddleAIStateParams{
+			CompanyID:  state.CompanyID,
+			HuddleID:   state.HuddleID,
+			State:      observed,
+			Generation: generation,
+			Failures:   failures,
+			RetryAt:    pgtype.Timestamptz{Time: retry, Valid: true},
+		},
+	)
 }
+
 func (s *DefaultHuddleAIService) Claim(ctx context.Context, id uuid.UUID) (HuddleAILease, error) {
 	token := make([]byte, 32)
 	if _, err := rand.Read(token); err != nil {
@@ -626,47 +770,85 @@ func (s *DefaultHuddleAIService) Claim(ctx context.Context, id uuid.UUID) (Huddl
 	capability := base64.RawURLEncoding.EncodeToString(token)
 	hash := sha256.Sum256([]byte(capability))
 	var result HuddleAILease
-	err := s.withAttempt(ctx, id, func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
-		if err := s.authorized(ctx, q, h, state, a); err != nil {
-			return err
-		}
-		humans, err := q.ListHuddleAIHumans(ctx, generated.ListHuddleAIHumansParams{CompanyID: h.CompanyID, HuddleID: h.ID})
-		if err != nil {
-			return err
-		}
-		if len(humans) == 0 {
-			return ErrHuddleUnavailable
-		}
-		a, err = q.ClaimHuddleAISession(ctx, generated.ClaimHuddleAISessionParams{ID: id, CapabilityHash: hash[:]})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrHuddleUnavailable
-		}
-		if err != nil {
-			return err
-		}
-		result = s.lease(h, state, a, humans)
-		receipts, err := q.ListHuddleAIUsage(ctx, generated.ListHuddleAIUsageParams{CompanyID: h.CompanyID, HuddleID: h.ID})
-		if err != nil {
-			return err
-		}
-		for _, receipt := range receipts {
-			result.ReasoningReserveTicks -= (receipt.InputTokens-receipt.CachedInputTokens)*s.options.InputTokenTicks + receipt.CachedInputTokens*s.options.CachedInputTokenTicks + receipt.OutputTokens*s.options.OutputTokenTicks
-		}
-		result.ReasoningReserveTicks = max(0, result.ReasoningReserveTicks)
-		pending, err := q.ListPendingHuddleAIChat(ctx, generated.ListPendingHuddleAIChatParams{CompanyID: h.CompanyID, HuddleID: h.ID})
-		if err != nil {
-			return err
-		}
-		for _, item := range pending {
-			result.PendingChat = append(result.PendingChat, HuddleAIChatItem{ID: item.ID, Seq: item.Seq, AuthorID: item.AuthorID.UUID, DisplayName: item.DisplayName, Text: item.Content, CreatedAt: item.CreatedAt.Time})
-		}
-		result.Capability = capability
-		result.Greet = !state.Greeted
-		return q.AdvanceHuddleAIChat(ctx, generated.AdvanceHuddleAIChatParams{CompanyID: h.CompanyID, HuddleID: h.ID, ChatCursor: state.ChatCursor})
-	})
+	err := s.withAttempt(
+		ctx,
+		id,
+		func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+			if err := s.authorized(ctx, q, h, state, a); err != nil {
+				return err
+			}
+			humans, err := q.ListHuddleAIHumans(
+				ctx,
+				generated.ListHuddleAIHumansParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+			)
+			if err != nil {
+				return err
+			}
+			if len(humans) == 0 {
+				return ErrHuddleUnavailable
+			}
+			a, err = q.ClaimHuddleAISession(
+				ctx,
+				generated.ClaimHuddleAISessionParams{ID: id, CapabilityHash: hash[:]},
+			)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrHuddleUnavailable
+			}
+			if err != nil {
+				return err
+			}
+			result = s.lease(h, state, a, humans)
+			receipts, err := q.ListHuddleAIUsage(
+				ctx,
+				generated.ListHuddleAIUsageParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+			)
+			if err != nil {
+				return err
+			}
+			for _, receipt := range receipts {
+				result.ReasoningReserveTicks -= (receipt.InputTokens-receipt.CachedInputTokens)*s.options.InputTokenTicks + receipt.CachedInputTokens*s.options.CachedInputTokenTicks + receipt.OutputTokens*s.options.OutputTokenTicks
+			}
+			result.ReasoningReserveTicks = max(0, result.ReasoningReserveTicks)
+			pending, err := q.ListPendingHuddleAIChat(
+				ctx,
+				generated.ListPendingHuddleAIChatParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+			)
+			if err != nil {
+				return err
+			}
+			for _, item := range pending {
+				result.PendingChat = append(
+					result.PendingChat,
+					HuddleAIChatItem{
+						ID:          item.ID,
+						Seq:         item.Seq,
+						AuthorID:    item.AuthorID.UUID,
+						DisplayName: item.DisplayName,
+						Text:        item.Content,
+						CreatedAt:   item.CreatedAt.Time,
+					},
+				)
+			}
+			result.Capability = capability
+			result.Greet = !state.Greeted
+			return q.AdvanceHuddleAIChat(
+				ctx,
+				generated.AdvanceHuddleAIChatParams{
+					CompanyID:  h.CompanyID,
+					HuddleID:   h.ID,
+					ChatCursor: state.ChatCursor,
+				},
+			)
+		},
+	)
 	return result, err
 }
-func (s *DefaultHuddleAIService) withAttempt(ctx context.Context, id uuid.UUID, fn func(*generated.Queries, generated.Huddle, generated.HuddleAiState, generated.HuddleAiSession) error) error {
+
+func (s *DefaultHuddleAIService) withAttempt(
+	ctx context.Context,
+	id uuid.UUID,
+	fn func(*generated.Queries, generated.Huddle, generated.HuddleAiState, generated.HuddleAiSession) error,
+) error {
 	return s.options.Store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		a, err := q.GetHuddleAISession(ctx, id)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -679,7 +861,10 @@ func (s *DefaultHuddleAIService) withAttempt(ctx context.Context, id uuid.UUID, 
 		if err != nil {
 			return err
 		}
-		state, err := q.LockHuddleAIState(ctx, generated.LockHuddleAIStateParams{CompanyID: a.CompanyID, HuddleID: a.HuddleID})
+		state, err := q.LockHuddleAIState(
+			ctx,
+			generated.LockHuddleAIStateParams{CompanyID: a.CompanyID, HuddleID: a.HuddleID},
+		)
 		if err != nil {
 			return err
 		}
@@ -705,7 +890,13 @@ func (s *DefaultHuddleAIService) signalAttempt(ctx context.Context, attemptID uu
 	}
 }
 
-func (s *DefaultHuddleAIService) authorized(ctx context.Context, q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+func (s *DefaultHuddleAIService) authorized(
+	ctx context.Context,
+	q *generated.Queries,
+	h generated.Huddle,
+	state generated.HuddleAiState,
+	a generated.HuddleAiSession,
+) error {
 	if state.AllowCompanyContext {
 		active, err := huddleContextGrantActive(ctx, q, state)
 		if err != nil {
@@ -722,15 +913,26 @@ func (s *DefaultHuddleAIService) authorized(ctx context.Context, q *generated.Qu
 	if !eligible {
 		return ErrHuddleUnavailable
 	}
-	revoked, err := q.HuddleAIHasRevokedListener(ctx, generated.HuddleAIHasRevokedListenerParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+	revoked, err := q.HuddleAIHasRevokedListener(
+		ctx,
+		generated.HuddleAIHasRevokedListenerParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+	)
 	if err != nil {
 		return err
 	}
 	now := time.Now()
-	if revoked.Bool || !s.options.Enabled || state.Disabled || h.State != "open" || state.Generation != a.Generation || !a.LeaseExpiresAt.Time.After(now) || !a.DeadlineAt.Time.After(now) || !h.DeadlineAt.Time.After(now) || (a.State != "claimed" && a.State != "pending") {
+	if revoked.Bool || !s.options.Enabled || state.Disabled || h.State != "open" ||
+		state.Generation != a.Generation ||
+		!a.LeaseExpiresAt.Time.After(now) ||
+		!a.DeadlineAt.Time.After(now) ||
+		!h.DeadlineAt.Time.After(now) ||
+		(a.State != "claimed" && a.State != "pending") {
 		return ErrHuddleUnavailable
 	}
-	grace, err := q.HuddleAIHasHumanGrace(ctx, generated.HuddleAIHasHumanGraceParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+	grace, err := q.HuddleAIHasHumanGrace(
+		ctx,
+		generated.HuddleAIHasHumanGraceParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+	)
 	if err != nil {
 		return err
 	}
@@ -743,7 +945,10 @@ func (s *DefaultHuddleAIService) authorized(ctx context.Context, q *generated.Qu
 		}
 		return err
 	}
-	reservation, err := q.GetHuddleAIBudgetReservation(ctx, generated.GetHuddleAIBudgetReservationParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+	reservation, err := q.GetHuddleAIBudgetReservation(
+		ctx,
+		generated.GetHuddleAIBudgetReservationParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+	)
 	if err != nil {
 		return err
 	}
@@ -762,6 +967,7 @@ func (s *DefaultHuddleAIService) authorized(ctx context.Context, q *generated.Qu
 	}
 	return nil
 }
+
 func checkHuddleAICapability(a generated.HuddleAiSession, token string) error {
 	hash := sha256.Sum256([]byte(token))
 	if subtle.ConstantTimeCompare(hash[:], a.CapabilityHash) != 1 {
@@ -769,7 +975,13 @@ func checkHuddleAICapability(a generated.HuddleAiSession, token string) error {
 	}
 	return nil
 }
-func (s *DefaultHuddleAIService) lease(h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession, humans []uuid.UUID) HuddleAILease {
+
+func (s *DefaultHuddleAIService) lease(
+	h generated.Huddle,
+	state generated.HuddleAiState,
+	a generated.HuddleAiSession,
+	humans []uuid.UUID,
+) HuddleAILease {
 	identities := make([]string, 0, len(humans))
 	for _, id := range humans {
 		identities = append(identities, "huddle:"+h.ID.String()+":user:"+id.String())
@@ -784,76 +996,128 @@ func (s *DefaultHuddleAIService) lease(h generated.Huddle, state generated.Huddl
 		ReasoningReserveTicks: s.options.ReasoningReserveTicks,
 	}
 }
-func (s *DefaultHuddleAIService) Heartbeat(ctx context.Context, id uuid.UUID, token string, in HuddleAIHeartbeat) (HuddleAILease, error) {
+
+func (s *DefaultHuddleAIService) Heartbeat(
+	ctx context.Context,
+	id uuid.UUID,
+	token string,
+	in HuddleAIHeartbeat,
+) (HuddleAILease, error) {
 	if len(in.ClaimWorkNotice) > 160 {
 		return HuddleAILease{}, ErrHuddleInvalid
 	}
-	if in.ChatCursor < 0 || in.CompletedSeq < 0 || in.CompletedSeq > in.ChatCursor || (in.State != "" && in.State != "listening" && in.State != "speaking") {
+	if in.ChatCursor < 0 || in.CompletedSeq < 0 || in.CompletedSeq > in.ChatCursor ||
+		(in.State != "" && in.State != "listening" && in.State != "speaking") {
 		return HuddleAILease{}, ErrHuddleInvalid
 	}
 	var result HuddleAILease
 	changed := false
-	err := s.withAttempt(ctx, id, func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
-		if err := checkHuddleAICapability(a, token); err != nil {
-			return err
-		}
-		if err := s.authorized(ctx, q, h, state, a); err != nil {
-			return err
-		}
-		head, err := q.GetHuddleAIChatHead(ctx, generated.GetHuddleAIChatHeadParams{CompanyID: h.CompanyID, ID: h.ID})
-		if err != nil {
-			return err
-		}
-		if in.ChatCursor > head {
-			return ErrHuddleInvalid
-		}
-		if err = q.AdvanceHuddleAIChat(ctx, generated.AdvanceHuddleAIChatParams{CompanyID: h.CompanyID, HuddleID: h.ID, ChatCursor: in.ChatCursor}); err != nil {
-			return err
-		}
-		if err = q.CompleteHuddleAIChat(ctx, generated.CompleteHuddleAIChatParams{CompanyID: h.CompanyID, HuddleID: h.ID, ChatCompletedSeq: in.CompletedSeq}); err != nil {
-			return err
-		}
-		a, err = q.RenewHuddleAISession(ctx, id)
-		if err != nil {
-			return err
-		}
-		if in.State != "" {
-			if err = s.setState(ctx, q, state, in.State, state.Generation, state.Failures, state.RetryAt.Time, &changed); err != nil {
+	err := s.withAttempt(
+		ctx,
+		id,
+		func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+			if err := checkHuddleAICapability(a, token); err != nil {
 				return err
 			}
-		}
-		humans, err := q.ListHuddleAIHumans(ctx, generated.ListHuddleAIHumansParams{CompanyID: h.CompanyID, HuddleID: h.ID})
-		if err != nil {
-			return err
-		}
-		state.ChatCursor = max(state.ChatCursor, in.ChatCursor)
-		result = s.lease(h, state, a, humans)
-		if in.State != "" {
-			greeted, err := q.ClaimHuddleAIGreeting(ctx, generated.ClaimHuddleAIGreetingParams{CompanyID: h.CompanyID, HuddleID: h.ID})
+			if err := s.authorized(ctx, q, h, state, a); err != nil {
+				return err
+			}
+			head, err := q.GetHuddleAIChatHead(
+				ctx,
+				generated.GetHuddleAIChatHeadParams{CompanyID: h.CompanyID, ID: h.ID},
+			)
 			if err != nil {
 				return err
 			}
-			result.Greet = greeted == 1
-		}
+			if in.ChatCursor > head {
+				return ErrHuddleInvalid
+			}
+			if err = q.AdvanceHuddleAIChat(
+				ctx,
+				generated.AdvanceHuddleAIChatParams{
+					CompanyID:  h.CompanyID,
+					HuddleID:   h.ID,
+					ChatCursor: in.ChatCursor,
+				},
+			); err != nil {
+				return err
+			}
+			if err = q.CompleteHuddleAIChat(
+				ctx,
+				generated.CompleteHuddleAIChatParams{
+					CompanyID:        h.CompanyID,
+					HuddleID:         h.ID,
+					ChatCompletedSeq: in.CompletedSeq,
+				},
+			); err != nil {
+				return err
+			}
+			a, err = q.RenewHuddleAISession(ctx, id)
+			if err != nil {
+				return err
+			}
+			if in.State != "" {
+				if err = s.setState(
+					ctx,
+					q,
+					state,
+					in.State,
+					state.Generation,
+					state.Failures,
+					state.RetryAt.Time,
+					&changed,
+				); err != nil {
+					return err
+				}
+			}
+			humans, err := q.ListHuddleAIHumans(
+				ctx,
+				generated.ListHuddleAIHumansParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+			)
+			if err != nil {
+				return err
+			}
+			state.ChatCursor = max(state.ChatCursor, in.ChatCursor)
+			result = s.lease(h, state, a, humans)
+			if in.State != "" {
+				greeted, err := q.ClaimHuddleAIGreeting(
+					ctx,
+					generated.ClaimHuddleAIGreetingParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+				)
+				if err != nil {
+					return err
+				}
+				result.Greet = greeted == 1
+			}
 
-		receipts, err := q.ListHuddleAIUsage(ctx, generated.ListHuddleAIUsageParams{CompanyID: h.CompanyID, HuddleID: h.ID})
-		if err != nil {
-			return err
-		}
-		for _, receipt := range receipts {
-			result.ReasoningReserveTicks -= (receipt.InputTokens-receipt.CachedInputTokens)*s.options.InputTokenTicks + receipt.CachedInputTokens*s.options.CachedInputTokenTicks + receipt.OutputTokens*s.options.OutputTokenTicks
-		}
-		result.ReasoningReserveTicks = max(0, result.ReasoningReserveTicks)
-		if state.AllowCompanyContext && len(humans) > 0 && (in.PollWork || in.ClaimWorkNotice != "") {
-			result.WorkNotices, result.ClaimedWorkNotice, err = huddleWorkNotices(ctx, q, h, state.ContextGrantedByUserID.UUID, in.ClaimWorkNotice)
+			receipts, err := q.ListHuddleAIUsage(
+				ctx,
+				generated.ListHuddleAIUsageParams{CompanyID: h.CompanyID, HuddleID: h.ID},
+			)
 			if err != nil {
 				return err
 			}
-			// A query may overlap audience/grant revocation; fence the disclosure again.
-			return s.authorized(ctx, q, h, state, a)
-		}
-		return nil
-	})
+			for _, receipt := range receipts {
+				result.ReasoningReserveTicks -= (receipt.InputTokens-receipt.CachedInputTokens)*s.options.InputTokenTicks + receipt.CachedInputTokens*s.options.CachedInputTokenTicks + receipt.OutputTokens*s.options.OutputTokenTicks
+			}
+			result.ReasoningReserveTicks = max(0, result.ReasoningReserveTicks)
+			if state.AllowCompanyContext && len(humans) > 0 && (in.PollWork || in.ClaimWorkNotice != "") {
+				result.WorkNotices, result.ClaimedWorkNotice, err = huddleWorkNotices(
+					ctx,
+					q,
+					h,
+					state.ContextGrantedByUserID.UUID,
+					in.ClaimWorkNotice,
+				)
+				if err != nil {
+					return err
+				}
+				// A query may overlap audience/grant revocation; fence the disclosure again.
+				return s.authorized(ctx, q, h, state, a)
+			}
+			return nil
+		},
+	)
 	if err != nil {
 		return HuddleAILease{}, err
 	}
@@ -862,23 +1126,45 @@ func (s *DefaultHuddleAIService) Heartbeat(ctx context.Context, id uuid.UUID, to
 	}
 	return result, err
 }
+
 func (s *DefaultHuddleAIService) Chat(ctx context.Context, id uuid.UUID, token string) ([]HuddleAIChatItem, error) {
 	result := []HuddleAIChatItem{}
-	err := s.withAttempt(ctx, id, func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
-		if err := checkHuddleAICapability(a, token); err != nil {
-			return err
-		}
-		if err := s.authorized(ctx, q, h, state, a); err != nil {
-			return err
-		}
-		rows, err := q.ListHuddleAIChat(ctx, generated.ListHuddleAIChatParams{CompanyID: h.CompanyID, ID: h.ID, Seq: state.ChatCursor})
-		if err != nil {
-			return err
-		}
-		for _, row := range rows {
-			result = append(result, HuddleAIChatItem{ID: row.ID, Seq: row.Seq, AuthorID: row.AuthorID.UUID, DisplayName: row.DisplayName, Text: row.Content, CreatedAt: row.CreatedAt.Time})
-		}
-		return nil
-	})
+	err := s.withAttempt(
+		ctx,
+		id,
+		func(q *generated.Queries, h generated.Huddle, state generated.HuddleAiState, a generated.HuddleAiSession) error {
+			if err := checkHuddleAICapability(a, token); err != nil {
+				return err
+			}
+			if err := s.authorized(ctx, q, h, state, a); err != nil {
+				return err
+			}
+			rows, err := q.ListHuddleAIChat(
+				ctx,
+				generated.ListHuddleAIChatParams{
+					CompanyID: h.CompanyID,
+					ID:        h.ID,
+					Seq:       state.ChatCursor,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			for _, row := range rows {
+				result = append(
+					result,
+					HuddleAIChatItem{
+						ID:          row.ID,
+						Seq:         row.Seq,
+						AuthorID:    row.AuthorID.UUID,
+						DisplayName: row.DisplayName,
+						Text:        row.Content,
+						CreatedAt:   row.CreatedAt.Time,
+					},
+				)
+			}
+			return nil
+		},
+	)
 	return result, err
 }

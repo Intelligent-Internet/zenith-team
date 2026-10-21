@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"

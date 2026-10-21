@@ -334,6 +334,7 @@ func TestBoardExportShapesRasterizeOnlyTheirBounds(t *testing.T) {
 	tile := image.NewRGBA(image.Rect(0, 0, 1280, 1280))
 	fill, stroke := color.RGBA{255, 242, 168, 255}, color.RGBA{37, 37, 45, 255}
 	result := testing.Benchmark(func(b *testing.B) {
+		b.Helper()
 		for b.Loop() {
 			boardShape(tile, fullRenderWork(), 600, 600, 100, 100, "rectangle", fill, stroke, 2)
 		}

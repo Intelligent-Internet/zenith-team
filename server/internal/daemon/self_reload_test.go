@@ -15,13 +15,13 @@ import (
 )
 
 // newSelfReloadTestDaemon returns a Daemon wired for trySelfReload: a real
-// temp file standing in for the boardly binary (so the on-disk digest is the
+// temp file standing in for the zenith-team binary (so the on-disk digest is the
 // genuine article), the running version, and a sentinel cancelFunc the tests
 // assert on to detect that a restart was scheduled.
 func newSelfReloadTestDaemon(t *testing.T, runningVersion string) (*Daemon, string, *atomic.Int32) {
 	t.Helper()
-	binary := filepath.Join(t.TempDir(), "boardly")
-	if err := os.WriteFile(binary, []byte("boardly build one"), 0o755); err != nil {
+	binary := filepath.Join(t.TempDir(), "zenith-team")
+	if err := os.WriteFile(binary, []byte("zenith-team build one"), 0o755); err != nil {
 		t.Fatalf("write binary fixture: %v", err)
 	}
 	previousResolve := resolveSelfExecutable
@@ -42,7 +42,7 @@ func newSelfReloadTestDaemon(t *testing.T, runningVersion string) (*Daemon, stri
 // one recorded at startup — what `make build` or an upgrade does in place.
 func replaceBinary(t *testing.T, binary string) {
 	t.Helper()
-	if err := os.WriteFile(binary, []byte("boardly build two"), 0o755); err != nil {
+	if err := os.WriteFile(binary, []byte("zenith-team build two"), 0o755); err != nil {
 		t.Fatalf("replace binary fixture: %v", err)
 	}
 }
@@ -192,7 +192,10 @@ func TestTrySelfReloadDefersWhileTheDaemonIsBusy(t *testing.T) {
 			d.trySelfReload(context.Background())
 
 			if restartCalls.Load() != 1 {
-				t.Fatalf("restart scheduled %d times after the daemon went idle, want 1", restartCalls.Load())
+				t.Fatalf(
+					"restart scheduled %d times after the daemon went idle, want 1",
+					restartCalls.Load(),
+				)
 			}
 			if probes.Load() != 2 {
 				t.Fatalf("probed %d times, want one probe per tick", probes.Load())
@@ -336,13 +339,13 @@ func TestHealthExplainsADeferredRestart(t *testing.T) {
 	if got := read().ReloadPendingReason; got != "" {
 		t.Fatalf("reloadPendingReason = %q, want empty when nothing is pending", got)
 	}
-	d.setReloadPending("boardly binary on disk reports 0.9.3, running 0.9.2")
+	d.setReloadPending("zenith-team binary on disk reports 0.9.3, running 0.9.2")
 	if got := read().ReloadPendingReason; !strings.Contains(got, "0.9.3") {
 		t.Fatalf("reloadPendingReason = %q, want the pending reason", got)
 	}
 }
 
-// BOARDLY_AUTO_RELOAD=false and the --no-auto-reload override can only turn
+// ZENITH_TEAM_AUTO_RELOAD=false and the --no-auto-reload override can only turn
 // the watch off; nothing forces it on over an explicit env opt-out.
 func TestLoadConfigAutoReloadLadder(t *testing.T) {
 	isolateProviderDiscovery(t, t.TempDir())
@@ -356,12 +359,17 @@ func TestLoadConfigAutoReloadLadder(t *testing.T) {
 		{name: "default on", env: "", want: true},
 		{name: "env off", env: "false", want: false},
 		{name: "override off", env: "", overrides: Overrides{DisableAutoReload: true}, want: false},
-		{name: "env on and override off", env: "true", overrides: Overrides{DisableAutoReload: true}, want: false},
+		{
+			name:      "env on and override off",
+			env:       "true",
+			overrides: Overrides{DisableAutoReload: true},
+			want:      false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("BOARDLY_HOME", t.TempDir())
-			t.Setenv("BOARDLY_AUTO_RELOAD", tc.env)
+			t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+			t.Setenv("ZENITH_TEAM_AUTO_RELOAD", tc.env)
 			tc.overrides.AllowNoAgents = true
 			cfg, err := LoadConfig(tc.overrides)
 			if err != nil {

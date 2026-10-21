@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestActivityPageUsesOverfetchRowOnlyForContinuation(t *testing.T) {
@@ -95,9 +95,9 @@ func TestEntriesNameNoMembersMachine(t *testing.T) {
 			name:       "agent receipt",
 			entityType: "agent",
 			details: `{"schemaVersion":0,"context":{},"payload":{"id":"a1","name":"Lyra",` +
-				`"binding":{"id":"b1","runtime":{"id":"` + runtimeID + `","name":"Codex (DuongPhung)",` +
+				`"binding":{"id":"b1","runtime":{"id":"` + runtimeID + `","name":"Codex (AlexRivera)",` +
 				`"signIn":{"state":"signed_in","detail":"Logged in using ChatGPT."}}},` +
-				`"runtime":{"id":"` + runtimeID + `","name":"Codex (DuongPhung)"}}}`,
+				`"runtime":{"id":"` + runtimeID + `","name":"Codex (AlexRivera)"}}}`,
 			want: map[string]any{
 				"schemaVersion": float64(0), "context": map[string]any{},
 				"payload": map[string]any{"id": "a1", "name": "Lyra", "binding": nil},
@@ -119,7 +119,8 @@ func TestEntriesNameNoMembersMachine(t *testing.T) {
 				ID: uuid.New(), EntityType: test.entityType, EntityID: "subject",
 				Details: []byte(test.details), CreatedAt: createdAt,
 			})
-			if strings.Contains(string(entry.Details), runtimeID) || strings.Contains(string(entry.Details), "DuongPhung") {
+			if strings.Contains(string(entry.Details), runtimeID) ||
+				strings.Contains(string(entry.Details), "AlexRivera") {
 				t.Fatalf("entry names a member's machine: %s", entry.Details)
 			}
 			var got map[string]any

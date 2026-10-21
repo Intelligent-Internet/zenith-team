@@ -12,12 +12,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func mustRuntimeLifecycleService(t *testing.T, store *db.Store) (*DefaultRuntimeService, *agentEventLog) {
@@ -272,7 +272,7 @@ func TestDeregisterRuntimesSkipsForeignRuntimesAndFansOutOffline(t *testing.T) {
 	}
 }
 
-// DR-AC25: a member's daemon that did not register the runtime cannot take
+// A member's daemon that did not register the runtime cannot take
 // it offline. The foreign daemon id is skipped like an unknown id — the batch
 // still answers without error — and nothing about the runtime changes.
 func TestDeregisterRuntimesSkipsRuntimesOfAnotherDaemon(t *testing.T) {
@@ -496,8 +496,8 @@ func TestMarkStaleRuntimesOfflineFlipsOnlyStaleRuntimes(t *testing.T) {
 		t.Fatalf("agent.status events = %+v, want one unavailable entry for AgentA", statuses)
 	}
 
-	// DR-FR18 is scoped to a demotion that costs work: the fixture's only run
-	// is already completed, so the owner is told nothing.
+	// The offline notice is scoped to a demotion that costs work: the
+	// fixture's only run is already completed, so the owner is told nothing.
 	var notices int64
 	if err := pool.QueryRow(ctx,
 		`SELECT count(*) FROM inbox_items WHERE kind = 'runtime_offline'`).
@@ -607,7 +607,7 @@ func TestHeartbeatTouchesLivenessAndKeepsDenialSemantics(t *testing.T) {
 	if !errors.Is(err, ErrRuntimeNotFound) {
 		t.Fatalf("missing Heartbeat() error = %v, want ErrRuntimeNotFound", err)
 	}
-	// DR-AC25: a member beating from a daemon that did not register the
+	// A member beating from a daemon that did not register the
 	// runtime is denied exactly like a non-member — never told "gone", so
 	// the daemon does not prune and re-register — and liveness is untouched.
 	err = service.Heartbeat(ctx, auth.UserPrincipal{UserID: fixture.UserA}, fixture.RuntimeA, "daemon-m")
@@ -688,7 +688,7 @@ func TestHeartbeatTouchesLivenessAndKeepsDenialSemantics(t *testing.T) {
 	}
 
 	// An empty daemon id is the unfenced rollout form: the transport admits
-	// a daemon that sent no X-Boardly-Daemon-ID and the domain skips the
+	// a daemon that sent no X-Zenith-Team-Daemon-ID and the domain skips the
 	// daemon check, keeping membership as the only gate.
 	if err := service.Heartbeat(ctx, auth.UserPrincipal{UserID: fixture.UserA}, fixture.RuntimeA, ""); err != nil {
 		t.Fatalf("unfenced Heartbeat() error = %v", err)
@@ -754,7 +754,7 @@ func TestPruneOfflineRuntimesDeletesOnlyExpiredUnreferencedRuntimes(t *testing.T
 	}
 }
 
-// DR-AC19 on the server: a registration carrying an unusableReason lands
+// On the server, a registration carrying an unusableReason lands
 // offline whatever status the daemon announced, the reason projects on the
 // runtime and as the bound agent's `runtime_unusable`, a heartbeat keeps the
 // row fresh but offline, and the next registration without the reason

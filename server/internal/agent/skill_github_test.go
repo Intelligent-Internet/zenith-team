@@ -53,7 +53,8 @@ func TestSkillGitHubLocationUsesFullURL(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := parseSkillGitHubLocation(SkillGitHubInput{URL: test.url})
-			if err != nil || got.Repository != "acme/skills" || got.Ref != test.ref || got.Path != test.path {
+			if err != nil || got.Repository != "acme/skills" || got.Ref != test.ref ||
+				got.Path != test.path {
 				t.Fatalf(
 					"location = %+v, error = %v, want acme/skills at %q/%q",
 					got, err, test.ref, test.path,

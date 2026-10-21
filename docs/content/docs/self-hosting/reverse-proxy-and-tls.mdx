@@ -1,0 +1,145 @@
+---
+title: Reverse proxy and TLS
+description: Serve a self-hosted Zenith Team server over HTTPS with Caddy or nginx, so other people and other computers can reach it.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Out of the box, the server only answers on this machine, at `http://localhost:8080`. To let other people open the web app, and to connect computers that run agents elsewhere, serve it over HTTPS through a reverse proxy.
+
+The plan:
+
+1. Point a domain name, such as `zenith.example.com`, at the server.
+2. Run a TLS proxy on the server that forwards to the web app on `127.0.0.1:8080`.
+3. Tell Zenith Team its new address.
+
+## Why the ports stay on 127.0.0.1
+
+The Compose stack publishes its two ports, `8080` (web) and `8788` (API), on `127.0.0.1` only. Docker publishes container ports past the host firewall, so a firewall rule would not protect them. Binding to `127.0.0.1` means only programs on this machine, such as your proxy, can reach them.
+
+Keep it that way. `APP_BIND_ADDRESS` changes the address, but use it only when you mean to publish the ports on a network, for example to a proxy on another machine in a private network. Even then:
+
+- Both ports are plain HTTP, and the API port also serves `/metrics`.
+- Browsers cannot use plain HTTP anyway: the server accepts a plain `http://` browser address only for localhost.
+
+## What the proxy must do
+
+- **Forward everything to `127.0.0.1:8080`.** The web container serves the app and passes `/api` on to the server, so the proxy needs only one upstream.
+- **Pass WebSockets.** Live updates use `/api/v1/ws`, and connected computers use `/api/v1/daemon/ws`. Both must upgrade through the proxy.
+- **Keep the `Host` header** as the browser sent it.
+- **Allow large uploads.** A file can be up to 100 MB.
+- **Not buffer long responses.** The web container already streams run output without buffering. Do the same.
+
+## Caddy
+
+[Caddy](https://caddyserver.com) gets and renews certificates by itself, passes WebSockets, and keeps the `Host` header. Ports 80 and 443 must be open to the internet for the certificate check.
+
+```text
+zenith.example.com {
+	reverse_proxy 127.0.0.1:8080
+}
+```
+
+## nginx
+
+This example assumes you already have a certificate, for example from Let's Encrypt.
+
+```nginx
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    server_name zenith.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name zenith.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/zenith.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/zenith.example.com/privkey.pem;
+
+    # Attachments can be up to 100 MB.
+    client_max_body_size 110m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # WebSockets for live updates and connected computers.
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 1h;
+
+        # Stream run output as it arrives.
+        proxy_buffering off;
+    }
+}
+```
+
+Both examples assume the proxy runs on the server itself, outside Docker. A proxy inside a container cannot reach the host's `127.0.0.1`.
+
+## Tell Zenith Team its address
+
+Set your HTTPS address in `deploy/.env`. Keep `zenith-team-app://renderer` so the desktop app can still sign in.
+
+```dotenv
+AUTH_WEB_ORIGINS=https://zenith.example.com,zenith-team-app://renderer
+AUTH_WEB_APP_ORIGIN=https://zenith.example.com
+```
+
+Write the address exactly as people will open it: scheme and host, with no path and no trailing slash. The server refuses browser requests from any address not in `AUTH_WEB_ORIGINS`. An `https://` address in the list also turns on Secure cookies.
+
+If you use them, move these to the HTTPS address too:
+
+- `GOOGLE_WEB_REDIRECT_URI`, and the redirect URI registered at Google. See [Sign-in setup](/self-hosting/auth-setup#google-sign-in).
+- `SOCIAL_CALLBACK_ORIGIN`, and the callbacks registered with each social app.
+
+Then apply the change:
+
+```bash
+make selfhost-up
+```
+
+Open `https://zenith.example.com` and sign in. On each computer that runs agents, sign in against the new address and restart the daemon:
+
+```bash
+zen auth login --server https://zenith.example.com
+zen daemon restart
+```
+
+<Callout type="info">
+Once the HTTPS address is set, drop `http://localhost:8080` from `AUTH_WEB_ORIGINS` unless you still need it. Every address on the list is one the server trusts.
+</Callout>
+
+## Trusted proxies
+
+Leave `ZENITH_TEAM_TRUSTED_PROXIES` empty for the setup on this page. The server checks a browser's address against `AUTH_WEB_ORIGINS`, so the list above is all it needs.
+
+Set it only when a proxy talks to the server directly and rewrites the `Host` header. List that proxy's address range as CIDRs, for example `10.0.0.0/8`. The server then trusts that proxy's `X-Forwarded-Host` header for the WebSocket origin check, and its `X-Forwarded-For` header for the client address. Empty trusts nobody.
+
+<Callout type="warning">
+Never list a range that other machines can send requests from. Anyone inside it could fake those headers.
+</Callout>
+
+## Check it works
+
+| Check | How |
+| --- | --- |
+| The certificate is valid | Open `https://zenith.example.com`. The browser shows no warning. |
+| Sign-in works | Sign in. An `origin is not allowed` error means `AUTH_WEB_ORIGINS` does not match the address in the browser bar. |
+| Live updates work | Send a chat message. It appears without a page reload. If not, the proxy is not passing WebSockets. |
+| Computers connect | `zen daemon status` on a connected computer shows the HTTPS server and a running daemon. |
+
+## Next steps
+
+- **[Sign-in setup](/self-hosting/auth-setup)**: email and Google sign-in.
+- **[Security model](/self-hosting/security-model)**: the hardening checklist.

@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The rebind and removal participant: the member's pending rows on the named
@@ -43,10 +43,22 @@ func TestRetargetPendingRunsForBindingsMovesOnlyTheMembersPendingRows(t *testing
 	// that must stay put is another authorizer's row on the source, as a
 	// re-registration under a new account leaves behind.
 	otherMember := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Other member')`, otherMember, otherMember.String()+"@boardly.test")
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, otherMember)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Other member')`,
+		otherMember,
+		otherMember.String()+"@zenith-team.test",
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		otherMember,
+	)
 	seed := func(agentID, authorizer uuid.UUID, status string) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
@@ -78,7 +90,15 @@ func TestRetargetPendingRunsForBindingsMovesOnlyTheMembersPendingRows(t *testing
 
 	// An empty agent set touches nothing and runs no statement.
 	work := BindingWork{CompanyID: fixture.CompanyA, SourceRuntimeID: fixture.RuntimeA, UserID: fixture.UserA}
-	if moved, err := RetargetPendingRunsForBindingsInTx(ctx, queries, &pending, events.SystemActor(), work, target); err != nil || len(moved) != 0 {
+	if moved, err := RetargetPendingRunsForBindingsInTx(
+		ctx,
+		queries,
+		&pending,
+		events.SystemActor(),
+		work,
+		target,
+	); err != nil ||
+		len(moved) != 0 {
 		t.Fatalf("RetargetPendingRunsForBindingsInTx(no agents) = %+v, %v; want nothing", moved, err)
 	}
 	work.AgentIDs = []uuid.UUID{fixture.AgentA}
@@ -90,10 +110,14 @@ func TestRetargetPendingRunsForBindingsMovesOnlyTheMembersPendingRows(t *testing
 		t.Fatalf("commit: %v", err)
 	}
 	if len(moved) != 2 {
-		t.Fatalf("RetargetPendingRunsForBindingsInTx() moved %d rows, want the queued and deferred runs", len(moved))
+		t.Fatalf(
+			"RetargetPendingRunsForBindingsInTx() moved %d rows, want the queued and deferred runs",
+			len(moved),
+		)
 	}
 	for _, run := range moved {
-		if run.RuntimeID != target || run.AgentID != fixture.AgentA || (run.ID != queued && run.ID != deferred) {
+		if run.RuntimeID != target || run.AgentID != fixture.AgentA ||
+			(run.ID != queued && run.ID != deferred) {
 			t.Fatalf("moved run = %+v, want AgentA's queued or deferred run on the target", run)
 		}
 	}
@@ -108,7 +132,8 @@ func TestRetargetPendingRunsForBindingsMovesOnlyTheMembersPendingRows(t *testing
 	}
 	for runID, wantRuntime := range want {
 		var got uuid.UUID
-		if err := pool.QueryRow(ctx, `SELECT runtime_id FROM runs WHERE id = $1`, runID).Scan(&got); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT runtime_id FROM runs WHERE id = $1`, runID).
+			Scan(&got); err != nil {
 			t.Fatalf("read run %d: %v", runID, err)
 		}
 		if got != wantRuntime {

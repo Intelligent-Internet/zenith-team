@@ -15,7 +15,7 @@ const APP_ID = getDesktopAppUserModelId(DESKTOP_VARIANT);
 const APP_ICON_PATH = getRuntimeIconPath();
 
 const {
-  BOARDLY_APP_INDEX_URL,
+  ZENITH_TEAM_APP_INDEX_URL,
   registerCodexGeneratedImageProtocol,
   registerPackagedAppProtocol,
   registerPackagedAppProtocolScheme,
@@ -35,8 +35,8 @@ const { registerDiagnostics, writeMainLog } = require("./diagnostics.cjs");
 const {
   createDesktopAgentDiscoverer,
   registerDesktopAgentDiscovery,
-  resolveBoardlyMCPExecutable,
-  resolveBoardlyExecutable,
+  resolveZenithTeamMCPExecutable,
+  resolveZenithTeamExecutable,
 } = require("./agent-discovery.cjs");
 const {
   registerDesktopAgentVerification,
@@ -146,9 +146,10 @@ if (!hasSingleInstanceLock) {
   app.whenReady().then(() => {
     configureAppIdentity();
     denyUnexpectedPermissions();
-    // The first launch after the update (D31): a daemon of the previous
-    // version still renews the session this app shared with it, so the app
-    // only reads that session until the daemon is replaced.
+    // The first launch after the update that gave the daemon its own session:
+    // a daemon of the previous version still renews the session this app
+    // shared with it, so the app only reads that session until the daemon is
+    // replaced.
     setSharedSessionInUseCheck(async () => {
       const health = await fetchDaemonHealth({
         healthPort: DESKTOP_VARIANT.daemonHealthPort,
@@ -182,22 +183,23 @@ if (!hasSingleInstanceLock) {
     // Registered even without daemon resources so the Daemon card can say
     // "unavailable" instead of hanging on a missing handler.
     desktopDaemonPanel = registerDesktopDaemonPanel({
-      boardlyHomeDirectory:
-        daemonResources?.boardlyHomeDirectory ?? getCredentialDirectoryPath(),
+      zenithTeamHomeDirectory:
+        daemonResources?.zenithTeamHomeDirectory ??
+        getCredentialDirectoryPath(),
       getDaemonRuntime: () => desktopDaemonRuntime,
       getMainWindow: () => mainWindow,
       ipcMain,
     });
     if (daemonResources) {
       desktopLocalPreview = createDesktopLocalPreview({
-        boardlyHomeDirectory: daemonResources.boardlyHomeDirectory,
+        zenithTeamHomeDirectory: daemonResources.zenithTeamHomeDirectory,
         onStateChange(state) {
           writeMainLog("desktop-local-preview-status", state);
         },
       });
       const discoverAgents = createDesktopAgentDiscoverer({
         app,
-        boardlyHomeDirectory: daemonResources.boardlyHomeDirectory,
+        zenithTeamHomeDirectory: daemonResources.zenithTeamHomeDirectory,
         environment: DESKTOP_RUNTIME_ENV,
         executablePath: daemonResources.binaryPath,
         healthPort: DESKTOP_VARIANT.daemonHealthPort,
@@ -384,7 +386,7 @@ function disposeDesktopDaemonRuntime() {
 }
 
 function resolveDesktopDaemonResources() {
-  const binaryPath = resolveBoardlyExecutable({
+  const binaryPath = resolveZenithTeamExecutable({
     app,
     env: DESKTOP_RUNTIME_ENV,
   });
@@ -394,20 +396,20 @@ function resolveDesktopDaemonResources() {
     });
     return null;
   }
-  const boardlyMCPExecutable = resolveBoardlyMCPExecutable({
+  const zenithTeamMCPExecutable = resolveZenithTeamMCPExecutable({
     app,
     env: DESKTOP_RUNTIME_ENV,
   });
-  if (!boardlyMCPExecutable) {
+  if (!zenithTeamMCPExecutable) {
     writeMainLog("desktop-daemon-unavailable", {
-      reason: "boardly_mcp_unavailable",
+      reason: "zenith_team_mcp_unavailable",
     });
     return null;
   }
   return {
     binaryPath,
-    boardlyHomeDirectory: getCredentialDirectoryPath(),
-    boardlyMCPExecutable,
+    zenithTeamHomeDirectory: getCredentialDirectoryPath(),
+    zenithTeamMCPExecutable,
     serverUrl: resolveDesktopDaemonServerUrl(),
   };
 }
@@ -418,8 +420,8 @@ function startDesktopDaemonRuntime(resources) {
       autoStart: true,
       autoStop: false,
       binaryPath: resources.binaryPath,
-      boardlyHomeDirectory: resources.boardlyHomeDirectory,
-      boardlyMCPExecutable: resources.boardlyMCPExecutable,
+      zenithTeamHomeDirectory: resources.zenithTeamHomeDirectory,
+      zenithTeamMCPExecutable: resources.zenithTeamMCPExecutable,
       desktopSessionPath: getSessionStorePath(),
       environment: DESKTOP_RUNTIME_ENV,
       expectedVersion: app.getVersion(),
@@ -433,7 +435,7 @@ function startDesktopDaemonRuntime(resources) {
           desktopLocalPreview?.stop();
         }
       },
-      // The daemon's own session (D31), started from the app's sign-in.
+      // The daemon's own session, started from the app's sign-in.
       prepareLaunch: ensureDaemonSession,
       readStoredSession,
       serverUrl: resources.serverUrl,
@@ -453,7 +455,7 @@ function startDesktopDaemonRuntime(resources) {
 
 function resolveDesktopDaemonServerUrl() {
   const configured =
-    DESKTOP_RUNTIME_ENV.BOARDLY_DESKTOP_API_BASE_URL ||
+    DESKTOP_RUNTIME_ENV.ZENITH_TEAM_DESKTOP_API_BASE_URL ||
     DESKTOP_RUNTIME_ENV.VITE_API_URL ||
     DESKTOP_VARIANT.apiOrigin;
   return normalizeServerUrl(configured);
@@ -570,28 +572,31 @@ function showDesktopUpdateResult() {
   showDialog();
 }
 
+// Only the trusted app's main frame may use the microphone, and only a Huddle
+// window may capture the screen. Every other permission is refused.
+function isAllowedPermission(contents, permission, details) {
+  return (
+    isTrustedRenderer(contents) &&
+    details?.isMainFrame === true &&
+    details.requestingUrl === contents.getURL() &&
+    (permission === "media" ||
+      (permission === "display-capture" && isHuddleWebContents(contents)))
+  );
+}
+
 function denyUnexpectedPermissions() {
   session.defaultSession.setPermissionRequestHandler(
     (contents, permission, callback, details) => {
-      const trustedFrame =
-        isTrustedRenderer(contents) &&
-        details?.isMainFrame === true &&
-        details.requestingUrl === contents.getURL();
-      callback(
-        trustedFrame &&
-          (permission === "media" ||
-            (permission === "display-capture" &&
-              isHuddleWebContents(contents))),
-      );
+      if (!isAllowedPermission(contents, permission, details)) {
+        callback(false);
+        return;
+      }
+      callback(true);
     },
   );
   session.defaultSession.setPermissionCheckHandler(
     (contents, permission, _origin, details) =>
-      isTrustedRenderer(contents) &&
-      details?.isMainFrame === true &&
-      details.requestingUrl === contents.getURL() &&
-      (permission === "media" ||
-        (permission === "display-capture" && isHuddleWebContents(contents))),
+      isAllowedPermission(contents, permission, details),
   );
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
     const frame = request.frame;
@@ -637,8 +642,8 @@ function isSameOrigin(left, right) {
 function isTrustedRenderer(webContents) {
   const url = webContents?.getURL?.();
   if (typeof url !== "string") return false;
-  if (url.startsWith(BOARDLY_APP_INDEX_URL)) return true;
-  const devUrl = process.env.BOARDLY_ELECTRON_DEV_SERVER_URL;
+  if (url.startsWith(ZENITH_TEAM_APP_INDEX_URL)) return true;
+  const devUrl = process.env.ZENITH_TEAM_ELECTRON_DEV_SERVER_URL;
   return typeof devUrl === "string" && url.startsWith(devUrl);
 }
 

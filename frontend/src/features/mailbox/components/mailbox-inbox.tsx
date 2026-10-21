@@ -20,7 +20,7 @@ import type {
   MailboxMessagePage,
 } from "@/features/mailbox/model/mailbox";
 import { subscribeToMailboxChanges } from "@/features/mailbox/model/mailbox-realtime";
-import { isRetryableBoardlyQueryError } from "@/shared/api/boardly-api";
+import { isRetryableZenithTeamQueryError } from "@/shared/api/zenith-team-api";
 import { cx } from "@/shared/lib/cx";
 import { subscribeToRefetchSignals } from "@/shared/realtime/refetch-signals";
 import { Button } from "@/shared/ui/core/button";
@@ -456,7 +456,7 @@ function MailboxMessageDetailView({
       </button>
       {detail &&
       detailQuery.isError &&
-      isRetryableBoardlyQueryError(detailQuery.error) ? (
+      isRetryableZenithTeamQueryError(detailQuery.error) ? (
         <div className="px-5 pt-4 sm:px-7">
           <MailboxRefreshNotice
             label="Message could not be refreshed."
@@ -469,7 +469,7 @@ function MailboxMessageDetailView({
         <MailboxLoading label="Opening message…" />
       ) : !detail ||
         (detailQuery.isError &&
-          !isRetryableBoardlyQueryError(detailQuery.error)) ? (
+          !isRetryableZenithTeamQueryError(detailQuery.error)) ? (
         <MailboxDetailError
           code={mailboxErrorCode(detailQuery.error)}
           onRetry={() => void detailQuery.refetch()}

@@ -7,10 +7,10 @@ import (
 	"errors"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	dbgen "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestPublicationSubdomainRoutesWithoutRebuildingAndCleansUpBeforeUnpublish(t *testing.T) {
@@ -139,7 +139,7 @@ func TestPublicationSubdomainRoutesWithoutRebuildingAndCleansUpBeforeUnpublish(t
 	if err != nil || view.Publication.CustomURL == nil ||
 		*view.Publication.CustomURL != "https://my-app.apps.example.com" ||
 		routes.hostname != "my-app.apps.example.com" ||
-		routes.origin != "https://published.boardly.test" ||
+		routes.origin != "https://published.zenith-team.test" ||
 		provider.publishCalls != 1 {
 		t.Fatalf(
 			"routed publication = %+v, routes = %+v, builds = %d, error = %v",

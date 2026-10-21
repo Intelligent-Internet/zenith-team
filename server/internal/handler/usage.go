@@ -4,14 +4,14 @@ import (
 	"context"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
 )
 
 type UsageService interface {
@@ -25,11 +25,19 @@ type AnalyticsService interface {
 	GetAnalyticsSummary(context.Context, auth.UserPrincipal, usage.AnalyticsQuery) (usage.AnalyticsSummary, error)
 	GetAnalyticsSeries(context.Context, auth.UserPrincipal, usage.AnalyticsQuery) (usage.AnalyticsSeries, error)
 	GetAnalyticsHeatmap(context.Context, auth.UserPrincipal, usage.AnalyticsQuery) (usage.AnalyticsHeatmap, error)
-	GetAnalyticsBreakdown(context.Context, auth.UserPrincipal, usage.AnalyticsQuery) (usage.AnalyticsBreakdown, error)
+	GetAnalyticsBreakdown(
+		context.Context,
+		auth.UserPrincipal,
+		usage.AnalyticsQuery,
+	) (usage.AnalyticsBreakdown, error)
 	GetAnalyticsFailures(context.Context, auth.UserPrincipal, usage.AnalyticsQuery) (usage.AnalyticsFailures, error)
 	GetTaskUsage(context.Context, auth.UserPrincipal, uuid.UUID) (usage.AnalyticsTaskUsage, error)
 	GetAnalyticsBudgets(context.Context, auth.UserPrincipal) ([]usage.AnalyticsBudget, error)
-	UpsertAnalyticsBudget(context.Context, auth.UserPrincipal, usage.AnalyticsBudgetInput) (usage.AnalyticsBudget, error)
+	UpsertAnalyticsBudget(
+		context.Context,
+		auth.UserPrincipal,
+		usage.AnalyticsBudgetInput,
+	) (usage.AnalyticsBudget, error)
 }
 
 func (h *Handler) registerUsageRoutes(group *gin.RouterGroup) {

@@ -234,7 +234,7 @@ ipcRenderer.on("desktop:social-oauth-callback", (_event, route) => {
   }
 });
 
-contextBridge.exposeInMainWorld("boardlyDesktop", {
+contextBridge.exposeInMainWorld("zenithTeamDesktop", {
   readArtifactFile: async (request) => {
     if (!isArtifactFileRequest(request))
       return { ok: false, code: "invalid_request" };

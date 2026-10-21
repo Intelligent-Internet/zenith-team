@@ -26,7 +26,7 @@ export type ChatWorkspaceRoute = {
   target?: ChatConversationTarget;
 };
 
-const taskPeekOpenedInAppStateKey = "boardlyTaskPeekOpenedInApp";
+const taskPeekOpenedInAppStateKey = "zenithTeamTaskPeekOpenedInApp";
 
 export function createTaskPeekNavigationState() {
   return { [taskPeekOpenedInAppStateKey]: true } as const;
@@ -41,7 +41,7 @@ export function taskPeekWasOpenedInApp(state: unknown) {
   );
 }
 
-const composerDraftStateKey = "boardlyComposerDraft";
+const composerDraftStateKey = "zenithTeamComposerDraft";
 
 // Route state for a `newSession=1` link that opens the new chat with its
 // composer already filled in. The text is only a draft: the person reads,

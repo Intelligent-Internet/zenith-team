@@ -3,7 +3,7 @@ import type { JSONContent } from "@tiptap/react";
 import * as HoverCard from "@radix-ui/react-hover-card";
 import { Link } from "react-router";
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type {
   ArtifactRunResult,
@@ -45,7 +45,7 @@ export function citedArtifactIds(body: string) {
   return [...ids].sort().slice(0, 50);
 }
 
-export const wikiArtifactsApi = boardlyApi.injectEndpoints({
+export const wikiArtifactsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listCitableArtifacts: builder.query<
       ConversationArtifactPage,
@@ -53,7 +53,7 @@ export const wikiArtifactsApi = boardlyApi.injectEndpoints({
     >({
       providesTags: [{ type: "Artifact" }, { type: "Deliverable" }],
       queryFn: ({ companyId, search }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ConversationArtifactPage>(
               `/companies/${encodeURIComponent(companyId)}/artifacts`,
@@ -70,7 +70,7 @@ export const wikiArtifactsApi = boardlyApi.injectEndpoints({
       // The shared serializer joins arrays with commas; the route takes a
       // repeated `id`.
       queryFn: ({ companyId, ids }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ResolvedArtifacts>(
               `/companies/${encodeURIComponent(companyId)}/artifacts/resolve?${ids

@@ -13,12 +13,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const maximumFiringPassLimit = 5000
@@ -613,7 +613,7 @@ func (w *FiringWorker) fireNext(
 		if err != nil {
 			return err
 		}
-		if err := linkMaterializedRun(ctx, tx, current, firing, materializeRequest, materialized); err != nil {
+		if err := linkMaterializedRun(ctx, tx, current, firing, materialized); err != nil {
 			return err
 		}
 		if overlapFound {
@@ -959,7 +959,6 @@ func linkMaterializedRun(
 	tx *generated.Queries,
 	current Response,
 	firing generated.ScheduleFiring,
-	input MaterializeInput,
 	result MaterializeResult,
 ) error {
 	if result.Disposition != FiringDispositionMaterialized {

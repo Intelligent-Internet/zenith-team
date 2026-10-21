@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -535,7 +535,7 @@ func NewMemberMessageCreatedEvent(
 // NewMemberMessageCreatedEventBy is NewMemberMessageCreatedEvent with the
 // actor named in full. A member's item a Run wrote for them, such as the
 // prompt of a Task a Run created and started, names the Run's Agent acting
-// for that member (D31).
+// for that member.
 func NewMemberMessageCreatedEventBy(
 	actor events.Actor,
 	companyID uuid.UUID,

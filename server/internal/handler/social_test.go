@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
 )
 
 func TestSocialErrorContracts(t *testing.T) {

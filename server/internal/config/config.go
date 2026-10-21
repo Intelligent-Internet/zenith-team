@@ -16,7 +16,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type LookupEnv func(string) (string, bool)
@@ -92,7 +92,7 @@ type Config struct {
 	ScheduleSweepInterval  time.Duration
 	RealtimeMetricsToken   string
 	// DaemonIDRequired makes daemon-plane runtime routes refuse a request
-	// that carries no X-Boardly-Daemon-ID (400 invalid_request). Off is the
+	// that carries no X-Zenith-Team-Daemon-ID (400 invalid_request). Off is the
 	// warn-only rollout stage: a missing header is admitted and logged.
 	DaemonIDRequired bool
 	Auth             AuthConfig
@@ -125,6 +125,11 @@ func Load(lookup LookupEnv) (Config, error) {
 	csrfSecret, ok := lookup("AUTH_CSRF_SECRET")
 	if !ok || len([]byte(csrfSecret)) < 32 {
 		return Config{}, errors.New("AUTH_CSRF_SECRET must contain at least 32 bytes")
+	}
+	if appEnvironment != "local" && isTemplateSecret(csrfSecret) {
+		return Config{}, errors.New(
+			"AUTH_CSRF_SECRET is a placeholder from a committed template; generate one with openssl rand -hex 32",
+		)
 	}
 	logLevel := strings.ToLower(valueOrDefault(lookup, "APP_LOG_LEVEL", "info"))
 	if logLevel != "debug" && logLevel != "info" && logLevel != "warn" && logLevel != "error" {
@@ -285,11 +290,13 @@ func Load(lookup LookupEnv) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	studioOrigin, err := util.CanonicalStudioOrigin(
-		valueOrDefault(lookup, "ZENITH_STUDIO_API_URL", util.DefaultStudioOrigin),
-	)
-	if err != nil {
-		return Config{}, fmt.Errorf("ZENITH_STUDIO_API_URL: %w", err)
+	// Zenith Studio is an optional integration: unset leaves it off.
+	studioOrigin := ""
+	if raw := valueOrDefault(lookup, "ZENITH_STUDIO_API_URL", ""); raw != "" {
+		studioOrigin, err = util.CanonicalStudioOrigin(raw)
+		if err != nil {
+			return Config{}, fmt.Errorf("ZENITH_STUDIO_API_URL: %w", err)
+		}
 	}
 	var studioNamespace uuid.UUID
 	if raw, present := lookup("APP_STUDIO_RECEIPT_NAMESPACE"); present && strings.TrimSpace(raw) != "" {
@@ -298,14 +305,6 @@ func Load(lookup LookupEnv) (Config, error) {
 			return Config{}, errors.New("APP_STUDIO_RECEIPT_NAMESPACE must be a nonzero UUID")
 		}
 	}
-	// Huddle settings dropped their BOARDLY_ prefix; the old names still work.
-	huddleLookup := withLegacyNames(lookup, map[string]string{
-		"HUDDLE_AI_ENABLED":         "BOARDLY_HUDDLE_AI_ENABLED",
-		"HUDDLE_AI_WORKLOAD_SECRET": "BOARDLY_HUDDLE_AI_WORKLOAD_SECRET",
-		"LIVEKIT_URL":               "BOARDLY_LIVEKIT_URL",
-		"LIVEKIT_API_KEY":           "BOARDLY_LIVEKIT_API_KEY",
-		"LIVEKIT_API_SECRET":        "BOARDLY_LIVEKIT_API_SECRET",
-	})
 	// HUDDLES_ENABLED=false turns Huddles off even where LiveKit is configured;
 	// it defaults on so deployments that already configure LiveKit keep calls.
 	huddlesEnabled, err := boolean(lookup, "HUDDLES_ENABLED", true)
@@ -313,26 +312,26 @@ func Load(lookup LookupEnv) (Config, error) {
 		return Config{}, err
 	}
 	if !huddlesEnabled {
-		huddleLookup = withoutHuddleSettings(huddleLookup)
+		lookup = withoutHuddleSettings(lookup)
 	}
-	aiEnabled, err := boolean(huddleLookup, "HUDDLE_AI_ENABLED", false)
+	aiEnabled, err := boolean(lookup, "HUDDLE_AI_ENABLED", false)
 	if err != nil {
 		return Config{}, err
 	}
-	aiSecret := valueOrDefault(huddleLookup, "HUDDLE_AI_WORKLOAD_SECRET", "")
+	aiSecret := valueOrDefault(lookup, "HUDDLE_AI_WORKLOAD_SECRET", "")
 	if aiEnabled && len(aiSecret) < 32 {
 		return Config{}, errors.New(
 			"HUDDLE_AI_WORKLOAD_SECRET must contain at least 32 bytes when huddle AI is enabled",
 		)
 	}
 	liveKitConfig := LiveKitConfig{
-		NotesRecapKey:    valueOrDefault(huddleLookup, "HUDDLE_NOTES_RECAP_API_KEY", ""),
-		NotesRecapModel:  valueOrDefault(huddleLookup, "HUDDLE_NOTES_RECAP_MODEL", ""),
+		NotesRecapKey:    valueOrDefault(lookup, "HUDDLE_NOTES_RECAP_API_KEY", ""),
+		NotesRecapModel:  valueOrDefault(lookup, "HUDDLE_NOTES_RECAP_MODEL", ""),
 		AIEnabled:        aiEnabled,
 		AIWorkloadSecret: aiSecret,
-		URL:              liveKitHTTPURL(valueOrDefault(huddleLookup, "LIVEKIT_URL", "")),
-		APIKey:           valueOrDefault(huddleLookup, "LIVEKIT_API_KEY", ""),
-		APISecret:        valueOrDefault(huddleLookup, "LIVEKIT_API_SECRET", ""),
+		URL:              liveKitHTTPURL(valueOrDefault(lookup, "LIVEKIT_URL", "")),
+		APIKey:           valueOrDefault(lookup, "LIVEKIT_API_KEY", ""),
+		APISecret:        valueOrDefault(lookup, "LIVEKIT_API_SECRET", ""),
 	}
 	if aiEnabled && (liveKitConfig.URL == "" || liveKitConfig.APIKey == "" || liveKitConfig.APISecret == "") {
 		return Config{}, errors.New("LiveKit configuration is required when huddle AI is enabled")
@@ -636,7 +635,7 @@ func browserOrigins(lookup LookupEnv) ([]string, error) {
 	origins := make([]string, 0, len(configured))
 	seen := make(map[string]struct{}, len(configured))
 	for _, raw := range configured {
-		if raw == "boardly-app://renderer" {
+		if raw == "zenith-team-app://renderer" {
 			if _, duplicate := seen[raw]; !duplicate {
 				seen[raw] = struct{}{}
 				origins = append(origins, raw)
@@ -769,25 +768,17 @@ func positiveInt(lookup LookupEnv, key string, fallback int) (int, error) {
 	return value, nil
 }
 
-// withLegacyNames reads each renamed variable from its old name when the new
-// one is unset or blank.
-func withLegacyNames(lookup LookupEnv, legacy map[string]string) LookupEnv {
-	return func(key string) (string, bool) {
-		if value, ok := lookup(key); ok && strings.TrimSpace(value) != "" {
-			return value, ok
-		}
-		if old, renamed := legacy[key]; renamed {
-			return lookup(old)
-		}
-		return lookup(key)
-	}
-}
-
 // withoutHuddleSettings hides every Huddle setting, as if none were set.
 func withoutHuddleSettings(lookup LookupEnv) LookupEnv {
 	return func(key string) (string, bool) {
 		switch key {
-		case "HUDDLE_NOTES_RECAP_API_KEY", "HUDDLE_NOTES_RECAP_MODEL", "HUDDLE_AI_ENABLED", "HUDDLE_AI_WORKLOAD_SECRET", "LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET":
+		case "HUDDLE_NOTES_RECAP_API_KEY",
+			"HUDDLE_NOTES_RECAP_MODEL",
+			"HUDDLE_AI_ENABLED",
+			"HUDDLE_AI_WORKLOAD_SECRET",
+			"LIVEKIT_URL",
+			"LIVEKIT_API_KEY",
+			"LIVEKIT_API_SECRET":
 			return "", false
 		}
 		return lookup(key)
@@ -814,11 +805,11 @@ func valueOrDefault(lookup LookupEnv, key, fallback string) string {
 	return fallback
 }
 
-// trustedProxies parses BOARDLY_TRUSTED_PROXIES as comma-separated CIDR
+// trustedProxies parses ZENITH_TEAM_TRUSTED_PROXIES as comma-separated CIDR
 // prefixes. Invalid entries are dropped with a warning rather than failing
 // startup; an empty variable returns nil ("trust no proxy").
 func trustedProxies(lookup LookupEnv) []netip.Prefix {
-	raw, _ := lookup("BOARDLY_TRUSTED_PROXIES")
+	raw, _ := lookup("ZENITH_TEAM_TRUSTED_PROXIES")
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil
@@ -837,4 +828,17 @@ func trustedProxies(lookup LookupEnv) []netip.Prefix {
 		prefixes = append(prefixes, prefix)
 	}
 	return prefixes
+}
+
+// templateSecrets are the placeholder secrets committed in this repository's
+// env templates and docs. A shared deployment must never run with one, so add
+// any new template placeholder here in the same change that commits it.
+var templateSecrets = map[string]struct{}{
+	"development-only-32-byte-secret!": {},
+}
+
+func isTemplateSecret(value string) bool {
+	value = strings.TrimSpace(value)
+	_, known := templateSecrets[value]
+	return known || strings.HasPrefix(value, "<")
 }

@@ -12,8 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 // sessionAuthenticator answers every bearer with one fixed principal. Only
@@ -27,7 +27,7 @@ func (a sessionAuthenticator) Authenticate(context.Context, string, auth.TokenKi
 	return a.principal, nil
 }
 
-// A daemon's own session (D31, IA-FR7) acts on the daemon plane, and
+// A daemon's own session acts on the daemon plane, and
 // elsewhere only as a live Run of its person on a route that accepts a Run.
 // Everything else is 403 run_proof_required, and a person's session is
 // untouched.

@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { conversationService } from "@/shared/api/conversation.service";
 import {
   taskService,
@@ -15,7 +18,7 @@ import type {
   TaskUpdateRequest,
 } from "@/shared/api/types";
 
-export const taskApi = boardlyApi.injectEndpoints({
+export const taskApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listWorkspaceTasks: builder.query<
       Awaited<ReturnType<typeof taskService.listTasks>>,
@@ -26,7 +29,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: argument.companyId, type: "Task" },
       ],
       queryFn: (argument: { companyId: string; options?: TaskListOptions }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.listTasks(argument.companyId, argument.options),
           "Tasks could not be loaded.",
         ),
@@ -40,7 +43,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Task" },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.getTask(companyId, taskId),
           "Task could not be loaded.",
           { retry: true },
@@ -57,7 +60,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Task" },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.getWorkspace(companyId, taskId),
           "Task workspace could not be loaded.",
           { retry: true },
@@ -72,7 +75,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Task" },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.listDependencies(companyId, taskId),
           "Task dependencies could not be loaded.",
         ),
@@ -86,7 +89,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Task" },
       ],
       queryFn: ({ companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.listDependencyGraph(companyId),
           "Task dependency graph could not be loaded.",
         ),
@@ -99,7 +102,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: conversationId, type: "Message" },
       ],
       queryFn: ({ taskId, conversationId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             conversationService.listTaskDisplayItems(taskId, conversationId),
           "Messages could not be loaded.",
@@ -113,7 +116,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: argument.companyId, type: "Task" },
       ],
       queryFn: (argument: { companyId: string; request: TaskCreateRequest }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskService.createTask(argument.companyId, argument.request),
           "Task could not be created.",
         ),
@@ -139,7 +142,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         request: TaskUpdateRequest;
         taskId: string;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             taskService.updateTask(
               argument.companyId,
@@ -162,7 +165,7 @@ export const taskApi = boardlyApi.injectEndpoints({
         { id: argument.companyId, type: "Task" },
       ],
       queryFn: (argument) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             taskService.startExecution(
               argument.companyId,

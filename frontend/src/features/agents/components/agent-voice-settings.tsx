@@ -2,7 +2,7 @@ import { useUpdateWorkspaceAgentMutation } from "@/shared/api/agent-api";
 import { useId, useState } from "react";
 import type { AgentDto } from "@/shared/api/types";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { Button } from "@/shared/ui/button";
 import { Mic } from "@/shared/ui/icons";
 import {
@@ -73,7 +73,7 @@ export function AgentVoiceSettings({ agent }: { agent: AgentDto }) {
       setRevision(updated.revision);
       setSaved(true);
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     }
   }
 

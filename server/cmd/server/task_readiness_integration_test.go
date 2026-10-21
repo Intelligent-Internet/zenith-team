@@ -12,13 +12,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Whether a Task can start is read live off its assignee's setup of the
@@ -87,7 +87,8 @@ func TestAssigneeReadinessChangesReachTheProjectReaders(t *testing.T) {
 			for _, reader := range ids {
 				readers["company_user/"+env.fixture.CompanyA.String()+"/"+reader.String()] = true
 			}
-			if len(readers) == 0 || readers["company_user/"+env.fixture.CompanyA.String()+"/"+env.fixture.UserB.String()] {
+			if len(readers) == 0 ||
+				readers["company_user/"+env.fixture.CompanyA.String()+"/"+env.fixture.UserB.String()] {
 				t.Fatalf("readers = %v; want the owner and not the member", readers)
 			}
 			var got []string

@@ -1,6 +1,6 @@
 import type { WikiTag } from "@/shared/api/wiki-tags";
-import { boardlyApi } from "@/shared/api/boardly-api";
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import { realtimeEventConversationId } from "@/shared/realtime/realtime-client.service";
 import { applyAuthCacheEvent } from "@/app/shell/realtime-sync/auth-cache-updater";
 import { applyConversationCacheEvent } from "@/app/shell/realtime-sync/conversation-cache-updater";
@@ -22,7 +22,7 @@ const wikiRefreshMaxWaitMs = 2000;
 
 export function applyRealtimeCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   // An open Board catches up from its own subscription; its sharing is the
   // Whiteboard Artifact's, refreshed below with every other Artifact.
@@ -35,26 +35,26 @@ export function applyRealtimeCacheEvent(
   }
   if (event.type === "calendar.changed") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([{ type: "Calendar", id: "events" }]),
+      zenithTeamApi.util.invalidateTags([{ type: "Calendar", id: "events" }]),
     );
     return;
   }
   if (event.type === "schedule.changed") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Schedule", id: context.companyId },
       ]),
     );
     return;
   }
-  // A Group was created, renamed, filled, emptied or deleted (Access TECH
-  // D3). The frame names only the Group: the Groups and every Project grant
+  // A Group was created, renamed, filled, emptied or deleted. The frame
+  // names only the Group: the Groups and every Project grant
   // list (which shows Group names and member counts) read again, and so
   // does the feed, where the change is recorded. Access a change moves
   // arrives as project.access_changed.
   if (event.type === "group.changed" || event.type === "group.deleted") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Group", id: context.companyId },
         { type: "Activity", id: context.companyId },
       ]),
@@ -63,7 +63,7 @@ export function applyRealtimeCacheEvent(
   }
   if (event.type === "conversation.discussion_resync") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "ChannelAgent", id: context.companyId },
         { type: "AgentSkill", id: context.companyId },
         { type: "ChannelAgentActivity", id: context.companyId },
@@ -80,7 +80,7 @@ export function applyRealtimeCacheEvent(
     context.requestRefresh("channelActivity");
     if (id && event.payload.activityOnly !== true) {
       context.dispatch(
-        boardlyApi.util.invalidateTags([{ type: "ChannelAgent", id }]),
+        zenithTeamApi.util.invalidateTags([{ type: "ChannelAgent", id }]),
       );
     }
     return;
@@ -92,7 +92,7 @@ export function applyRealtimeCacheEvent(
     const id = realtimeEventConversationId(event);
     if (id)
       context.dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { type: "ChannelAgent", id },
           { type: "ChannelAgentActivity", id },
         ]),
@@ -123,7 +123,7 @@ export function applyRealtimeCacheEvent(
     event.type === "daemon.roster_changed"
   ) {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "ChannelAgent", id: context.companyId },
         { type: "AgentSkill", id: context.companyId },
         { type: "Connector", id: context.companyId },
@@ -137,7 +137,7 @@ export function applyRealtimeCacheEvent(
   ) {
     const id = realtimeEventConversationId(event);
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         ...(id ? [{ type: "DiscussionDetail" as const, id }] : []),
         { type: "Artifact" },
         { type: "Deliverable" },
@@ -150,7 +150,7 @@ export function applyRealtimeCacheEvent(
   }
   if (event.type === "artifact.access_changed") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Artifact" },
         { type: "Deliverable" },
         { type: "Canvas" },
@@ -169,7 +169,7 @@ export function applyRealtimeCacheEvent(
     event.type === "task.report_changed"
   ) {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { id: context.companyId, type: "TaskReport" },
       ]),
     );
@@ -184,7 +184,7 @@ export function applyRealtimeCacheEvent(
   }
   if (event.type === "activity.created") {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { id: context.companyId, type: "Activity" },
         { type: "Deliverable" },
       ]),
@@ -225,7 +225,7 @@ export function createRealtimeRefreshQueue({
     wikiTimer = undefined;
     const tags = [...pendingWiki.values()];
     pendingWiki.clear();
-    dispatch(boardlyApi.util.invalidateTags(tags));
+    dispatch(zenithTeamApi.util.invalidateTags(tags));
   };
 
   return {
@@ -267,7 +267,7 @@ export function convergeRealtimeCaches(
   companyId: string,
 ) {
   dispatch(
-    boardlyApi.util.invalidateTags([
+    zenithTeamApi.util.invalidateTags([
       { type: "Account" },
       { id: companyId, type: "Analytics" },
       { type: "Studio" },
@@ -326,7 +326,7 @@ function refreshRealtimeDomains({
   }
   const tags: Record<
     Exclude<RealtimeRefreshDomain, "shell">,
-    Parameters<typeof boardlyApi.util.invalidateTags>[0]
+    Parameters<typeof zenithTeamApi.util.invalidateTags>[0]
   > = {
     agents: [{ type: "Agent", id: `${companyId}:roster` }],
     analytics: [{ type: "Analytics", id: companyId }],
@@ -351,7 +351,7 @@ function refreshRealtimeDomains({
   // Delayed tag invalidation waits for older in-flight responses, then reads
   // only subscribed queries. Closed screens are evicted without issuing GETs.
   dispatch(
-    boardlyApi.util.invalidateTags(
+    zenithTeamApi.util.invalidateTags(
       [...domains].flatMap((domain) =>
         domain === "shell" ? [] : tags[domain],
       ),

@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 
-const PUBLIC_SITE_ORIGIN = "https://app.example.com";
+import { deployment } from "@/shared/lib/deployment";
+
+const PUBLIC_SITE_ORIGIN =
+  deployment.publicSiteOrigin ?? window.location.origin;
 const PUBLIC_SOCIAL_IMAGE_PATH = "/images/og/zenith-team-social-card.png";
 
 export type PublicPageMetadataInput = {

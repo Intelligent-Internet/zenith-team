@@ -1,11 +1,11 @@
 import { attachmentService } from "@/shared/api/attachment.service";
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 export type SocialPlatform = components["schemas"]["SocialPlatform"];
 export type SocialConnection = components["schemas"]["SocialConnection"];
 const path = "/me/social";
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (build) => ({
     socialMediaPreview: build.query<
       string,
@@ -13,7 +13,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: ({ companyId, attachmentId }, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const blob = await attachmentService.download(
             companyId,
             attachmentId,
@@ -36,7 +36,7 @@ const api = boardlyApi.injectEndpoints({
       void
     >({
       queryFn: () =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["SocialPlatforms"]>(
               `${path}/platforms`,
@@ -50,7 +50,7 @@ const api = boardlyApi.injectEndpoints({
       void
     >({
       queryFn: () =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["SocialConnections"]>(
               `${path}/connections`,
@@ -67,7 +67,7 @@ const api = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ platform, desktop }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<components["schemas"]["SocialOAuthStartResponse"]>(
               `${path}/oauth/${platform}${desktop ? "/desktop" : ""}`,
@@ -78,7 +78,7 @@ const api = boardlyApi.injectEndpoints({
     }),
     disconnectSocial: build.mutation<void, { id: string; revision: number }>({
       queryFn: ({ id, revision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(`${path}/connections/${id}`, {
               params: { expected_revision: revision },

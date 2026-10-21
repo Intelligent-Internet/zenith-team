@@ -13,11 +13,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // lifecycleDBTX is a scriptable generated.DBTX: it records every statement
@@ -170,7 +170,8 @@ func TestBindingChangeEventCarriesTheBinderAndAnExplicitNull(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decode payload: %v", err)
 	}
-	if payload.AgentID != agentID || payload.Binding != nil || payload.UserID != userID || payload.CompanyID != companyID {
+	if payload.AgentID != agentID || payload.Binding != nil || payload.UserID != userID ||
+		payload.CompanyID != companyID {
 		t.Fatalf("payload = %+v, want the agent with no binding under the company and binder", payload)
 	}
 	encoded, err := json.Marshal(payload)
@@ -285,14 +286,17 @@ func TestUpsertRuntimeParamsStoresTheDeviceNameInItsColumn(t *testing.T) {
 		t.Fatalf("device name = %+v, metadata = %s", named.DeviceName, named.Metadata)
 	}
 	registration.DeviceName = ""
-	if unnamed := upsertRuntimeParams(registration, RuntimeRegistrationSpec{Provider: "codex"}); unnamed.DeviceName.Valid {
+	if unnamed := upsertRuntimeParams(
+		registration,
+		RuntimeRegistrationSpec{Provider: "codex"},
+	); unnamed.DeviceName.Valid {
 		t.Fatalf("empty device name = %+v, want NULL", unnamed.DeviceName)
 	}
 }
 
 // Without a reason both columns are NULL — the upsert replaces them
 // wholesale, so this is what clears a stored reason — and the announced
-// status is honoured.
+// status is honored.
 func TestUpsertRuntimeParamsWithoutReasonClearsColumns(t *testing.T) {
 	t.Parallel()
 	registration := RuntimeRegistration{CompanyID: uuid.New(), OwnerUserID: uuid.New(), DaemonID: "daemon-1"}
@@ -323,7 +327,8 @@ func TestUpsertRuntimeParamsStoresTheSignInVerdict(t *testing.T) {
 	if signedOut.Status != "online" {
 		t.Fatalf("Status = %q, want a signed-out provider left online", signedOut.Status)
 	}
-	if !signedOut.ProviderSignInState.Valid || signedOut.ProviderSignInState.String != protocol.RuntimeSignInSignedOut ||
+	if !signedOut.ProviderSignInState.Valid ||
+		signedOut.ProviderSignInState.String != protocol.RuntimeSignInSignedOut ||
 		!signedOut.ProviderSignInDetail.Valid ||
 		signedOut.ProviderSignInDetail.String != "Not signed in." ||
 		!signedOut.ProviderSignInCheckedAt.Valid ||

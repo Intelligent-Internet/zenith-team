@@ -7,9 +7,9 @@ import { ChatComposerEmoji } from "@/features/chat-panel/components/chat-compose
 import "@/features/discussions/styles/discussions.css";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { HuddleTranscriptMessage } from "@/features/discussions/components/huddle-transcript-message";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import {
-  boardlyRealtimeClient,
+  zenithTeamRealtimeClient,
   realtimeEventConversationId,
 } from "@/shared/realtime/realtime-client.service";
 import {
@@ -46,7 +46,7 @@ export function HuddleChatPanel({
   }, [history.currentData, history.isError]);
   useEffect(() => {
     if (!session.userId) return undefined;
-    const removeRealtime = boardlyRealtimeClient.onEvent((event) => {
+    const removeRealtime = zenithTeamRealtimeClient.onEvent((event) => {
       if (
         event.companyId === companyId &&
         event.type === "conversation.discussion_changed" &&
@@ -54,7 +54,7 @@ export function HuddleChatPanel({
       )
         void refetch();
     });
-    const removeRecovery = boardlyRealtimeClient.onRecovery(
+    const removeRecovery = zenithTeamRealtimeClient.onRecovery(
       () => void refetch(),
     );
     return () => {
@@ -120,7 +120,7 @@ export function HuddleChatPanel({
       pending.current = null;
       void history.refetch();
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     }
   };
 

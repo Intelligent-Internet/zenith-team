@@ -18,7 +18,7 @@ const detailMaxRunes = 280
 // The sentence says what kind of thing went wrong and who can act; the detail
 // is the provider's or daemon's own words — "try again at Sep 22nd", the exact
 // model name that was rejected, the link to a billing page. It is the part a
-// generic sentence cannot carry, and the part the owner asked to see.
+// generic sentence cannot carry, and the part a person needs to fix it.
 //
 // The text has already passed through redact.Diagnostic before it was
 // persisted, so this is shaping, not redaction: a JSON error envelope yields

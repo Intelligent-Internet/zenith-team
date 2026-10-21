@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A Task read carries the reader's permissions on its Project, merged from
@@ -43,7 +43,10 @@ func TestTaskAccessMergesLikeProjectAccess(t *testing.T) {
 			visibility: string(auth.ProjectVisibilityRestricted),
 			via:        string(auth.ProjectAccessViaGrant),
 			granted:    []string{read, write},
-			want:       []auth.ProjectPermission{auth.ProjectPermissionRead, auth.ProjectPermissionTasksWrite},
+			want: []auth.ProjectPermission{
+				auth.ProjectPermissionRead,
+				auth.ProjectPermissionTasksWrite,
+			},
 		},
 		{
 			name:       "company-visible floor with no rows",
@@ -69,8 +72,12 @@ func TestTaskAccessMergesLikeProjectAccess(t *testing.T) {
 			t.Parallel()
 			row := generated.ListTaskProjectionsForActiveMemberRow{
 				Task: generated.Task{
-					ID: uuid.New(), CompanyID: uuid.New(), ProjectID: uuid.New(),
-					AssigneeUserID: uuid.New(), Status: string(StatusTodo), Priority: string(PriorityMedium),
+					ID:             uuid.New(),
+					CompanyID:      uuid.New(),
+					ProjectID:      uuid.New(),
+					AssigneeUserID: uuid.New(),
+					Status:         string(StatusTodo),
+					Priority:       string(PriorityMedium),
 				},
 				ProjectVisibility:    test.visibility,
 				ProjectAccessVersion: 3,
@@ -113,12 +120,22 @@ func TestTaskReadinessFollowsTheUnreadyReason(t *testing.T) {
 			execution := value.Execution
 			if reason == "" {
 				if !execution.AssigneeReady || execution.UnreadyReason != nil {
-					t.Errorf("%s read, no reason: execution = %+v; want ready with a null reason", who, execution)
+					t.Errorf(
+						"%s read, no reason: execution = %+v; want ready with a null reason",
+						who,
+						execution,
+					)
 				}
 				continue
 			}
-			if execution.AssigneeReady || execution.UnreadyReason == nil || *execution.UnreadyReason != reason {
-				t.Errorf("%s read, reason %q: execution = %+v; want not ready with that reason", who, reason, execution)
+			if execution.AssigneeReady || execution.UnreadyReason == nil ||
+				*execution.UnreadyReason != reason {
+				t.Errorf(
+					"%s read, reason %q: execution = %+v; want not ready with that reason",
+					who,
+					reason,
+					execution,
+				)
 			}
 		}
 	}
@@ -129,7 +146,10 @@ func TestTaskReadinessFollowsTheUnreadyReason(t *testing.T) {
 func TestTaskFrameCarriesNoReaderAccess(t *testing.T) {
 	t.Parallel()
 
-	value := Response{ID: uuid.New(), Access: &Access{Permissions: []auth.ProjectPermission{auth.ProjectPermissionRead}}}
+	value := Response{
+		ID:     uuid.New(),
+		Access: &Access{Permissions: []auth.ProjectPermission{auth.ProjectPermissionRead}},
+	}
 	// The audience is already decided, so staging reads no database here;
 	// TestStampProjectAudiencesDecidesEachBranch covers deciding it.
 	value.Audience = &auth.ProjectAudience{CompanyWide: true}
@@ -242,11 +262,20 @@ func TestTaskProjectDecisions(t *testing.T) {
 		{"writer writes", writer, auth.ProjectPermissionTasksWrite, nil},
 		{"reader cannot write", reader, auth.ProjectPermissionTasksWrite, auth.ErrProjectPermissionRequired},
 		{"manager without read sees nothing", manager, auth.ProjectPermissionTasksWrite, ErrNotFound},
-		{"manager without read cannot archive a Task either", manager, auth.ProjectPermissionArchive, ErrNotFound},
+		{
+			"manager without read cannot archive a Task either",
+			manager,
+			auth.ProjectPermissionArchive,
+			ErrNotFound,
+		},
 		{"stranger sees nothing", stranger, auth.ProjectPermissionTasksWrite, ErrNotFound},
 	}
 	for _, test := range cases {
-		if err := requireProjectPermission(test.access, test.permission); !errors.Is(err, test.want) || (test.want == nil && err != nil) {
+		if err := requireProjectPermission(
+			test.access,
+			test.permission,
+		); !errors.Is(err, test.want) ||
+			(test.want == nil && err != nil) {
 			t.Errorf("%s: requireProjectPermission = %v, want %v", test.name, err, test.want)
 		}
 	}

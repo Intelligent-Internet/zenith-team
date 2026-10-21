@@ -12,7 +12,7 @@ import (
 	"slices"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
 )
 
 //go:embed studio_runtime.md
@@ -52,11 +52,11 @@ type studioRunEnvironment struct {
 	// Home is the Agent's own Studio sign-in folder under the workspaces
 	// root, which the Run's Studio CLI reads and renews; empty when Studio
 	// is off. It is the one folder there outside the Run's own that its
-	// sandbox lets it write (Access TECH B3f).
+	// sandbox lets it write.
 	Home string
 	// ToolDirs are the reviewed Tool installations the Run's commands start,
 	// under the workspaces root. A tagged Run's sandbox, which hides that
-	// root, opens them for reading (Access TECH B7b).
+	// root, opens them for reading.
 	ToolDirs []string
 }
 
@@ -94,9 +94,13 @@ func prepareStudioRun(
 		}
 		switch release.Key {
 		case "zenith-studio":
+			// Studio runs only against the origin the server configured.
 			apiURL := input.APIURL
 			if apiURL == "" {
-				apiURL = release.APIURL
+				return result, fmt.Errorf(
+					"prepare %s: Zenith Studio is off on this server",
+					release.Name,
+				)
 			}
 			installed, err = writeStudioLauncher(
 				result.BinDir,
@@ -208,6 +212,9 @@ func studioRuntimeSkillDenials() []execenv.RuntimeSkillRef {
 func (d *Daemon) prepareStudioEnvironment(ctx context.Context, input studioRunInput) (studioRunEnvironment, error) {
 	if !input.Enabled {
 		return prepareStudioRun(ctx, input, nil)
+	}
+	if d.cfg.StudioAPIOrigin == "" {
+		return studioRunEnvironment{}, errStudioNotConfigured
 	}
 	if d.tools == nil {
 		return studioRunEnvironment{}, fmt.Errorf(

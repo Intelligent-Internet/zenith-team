@@ -10,12 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestExplicitDirectSessionsPreserveHistoryAndReplayIdentity(t *testing.T) {
@@ -41,7 +42,11 @@ func TestExplicitDirectSessionsPreserveHistoryAndReplayIdentity(t *testing.T) {
 	if err != nil || !first.Created || first.Conversation.ID == fixture.DirectConversationA {
 		t.Fatalf("new session = %+v %v", first, err)
 	}
-	replay, err := service.CreateDirect(ctx, principal, CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key})
+	replay, err := service.CreateDirect(
+		ctx,
+		principal,
+		CreateDirectInput{AgentID: fixture.AgentA, RequestKey: &key},
+	)
 	if err != nil || replay.Created || replay.Conversation.ID != first.Conversation.ID {
 		t.Fatalf("replay = %+v %v", replay, err)
 	}
@@ -150,10 +155,12 @@ func TestExplicitDirectSessionsPreserveHistoryAndReplayIdentity(t *testing.T) {
 		t.Fatalf("explicit title projection = %+v %v", listed, err)
 	}
 	var active int
-	if err := pool.QueryRow(ctx,
+	if err := pool.QueryRow(
+		ctx,
 		`SELECT count(*) FROM conversations WHERE company_id=$1 AND agent_id=$2 AND kind='direct' AND archived_at IS NULL`,
 		fixture.CompanyA,
-		fixture.AgentA).Scan(&active); err != nil ||
+		fixture.AgentA,
+	).Scan(&active); err != nil ||
 		active != 3 {
 		t.Fatalf("active sessions = %d %v", active, err)
 	}
@@ -353,12 +360,14 @@ func TestConversationHistoryPrivacyCountsAndRevisionPaging(t *testing.T) {
 	// Known public evidence and unknown legacy scope bracket the private rows.
 	// The public row is about an Agent: a Company-wide row about a Task must
 	// name its Project and reads only for its readers (ADR 0017).
-	dbtest.MustExec(t,
+	dbtest.MustExec(
+		t,
 		ctx,
 		pool,
 		`INSERT INTO activity_events(company_id,actor_type,action,entity_type,entity_id,visibility,details,created_at) VALUES($1,'system','agent.updated','agent',$2,'company','{"schemaVersion":0,"payload":{}}',clock_timestamp()),($1,'system','agent.updated','agent',$2,NULL,'{"schemaVersion":0,"payload":{}}',clock_timestamp())`,
 		fixture.CompanyA,
-		fixture.AgentA.String())
+		fixture.AgentA.String(),
+	)
 	feed := activity.NewFeed(store.Queries())
 	today := time.Now().UTC()
 	month := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
@@ -422,7 +431,11 @@ func TestConversationHistoryPrivacyCountsAndRevisionPaging(t *testing.T) {
 							// feed read never carries (ADR 0017).
 							expected.Audience = nil
 							if !reflect.DeepEqual(got, expected) {
-								t.Fatalf("REST/realtime mismatch: %+v vs %+v", got, expected)
+								t.Fatalf(
+									"REST/realtime mismatch: %+v vs %+v",
+									got,
+									expected,
+								)
 							}
 						}
 					}

@@ -1,6 +1,6 @@
 import {
-  boardlyRealtimeClient,
-  type BoardlyRealtimeEvent,
+  zenithTeamRealtimeClient,
+  type ZenithTeamRealtimeEvent,
 } from "@/shared/realtime/realtime-client.service";
 
 export type MailboxChangeReason =
@@ -21,7 +21,7 @@ export function subscribeToMailboxChanges(
   companyId: string,
   handleChange: (change: MailboxChange) => void,
 ) {
-  return boardlyRealtimeClient.onEvent((event) => {
+  return zenithTeamRealtimeClient.onEvent((event) => {
     const change = parseMailboxChange(event, companyId);
     if (change) {
       handleChange(change);
@@ -30,7 +30,7 @@ export function subscribeToMailboxChanges(
 }
 
 function parseMailboxChange(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
   companyId: string,
 ): MailboxChange | null {
   if (event.type !== "mailbox.changed" || event.companyId !== companyId) {

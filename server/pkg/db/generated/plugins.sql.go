@@ -76,7 +76,7 @@ WITH statement_clock AS MATERIALIZED (
     FROM input_items
     WHERE $2::text = 'codex'
 ), curated_duplicates AS MATERIALIZED (
-    -- The catalog leaves out (D26) a Codex Plugin of a marketplace outside
+    -- The catalog leaves out a Codex Plugin of a marketplace outside
     -- OpenAI's (the native id after its last '@' does not start with
     -- "openai-"), not installed, that shares its name key with a curated
     -- Plugin of this generation that is installed or can be installed, when
@@ -883,7 +883,7 @@ type ListCompanyCodexIconsByNameRow struct {
 }
 
 // A Plugin without a loadable logo (every Claude Plugin reports none) borrows
-// first by name (D26): the logo of a Codex Plugin with the same name key
+// first by name: the logo of a Codex Plugin with the same name key
 // (case, spaces and punctuation ignored), else of a Codex app
 // with the same case-insensitive name, that a Runtime of the same Company
 // observes; a Codex app whose own logo loads only in a ChatGPT session borrows
@@ -1001,7 +1001,7 @@ type ListCompanyCodexPluginLogosByPublisherRow struct {
 	IconUrl   string    `json:"icon_url"`
 }
 
-// A Plugin that borrows no logo by name borrows by its publisher (D26): the
+// A Plugin that borrows no logo by name borrows by its publisher: the
 // logo of a Codex Plugin whose website has the same host (website_host,
 // without "www."), else of one with the same case-insensitive developer, on
 // one of the viewer's own Runtimes (ADR 0014). The caller lends
@@ -1085,7 +1085,7 @@ JOIN company_members
 WHERE observations.runtime_id = $3::uuid
   AND observations.company_id = $4::uuid
   AND observations.provider = $5::text
-  -- An uninstalled copy of a curated Plugin from another marketplace (D26);
+  -- An uninstalled copy of a curated Plugin from another marketplace;
   -- getPlugin still reads it by id.
   AND NOT observations.curated_duplicate
   AND (
@@ -1298,8 +1298,8 @@ type ListInstalledPluginLogosForRuntimeRow struct {
 
 // The Plugins one Runtime observes installed in its current generation, with
 // a logo and the Connector identities each bundles. A Codex app whose own logo
-// loads only in a ChatGPT session shows the logo of a Plugin that bundles it
-// (D26); the caller matches the identities.
+// loads only in a ChatGPT session shows the logo of a Plugin that bundles it;
+// the caller matches the identities.
 func (q *Queries) ListInstalledPluginLogosForRuntime(ctx context.Context, arg ListInstalledPluginLogosForRuntimeParams) ([]ListInstalledPluginLogosForRuntimeRow, error) {
 	rows, err := q.db.Query(ctx, listInstalledPluginLogosForRuntime, arg.CompanyID, arg.RuntimeID)
 	if err != nil {

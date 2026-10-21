@@ -5,8 +5,8 @@ server in Docker, the Go API, the app, and the Python voice worker. No LiveKit
 Cloud account or public tunnel is needed. The only external service is OpenAI,
 and only for the voice Agent.
 
-Production uses LiveKit Cloud and a deployed worker instead; that setup is in
-[`../voice-agent/README.md`](../voice-agent/README.md#livekit-cloud-managed-media-and-voice-worker).
+For a real install you run LiveKit and the voice worker somewhere people can
+reach: see [`../voice-agent/README.md`](../voice-agent/README.md#run-it-in-production).
 
 ```text
  browser / desktop app ──WebRTC──▶ LiveKit (Docker, :7880) ◀──WebRTC── voice worker (Python)
@@ -107,8 +107,8 @@ Company can use.
   (both use the same ports). Same keys and webhook.
 - **Stopping.** `make livekit-down` stops LiveKit; `make infra-down` stops it
   with the rest of the stack.
-- **Renamed settings.** `LIVEKIT_*` and `HUDDLE_AI_*` were `BOARDLY_LIVEKIT_*`
-  and `BOARDLY_HUDDLE_AI_*`. The old names still work; when both are set, the
-  new one wins. The API also accepts a `ws(s)://` `LIVEKIT_URL`, so it can share
-  one value with the voice worker.
+- **Setting names.** The server reads only `LIVEKIT_*` and `HUDDLE_AI_*`. The
+  voice worker also accepts the older `ZENITH_TEAM_HUDDLE_AI_WORKLOAD_SECRET`.
+  The API accepts a `ws(s)://` `LIVEKIT_URL`, so it can share one value with
+  the voice worker.
 - All keys and secrets above are for development only. Never reuse them.

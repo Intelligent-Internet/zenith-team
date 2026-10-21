@@ -479,7 +479,7 @@ func TestValidateSkillRelativePathBounds(t *testing.T) {
 		"references//file.md",
 		"references/../assets/file.txt",
 		"nested/SKILL.md",
-		".boardly.json",
+		".zenith-team.json",
 		string([]byte{'r', 0xff}),
 	} {
 		if err := validateSkillRelativePath(path); err == nil {

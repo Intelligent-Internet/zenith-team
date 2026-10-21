@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (w projectAccessWorld) upload(t *testing.T, ctx context.Context, name string) uuid.UUID {
@@ -44,7 +44,12 @@ func (w projectAccessWorld) replaceFiles(t *testing.T, ctx context.Context, docu
 
 // insertRun adds a Run on the fixture's Task chat that the person authorized,
 // optionally a retry of an earlier one.
-func (w projectAccessWorld) insertRun(t *testing.T, ctx context.Context, authorizer uuid.UUID, parent *uuid.UUID) uuid.UUID {
+func (w projectAccessWorld) insertRun(
+	t *testing.T,
+	ctx context.Context,
+	authorizer uuid.UUID,
+	parent *uuid.UUID,
+) uuid.UUID {
 	t.Helper()
 	var runID uuid.UUID
 	if err := w.pool.QueryRow(ctx, `
@@ -65,10 +70,11 @@ func (w projectAccessWorld) runDownloads(
 	t *testing.T, ctx context.Context, runID, authorizer, file uuid.UUID, frozen bool,
 ) bool {
 	t.Helper()
-	_, err := generated.New(w.pool).AuthorizeRunAttachmentDownload(ctx, generated.AuthorizeRunAttachmentDownloadParams{
-		AttachmentID: file, CompanyID: w.f.CompanyA, RunID: runID, AuthorizerUserID: authorizer,
-		FrozenProjectDocument: frozen,
-	})
+	_, err := generated.New(w.pool).
+		AuthorizeRunAttachmentDownload(ctx, generated.AuthorizeRunAttachmentDownloadParams{
+			AttachmentID: file, CompanyID: w.f.CompanyA, RunID: runID, AuthorizerUserID: authorizer,
+			FrozenProjectDocument: frozen,
+		})
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		t.Fatal(err)
 	}
@@ -115,8 +121,20 @@ func TestRunDownloadsFollowTheAuthorizersProjectAccess(t *testing.T) {
 		{"an authorizer without project.read", outsiderRun, w.admin.UserID, true, false},
 		{"a person who did not authorize the Run", memberRun, w.owner.UserID, true, false},
 	} {
-		if got := w.runDownloads(t, ctx, check.run, check.authorizer, doc, check.frozen); got != check.wantDownloadable {
-			t.Errorf("%s: downloads the retired document = %t, want %t", check.name, got, check.wantDownloadable)
+		if got := w.runDownloads(
+			t,
+			ctx,
+			check.run,
+			check.authorizer,
+			doc,
+			check.frozen,
+		); got != check.wantDownloadable {
+			t.Errorf(
+				"%s: downloads the retired document = %t, want %t",
+				check.name,
+				got,
+				check.wantDownloadable,
+			)
 		}
 	}
 	if _, err := generated.New(w.pool).AuthorizeAttachmentDownload(ctx, generated.AuthorizeAttachmentDownloadParams{
@@ -171,17 +189,29 @@ func TestCompanyReferencesOpenOnlyFilesWithNoOtherRule(t *testing.T) {
 		).Scan(&message); err != nil {
 			t.Fatal(err)
 		}
-		dbtest.MustExec(t, ctx, w.pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-			VALUES ($1, $2, $3, 0)`, w.f.CompanyA, message, file)
+		dbtest.MustExec(
+			t,
+			ctx,
+			w.pool,
+			`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+			VALUES ($1, $2, $3, 0)`,
+			w.f.CompanyA,
+			message,
+			file,
+		)
 		return file
 	}
 	directFile := postFile(w.f.DirectConversationA, "direct_chat", "owner-private.txt")
 	taskChatFile := postFile(w.f.ConversationA, "task", "restricted-task.txt")
 	adminRun := w.insertRun(t, ctx, w.admin.UserID, nil)
 	for _, file := range []uuid.UUID{directFile, taskChatFile} {
-		if _, err := generated.New(w.pool).AuthorizeAttachmentDownload(ctx, generated.AuthorizeAttachmentDownloadParams{
-			CompanyID: w.f.CompanyA, AttachmentID: file, ActorUserID: w.admin.UserID,
-		}); !errors.Is(err, pgx.ErrNoRows) {
+		if _, err := generated.New(w.pool).
+			AuthorizeAttachmentDownload(ctx, generated.AuthorizeAttachmentDownloadParams{
+				CompanyID: w.f.CompanyA, AttachmentID: file, ActorUserID: w.admin.UserID,
+			}); !errors.Is(
+			err,
+			pgx.ErrNoRows,
+		) {
 			t.Fatalf("the admin opens a file of a chat they do not read: %v", err)
 		}
 	}
@@ -197,17 +227,38 @@ func TestCompanyReferencesOpenOnlyFilesWithNoOtherRule(t *testing.T) {
 		{"an admin, a Task chat file", w.admin, taskChatFile},
 		{"the uploader, a file already in a chat", w.owner, directFile},
 	} {
-		if _, err := references.AddReferenceDocuments(ctx, check.person, []uuid.UUID{check.file}); !errors.Is(err, ErrInvalidInput) {
+		if _, err := references.AddReferenceDocuments(
+			ctx,
+			check.person,
+			[]uuid.UUID{check.file},
+		); !errors.Is(
+			err,
+			ErrInvalidInput,
+		) {
 			t.Errorf("%s: register = %v, want ErrInvalidInput", check.name, err)
 		}
 	}
 	projectFile := w.upload(t, ctx, "project-brief.txt")
 	w.replaceFiles(t, ctx, projectFile)
-	if _, err := references.AddReferenceDocuments(ctx, w.owner, []uuid.UUID{projectFile}); !errors.Is(err, ErrInvalidInput) {
+	if _, err := references.AddReferenceDocuments(
+		ctx,
+		w.owner,
+		[]uuid.UUID{projectFile},
+	); !errors.Is(
+		err,
+		ErrInvalidInput,
+	) {
 		t.Errorf("the uploader registers an active Project file = %v, want ErrInvalidInput", err)
 	}
 	w.replaceFiles(t, ctx)
-	if _, err := references.AddReferenceDocuments(ctx, w.owner, []uuid.UUID{projectFile}); !errors.Is(err, ErrInvalidInput) {
+	if _, err := references.AddReferenceDocuments(
+		ctx,
+		w.owner,
+		[]uuid.UUID{projectFile},
+	); !errors.Is(
+		err,
+		ErrInvalidInput,
+	) {
 		t.Errorf("the uploader registers a retired Project file = %v, want ErrInvalidInput", err)
 	}
 	overview := w.upload(t, ctx, "company-overview.txt")
@@ -264,16 +315,26 @@ func TestProjectFilesReplaceTellsChatsToRefetchTheirMessages(t *testing.T) {
 	}
 	shared := w.upload(t, ctx, "shared-plan.txt")
 	unshared := w.upload(t, ctx, "unshared.txt")
-	dbtest.MustExec(t, ctx, w.pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-		VALUES ($1, $2, $3, 0)`, w.f.CompanyA, message, shared)
+	dbtest.MustExec(
+		t,
+		ctx,
+		w.pool,
+		`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+		VALUES ($1, $2, $3, 0)`,
+		w.f.CompanyA,
+		message,
+		shared,
+	)
 
 	w.replaceFiles(t, ctx, shared, unshared) // registers the shared file
 	w.replaceFiles(t, ctx, shared)           // keeps it: its message is unchanged
 	w.replaceFiles(t, ctx, unshared)         // retires it
 	updates := w.messages.named(conversation.EventMessageUpdated)
 	if len(updates) != 2 {
-		t.Fatalf("message.updated frames = %d, want one for the register and one for the retire, none for the keep",
-			len(updates))
+		t.Fatalf(
+			"message.updated frames = %d, want one for the register and one for the retire, none for the keep",
+			len(updates),
+		)
 	}
 	for _, update := range updates {
 		payload := payloadOf[conversation.MessageUpdated](t, update)
@@ -282,7 +343,8 @@ func TestProjectFilesReplaceTellsChatsToRefetchTheirMessages(t *testing.T) {
 			t.Fatal(err)
 		}
 		want := `{"conversationId":"` + channel.String() + `","messageId":"` + message.String() + `"}`
-		if string(encoded) != want || payload.ConversationKind != "channel" || update.ConversationID != channel {
+		if string(encoded) != want || payload.ConversationKind != "channel" ||
+			update.ConversationID != channel {
 			t.Fatalf("message.updated = %s (kind %q), want %s", encoded, payload.ConversationKind, want)
 		}
 	}
@@ -309,9 +371,10 @@ func TestQueuedFilesFollowTheProjectFileRule(t *testing.T) {
 		VALUES ($1, $2, $3, 0), ($1, $2, $4, 1)`, w.f.CompanyA, item, projectFile, plain)
 	queued := func(viewer uuid.UUID) []uuid.UUID {
 		t.Helper()
-		rows, err := generated.New(w.pool).ListRunQueueItemAttachments(ctx, generated.ListRunQueueItemAttachmentsParams{
-			QueueItemIds: []uuid.UUID{item}, ViewerUserID: viewer,
-		})
+		rows, err := generated.New(w.pool).
+			ListRunQueueItemAttachments(ctx, generated.ListRunQueueItemAttachmentsParams{
+				QueueItemIds: []uuid.UUID{item}, ViewerUserID: viewer,
+			})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -3,7 +3,7 @@ package conversation
 import (
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestStudioProjectRejectsInvalidTextBeforeDatabaseWrite(t *testing.T) {

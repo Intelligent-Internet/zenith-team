@@ -1,4 +1,4 @@
-export const boardlyPublicLegalUrls = {
-  privacy: "https://app.example.com/privacy",
-  terms: "https://app.example.com/terms",
-} as const;
+import { deployment } from "@/shared/lib/deployment";
+
+/** Legal pages of the operator's public site; null when the build has none. */
+export const zenithTeamPublicLegalUrls = deployment.legalUrls;

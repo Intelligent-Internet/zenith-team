@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"

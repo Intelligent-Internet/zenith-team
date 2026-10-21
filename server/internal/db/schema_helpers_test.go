@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 // normalizedBaselineSQL reads the named baseline migration files and returns

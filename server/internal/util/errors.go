@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/go-playground/validator/v10"
 )

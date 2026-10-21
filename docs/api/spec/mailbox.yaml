@@ -235,7 +235,7 @@ paths:
       summary: Create the current Run's reviewable Agent Mail drafts
       description: |
         Requires an ordinary bearer principal with `mailbox.manage` plus the supplemental live
-        `X-Boardly-Run-Token`. The resolved token exclusively supplies the Run
+        `X-Zenith-Team-Run-Token`. The resolved token exclusively supplies the Run
         and Agent identity; the path Conversation must belong to that Run.
         PostgreSQL generates group, draft, and delivery ids.
 
@@ -244,7 +244,7 @@ paths:
         `200`. Reusing the key or Run with incompatible canonical content
         returns `409 agent_mail_draft_conflict`.
       parameters:
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           description: Supplemental proof for the live Run creating the drafts.

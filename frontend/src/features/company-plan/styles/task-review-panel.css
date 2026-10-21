@@ -93,7 +93,7 @@
 }
 
 /* The workspace review uses the active palette in its opaque portal. */
-html[data-boardly-workspace-theme] {
+html[data-zenith-team-workspace-theme] {
   .task-review-panel {
     background: var(--workspace-panel-bg);
     color: var(--workspace-native-text);

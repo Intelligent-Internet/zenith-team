@@ -3,8 +3,9 @@ package conversation
 import (
 	"testing"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
+
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestHuddleWorkState(t *testing.T) {
@@ -58,7 +59,9 @@ func TestHuddleWorkNoticeEligibility(t *testing.T) {
 				HasResult: tt.result, WaitingInput: tt.input, NewerTaskExecution: tt.newer,
 			}
 			if tt.announced {
-				row.VoiceNoticeKeys = []string{row.ProposalID.String() + ":" + row.RunID.String() + ":completed"}
+				row.VoiceNoticeKeys = []string{
+					row.ProposalID.String() + ":" + row.RunID.String() + ":completed",
+				}
 			}
 			got := huddleWorkNotice(row)
 			if tt.want == "" {

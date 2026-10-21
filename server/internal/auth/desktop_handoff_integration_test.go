@@ -18,7 +18,7 @@ func TestDesktopHandoffCodeCreateThenConsumeReturnsRowAndIsSingleUse(t *testing.
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-single-use@boardly.test")
+	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-single-use@zenith-team.test")
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	codeHash := bytes.Repeat([]byte{31}, 32)
 
@@ -57,7 +57,7 @@ func TestDesktopHandoffCodeConsumeIgnoresExpiryAtStorageLayer(t *testing.T) {
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-expired@boardly.test")
+	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-expired@zenith-team.test")
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	past := now.Add(-time.Hour)
 	codeHash := bytes.Repeat([]byte{32}, 32)
@@ -96,7 +96,7 @@ func TestDesktopHandoffCodeConcurrentConsumeHasExactlyOneWinner(t *testing.T) {
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-race@boardly.test")
+	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-race@zenith-team.test")
 	codeHash := bytes.Repeat([]byte{41}, 32)
 	if err := createDesktopHandoffCode(ctx, store, NewDesktopHandoffCode{
 		UserID: userID, CodeHash: codeHash,
@@ -141,7 +141,7 @@ func TestDesktopHandoffCodeCreateReplacesPriorCodeForUser(t *testing.T) {
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-replace@boardly.test")
+	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-replace@zenith-team.test")
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	firstHash := bytes.Repeat([]byte{51}, 32)
 	secondHash := bytes.Repeat([]byte{52}, 32)
@@ -175,7 +175,7 @@ func TestDesktopHandoffCodeCascadesWithRawUserDelete(t *testing.T) {
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-cascade@boardly.test")
+	userID := createDesktopHandoffTestUser(t, ctx, pool, "handoff-cascade@zenith-team.test")
 	codeHash := bytes.Repeat([]byte{61}, 32)
 	if err := createDesktopHandoffCode(ctx, store, NewDesktopHandoffCode{
 		UserID: userID, CodeHash: codeHash,

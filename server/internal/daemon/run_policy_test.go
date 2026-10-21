@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 func TestDocumentRunToolPolicy(t *testing.T) {
@@ -24,9 +24,9 @@ func TestDocumentRunToolPolicy(t *testing.T) {
 			var wantTools, wantServers []string
 			if !writing {
 				wantTools = []string{"page_read", "page_edit", "source_read"}
-				wantServers = []string{boardlyMCPServerName}
+				wantServers = []string{zenithTeamMCPServerName}
 			}
-			if got := boardlyMCPToolsForRun(doc); !slices.Equal(got, wantTools) {
+			if got := zenithTeamMCPToolsForRun(doc); !slices.Equal(got, wantTools) {
 				t.Fatalf("tools = %v, want %v", got, wantTools)
 			}
 			commands := runCLICommands(Run{CompanyID: "company"}, doc)
@@ -38,17 +38,35 @@ func TestDocumentRunToolPolicy(t *testing.T) {
 					t.Errorf("unexpected document command: %+v", command)
 				}
 			}
-			if runOutputPresentationAvailable(doc) || runTaskCreationAvailable(doc) || runCompanyReadsAvailable(doc) {
+			if runOutputPresentationAvailable(doc) || runTaskCreationAvailable(doc) ||
+				runCompanyReadsAvailable(doc) {
 				t.Fatal("document Run retains ordinary direct-run authority")
 			}
-			opts := applyRunExecutionPolicy(doc, connectorExecution{AllowedMCPServers: []string{"external"}}, agent.ExecOptions{
-				ResumeSessionID: "old", ResumeExpected: true, ResumeContinuityNotice: "resume",
-				ConnectorApps: []agent.ConnectorApp{{ID: "external"}}, PluginDirectories: []string{"/external/plugin"},
-			})
-			if opts.ToolPolicy != agent.ToolPolicyConnectorOnly || !slices.Equal(opts.AllowedMCPServers, wantServers) ||
-				opts.ResumeSessionID != "" || opts.ResumeExpected || opts.ResumeContinuityNotice != "" ||
-				len(opts.ConnectorApps) != 0 || len(opts.PluginDirectories) != 0 {
-				t.Fatalf("document execution options = %+v, want fresh restricted execution with servers %v", opts, wantServers)
+			opts := applyRunExecutionPolicy(
+				doc,
+				connectorExecution{AllowedMCPServers: []string{"external"}},
+				agent.ExecOptions{
+					ResumeSessionID:        "old",
+					ResumeExpected:         true,
+					ResumeContinuityNotice: "resume",
+					ConnectorApps: []agent.ConnectorApp{
+						{ID: "external"},
+					},
+					PluginDirectories: []string{"/external/plugin"},
+				},
+			)
+			if opts.ToolPolicy != agent.ToolPolicyConnectorOnly ||
+				!slices.Equal(opts.AllowedMCPServers, wantServers) ||
+				opts.ResumeSessionID != "" ||
+				opts.ResumeExpected ||
+				opts.ResumeContinuityNotice != "" ||
+				len(opts.ConnectorApps) != 0 ||
+				len(opts.PluginDirectories) != 0 {
+				t.Fatalf(
+					"document execution options = %+v, want fresh restricted execution with servers %v",
+					opts,
+					wantServers,
+				)
 			}
 			prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
 			for _, forbidden := range []string{"call ask_human", "Company main workspace", "social_publish", "Workspace Memory"} {
@@ -62,10 +80,15 @@ func TestDocumentRunToolPolicy(t *testing.T) {
 
 func TestDocumentRunStartsWithoutExternalTools(t *testing.T) {
 	d := newTestDaemon(t, "http://127.0.0.1")
-	d.cfg.MCPExecutable = "/opt/boardly-mcp"
+	d.cfg.MCPExecutable = "/opt/zenith-team-mcp"
 	for _, writing := range []bool{false, true} {
-		doc := RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentThreadID: "thread", DocumentWriting: writing}}
-		config := d.boardlyMcpConfig(nil, Run{}, boardlyMCPToolsForRun(doc), "", "", "/run/home", nil)
+		doc := RunContext{
+			ExecutionProfile: RunExecutionProfileContext{
+				DocumentThreadID: "thread",
+				DocumentWriting:  writing,
+			},
+		}
+		config := d.zenithTeamMcpConfig(nil, Run{}, zenithTeamMCPToolsForRun(doc), "", "", "/run/home", nil)
 		opts := applyRunExecutionPolicy(doc, connectorExecution{}, agent.ExecOptions{McpConfig: config})
 		var servers struct {
 			Items map[string]json.RawMessage `json:"mcpServers"`
@@ -85,7 +108,7 @@ func TestDocumentRunStartsWithoutExternalTools(t *testing.T) {
 	}
 }
 
-func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
+func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -165,7 +188,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 		},
 		{
 			// The export reads every Task the member reads, which only the
-			// Planner may (Access TECH B6): the root Agent plans only in its
+			// Planner may: the root Agent plans only in its
 			// direct chat.
 			name: "root channel invocation reads no Company Plan",
 			doc: RunContext{
@@ -211,7 +234,7 @@ func TestBoardlyMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := boardlyMCPToolsForRun(test.doc)
+			got := zenithTeamMCPToolsForRun(test.doc)
 			for _, tool := range test.want {
 				if !slices.Contains(got, tool) {
 					t.Errorf("tools = %v, want %q", got, tool)
@@ -252,7 +275,7 @@ func TestTaskPageAuthoringKeepsItsGuideWhenCoordinationIsDisabled(t *testing.T) 
 					Task:   &RunTaskContext{Key: "ENG-1", HumanWork: test.humanWork},
 				},
 			}
-			got := boardlyMCPToolsForRun(doc)
+			got := zenithTeamMCPToolsForRun(doc)
 			for _, tool := range []string{
 				"project_read", "source_read", "page_preview",
 				"page_create", "page_read", "page_edit", "search_skills", "load_skill_reference",
@@ -348,7 +371,7 @@ func TestTaskRunPromptDefinesDurableHumanInputExit(t *testing.T) {
 }
 
 // A Task Run always works in a Task worktree, whose repository is its Project
-// main's, which a Run on a protected computer cannot write (Access TECH B3f),
+// main's, which a Run on a protected computer cannot write,
 // so it leaves its changes, Memory included, uncommitted for the review.
 func TestTaskRunLeavesItsChangesUncommitted(t *testing.T) {
 	t.Parallel()
@@ -696,7 +719,7 @@ func TestApplyRunExecutionPolicyMakesSchedulesConnectorOnlyAndOneShot(t *testing
 		connectorExecution{AllowedMCPServers: []string{"google_drive", "slack"}},
 		agent.ExecOptions{
 			McpConfig: []byte(
-				`{"mcpServers":{"boardly":{"command":"boardly-mcp"},` +
+				`{"mcpServers":{"zenith-team":{"command":"zenith-team-mcp"},` +
 					`"google_drive":{"command":"connector"},"slack":{"command":"connector"}}}`,
 			),
 			ResumeSessionID: "prior-session", ResumeExpected: true,
@@ -791,7 +814,7 @@ func TestRunPromptNeverCarriesOutAnotherTask(t *testing.T) {
 		t.Fatalf("chat Run prompt still offers every Task: %s", chat)
 	}
 	// In its direct chat the root Agent reads every Task its member reads,
-	// through its Company Plan export and `zen task` alike (IA-FR12); it is
+	// through its Company Plan export and `zen task` alike; it is
 	// told so, and that what it reads is for planning, not for doing.
 	root := buildRunSystemPrompt(
 		RunContext{Agent: RunAgentContext{Name: "Ada", IsRoot: true}}, "/work/company/main", runMemoryContext{},
@@ -841,12 +864,12 @@ func TestRunPromptNeverCarriesOutAnotherTask(t *testing.T) {
 // the person's own files: its commits are the deliverable, presented as
 // files. It only presents the directory as an app for an explicit app Task.
 // A Run tagged in a channel or group DM uses the access of the person who
-// tagged the Agent, and its answer goes to everyone in the chat (D31,
-// revised 2026-10-06). The prompt says so, asks the Agent to share only what
+// tagged the Agent, and its answer goes to everyone in the chat. The prompt
+// says so, asks the Agent to share only what
 // the request needs, and names who answers for it. The old audience clause
 // and its advice are gone: a refused read gets the ordinary answer. Only a
 // tagged Run carries the sentences, and the root Agent tagged there carries
-// no Company Plan export, which only the Planner gets (Access TECH B6).
+// no Company Plan export, which only the Planner gets.
 func TestTaggedRunPromptSaysWhoReadsTheAnswer(t *testing.T) {
 	t.Parallel()
 
@@ -854,8 +877,8 @@ func TestTaggedRunPromptSaysWhoReadsTheAnswer(t *testing.T) {
 		"Your answer goes to everyone in this chat.",
 		"Zenith Team shows you the Projects and Tasks that the person who asked can see.",
 		"Share only what the request needs; the person who asked is responsible for what you share here.",
-		// Only the person who tagged the Agent reads its Run's activity
-		// (Access TECH B11), not the Agent's creator.
+		// Only the person who tagged the Agent reads its Run's activity,
+		// not the Agent's creator.
 		"Progress and tool activity are private to the person who asked.",
 	}
 	tagged := buildRunSystemPrompt(RunContext{
@@ -880,7 +903,7 @@ func TestTaggedRunPromptSaysWhoReadsTheAnswer(t *testing.T) {
 	if strings.Contains(tagged, "Company Plan export") || strings.Contains(tagged, "CEO Company Planning Policy") {
 		t.Fatalf("tagged root Run prompt still offers the Company Plan: %s", tagged)
 	}
-	// A tagged Run starts in its own scratch (Access TECH B7), so its prompt
+	// A tagged Run starts in its own scratch, so its prompt
 	// never sends it to the Company main.
 	if !strings.Contains(tagged, "fresh scratch folder of its own") ||
 		strings.Contains(tagged, "uses the Company main workspace") {
@@ -1160,7 +1183,7 @@ func TestCalendarToolsFollowDirectRunAndCapabilityPolicy(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := boardlyMCPToolsForRun(test.doc)
+			got := zenithTeamMCPToolsForRun(test.doc)
 			for _, tool := range []string{"calendar_read", "calendar_write", "social_read", "social_publish"} {
 				found := false
 				for _, value := range got {
@@ -1197,7 +1220,7 @@ func TestWikiToolsFollowRunKindAndCapabilityPolicy(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := boardlyMCPToolsForRun(test.doc)
+			got := zenithTeamMCPToolsForRun(test.doc)
 			for _, tool := range []string{"wiki_search", "wiki_list", "wiki_read"} {
 				if slices.Contains(got, tool) != test.want {
 					t.Fatalf("%s present=%v, want %v (tools %v)", tool, !test.want, test.want, got)
@@ -1282,7 +1305,7 @@ func TestCustomSkillsRemainReadableForCEOAndDisabledCoordination(t *testing.T) {
 				Capabilities: RunCapabilitySettings{DisabledBuiltIns: []string{"coordination"}},
 			},
 		}
-		available := boardlyMCPToolsForRun(doc)
+		available := zenithTeamMCPToolsForRun(doc)
 		for _, name := range []string{"search_skills", "load_skill_reference"} {
 			if !slices.Contains(available, name) {
 				t.Fatalf("root=%v missing %s", root, name)
@@ -1307,14 +1330,21 @@ func TestCEOPlanningPolicyTeachesWikiOnlyWithWikiTools(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			doc := RunContext{
-				Agent:            RunAgentContext{Name: "Andrew", IsRoot: true, Capabilities: test.capabilities},
+				Agent: RunAgentContext{
+					Name:         "Andrew",
+					IsRoot:       true,
+					Capabilities: test.capabilities,
+				},
 				ExecutionProfile: RunExecutionProfileContext{Source: "message"},
 			}
 			prompt := buildRunSystemPrompt(doc, "/work/current", runMemoryContext{})
 			if !strings.Contains(prompt, "CEO Company Planning Policy") {
 				t.Fatal("the CEO planning policy is missing")
 			}
-			if got := strings.Contains(prompt, "call wiki_search with \"company overview\""); got != test.want {
+			if got := strings.Contains(
+				prompt,
+				"call wiki_search with \"company overview\"",
+			); got != test.want {
 				t.Fatalf("Wiki step present=%v, want %v", got, test.want)
 			}
 			if !test.want && strings.Contains(prompt, "wiki_search") {
@@ -1336,7 +1366,7 @@ func TestWhiteboardsComeThroughTheArtifactTools(t *testing.T) {
 			{ID: "6f9619ff-8b86-4011-b42d-00c04fc964ff", Title: "Sprint Q4"},
 		},
 	}
-	tools := boardlyMCPToolsForRun(tagged)
+	tools := zenithTeamMCPToolsForRun(tagged)
 	if !slices.Contains(tools, "artifact_inspect") || !slices.Contains(tools, "artifact_edit") {
 		t.Fatalf("tools = %v; want artifact_inspect and artifact_edit", tools)
 	}
@@ -1375,7 +1405,7 @@ func TestDocumentRunRequiresPageToolExecutable(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			for _, executable := range []string{"", "/nonexistent/boardly-mcp"} {
+			for _, executable := range []string{"", "/nonexistent/zenith-team-mcp"} {
 				err := validateDocumentRunTools(tt.doc, executable)
 				if got := err != nil; got != tt.wantError {
 					t.Fatalf("missing page tools error = %v, want %v", err, tt.wantError)

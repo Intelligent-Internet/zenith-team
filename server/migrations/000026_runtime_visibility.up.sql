@@ -1,5 +1,4 @@
--- Runtime visibility and execution consent (ADR 0007 as amended by ADR 0011,
--- DR-C26).
+-- Runtime visibility and execution consent (ADR 0007 as amended by ADR 0011).
 --
 -- visibility: whether the registrant lends this provider connection to the
 -- Company. 'private' — the default for every new registration and for every

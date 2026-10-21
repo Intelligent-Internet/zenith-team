@@ -1,23 +1,24 @@
 package handler
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type skillCollectionResponse struct {
 	Items []agent.SkillView `json:"items"`
 }
 type skillGitHubRequest struct {
-	URL            string `json:"url" binding:"required,max=2048"`
+	URL            string `json:"url"            binding:"required,max=2048"`
 	ReplaceSkillID string `json:"replaceSkillId" binding:"omitempty,uuid"`
 }
 type skillInstallRequest struct {
@@ -25,21 +26,21 @@ type skillInstallRequest struct {
 	VersionIDs       []string                  `json:"versionIds"       binding:"required,min=1,max=32,dive,uuid"`
 	ReplaceSkillID   string                    `json:"replaceSkillId"   binding:"omitempty,uuid"`
 	ExpectedRevision *int64                    `json:"expectedRevision" binding:"omitempty,revision"`
-	Replacements     []skillReplacementRequest `json:"replacements" binding:"omitempty,max=32,dive"`
+	Replacements     []skillReplacementRequest `json:"replacements"     binding:"omitempty,max=32,dive"`
 }
 type skillReplacementRequest struct {
-	VersionID        string `json:"versionId" binding:"required,uuid"`
-	SkillID          string `json:"skillId" binding:"required,uuid"`
+	VersionID        string `json:"versionId"        binding:"required,uuid"`
+	SkillID          string `json:"skillId"          binding:"required,uuid"`
 	ExpectedRevision int64  `json:"expectedRevision" binding:"revision"`
 }
 type skillUpdateRequest struct {
 	ExpectedRevision int64                    `json:"expectedRevision" binding:"revision"`
 	Enabled          *bool                    `json:"enabled"          binding:"omitempty"`
-	Changes          []skillFileChangeRequest `json:"changes" binding:"omitempty,max=2000,dive"`
-	DeletePaths      []string                 `json:"deletePaths" binding:"omitempty,max=2000,dive,required,max=1024"`
+	Changes          []skillFileChangeRequest `json:"changes"          binding:"omitempty,max=2000,dive"`
+	DeletePaths      []string                 `json:"deletePaths"      binding:"omitempty,max=2000,dive,required,max=1024"`
 }
 type skillFileChangeRequest struct {
-	Path    string  `json:"path" binding:"required,max=1024"`
+	Path    string  `json:"path"    binding:"required,max=1024"`
 	Content *string `json:"content" binding:"required"`
 }
 
@@ -47,7 +48,13 @@ func (h *Handler) registerAgentSkillRoutes(group *gin.RouterGroup) {
 	if h.AuthService == nil || h.CompanyService == nil || h.SkillService == nil {
 		return
 	}
-	group.GET("/companies/:companyId/message-skills", middleware.RequireUserAuth(h.AuthService), middleware.RequireCompanyMember(h.CompanyService), middleware.RequireHumanActor(), h.listMessageSkills)
+	group.GET(
+		"/companies/:companyId/message-skills",
+		middleware.RequireUserAuth(h.AuthService),
+		middleware.RequireCompanyMember(h.CompanyService),
+		middleware.RequireHumanActor(),
+		h.listMessageSkills,
+	)
 	routes := group.Group(
 		"/companies/:companyId/agents/:agentId",
 		middleware.RequireUserAuth(
@@ -123,7 +130,7 @@ func (h *Handler) previewAgentSkillUpload(c *gin.Context) {
 	}
 	var replaceID uuid.UUID
 	part, err := reader.NextPart()
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		if err != nil || part.FormName() != "replaceSkillId" || part.FileName() != "" {
 			writeBoundaryError(c, boundaryErrorInvalidRequestBody)
 			return
@@ -253,13 +260,25 @@ func (h *Handler) updateAgentSkill(c *gin.Context) {
 		for _, change := range req.Changes {
 			changes = append(changes, agent.SkillFileChange{Path: change.Path, Content: *change.Content})
 		}
-		result, err = h.SkillService.EditFiles(c.Request.Context(), principal, agentID, skillID, agent.SkillEditInput{
-			ExpectedRevision: req.ExpectedRevision, Changes: changes, DeletePaths: req.DeletePaths,
-		})
+		result, err = h.SkillService.EditFiles(
+			c.Request.Context(),
+			principal,
+			agentID,
+			skillID,
+			agent.SkillEditInput{
+				ExpectedRevision: req.ExpectedRevision, Changes: changes, DeletePaths: req.DeletePaths,
+			},
+		)
 	} else {
-		result, err = h.SkillService.Update(c.Request.Context(), principal, agentID, skillID, agent.SkillUpdateInput{
-			ExpectedRevision: req.ExpectedRevision, Enabled: *req.Enabled,
-		})
+		result, err = h.SkillService.Update(
+			c.Request.Context(),
+			principal,
+			agentID,
+			skillID,
+			agent.SkillUpdateInput{
+				ExpectedRevision: req.ExpectedRevision, Enabled: *req.Enabled,
+			},
+		)
 	}
 	if err != nil {
 		writeSkillError(c, err)
@@ -306,7 +325,8 @@ func (h *Handler) readAgentSkillReference(c *gin.Context) {
 		return
 	}
 	query := c.Request.URL.Query()
-	if len(query["path"]) != 1 || query.Get("path") == "" || len(query) > 2 || (len(query) == 2 && len(query["versionId"]) != 1) {
+	if len(query["path"]) != 1 || query.Get("path") == "" || len(query) > 2 ||
+		(len(query) == 2 && len(query["versionId"]) != 1) {
 		writeBoundaryError(c, boundaryErrorValidationFailed)
 		return
 	}

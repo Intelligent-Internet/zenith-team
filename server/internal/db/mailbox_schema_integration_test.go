@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestMailboxSchemaEnforcesAddressReplayAndMetadataContracts(t *testing.T) {
@@ -116,7 +116,7 @@ func TestAgentMailSchemaEnforcesRunReplayDraftStateAndPrivateDeliveries(t *testi
 		INSERT INTO mailbox_drafts (
 			id, company_id, group_id, ordinal, subject, body_text,
 			from_name, from_address
-		) VALUES ($1,$2,$3,0,'Hello','Plain text only','Boardly','agent-mail@mail.example.com')`,
+		) VALUES ($1,$2,$3,0,'Hello','Plain text only','Zenith Team','agent-mail@mail.example.com')`,
 		draftID, fixture.CompanyA, groupID)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO mailbox_draft_deliveries (

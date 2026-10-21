@@ -15,12 +15,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // seedInboxProjectTask seeds a restricted Project with one Task and its chat,
@@ -34,8 +34,15 @@ func seedInboxProjectTask(
 ) (projectID, taskID, conversationID uuid.UUID) {
 	t.Helper()
 	projectID, taskID, conversationID = uuid.New(), uuid.New(), uuid.New()
-	mustInboxExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, $3, 'Inbox Project')`,
-		projectID, owner.CompanyID, key)
+	mustInboxExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, $3, 'Inbox Project')`,
+		projectID,
+		owner.CompanyID,
+		key,
+	)
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -62,7 +69,12 @@ func seedInboxProjectTask(
 	return projectID, taskID, conversationID
 }
 
-func grantInboxProjectRead(t *testing.T, ctx context.Context, pool *pgxpool.Pool, companyID, projectID, userID uuid.UUID) {
+func grantInboxProjectRead(
+	t *testing.T,
+	ctx context.Context,
+	pool *pgxpool.Pool,
+	companyID, projectID, userID uuid.UUID,
+) {
 	t.Helper()
 	mustInboxExec(t, ctx, pool, `
 		INSERT INTO project_grants (company_id, project_id, user_id, permission, granted_by_user_id)
@@ -100,8 +112,14 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 			var pending []events.Event
 			var err error
 			result, err = CreateInTx(ctx, q, &pending, CreateInput{
-				CompanyID: owner.CompanyID, RecipientUserID: recipient.UserID, ConversationID: conversation,
-				Type: TypeBlocker, Entity: entity, Title: key, Body: key, DedupeKey: key,
+				CompanyID:       owner.CompanyID,
+				RecipientUserID: recipient.UserID,
+				ConversationID:  conversation,
+				Type:            TypeBlocker,
+				Entity:          entity,
+				Title:           key,
+				Body:            key,
+				DedupeKey:       key,
 			})
 			return err
 		}); err != nil {
@@ -112,17 +130,33 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 	storedProject := func(itemID uuid.UUID) uuid.NullUUID {
 		t.Helper()
 		var project uuid.NullUUID
-		if err := pool.QueryRow(ctx, `SELECT project_id FROM inbox_items WHERE id = $1`, itemID).Scan(&project); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT project_id FROM inbox_items WHERE id = $1`, itemID).
+			Scan(&project); err != nil {
 			t.Fatal(err)
 		}
 		return project
 	}
 
-	byChat := create(owner, "by-chat", &conversationID, Entity{Type: protocol.EntityConversation, ID: conversationID.String()})
+	byChat := create(
+		owner,
+		"by-chat",
+		&conversationID,
+		Entity{Type: protocol.EntityConversation, ID: conversationID.String()},
+	)
 	byTask := create(owner, "by-task", nil, Entity{Type: protocol.EntityTask, ID: taskID.String()})
-	elsewhere := create(owner, "no-project", nil, Entity{Type: protocol.EntityCompany, ID: owner.CompanyID.String()})
+	elsewhere := create(
+		owner,
+		"no-project",
+		nil,
+		Entity{Type: protocol.EntityCompany, ID: owner.CompanyID.String()},
+	)
 	if !byChat.Created || !byTask.Created || !elsewhere.Created {
-		t.Fatalf("created = %t %t %t, want every item for a reader", byChat.Created, byTask.Created, elsewhere.Created)
+		t.Fatalf(
+			"created = %t %t %t, want every item for a reader",
+			byChat.Created,
+			byTask.Created,
+			elsewhere.Created,
+		)
 	}
 	for name, item := range map[string]CreateResult{"chat": byChat, "task": byTask} {
 		if got := storedProject(item.Item.ID); !got.Valid || got.UUID != projectID {
@@ -133,7 +167,12 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 		t.Errorf("item about no Project stores %v", got)
 	}
 	// A recipient who cannot read the Project is not told about it.
-	if skipped := create(member, "member-by-task", nil, Entity{Type: protocol.EntityTask, ID: taskID.String()}); skipped.Created ||
+	if skipped := create(
+		member,
+		"member-by-task",
+		nil,
+		Entity{Type: protocol.EntityTask, ID: taskID.String()},
+	); skipped.Created ||
 		skipped.Item.ID != uuid.Nil {
 		t.Fatalf("CreateInTx for a non-reader = %+v, want nothing", skipped)
 	}
@@ -143,7 +182,12 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 		t.Fatalf("non-reader Inbox rows = %d, %v; want 0", memberRows, err)
 	}
 	// A replay of a create stays a replay for a reader.
-	if replay := create(owner, "by-task", nil, Entity{Type: protocol.EntityTask, ID: taskID.String()}); replay.Created ||
+	if replay := create(
+		owner,
+		"by-task",
+		nil,
+		Entity{Type: protocol.EntityTask, ID: taskID.String()},
+	); replay.Created ||
 		replay.Item.ID != byTask.Item.ID {
 		t.Fatalf("replayed create = %+v, want the stored item", replay)
 	}
@@ -162,7 +206,11 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 		projectID, owner.UserID)
 	page, err = service.List(ctx, owner, ListOptions{Status: StatusAll})
 	if err != nil || len(page.Items) != 1 || page.Items[0].ID != elsewhere.Item.ID {
-		t.Fatalf("List after losing the Project = %+v, %v; want only the item about no Project", page.Items, err)
+		t.Fatalf(
+			"List after losing the Project = %+v, %v; want only the item about no Project",
+			page.Items,
+			err,
+		)
 	}
 	if counts, err = service.Counts(ctx, owner); err != nil || counts.UnreadCount != 1 {
 		t.Fatalf("Counts after losing the Project = %+v, %v; want 1 unread", counts, err)
@@ -170,7 +218,16 @@ func TestInboxItemsFollowTheirProject(t *testing.T) {
 	if _, err := service.Get(ctx, owner, byTask.Item.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("Get(hidden item) error = %v, want ErrNotFound", err)
 	}
-	if _, err := service.Mutate(ctx, owner, byTask.Item.ID, MutationRead, byTask.Item.Revision); !errors.Is(err, ErrNotFound) {
+	if _, err := service.Mutate(
+		ctx,
+		owner,
+		byTask.Item.ID,
+		MutationRead,
+		byTask.Item.Revision,
+	); !errors.Is(
+		err,
+		ErrNotFound,
+	) {
 		t.Fatalf("Mutate(hidden item) error = %v, want ErrNotFound", err)
 	}
 	if _, err := service.ReadConversation(ctx, owner, conversationID); !errors.Is(err, ErrConversationNotFound) {
@@ -268,7 +325,8 @@ func TestInboxCountsVersionMovesForwardAcrossProjectAccessChanges(t *testing.T) 
 	accessRevision := func() int64 {
 		t.Helper()
 		var revision int64
-		if err := pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, projectID).Scan(&revision); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, projectID).
+			Scan(&revision); err != nil {
 			t.Fatal(err)
 		}
 		return revision
@@ -304,8 +362,14 @@ func TestInboxCountsVersionMovesForwardAcrossProjectAccessChanges(t *testing.T) 
 		t.Helper()
 		mustInboxExec(t, ctx, pool, `UPDATE inbox_items SET updated_at = updated_at - interval '1 second'
 			WHERE recipient_user_id = $1`, member.UserID)
-		mustInboxExec(t, ctx, pool, `UPDATE projects SET access_changed_at = access_changed_at - interval '1 second'
-			WHERE id = $1`, projectID)
+		mustInboxExec(
+			t,
+			ctx,
+			pool,
+			`UPDATE projects SET access_changed_at = access_changed_at - interval '1 second'
+			WHERE id = $1`,
+			projectID,
+		)
 		return counts(name)
 	}
 
@@ -316,8 +380,16 @@ func TestInboxCountsVersionMovesForwardAcrossProjectAccessChanges(t *testing.T) 
 	if err := store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		var pending []events.Event
 		created, err := CreateInTx(ctx, q, &pending, CreateInput{
-			CompanyID: owner.CompanyID, RecipientUserID: member.UserID, Type: TypeBlocker,
-			Entity: Entity{Type: protocol.EntityTask, ID: taskID.String()}, Title: "t", Body: "t", DedupeKey: "version",
+			CompanyID:       owner.CompanyID,
+			RecipientUserID: member.UserID,
+			Type:            TypeBlocker,
+			Entity: Entity{
+				Type: protocol.EntityTask,
+				ID:   taskID.String(),
+			},
+			Title:     "t",
+			Body:      "t",
+			DedupeKey: "version",
 		})
 		if err == nil && !created.Created {
 			err = errors.New("the reader got no item")
@@ -333,13 +405,21 @@ func TestInboxCountsVersionMovesForwardAcrossProjectAccessChanges(t *testing.T) 
 	revoke()
 	hidden := counts("item hidden")
 	if hidden.UnreadCount != 0 || hidden.CountsVersion <= seen.CountsVersion {
-		t.Fatalf("counts after the revoke = %+v, want 0 unread and a version above %d", hidden, seen.CountsVersion)
+		t.Fatalf(
+			"counts after the revoke = %+v, want 0 unread and a version above %d",
+			hidden,
+			seen.CountsVersion,
+		)
 	}
 	stillHidden := age("item still hidden")
 	grant()
 	back := counts("item back")
 	if back.UnreadCount != 1 || back.CountsVersion <= stillHidden.CountsVersion {
-		t.Fatalf("counts after the regrant = %+v, want 1 unread and a version above %d", back, stillHidden.CountsVersion)
+		t.Fatalf(
+			"counts after the regrant = %+v, want 1 unread and a version above %d",
+			back,
+			stillHidden.CountsVersion,
+		)
 	}
 }
 

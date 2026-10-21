@@ -17,14 +17,14 @@ type scheduleMetrics struct {
 func newScheduleMetrics(registry *prometheus.Registry) scheduleMetrics {
 	gauge := func(name, help string) prometheus.Gauge {
 		value := prometheus.NewGauge(
-			prometheus.GaugeOpts{Namespace: "boardly", Subsystem: "schedule", Name: name, Help: help},
+			prometheus.GaugeOpts{Namespace: "zenith-team", Subsystem: "schedule", Name: name, Help: help},
 		)
 		registry.MustRegister(value)
 		return value
 	}
 	counter := func(name, help string, labels ...string) *prometheus.CounterVec {
 		value := prometheus.NewCounterVec(
-			prometheus.CounterOpts{Namespace: "boardly", Subsystem: "schedule", Name: name, Help: help},
+			prometheus.CounterOpts{Namespace: "zenith-team", Subsystem: "schedule", Name: name, Help: help},
 			labels,
 		)
 		registry.MustRegister(value)
@@ -32,7 +32,7 @@ func newScheduleMetrics(registry *prometheus.Registry) scheduleMetrics {
 	}
 	delay := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Namespace: "boardly",
+			Namespace: "zenith-team",
 			Subsystem: "schedule",
 			Name:      "firing_delay_seconds",
 			Help:      "Committed occurrence lateness measured using the database clock.",

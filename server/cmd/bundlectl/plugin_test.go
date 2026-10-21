@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 func writeManagedPlugin(t *testing.T, root string) string {

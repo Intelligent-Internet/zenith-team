@@ -10,12 +10,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	taskdomain "boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // planInboxPresenter records the transient presentation a Plan apply raises
@@ -65,22 +65,30 @@ func TestCompanyPlanApplyCreatesDirectTasks(t *testing.T) {
 	dbtest.SeedBoundAgent(t, ctx, pool, engineeringID, fixture.CompanyA,
 		"Engineering", "codex", &fixture.AgentA, fixture.UserA, fixture.RuntimeA)
 	slug := "schema-a"
-	desired := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}}, FormatVersion: planFormatVersion, Company: slug, Tasks: []PlanTask{{ProjectKey: "work",
-		Key: "website", AgentID: engineeringID.String(), MilestoneType: "product",
-		Title:       "Build and deploy the launch website",
-		Description: "Produce the deployed customer-facing launch website.",
-		Status:      "backlog", Priority: "high", DependsOn: []PlanTaskDependency{},
-	}, {ProjectKey: "work",
-		Key: "buy_domain", MilestoneType: "product",
-		Title:       "Purchase the launch domain",
-		Description: "Purchase the approved domain with the founder payment method.",
-		Status:      "todo", Priority: "high", DependsOn: []PlanTaskDependency{},
-	}, {ProjectKey: "work",
-		Key: "launch_review", AgentID: engineeringID.String(), MilestoneType: "launch",
-		Title:       "Prepare launch and obtain founder approval",
-		Description: "Prepare launch assets, request approval, and hand off for release.",
-		Status:      "backlog", Priority: "high", DependsOn: []PlanTaskDependency{},
-	}}}
+	desired := PlanDocument{
+		Projects:      []PlanProject{{Key: "work", Title: "Work"}},
+		FormatVersion: planFormatVersion,
+		Company:       slug,
+		Tasks: []PlanTask{{
+			ProjectKey: "work",
+			Key:        "website", AgentID: engineeringID.String(), MilestoneType: "product",
+			Title:       "Build and deploy the launch website",
+			Description: "Produce the deployed customer-facing launch website.",
+			Status:      "backlog", Priority: "high", DependsOn: []PlanTaskDependency{},
+		}, {
+			ProjectKey: "work",
+			Key:        "buy_domain", MilestoneType: "product",
+			Title:       "Purchase the launch domain",
+			Description: "Purchase the approved domain with the founder payment method.",
+			Status:      "todo", Priority: "high", DependsOn: []PlanTaskDependency{},
+		}, {
+			ProjectKey: "work",
+			Key:        "launch_review", AgentID: engineeringID.String(), MilestoneType: "launch",
+			Title:       "Prepare launch and obtain founder approval",
+			Description: "Prepare launch assets, request approval, and hand off for release.",
+			Status:      "backlog", Priority: "high", DependsOn: []PlanTaskDependency{},
+		}},
+	}
 	result, err := service.ApplyCompanyPlan(
 		ctx,
 		auth.UserPrincipal{
@@ -92,7 +100,9 @@ func TestCompanyPlanApplyCreatesDirectTasks(t *testing.T) {
 			CompanySlug:     slug,
 			CreatedAt:       time.Now().UTC(),
 			Base: PlanBase{
-				Projects:     []PlanBaseEntity{{ID: fixture.ProjectA.String(), Key: "work", Revision: 1}},
+				Projects: []PlanBaseEntity{
+					{ID: fixture.ProjectA.String(), Key: "work", Revision: 1},
+				},
 				Tasks:        []PlanBaseEntity{},
 				Dependencies: []PlanBaseDependency{},
 			},
@@ -176,7 +186,9 @@ func TestCompanyPlanApplyCreatesDirectTasks(t *testing.T) {
 			CompanySlug:     slug,
 			CreatedAt:       time.Now().UTC(),
 			Base: PlanBase{
-				Projects:     []PlanBaseEntity{{ID: fixture.ProjectA.String(), Key: "work", Revision: 1}},
+				Projects: []PlanBaseEntity{
+					{ID: fixture.ProjectA.String(), Key: "work", Revision: 1},
+				},
 				Tasks:        baseTasks,
 				Dependencies: []PlanBaseDependency{},
 			},

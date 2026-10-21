@@ -11,9 +11,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // ErrChannelInvocationDenied signals that a channel Run's frozen authority
@@ -30,24 +30,42 @@ func AuthorizeChannelInvocationInTx(ctx context.Context, q *db.Queries, in RunTr
 	if err != nil {
 		return err
 	}
-	return AuthorizeAgentInvocationInTx(ctx, q, RunTrigger{CompanyID: invocation.CompanyID, AgentID: invocation.AgentID, AuthorizedByUserID: invocation.CallerUserID})
+	return AuthorizeAgentInvocationInTx(
+		ctx,
+		q,
+		RunTrigger{
+			CompanyID:          invocation.CompanyID,
+			AgentID:            invocation.AgentID,
+			AuthorizedByUserID: invocation.CallerUserID,
+		},
+	)
 }
 
 // authorizeChannelAuthorityInTx is the channel half of
 // AuthorizeChannelInvocationInTx: the invocation is live for this Run and
 // its caller still holds the channel. It reads no binding.
 func authorizeChannelAuthorityInTx(ctx context.Context, q *db.Queries, in RunTrigger) (db.ChannelInvocation, error) {
-	invocation, err := q.GetChannelInvocation(ctx, db.GetChannelInvocationParams{InvocationID: in.InvocationID.UUID, CompanyID: in.CompanyID})
+	invocation, err := q.GetChannelInvocation(
+		ctx,
+		db.GetChannelInvocationParams{InvocationID: in.InvocationID.UUID, CompanyID: in.CompanyID},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return db.ChannelInvocation{}, ErrChannelInvocationDenied
 	}
 	if err != nil {
 		return db.ChannelInvocation{}, fmt.Errorf("load channel invocation: %w", err)
 	}
-	if invocation.ConversationID != in.ConversationID || invocation.AgentID != in.AgentID || (invocation.Status != "active" && invocation.Status != "waiting_input") {
+	if invocation.ConversationID != in.ConversationID || invocation.AgentID != in.AgentID ||
+		(invocation.Status != "active" && invocation.Status != "waiting_input") {
 		return db.ChannelInvocation{}, ErrChannelInvocationDenied
 	}
-	allowed, err := q.ChannelInvocationAuthorized(ctx, db.ChannelInvocationAuthorizedParams{InvocationID: invocation.ID, ActorRoles: auth.RolesWith(auth.PermissionConversationsDiscuss)})
+	allowed, err := q.ChannelInvocationAuthorized(
+		ctx,
+		db.ChannelInvocationAuthorizedParams{
+			InvocationID: invocation.ID,
+			ActorRoles:   auth.RolesWith(auth.PermissionConversationsDiscuss),
+		},
+	)
 	if err != nil {
 		return db.ChannelInvocation{}, fmt.Errorf("check channel invocation authority: %w", err)
 	}
@@ -73,8 +91,16 @@ type channelInvocationContext struct {
 	ContextRevision int64     `json:"contextRevision"`
 }
 
-func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, document map[string]json.RawMessage) error {
-	invocation, err := q.GetChannelInvocation(ctx, db.GetChannelInvocationParams{InvocationID: in.InvocationID.UUID, CompanyID: in.CompanyID})
+func freezeChannelInvocation(
+	ctx context.Context,
+	q *db.Queries,
+	in RunTrigger,
+	document map[string]json.RawMessage,
+) error {
+	invocation, err := q.GetChannelInvocation(
+		ctx,
+		db.GetChannelInvocationParams{InvocationID: in.InvocationID.UUID, CompanyID: in.CompanyID},
+	)
 	if err != nil {
 		return fmt.Errorf("load channel context invocation: %w", err)
 	}
@@ -82,7 +108,14 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 	if err != nil {
 		return err
 	}
-	rows, err := q.ListChannelContext(ctx, db.ListChannelContextParams{ChannelID: invocation.ChannelID, TriggerMessageID: invocation.TriggerMessageID, ThreadRootID: invocation.ThreadRootID})
+	rows, err := q.ListChannelContext(
+		ctx,
+		db.ListChannelContextParams{
+			ChannelID:        invocation.ChannelID,
+			TriggerMessageID: invocation.TriggerMessageID,
+			ThreadRootID:     invocation.ThreadRootID,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -90,7 +123,7 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 	for _, row := range rows {
 		contextMessageIDs = append(contextMessageIDs, row.ID)
 	}
-	// The Run uses its caller's access (D31), so it freezes the Artifact
+	// The Run uses its caller's access, so it freezes the Artifact
 	// references its caller may read, as it does the chat files below.
 	references, err := q.ListRunChannelArtifacts(ctx, db.ListRunChannelArtifactsParams{
 		CompanyID: invocation.CompanyID, MessageIds: contextMessageIDs, ActorUserID: invocation.CallerUserID,
@@ -127,11 +160,28 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 	if err := freezeChatWhiteboards(document, briefs); err != nil {
 		return err
 	}
-	snapshot := runConversationSnapshot{SchemaVersion: 1, Kind: "channel_agent", ConversationID: in.ConversationID.String(), ThroughSeq: head.HeadSeq, Truncated: len(rows) == 64, Items: []runConversationSnapshotItem{}}
+	snapshot := runConversationSnapshot{
+		SchemaVersion:  1,
+		Kind:           "channel_agent",
+		ConversationID: in.ConversationID.String(),
+		ThroughSeq:     head.HeadSeq,
+		Truncated:      len(rows) == 64,
+		Items:          []runConversationSnapshotItem{},
+	}
 	size := 0
 	messageIDs := []uuid.UUID{invocation.TriggerMessageID}
 	for _, row := range rows {
-		item := runConversationSnapshotItem{ID: row.ID.String(), Seq: row.Seq, Author: runContextActor{ID: row.AuthorID.UUID.String(), Kind: row.AuthorKind, Name: row.AuthorName}, CreatedAt: row.CreatedAt.Time, Content: channelArtifactContent(row.Content, artifactsByMessage[row.ID])}
+		item := runConversationSnapshotItem{
+			ID:  row.ID.String(),
+			Seq: row.Seq,
+			Author: runContextActor{
+				ID:   row.AuthorID.UUID.String(),
+				Kind: row.AuthorKind,
+				Name: row.AuthorName,
+			},
+			CreatedAt: row.CreatedAt.Time,
+			Content:   channelArtifactContent(row.Content, artifactsByMessage[row.ID]),
+		}
 		encoded, err := json.Marshal(item)
 		if err != nil {
 			return err
@@ -149,7 +199,7 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 	if err != nil {
 		return err
 	}
-	// The Run uses its caller's access (D31), so it freezes the files its
+	// The Run uses its caller's access, so it freezes the files its
 	// caller may open: a Project file stays out unless the caller reads one of
 	// its Projects (ADR 0017).
 	files, err := q.ListRunChannelAttachments(ctx, db.ListRunChannelAttachmentsParams{
@@ -165,24 +215,44 @@ func freezeChannelInvocation(ctx context.Context, q *db.Queries, in RunTrigger, 
 			continue
 		}
 		seen[file.Attachment.ID] = true
-		attachments = append(attachments, runAttachedFileBrief{ID: file.Attachment.ID.String(), Filename: file.Attachment.Filename, ContentType: file.Attachment.ContentType, SizeBytes: file.Attachment.SizeBytes})
+		attachments = append(
+			attachments,
+			runAttachedFileBrief{
+				ID:          file.Attachment.ID.String(),
+				Filename:    file.Attachment.Filename,
+				ContentType: file.Attachment.ContentType,
+				SizeBytes:   file.Attachment.SizeBytes,
+			},
+		)
 	}
 	document["channelAttachments"], err = json.Marshal(attachments)
 	if err != nil {
 		return err
 	}
-	document["channelInvocation"], err = json.Marshal(channelInvocationContext{ID: invocation.ID, ChannelID: invocation.ChannelID, ThreadRootID: invocation.ThreadRootID, ContextRevision: head.ChannelContextRevision})
+	document["channelInvocation"], err = json.Marshal(
+		channelInvocationContext{
+			ID:              invocation.ID,
+			ChannelID:       invocation.ChannelID,
+			ThreadRootID:    invocation.ThreadRootID,
+			ContextRevision: head.ChannelContextRevision,
+		},
+	)
 	return err
 }
 
 // CancelChannelInvocationRunsInTx revokes live Run tokens and emits the same
 // cancellation events as other authority revocations. Locks precede Run writes.
-func CancelChannelInvocationRunsInTx(ctx context.Context, q *db.Queries, pending *[]events.Event, invocation db.ChannelInvocation) error {
+func CancelChannelInvocationRunsInTx(
+	ctx context.Context,
+	q *db.Queries,
+	pending *[]events.Event,
+	invocation db.ChannelInvocation,
+) error {
 	runs, err := q.ListActiveInvocationRuns(ctx, uuid.NullUUID{UUID: invocation.ID, Valid: true})
 	if err != nil {
 		return err
 	}
-	_, err = cancelRunCandidatesInTx(ctx, q, pending, invocation.CompanyID, runs, "channel_access_revoked")
+	_, err = cancelRunCandidatesInTx(ctx, q, pending, runs, "channel_access_revoked")
 	return err
 }
 
@@ -198,7 +268,12 @@ func refreshChannelRunContext(ctx context.Context, q *db.Queries, run db.Run) (d
 	if !run.InvocationID.Valid {
 		return run, nil
 	}
-	in := RunTrigger{CompanyID: run.CompanyID, ConversationID: run.ConversationID, AgentID: run.AgentID, InvocationID: run.InvocationID}
+	in := RunTrigger{
+		CompanyID:      run.CompanyID,
+		ConversationID: run.ConversationID,
+		AgentID:        run.AgentID,
+		InvocationID:   run.InvocationID,
+	}
 	if _, err := authorizeChannelAuthorityInTx(ctx, q, in); err != nil {
 		return db.Run{}, err
 	}
@@ -220,7 +295,16 @@ func validateChannelRunStart(ctx context.Context, q *db.Queries, run db.Run) err
 	if !run.InvocationID.Valid {
 		return nil
 	}
-	if err := AuthorizeChannelInvocationInTx(ctx, q, RunTrigger{CompanyID: run.CompanyID, ConversationID: run.ConversationID, AgentID: run.AgentID, InvocationID: run.InvocationID}); err != nil {
+	if err := AuthorizeChannelInvocationInTx(
+		ctx,
+		q,
+		RunTrigger{
+			CompanyID:      run.CompanyID,
+			ConversationID: run.ConversationID,
+			AgentID:        run.AgentID,
+			InvocationID:   run.InvocationID,
+		},
+	); err != nil {
 		return err
 	}
 	var doc struct {

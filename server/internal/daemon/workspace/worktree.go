@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/repocache"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
 )
 
 const (
@@ -61,8 +61,8 @@ type Acquired struct {
 	Reused  bool
 	// GitDir is the Task worktree's own folder in its Project main's
 	// repository (.git/worktrees/<name>: its HEAD, index and their logs),
-	// the one place there a Run in the worktree may write (Access TECH
-	// B3f). Empty for a scratch workspace, and when the worktree's .git file
+	// the one place there a Run in the worktree may write. Empty for a scratch
+	// workspace, and when the worktree's .git file
 	// and that folder do not name each other.
 	GitDir string
 }
@@ -182,7 +182,7 @@ const (
 	// workspaceSuperseded is a Task root whose workspace generation a
 	// confirmed handoff advanced past (ADR 0014). No Run continues it, and
 	// because the work in it was never merged, GC keeps it until a
-	// disposition is recorded (workspaces TECH §11.4).
+	// disposition is recorded.
 	workspaceSuperseded workspaceState = "superseded"
 )
 
@@ -496,7 +496,7 @@ func (m *Manager) acquireScopedScratchLocked(
 // .git/worktrees, as a real folder, and its gitdir file must name workDir's
 // .git back. Another worktree's folder names its own worktree, so no Run
 // can point this at it. It is empty when any check fails; the Run then
-// writes nothing in the repository (Access TECH B3f).
+// writes nothing in the repository.
 func worktreeGitDir(mainDir, workDir string) string {
 	readPointer := func(file string) (string, bool) {
 		info, err := os.Lstat(file)
@@ -707,7 +707,7 @@ func (m *Manager) refreshScopedWorktree(
 }
 
 func taskBranch(runID uuid.UUID) string {
-	return "boardly/task-" + runID.String()
+	return "zenith-team/task-" + runID.String()
 }
 
 // AcquireIsolatedScratch creates a scratch identity scoped to one cloud Run.
@@ -722,7 +722,7 @@ func (m *Manager) AcquireIsolatedScratch(conversationID string, runID uuid.UUID)
 	}
 	identity := uuid.NewSHA1(
 		uuid.NameSpaceOID,
-		[]byte(fmt.Sprintf("boardly:isolated-run:%s:%s", conversationID, runID)),
+		[]byte(fmt.Sprintf("zenith-team:isolated-run:%s:%s", conversationID, runID)),
 	).String()
 	acquired, err := m.AcquireScratch(identity, runID)
 	if err != nil {
@@ -1102,7 +1102,7 @@ func (m *Manager) gcLocked(ctx context.Context, activeConversationIDs map[string
 		}
 		// A superseded root has no clock at all: it holds work a handoff took
 		// away before anybody merged it, and nothing records a disposition
-		// for it yet, so it is kept (workspaces TECH §11.4).
+		// for it yet, so it is kept.
 		eligible := entry.State == workspaceCompleted && entry.CompletedAt != nil &&
 			!entry.CompletedAt.Add(m.retention.Completed).After(now)
 		eligible = eligible || entry.State == workspaceOrphaned && entry.OrphanedAt != nil &&

@@ -6,14 +6,14 @@ import (
 	"errors"
 	"net/http"
 
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
 const maxCompanyBodyBytes = 64 << 10
@@ -56,7 +56,7 @@ type createCompanyRequest struct {
 }
 
 type updateCompanyProfileRequest struct {
-	ExpectedRevision   optional[int64] `json:"expectedRevision" binding:"omitnil,required,revision"`
+	ExpectedRevision   optional[int64] `json:"expectedRevision"   binding:"omitnil,required,revision"`
 	Name               json.RawMessage `json:"name"`
 	ContactEmail       json.RawMessage `json:"contactEmail"`
 	PhoneCountryISO2   json.RawMessage `json:"phoneCountryIso2"`
@@ -319,7 +319,9 @@ func (request updateCompanyProfileRequest) domainInput() (company.UpdateProfileI
 		if value != nil {
 			id, err := util.ParseGoUUID(*value)
 			if err != nil {
-				return company.UpdateProfileInput{}, errors.New("avatarAttachmentId must be a UUID or null")
+				return company.UpdateProfileInput{}, errors.New(
+					"avatarAttachmentId must be a UUID or null",
+				)
 			}
 			*avatarAttachmentID = uuid.NullUUID{UUID: id, Valid: true}
 		}

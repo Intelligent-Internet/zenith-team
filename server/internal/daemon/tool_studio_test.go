@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,10 +17,13 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/google/uuid"
 )
+
+// testStudioOrigin turns the optional Zenith Studio integration on.
+const testStudioOrigin = "https://studio.example"
 
 func TestStudioRunEnvironmentLaunchesConversationScopedCommand(t *testing.T) {
 	t.Parallel()
@@ -54,6 +58,7 @@ func TestStudioRunEnvironmentLaunchesConversationScopedCommand(t *testing.T) {
 			Enabled:  true,
 			EnvRoot:  root,
 			Run:      run,
+			APIURL:   testStudioOrigin,
 			Endpoint: server.URL + "/v1/tools/studio-project/" + run.RuntimeID + "/" + run.ID.String(),
 			RunToken: "live-run-proof",
 		},
@@ -92,7 +97,7 @@ func TestStudioLauncherPreservesUpstreamFailure(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(protocol.StudioProject{ProjectID: "project"})
 	}))
 	defer server.Close()
@@ -115,7 +120,8 @@ func TestStudioLauncherPreservesUpstreamFailure(t *testing.T) {
 		"node",
 	)
 	output, err := cmd.CombinedOutput()
-	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 5 {
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) || exit.ExitCode() != 5 {
 		t.Fatalf("expected CLI exit 5, got %v: %s", err, output)
 	}
 	if string(output) != want {
@@ -151,7 +157,7 @@ func TestStudioLauncherReportsTeamBindingFailure(t *testing.T) {
 					Encode(map[string]string{"code": tt.code, "detail": "private-upstream-value"})
 			}))
 			defer cloud.Close()
-			d := &Daemon{client: NewClient(cloud.URL)}
+			d := &Daemon{client: NewClient(cloud.URL), cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 			mux := http.NewServeMux()
 			mux.HandleFunc(
 				"POST /v1/tools/studio-project/{runtimeId}/{runId}",
@@ -361,7 +367,7 @@ func TestLocalStudioProjectBridgePreservesDaemonAndRunProof(t *testing.T) {
 	client := NewClient(server.URL)
 	client.SetToken("user-session")
 	client.daemonID = "daemon-a"
-	d := &Daemon{client: client}
+	d := &Daemon{client: client, cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/tools/studio-project/{runtimeId}/{runId}", d.localStudioProjectHandler())
 	for _, authenticated := range []bool{false, true} {
@@ -644,7 +650,7 @@ func TestStudioAuthWaitBridgeRequiresLiveRunProof(t *testing.T) {
 				t.Error("wait was not authorized or payload was lost")
 			}
 			waits.Add(1)
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		var request protocol.StudioProjectRequest
@@ -653,14 +659,14 @@ func TestStudioAuthWaitBridgeRequiresLiveRunProof(t *testing.T) {
 			t.Errorf("authorization action = %s", request.Action)
 		}
 		if request.RunToken != "live-proof" {
-			w.WriteHeader(403)
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
 		verified.Add(1)
 		_ = json.NewEncoder(w).Encode(protocol.StudioProject{})
 	}))
 	defer server.Close()
-	d := &Daemon{client: NewClient(server.URL)}
+	d := &Daemon{client: NewClient(server.URL), cfg: Config{StudioAPIOrigin: testStudioOrigin}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/tools/studio-project/{runtimeId}/{runId}", d.localStudioProjectHandler())
 	for _, token := range []string{"stale-proof", "live-proof"} {
@@ -708,7 +714,7 @@ func TestStudioLauncherScopesRenderPublication(t *testing.T) {
 			); err != nil {
 				t.Fatal(err)
 			}
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				_ = json.NewEncoder(w).Encode(protocol.StudioProject{ProjectID: "project"})
 			}))
 			defer server.Close()

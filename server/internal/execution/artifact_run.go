@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 
 	"github.com/google/uuid"
 )
@@ -14,8 +14,7 @@ import (
 // revocable grants for the Run's Authorizer. Every Run, in a direct chat, a
 // Task chat or tagged in a channel or group DM, reads an Artifact exactly
 // when its Authorizer reads it through the person's own path, never more,
-// and no chat audience narrows it (D31, Access TECH B10). A scheduled Run
-// reads none.
+// and no chat audience narrows it. A scheduled Run reads none.
 func (s *DefaultDeliverableService) ReadArtifactForRun(
 	ctx context.Context,
 	p auth.UserPrincipal,

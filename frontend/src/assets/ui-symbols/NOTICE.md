@@ -19,7 +19,7 @@ They match the Iconsax 24 × 24 grid, 1.5 px line weight, rounded ends, and
 Use Iconsax for other UI icons; do not substitute an unrelated Free glyph for an
 established action symbol.
 
-The owner confirmed on 2026-09-15 that these symbols may be reused in new UI.
+These symbols may be reused in new UI.
 Additional authored symbols are allowed when the Iconsax catalog lacks a
 suitable glyph. Match the same grid, line weight, rounded ends/joins,
 `currentColor` and visual weight. Add the SVG here, register it in the shared
@@ -66,7 +66,7 @@ from another icon library or labelled as official Iconsax artwork.
 ## Selection pointer
 
 `selection-pointer.svg` is an original Zenith Team dashed selection box with
-an outlined pointer, following the owner's Whiteboard reference on 2026-10-10.
+an outlined pointer for the Whiteboard.
 The official Iconsax Outline catalog was inspected for selection and cursor
 symbols; the reviewed results did not provide this unfilled combination.
 The symbol uses the shared 24 × 24 grid, 1.5 px rounded strokes and

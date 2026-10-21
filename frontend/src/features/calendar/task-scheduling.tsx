@@ -2,7 +2,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { useState } from "react";
 import { Link } from "react-router";
 import type { TaskDto } from "@/shared/api/types";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { hasProjectPermission } from "@/shared/permissions";
 import { ArrowUpRight, CalendarDays, Repeat2 } from "@/shared/ui/icons";
 import { dateKey, taskScheduleStateLabel } from "./calendar-dates";
@@ -58,7 +58,7 @@ export function TaskScheduling({
               {label}
             </Popover.Trigger>
             <Popover.Portal
-              container={document.querySelector(".boardly-workspace-theme")}
+              container={document.querySelector(".zenith-team-workspace-theme")}
             >
               <Popover.Content
                 className="task-schedule-popover"
@@ -78,7 +78,7 @@ export function TaskScheduling({
                     className="text-workspace-danger text-[length:12px] leading-[1.5]"
                     role="alert"
                   >
-                    {getBoardlyQueryErrorMessage(schedule.error)}
+                    {getZenithTeamQueryErrorMessage(schedule.error)}
                   </p>
                 ) : !task.scheduleId || schedule.currentData ? (
                   <TaskScheduleEditor

@@ -2,7 +2,7 @@
 
 The development stack provides PostgreSQL 17, Redis, and Silo. Start it with
 `make infra-up`; the command waits for all long-running services to become
-healthy and creates the private `boardly-attachments` bucket.
+healthy and creates the private `zenith-team-attachments` bucket.
 
 The stack is deliberately infrastructure-only: the API server and the
 daemon are **not** containerized in development. Run the server from source
@@ -15,13 +15,13 @@ image rebuilds; the daemon likewise runs from source via
 Default local connection settings:
 
 ```text
-PostgreSQL  postgresql://boardly:boardly@localhost:5432/boardly?sslmode=disable
+PostgreSQL  postgresql://zenith_team:zenith_team@localhost:5432/zenith_team?sslmode=disable
 Redis       redis://localhost:6379/0
 Silo API    http://localhost:9000
 Silo UI     http://localhost:9001
-S3 key      boardly
-S3 secret   boardly-development-secret
-S3 bucket   boardly-attachments
+S3 key      zenith-team
+S3 secret   zenith-team-development-secret
+S3 bucket   zenith-team-attachments
 ```
 
 Host ports can be overridden with `APP_POSTGRES_PORT`,
@@ -55,14 +55,14 @@ The equivalent explicit
 Docker-infra invocation from `server/`:
 
 ```bash
-APP_DATABASE_URL='postgresql://boardly:boardly@localhost:5432/boardly?sslmode=disable' \
+APP_DATABASE_URL='postgresql://zenith_team:zenith_team@localhost:5432/zenith_team?sslmode=disable' \
 AUTH_CSRF_SECRET='development-only-32-byte-secret!' \
 APP_REDIS_URL='redis://localhost:6379/0' \
-STORAGE_S3_BUCKET='boardly-attachments' \
+STORAGE_S3_BUCKET='zenith-team-attachments' \
 STORAGE_S3_REGION='us-east-1' \
 STORAGE_S3_ENDPOINT='http://localhost:9000' \
-STORAGE_S3_ACCESS_KEY_ID='boardly' \
-STORAGE_S3_SECRET_ACCESS_KEY='boardly-development-secret' \
+STORAGE_S3_ACCESS_KEY_ID='zenith-team' \
+STORAGE_S3_SECRET_ACCESS_KEY='zenith-team-development-secret' \
 STORAGE_S3_USE_PATH_STYLE='true' \
 go run ./cmd/server
 ```

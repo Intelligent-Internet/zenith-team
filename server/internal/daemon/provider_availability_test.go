@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // adoptionRecorder is a daemon-plane server that answers every registration
@@ -253,7 +253,7 @@ func sortedCopy(ids []string) []string {
 	return out
 }
 
-// DR-AC20 fixes the cadence: a CLI installed after start is found within two
+// The cadence: a CLI installed after start is found within two
 // minutes, and a CLI that keeps failing costs at most one attempt per half
 // hour.
 func TestProviderAvailabilityCadenceMatchesTheSpec(t *testing.T) {
@@ -344,7 +344,7 @@ func TestProvidersWithoutRecord(t *testing.T) {
 // companiesToRegister selects the companies a fresh payload must be
 // registered for: those lacking a record for a provider the payload carries
 // (adoption), and those whose recorded provider is gone from disk and
-// therefore absent from the payload (DR-FR9a's uninstall drop). A company
+// therefore absent from the payload (the uninstall drop). A company
 // whose recorded provider is still installed but absent from this round's
 // payload is held back instead, because the register response replaces the
 // company's runtime ids and would drop the runtime it runs today over a probe
@@ -440,7 +440,7 @@ func equalStrings(got, want []string) bool {
 	return true
 }
 
-// DR-AC20: a daemon that registered only Claude picks up a codex installed
+// A daemon that registered only Claude picks up a codex installed
 // later without a restart — one registration per tracked company carrying the
 // new provider online beside the existing one, the runtime ids indexed for
 // heartbeat and claiming, the connector/plugin backends wired exactly as at
@@ -558,7 +558,7 @@ func TestProviderAvailabilityIgnoresAnUnchangedMachine(t *testing.T) {
 	}
 }
 
-// DR-FR9: a CLI that disappears is not removed until restart — the daemon
+// A CLI that disappears is not removed until restart — the daemon
 // keeps the provider, registers nothing and probes nothing.
 func TestProviderAvailabilityKeepsAProviderThatDisappeared(t *testing.T) {
 	recorder := newAdoptionRecorder()
@@ -644,10 +644,10 @@ func TestProviderAvailabilityBacksOffWhileANewCLIFailsItsProbe(t *testing.T) {
 	}
 }
 
-// A found CLI that registers as unusable (DR-C22) counts as failing for the
+// A found CLI that registers as unusable counts as failing for the
 // backoff, but it is still registered offline with its reason so the roster
 // can say why, and its runtimes are never claimed for. From then on it has a
-// record, so recovery belongs to the version refresh (§9.8).
+// record, so recovery belongs to the version refresh.
 func TestProviderAvailabilityBacksOffWhileAFoundCLIIsUnusable(t *testing.T) {
 	recorder := newAdoptionRecorder()
 	d := newAdoptionDaemon(t, recorder.serve(t).URL)
@@ -854,7 +854,7 @@ func TestProviderAvailabilityLetsAnUninstalledProviderGoOfflineOnAdoption(t *tes
 	}
 }
 
-// DR-FR9a: a provider CLI uninstalled while the daemon runs is never
+// A provider CLI uninstalled while the daemon runs is never
 // deregistered, and it does not wait for another provider's adoption to be
 // noticed. The round that finds it gone re-registers every company that had a
 // record for it with a payload that omits it — which is what stops the daemon

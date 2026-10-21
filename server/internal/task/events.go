@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // Topic is the task family. Every fact this domain publishes travels on it,
@@ -122,7 +122,7 @@ var (
 )
 
 // NewDeletedEvent stages task.deleted. It is exported because the one place
-// Boardly deletes a task is a Company Plan apply, which reconciles a desired
+// Zenith Team deletes a task is a Company Plan apply, which reconciles a desired
 // document against what exists and owns that transaction; the task domain
 // still owns what the fact is called and what it carries.
 func NewDeletedEvent(

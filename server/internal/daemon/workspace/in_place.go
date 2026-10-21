@@ -28,7 +28,7 @@ const (
 )
 
 // InPlaceRunIdentity is what a Run receipt records about the work it belongs
-// to, so review can reject a stale identity (WS-FR9).
+// to, so review can reject a stale identity.
 type InPlaceRunIdentity struct {
 	CompanyID      string
 	ConversationID string
@@ -39,7 +39,7 @@ type InPlaceRunIdentity struct {
 // bound local directory. It records the commit HEAD pointed at before the
 // provider ran and the one it pointed at when the Run ended, which is the
 // exact bounded deliverable diff review shows and the identity acceptance
-// verifies (Workspaces TECH §11.4). It lives in the Run's own environment
+// verifies. It lives in the Run's own environment
 // root — never in the person's repository — and is authenticated with the
 // same key as every other lifecycle record, so a hand-edited file is
 // unusable rather than trusted.
@@ -140,7 +140,7 @@ func (m *Manager) resolveInPlaceRun(runID uuid.UUID) (inPlaceRun, error) {
 
 // reviewInPlaceRun is ReviewTask for a Run that executed in place: the diff
 // between the commit the Run started from and the commit it ended on, with
-// the same dirty-tree rule acceptance applies (WS-FR10: review shows what
+// the same dirty-tree rule acceptance applies (review shows what
 // acceptance will decide). Read-only — no command here touches the index or
 // the tree of the person's repository.
 func (m *Manager) reviewInPlaceRun(ctx context.Context, runID uuid.UUID) (TaskReview, error) {

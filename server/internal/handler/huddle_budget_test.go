@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/usage"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
 )
 
 type huddleBudgetStub struct {
@@ -15,7 +16,11 @@ type huddleBudgetStub struct {
 	configure func(usage.ConfigureHuddleBudgetInput) (usage.HuddleBudget, error)
 }
 
-func (s huddleBudgetStub) Configure(_ context.Context, _ auth.UserPrincipal, input usage.ConfigureHuddleBudgetInput) (usage.HuddleBudget, error) {
+func (s huddleBudgetStub) Configure(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	input usage.ConfigureHuddleBudgetInput,
+) (usage.HuddleBudget, error) {
 	return s.configure(input)
 }
 
@@ -40,19 +45,28 @@ func TestConfigureHuddleBudget(t *testing.T) {
 			userID, companyID := uuid.New(), uuid.New()
 			h := New(Handler{
 				AuthService: authenticatedAuthStub(userID),
-				CompanyService: &companyServiceStub{requirePermission: func(_ context.Context, p auth.UserPrincipal, _ uuid.UUID) (auth.UserPrincipal, error) {
-					p.CompanyID = companyID
-					p.Role = auth.CompanyRoleAdmin
-					return p, nil
-				}},
-				HuddleBudgetService: huddleBudgetStub{configure: func(input usage.ConfigureHuddleBudgetInput) (usage.HuddleBudget, error) {
-					if tc.want != 200 {
-						t.Fatal("invalid input reached service")
-					}
-					return usage.HuddleBudget{Revision: 1}, nil
-				}},
+				CompanyService: &companyServiceStub{
+					requirePermission: func(_ context.Context, p auth.UserPrincipal, _ uuid.UUID) (auth.UserPrincipal, error) {
+						p.CompanyID = companyID
+						p.Role = auth.CompanyRoleAdmin
+						return p, nil
+					},
+				},
+				HuddleBudgetService: huddleBudgetStub{
+					configure: func(_ usage.ConfigureHuddleBudgetInput) (usage.HuddleBudget, error) {
+						if tc.want != 200 {
+							t.Fatal("invalid input reached service")
+						}
+						return usage.HuddleBudget{Revision: 1}, nil
+					},
+				},
 			})
-			response := serveBearerJSON(h, http.MethodPut, "/api/v1/companies/"+companyID.String()+"/huddle-budget", []byte(tc.body))
+			response := serveBearerJSON(
+				h,
+				http.MethodPut,
+				"/api/v1/companies/"+companyID.String()+"/huddle-budget",
+				[]byte(tc.body),
+			)
 			if response.Code != tc.want {
 				t.Fatalf("status/body = %d/%s, want %d", response.Code, response.Body.String(), tc.want)
 			}

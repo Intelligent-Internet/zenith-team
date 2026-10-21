@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 
 import { SettingsCard } from "@/features/settings/components/settings-primitives";
+import { deployment } from "@/shared/lib/deployment";
 
 export function SubscriptionSettingsPage() {
   return (
@@ -14,7 +15,11 @@ export function SubscriptionSettingsPage() {
         <nav aria-label="Subscription resources">
           <Link to="/analytics">Open Analytics</Link>
           <Link to="/settings/agents">Open Computers</Link>
-          <a href="mailto:support@ii.inc">Contact support@ii.inc</a>
+          {deployment.supportEmail ? (
+            <a href={`mailto:${deployment.supportEmail}`}>
+              Contact {deployment.supportEmail}
+            </a>
+          ) : null}
         </nav>
       </SettingsCard>
     </div>

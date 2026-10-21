@@ -43,7 +43,7 @@ func TestManagerClonesThenFetchesBareCacheWithoutCredentialArguments(t *testing.
 		t.Fatal(err)
 	}
 	repository := Repository{
-		Key: "github:installation-1:repository-2", RemoteURL: "https://github.com/acme/boardly.git",
+		Key: "github:installation-1:repository-2", RemoteURL: "https://github.com/acme/zenith-team.git",
 		AuthenticationEnvironment: []string{"GIT_ASKPASS=/private/helper", "GITHUB_TOKEN=short-lived-secret"},
 	}
 	first, err := manager.Ensure(context.Background(), repository)

@@ -1,9 +1,7 @@
 export function desktopAppUrl(path: string): string {
-  const environment = import.meta.env.VITE_BOARDLY_DESKTOP_ENV;
   const protocol =
-    environment === "dev" ||
-    (!environment && window.location.hostname === "dev.example.com")
-      ? "boardly-dev"
-      : "boardly";
+    import.meta.env.VITE_ZENITH_TEAM_DESKTOP_ENV === "dev"
+      ? "zenith-team-dev"
+      : "zenith-team";
   return `${protocol}:/${path}`;
 }

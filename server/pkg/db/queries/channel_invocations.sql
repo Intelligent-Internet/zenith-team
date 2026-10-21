@@ -134,8 +134,8 @@ SELECT v.company_id,v.conversation_id,sqlc.arg(run_id)::uuid,
 FROM channel_invocations v WHERE v.id=sqlc.arg(invocation_id)::uuid;
 
 -- name: ListChannelAgentActivity :many
--- A tagged Run works for the person who tagged the Agent, with their access
--- (D31), so each viewer reads only the items of the Runs they started: never
+-- A tagged Run works for the person who tagged the Agent, with their access,
+-- so each viewer reads only the items of the Runs they started: never
 -- another tagger's requests or tool output, whoever created the Agent.
 SELECT i.id,i.run_id,r.invocation_id,i.type,i.content,i.parts,i.created_at
 FROM conversation_items i JOIN runs r ON r.id=i.run_id

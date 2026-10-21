@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"boardly.dev/boardly/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -49,44 +49,44 @@ type Registry struct {
 func NewRegistry() *Registry {
 	registry := prometheus.NewRegistry()
 	httpRequests := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly",
+		Namespace: "zenith-team",
 		Subsystem: "http",
 		Name:      "requests_total",
 		Help:      "Total HTTP requests by method, route template, and status.",
 	}, []string{"method", "route", "status"})
 	httpDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "boardly",
+		Namespace: "zenith-team",
 		Subsystem: "http",
 		Name:      "request_duration_seconds",
 		Help:      "HTTP request duration by method and route template.",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"method", "route"})
 	runTokens := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly",
+		Namespace: "zenith-team",
 		Subsystem: "run",
 		Name:      "tokens_total",
 		Help:      "Total provider tokens persisted for Runs by bounded provider and token kind.",
 	}, []string{"provider", "kind"})
 	runTerminal := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly",
+		Namespace: "zenith-team",
 		Subsystem: "run",
 		Name:      "terminal_total",
 		Help:      "Total newly persisted terminal Run outcomes by bounded provider and result class.",
 	}, []string{"provider", "outcome", "failure_kind"})
 	mailboxWebhooks := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly", Subsystem: "mailbox", Name: "webhooks_total",
+		Namespace: "zenith-team", Subsystem: "mailbox", Name: "webhooks_total",
 		Help: "Total verified Mailbox webhook outcomes by closed result class.",
 	}, []string{"outcome"})
 	mailboxProviderRequests := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly", Subsystem: "mailbox", Name: "provider_requests_total",
+		Namespace: "zenith-team", Subsystem: "mailbox", Name: "provider_requests_total",
 		Help: "Total on-demand Mailbox provider requests by closed result class.",
 	}, []string{"outcome"})
 	mailboxCache := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly", Subsystem: "mailbox", Name: "cache_total",
+		Namespace: "zenith-team", Subsystem: "mailbox", Name: "cache_total",
 		Help: "Total sanitized Mailbox detail cache outcomes.",
 	}, []string{"outcome"})
 	mailboxRetentionDeleted := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "boardly", Subsystem: "mailbox", Name: "retention_deleted_total",
+		Namespace: "zenith-team", Subsystem: "mailbox", Name: "retention_deleted_total",
 		Help: "Total Mailbox metadata rows deleted by retention.",
 	}, []string{"kind"})
 	registry.MustRegister(

@@ -4,13 +4,13 @@ import (
 	"errors"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	dbgen "boardly.dev/boardly/server/pkg/db/generated"
+	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestNormalizePublicationCreateInputRequiresExplicitExposureConfirmation(t *testing.T) {

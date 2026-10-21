@@ -12,7 +12,7 @@ import {
   CalendarEventDialog,
   type CalendarEventAnchor,
 } from "./calendar-event-dialog";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import {
   useChangeCalendarOccurrenceMutation,
   useRespondCalendarInvitationMutation,
@@ -57,7 +57,7 @@ export function EventDetails({
       toast.success("Response saved");
       onClose();
     } catch (error) {
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     }
   }
   return (
@@ -210,7 +210,7 @@ export function EventDetails({
                   .unwrap()
                   .then(onClose)
                   .catch((error: unknown) =>
-                    setError(getBoardlyQueryErrorMessage(error)),
+                    setError(getZenithTeamQueryErrorMessage(error)),
                   );
               }}
             >

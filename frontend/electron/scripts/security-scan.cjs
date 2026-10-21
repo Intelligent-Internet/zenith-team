@@ -10,49 +10,49 @@ const RULES = [
   {
     help:
       "BrowserWindow must keep contextIsolation true, nodeIntegration false, sandbox true, and webSecurity true.",
-    id: "boardly/electron/browser-window-web-preferences",
+    id: "zenith-team/electron/browser-window-web-preferences",
     level: "error",
     name: "BrowserWindow webPreferences are hardened",
   },
   {
     help:
       "The default session must deny unexpected permission requests unless a feature-specific permission policy is approved.",
-    id: "boardly/electron/permission-request-denied",
+    id: "zenith-team/electron/permission-request-denied",
     level: "error",
     name: "Unexpected permissions are denied",
   },
   {
     help:
       "Preload may call ipcRenderer internally, but must not expose raw ipcRenderer, send, invoke, or on methods to the renderer.",
-    id: "boardly/electron/preload-no-raw-ipc-exposure",
+    id: "zenith-team/electron/preload-no-raw-ipc-exposure",
     level: "error",
     name: "Preload bridge does not expose raw IPC",
   },
   {
     help:
       "Runtime product code must not add webview, BrowserView, or WebContentsView surfaces outside the approved policy helper.",
-    id: "boardly/electron/runtime-webview-disabled",
+    id: "zenith-team/electron/runtime-webview-disabled",
     level: "error",
     name: "Runtime webview surfaces are disabled",
   },
   {
     help:
       "Packaged builds must keep Electron fuses hardened: disable Node entry points, enable cookie encryption and ASAR integrity, and load only from app.asar.",
-    id: "boardly/electron/fuses-hardened",
+    id: "zenith-team/electron/fuses-hardened",
     level: "error",
     name: "Electron fuses are hardened",
   },
   {
     help:
       "Packaged builds must exclude local env files, source/test files, and download staging artifacts.",
-    id: "boardly/electron/package-ignore-sensitive-files",
+    id: "zenith-team/electron/package-ignore-sensitive-files",
     level: "error",
     name: "Package ignore excludes sensitive and development files",
   },
   {
     help:
       "The renderer build must inject a packaged Content Security Policy with self-only scripts and object-src none.",
-    id: "boardly/electron/packaged-csp",
+    id: "zenith-team/electron/packaged-csp",
     level: "error",
     name: "Packaged renderer has a Content Security Policy",
   },
@@ -133,7 +133,7 @@ function checkBrowserWindowWebPreferences(files) {
     finding({
       filePath,
       message: `BrowserWindow is missing hardened webPreferences: ${missing.join(", ")}.`,
-      ruleId: "boardly/electron/browser-window-web-preferences",
+      ruleId: "zenith-team/electron/browser-window-web-preferences",
       source,
     }),
   ];
@@ -155,7 +155,7 @@ function checkPermissionRequests(files) {
       filePath,
       message:
         "Electron default session must deny unexpected permission requests with callback(false).",
-      ruleId: "boardly/electron/permission-request-denied",
+      ruleId: "zenith-team/electron/permission-request-denied",
       source,
     }),
   ];
@@ -182,7 +182,7 @@ function checkRawIpcExposure(files) {
       filePath,
       message:
         "Preload bridge exposes raw ipcRenderer or raw IPC primitives to the renderer.",
-      ruleId: "boardly/electron/preload-no-raw-ipc-exposure",
+      ruleId: "zenith-team/electron/preload-no-raw-ipc-exposure",
       source,
     }),
   ];
@@ -203,7 +203,7 @@ function checkRuntimeWebviewSurfaces(runtimeFiles) {
           filePath: runtimeFile.path,
           message:
             "Runtime code contains a webview, BrowserView, or WebContentsView surface outside the approved policy.",
-          ruleId: "boardly/electron/runtime-webview-disabled",
+          ruleId: "zenith-team/electron/runtime-webview-disabled",
           source: runtimeFile.source,
         }),
       );
@@ -223,7 +223,7 @@ function checkFuses(forgeConfig) {
       finding({
         filePath: "forge.config.cjs",
         message: "Electron Forge fuses plugin is missing.",
-        ruleId: "boardly/electron/fuses-hardened",
+        ruleId: "zenith-team/electron/fuses-hardened",
       }),
     ];
   }
@@ -252,7 +252,7 @@ function checkFuses(forgeConfig) {
       message: `Electron Forge fuses are not hardened: ${mismatches
         .map(([key, expected]) => `${key} should be ${String(expected)}`)
         .join(", ")}.`,
-      ruleId: "boardly/electron/fuses-hardened",
+      ruleId: "zenith-team/electron/fuses-hardened",
     }),
   ];
 }
@@ -263,7 +263,7 @@ function checkPackageIgnore(forgeConfig) {
     "/.env.local",
     "/electron/main/app.test.mjs",
     "/node_modules/.vite/deps/_metadata.json",
-    "/public/downloads/Boardly.dmg",
+    "/public/downloads/Zenith Team.dmg",
     "/src/app/router.test.tsx",
   ];
   const missing = requiredIgnoredPaths.filter((filePath) => {
@@ -278,7 +278,7 @@ function checkPackageIgnore(forgeConfig) {
     finding({
       filePath: "forge.config.cjs",
       message: `Package ignore does not exclude expected sensitive/development paths: ${missing.join(", ")}.`,
-      ruleId: "boardly/electron/package-ignore-sensitive-files",
+      ruleId: "zenith-team/electron/package-ignore-sensitive-files",
     }),
   ];
 }
@@ -291,7 +291,7 @@ function checkPackagedCsp(files) {
     "script-src 'self'",
     "https://*.googleusercontent.com",
     "media-src",
-    "https://files.example.com",
+    "STUDIO_MEDIA_ORIGINS",
     "ws://127.0.0.1:*",
     "wss://*.livekit.cloud",
     "object-src 'none'",
@@ -306,7 +306,7 @@ function checkPackagedCsp(files) {
     finding({
       filePath,
       message: `Packaged renderer CSP injection is missing: ${missing.join(", ")}.`,
-      ruleId: "boardly/electron/packaged-csp",
+      ruleId: "zenith-team/electron/packaged-csp",
       source,
     }),
   ];

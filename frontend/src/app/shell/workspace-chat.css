@@ -1,7 +1,7 @@
 /* Match the backing layers to the sidebar at the shell's rounded left edge. */
 @media (min-width: 900px) {
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     :is(
       .workspace-shell-content:has(.workspace-chat-layout),
       .workspace-chat-layout
@@ -10,7 +10,7 @@
   }
 }
 
-html[data-boardly-workspace-theme] .workspace-company-context-sidebar {
+html[data-zenith-team-workspace-theme] .workspace-company-context-sidebar {
   animation: workspace-context-reveal 240ms ease-out both;
 }
 
@@ -26,21 +26,21 @@ html[data-boardly-workspace-theme] .workspace-company-context-sidebar {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-boardly-workspace-theme] .workspace-company-context-sidebar {
+  html[data-zenith-team-workspace-theme] .workspace-company-context-sidebar {
     animation: none;
   }
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-data-notice {
   border-color: var(--workspace-native-approval);
   background: var(--workspace-approval-soft) !important;
   color: var(--workspace-native-approval);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-connection-notice[data-tone="danger"] {
   border-color: color-mix(
     in srgb,
@@ -52,8 +52,8 @@ html[data-boardly-workspace-theme]
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-connection-notice[data-tone="checking"] {
   border-color: color-mix(
     in srgb,
@@ -65,21 +65,21 @@ html[data-boardly-workspace-theme]
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-connection-notice__dot {
   background: currentColor;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-data-notice
   > svg {
   color: var(--workspace-native-approval);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-menu-button {
   border-color: var(--workspace-divider-strong) !important;
   background: var(--workspace-panel-bg) !important;
@@ -87,24 +87,24 @@ html[data-boardly-workspace-theme]
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator {
   border-right-color: var(--workspace-divider) !important;
   background: var(--workspace-panel-raised-bg) !important;
   color: var(--workspace-native-text);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__header {
   height: 60px;
   border-bottom: 0;
   padding-inline: 16px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__title {
   font-family: var(--font-heading);
   font-size: var(--workspace-text-title);
@@ -112,8 +112,8 @@ html[data-boardly-workspace-theme]
   font-weight: 700;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .workspace-chat-navigator__eyebrow,
     .workspace-chat-navigator__section-title
@@ -124,27 +124,27 @@ html[data-boardly-workspace-theme]
   letter-spacing: 0.06em;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__toolbar {
   border-bottom: 0;
   padding: 0 12px 10px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__section {
   margin-bottom: 18px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__section-title {
   margin-bottom: 6px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator
   .text-xs {
   font-size: var(--workspace-text-body);
@@ -152,8 +152,8 @@ html[data-boardly-workspace-theme]
   font-weight: 500;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .workspace-chat-navigator__description,
     .workspace-chat-navigator__empty
@@ -162,8 +162,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__badge {
   border-radius: 4px;
   font-size: var(--workspace-text-caption);
@@ -173,36 +173,36 @@ html[data-boardly-workspace-theme]
   text-transform: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__row {
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__avatar {
   border: 0;
   border-radius: 8px !important;
   color: var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-navigator__need
   > span:first-child {
   background: var(--workspace-approval-soft) !important;
   color: var(--workspace-native-approval) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-content {
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-header {
   height: var(--workspace-conversation-header-height) !important;
@@ -210,23 +210,23 @@ html[data-boardly-workspace-theme]
   background: var(--workspace-chat-bg);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-review-button {
   border-color: var(--workspace-native-accent) !important;
   background: var(--workspace-accent-fill) !important;
   color: var(--workspace-accent-foreground) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-review-button:hover {
   border-color: var(--workspace-accent-hover) !important;
   background: var(--workspace-accent-hover) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-identity
   h2 {
   font-family: var(--font-heading);
@@ -235,24 +235,24 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-title);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-conversation-subtitle {
   font-size: var(--workspace-text-caption);
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-surface
   :is(.workspace-conversation-avatar, .workspace-conversation-avatar__image) {
   width: 40px !important;
   height: 40px !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(.workspace-assistant-message-content, .workspace-user-message-bubble) {
   color: var(--workspace-native-text) !important;
   font-size: var(--workspace-text-chat) !important;
@@ -260,8 +260,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-chat);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-user-message-bubble {
   border: 0 !important;
   border-radius: 12px !important;
@@ -269,8 +269,8 @@ html[data-boardly-workspace-theme]
   text-align: left;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-actor {
   margin-bottom: 8px;
   padding-inline: 0;
@@ -278,8 +278,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-body);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-actor__avatar {
   width: 28px;
   height: 28px;
@@ -289,8 +289,8 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   :is(
     .workspace-conversation-content,
     .workspace-task-peek,
@@ -301,38 +301,38 @@ html[data-boardly-workspace-theme]
   line-height: var(--workspace-leading-caption);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-composer {
   border-radius: var(--workspace-radius-composer) !important;
   background: var(--workspace-input-bg) !important;
   box-shadow: var(--workspace-composer-shadow) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-suggestion {
   border-color: var(--workspace-divider) !important;
   background: var(--workspace-panel-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-suggestion:is(:hover, :focus-visible) {
   border-color: var(--workspace-native-accent) !important;
   background: var(--workspace-accent-soft) !important;
   color: var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-composer:focus-within {
   border-color: var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-composer
   textarea {
   color: var(--workspace-native-text) !important;
@@ -342,8 +342,8 @@ html[data-boardly-workspace-theme]
   font-weight: 400;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-conversation-surface
   .workspace-chat-send-button {
   display: inline-grid;
@@ -356,16 +356,16 @@ html[data-boardly-workspace-theme]
   padding: 0;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-file-drop {
   border-color: var(--workspace-native-accent) !important;
   background: var(--workspace-selected-bg) !important;
   box-shadow: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-chat-file-changes {
   border-color: var(--workspace-divider) !important;
   border-radius: 10px;
@@ -375,34 +375,34 @@ html[data-boardly-workspace-theme]
   backdrop-filter: none;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-structured-chat-message {
   font-size: var(--workspace-text-chat);
   line-height: var(--workspace-leading-chat);
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-workspace-theme
+html[data-zenith-team-workspace-theme]
+  .zenith-team-workspace-theme
   .workspace-structured-chat-message
   :is(p, li) {
   font-size: inherit;
   line-height: inherit;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown {
   color: var(--workspace-native-text) !important;
   font-size: var(--workspace-text-chat);
   font-weight: 400;
   line-height: var(--workspace-leading-chat);
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown :is(p, li) {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown :is(p, li) {
   font-size: inherit;
   line-height: inherit;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown a {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown a {
   color: var(--workspace-native-accent) !important;
   text-decoration-color: color-mix(
     in srgb,
@@ -412,44 +412,44 @@ html[data-boardly-workspace-theme] .boardly-chat-markdown a {
   text-underline-offset: 3px;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-chat-markdown
+html[data-zenith-team-workspace-theme]
+  .zenith-team-chat-markdown
   :is(h1, h2, h3, strong) {
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown :is(h1, h2, h3) {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown :is(h1, h2, h3) {
   font-family: var(--font-heading);
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown blockquote {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown blockquote {
   border-color: var(--workspace-native-accent) !important;
   color: var(--workspace-native-text-muted) !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown :is(pre, code) {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown :is(pre, code) {
   background: var(--workspace-control-bg) !important;
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown pre {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown pre {
   border: 1px solid var(--workspace-divider);
   border-radius: 8px;
   font-size: var(--workspace-text-label);
   line-height: var(--workspace-leading-label);
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown pre code {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown pre code {
   padding: 0;
   background: transparent !important;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown pre span {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown pre span {
   color: var(--shiki-light, var(--workspace-native-text)) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-chat-markdown
+html[data-zenith-team-workspace-theme]
+  .zenith-team-chat-markdown
   :is(
     [data-streamdown="mermaid-block"],
     [data-streamdown="table-wrapper"],
@@ -462,36 +462,36 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider) !important;
 }
 
-html[data-boardly-workspace-theme]
-  .boardly-chat-markdown
+html[data-zenith-team-workspace-theme]
+  .zenith-team-chat-markdown
   div[data-streamdown="table-wrapper"] {
   border-radius: 8px;
   background: var(--workspace-panel-bg);
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown table {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown table {
   margin: 0;
   border: 0;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown tbody tr:last-child {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown tbody tr:last-child {
   border-bottom: 0;
 }
 
-html[data-boardly-workspace-theme] .boardly-chat-markdown thead {
+html[data-zenith-team-workspace-theme] .zenith-team-chat-markdown thead {
   background: var(--workspace-control-bg);
 }
 
 @media (pointer: coarse) {
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-chat-composer
     textarea {
     font-size: 16px;
   }
 
-  html[data-boardly-workspace-theme]
-    .boardly-workspace-theme
+  html[data-zenith-team-workspace-theme]
+    .zenith-team-workspace-theme
     .workspace-conversation-surface
     :is(
       .workspace-chat-send-button,
@@ -503,6 +503,6 @@ html[data-boardly-workspace-theme] .boardly-chat-markdown thead {
   }
 }
 
-html[data-boardly-color-mode="dark"] .boardly-chat-markdown pre span {
+html[data-zenith-team-color-mode="dark"] .zenith-team-chat-markdown pre span {
   color: var(--shiki-dark, var(--workspace-native-text)) !important;
 }

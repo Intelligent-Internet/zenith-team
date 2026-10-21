@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type CanvasPageInput struct {
@@ -258,7 +258,8 @@ func CheckpointCanvasPageInTx(ctx context.Context, q *generated.Queries, in Canv
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if detail.ProjectID.Valid {
+	switch {
+	case detail.ProjectID.Valid:
 		if err = auth.RequireProjectPermissionHeld(
 			ctx,
 			q,
@@ -269,7 +270,7 @@ func CheckpointCanvasPageInTx(ctx context.Context, q *generated.Queries, in Canv
 		); err != nil {
 			return uuid.Nil, err
 		}
-	} else if detail.SourceOutputID.Valid {
+	case detail.SourceOutputID.Valid:
 		access, e := auth.OutputDocumentAccessInTx(ctx, q, in.Principal, detail.SourceOutputID.UUID)
 		if e != nil {
 			return uuid.Nil, e
@@ -277,7 +278,7 @@ func CheckpointCanvasPageInTx(ctx context.Context, q *generated.Queries, in Canv
 		if !access.Edit {
 			return uuid.Nil, ErrPageForbidden
 		}
-	} else {
+	default:
 		return uuid.Nil, ErrPageForbidden
 	}
 	title, body, summary, err := normalizePageInput(detail.Title, in.Body, detail.Summary)

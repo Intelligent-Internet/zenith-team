@@ -1,4 +1,4 @@
--- C4 collaboration extends the zero-Run discussion lane only.
+-- Collaboration extends the zero-Run discussion lane only.
 ALTER TABLE conversation_items
     ADD COLUMN thread_root_id uuid,
     ADD COLUMN edited_at timestamptz,

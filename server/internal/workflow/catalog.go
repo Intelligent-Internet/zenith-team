@@ -33,11 +33,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/platformbundle"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
-	taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
 )
 
 // ErrNotFound reports a workflow key the catalog does not ship.
@@ -148,21 +148,21 @@ type Option struct {
 // them to every Run it starts, so a recurring Workflow never takes them, since
 // a Schedule carries no files.
 type Field struct {
-	Key          string    `json:"key" yaml:"key"`
-	Type         FieldType `json:"type" yaml:"type"`
-	Label        string    `json:"label" yaml:"label"`
-	Required     bool      `json:"required" yaml:"required"`
-	Placeholder  string    `json:"placeholder,omitempty" yaml:"placeholder"`
-	Description  string    `json:"description,omitempty" yaml:"description"`
-	Options      []Option  `json:"options,omitempty" yaml:"options"`
-	Default      string    `json:"default,omitempty" yaml:"default"`
-	Defaults     []string  `json:"defaults,omitempty" yaml:"defaults"`
+	Key          string    `json:"key"                    yaml:"key"`
+	Type         FieldType `json:"type"                   yaml:"type"`
+	Label        string    `json:"label"                  yaml:"label"`
+	Required     bool      `json:"required"               yaml:"required"`
+	Placeholder  string    `json:"placeholder,omitempty"  yaml:"placeholder"`
+	Description  string    `json:"description,omitempty"  yaml:"description"`
+	Options      []Option  `json:"options,omitempty"      yaml:"options"`
+	Default      string    `json:"default,omitempty"      yaml:"default"`
+	Defaults     []string  `json:"defaults,omitempty"     yaml:"defaults"`
 	AcceptsFiles bool      `json:"acceptsFiles,omitempty" yaml:"acceptsFiles"`
 }
 
 // Page is one step of the launch form.
 type Page struct {
-	Title  string  `json:"title" yaml:"title"`
+	Title  string  `json:"title"  yaml:"title"`
 	Fields []Field `json:"fields" yaml:"fields"`
 }
 
@@ -170,7 +170,7 @@ type Page struct {
 // connector-only (no Skills, web, files or product tools), so Instructions is
 // a self-contained template of its own rather than the playbook.
 type Schedule struct {
-	Cron         string `json:"cron" yaml:"cron"`
+	Cron         string `json:"cron"         yaml:"cron"`
 	Instructions string `json:"instructions" yaml:"instructions"`
 }
 
@@ -181,7 +181,7 @@ type Schedule struct {
 // footer tells the Run to stop rather than guess when one is not. Like the
 // connector hints it names, it grants no Connector authority.
 type Requirement struct {
-	AnyOf   []ConnectorType `json:"anyOf" yaml:"anyOf"`
+	AnyOf   []ConnectorType `json:"anyOf"             yaml:"anyOf"`
 	OrField string          `json:"orField,omitempty" yaml:"orField"`
 }
 
@@ -419,7 +419,9 @@ func buildWorkflow(key string, doc document) (Workflow, error) {
 	}
 	if doc.Key != key || !keyPattern.MatchString(key) || utf8.RuneCountInString(key) > maxKeyRunes {
 		return Workflow{}, fmt.Errorf(
-			"key %q must equal its directory and be a kebab-case slug of at most %d characters", doc.Key, maxKeyRunes,
+			"key %q must equal its directory and be a kebab-case slug of at most %d characters",
+			doc.Key,
+			maxKeyRunes,
 		)
 	}
 	checks := []error{
@@ -448,7 +450,10 @@ func buildWorkflow(key string, doc document) (Workflow, error) {
 	if doc.TitleField != "" {
 		field, ok := fields[doc.TitleField]
 		if !ok || (field.Type != FieldTypeText && field.Type != FieldTypeURL && field.Type != FieldTypeSelect) {
-			checks = append(checks, fmt.Errorf("titleField %q must name a text, url or select field", doc.TitleField))
+			checks = append(
+				checks,
+				fmt.Errorf("titleField %q must name a text, url or select field", doc.TitleField),
+			)
 		} else if !field.Required {
 			checks = append(checks, fmt.Errorf("titleField %q must name a required field", doc.TitleField))
 		}
@@ -464,7 +469,8 @@ func buildWorkflow(key string, doc document) (Workflow, error) {
 			for _, field := range page.Fields {
 				if field.AcceptsFiles {
 					checks = append(checks, fmt.Errorf(
-						"field %q: a recurring workflow cannot take files, because a Schedule carries none", field.Key,
+						"field %q: a recurring workflow cannot take files, because a Schedule carries none",
+						field.Key,
 					))
 				}
 			}
@@ -505,7 +511,10 @@ func validatePages(pages []Page) (map[string]Field, error) {
 	var checks []error
 	count := 0
 	for pageIndex, page := range pages {
-		checks = append(checks, requireText(fmt.Sprintf("pages[%d].title", pageIndex), page.Title, maxLabelRunes))
+		checks = append(
+			checks,
+			requireText(fmt.Sprintf("pages[%d].title", pageIndex), page.Title, maxLabelRunes),
+		)
 		if len(page.Fields) == 0 {
 			checks = append(checks, fmt.Errorf("pages[%d] has no fields", pageIndex))
 		}
@@ -554,7 +563,10 @@ func validateField(name string, field Field) error {
 	options := map[string]bool{}
 	for _, option := range field.Options {
 		if !optionValuePattern.MatchString(option.Value) || options[option.Value] {
-			checks = append(checks, fmt.Errorf("%s: option value %q must be a unique lowercase code", name, option.Value))
+			checks = append(
+				checks,
+				fmt.Errorf("%s: option value %q must be a unique lowercase code", name, option.Value),
+			)
 		}
 		options[option.Value] = true
 		checks = append(checks, requireText(name+" option label", option.Label, maxLabelRunes))
@@ -565,7 +577,10 @@ func validateField(name string, field Field) error {
 	chosen := map[string]bool{}
 	for _, value := range field.Defaults {
 		if field.Type != FieldTypeMultiSelect || !options[value] || chosen[value] {
-			checks = append(checks, fmt.Errorf("%s: defaults must be distinct options of a multi_select", name))
+			checks = append(
+				checks,
+				fmt.Errorf("%s: defaults must be distinct options of a multi_select", name),
+			)
 		}
 		chosen[value] = true
 	}
@@ -585,11 +600,17 @@ func validateRequirements(requirements []Requirement, connectors []ConnectorType
 	for index, requirement := range requirements {
 		name := fmt.Sprintf("requires[%d]", index)
 		if err := validateClosedSet(name+".anyOf", requirement.AnyOf, connectors, 1, 4); err != nil {
-			checks = append(checks, fmt.Errorf("%w (each app must be one of the workflow's connectors)", err))
+			checks = append(
+				checks,
+				fmt.Errorf("%w (each app must be one of the workflow's connectors)", err),
+			)
 		}
 		for _, app := range requirement.AnyOf {
 			if claimed[app] {
-				checks = append(checks, fmt.Errorf("%s: %s already belongs to another requirement", name, app))
+				checks = append(
+					checks,
+					fmt.Errorf("%s: %s already belongs to another requirement", name, app),
+				)
 			}
 			claimed[app] = true
 		}
@@ -601,9 +622,19 @@ func validateRequirements(requirements []Requirement, connectors []ConnectorType
 		case !ok:
 			checks = append(checks, fmt.Errorf("%s: orField %q names no field", name, requirement.OrField))
 		case field.Required:
-			checks = append(checks, fmt.Errorf("%s: orField %q must name an optional field", name, requirement.OrField))
+			checks = append(
+				checks,
+				fmt.Errorf("%s: orField %q must name an optional field", name, requirement.OrField),
+			)
 		case field.Type != FieldTypeTextarea && field.Type != FieldTypeURL:
-			checks = append(checks, fmt.Errorf("%s: orField %q must name a textarea or url field", name, requirement.OrField))
+			checks = append(
+				checks,
+				fmt.Errorf(
+					"%s: orField %q must name a textarea or url field",
+					name,
+					requirement.OrField,
+				),
+			)
 		}
 	}
 	return errors.Join(checks...)

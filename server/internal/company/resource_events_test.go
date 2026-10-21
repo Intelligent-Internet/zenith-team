@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // Staged events are opaque, so these read the frames at a subscriber — the
@@ -127,7 +127,7 @@ func validResourceDTOForTest(t *testing.T) ResourceResponse {
 		ResourceRef:      ResourceRefResponse{DaemonID: daemonID, DaemonName: "Owner laptop"},
 		DaemonStatus:     DaemonStatusOnline,
 		DaemonLastSeenAt: &now,
-		Label:            "Boardly",
+		Label:            "Zenith Team",
 		Position:         10,
 		Metadata:         json.RawMessage(`{}`),
 		CreatedBy: ActorRef{

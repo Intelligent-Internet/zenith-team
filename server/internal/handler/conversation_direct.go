@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // The flat conversation wire shapes. A list row and a detail read name the
@@ -172,7 +172,11 @@ func (h *Handler) listCompanyConversations(c *gin.Context) {
 		writeConversationError(c, conversation.ErrUnauthenticated)
 		return
 	}
-	page, err := h.ConversationService.ListDirect(c.Request.Context(), principal, query.Get("include_archived") == "true")
+	page, err := h.ConversationService.ListDirect(
+		c.Request.Context(),
+		principal,
+		query.Get("include_archived") == "true",
+	)
 	if err != nil {
 		writeConversationError(c, err)
 		return

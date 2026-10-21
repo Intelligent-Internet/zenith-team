@@ -20,16 +20,16 @@
   text-underline-offset: 3px;
 }
 
-.boardly-workspace-theme.member-profile-card,
+.zenith-team-workspace-theme.member-profile-card,
 .member-profile-panel,
-.boardly-workspace-theme.member-profile-panel {
+.zenith-team-workspace-theme.member-profile-panel {
   box-sizing: border-box;
   background: var(--workspace-panel-bg);
   color: var(--workspace-native-text);
   font-family: var(--workspace-font-body, sans-serif);
 }
 
-.boardly-workspace-theme.member-profile-card {
+.zenith-team-workspace-theme.member-profile-card {
   position: fixed;
   z-index: 330;
   width: min(332px, calc(100vw - 16px));
@@ -231,7 +231,7 @@
   align-self: center;
 }
 
-.boardly-workspace-theme.member-profile-panel--modal {
+.zenith-team-workspace-theme.member-profile-panel--modal {
   position: fixed;
   z-index: 241;
   inset-block: 0;

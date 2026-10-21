@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type AuthService interface {
@@ -71,7 +71,7 @@ type passwordResetConfirmRequest struct {
 }
 
 type refreshRequest struct {
-	Client         auth.ClientKind `json:"client"         binding:"oneof=web desktop"`
+	Client         auth.ClientKind `json:"client"               binding:"oneof=web desktop"`
 	RefreshToken   string          `json:"refreshToken"`
 	RotationID     string          `json:"rotationId,omitempty" binding:"omitempty,uuid"`
 	ClientMetadata map[string]any  `json:"clientMetadata"`
@@ -430,7 +430,7 @@ func (h *Handler) logout(c *gin.Context) {
 }
 
 // mintDaemonSession starts the daemon's own session for the signed-in
-// person (D31). The desktop app and `zen daemon start` call it with the
+// person. The desktop app and `zen daemon start` call it with the
 // person's bearer and keep the answer in daemon-auth.json. The answer is a
 // bearer token pair, so a browser's cookie session cannot ask for one. A
 // daemon session never reaches here: the route is a person's, and the

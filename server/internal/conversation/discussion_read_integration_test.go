@@ -3,8 +3,9 @@
 package conversation
 
 import (
-	"github.com/google/uuid"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestDiscussionEmptyWindowRefreshPreservesCatchup(t *testing.T) {
@@ -19,7 +20,11 @@ func TestDiscussionEmptyWindowRefreshPreservesCatchup(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			f := newDiscussionFixture(t)
-			dm, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+			dm, err := f.conversations.CreateHumanDirect(
+				f.ctx,
+				f.a,
+				CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -34,7 +39,12 @@ func TestDiscussionEmptyWindowRefreshPreservesCatchup(t *testing.T) {
 				t.Fatal(err)
 			}
 			if tc.seed {
-				empty, err = f.discussion.ListMessages(f.ctx, f.b, id, DiscussionPageOptions{Cursor: empty.NewerCursor})
+				empty, err = f.discussion.ListMessages(
+					f.ctx,
+					f.b,
+					id,
+					DiscussionPageOptions{Cursor: empty.NewerCursor},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -49,7 +59,12 @@ func TestDiscussionEmptyWindowRefreshPreservesCatchup(t *testing.T) {
 			// Refresh must keep the loaded window empty without consuming the
 			// unseen suffix, even when recovery refreshes it more than once.
 			for range 2 {
-				empty, err = f.discussion.ListMessages(f.ctx, f.b, id, DiscussionPageOptions{Cursor: empty.RefreshCursor})
+				empty, err = f.discussion.ListMessages(
+					f.ctx,
+					f.b,
+					id,
+					DiscussionPageOptions{Cursor: empty.RefreshCursor},
+				)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -57,7 +72,12 @@ func TestDiscussionEmptyWindowRefreshPreservesCatchup(t *testing.T) {
 					t.Fatalf("refreshed window = %+v, want empty with head %d", empty, sent.HeadSeq)
 				}
 			}
-			newer, err := f.discussion.ListMessages(f.ctx, f.b, id, DiscussionPageOptions{Cursor: empty.NewerCursor})
+			newer, err := f.discussion.ListMessages(
+				f.ctx,
+				f.b,
+				id,
+				DiscussionPageOptions{Cursor: empty.NewerCursor},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}

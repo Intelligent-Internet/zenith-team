@@ -7,16 +7,16 @@ import (
 	"slices"
 	"strings"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 const (
 	runSourceSchedule        = "schedule"
 	runSourceCompanyResearch = "company_research"
-	boardlyMCPServerName     = "boardly"
+	zenithTeamMCPServerName  = "zenith-team"
 )
 
-var boardlyMCPToolCatalog = []string{
+var zenithTeamMCPToolCatalog = []string{
 	"artifact_inspect",
 	"artifact_fetch",
 	"artifact_edit",
@@ -71,7 +71,9 @@ func validateDocumentRunTools(doc RunContext, executable string) error {
 		return nil
 	}
 	if !agentExecutablePresent(executable) {
-		return fmt.Errorf("document comments require page tools: build boardly-mcp and restart the daemon with BOARDLY_MCP_EXECUTABLE pointing to it")
+		return fmt.Errorf(
+			"document comments require page tools: build zenith-team-mcp and restart the daemon with ZENITH_TEAM_MCP_EXECUTABLE pointing to it",
+		)
 	}
 	return nil
 }
@@ -103,7 +105,7 @@ func isolateDocumentRun(run *Run, doc *RunContext) {
 // channel or group DM. A channel answer never draws on its person's local
 // folders, bound folders or private Memory, which no Project access governs,
 // so it starts clean: a fresh scratch folder, never its person's bound local
-// folder or the Company main folder, and no memory (Access TECH B7).
+// folder or the Company main folder, and no memory.
 func isTaggedRun(doc RunContext) bool {
 	return doc.ChannelInvocation != nil
 }
@@ -132,10 +134,10 @@ func runThreadName(doc RunContext) string {
 	return "Zenith Team direct conversation"
 }
 
-// boardlyMCPToolsForRun derives the Boardly product authority from the frozen
+// zenithTeamMCPToolsForRun derives the Zenith Team product authority from the frozen
 // execution profile. Provider prompts never grant tools: this exact allowlist
 // is injected into the run-scoped MCP subprocess.
-func boardlyMCPToolsForRun(doc RunContext) []string {
+func zenithTeamMCPToolsForRun(doc RunContext) []string {
 	if isCompanyResearchRun(doc) {
 		return companyResearchMCPTools(doc)
 	}
@@ -196,7 +198,7 @@ func boardlyMCPToolsForRun(doc RunContext) []string {
 		allowed["social_read"] = struct{}{}
 		allowed["social_publish"] = struct{}{}
 	}
-	removeDisabledBoardlyTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
+	removeDisabledZenithTeamTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
 	// Page authoring and Studio both need their compiled guides independently
 	// of optional coordination actions or custom Skill snapshots.
 	if doc.ExecutionProfile.Task != nil || studioEnabledForRun(doc) || len(doc.Agent.SkillRefs) != 0 {
@@ -204,7 +206,7 @@ func boardlyMCPToolsForRun(doc RunContext) []string {
 		allowed["load_skill_reference"] = struct{}{}
 	}
 	tools := make([]string, 0, len(allowed))
-	for _, tool := range boardlyMCPToolCatalog {
+	for _, tool := range zenithTeamMCPToolCatalog {
 		if _, ok := allowed[tool]; ok {
 			tools = append(tools, tool)
 		}
@@ -214,13 +216,13 @@ func boardlyMCPToolsForRun(doc RunContext) []string {
 
 // companyResearchMCPTools is all the product authority the research Run has:
 // search, browse and read the Company Wiki, and write the pages of its findings. The
-// server proves the same standing on every write and honours the Agent's wiki
+// server proves the same standing on every write and honors the Agent's wiki
 // switch, so a doctored allowlist grants nothing.
 func companyResearchMCPTools(doc RunContext) []string {
 	allowed := map[string]struct{}{"wiki_list": {}, "wiki_read": {}, "wiki_search": {}, "wiki_write": {}}
-	removeDisabledBoardlyTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
+	removeDisabledZenithTeamTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
 	tools := make([]string, 0, len(allowed))
-	for _, tool := range boardlyMCPToolCatalog {
+	for _, tool := range zenithTeamMCPToolCatalog {
 		if _, ok := allowed[tool]; ok {
 			tools = append(tools, tool)
 		}
@@ -232,7 +234,7 @@ func companyResearchMCPTools(doc RunContext) []string {
 // Agent has the Wiki switched off: research that cannot be saved would only
 // burn the Run and leave the founder with nothing.
 func requireResearchWikiTools(doc RunContext) error {
-	if isCompanyResearchRun(doc) && !slices.Contains(boardlyMCPToolsForRun(doc), "wiki_write") {
+	if isCompanyResearchRun(doc) && !slices.Contains(zenithTeamMCPToolsForRun(doc), "wiki_write") {
 		return errors.New(
 			"company research saves its findings in the Company Wiki, but this Agent has the Wiki capability switched off",
 		)
@@ -244,7 +246,7 @@ func requireResearchWikiTools(doc RunContext) error {
 // Company Plan tools, and with them the planning policy, which follows the
 // preview tool. The export reads over the Run channel with the Run proof, and
 // the server shows every Task the member reads only to the root Agent's Run
-// in the member's direct chat (task.RunScope.Planner, Access TECH B6); a Run
+// in the member's direct chat (task.RunScope.Planner); a Run
 // tagged in a channel or group DM is not the Planner and would export only
 // its own Tasks, so it gets none of the tools. The member plans in their
 // direct chat with the root Agent.
@@ -296,7 +298,7 @@ func buildRunSystemPromptWithCLI(
 	memory runMemoryContext,
 	cli runPlatformPromptContext,
 ) string {
-	companyPlanning := slices.Contains(boardlyMCPToolsForRun(doc), "company_plan_transaction_preview")
+	companyPlanning := slices.Contains(zenithTeamMCPToolsForRun(doc), "company_plan_transaction_preview")
 	if !companyPlanning {
 		cli.CompanyPlanRoot = ""
 	}
@@ -349,11 +351,11 @@ func buildRunSystemPromptWithCLI(
 	appendCompanyContext(&builder, doc.Company)
 	appendCompanyReferences(&builder, doc.CompanyReferences, memory.CompanyReferenceRoot)
 	appendProjectDocuments(&builder, doc)
-	appendWikiInstructions(&builder, boardlyMCPToolsForRun(doc))
-	appendWhiteboardInstructions(&builder, doc, boardlyMCPToolsForRun(doc))
+	appendWikiInstructions(&builder, zenithTeamMCPToolsForRun(doc))
+	appendWhiteboardInstructions(&builder, doc, zenithTeamMCPToolsForRun(doc))
 	appendPageInstructions(
 		&builder,
-		boardlyMCPToolsForRun(doc),
+		zenithTeamMCPToolsForRun(doc),
 		cli.PresentOutput && runOutputPresentationAvailable(doc),
 	)
 	if len(doc.ChannelAttachments) > 0 {
@@ -413,7 +415,12 @@ func buildRunSystemPromptWithCLI(
 			if companyPlanning {
 				builder.WriteString(runRootPlanExportPolicy)
 			}
-			appendCEOCompanyPlanningPolicy(&builder, companyPlanning, cli.CompanyPlanRoot, hasWikiReadTools(boardlyMCPToolsForRun(doc)))
+			appendCEOCompanyPlanningPolicy(
+				&builder,
+				companyPlanning,
+				cli.CompanyPlanRoot,
+				hasWikiReadTools(zenithTeamMCPToolsForRun(doc)),
+			)
 		}
 	}
 	if len(doc.Agent.SkillRefs) > 0 {
@@ -438,7 +445,12 @@ func buildRunSystemPromptWithCLI(
 		}
 	}
 	if len(doc.Agent.SelectedSkillKeys) > 0 {
-		builder.WriteString("\n\nThe user explicitly selected these skills for this message: " + strings.Join(doc.Agent.SelectedSkillKeys, ", ") + ". Load each selected skill with load_skill_reference (exact skillKey, path SKILL.md) before doing the relevant work, and follow its linked references. These selections apply only to this message, not future turns, and grant no extra permissions.")
+		builder.WriteString(
+			"\n\nThe user explicitly selected these skills for this message: " + strings.Join(
+				doc.Agent.SelectedSkillKeys,
+				", ",
+			) + ". Load each selected skill with load_skill_reference (exact skillKey, path SKILL.md) before doing the relevant work, and follow its linked references. These selections apply only to this message, not future turns, and grant no extra permissions.",
+		)
 	}
 	appendRunConnectorPolicy(&builder, doc)
 	appendWorkspaceMemoryInstructions(&builder, memory, doc.ExecutionProfile.Task != nil)
@@ -458,7 +470,7 @@ func buildRunSystemPromptWithCLI(
 		builder.WriteString(
 			"\n\nZenith Studio is enabled for this Agent. For Studio work, load_skill_reference with skillKey zenith-studio-cli and path SKILL.md directly once in this Run, with includeReferences false, unless its current instructions are already loaded. The key is known: do not search_skills to rediscover it or reread unchanged guides. In that same batch, load references/zenith-team-runtime.md and references/zenith-team-media.md for images, voice, audio or music; use references/zenith-team-video.md for video. Do not enumerate the reference inventory unless a required path cannot be found in the linked guides. Use the managed models list --model filter for a named model and team collect for submitted media, as those guides specify. Use the supplied zenith-studio CLI and reviewed Skill; do not install another copy or change accounts inside a Run.",
 		)
-		if slices.Contains(boardlyMCPToolsForRun(doc), "ask_human") {
+		if slices.Contains(zenithTeamMCPToolsForRun(doc), "ask_human") {
 			builder.WriteString(
 				` If Studio auth status reports authenticated false, a command reports studio_auth_required, or the upstream CLI reports an authentication error, you MUST call ask_human once with title "Connect to Zenith Studio" and prompts [{"id":"studio","prompt":"Connect to Zenith Studio","toolSetup":"zenith-studio","selectionMode":"single","required":true}]. Keep the user-facing reply to one short sentence in their language saying Studio needs connecting. Their original request resumes automatically after connection. Do not announce creating a card, waiting for an answer, or starting another Run, and do not ask them to click Continue. End the Run after the tool succeeds; do not leave a CLI process waiting or retry paid work. Respect a skipped setup request and do not ask again.`,
 			)
@@ -475,7 +487,7 @@ func buildRunSystemPromptWithCLI(
 		builder.WriteString(
 			"\n\nZenith Studio is disabled for this Agent. Do not invoke or install zenith-studio, or load ambient Zenith Studio skills.",
 		)
-		if slices.Contains(boardlyMCPToolsForRun(doc), "ask_human") {
+		if slices.Contains(zenithTeamMCPToolsForRun(doc), "ask_human") {
 			builder.WriteString(
 				` If the user's request needs Zenith Studio, you MUST call ask_human once with title "Enable Zenith Studio" and prompts [{"id":"studio","prompt":"Connect to Zenith Studio","toolSetup":"zenith-studio","selectionMode":"single","required":true}]. This creates the setup card in this chat. Keep the user-facing reply to one short sentence in their language saying Studio is not enabled and they need to enable it. Their original request resumes automatically once Studio is enabled and connected. Do not announce creating a card, waiting for an answer, or starting another Run, and do not ask them to click Continue. Do not mention Runs or Questions to the user. Do not reply only with setup instructions or send the human to Agent settings. After the tool succeeds, end the Run. Do not continue by probing or substituting unrelated media tools. If the human already skipped Studio setup for this request, respect that answer and do not ask again.`,
 			)
@@ -892,8 +904,8 @@ func appendWorkspaceMemoryInstructions(
 	}
 	if taskRun {
 		// A Task Run always works in a Task worktree, whose repository is its
-		// Project main's, which the Run cannot write on a protected computer
-		// (Access TECH B3f); the review takes every changed file, committed or
+		// Project main's, which the Run cannot write on a protected computer;
+		// the review takes every changed file, committed or
 		// not.
 		builder.WriteString(
 			"- Leave Memory changes in .memory, uncommitted, with the rest of the task's changes. They become official only when the reviewer accepts and merges this task workspace.\n",
@@ -923,7 +935,7 @@ const runTaskBoundaryPolicy = " Tasks are not run from here. A Task runs only as
 // runRootPlanExportPolicy names the one exception to the read rule. The
 // root Agent plans the Company, so in its person's direct chat, with its
 // Company Plan tools on, the server reads every Task that person reads for
-// it (task.RunScope.Planner, IA-FR12): its Company Plan export and its
+// it (task.RunScope.Planner): its Company Plan export and its
 // `zen task` reads alike. What it learns there is for planning, never a
 // Task to act out.
 const runRootPlanExportPolicy = " As the Company's planner, here your Company Plan export and `zen task` reads show every Task the member this Run works for can read, so you can plan the Company. What they show is for planning only: it never makes another Task yours to carry out."
@@ -979,7 +991,7 @@ func appendTaskRunPrompt(builder *strings.Builder, task RunTaskContext, workDir 
 
 	// A Task Run always works in a Task worktree, whose repository is its
 	// Project main's, shared with every other Task there, so a Run on a
-	// protected computer cannot commit in it (Access TECH B3f); the review
+	// protected computer cannot commit in it; the review
 	// takes every file it changed.
 	builder.WriteString(
 		"\n\nChoose exactly one of three exit paths. If the Task is complete, validate the result and leave Task-related changes in this Task worktree uncommitted: do not stage or commit them, because the review takes every file you changed. After presenting final deliveries, read the current Task revision and call finalize_task_results with their ordered outputIds before ending the Run. This selects evidence without accepting suggestions or approving the Task. If concrete founder input is required, finish all independent work first, call ask_human exactly once with one consolidated question, then end the Run without reporting the Task complete or failed; Zenith Team will resume work after the answer. If a genuine business condition makes completion impossible after a reasonable attempt, call mark_task_failed with a concise evidence-based reason and do not report the Task as done.",
@@ -1006,8 +1018,8 @@ func applyRunExecutionPolicy(
 	}
 	if isDocumentRun(doc) {
 		opts.AllowedMCPServers = nil
-		if len(boardlyMCPToolsForRun(doc)) != 0 {
-			opts.AllowedMCPServers = []string{boardlyMCPServerName}
+		if len(zenithTeamMCPToolsForRun(doc)) != 0 {
+			opts.AllowedMCPServers = []string{zenithTeamMCPServerName}
 		}
 		opts.ConnectorApps = nil
 		opts.PluginDirectories = nil

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // runContextGoldenPath is the document internal/daemon parses in
@@ -179,7 +179,10 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 		if snapshot.SchemaVersion != 1 || snapshot.Kind != "direct" ||
 			snapshot.ConversationID != goldenConversationID(t).String() ||
 			snapshot.ThroughSeq != 0 || snapshot.Truncated || snapshot.Items == nil || len(snapshot.Items) != 0 {
-			t.Fatalf("empty Conversation snapshot = %+v, want schema 1, kind direct, watermark 0 and an explicit empty item list", snapshot)
+			t.Fatalf(
+				"empty Conversation snapshot = %+v, want schema 1, kind direct, watermark 0 and an explicit empty item list",
+				snapshot,
+			)
 		}
 		if decoded.Trigger != nil {
 			t.Fatalf("context carries trigger %s, want none without an acting member", decoded.Trigger)
@@ -251,7 +254,11 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 
 	t.Run("a caller document keeps its own keys", func(t *testing.T) {
 		document, err := build(trigger(
-			fixture.CompanyA, fixture.AgentA, goldenConversationID(t), []byte(`{"prompt":"do the thing"}`), "",
+			fixture.CompanyA,
+			fixture.AgentA,
+			goldenConversationID(t),
+			[]byte(`{"prompt":"do the thing"}`),
+			"",
 		))
 		if err != nil {
 			t.Fatalf("buildRunContext() error = %v", err)
@@ -276,7 +283,13 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 	})
 
 	t.Run("a Schedule profile never receives Company resources", func(t *testing.T) {
-		input := trigger(fixture.CompanyA, fixture.AgentA, goldenConversationID(t), nil, "summarize the reviewed sources")
+		input := trigger(
+			fixture.CompanyA,
+			fixture.AgentA,
+			goldenConversationID(t),
+			nil,
+			"summarize the reviewed sources",
+		)
 		input.Source = RunSourceSchedule
 		document, err := build(input)
 		if err != nil {
@@ -297,7 +310,10 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 		if decoded.Resources != nil || decoded.Company != nil ||
 			decoded.Snapshot != nil || decoded.Trigger != nil ||
 			decoded.Profile.Source != RunSourceSchedule {
-			t.Fatalf("Schedule context = %s, want source without Company context, resources or chat history", document)
+			t.Fatalf(
+				"Schedule context = %s, want source without Company context, resources or chat history",
+				document,
+			)
 		}
 	})
 
@@ -374,7 +390,8 @@ func TestBuildRunContextCarriesLocalDirectories(t *testing.T) {
 		if err := json.Unmarshal(document, &decoded); err != nil {
 			t.Fatalf("decode Task context %s: %v", document, err)
 		}
-		if decoded.Profile.Project.ID != fixture.ProjectA.String() || decoded.Profile.Project.Key != "work" || decoded.Profile.Project.Revision != 1 {
+		if decoded.Profile.Project.ID != fixture.ProjectA.String() || decoded.Profile.Project.Key != "work" ||
+			decoded.Profile.Project.Revision != 1 {
 			t.Fatalf("frozen Project = %+v", decoded.Profile.Project)
 		}
 		if decoded.Profile.Source != RunSourceAssign || decoded.Profile.Task.Key != "task_a" ||
@@ -403,11 +420,27 @@ func TestBuildRunContextFreezesOnlyTaskProjectDocuments(t *testing.T) {
 	fixture := dbtest.SeedFixture(t, ctx, pool)
 	q := generated.New(pool)
 	var file uuid.UUID
-	if err := pool.QueryRow(ctx, `INSERT INTO attachments(company_id,uploaded_by_user_id,request_key,filename,content_type,size_bytes,status,version) VALUES ($1,$2,gen_random_uuid(),'requirements.md','text/markdown',12,'ready',2) RETURNING id`, fixture.CompanyA, fixture.UserA).Scan(&file); err != nil {
+	if err := pool.QueryRow(ctx, `INSERT INTO attachments(company_id,uploaded_by_user_id,request_key,filename,content_type,size_bytes,status,version) VALUES ($1,$2,gen_random_uuid(),'requirements.md','text/markdown',12,'ready',2) RETURNING id`, fixture.CompanyA, fixture.UserA).
+		Scan(&file); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO project_files(company_id,project_id,attachment_id,file_type) VALUES ($1,$2,$3,'document')`, fixture.CompanyA, fixture.ProjectA, file)
-	input := RunTrigger{CompanyID: fixture.CompanyA, AgentID: fixture.AgentA, ConversationID: fixture.ConversationA, TaskID: uuid.NullUUID{UUID: fixture.TaskA, Valid: true}, Source: RunSourceAssign, AuthorizedByUserID: fixture.UserA}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO project_files(company_id,project_id,attachment_id,file_type) VALUES ($1,$2,$3,'document')`,
+		fixture.CompanyA,
+		fixture.ProjectA,
+		file,
+	)
+	input := RunTrigger{
+		CompanyID:          fixture.CompanyA,
+		AgentID:            fixture.AgentA,
+		ConversationID:     fixture.ConversationA,
+		TaskID:             uuid.NullUUID{UUID: fixture.TaskA, Valid: true},
+		Source:             RunSourceAssign,
+		AuthorizedByUserID: fixture.UserA,
+	}
 	frozen, err := buildRunContext(ctx, q, input, fixture.RuntimeA)
 	if err != nil {
 		t.Fatal(err)
@@ -421,7 +454,13 @@ func TestBuildRunContextFreezesOnlyTaskProjectDocuments(t *testing.T) {
 	if len(doc.Files) != 1 || doc.Files[0].ID != file.String() {
 		t.Fatalf("frozen documents = %+v", doc.Files)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE project_files SET removed_at=clock_timestamp() WHERE attachment_id=$1`, file)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE project_files SET removed_at=clock_timestamp() WHERE attachment_id=$1`,
+		file,
+	)
 	next, err := buildRunContext(ctx, q, input, fixture.RuntimeA)
 	if err != nil {
 		t.Fatal(err)

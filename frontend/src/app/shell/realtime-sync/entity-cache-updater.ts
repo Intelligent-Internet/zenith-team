@@ -7,10 +7,10 @@ import type { components as ApiComponents } from "@/shared/api/generated/api.gen
 import { updateSessionCompanySummary } from "@/shared/session/session";
 import { agentToAgentSummary } from "@/shared/api/adapters";
 import { agentRuntimeApi } from "@/shared/api/agent-runtime-api";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import type { AgentDto, CompanyResourceDto } from "@/shared/api/types";
 
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {
   removeVersioned,
   replaceVersioned,
@@ -25,7 +25,7 @@ type DaemonRosterAction =
 
 export function applyEntityCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   switch (event.type) {
     case "wiki.page_created":
@@ -66,7 +66,7 @@ export function applyEntityCacheEvent(
     case "project.updated":
     case "project.archived":
       context.dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { type: "Project", id: context.companyId },
         ]),
       );
@@ -94,7 +94,7 @@ export function applyEntityCacheEvent(
       // about the Tasks from the task.updated that follows.
       context.requestRefresh("directConversations");
       context.dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { id: context.companyId, type: "Agent" },
           { id: context.companyId, type: "AgentBinding" as const },
           { id: context.companyId, type: "Connector" as const },
@@ -126,7 +126,7 @@ export function applyEntityCacheEvent(
         // Only runtime list/detail responses carry tools. Agent and Run
         // queries keep their caches until their own facts change.
         context.dispatch(
-          boardlyApi.util.invalidateTags([
+          zenithTeamApi.util.invalidateTags([
             { id: context.companyId, type: "Runtime" },
           ]),
         );
@@ -142,7 +142,7 @@ export function applyEntityCacheEvent(
       if (action === "update" || action === "remove") {
         context.requestRefresh("directConversations");
         context.dispatch(
-          boardlyApi.util.invalidateTags([
+          zenithTeamApi.util.invalidateTags([
             { id: context.companyId, type: "Agent" },
             { id: context.companyId, type: "Run" as const },
           ]),
@@ -294,7 +294,7 @@ function updateAgent(context: RealtimeSyncContext, agent: AgentDto) {
   );
   if (needsOwnVerdict) {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { type: "Agent", id: context.companyId },
       ]),
     );
@@ -344,7 +344,7 @@ function updateAgentStatus(
   // roster refetches to learn the reason.
   if (rows.some((row) => !row.runtimeAvailable)) {
     context.dispatch(
-      boardlyApi.util.invalidateTags([
+      zenithTeamApi.util.invalidateTags([
         { id: context.companyId, type: "Agent" },
       ]),
     );

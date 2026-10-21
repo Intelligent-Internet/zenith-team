@@ -36,7 +36,7 @@ parameters:
     required: true
     schema: { type: string, format: uuid }
   daemonIDHeader:
-    name: X-Boardly-Daemon-ID
+    name: X-Zenith-Team-Daemon-ID
     in: header
     required: false
     description: |
@@ -52,7 +52,7 @@ parameters:
       header is `400 invalid_request`.
     schema: { type: string }
   runTokenOwnRead:
-    name: X-Boardly-Run-Token
+    name: X-Zenith-Team-Run-Token
     in: header
     required: false
     description: |
@@ -65,7 +65,7 @@ parameters:
       read is the member's own.
     schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }
   runTokenUpload:
-    name: X-Boardly-Run-Token
+    name: X-Zenith-Team-Run-Token
     in: header
     required: false
     description: |
@@ -152,7 +152,7 @@ responses:
     description: |
       `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
       `company_access_required`, or `human_actor_required` when a Run proof
-      (`X-Boardly-Run-Token`) reaches a route that does not accept a Run.
+      (`X-Zenith-Team-Run-Token`) reaches a route that does not accept a Run.
     content:
       application/json:
         schema: { $ref: '#/schemas/Error' }
@@ -160,7 +160,7 @@ responses:
     description: |
       `401` — `authentication_required`, `session_invalid` or
       `invalid_credentials`, or `run_token_invalid` when a supplied
-      `X-Boardly-Run-Token` does not prove a running Run whose member is the
+      `X-Zenith-Team-Run-Token` does not prove a running Run whose member is the
       caller.
     content:
       application/json:
@@ -269,10 +269,10 @@ schemas:
       Whether the daemon keeps a runtime's Agents away from the Zenith Team
       sign-in files on its computer. `enforced`: on macOS the daemon starts
       every provider process in a sandbox that can neither read nor write
-      the daemon's home, `~/.boardly`, the desktop app's session store or
+      the daemon's home, `~/.zenith-team`, the desktop app's session store or
       `local-preview.json`, and this round's probe proved it. `not_enforced`:
       Windows, Linux, a failed probe, or the test switch
-      `BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced`. A daemon reports it
+      `ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION=not_enforced`. A daemon reports it
       at registration and on every heartbeat.
 
   RuntimeUnusableReason:

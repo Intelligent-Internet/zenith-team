@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 )

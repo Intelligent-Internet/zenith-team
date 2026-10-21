@@ -11,10 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 func TestTaskFailureUsesOnlyPrincipalRunProofAndReason(t *testing.T) {
@@ -24,8 +24,14 @@ func TestTaskFailureUsesOnlyPrincipalRunProofAndReason(t *testing.T) {
 	taskID := uuid.Must(uuid.NewV7())
 	agentID := uuid.Must(uuid.NewV7())
 	origin := execution.RunOrigin{
-		RunID: uuid.MustParse("00000000-0000-4000-8000-000000000041"), CompanyID: principal.CompanyID, AgentID: agentID,
-		TaskID: &taskID, ConversationID: uuid.Must(uuid.NewV7()), ConversationKind: "task",
+		RunID: uuid.MustParse(
+			"00000000-0000-4000-8000-000000000041",
+		),
+		CompanyID:          principal.CompanyID,
+		AgentID:            agentID,
+		TaskID:             &taskID,
+		ConversationID:     uuid.Must(uuid.NewV7()),
+		ConversationKind:   "task",
 		AuthorizedByUserID: &principal.UserID,
 	}
 	requestKey := uuid.Must(uuid.NewV7())
@@ -77,8 +83,14 @@ func TestTaskFailureRejectsUnprovedOrMalformedRequests(t *testing.T) {
 	principal := phase4Principal(uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7()))
 	taskID := uuid.Must(uuid.NewV7())
 	origin := execution.RunOrigin{
-		RunID: uuid.MustParse("00000000-0000-4000-8000-000000000042"), CompanyID: principal.CompanyID, AgentID: uuid.Must(uuid.NewV7()),
-		TaskID: &taskID, ConversationID: uuid.Must(uuid.NewV7()), ConversationKind: "task",
+		RunID: uuid.MustParse(
+			"00000000-0000-4000-8000-000000000042",
+		),
+		CompanyID:          principal.CompanyID,
+		AgentID:            uuid.Must(uuid.NewV7()),
+		TaskID:             &taskID,
+		ConversationID:     uuid.Must(uuid.NewV7()),
+		ConversationKind:   "task",
 		AuthorizedByUserID: &principal.UserID,
 	}
 	service := &taskServiceStub{

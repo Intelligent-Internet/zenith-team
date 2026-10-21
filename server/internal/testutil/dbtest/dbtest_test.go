@@ -18,7 +18,7 @@ func TestOpenDatabaseRequiresSharedServer(t *testing.T) {
 }
 
 func TestOpenDatabaseDoesNotClassifyInvalidSharedServerAsUnavailable(t *testing.T) {
-	t.Setenv(SharedDatabaseURLEnv, "mysql://boardly:boardly@127.0.0.1/boardly")
+	t.Setenv(SharedDatabaseURLEnv, "mysql://zenith-team:zenith-team@127.0.0.1/zenith-team")
 
 	_, err := OpenDatabase(context.Background())
 	if err == nil {
@@ -45,7 +45,7 @@ func TestIsolatedDatabaseNameIsSafeAndDeterministic(t *testing.T) {
 	t.Parallel()
 
 	id := uuid.MustParse("019c9f4e-809c-7f63-bb01-fb2533917798")
-	if got, want := isolatedDatabaseName(id), "boardly_test_019c9f4e809c7f63bb01fb2533917798"; got != want {
+	if got, want := isolatedDatabaseName(id), "zenith_team_test_019c9f4e809c7f63bb01fb2533917798"; got != want {
 		t.Fatalf("isolatedDatabaseName() = %q, want %q", got, want)
 	}
 }
@@ -54,13 +54,13 @@ func TestDatabaseURLForNamePreservesConnectionOptions(t *testing.T) {
 	t.Parallel()
 
 	got, err := databaseURLForName(
-		"postgres://boardly:boardly@127.0.0.1:54321/boardly?sslmode=disable&connect_timeout=5",
-		"boardly_test_123",
+		"postgres://zenith_team:zenith_team@127.0.0.1:54321/zenith_team?sslmode=disable&connect_timeout=5",
+		"zenith_team_test_123",
 	)
 	if err != nil {
 		t.Fatalf("databaseURLForName() error = %v", err)
 	}
-	const want = "postgres://boardly:boardly@127.0.0.1:54321/boardly_test_123?sslmode=disable&connect_timeout=5"
+	const want = "postgres://zenith_team:zenith_team@127.0.0.1:54321/zenith_team_test_123?sslmode=disable&connect_timeout=5"
 	if got != want {
 		t.Fatalf("databaseURLForName() = %q, want %q", got, want)
 	}

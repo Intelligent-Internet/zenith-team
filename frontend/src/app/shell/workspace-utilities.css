@@ -1,8 +1,8 @@
 /* Compatibility for existing light-on-dark utilities. Feature styles own special surfaces. */
 
-:where(html[data-boardly-workspace-theme])
+:where(html[data-zenith-team-workspace-theme])
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -17,9 +17,9 @@
   background: var(--workspace-panel-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -28,9 +28,9 @@ html[data-boardly-workspace-theme]
   background-color: var(--workspace-control-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -51,9 +51,9 @@ html[data-boardly-workspace-theme]
   background-color: var(--workspace-control-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -76,9 +76,9 @@ html[data-boardly-workspace-theme]
   background-color: var(--workspace-control-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -87,9 +87,9 @@ html[data-boardly-workspace-theme]
   background-color: var(--workspace-hover-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -107,9 +107,9 @@ html[data-boardly-workspace-theme]
   background-color: var(--workspace-hover-bg) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -124,9 +124,9 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -147,9 +147,9 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -158,9 +158,9 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider-strong) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -175,9 +175,9 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider-strong) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -198,9 +198,9 @@ html[data-boardly-workspace-theme]
   border-color: var(--workspace-divider-strong) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -212,9 +212,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -223,9 +223,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -245,9 +245,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -272,9 +272,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -288,9 +288,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-faint) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -311,9 +311,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-faint) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -326,9 +326,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -352,9 +352,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-text-muted) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -364,9 +364,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-accent-foreground) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -380,9 +380,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-native-accent) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :where(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu,
     .workspace-command-palette
@@ -391,9 +391,9 @@ html[data-boardly-workspace-theme]
   color: var(--workspace-danger-foreground) !important;
 }
 
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   :is(
-    .boardly-workspace-theme,
+    .zenith-team-workspace-theme,
     .workspace-profile-menu,
     .workspace-notification-menu
   )

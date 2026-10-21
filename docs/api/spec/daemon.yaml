@@ -7,7 +7,7 @@ paths:
     parameters:
       - { $ref: './_common.yaml#/parameters/runtimeId' }
       - { $ref: './_common.yaml#/parameters/runId' }
-      - name: X-Boardly-Daemon-ID
+      - name: X-Zenith-Team-Daemon-ID
         in: header
         required: true
         schema: { type: string }
@@ -79,7 +79,7 @@ paths:
   daemon_runtime_tools:
     parameters:
       - { $ref: './_common.yaml#/parameters/runtimeId' }
-      - name: X-Boardly-Daemon-ID
+      - name: X-Zenith-Team-Daemon-ID
         in: header
         required: true
         description: Must match the Runtime's owning daemon; required independently of the legacy header rollout setting.
@@ -118,11 +118,11 @@ paths:
       description: |
         The daemon checks it before a local Tool sign-in and before it
         publishes Tool status. The runtime must be this daemon's
-        (`X-Boardly-Daemon-ID`) and the signed-in person's, in a Company they
+        (`X-Zenith-Team-Daemon-ID`) and the signed-in person's, in a Company they
         still belong to; anything else is `404 runtime_not_found` or
         `404 company_not_found`. `items` are the person's own bindings on the
         runtime, as `GET /companies/{companyId}/agent-bindings?runtime_id=`
-        lists them. The daemon's own session (D31) cannot read that member
+        lists them. The daemon's own session cannot read that member
         route, so the daemon plane carries this read.
       security: [{ daemonToken: [] }]
       responses:
@@ -164,7 +164,7 @@ paths:
   #   * Runtime-scoped operations (listed with the `daemonIDHeader`
   #     parameter, as the run-scoped ones below also are) additionally prove
   #     the caller is the machine that registered the runtime:
-  #     `X-Boardly-Daemon-ID` must equal the runtime's `daemonId`. A
+  #     `X-Zenith-Team-Daemon-ID` must equal the runtime's `daemonId`. A
   #     mismatch is the same non-disclosing `404 runtime_not_found`; on the
   #     deregister batch the id is skipped.
   #     Rollout: a missing header is admitted with a warning this release and
@@ -459,7 +459,7 @@ paths:
       operationId: daemonWebSocket
       summary: Open the daemon control socket
       description: |
-        WebSocket upgrade. The daemon id comes from the `X-Boardly-Daemon-ID`
+        WebSocket upgrade. The daemon id comes from the `X-Zenith-Team-Daemon-ID`
         header, falling back to the `daemon_id` query parameter; `runtime_ids` is
         a comma-separated scope. The caller's complete company set is resolved
         server-side so heartbeats and RPCs reuse the HTTP checks.
@@ -488,7 +488,7 @@ paths:
           in: query
           required: false
           description: |
-            Fallback for the `X-Boardly-Daemon-ID` header. When neither is
+            Fallback for the `X-Zenith-Team-Daemon-ID` header. When neither is
             present the upgrade follows the header's rollout rule: admitted
             with a warning, or `400 invalid_request` once required.
           schema: { type: string }
@@ -509,7 +509,7 @@ paths:
         '400': { $ref: './_common.yaml#/responses/BadRequest' }
         '401': { $ref: './_common.yaml#/responses/Unauthorized' }
         '500': { $ref: './_common.yaml#/responses/InternalError' }
-      x-boardly-rpc-methods:
+      x-zenith-team-rpc-methods:
         runs.claim:
           request: { $ref: '#/schemas/DaemonClaimRunsRequest' }
           response: { $ref: '#/schemas/DaemonClaimRunsResponse' }
@@ -1720,8 +1720,8 @@ schemas:
       not served; the user plane's `Run` is where those live.
 
       There is no trigger-message id beside `id`: the words the run answers
-      arrive frozen in `context.prompt` (ADR 0001), so the daemon never
-      resolves a prompt by id.
+      arrive frozen in `context.prompt` when the run is created, so the
+      daemon never resolves a prompt by id.
     required: [id, companyId, agentId, conversationId, runtimeId, forceFreshSession]
     properties:
       id: {"type": "string", "format": "uuid"}
@@ -1746,8 +1746,8 @@ schemas:
           bundles/references.
           Current non-Schedule Resource bindings can include `localPath` here;
           this private daemon shape is not the public Resource projection.
-          The versioned managed-only replacement is Planned in docs/specs/runs
-          and docs/specs/workspaces, not required by this baseline schema.
+          A versioned managed-only replacement is planned and is not required
+          by this baseline schema.
         additionalProperties: true
       forceFreshSession: { type: boolean }
       authToken:

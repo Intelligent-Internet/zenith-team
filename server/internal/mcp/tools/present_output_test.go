@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
 )
 
 const presentOutputTestID = "01990d25-3d7a-7000-8000-000000000901"
@@ -202,7 +202,7 @@ func TestPresentOutputRejectsWorkspaceEscapeAndSymlink(t *testing.T) {
 
 // The guard sees each file's real path before anything is read or uploaded,
 // for a listed item and for a Studio canvas, and its refusal stops the whole
-// presentation (Access TECH B3e).
+// presentation.
 func TestPresentOutputAsksTheGuardBeforeReadingAFile(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()

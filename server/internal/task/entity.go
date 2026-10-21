@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type ActorKind = protocol.ActorKind
@@ -369,10 +369,6 @@ func validTitle(value string) bool {
 func validDescription(value string) bool {
 	return utf8.ValidString(value) && protocol.TrimContractWhitespace(value) == value &&
 		utf8.RuneCountInString(value) <= 64*1024 && len(value) <= 64*1024
-}
-
-func sameUUID(left, right *uuid.UUID) bool {
-	return left == nil && right == nil || left != nil && right != nil && *left == *right
 }
 
 // ActorRef is the shared actor reference shape.

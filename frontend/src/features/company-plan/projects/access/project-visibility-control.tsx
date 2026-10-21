@@ -1,5 +1,5 @@
 import { accessErrorCopy } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import { useProjectAccess } from "@/shared/permissions";
 import { Building2 } from "@/shared/ui/icons";
 import { toast } from "@/shared/ui/sonner";
@@ -11,7 +11,7 @@ import {
 import type { AccessConfirmation } from "./project-access-confirm-dialog";
 
 // A Project shows only the people added to it; opening one to the whole
-// Company is not offered (owner decision 2026-10-02). A Project that is
+// Company is not offered. A Project that is
 // already open to everyone says so in one line above the list ("Open to
 // everyone"), and whoever may change it can limit it to the people added
 // ("Limit access", after a short confirm). That is an access change, so it
@@ -46,7 +46,7 @@ export function ProjectEveryoneNotice({
         expectedAccessRevision: accessRevision,
       }).unwrap();
     } catch (reason) {
-      const failure = reason as Partial<BoardlyApiError>;
+      const failure = reason as Partial<ZenithTeamApiError>;
       if (
         failure.code === "project_grant_revision_conflict" ||
         failure.code === "project_conflict"

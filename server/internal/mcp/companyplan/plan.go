@@ -322,7 +322,15 @@ func diffTasks(current, desired map[string]Task) []Change {
 		terminalUpdateAllowed := changed && taskDependencyRemovalAllowed(before, after)
 		switch {
 		case existed && wanted && before.ProjectKey != after.ProjectKey:
-			changes = append(changes, Change{EntityType: "task", Operation: "blocked", Key: key, Reason: "Task Project is immutable"})
+			changes = append(
+				changes,
+				Change{
+					EntityType: "task",
+					Operation:  "blocked",
+					Key:        key,
+					Reason:     "Task Project is immutable",
+				},
+			)
 		case !existed:
 			changes = append(changes, Change{EntityType: "task", Operation: "create", Key: key})
 		case terminal && !wanted:

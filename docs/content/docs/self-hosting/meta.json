@@ -1,0 +1,13 @@
+{
+  "title": "Self-hosting",
+  "pages": [
+    "quickstart",
+    "environment-variables",
+    "auth-setup",
+    "storage",
+    "reverse-proxy-and-tls",
+    "upgrading",
+    "security-model",
+    "privacy-and-network"
+  ]
+}

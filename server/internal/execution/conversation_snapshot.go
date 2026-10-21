@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // conversationSnapshotMaxItems bounds a Run's frozen chat history. The query
@@ -183,7 +183,9 @@ func snapshotItemFromQueuedRow(
 		ID:  item.MessageID.String(),
 		Seq: seq,
 		Author: runContextActor{
-			ID: item.InitiatedByUserID.String(), Kind: string(protocol.ActorKindUser), Name: row.DisplayName,
+			ID:   item.InitiatedByUserID.String(),
+			Kind: string(protocol.ActorKindUser),
+			Name: row.DisplayName,
 		},
 		CreatedAt: item.CreatedAt.Time.UTC(),
 		Content:   item.Content,

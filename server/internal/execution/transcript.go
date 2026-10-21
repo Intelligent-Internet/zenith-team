@@ -17,11 +17,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 const (
@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	// ErrTranscriptItemInvalid means the normalized Boardly item is malformed
+	// ErrTranscriptItemInvalid means the normalized Zenith Team item is malformed
 	// or exceeds the durable transcript bounds.
 	ErrTranscriptItemInvalid = errors.New("transcript item is invalid")
 	// ErrTranscriptItemConflict means ItemKey already names different
@@ -236,7 +236,8 @@ func normalizeTranscriptItem(input TranscriptItemInput) (normalizedTranscriptIte
 	parts := make([]protocol.RunItemPart, len(input.Parts))
 	finalAnswer := false
 	for index, part := range input.Parts {
-		if part.Final && (input.Role != protocol.RunItemRoleAgent || part.Type != protocol.RunItemPartTypeText) {
+		if part.Final &&
+			(input.Role != protocol.RunItemRoleAgent || part.Type != protocol.RunItemPartTypeText) {
 			return normalizedTranscriptItem{}, transcriptItemInvalid("final answer part")
 		}
 		finalAnswer = finalAnswer || part.Final

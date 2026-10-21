@@ -55,5 +55,3 @@ type DependencyGraph struct {
 	Dependencies []DependencyGraphEdge `json:"items"`
 	Tasks        []DependencyGraphTask `json:"tasks"`
 }
-
-type DependencyGraphOptions struct{}

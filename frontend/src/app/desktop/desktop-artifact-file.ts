@@ -1,5 +1,5 @@
 import type { DesktopArtifactFileReference } from "../../../electron/shared/desktop-bridge.types";
-import { getBoardlyDesktopBridge } from "../../shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "../../shared/desktop/desktop-environment.service";
 
 // The main process owns credentials, disk access and permission revalidation.
 // Web clients and files above the desktop cache limit use the normal API path.
@@ -8,7 +8,7 @@ export async function downloadDesktopArtifactFile(
   signal?: AbortSignal,
 ): Promise<Blob | null> {
   signal?.throwIfAborted();
-  const bridge = getBoardlyDesktopBridge();
+  const bridge = getZenithTeamDesktopBridge();
   if (!bridge?.readArtifactFile) return null;
   const requestId = crypto.randomUUID();
   const cancel = () => {

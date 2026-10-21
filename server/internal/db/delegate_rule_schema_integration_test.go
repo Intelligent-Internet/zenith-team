@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// D31 (000099): the delegate rule is two functions and nothing else, so the
+// 000099: the delegate rule is two functions and nothing else, so the
 // migration changes no row. Rolling back drops both and keeps every row;
 // migrating up again restores them.
 func TestDelegateRuleMigrationAddsTwoFunctionsAndRollsBack(t *testing.T) {
@@ -83,7 +83,7 @@ func TestDelegateRuleMigrationAddsTwoFunctionsAndRollsBack(t *testing.T) {
 	}
 }
 
-// D31, revised 2026-10-06 (000100): a Run uses its Authorizer's access, so
+// 000100: a Run uses its Authorizer's access, so
 // delegate_permission_held loses the audience and Agent arguments,
 // run_permission_held stops reading the Run's invocation, and
 // conversation_audience_reads goes. The migration changes no row. Rolling

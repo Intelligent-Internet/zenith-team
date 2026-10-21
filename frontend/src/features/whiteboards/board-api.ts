@@ -1,10 +1,13 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import type { QueryReturnValue } from "@reduxjs/toolkit/query";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { RootState } from "@/state/store";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import { subscribeToRefetchSignals } from "@/shared/realtime/refetch-signals";
 
 type Schema = components["schemas"];
@@ -41,7 +44,7 @@ export function onBoardChange(scope: BoardScope, changed: () => void) {
     if (boardScopeKey(other) === boardScopeKey(scope)) changed();
   };
   listeners.add(local);
-  const events = boardlyRealtimeClient.onEvent((event) => {
+  const events = zenithTeamRealtimeClient.onEvent((event) => {
     if (
       event.companyId === scope.companyId &&
       event.type === "whiteboard.changed" &&
@@ -69,14 +72,14 @@ function reconcile<T extends { id: string }>(
     ...incoming.filter((item) => !removed.has(item.id)),
   ];
 }
-export const whiteboardApi = boardlyApi.injectEndpoints({
+export const whiteboardApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     attachWhiteboardFile: builder.mutation<
       Schema["BoardFile"],
       BoardScope & { input: Schema["BoardFileInput"] }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["BoardFile"]>(
               `${boardPath(scope)}/files`,
@@ -87,7 +90,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
     }),
     publicWhiteboard: builder.query<BoardSnapshot, string>({
       queryFn: (token) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<BoardSnapshot>(publicBoardPath(token)),
           "This Whiteboard link is unavailable.",
         ),
@@ -97,11 +100,11 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
       queryFn: (
         scope,
         { getState, signal },
-      ): Promise<QueryReturnValue<BoardSnapshot, BoardlyApiError, {}>> => {
+      ): Promise<QueryReturnValue<BoardSnapshot, ZenithTeamApiError, {}>> => {
         const previous = whiteboardApi.endpoints.getWhiteboard.select(scope)(
           getState() as RootState,
         ).data;
-        return executeBoardlyQuery(
+        return executeZenithTeamQuery(
           () =>
             apiClient.get<BoardSnapshot>(boardPath(scope), {
               params: { after_seq: previous?.sequence ?? 0 },
@@ -161,7 +164,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
             retryDelay = 300;
           } catch (error) {
             retry = ![401, 403, 404].includes(
-              (error as BoardlyApiError).status ?? 0,
+              (error as ZenithTeamApiError).status ?? 0,
             );
             requested = retry;
             retryDelay = Math.min(30000, Math.max(1000, retryDelay * 2));
@@ -189,7 +192,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
             request(sequence);
         };
         listeners.add(local);
-        const events = boardlyRealtimeClient.onEvent((event) => {
+        const events = zenithTeamRealtimeClient.onEvent((event) => {
           if (event.companyId !== scope.companyId) return;
           if (
             event.type.startsWith("whiteboard.") &&
@@ -205,7 +208,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
             );
           if (event.type.startsWith("auth.company_access")) request();
         });
-        const status = boardlyRealtimeClient.onStatus((event) => {
+        const status = zenithTeamRealtimeClient.onStatus((event) => {
           if (
             event.activeCompanyId === scope.companyId &&
             event.status === "ready"
@@ -240,7 +243,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: [{ type: "Artifact" }],
       queryFn: ({ title, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Schema["Board"]>(`${boardPath(scope)}/title`, {
               title,
@@ -269,7 +272,7 @@ export const whiteboardApi = boardlyApi.injectEndpoints({
       BoardScope & { input: BoardBatch }
     >({
       queryFn: ({ input, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["BoardMutation"]>(
               `${boardPath(scope)}/operations`,

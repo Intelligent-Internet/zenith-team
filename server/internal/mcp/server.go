@@ -6,7 +6,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type Tools interface {
@@ -66,7 +66,7 @@ func newServer(
 	allowedTools map[string]struct{},
 	optional ...optionalTools,
 ) *mcpsdk.Server {
-	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "boardly-mcp", Version: "0.1.0"}, nil)
+	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "zenith-team-mcp", Version: "0.1.0"}, nil)
 	closedWorld := false
 	destructive := true
 	nonDestructive := false

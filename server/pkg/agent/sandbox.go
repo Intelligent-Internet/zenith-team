@@ -5,9 +5,9 @@ import (
 	"slices"
 )
 
-// Sandbox is a macOS Seatbelt profile a provider launch runs under (Access
-// TECH B3d). The daemon builds it; the adapter only wraps the command line,
-// so every process the provider starts (its shell, zen, boardly-mcp, MCP
+// Sandbox is a macOS Seatbelt profile a provider launch runs under. The
+// daemon builds it; the adapter only wraps the command line,
+// so every process the provider starts (its shell, zen, zenith-team-mcp, MCP
 // servers) inherits the same walls.
 type Sandbox struct {
 	// Profile is the SBPL source handed to sandbox-exec -p. It names paths

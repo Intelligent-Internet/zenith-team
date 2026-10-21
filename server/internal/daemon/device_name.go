@@ -10,8 +10,8 @@ import (
 )
 
 // defaultDeviceName is the name a machine announces for itself when nobody
-// set BOARDLY_DEVICE_NAME: on macOS the computer name the person gave it in
-// System Settings ("Duong's MacBook"), because os.Hostname there is whatever
+// set ZENITH_TEAM_DEVICE_NAME: on macOS the computer name the person gave it in
+// System Settings ("Alex's MacBook"), because os.Hostname there is whatever
 // the current network resolves — an ISP's reverse-DNS label on one Wi-Fi,
 // "name.local" on another — and that string ends up in every roster and
 // runtime picker. Elsewhere, and whenever the lookup fails, the hostname

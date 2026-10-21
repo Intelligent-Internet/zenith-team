@@ -21,10 +21,10 @@ const (
 	maximumSourceArchiveBytes   = int64(100 << 20)
 	maximumSourceExpandedBytes  = uint64(1 << 30)
 	maximumSourceArchiveEntries = 20_000
-	generatedDockerfilePath     = ".boardly/Dockerfile"
-	generatedNginxPath          = ".boardly/nginx.conf"
-	generatedSourceDirectory    = ".boardly"
-	generatedStaticDirectory    = ".boardly/site"
+	generatedDockerfilePath     = ".zenith-team/Dockerfile"
+	generatedNginxPath          = ".zenith-team/nginx.conf"
+	generatedSourceDirectory    = ".zenith-team"
+	generatedStaticDirectory    = ".zenith-team/site"
 	staticPublicDirectory       = "public"
 	defaultApplicationPort      = 8080
 )
@@ -64,7 +64,7 @@ func prepareSourceArchive(
 		(len(expectedSHA256) != 0 && len(expectedSHA256) != sha256.Size) {
 		return nil, sourceFailure(errors.New("invalid source archive metadata"))
 	}
-	original, err := os.CreateTemp("", "boardly-source-*.zip")
+	original, err := os.CreateTemp("", "zenith-team-source-*.zip")
 	if err != nil {
 		return nil, providerFailure(
 			FailureProviderUnavailable,
@@ -271,7 +271,7 @@ func writePreparedArchive(
 	template Template,
 	build BuildType,
 ) (*preparedSource, error) {
-	target, err := os.CreateTemp("", "boardly-prepared-source-*.zip")
+	target, err := os.CreateTemp("", "zenith-team-prepared-source-*.zip")
 	if err != nil {
 		return nil, providerFailure(
 			FailureProviderUnavailable,
@@ -497,7 +497,7 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 RUN npm run build
 FROM nginxinc/nginx-unprivileged:alpine
-COPY .boardly/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .zenith-team/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 8080
 `
@@ -509,14 +509,14 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 RUN npm run build
 FROM nginxinc/nginx-unprivileged:alpine
-COPY .boardly/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .zenith-team/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/build /usr/share/nginx/html
 EXPOSE 8080
 `
 
 const generatedStaticDockerfile = `FROM nginxinc/nginx-unprivileged:alpine
-COPY .boardly/nginx.conf /etc/nginx/conf.d/default.conf
-COPY .boardly/site/ /usr/share/nginx/html/
+COPY .zenith-team/nginx.conf /etc/nginx/conf.d/default.conf
+COPY .zenith-team/site/ /usr/share/nginx/html/
 EXPOSE 8080
 `
 

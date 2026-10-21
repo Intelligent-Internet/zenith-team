@@ -14,8 +14,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
 )
 
 func TestScheduleAsynqRealRedisCompatibility(t *testing.T) {

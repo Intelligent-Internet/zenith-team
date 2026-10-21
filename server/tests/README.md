@@ -35,11 +35,11 @@ inside a tested package:
   (testcontainers) container while a child test command runs. The separate
   process exists because Go executes each tested package in its own process;
   no package-local singleton can span the full test command. It exports the
-  server URL to children via `BOARDLY_TEST_DATABASE_URL` and removes its
+  server URL to children via `ZENITH_TEAM_TEST_DATABASE_URL` and removes its
   container on normal and handled-signal paths. `make go-shape` pins
   PostgreSQL testcontainers imports to this package alone.
 - **`wsobserve/`** — the e2e smoke observer: connects two clients to the
-  Boardly client WebSocket and prints one line per received frame, proving
+  Zenith Team client WebSocket and prints one line per received frame, proving
   multi-socket fanout ordering.
 - `smoke/` — currently an empty, untracked scratch directory; it contains no
   Go package.
@@ -70,6 +70,6 @@ Redis, so run `make go-integration` yourself — or dispatch the CI workflow by
 hand — before merging changes to migrations, sqlc queries, or fixtures.
 
 Beyond the tag, a raw `go test` still never starts PostgreSQL implicitly: a
-tagged test that does run without `BOARDLY_TEST_DATABASE_URL` skips, and CI (or
+tagged test that does run without `ZENITH_TEAM_TEST_DATABASE_URL` skips, and CI (or
 `TEST_REQUIRE_DOCKER=1`) makes that absence fatal instead. This prevents an
 editor or an agent from unexpectedly launching dozens of containers.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 func runPolicyConnector(id, nativeID, name string, tools ...agent.ConnectorTool) RunConnectorContext {

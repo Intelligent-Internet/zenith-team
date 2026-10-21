@@ -53,7 +53,8 @@ func validateProjectAction(action Action) error {
 	default:
 		return errors.New("invalid Project operation")
 	}
-	if fields.ProjectKey != nil || fields.AgentID != nil || fields.MilestoneType != nil || fields.Priority != nil || fields.DependsOn != nil {
+	if fields.ProjectKey != nil || fields.AgentID != nil || fields.MilestoneType != nil || fields.Priority != nil ||
+		fields.DependsOn != nil {
 		return errors.New("Project accepts only title and description")
 	}
 	return validateProvided(*fields)

@@ -7,13 +7,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // ProjectFilesInput replaces the current file selection as one reviewed set.
@@ -36,7 +37,12 @@ type ProjectFiles struct {
 
 // loadProjectFiles attaches the active files the reader may open to Projects
 // the reader reads.
-func loadProjectFiles(ctx context.Context, q *generated.Queries, companyID, readerID uuid.UUID, projects []ProjectResponse) error {
+func loadProjectFiles(
+	ctx context.Context,
+	q *generated.Queries,
+	companyID, readerID uuid.UUID,
+	projects []ProjectResponse,
+) error {
 	ids := make([]uuid.UUID, len(projects))
 	for i := range projects {
 		ids[i] = projects[i].ID
@@ -54,7 +60,12 @@ func loadProjectFiles(ctx context.Context, q *generated.Queries, companyID, read
 	}
 	for _, row := range rows {
 		i := positions[row.ProjectID]
-		file := ProjectFile{ID: row.ID, Filename: row.Filename, ContentType: row.ContentType, SizeBytes: row.SizeBytes}
+		file := ProjectFile{
+			ID:          row.ID,
+			Filename:    row.Filename,
+			ContentType: row.ContentType,
+			SizeBytes:   row.SizeBytes,
+		}
 		if row.FileType == "logo" {
 			projects[i].Files.Logo = &file
 		} else {
@@ -86,7 +97,15 @@ func replaceProjectFiles(
 	}
 	// Lock every selected upload before retiring old grants, so cleanup cannot win between validation and registration.
 	for _, id := range ids {
-		row, err := q.LockProjectUpload(ctx, generated.LockProjectUploadParams{CompanyID: principal.CompanyID, AttachmentID: id, ActorUserID: principal.UserID, ProjectID: projectID})
+		row, err := q.LockProjectUpload(
+			ctx,
+			generated.LockProjectUploadParams{
+				CompanyID:    principal.CompanyID,
+				AttachmentID: id,
+				ActorUserID:  principal.UserID,
+				ProjectID:    projectID,
+			},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrProjectInvalidInput
 		}
@@ -98,7 +117,10 @@ func replaceProjectFiles(
 			return ErrProjectInvalidInput
 		}
 	}
-	retired, err := q.RetireProjectFiles(ctx, generated.RetireProjectFilesParams{CompanyID: principal.CompanyID, ProjectID: projectID})
+	retired, err := q.RetireProjectFiles(
+		ctx,
+		generated.RetireProjectFilesParams{CompanyID: principal.CompanyID, ProjectID: projectID},
+	)
 	if err != nil {
 		return err
 	}
@@ -107,7 +129,15 @@ func replaceProjectFiles(
 		if input.LogoID != nil && id == *input.LogoID {
 			kind = "logo"
 		}
-		if err := q.RegisterProjectFile(ctx, generated.RegisterProjectFileParams{CompanyID: principal.CompanyID, ProjectID: projectID, AttachmentID: id, FileType: kind}); err != nil {
+		if err := q.RegisterProjectFile(
+			ctx,
+			generated.RegisterProjectFileParams{
+				CompanyID:    principal.CompanyID,
+				ProjectID:    projectID,
+				AttachmentID: id,
+				FileType:     kind,
+			},
+		); err != nil {
 			return err
 		}
 	}
@@ -249,7 +279,10 @@ func (s *DefaultProjectService) ReplaceFiles(
 		if err := replaceProjectFiles(ctx, q, &pending, principal, id, &input); err != nil {
 			return err
 		}
-		row, err = q.AdvanceProjectRevision(ctx, generated.AdvanceProjectRevisionParams{CompanyID: principal.CompanyID, ProjectID: id})
+		row, err = q.AdvanceProjectRevision(
+			ctx,
+			generated.AdvanceProjectRevisionParams{CompanyID: principal.CompanyID, ProjectID: id},
+		)
 		if err != nil {
 			return mapProjectError(err)
 		}
@@ -280,7 +313,8 @@ func validProjectFile(name, contentType string, size int64, logo bool) bool {
 	case ".txt":
 		return contentType == "text/plain"
 	case ".md", ".markdown":
-		return contentType == "text/markdown" || contentType == "text/plain" || contentType == "application/octet-stream"
+		return contentType == "text/markdown" || contentType == "text/plain" ||
+			contentType == "application/octet-stream"
 	case ".pdf":
 		return contentType == "application/pdf"
 	case ".docx":

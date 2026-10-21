@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The access report's rows arrive one per Project and person, in Project
@@ -23,7 +23,13 @@ func TestGroupProjectAccessReport(t *testing.T) {
 	web, docs := uuid.New(), uuid.New()
 	ann, bob, cat := uuid.New(), uuid.New(), uuid.New()
 	row := func(project uuid.UUID, key string, user uuid.UUID, reasons ...string) generated.ListProjectAccessReportRow {
-		return generated.ListProjectAccessReportRow{ProjectID: project, Key: key, Title: key + " title", UserID: user, Reasons: reasons}
+		return generated.ListProjectAccessReportRow{
+			ProjectID: project,
+			Key:       key,
+			Title:     key + " title",
+			UserID:    user,
+			Reasons:   reasons,
+		}
 	}
 	person := func(user uuid.UUID, reasons ...ProjectAccessReportReason) ProjectAccessReportPerson {
 		return ProjectAccessReportPerson{UserID: user, Reasons: reasons}
@@ -67,7 +73,8 @@ func TestGroupProjectAccessReport(t *testing.T) {
 				t.Fatalf("report = %+v", got)
 			}
 			if !slices.EqualFunc(got.Items, test.want, func(a, b ProjectAccessReportEntry) bool {
-				return a.ProjectID == b.ProjectID && a.Key == b.Key && a.Title == b.Title && a.People != nil &&
+				return a.ProjectID == b.ProjectID && a.Key == b.Key && a.Title == b.Title &&
+					a.People != nil &&
 					slices.EqualFunc(a.People, b.People, func(x, y ProjectAccessReportPerson) bool {
 						return x.UserID == y.UserID && slices.Equal(x.Reasons, y.Reasons)
 					})
@@ -113,7 +120,8 @@ func TestProjectAccessReportReasonsMatchContractAndQuery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	query := regexp.MustCompile(`(?s)-- name: ListProjectAccessReport :many\n(.*?)(?:\n-- name: |\z)`).FindSubmatch(sql)
+	query := regexp.MustCompile(`(?s)-- name: ListProjectAccessReport :many\n(.*?)(?:\n-- name: |\z)`).
+		FindSubmatch(sql)
 	if query == nil {
 		t.Fatal("ListProjectAccessReport not found in project_access.sql")
 	}

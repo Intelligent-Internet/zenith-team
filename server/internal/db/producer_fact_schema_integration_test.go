@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestProducerFactsHaveNoLateDirectCompanyForeignKeys(t *testing.T) {

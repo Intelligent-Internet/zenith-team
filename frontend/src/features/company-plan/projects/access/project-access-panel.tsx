@@ -17,7 +17,7 @@ import {
   useGroupReviewNames,
 } from "@/features/agents/hooks/use-group-actions";
 import { accessErrorCopy } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import { useCan, useProjectAccess } from "@/shared/permissions";
 import { Eye, LogIn } from "@/shared/ui/icons";
 import { toast } from "@/shared/ui/sonner";
@@ -67,7 +67,7 @@ import "./project-access.css";
 // what is above it is greyed, and people or Groups who hold more are
 // read-only. A Group change reads the server's preview first and is
 // reviewed only when someone loses the Project, a run stops or Projects
-// the viewer can't see move (Access DESIGN 7.0). A manager who cannot read
+// the viewer can't see move. A manager who cannot read
 // the Project gets Join beside the Project picker.
 export function ProjectAccessPanel({
   companyId,
@@ -195,7 +195,7 @@ export function ProjectAccessPanel({
         if (asks) asking.push(asks.review);
       } catch (reason) {
         toast.error(
-          accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+          accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
             `Couldn't add ${entry.name}`,
         );
         break;
@@ -221,7 +221,7 @@ export function ProjectAccessPanel({
         current = result.revision;
         saved(current);
       } catch (reason) {
-        const failure = reason as Partial<BoardlyApiError>;
+        const failure = reason as Partial<ZenithTeamApiError>;
         if (failure.code === "project_grant_revision_conflict") reload();
         toast.error(
           accessErrorCopy(failure.code) ??
@@ -401,7 +401,7 @@ function JoinButton({
           }).unwrap();
         } catch (reason) {
           toast.error(
-            accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+            accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
               "Couldn't join",
           );
         }

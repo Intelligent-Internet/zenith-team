@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 func TestNewDesktopHandoffServiceRequiresStoreAndTokens(t *testing.T) {

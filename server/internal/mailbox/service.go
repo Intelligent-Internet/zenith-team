@@ -1,7 +1,7 @@
 // Package mailbox owns the shared Company Email identity, inbound-message
 // metadata and retention, and reviewable outbound Agent Mail drafts with their
 // durable send queue. It is separate from inbox because email is user content,
-// not a Boardly notification.
+// not a Zenith Team notification.
 package mailbox
 
 import (
@@ -19,12 +19,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/sync/singleflight"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/infra/email"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (
@@ -169,7 +169,7 @@ type Observer interface {
 
 // MailboxService owns Company Email configuration, inbound metadata, detail
 // retrieval, and retention.
-type MailboxService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type MailboxService interface {
 	GetState(context.Context, auth.UserPrincipal) (State, error)
 	Create(context.Context, auth.UserPrincipal, string) (State, error)
 	List(context.Context, auth.UserPrincipal, ListOptions) (Page, error)

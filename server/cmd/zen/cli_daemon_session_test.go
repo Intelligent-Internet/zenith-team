@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // fakeAccessToken is an unsigned token shaped like the server's, naming
@@ -74,7 +74,7 @@ func newDaemonSessionServer(t *testing.T) *daemonSessionServer {
 			w.WriteHeader(http.StatusNoContent)
 		case "/api/v1/daemon/config":
 			_ = json.NewEncoder(w).
-				Encode(map[string]string{"studioApiOrigin": "https://studio.boardly.test"})
+				Encode(map[string]string{"studioApiOrigin": "https://studio.zenith-team.test"})
 		default:
 			http.NotFound(w, r)
 		}
@@ -116,7 +116,7 @@ func sessionPaths(t *testing.T) (string, string) {
 	return personPath, daemonPath
 }
 
-// D31: `zen daemon start` gives the daemon its own session, minted once from
+// `zen daemon start` gives the daemon its own session, minted once from
 // the person's `zen auth login` with the person's bearer, and keeps it while
 // the server accepts it. The person's auth.json is left as it was.
 func TestDaemonStartMintsTheDaemonSessionFromThePersonsLogin(t *testing.T) {

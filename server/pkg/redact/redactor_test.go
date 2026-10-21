@@ -11,8 +11,8 @@ func TestRedactorReplacesSecretLiteralsAndPreservesPaths(t *testing.T) {
 	redactor := NewRedactor(Options{
 		SecretLiterals: []string{"run-capability-secret-token"},
 	})
-	input := "wrote /tmp/boardly-workspaces/run-1/src/main.go using run-capability-secret-token and password=hunter2"
-	want := "wrote /tmp/boardly-workspaces/run-1/src/main.go using [redacted:literal] and password=[redacted:kv-secret]"
+	input := "wrote /tmp/zenith-team-workspaces/run-1/src/main.go using run-capability-secret-token and password=hunter2"
+	want := "wrote /tmp/zenith-team-workspaces/run-1/src/main.go using [redacted:literal] and password=[redacted:kv-secret]"
 	if got := redactor.Redact(input); got != want {
 		t.Fatalf("Redact() = %q, want %q", got, want)
 	}

@@ -330,7 +330,7 @@ func TestDaemonShutdownPreservesLocalPreviewConfig(t *testing.T) {
 			prepared := make(chan error, 1)
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/api/v1/daemon/config" {
-					_, _ = w.Write([]byte(`{"studioApiOrigin":"https://api-agent.ii.inc"}`))
+					_, _ = w.Write([]byte(`{"studioApiOrigin":"https://studio.example"}`))
 					return
 				}
 				if r.URL.Path != "/api/v1/daemon/companies" {
@@ -349,7 +349,7 @@ func TestDaemonShutdownPreservesLocalPreviewConfig(t *testing.T) {
 			defer server.Close()
 			daemon := newTestDaemon(t, server.URL)
 			daemon.cfg.LaunchedBy = "desktop"
-			t.Setenv("BOARDLY_HOME", home)
+			t.Setenv("ZENITH_TEAM_HOME", home)
 			writeCredential(t, server.URL, "access-1", "refresh-1", time.Hour)
 			if err := daemon.Run(t.Context()); err == nil {
 				t.Fatal("Run() error = nil, want preflight failure")
@@ -376,7 +376,9 @@ func TestDaemonShutdownPreservesLocalPreviewConfig(t *testing.T) {
 				if validLocalPreviewAuthorization("Bearer "+daemon.localPreviewToken, wantCapability) {
 					t.Fatal("replacement daemon accepts the retired capability")
 				}
-				if want := "http://" + listener.Addr().String() + localPreviewPath; config.Endpoint != want {
+				if want := "http://" + listener.Addr().
+					String() +
+					localPreviewPath; config.Endpoint != want {
 					t.Fatalf("retained endpoint = %q, want %q", config.Endpoint, want)
 				}
 			}

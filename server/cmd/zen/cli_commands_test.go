@@ -13,18 +13,18 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 const testCompanyID = "0198aa00-0000-7000-8000-0000000000c0"
 
-// seedSession points BOARDLY_HOME at a temp dir holding a valid credential
-// for serverURL and a config selecting testCompanyID — the state `boardly
+// seedSession points ZENITH_TEAM_HOME at a temp dir holding a valid credential
+// for serverURL and a config selecting testCompanyID — the state `zenith-team
 // login` plus `zen config set company_id` leaves behind.
 func seedSession(t *testing.T, serverURL string) {
 	t.Helper()
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	if err := daemon.SaveCLIConfig(daemon.CLIConfig{ServerURL: serverURL, CompanyID: testCompanyID}); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -48,7 +48,7 @@ func seedSession(t *testing.T, serverURL string) {
 }
 
 func TestConfigSetAndShowRoundTrip(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 
 	for _, set := range [][]string{
 		{"set", "server_url", "http://127.0.0.1:9999"},
@@ -114,7 +114,7 @@ func TestConfigSetAndShowRoundTrip(t *testing.T) {
 }
 
 func TestConfigSetRejectsInvalidValues(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	for _, invalid := range [][]string{
 		{"set", "poll_interval", "soon"},
 		{"set", "poll_interval", "0s"},
@@ -132,8 +132,8 @@ func TestConfigSetRejectsInvalidValues(t *testing.T) {
 // daemonOverrides feeds `daemon start`: a flag beats the env, the env beats
 // config.json, and config.json beats the built-in default.
 func TestDaemonOverridesHonorTheFlagEnvConfigLadder(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_DEVICE_NAME", "env-box")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_DEVICE_NAME", "env-box")
 	err := daemon.SaveCLIConfig(daemon.CLIConfig{
 		PollInterval:      "45s",
 		DeviceName:        "config-box",
@@ -174,7 +174,7 @@ func TestDaemonOverridesHonorTheFlagEnvConfigLadder(t *testing.T) {
 }
 
 func TestDaemonOverridesRejectACorruptConfigDuration(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	if err := daemon.SaveCLIConfig(daemon.CLIConfig{PollInterval: "soon"}); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestDaemonOverridesRejectACorruptConfigDuration(t *testing.T) {
 // WS-first claim ladder logs at debug — without this knob a stuck run cannot
 // be diagnosed from the daemon log at all.
 func TestDaemonLogLevelHonorsTheFlagEnvConfigLadder(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 
 	// Nothing set anywhere: the built-in default.
 	start := findSubcommand(t, newDaemonCmd(), "start")
@@ -204,7 +204,7 @@ func TestDaemonLogLevelHonorsTheFlagEnvConfigLadder(t *testing.T) {
 		t.Fatalf("config level = %v (err %v), want the config value", level, err)
 	}
 
-	t.Setenv("BOARDLY_LOG_LEVEL", "error")
+	t.Setenv("ZENITH_TEAM_LOG_LEVEL", "error")
 	if level, err := daemonLogLevel(start); err != nil || level != slog.LevelError {
 		t.Fatalf("env level = %v (err %v), want the env to beat config.json", level, err)
 	}
@@ -218,7 +218,7 @@ func TestDaemonLogLevelHonorsTheFlagEnvConfigLadder(t *testing.T) {
 }
 
 func TestDaemonLogLevelRejectsAnUnknownLevel(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 
 	start := findSubcommand(t, newDaemonCmd(), "start")
 	if err := start.Flags().Set("log-level", "verbose"); err != nil {
@@ -500,7 +500,7 @@ func runtimeListBody() map[string]any {
 			"provider": "claude", "status": "online",
 			"owner": map[string]any{
 				"id": "0198aa00-0000-7000-8000-0000000000a1", "kind": "user",
-				"name": "Duong Phung", "avatarUrl": nil,
+				"name": "Alex Rivera", "avatarUrl": nil,
 			},
 			"customName": "Office Mac",
 			"signIn": map[string]any{
@@ -551,7 +551,7 @@ func TestRuntimeListRendersTheCompanyRuntimes(t *testing.T) {
 	}
 	for _, want := range []string{
 		"ID", "NAME", "PROVIDER", "STATUS", "SIGN_IN", "OWNER", "LAST_SEEN",
-		"claude", "online", "signed_out", "Duong Phung", "2026-08-14T10:00:00Z",
+		"claude", "online", "signed_out", "Alex Rivera", "2026-08-14T10:00:00Z",
 		"macbook codex", "codex", "offline",
 	} {
 		if !strings.Contains(out, want) {
@@ -559,7 +559,7 @@ func TestRuntimeListRendersTheCompanyRuntimes(t *testing.T) {
 		}
 	}
 	// A machine somebody renamed shows that name here too, exactly as the
-	// roster and every picker do (DR-AC23: "in every picker and roster").
+	// roster and every picker do.
 	// The daemon's own name is what the custom one replaces, not a second
 	// column, so it must be gone from the table.
 	if !strings.Contains(out, "Office Mac") {
@@ -637,7 +637,7 @@ func TestRuntimeListJSONPrintsTheServerBody(t *testing.T) {
 }
 
 func TestAPIClientGuidesWhenLoginOrCompanyIsMissing(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	if _, err := executeCLI(t, newRootCmd, "agent", "list"); err == nil ||
 		!strings.Contains(err.Error(), "zen auth login") {
 		t.Fatalf("unauthenticated error = %v, want login guidance", err)
@@ -929,8 +929,8 @@ func TestConversationTranscriptRendersRolePartsAndContinuesFromTheLastRow(t *tes
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	out, err := executeCLI(t, newRootCmd, "conversation", "transcript", conversationID, "--limit", "2")
 	if err != nil {
@@ -1148,12 +1148,12 @@ func TestRunListTableFallsBackToTheAgentIDWithoutTheRoster(t *testing.T) {
 	}
 }
 
-// CL-FR6: a failure terminates non-zero and stdout stays parseable. Cobra
+// A failure terminates non-zero and stdout stays parseable. Cobra
 // only rejects an unknown subcommand at the root, so every family must
 // refuse `zen <family> <unknown>` the same way instead of printing its help
 // to stdout and exiting 0.
 func TestUnknownFamilySubcommandFailsLikeTheRoot(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	for _, args := range [][]string{
 		{"task", "frobnicate", "--output", "json"},
 		{"runtime", "frob"},

@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // Provider is the unified interface for executing prompts via coding
@@ -247,7 +247,7 @@ type ItemDelta struct {
 
 func (ItemDelta) isExecutionEvent() {}
 
-// Role is the Boardly-owned speaker vocabulary for completed items. It is
+// Role is the Zenith-Team-owned speaker vocabulary for completed items. It is
 // the same vocabulary the transcript wire carries (agent/tool/system), so
 // nothing between a provider adapter and PostgreSQL translates roles.
 type Role string
@@ -258,7 +258,7 @@ const (
 	RoleSystem Role = "system"
 )
 
-// Part is the closed Boardly-owned content vocabulary. Vendor wire objects are
+// Part is the closed Zenith-Team-owned content vocabulary. Vendor wire objects are
 // decoded into these values inside pkg/agent and never cross this seam.
 type Part interface {
 	isItemPart()

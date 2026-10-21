@@ -13,10 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/contentbundle"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestSkillErrorsUseDocumentedEnvelope(t *testing.T) {
@@ -73,9 +73,16 @@ func TestSkillErrorsKeepUnknownFailuresPrivate(t *testing.T) {
 				t.Fatal(err)
 			}
 			if recorder.Code != test.want || body["code"] != test.code || len(body) != 3 {
-				t.Fatalf("response = %d %v, want %d %q and canonical envelope", recorder.Code, body, test.want, test.code)
+				t.Fatalf(
+					"response = %d %v, want %d %q and canonical envelope",
+					recorder.Code,
+					body,
+					test.want,
+					test.code,
+				)
 			}
-			if strings.Contains(recorder.Body.String(), "private-source") || strings.Contains(recorder.Body.String(), "token-secret") {
+			if strings.Contains(recorder.Body.String(), "private-source") ||
+				strings.Contains(recorder.Body.String(), "token-secret") {
 				t.Fatal("response exposed private error context")
 			}
 		})
@@ -160,16 +167,27 @@ func TestGitHubSkillPreviewAcceptsOnlyURLInput(t *testing.T) {
 			c.Params = gin.Params{{Key: "agentId", Value: uuid.NewString()}}
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(test.body))
 			request.Header.Set("Content-Type", "application/json")
-			c.Request = request.WithContext(auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()))
+			c.Request = request.WithContext(
+				auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),
+			)
 			h.previewAgentSkillGitHub(c)
 			if recorder.Code != test.want || called != (test.want == http.StatusCreated) {
-				t.Fatalf("status = %d, called = %v, body = %s", recorder.Code, called, recorder.Body.String())
+				t.Fatalf(
+					"status = %d, called = %v, body = %s",
+					recorder.Code,
+					called,
+					recorder.Body.String(),
+				)
 			}
 			if test.want == http.StatusBadRequest {
 				var envelope struct {
 					Code string `json:"code"`
 				}
-				if err := json.Unmarshal(recorder.Body.Bytes(), &envelope); err != nil || envelope.Code != "invalid_request" {
+				if err := json.Unmarshal(
+					recorder.Body.Bytes(),
+					&envelope,
+				); err != nil ||
+					envelope.Code != "invalid_request" {
 					t.Fatalf("error envelope = %s, error = %v", recorder.Body.String(), err)
 				}
 			}
@@ -182,7 +200,12 @@ type skillInstallStub struct {
 	install func(agent.SkillInstallInput) ([]agent.SkillView, error)
 }
 
-func (s *skillInstallStub) Install(_ context.Context, _ auth.UserPrincipal, _ uuid.UUID, input agent.SkillInstallInput) ([]agent.SkillView, error) {
+func (s *skillInstallStub) Install(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	_ uuid.UUID,
+	input agent.SkillInstallInput,
+) ([]agent.SkillView, error) {
 	return s.install(input)
 }
 
@@ -201,27 +224,47 @@ func TestSkillInstallBindsExplicitReplacementChoices(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			body, err := json.Marshal(map[string]any{"importId": importID.String(), "versionIds": []string{versionID.String()}, "replacements": []any{test.replacement}})
+			body, err := json.Marshal(
+				map[string]any{
+					"importId":     importID.String(),
+					"versionIds":   []string{versionID.String()},
+					"replacements": []any{test.replacement},
+				},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
 			called := false
-			h := &Handler{SkillService: &skillInstallStub{install: func(input agent.SkillInstallInput) ([]agent.SkillView, error) {
-				called = true
-				if input.ImportID != importID || len(input.Replacements) != 1 || input.Replacements[0].VersionID != versionID || input.Replacements[0].SkillID != skillID || input.Replacements[0].ExpectedRevision != 3 {
-					t.Fatalf("install input = %+v", input)
-				}
-				return []agent.SkillView{}, nil
-			}}}
+			h := &Handler{
+				SkillService: &skillInstallStub{
+					install: func(input agent.SkillInstallInput) ([]agent.SkillView, error) {
+						called = true
+						if input.ImportID != importID || len(input.Replacements) != 1 ||
+							input.Replacements[0].VersionID != versionID ||
+							input.Replacements[0].SkillID != skillID ||
+							input.Replacements[0].ExpectedRevision != 3 {
+							t.Fatalf("install input = %+v", input)
+						}
+						return []agent.SkillView{}, nil
+					},
+				},
+			}
 			recorder := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(recorder)
 			c.Params = gin.Params{{Key: "agentId", Value: uuid.NewString()}}
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(body)))
 			request.Header.Set("Content-Type", "application/json")
-			c.Request = request.WithContext(auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()))
+			c.Request = request.WithContext(
+				auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),
+			)
 			h.installAgentSkills(c)
 			if recorder.Code != test.want || called != (test.want == http.StatusOK) {
-				t.Fatalf("status = %d, called = %v, body = %s", recorder.Code, called, recorder.Body.String())
+				t.Fatalf(
+					"status = %d, called = %v, body = %s",
+					recorder.Code,
+					called,
+					recorder.Body.String(),
+				)
 			}
 		})
 	}
@@ -237,7 +280,12 @@ type skillFileEditStub struct {
 	edit func(agent.SkillEditInput) (agent.SkillView, error)
 }
 
-func (s *skillFileEditStub) EditFiles(_ context.Context, _ auth.UserPrincipal, _, _ uuid.UUID, input agent.SkillEditInput) (agent.SkillView, error) {
+func (s *skillFileEditStub) EditFiles(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	_, _ uuid.UUID,
+	input agent.SkillEditInput,
+) (agent.SkillView, error) {
 	return s.edit(input)
 }
 
@@ -258,22 +306,36 @@ func TestSkillUpdateBindsFileEditsWithoutMixingEnablement(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			called := false
-			h := &Handler{SkillService: &skillFileEditStub{edit: func(input agent.SkillEditInput) (agent.SkillView, error) {
-				called = true
-				if input.ExpectedRevision != 2 {
-					t.Fatalf("revision = %d, want 2", input.ExpectedRevision)
-				}
-				return agent.SkillView{}, nil
-			}}}
+			h := &Handler{
+				SkillService: &skillFileEditStub{
+					edit: func(input agent.SkillEditInput) (agent.SkillView, error) {
+						called = true
+						if input.ExpectedRevision != 2 {
+							t.Fatalf("revision = %d, want 2", input.ExpectedRevision)
+						}
+						return agent.SkillView{}, nil
+					},
+				},
+			}
 			recorder := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(recorder)
-			c.Params = gin.Params{{Key: "agentId", Value: uuid.NewString()}, {Key: "skillId", Value: uuid.NewString()}}
+			c.Params = gin.Params{
+				{Key: "agentId", Value: uuid.NewString()},
+				{Key: "skillId", Value: uuid.NewString()},
+			}
 			request := httptest.NewRequest(http.MethodPatch, "/", strings.NewReader(test.body))
 			request.Header.Set("Content-Type", "application/json")
-			c.Request = request.WithContext(auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()))
+			c.Request = request.WithContext(
+				auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),
+			)
 			h.updateAgentSkill(c)
 			if recorder.Code != test.want || called != (test.want == http.StatusOK) {
-				t.Fatalf("status = %d, called = %v, body = %s", recorder.Code, called, recorder.Body.String())
+				t.Fatalf(
+					"status = %d, called = %v, body = %s",
+					recorder.Code,
+					called,
+					recorder.Body.String(),
+				)
 			}
 		})
 	}
@@ -284,7 +346,11 @@ type skillReferenceStub struct {
 	read func(agent.SkillReadInput) (agent.SkillReferenceView, error)
 }
 
-func (s *skillReferenceStub) ReadReference(_ context.Context, _ auth.UserPrincipal, input agent.SkillReadInput) (agent.SkillReferenceView, error) {
+func (s *skillReferenceStub) ReadReference(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	input agent.SkillReadInput,
+) (agent.SkillReferenceView, error) {
 	return s.read(input)
 }
 
@@ -307,21 +373,35 @@ func TestSkillReferenceValidatesVersionBeforeReading(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			called := false
-			h := &Handler{SkillService: &skillReferenceStub{read: func(input agent.SkillReadInput) (agent.SkillReferenceView, error) {
-				called = true
-				if input.VersionID != test.version || input.Path != "SKILL.md" {
-					t.Fatalf("read input = %+v", input)
-				}
-				return agent.SkillReferenceView{}, nil
-			}}}
+			h := &Handler{
+				SkillService: &skillReferenceStub{
+					read: func(input agent.SkillReadInput) (agent.SkillReferenceView, error) {
+						called = true
+						if input.VersionID != test.version || input.Path != "SKILL.md" {
+							t.Fatalf("read input = %+v", input)
+						}
+						return agent.SkillReferenceView{}, nil
+					},
+				},
+			}
 			recorder := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(recorder)
-			c.Params = gin.Params{{Key: "agentId", Value: uuid.NewString()}, {Key: "skillId", Value: uuid.NewString()}}
+			c.Params = gin.Params{
+				{Key: "agentId", Value: uuid.NewString()},
+				{Key: "skillId", Value: uuid.NewString()},
+			}
 			request := httptest.NewRequest(http.MethodGet, "/"+test.query, nil)
-			c.Request = request.WithContext(auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()))
+			c.Request = request.WithContext(
+				auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),
+			)
 			h.readAgentSkillReference(c)
 			if recorder.Code != test.want || called != (test.want == http.StatusOK) {
-				t.Fatalf("status = %d, called = %v, body = %s", recorder.Code, called, recorder.Body.String())
+				t.Fatalf(
+					"status = %d, called = %v, body = %s",
+					recorder.Code,
+					called,
+					recorder.Body.String(),
+				)
 			}
 		})
 	}
@@ -414,7 +494,7 @@ func TestDaemonSkillsRequireCurrentContractAndExactClaim(t *testing.T) {
 				t.Fatal(err)
 			}
 			request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(body)))
-			request.Header.Set("X-Boardly-Daemon-ID", "test-daemon")
+			request.Header.Set("X-Zenith-Team-Daemon-ID", "test-daemon")
 			request.Header.Set("Content-Type", "application/json")
 			c.Request = request.WithContext(
 				auth.WithUserPrincipal(request.Context(), daemonTestPrincipal()),

@@ -1,0 +1,131 @@
+---
+title: Desktop app
+description: What the Zenith Team desktop app does, how to build it for your own server, and how updates, crash reports, diagnostics and uninstalling work.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+The desktop app is the Zenith Team app in its own window, plus everything a computer needs to run agents. It ships the `zen` CLI and the `zenith-team-mcp` agent tool server inside the app, and starts its own [daemon](/daemon-and-runtimes) when you sign in. So a person who uses the desktop app needs no terminal setup: sign in, and the computer is connected.
+
+The app's daemon is separate from one you start with `zen daemon start`. It keeps its state in the app's own data folder and uses its own health port, so the two never touch each other.
+
+## Install: build from source for now
+
+There is no ready-made download yet. You build the app yourself, because **each build has its server address built in**. A build made for one server cannot sign in to another.
+
+The address comes from a setting you give at build time:
+
+| Build | Setting | Used for |
+| --- | --- | --- |
+| `prod` (the default for `electron:make`) | `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` | Your server |
+| `dev` | `ZENITH_TEAM_DESKTOP_DEV_ORIGIN` | A second, test server, installed side by side as **Zenith Team Dev** |
+| `local` (`pnpm electron:dev`) | none | A server on this machine at `http://127.0.0.1:8788`, for development |
+
+A `prod` or `dev` build stops when its setting is missing or points at `localhost`. The variants are defined in `frontend/electron/shared/desktop-variant.cjs`.
+
+### Build it
+
+You need Node.js 24, pnpm (`corepack enable` picks the pinned version) and Go 1.26, because the build also compiles `zen` and `zenith-team-mcp`. The first build downloads a few pinned packages from the npm registry.
+
+```bash
+git clone https://github.com/Intelligent-Internet/zenith-team.git
+cd zenith-team/frontend
+pnpm install
+ZENITH_TEAM_DESKTOP_PROD_ORIGIN=https://zenith.example.com pnpm electron:make
+```
+
+Use the same release tag as your server: run `git checkout v1.2.3` before you build. The installers land in `frontend/out/make`: a `.dmg` and a `.zip` on macOS, a `.zip` on Linux. The app builds for the system you build on.
+
+Windows is not supported yet, because the bundled `zen` CLI does not build there.
+
+### Test builds from CI
+
+Maintainers can run the **Desktop Smoke Build** workflow (`.github/workflows/desktop-smoke.yml`) by hand from the Actions tab. It makes unsigned test builds for macOS (arm64) and Linux (x64) and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for a `local` build, or give a server address for a `prod` build. These builds are for testing packaging, not for handing out.
+
+## Connect it to your server
+
+Two settings on the server make the desktop app work:
+
+- **Keep `zenith-team-app://renderer` in `AUTH_WEB_ORIGINS`.** The app's pages send that origin. The defaults include it. Without it, the server refuses the app's requests.
+- **Google sign-in is optional.** Email and password work without it. To offer Google in the app, create a separate Google **Desktop app** client and set `GOOGLE_DESKTOP_CLIENT_ID` and `GOOGLE_DESKTOP_CLIENT_SECRET`.
+
+Both are explained in [Sign-in setup](/self-hosting/auth-setup#desktop-app).
+
+## Unsigned builds
+
+A build you make yourself is not signed, so the system warns before it opens.
+
+- **macOS** blocks an unsigned app that came from a download or another machine. Open it once with right-click → **Open**, or remove the quarantine flag:
+
+  ```bash
+  xattr -dr com.apple.quarantine "/Applications/Zenith Team.app"
+  ```
+
+  Some macOS features, such as native notifications, need a signed app.
+
+- **Windows**, once it is supported, shows a SmartScreen warning for an unsigned installer. Choose **More info**, then **Run anyway**.
+
+Only open builds you made yourself or got from someone you trust. Signing is optional and off by default. The signing settings are listed in `frontend/README.md`.
+
+## Updates
+
+A build checks for updates by itself only when an update feed was built in (`ZENITH_TEAM_DESKTOP_AUTO_UPDATE=true` plus a feed and manifest address). Builds you make with the steps above have none.
+
+Without a feed, **Check for Updates** opens a page instead: the GitHub Releases page, or the address in `ZENITH_TEAM_DESKTOP_UPDATE_URL` if you set one at build time. To update, rebuild from the new release tag and install over the old app. The app restarts its own daemon after an update.
+
+Keep the desktop app on the same release as your server. See [Upgrading](/self-hosting/upgrading#connected-computers-and-desktop-apps).
+
+## Crash reports
+
+Crash reporting is **off** unless the build turned it on. To turn it on, set these at build time:
+
+```dotenv
+ZENITH_TEAM_DESKTOP_CRASH_REPORTS_ENABLED=true
+ZENITH_TEAM_DESKTOP_CRASH_REPORT_PROVIDER=sentry
+ZENITH_TEAM_DESKTOP_SENTRY_DSN=https://<key>@<your-sentry-host>/<project-id>
+```
+
+Reports then go to the Sentry project you named, and nowhere else. Other crash services take `ZENITH_TEAM_DESKTOP_CRASH_REPORT_SUBMIT_URL` instead of a DSN. More in [Privacy and network](/self-hosting/privacy-and-network).
+
+## Diagnostics
+
+**Help → Copy Diagnostics Summary** copies a short text you can paste into a bug report: the app version, build variant, platform, the Electron, Chrome and Node versions, and the paths of the data folder, the log file and crash dumps. The paths can include your user name.
+
+The app writes its own log to `logs/zenith-team-main.log` in its data folder. The daemon it runs has its own log, which you can read under **Settings → Updates & Support**, on the **Agent service** card.
+
+## Data folders and uninstall
+
+Each build variant keeps its data in its own folder:
+
+| Build | Folder name |
+| --- | --- |
+| `prod` | `Zenith Team` |
+| `dev` | `Zenith Team Dev` |
+| `local` | `Zenith Team Local` |
+
+The folder is in your system's app data location:
+
+| System | Location |
+| --- | --- |
+| macOS | `~/Library/Application Support/<folder name>` |
+| Linux | `~/.config/<folder name>` |
+
+It holds your sign-in, settings, logs and the daemon's home (`zenith-team-home`). The full list of names is in [`docs/branding.md`](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/branding.md#technical-identities).
+
+To uninstall:
+
+1. Quit the app. It stops its own daemon.
+2. Delete the app.
+3. Delete its data folder, if you do not want to keep your sign-in and settings.
+
+<Callout type="warning">
+Agent work lives outside the app, in `~/zenith_team_workspaces` (and `~/zenith_team_workspaces-repos`), unless you changed the workspaces root. It holds the files your agents made. Delete it only if you no longer need that work. See [Workspaces](/workspaces).
+</Callout>
+
+Your computer's runtimes stay on the server's roster, offline, until you remove them in **Settings → Runtimes**. See [Naming and removing a runtime](/daemon-and-runtimes#naming-and-removing-a-runtime).
+
+## Next steps
+
+- **[Sign-in setup](/self-hosting/auth-setup)**: email, Google and the desktop origin.
+- **[Daemon and runtimes](/daemon-and-runtimes)**: what the app's daemon does.
+- **[Troubleshooting](/troubleshooting)**: when a computer will not connect.

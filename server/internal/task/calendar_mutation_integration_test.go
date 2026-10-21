@@ -11,13 +11,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
@@ -56,7 +56,13 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 			}
 			// Complete the first occurrence so recovery exercises a child whose
 			// Conversation is distinct from the template edited below.
-			dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='completed' WHERE task_id=$1`, created.Task.ID)
+			dbtest.MustExec(
+				t,
+				ctx,
+				pool,
+				`UPDATE runs SET status='completed' WHERE task_id=$1`,
+				created.Task.ID,
+			)
 			second := first.Add(5 * time.Minute)
 			if err := calendar.ProcessDue(ctx, second.Add(time.Second), 100); err != nil {
 				t.Fatal(err)
@@ -69,10 +75,13 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 			}
 			bus := newTestBus(t)
 			var wakeup execution.RuntimeWork
-			if err := bus.Subscribe(execution.TopicRuntime, func(_ context.Context, event events.Event) error {
-				wakeup = event.Payload.(execution.RuntimeWork)
-				return nil
-			}); err != nil {
+			if err := bus.Subscribe(
+				execution.TopicRuntime,
+				func(_ context.Context, event events.Event) error {
+					wakeup = event.Payload.(execution.RuntimeWork)
+					return nil
+				},
+			); err != nil {
 				t.Fatal(err)
 			}
 			runs := execution.NewRunService(execution.RunServiceOptions{
@@ -94,7 +103,10 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				change := CalendarScheduleChange{ExpectedRevision: current.Revision, Paused: test.name == "pause"}
+				change := CalendarScheduleChange{
+					ExpectedRevision: current.Revision,
+					Paused:           test.name == "pause",
+				}
 				if test.name == "edit" {
 					next = second.Add(time.Hour)
 					change.Trigger = &schedule.Trigger{Type: schedule.TriggerTypeOnce, RunAt: &next}
@@ -103,11 +115,29 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "template consent":
-				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET assignment_status='pending' WHERE id=$1`, created.Task.ID)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE tasks SET assignment_status='pending' WHERE id=$1`,
+					created.Task.ID,
+				)
 			case "occurrence consent":
-				dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET assignment_status='pending' WHERE id=$1`, childID)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE tasks SET assignment_status='pending' WHERE id=$1`,
+					childID,
+				)
 			case "deleted definition":
-				dbtest.MustExec(t, ctx, pool, `DELETE FROM task_schedules WHERE id=$1`, created.Task.ScheduleID)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`DELETE FROM task_schedules WHERE id=$1`,
+					created.Task.ScheduleID,
+				)
 			case "runtime offline":
 				if _, err := tasks.store.Queries().SetRuntimeOffline(ctx, f.RuntimeA); err != nil {
 					t.Fatal(err)
@@ -128,17 +158,27 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 				if _, err := q.LockCompanyForMembershipMutation(ctx, f.CompanyA); err != nil {
 					t.Fatal(err)
 				}
-				children, err := q.ListUnstartedTaskOccurrences(ctx, generated.ListUnstartedTaskOccurrencesParams{
-					ScheduleID:     uuid.NullUUID{UUID: *created.Task.ScheduleID, Valid: true},
-					ExcludedTaskID: created.Task.ID, Generation: created.Task.ScheduleGeneration,
-					IncludeScheduled: true,
-				})
+				children, err := q.ListUnstartedTaskOccurrences(
+					ctx,
+					generated.ListUnstartedTaskOccurrencesParams{
+						ScheduleID: uuid.NullUUID{
+							UUID:  *created.Task.ScheduleID,
+							Valid: true,
+						},
+						ExcludedTaskID:   created.Task.ID,
+						Generation:       created.Task.ScheduleGeneration,
+						IncludeScheduled: true,
+					},
+				)
 				if err != nil || len(children) != 0 {
 					t.Fatalf("unstarted children = %v, %v; want no dispatched child", children, err)
 				}
-				if _, err := q.AdvanceTaskScheduleGeneration(ctx, generated.AdvanceTaskScheduleGenerationParams{
-					ID: *created.Task.ScheduleID, CompanyID: f.CompanyA,
-				}); err != nil {
+				if _, err := q.AdvanceTaskScheduleGeneration(
+					ctx,
+					generated.AdvanceTaskScheduleGenerationParams{
+						ID: *created.Task.ScheduleID, CompanyID: f.CompanyA,
+					},
+				); err != nil {
 					t.Fatal(err)
 				}
 				done := make(chan recoveryResult, 1)
@@ -150,7 +190,11 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 				for {
 					select {
 					case got := <-done:
-						t.Fatalf("recovery bypassed uncommitted Calendar edit: %+v, %v", got.run, got.err)
+						t.Fatalf(
+							"recovery bypassed uncommitted Calendar edit: %+v, %v",
+							got.run,
+							got.err,
+						)
 					default:
 					}
 					var waiting bool
@@ -170,7 +214,11 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 				}
 				// Calendar mutations may still need the Run lock after obtaining
 				// the Company fence; recovery must not invert that order.
-				if _, err := holder.Exec(ctx, `SELECT id FROM runs WHERE id=$1 FOR UPDATE NOWAIT`, claimed.ID); err != nil {
+				if _, err := holder.Exec(
+					ctx,
+					`SELECT id FROM runs WHERE id=$1 FOR UPDATE NOWAIT`,
+					claimed.ID,
+				); err != nil {
 					t.Fatalf("recovery locked Run before Company: %v", err)
 				}
 				if err := holder.Commit(ctx); err != nil {
@@ -193,7 +241,11 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 			cancelled := test.wantStatus == "cancelled"
 			if result.run.FinishedAt.Valid != cancelled || result.run.Error.Valid != cancelled ||
 				cancelled && result.run.Error.String != execution.CancellationScheduleInvalidated {
-				t.Fatalf("recovery metadata: finishedAt=%v error=%v", result.run.FinishedAt, result.run.Error)
+				t.Fatalf(
+					"recovery metadata: finishedAt=%v error=%v",
+					result.run.FinishedAt,
+					result.run.Error,
+				)
 			}
 			if result.run.ClaimedAt.Valid || result.run.PrepareLeaseExpiresAt.Valid {
 				t.Fatal("recovery retained the failed claim lease")
@@ -203,7 +255,12 @@ func TestCalendarClaimRecoveryRechecksSchedule(t *testing.T) {
 				wantRunID = ""
 			}
 			if wakeup.RuntimeID != f.RuntimeA.String() || wakeup.RunID != wantRunID {
-				t.Fatalf("runtime wakeup = %+v, want runtime %s and Run %q", wakeup, f.RuntimeA, wantRunID)
+				t.Fatalf(
+					"runtime wakeup = %+v, want runtime %s and Run %q",
+					wakeup,
+					f.RuntimeA,
+					wantRunID,
+				)
 			}
 			wantAction := execution.EventRunQueued
 			if cancelled {

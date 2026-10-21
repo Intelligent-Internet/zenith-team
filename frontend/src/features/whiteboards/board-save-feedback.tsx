@@ -7,7 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/shared/ui/core/dialog";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 
 /** Whether a navigation from `current` to `next` closes the Board. */
 export type BoardLeaves = (current: Location, next: Location) => boolean;
@@ -137,7 +137,7 @@ export function useBoardSaveFeedback({
       })
       .catch((error: unknown) => {
         if (mounted.current && leaveAttempt.current === attempt)
-          setLeaveError(getBoardlyQueryErrorMessage(error));
+          setLeaveError(getZenithTeamQueryErrorMessage(error));
       });
   }, [blocker, hasPendingChanges, save]);
 

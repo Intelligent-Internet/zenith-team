@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/social"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 func (h *Handler) socialRunContext(c *gin.Context) (auth.UserPrincipal, social.RunContext, bool) {

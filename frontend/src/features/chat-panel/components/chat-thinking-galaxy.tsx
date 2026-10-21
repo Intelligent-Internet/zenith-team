@@ -93,7 +93,7 @@ export function ChatThinkingGalaxy({ active }: { active: boolean }) {
     const themeObserver = new MutationObserver(resize);
     themeObserver.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ["style", "data-boardly-color-mode"],
+      attributeFilter: ["style", "data-zenith-team-color-mode"],
     });
     reducedMotion.addEventListener("change", startMotion);
     resize();

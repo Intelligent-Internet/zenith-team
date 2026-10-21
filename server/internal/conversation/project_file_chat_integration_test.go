@@ -13,10 +13,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // frameLog keeps every frame payload a topic published, marshaled as the
@@ -88,7 +88,9 @@ func TestChannelProjectFileShowsOnlyToProjectReaders(t *testing.T) {
 	dbtest.MustExec(t, f.ctx, f.pool, `INSERT INTO project_files (company_id, project_id, attachment_id, file_type)
 		VALUES ($1, $2, $3, 'document')`, f.a.CompanyID, f.seed.ProjectA, file)
 	sent, err := f.discussion.Send(f.ctx, f.a, channel.Conversation.ID, DiscussionSendInput{
-		RequestKey: uuid.New(), Body: DiscussionBody{Version: 1, Markdown: "The plan"}, AttachmentIDs: []uuid.UUID{file},
+		RequestKey:    uuid.New(),
+		Body:          DiscussionBody{Version: 1, Markdown: "The plan"},
+		AttachmentIDs: []uuid.UUID{file},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -106,7 +108,12 @@ func TestChannelProjectFileShowsOnlyToProjectReaders(t *testing.T) {
 		case f.c.UserID:
 			principal = f.c
 		}
-		page, err := f.discussion.ListMessages(f.ctx, principal, channel.Conversation.ID, DiscussionPageOptions{})
+		page, err := f.discussion.ListMessages(
+			f.ctx,
+			principal,
+			channel.Conversation.ID,
+			DiscussionPageOptions{},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,7 +135,12 @@ func TestChannelProjectFileShowsOnlyToProjectReaders(t *testing.T) {
 	withheld := func(reader uuid.UUID) bool {
 		t.Helper()
 		principal := map[uuid.UUID]auth.UserPrincipal{f.a.UserID: f.a, f.b.UserID: f.b, f.c.UserID: f.c}[reader]
-		page, err := f.discussion.ListMessages(f.ctx, principal, channel.Conversation.ID, DiscussionPageOptions{})
+		page, err := f.discussion.ListMessages(
+			f.ctx,
+			principal,
+			channel.Conversation.ID,
+			DiscussionPageOptions{},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -142,9 +154,10 @@ func TestChannelProjectFileShowsOnlyToProjectReaders(t *testing.T) {
 	}
 	opens := func(reader uuid.UUID) bool {
 		t.Helper()
-		_, err := generated.New(f.pool).AuthorizeAttachmentDownload(f.ctx, generated.AuthorizeAttachmentDownloadParams{
-			CompanyID: f.a.CompanyID, AttachmentID: file, ActorUserID: reader,
-		})
+		_, err := generated.New(f.pool).
+			AuthorizeAttachmentDownload(f.ctx, generated.AuthorizeAttachmentDownloadParams{
+				CompanyID: f.a.CompanyID, AttachmentID: file, ActorUserID: reader,
+			})
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatal(err)
 		}
@@ -158,8 +171,13 @@ func TestChannelProjectFileShowsOnlyToProjectReaders(t *testing.T) {
 	}
 	for _, outsider := range []uuid.UUID{f.b.UserID, f.c.UserID} {
 		if got := files(outsider, sent.Message.ID); len(got) != 0 || opens(outsider) || !withheld(outsider) {
-			t.Fatalf("non-reader channel member %s sees %v (opens %t, withheld %t), want no file and the flag",
-				outsider, got, opens(outsider), withheld(outsider))
+			t.Fatalf(
+				"non-reader channel member %s sees %v (opens %t, withheld %t), want no file and the flag",
+				outsider,
+				got,
+				opens(outsider),
+				withheld(outsider),
+			)
 		}
 	}
 	// A grant opens it to b; c still cannot.
@@ -234,13 +252,22 @@ func TestMessageCreatedFrameWithholdsProjectFiles(t *testing.T) {
 		f.a.CompanyID, f.seed.ConversationA, f.a.UserID).Scan(&message); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-		VALUES ($1, $2, $3, 0)`, f.a.CompanyID, message, file)
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+		VALUES ($1, $2, $3, 0)`,
+		f.a.CompanyID,
+		message,
+		file,
+	)
 	// A second Project in the Company holds the file; the Task chat is
 	// ProjectA's, so the chat's audience is not the file's.
 	var other uuid.UUID
 	if err := f.pool.QueryRow(f.ctx, `INSERT INTO projects (company_id, key, title) VALUES ($1, 'pricing', 'Pricing')
-		RETURNING id`, f.a.CompanyID).Scan(&other); err != nil {
+		RETURNING id`, f.a.CompanyID).
+		Scan(&other); err != nil {
 		t.Fatal(err)
 	}
 	dbtest.GrantProject(t, f.ctx, f.pool, f.a.CompanyID, other, f.a.UserID, "project.read")
@@ -258,7 +285,9 @@ func TestMessageCreatedFrameWithholdsProjectFiles(t *testing.T) {
 		if len(view.Attachments) != 1 {
 			t.Fatalf("sender's own view = %d files, want 1", len(view.Attachments))
 		}
-		encoded, err := json.Marshal(NewMemberMessageCreatedEvent(f.a.UserID, f.a.CompanyID, KindTask, nil, view).Payload)
+		encoded, err := json.Marshal(
+			NewMemberMessageCreatedEvent(f.a.UserID, f.a.CompanyID, KindTask, nil, view).Payload,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -273,23 +302,37 @@ func TestMessageCreatedFrameWithholdsProjectFiles(t *testing.T) {
 	dbtest.GrantProject(t, f.ctx, f.pool, f.a.CompanyID, f.seed.ProjectA, f.b.UserID, "project.read")
 	page := func(reader uuid.UUID) MessageView {
 		t.Helper()
-		views, err := buildMessageViews(f.ctx, q, reader, f.a.CompanyID, []generated.ConversationItem{{
-			ID: message, CompanyID: f.a.CompanyID, ConversationID: f.seed.ConversationA, Type: string(ItemTypeUserMessage),
-		}})
+		views, err := buildMessageViews(f.ctx, q, reader, f.a.CompanyID, []generated.ConversationItem{
+			{
+				ID:             message,
+				CompanyID:      f.a.CompanyID,
+				ConversationID: f.seed.ConversationA,
+				Type:           string(ItemTypeUserMessage),
+			},
+		})
 		if err != nil || len(views) != 1 {
 			t.Fatalf("chat page = %v, %v", views, err)
 		}
 		return views[0]
 	}
 	if view := page(f.b.UserID); len(view.Attachments) != 0 || !view.AttachmentsWithheld {
-		t.Fatalf("chat page for a reader outside the file's Project = %d files, withheld %t; want none and the flag",
-			len(view.Attachments), view.AttachmentsWithheld)
+		t.Fatalf(
+			"chat page for a reader outside the file's Project = %d files, withheld %t; want none and the flag",
+			len(view.Attachments),
+			view.AttachmentsWithheld,
+		)
 	}
 	if view := page(f.a.UserID); len(view.Attachments) != 1 || view.AttachmentsWithheld {
 		t.Fatalf("chat page for the sender = %d files, withheld %t; want the file and no flag",
 			len(view.Attachments), view.AttachmentsWithheld)
 	}
-	dbtest.MustExec(t, f.ctx, f.pool, `UPDATE project_files SET removed_at = clock_timestamp() WHERE attachment_id = $1`, file)
+	dbtest.MustExec(
+		t,
+		f.ctx,
+		f.pool,
+		`UPDATE project_files SET removed_at = clock_timestamp() WHERE attachment_id = $1`,
+		file,
+	)
 	if got := frame(); !strings.Contains(got, filename) || !strings.Contains(got, `"attachmentsWithheld":false`) {
 		t.Fatalf("message.created after the file was retired = %s", got)
 	}

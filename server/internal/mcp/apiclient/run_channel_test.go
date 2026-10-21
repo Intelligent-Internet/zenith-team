@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const testChannelCapability = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
@@ -29,8 +29,8 @@ func fakeDaemonChannel(
 		if got := r.Header.Get("Authorization"); got != want {
 			t.Errorf("Authorization = %q, want the Run capability and never a bearer", got)
 		}
-		if r.Header.Get("X-Boardly-Run-Token") != "" {
-			t.Error("boardly-mcp sent a Run token; only the daemon's forward carries the proof")
+		if r.Header.Get("X-Zenith-Team-Run-Token") != "" {
+			t.Error("zenith-team-mcp sent a Run token; only the daemon's forward carries the proof")
 		}
 		var request runchannel.Request
 		decoder := json.NewDecoder(r.Body)
@@ -107,7 +107,7 @@ func TestRunChannelCarriesEveryCallWithoutABearer(t *testing.T) {
 	if !errors.As(err, &refusal) || refusal.Code != "run_scope_denied" || errors.As(err, &apiErr) {
 		t.Fatalf("channel refusal = %v, want *runchannel.Refusal", err)
 	}
-	// A mutation without a request key never leaves boardly-mcp.
+	// A mutation without a request key never leaves zenith-team-mcp.
 	if err := channel.PostRunJSON(t.Context(), "/companies/c1/questions", "", nil, nil); err == nil {
 		t.Fatal("PostRunJSON() without a request key succeeded")
 	}

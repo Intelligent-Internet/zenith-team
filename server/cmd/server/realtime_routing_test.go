@@ -13,21 +13,21 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/mailbox"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/wiki"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // recordingBroadcaster records which room each frame was addressed to, so a
@@ -153,10 +153,17 @@ func TestHuddleRosterChangesRouteOnlyToCallMembers(t *testing.T) {
 	t.Parallel()
 	bus, recorder := routedBus(t)
 	companyID, first, second := uuid.New(), uuid.New(), uuid.New()
-	publish(t, bus, companyID, conversation.TopicHuddle, conversation.EventHuddleRosterChanged, conversation.HuddleRosterChangedEvent{
-		HuddleID:         uuid.New(),
-		RecipientUserIDs: []uuid.UUID{first, second},
-	})
+	publish(
+		t,
+		bus,
+		companyID,
+		conversation.TopicHuddle,
+		conversation.EventHuddleRosterChanged,
+		conversation.HuddleRosterChangedEvent{
+			HuddleID:         uuid.New(),
+			RecipientUserIDs: []uuid.UUID{first, second},
+		},
+	)
 	want := []string{
 		"company_user/" + companyID.String() + "/" + first.String(),
 		"company_user/" + companyID.String() + "/" + second.String(),
@@ -170,10 +177,17 @@ func TestHuddleStatusChangesRouteOnlyToCallMembers(t *testing.T) {
 	t.Parallel()
 	bus, recorder := routedBus(t)
 	companyID, member := uuid.New(), uuid.New()
-	publish(t, bus, companyID, conversation.TopicHuddle, conversation.EventHuddleStatusChanged, conversation.HuddleStatusChangedEvent{
-		HuddleID:         uuid.New(),
-		RecipientUserIDs: []uuid.UUID{member},
-	})
+	publish(
+		t,
+		bus,
+		companyID,
+		conversation.TopicHuddle,
+		conversation.EventHuddleStatusChanged,
+		conversation.HuddleStatusChangedEvent{
+			HuddleID:         uuid.New(),
+			RecipientUserIDs: []uuid.UUID{member},
+		},
+	)
 	want := []string{"company_user/" + companyID.String() + "/" + member.String()}
 	if !slices.Equal(recorder.sent, want) {
 		t.Fatalf("routes = %v, want %v", recorder.sent, want)
@@ -357,7 +371,9 @@ func TestScheduleCalendarAndWikiHintsRespectTheirReadScopes(t *testing.T) {
 			wiki.EventRunReadsChanged,
 			"company_user/" + company.String() + "/" + user.String(),
 			wiki.RunReadsChanged{
-				ProjectFrame:     auth.ProjectFrame{Audience: &auth.ProjectAudience{UserIDs: []uuid.UUID{user}}},
+				ProjectFrame: auth.ProjectFrame{
+					Audience: &auth.ProjectAudience{UserIDs: []uuid.UUID{user}},
+				},
 				RunID:            uuid.New(),
 				ConversationKind: "task",
 			},
@@ -425,8 +441,11 @@ func TestDeliverableRoutingInvalidatesOnlyArtifactRecipients(t *testing.T) {
 				EntityType: execution.TopicDeliverable, Name: name, CompanyID: companyID,
 				CreatedAt: time.Now().UTC(), Actor: events.UserActor(ownerID.String()),
 				Payload: execution.DeliverableEvent{
-					ID: uuid.New(), RunID: uuid.New(), Status: execution.DeliverableStatusApproved,
-					ItemCount: 2, RecipientUserIDs: []uuid.UUID{ownerID, viewerID, ownerID, uuid.Nil},
+					ID:               uuid.New(),
+					RunID:            uuid.New(),
+					Status:           execution.DeliverableStatusApproved,
+					ItemCount:        2,
+					RecipientUserIDs: []uuid.UUID{ownerID, viewerID, ownerID, uuid.Nil},
 				},
 			})
 			want := []string{
@@ -714,7 +733,8 @@ func TestAgentBindingAndStatusFramesReachOnlyTheBinder(t *testing.T) {
 			if err != nil {
 				t.Fatalf("encode frame: %v", err)
 			}
-			if !strings.Contains(string(raw), test.wantKey) || strings.Contains(string(raw), binder.String()) {
+			if !strings.Contains(string(raw), test.wantKey) ||
+				strings.Contains(string(raw), binder.String()) {
 				t.Fatalf("frame = %s, want %s and no binder id on the wire", raw, test.wantKey)
 			}
 		})
@@ -745,7 +765,9 @@ func TestDaemonRosterFramesFollowTheRegistrant(t *testing.T) {
 	publish(t, bus, companyID, agent.TopicDaemon, agent.EventDaemonRosterChanged, agent.DaemonRoster{
 		UserID: registrant,
 		DaemonRegisterPayload: protocol.DaemonRegisterPayload{
-			Action: protocol.DaemonRosterActionRegister, CompanyID: companyID.String(), DaemonID: "daemon-a",
+			Action:    protocol.DaemonRosterActionRegister,
+			CompanyID: companyID.String(),
+			DaemonID:  "daemon-a",
 		},
 	})
 	publish(t, bus, companyID, agent.TopicDaemon, agent.EventDaemonRosterChanged, agent.DaemonRoster{

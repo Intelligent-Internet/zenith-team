@@ -434,18 +434,18 @@ func TestPrepareClaudeDeniesFileToolsOnExistingCredentialPaths(t *testing.T) {
 	if err := os.MkdirAll(workDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	boardlyHome := t.TempDir()
+	zenithTeamHome := t.TempDir()
 	sessionStore := filepath.Join(t.TempDir(), "desktop-session.bin")
 	if err := os.WriteFile(sessionStore, []byte("sealed"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	missing := filepath.Join(t.TempDir(), "missing-boardly-home")
+	missing := filepath.Join(t.TempDir(), "missing-zenith-team-home")
 
 	env, err := Prepare(Options{
 		EnvRoot:                  envRoot,
 		WorkDir:                  workDir,
 		Provider:                 "claude",
-		ProtectedCredentialPaths: []string{boardlyHome, sessionStore, missing, "relative/.boardly", ""},
+		ProtectedCredentialPaths: []string{zenithTeamHome, sessionStore, missing, "relative/.zenith-team", ""},
 	}, testLogger())
 	if err != nil {
 		t.Fatalf("prepare: %v", err)
@@ -461,7 +461,7 @@ func TestPrepareClaudeDeniesFileToolsOnExistingCredentialPaths(t *testing.T) {
 	// t.TempDir sits behind a symlink on macOS (/var -> /private/var); the
 	// rules must name both spellings there and the one spelling elsewhere.
 	var want []string
-	for _, dir := range pathSpellings(boardlyHome) {
+	for _, dir := range pathSpellings(zenithTeamHome) {
 		pattern := "//" + strings.TrimPrefix(dir, "/") + "/**"
 		want = append(want, "Read("+pattern+")", "Edit("+pattern+")", "Write("+pattern+")")
 	}
@@ -475,7 +475,7 @@ func TestPrepareClaudeDeniesFileToolsOnExistingCredentialPaths(t *testing.T) {
 		}
 	}
 	for rule := range got {
-		if strings.Contains(rule, "missing-boardly-home") || strings.Contains(rule, "relative") {
+		if strings.Contains(rule, "missing-zenith-team-home") || strings.Contains(rule, "relative") {
 			t.Errorf("deny rule %q names a path that does not exist or is not absolute", rule)
 		}
 	}
@@ -486,8 +486,8 @@ func TestPrepareClaudeDeniesFileToolsOnExistingCredentialPaths(t *testing.T) {
 
 func TestPrepareClaudeLeavesACredentialPathHoldingTheRunUndenied(t *testing.T) {
 	t.Run("workspace inside the home", func(t *testing.T) {
-		boardlyHome := t.TempDir()
-		envRoot := filepath.Join(boardlyHome, "workspaces", "run")
+		zenithTeamHome := t.TempDir()
+		envRoot := filepath.Join(zenithTeamHome, "workspaces", "run")
 		workDir := filepath.Join(envRoot, "workdir")
 		if err := os.MkdirAll(workDir, 0o755); err != nil {
 			t.Fatal(err)
@@ -496,7 +496,7 @@ func TestPrepareClaudeLeavesACredentialPathHoldingTheRunUndenied(t *testing.T) {
 			EnvRoot:                  envRoot,
 			WorkDir:                  workDir,
 			Provider:                 "claude",
-			ProtectedCredentialPaths: []string{boardlyHome},
+			ProtectedCredentialPaths: []string{zenithTeamHome},
 		}, testLogger())
 		if err != nil {
 			t.Fatalf("prepare: %v", err)
@@ -515,7 +515,7 @@ func TestPrepareClaudeLeavesACredentialPathHoldingTheRunUndenied(t *testing.T) {
 		// On macOS t.TempDir is spelled /var/... and resolves to
 		// /private/var/...; a folder that does not exist yet keeps only the
 		// first spelling and must still be found inside the home.
-		boardlyHome := t.TempDir()
+		zenithTeamHome := t.TempDir()
 		envRoot := t.TempDir()
 		workDir := filepath.Join(envRoot, "workdir")
 		if err := os.MkdirAll(workDir, 0o755); err != nil {
@@ -525,8 +525,8 @@ func TestPrepareClaudeLeavesACredentialPathHoldingTheRunUndenied(t *testing.T) {
 			EnvRoot:                  envRoot,
 			WorkDir:                  workDir,
 			Provider:                 "claude",
-			ReadOnlyDirs:             []string{filepath.Join(boardlyHome, "attachments")},
-			ProtectedCredentialPaths: []string{boardlyHome},
+			ReadOnlyDirs:             []string{filepath.Join(zenithTeamHome, "attachments")},
+			ProtectedCredentialPaths: []string{zenithTeamHome},
 		}, testLogger())
 		if err != nil {
 			t.Fatalf("prepare: %v", err)
@@ -543,8 +543,8 @@ func TestClaudeRulePathIsPOSIXFromTheRoot(t *testing.T) {
 	tests := []struct {
 		volume, slashed, want string
 	}{
-		{volume: "", slashed: "/Users/mia/.boardly", want: "//Users/mia/.boardly"},
-		{volume: "C:", slashed: "C:/Users/mia/.boardly", want: "//c/Users/mia/.boardly"},
+		{volume: "", slashed: "/Users/mia/.zenith-team", want: "//Users/mia/.zenith-team"},
+		{volume: "C:", slashed: "C:/Users/mia/.zenith-team", want: "//c/Users/mia/.zenith-team"},
 	}
 	for _, test := range tests {
 		if got := posixRulePath(test.volume, test.slashed); got != test.want {
@@ -617,7 +617,7 @@ func TestWriteSkillFilesYieldsToOccupiedSlug(t *testing.T) {
 	if data, err := os.ReadFile(marker); err != nil || string(data) != "mine" {
 		t.Fatalf("user bytes clobbered: %q err=%v", data, err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "docs-boardly", "SKILL.md")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "docs-zenith-team", "SKILL.md")); err != nil {
 		t.Fatalf("collision-free sibling missing: %v", err)
 	}
 }

@@ -1,16 +1,16 @@
-// Package platformbundle holds the platform content boardly pins from
+// Package platformbundle holds the platform content zenith-team pins from
 // Intelligent-Internet/boardly-plugins (ADR 0016): one canonical USTAR tar and
-// one lock per pinned plugin component, plus the harness files boardly owns
+// one lock per pinned plugin component, plus the harness files zenith-team owns
 // beside them, today the zenith-workflows SKILL.md. Every read verifies a tar
 // against its lock before any of its bytes are served, and the pin is
 // committed, so no build or test needs a credential or the network.
 //
 // It is its own package because cmd/zen links internal/mcp/tools and must
 // never link the bundle bytes (the cmd/zen link set; make go-shape checks it).
-// The server and boardly-mcp are the only shipped binaries that link it;
+// The server and zenith-team-mcp are the only shipped binaries that link it;
 // cmd/bundlectl, the maintainer tool that writes the pin, reads it too. It
 // imports only internal/mcp/tools and the asset-free internal/contentbundle
-// verifier, so boardly-mcp stays sealed.
+// verifier, so zenith-team-mcp stays sealed.
 package platformbundle
 
 import (
@@ -22,8 +22,8 @@ import (
 	"strings"
 	"sync"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 //go:embed *.bundle.tar *.lock.json harness
@@ -138,10 +138,10 @@ func WorkflowsSkill(catalog fs.FS) tools.PlatformBundle {
 	}
 }
 
-// PlatformSkills returns the skills boardly-mcp serves from pinned content,
+// PlatformSkills returns the skills zenith-team-mcp serves from pinned content,
 // with the locks they came from: the zenith-workflows skill, built from every
 // workflows component that verified. A component that failed is left out and
-// named in the error, so boardly-mcp keeps serving zenith-platform. The
+// named in the error, so zenith-team-mcp keeps serving zenith-platform. The
 // skills returned are usable whenever the slice is non-empty, error or not.
 func PlatformSkills() ([]tools.PlatformBundle, []contentbundle.Lock, error) {
 	bundles, loadErr := Load()

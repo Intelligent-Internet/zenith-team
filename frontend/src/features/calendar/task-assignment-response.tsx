@@ -1,7 +1,7 @@
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import type { TaskDto } from "@/shared/api/types";
 import { hasProjectPermission } from "@/shared/permissions";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { toast } from "@/shared/ui/sonner";
 import { useDecideTaskAssignmentMutation } from "./task-calendar-api";
 
@@ -18,7 +18,7 @@ export function TaskAssignmentResponse({ task }: { task: TaskDto }) {
       }).unwrap();
       toast.success(accept ? "Assignment accepted" : "Assignment declined");
     } catch (error) {
-      toast.error(getBoardlyQueryErrorMessage(error));
+      toast.error(getZenithTeamQueryErrorMessage(error));
     }
   }
   return (

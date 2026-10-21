@@ -32,8 +32,8 @@ import (
 // expired. With it, the only window left is one extra DB SELECT per
 // runtime per concurrent enqueue, never a stalled run.
 const (
-	emptyClaimCachePrefix   = "boardly:claim:runtime:empty:"
-	emptyClaimVersionPrefix = "boardly:claim:runtime:version:"
+	emptyClaimCachePrefix   = "zenith-team:claim:runtime:empty:"
+	emptyClaimVersionPrefix = "zenith-team:claim:runtime:version:"
 )
 
 // EmptyClaimCacheTTL bounds how long a cached "no queued run" verdict

@@ -80,7 +80,7 @@ func NewRedisRequestGate(
 		return nil, err
 	}
 	return &RedisRequestGate{
-		client: client, key: "boardly:email:request-gate:" + key,
+		client: client, key: "zenith-team:email:request-gate:" + key,
 		intervalMillis: max(interval.Milliseconds(), 1),
 	}, nil
 }

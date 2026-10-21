@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // requestError is returned by postJSON/getJSON when the server responds with
@@ -121,7 +121,7 @@ func terminalHeadMismatch(err error, runID uuid.UUID) (protocol.RunTerminalHeadM
 	return head, true
 }
 
-// Client handles HTTP communication with the Boardly server daemon API
+// Client handles HTTP communication with the Zenith Team server daemon API
 // (/api/v1/daemon/*).
 type Client struct {
 	baseURL string
@@ -144,7 +144,7 @@ type Client struct {
 // literal is repeated here rather than imported from internal/middleware,
 // which cmd/zen must not link; the wire round-trip test in
 // internal/handler pins the two together.
-const daemonIDHeader = "X-Boardly-Daemon-ID"
+const daemonIDHeader = "X-Zenith-Team-Daemon-ID"
 
 // NewClient creates a new daemon API client.
 func NewClient(baseURL string) *Client {
@@ -189,7 +189,7 @@ func (c *Client) SetVersion(v string) {
 }
 
 // SetDaemonID records the machine identity the daemon registers with, sent
-// as X-Boardly-Daemon-ID on every request.
+// as X-Zenith-Team-Daemon-ID on every request.
 func (c *Client) SetDaemonID(id string) {
 	c.daemonID = id
 }
@@ -618,8 +618,8 @@ type RegisterRuntime struct {
 	// round. Omitted when the probe did not reach it, so an older server
 	// keeps accepting the registration.
 	SignIn *protocol.RuntimeSignIn `json:"signIn,omitempty"`
-	// CredentialIsolation is this round's sandbox verdict for the machine
-	// (Access TECH B3d): protocol.CredentialIsolationEnforced or
+	// CredentialIsolation is this round's sandbox verdict for the machine:
+	// protocol.CredentialIsolationEnforced or
 	// CredentialIsolationNotEnforced. Heartbeats repeat the current one.
 	CredentialIsolation string `json:"credentialIsolation,omitempty"`
 }

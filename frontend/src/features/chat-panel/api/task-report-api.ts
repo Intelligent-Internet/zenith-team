@@ -1,5 +1,5 @@
 import { taskReportService } from "@/shared/api/task-report.service";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type {
   SendTaskReportsResponse,
   TaskReportPreviewDto,
@@ -17,7 +17,7 @@ type SendTaskReportsArgument = TaskReportArgument & {
 const taskReportTag = ({ companyId, conversationId }: TaskReportArgument) =>
   `${companyId}:${conversationId}:reports`;
 
-export const taskReportApi = boardlyApi.injectEndpoints({
+export const taskReportApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getTaskReportPreview: builder.query<
       TaskReportPreviewDto,
@@ -28,7 +28,7 @@ export const taskReportApi = boardlyApi.injectEndpoints({
         { id: taskReportTag(argument), type: "TaskReport" },
       ],
       queryFn: ({ companyId, conversationId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => taskReportService.preview(companyId, conversationId),
           "Task updates could not be loaded.",
         ),
@@ -42,7 +42,7 @@ export const taskReportApi = boardlyApi.injectEndpoints({
         { id: taskReportTag(argument), type: "TaskReport" },
       ],
       queryFn: ({ companyId, conversationId, requestKey }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             taskReportService.send(companyId, conversationId, { requestKey }),
           "Task updates could not be sent.",

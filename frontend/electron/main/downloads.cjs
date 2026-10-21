@@ -53,10 +53,10 @@ function registerDownloadHandling(options = {}) {
 }
 
 function sanitizeDownloadFilename(filename) {
-  const basename = path.basename(filename || "boardly-download");
+  const basename = path.basename(filename || "zenith-team-download");
   const sanitized = basename.replace(/[^\w .()[\]-]+/g, "_").trim();
 
-  return sanitized || "boardly-download";
+  return sanitized || "zenith-team-download";
 }
 
 function resolveElectronOptions(options) {

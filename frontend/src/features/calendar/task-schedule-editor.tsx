@@ -2,7 +2,7 @@ import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { useState } from "react";
 
 import type { TaskDto } from "@/shared/api/types";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { toast } from "@/shared/ui/sonner";
 import {
   TaskScheduleFields,
@@ -37,7 +37,7 @@ export function TaskScheduleEditor({
         className="text-workspace-danger text-[length:12px] leading-[1.5]"
         role="alert"
       >
-        {getBoardlyQueryErrorMessage(template.error)}
+        {getZenithTeamQueryErrorMessage(template.error)}
       </p>
     );
   if (!target) return <p role="status">Loading task…</p>;
@@ -84,7 +84,7 @@ function TaskScheduleForm({
       toast.success(paused ? "Schedule paused" : "Schedule saved");
       onClose();
     } catch (caught) {
-      setError(getBoardlyQueryErrorMessage(caught));
+      setError(getZenithTeamQueryErrorMessage(caught));
     }
   }
   return (

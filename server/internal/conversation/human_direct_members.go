@@ -6,11 +6,12 @@ import (
 	"errors"
 	"slices"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (s *DefaultConversationService) InviteHumanDirectMembers(
@@ -59,7 +60,10 @@ func (s *DefaultConversationService) InviteHumanDirectMembers(
 		if row.UserLowID.Valid {
 			return ErrDiscussionForbidden
 		}
-		identity, err := q.GetHumanDirectIdentity(ctx, generated.GetHumanDirectIdentityParams{CompanyID: p.CompanyID, ConversationID: id})
+		identity, err := q.GetHumanDirectIdentity(
+			ctx,
+			generated.GetHumanDirectIdentityParams{CompanyID: p.CompanyID, ConversationID: id},
+		)
 		if err != nil {
 			return err
 		}
@@ -78,14 +82,17 @@ func (s *DefaultConversationService) InviteHumanDirectMembers(
 		}
 		var addedUsers, addedAgents []uuid.UUID
 		for _, userID := range input.MemberUserIDs {
-			previous, err := q.GetDiscussionMember(ctx, generated.GetDiscussionMemberParams{ConversationID: id, UserID: userID})
+			previous, err := q.GetDiscussionMember(
+				ctx,
+				generated.GetDiscussionMemberParams{ConversationID: id, UserID: userID},
+			)
 			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 				return err
 			}
 			if err == nil && previous.Status == "active" {
 				continue
 			}
-			if _, err = grantDiscussionHuman(ctx, q, discussionGrant{
+			if err = grantDiscussionHuman(ctx, q, discussionGrant{
 				CompanyID: p.CompanyID, ConversationID: id,
 				UserID: userID, ActorUserID: p.UserID,
 				SourceType: "human_direct", HeadSeq: row.HeadSeq,
@@ -95,7 +102,10 @@ func (s *DefaultConversationService) InviteHumanDirectMembers(
 			addedUsers = append(addedUsers, userID)
 		}
 		for _, agentID := range input.AgentIDs {
-			previous, err := q.GetDiscussionAgent(ctx, generated.GetDiscussionAgentParams{ConversationID: id, AgentID: agentID})
+			previous, err := q.GetDiscussionAgent(
+				ctx,
+				generated.GetDiscussionAgentParams{ConversationID: id, AgentID: agentID},
+			)
 			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 				return err
 			}
@@ -118,7 +128,16 @@ func (s *DefaultConversationService) InviteHumanDirectMembers(
 				return err
 			}
 
-			if _, err = finishDiscussionChange(ctx, q, &pending, discussionChange{CompanyID: p.CompanyID, ConversationID: id, Actor: events.UserActor(p.UserID.String())}); err != nil {
+			if _, err = finishDiscussionChange(
+				ctx,
+				q,
+				&pending,
+				discussionChange{
+					CompanyID:      p.CompanyID,
+					ConversationID: id,
+					Actor:          events.UserActor(p.UserID.String()),
+				},
+			); err != nil {
 				return err
 			}
 		}

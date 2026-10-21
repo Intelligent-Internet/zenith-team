@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // The milestone vocabulary is written out in more than one CHECK constraint,
-// and the Go catalogue is its authority. Rather than push the list into a
+// and the Go catalog is its authority. Rather than push the list into a
 // domain or a lookup table — which would move the vocabulary out of versioned
 // code and still leave the array column unconstrained — the duplication is
 // allowed and diffed here, the same way handler.errorCodeRegistry is diffed
@@ -68,7 +68,11 @@ func TestMilestoneCheckConstraintsMatchTheGoCatalog(t *testing.T) {
 			if len(got) != len(want) {
 				t.Fatalf(
 					"%s admits %d milestone values, catalog v%d defines %d:\n%s",
-					target.constraint, len(got), taskmilestone.CatalogVersion, len(want), definition,
+					target.constraint,
+					len(got),
+					taskmilestone.CatalogVersion,
+					len(want),
+					definition,
 				)
 			}
 			for index := range want {

@@ -50,7 +50,8 @@ func parseReviewAnchor(raw json.RawMessage) (*MediaAnchor, error) {
 		if header.Type == "block" && header.BlockID == nil {
 			return nil, ErrInvalid
 		}
-		if header.Type == "textQuote" && (strings.TrimSpace(header.Exact) == "" || len([]rune(header.Exact)) > 1000) {
+		if header.Type == "textQuote" &&
+			(strings.TrimSpace(header.Exact) == "" || len([]rune(header.Exact)) > 1000) {
 			return nil, ErrInvalid
 		}
 		if header.BlockID != nil && *header.BlockID == uuid.Nil {

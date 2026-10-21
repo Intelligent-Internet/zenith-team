@@ -10,11 +10,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
-	taskdomain "boardly.dev/boardly/server/internal/task"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 func TestCompanyPlanArtifactAcceptsTasksWithoutGoals(t *testing.T) {
@@ -39,7 +39,8 @@ func TestCompanyPlanArtifactAcceptsTasksWithoutGoals(t *testing.T) {
 
 func TestValidCompanyPlanDependencyGraph(t *testing.T) {
 	t.Parallel()
-	document := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+	document := PlanDocument{
+		Projects: []PlanProject{{Key: "work", Title: "Work"}},
 		Tasks: []PlanTask{
 			{ProjectKey: "work", Key: "design", DependsOn: []PlanTaskDependency{}},
 			{ProjectKey: "work", Key: "build", DependsOn: []PlanTaskDependency{{TaskKey: "design"}}},
@@ -76,13 +77,23 @@ func TestValidCompanyPlanDependencyGraph(t *testing.T) {
 func TestCompanyPlanTaskNamesAnAgentForAgentWorkOnly(t *testing.T) {
 	t.Parallel()
 
-	document := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}},
+	document := PlanDocument{
+		Projects:      []PlanProject{{Key: "work", Title: "Work"}},
 		FormatVersion: planFormatVersion,
 		Company:       "acme",
-		Tasks: []PlanTask{{ProjectKey: "work",
-			Key: "ship", Title: "Ship", Status: "todo", Priority: "high",
-			AgentID: uuid.New().String(), MilestoneType: taskdomain.MilestoneTypeProduct, DependsOn: []PlanTaskDependency{},
-		}},
+		Tasks: []PlanTask{
+			{
+				ProjectKey: "work",
+				Key:        "ship",
+				Title:      "Ship",
+				Status:     "todo",
+				Priority:   "high",
+				AgentID: uuid.New().
+					String(),
+				MilestoneType: taskdomain.MilestoneTypeProduct,
+				DependsOn:     []PlanTaskDependency{},
+			},
+		},
 	}
 	if !validCompanyPlanDependencyGraph(document) {
 		t.Fatal("valid Company Plan task dependency graph = false")
@@ -99,6 +110,7 @@ func TestCompanyPlanTaskNamesAnAgentForAgentWorkOnly(t *testing.T) {
 		t.Fatal("validCompanyPlanTask(malformed agentId) = true")
 	}
 }
+
 func TestCompanyPlanPreviewRetainsOmittedTerminalDependencies(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -133,26 +145,33 @@ func TestCompanyPlanPreviewRetainsOmittedTerminalDependencies(t *testing.T) {
 					ExecutedByAgentID: executedBy,
 				},
 			}
-			document := PlanDocument{Projects: []PlanProject{{Key: "work", Title: "Work"}}, FormatVersion: planFormatVersion, Company: "acme", Tasks: []PlanTask{}}
+			document := PlanDocument{
+				Projects:      []PlanProject{{Key: "work", Title: "Work"}},
+				FormatVersion: planFormatVersion,
+				Company:       "acme",
+				Tasks:         []PlanTask{},
+			}
 			if test.includeDependent {
 				document.Tasks = append(
 					document.Tasks,
-					PlanTask{ProjectKey: "work",
-						Key:       "dependent",
-						Status:    test.dependentStatus,
-						AgentID:   agentID.String(),
-						DependsOn: []PlanTaskDependency{},
+					PlanTask{
+						ProjectKey: "work",
+						Key:        "dependent",
+						Status:     test.dependentStatus,
+						AgentID:    agentID.String(),
+						DependsOn:  []PlanTaskDependency{},
 					},
 				)
 			}
 			if test.includePrerequisite {
 				document.Tasks = append(
 					document.Tasks,
-					PlanTask{ProjectKey: "work",
-						Key:       "prerequisite",
-						Status:    test.prerequisiteStatus,
-						AgentID:   agentID.String(),
-						DependsOn: []PlanTaskDependency{},
+					PlanTask{
+						ProjectKey: "work",
+						Key:        "prerequisite",
+						Status:     test.prerequisiteStatus,
+						AgentID:    agentID.String(),
+						DependsOn:  []PlanTaskDependency{},
 					},
 				)
 			}
@@ -225,7 +244,12 @@ func TestBaseMatchesIgnoresConversationID(t *testing.T) {
 		},
 		"stale revision": {
 			submitted: []PlanBaseEntity{
-				{ID: taskID.String(), Key: "ship", Revision: 2, ConversationID: conversationID.String()},
+				{
+					ID:             taskID.String(),
+					Key:            "ship",
+					Revision:       2,
+					ConversationID: conversationID.String(),
+				},
 			},
 			want: false,
 		},

@@ -69,21 +69,13 @@ func uuidArg(what, value string) (string, error) {
 
 // fetchRevision reads the current revision of one revisioned object so a
 // mutation can name the state it saw; the server refuses a stale one.
-func fetchRevision(ctx context.Context, client *apiClient, path string, field string) (int64, error) {
+func fetchRevision(ctx context.Context, client *apiClient, path string) (int64, error) {
 	var raw map[string]json.RawMessage
 	if err := client.get(ctx, path, &raw); err != nil {
 		return 0, err
 	}
-	object := raw
-	if field != "" {
-		var nested map[string]json.RawMessage
-		if err := json.Unmarshal(raw[field], &nested); err != nil {
-			return 0, fmt.Errorf("decode %s: %w", field, err)
-		}
-		object = nested
-	}
 	var revision int64
-	if err := json.Unmarshal(object["revision"], &revision); err != nil {
+	if err := json.Unmarshal(raw["revision"], &revision); err != nil {
 		return 0, fmt.Errorf("decode revision from %s: %w", path, err)
 	}
 	return revision, nil
@@ -95,11 +87,11 @@ func addRevisionFlag(cmd *cobra.Command) {
 	cmd.Flags().Int64("revision", 0, "expected revision (fetched first when omitted)")
 }
 
-func resolveRevision(cmd *cobra.Command, ctx context.Context, client *apiClient, path, field string) (int64, error) {
+func resolveRevision(ctx context.Context, cmd *cobra.Command, client *apiClient, path string) (int64, error) {
 	if revision, _ := cmd.Flags().GetInt64("revision"); revision > 0 {
 		return revision, nil
 	}
-	return fetchRevision(ctx, client, path, field)
+	return fetchRevision(ctx, client, path)
 }
 
 // csvFlag splits a comma-separated flag into trimmed non-empty parts.

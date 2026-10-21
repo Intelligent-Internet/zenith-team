@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
 )
 
 func TestStorageConfigurationTypesRedactPhysicalBackendMaterial(t *testing.T) {

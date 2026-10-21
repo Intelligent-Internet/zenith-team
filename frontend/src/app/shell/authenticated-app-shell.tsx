@@ -114,8 +114,8 @@ function WorkspaceShellContent() {
 
   return (
     <div
-      className="boardly-workspace-theme"
-      data-boardly-theme={preferences.themeId}
+      className="zenith-team-workspace-theme"
+      data-zenith-team-theme={preferences.themeId}
       data-desktop-mac={desktopMac || undefined}
     >
       <ChatSessionMemoryProvider

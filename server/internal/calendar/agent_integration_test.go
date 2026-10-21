@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestRunCalendarIdentityReplayAndLifecycle(t *testing.T) {
@@ -22,7 +23,12 @@ func TestRunCalendarIdentityReplayAndLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -32,12 +38,30 @@ func TestRunCalendarIdentityReplayAndLifecycle(t *testing.T) {
 	s := newCalendarTestService(t, store)
 	p := auth.UserPrincipal{UserID: f.UserA, CompanyID: f.CompanyA}
 	var runID uuid.UUID
-	err = pool.QueryRow(ctx, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,revision) VALUES($1,$2,$3,$4,'running','direct_chat',1) RETURNING id`, f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA).Scan(&runID)
+	err = pool.QueryRow(ctx, `INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,revision) VALUES($1,$2,$3,$4,'running','direct_chat',1) RETURNING id`, f.CompanyA, f.AgentA, f.DirectConversationA, f.RuntimeA).
+		Scan(&runID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run := RunContext{RunID: runID, ConversationID: f.DirectConversationA, AgentID: f.AgentA, RequestKey: uuid.New()}
-	command := Command{Action: "create", Input: &Input{Type: "event", Title: "Agent meeting", Color: "sky", StartLocal: "2026-09-22T09:00", EndLocal: "2026-09-22T10:00", TimeZone: "Asia/Ho_Chi_Minh", Recurrence: "none", AttendeeUserIDs: []string{f.UserB.String()}}}
+	run := RunContext{
+		RunID:          runID,
+		ConversationID: f.DirectConversationA,
+		AgentID:        f.AgentA,
+		RequestKey:     uuid.New(),
+	}
+	command := Command{
+		Action: "create",
+		Input: &Input{
+			Type:            "event",
+			Title:           "Agent meeting",
+			Color:           "sky",
+			StartLocal:      "2026-09-22T09:00",
+			EndLocal:        "2026-09-22T10:00",
+			TimeZone:        "Asia/Ho_Chi_Minh",
+			Recurrence:      "none",
+			AttendeeUserIDs: []string{f.UserB.String()},
+		},
+	}
 	var wg sync.WaitGroup
 	results := make(chan CommandResult, 2)
 	failures := make(chan error, 2)
@@ -63,7 +87,9 @@ func TestRunCalendarIdentityReplayAndLifecycle(t *testing.T) {
 		id = result.Event.ID
 	}
 	var notifications int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1 AND kind='calendar_update'`, f.UserB).Scan(&notifications); err != nil || notifications != 1 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE recipient_user_id=$1 AND kind='calendar_update'`, f.UserB).
+		Scan(&notifications); err != nil ||
+		notifications != 1 {
 		t.Fatalf("replayed tool invitations = %d, %v; want 1", notifications, err)
 	}
 	command.Input.Title = "Different payload"

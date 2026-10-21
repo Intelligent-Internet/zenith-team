@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { companyService } from "@/shared/api/company.service";
 import { conversationService } from "@/shared/api/conversation.service";
 import type { operations } from "@/shared/api/generated/api.generated";
@@ -12,11 +12,11 @@ type InitializationRequest =
 const path = (companyId: string) =>
   `/companies/${encodeURIComponent(companyId)}/initialization`;
 
-export const initializationApi = boardlyApi.injectEndpoints({
+export const initializationApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getCompanyInitialization: builder.query<CompanyInitialization, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<CompanyInitialization>(path(companyId)),
           "Your saved progress could not be checked.",
         ),
@@ -26,7 +26,7 @@ export const initializationApi = boardlyApi.injectEndpoints({
       { companyId: string; request: InitializationRequest; start?: boolean }
     >({
       queryFn: ({ companyId, request, start }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           if (start) {
             const bootstrap = await companyService.getBootstrap(companyId);
             if (!bootstrap.ceoAgent)

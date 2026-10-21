@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type PageSource struct {
@@ -63,7 +63,10 @@ func (s *DefaultPresentationService) ReadPageSource(
 		if !source.WikiRevisionID.Valid {
 			return nil
 		}
-		page, err := q.GetCanvasWikiPage(ctx, generated.GetCanvasWikiPageParams{CompanyID: p.CompanyID, ID: source.WikiPageID.UUID})
+		page, err := q.GetCanvasWikiPage(
+			ctx,
+			generated.GetCanvasWikiPageParams{CompanyID: p.CompanyID, ID: source.WikiPageID.UUID},
+		)
 		if err != nil {
 			return lookup(err)
 		}

@@ -1,4 +1,4 @@
-const BOARDLY_PROTOCOL = "boardly";
+const ZENITH_TEAM_PROTOCOL = "zenith-team";
 
 const allowedRoutePrefixes = [
   "/agents",
@@ -17,7 +17,7 @@ const allowedRoutePrefixes = [
 function registerDeepLinkProtocol(
   app,
   processInfo = process,
-  protocol = BOARDLY_PROTOCOL,
+  protocol = ZENITH_TEAM_PROTOCOL,
 ) {
   if (app.isPackaged) {
     app.setAsDefaultProtocolClient(protocol);
@@ -33,15 +33,15 @@ function registerDeepLinkProtocol(
   }
 }
 
-function findDeepLinkUrl(argv, protocol = BOARDLY_PROTOCOL) {
-  return argv.find((value) => isBoardlyDeepLinkUrl(value, protocol)) ?? null;
+function findDeepLinkUrl(argv, protocol = ZENITH_TEAM_PROTOCOL) {
+  return argv.find((value) => isZenithTeamDeepLinkUrl(value, protocol)) ?? null;
 }
 
-function isBoardlyDeepLinkUrl(value, protocol = BOARDLY_PROTOCOL) {
+function isZenithTeamDeepLinkUrl(value, protocol = ZENITH_TEAM_PROTOCOL) {
   return typeof value === "string" && value.startsWith(`${protocol}://`);
 }
 
-function routeDeepLinkToWindow(mainWindow, url, protocol = BOARDLY_PROTOCOL) {
+function routeDeepLinkToWindow(mainWindow, url, protocol = ZENITH_TEAM_PROTOCOL) {
   const route = getRouteFromDeepLinkUrl(url, protocol);
 
   if (!route || !mainWindow || mainWindow.isDestroyed()) {
@@ -63,8 +63,8 @@ function routeDeepLinkToWindow(mainWindow, url, protocol = BOARDLY_PROTOCOL) {
   return true;
 }
 
-function getRouteFromDeepLinkUrl(url, protocol = BOARDLY_PROTOCOL) {
-  if (!isBoardlyDeepLinkUrl(url, protocol)) {
+function getRouteFromDeepLinkUrl(url, protocol = ZENITH_TEAM_PROTOCOL) {
+  if (!isZenithTeamDeepLinkUrl(url, protocol)) {
     return null;
   }
 
@@ -256,7 +256,7 @@ function hasUnsafeRoutePathSegments(routePath) {
     });
 }
 
-function hasUnsafeRawDeepLinkPath(rawUrl, protocol = BOARDLY_PROTOCOL) {
+function hasUnsafeRawDeepLinkPath(rawUrl, protocol = ZENITH_TEAM_PROTOCOL) {
   const rawPath = rawUrl.slice(`${protocol}://`.length).split(/[?#]/, 1)[0];
 
   return rawPath
@@ -280,7 +280,7 @@ function isUnsafeRouteSegment(segment) {
 }
 
 module.exports = {
-  BOARDLY_PROTOCOL,
+  ZENITH_TEAM_PROTOCOL,
   findDeepLinkUrl,
   getRouteFromDeepLinkUrl,
   registerDeepLinkProtocol,

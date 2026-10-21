@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A Task Run answers into its Task chat, which only the Task's Project
@@ -43,7 +43,14 @@ func TestTaskRunFilesStayInsideTheTasksProject(t *testing.T) {
 	// keep the secret file out.
 	dbtest.GrantProject(t, ctx, pool, company, secret, owner, "project.read")
 	dbtest.GrantProject(t, ctx, pool, company, f.ProjectA, owner, "project.read")
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET execution_authorized_by_user_id = $2 WHERE id = $1`, f.RunA, owner)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET execution_authorized_by_user_id = $2 WHERE id = $1`,
+		f.RunA,
+		owner,
+	)
 
 	upload := func(name string) uuid.UUID {
 		t.Helper()
@@ -58,14 +65,31 @@ func TestTaskRunFilesStayInsideTheTasksProject(t *testing.T) {
 	}
 	holdInProject := func(project, file uuid.UUID) {
 		t.Helper()
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO project_files (company_id, project_id, attachment_id, file_type)
-			VALUES ($1, $2, $3, 'document')`, company, project, file)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO project_files (company_id, project_id, attachment_id, file_type)
+			VALUES ($1, $2, $3, 'document')`,
+			company,
+			project,
+			file,
+		)
 	}
 	position := 0
 	linkInTaskChat := func(file uuid.UUID) {
 		t.Helper()
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
-			VALUES ($1, $2, $3, $4)`, company, f.MessageA, file, position)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO message_attachments (company_id, message_id, attachment_id, position)
+			VALUES ($1, $2, $3, $4)`,
+			company,
+			f.MessageA,
+			file,
+			position,
+		)
 		position++
 	}
 
@@ -133,8 +157,12 @@ func TestTaskRunFilesStayInsideTheTasksProject(t *testing.T) {
 	for _, refused := range []uuid.UUID{secretOnMessage, secretTrigger, secretQueued} {
 		for _, projectDocument := range []bool{false, true} {
 			if err := download(refused, projectDocument); !errors.Is(err, pgx.ErrNoRows) {
-				t.Errorf("Task Run download of another Project's file %v (document %v) = %v, want no rows",
-					refused, projectDocument, err)
+				t.Errorf(
+					"Task Run download of another Project's file %v (document %v) = %v, want no rows",
+					refused,
+					projectDocument,
+					err,
+				)
 			}
 		}
 	}

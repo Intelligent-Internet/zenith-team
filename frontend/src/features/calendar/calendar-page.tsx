@@ -39,7 +39,7 @@ import {
   type EventEditorSelection,
   type CalendarEntryDraft,
 } from "./event-editor";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import "./calendar.css";
 
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
@@ -278,7 +278,7 @@ export function CalendarPage() {
       }).unwrap();
       toast.success("Task moved");
     } catch (error) {
-      toast.error(getBoardlyQueryErrorMessage(error));
+      toast.error(getZenithTeamQueryErrorMessage(error));
     }
   }
   function navigate(direction: number) {
@@ -381,7 +381,7 @@ export function CalendarPage() {
         </header>
         {taskQuery.isError ? (
           <p className="personal-empty" role="alert">
-            {getBoardlyQueryErrorMessage(taskQuery.error)}{" "}
+            {getZenithTeamQueryErrorMessage(taskQuery.error)}{" "}
             <button
               className="personal-button"
               onClick={() => void taskQuery.refetch()}
@@ -398,7 +398,7 @@ export function CalendarPage() {
         ) : null}
         {query.isError ? (
           <div className="personal-empty" role="alert">
-            <p>{getBoardlyQueryErrorMessage(query.error)}</p>
+            <p>{getZenithTeamQueryErrorMessage(query.error)}</p>
             <button
               className="personal-button"
               onClick={() => void query.refetch()}

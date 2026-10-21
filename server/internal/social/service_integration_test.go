@@ -18,12 +18,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/db"
-	adapter "boardly.dev/boardly/server/internal/infra/social"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	adapter "github.com/Intelligent-Internet/zenith-team/server/internal/infra/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestDisconnectRequiresSuccessfulProviderRevocation(t *testing.T) {

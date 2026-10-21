@@ -11,12 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
@@ -517,7 +517,11 @@ func TestNewAgentPageRequiresAcceptance(t *testing.T) {
 		ctx,
 		p,
 		f.RunA,
-		PageCreateInput{RequestKey: uuid.New(), Title: "Candidate", Markdown: strings.Repeat("Not shared yet\n\n", 40)},
+		PageCreateInput{
+			RequestKey: uuid.New(),
+			Title:      "Candidate",
+			Markdown:   strings.Repeat("Not shared yet\n\n", 40),
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -558,15 +562,30 @@ func TestNewAgentPageRequiresAcceptance(t *testing.T) {
 	) {
 		t.Fatalf("unaccepted Page as Overview = %v, want conflict", err)
 	}
-	detail, err := s.DefaultPageService.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, *page.ChangeID)
+	detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, *page.ChangeID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(detail.Suggestions) != 41 || len(detail.Suggestions[0].Group) != 41 {
-		t.Fatalf("creation suggestions = %d, group = %d, want 41", len(detail.Suggestions), len(detail.Suggestions[0].Group))
+		t.Fatalf(
+			"creation suggestions = %d, group = %d, want 41",
+			len(detail.Suggestions),
+			len(detail.Suggestions[0].Group),
+		)
 	}
-	if _, err = s.DefaultPageService.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, *page.ChangeID,
-		PageChangeReviewInput{RequestKey: uuid.New(), Fingerprint: detail.Fingerprint, Action: "apply", Indexes: detail.Suggestions[0].Group}); err != nil {
+	if _, err = s.DefaultPageService.ReviewPageChange(
+		ctx,
+		p,
+		f.ProjectA,
+		page.PageID,
+		*page.ChangeID,
+		PageChangeReviewInput{
+			RequestKey:  uuid.New(),
+			Fingerprint: detail.Fingerprint,
+			Action:      "apply",
+			Indexes:     detail.Suggestions[0].Group,
+		},
+	); err != nil {
 		t.Fatal(err)
 	}
 	current, err = s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
@@ -729,7 +748,12 @@ func TestPageSuggestionInsertBelowHeading(t *testing.T) {
 		f.TaskA,
 	)
 
-	page, err := s.CreatePage(ctx, p, f.ProjectA, PageCreateInput{RequestKey: uuid.New(), Title: "Translation", Markdown: "## Poem\n\nOriginal stanza"})
+	page, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{RequestKey: uuid.New(), Title: "Translation", Markdown: "## Poem\n\nOriginal stanza"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -741,10 +765,22 @@ func TestPageSuggestionInsertBelowHeading(t *testing.T) {
 	if err = json.Unmarshal(read.Content, &root); err != nil {
 		t.Fatal(err)
 	}
-	in := PageEditInput{RequestKey: uuid.New(), Sequence: read.Sequence, Summary: "Add translation", Operations: []wiki.BlockOperation{{
-		Type: "insert", ParentID: root.Content[0].Attrs["blockId"].(string), AfterID: root.Content[1].Attrs["blockId"].(string),
-		Content: &wiki.BlockNode{Type: "paragraph", Content: []wiki.BlockNode{{Type: "text", Text: "English translation"}}},
-	}}}
+	in := PageEditInput{
+		RequestKey: uuid.New(),
+		Sequence:   read.Sequence,
+		Summary:    "Add translation",
+		Operations: []wiki.BlockOperation{
+			{
+				Type:     "insert",
+				ParentID: root.Content[0].Attrs["blockId"].(string),
+				AfterID:  root.Content[1].Attrs["blockId"].(string),
+				Content: &wiki.BlockNode{
+					Type:    "paragraph",
+					Content: []wiki.BlockNode{{Type: "text", Text: "English translation"}},
+				},
+			},
+		},
+	}
 	if _, err = s.EditPageForRun(ctx, p, f.RunA, page.PageID, in); !errors.Is(err, ErrPageInvalidInsert) {
 		t.Fatalf("insertion under heading = %v, want ErrPageInvalidInsert", err)
 	}

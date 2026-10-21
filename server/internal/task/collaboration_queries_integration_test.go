@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Task-domain policy that only PostgreSQL enforces: number allocation,
@@ -66,10 +66,16 @@ func TestTaskUpdateRetainsButCannotSelectArchivedAssociations(t *testing.T) {
 		archivedAgentID, fixture.CompanyA)
 	t.Run("Agent", func(t *testing.T) {
 		params := generated.UpdateTaskParams{
-			MilestoneType: retained.MilestoneType, Title: retained.Title, Description: retained.Description,
-			Status: retained.Status, Priority: retained.Priority, AssigneeUserID: retained.AssigneeUserID,
+			MilestoneType:     retained.MilestoneType,
+			Title:             retained.Title,
+			Description:       retained.Description,
+			Status:            retained.Status,
+			Priority:          retained.Priority,
+			AssigneeUserID:    retained.AssigneeUserID,
 			ExecutedByAgentID: uuid.NullUUID{UUID: archivedAgentID, Valid: true},
-			TaskID:            retained.ID, CompanyID: retained.CompanyID, ExpectedVersion: retained.Version,
+			TaskID:            retained.ID,
+			CompanyID:         retained.CompanyID,
+			ExpectedVersion:   retained.Version,
 		}
 		if _, err := store.Queries().UpdateTask(ctx, params); !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatalf("UpdateTask(select archived Agent) error = %v, want pgx.ErrNoRows", err)
@@ -122,9 +128,14 @@ func TestTaskUpdateRetainsButCannotSelectArchivedAssociations(t *testing.T) {
 		// Handing the Task BACK to the departed member is refused: they are
 		// no longer the row's assignee, so the retention arm does not apply.
 		if _, err := store.Queries().UpdateTask(ctx, generated.UpdateTaskParams{
-			MilestoneType: reassigned.MilestoneType, Title: reassigned.Title, Description: reassigned.Description,
-			Status: reassigned.Status, Priority: reassigned.Priority,
-			AssigneeUserID: fixture.UserB, TaskID: reassigned.ID, CompanyID: reassigned.CompanyID,
+			MilestoneType:   reassigned.MilestoneType,
+			Title:           reassigned.Title,
+			Description:     reassigned.Description,
+			Status:          reassigned.Status,
+			Priority:        reassigned.Priority,
+			AssigneeUserID:  fixture.UserB,
+			TaskID:          reassigned.ID,
+			CompanyID:       reassigned.CompanyID,
 			ExpectedVersion: reassigned.Version,
 		}); !errors.Is(err, pgx.ErrNoRows) {
 			t.Fatalf("UpdateTask(assign to a revoked member) error = %v, want pgx.ErrNoRows", err)

@@ -1,8 +1,8 @@
 # Pinned platform content
 
-This directory pins the platform content boardly takes from
+This directory pins the platform content zenith-team takes from
 [Intelligent-Internet/boardly-plugins](https://github.com/Intelligent-Internet/boardly-plugins)
-([ADR 0016](../../../docs/adr/0016-platform-content-bundles-in-boardly-plugins.md)).
+([ADR 0016](../../../docs/adr/0016-platform-content-bundles.md)).
 Each pinned component is two files, a canonical uncompressed USTAR tar and a
 lock, and both are committed, so no build, test or fresh clone needs a
 credential or the network.
@@ -18,22 +18,22 @@ boardly-plugins commit, the manifest's SHA256, the content folder's git tree
 id, the tree hash over all 290 files and the retired keys. Where this file
 and the lock disagree, the lock wins.
 
-Version 1.0.0 carries the catalog boardly held in
+Version 1.0.0 carries the catalog zenith-team held in
 `internal/mcp/tools/builtin/zenith-workflows/` before the move. The tar's
-files plus the harness below are byte-identical to that directory at
-`98011b462`, and the skill's `ContentHash` is unchanged.
+files plus the harness below are byte-identical to that directory, and the
+skill's `ContentHash` is unchanged.
 
-The content is authored and reviewed in boardly-plugins, under
-`plugins/zenith-workflows/boardly/workflows/`, and released there with a
-`zenith-workflows--vX.Y.Z` tag. Nothing reaches a Run until a boardly pull
-request bumps the pin.
+The content lives in boardly-plugins, under
+`plugins/zenith-workflows/boardly/workflows/`, and is released there with a
+`zenith-workflows--vX.Y.Z` tag. Nothing reaches a Run until this repository
+bumps the pin.
 
 ## The harness stays here
 
 `harness/zenith-workflows/SKILL.md` is laid over the pinned files at `.`,
 so the page and a Task Run read the same skill root as before the move. It
-stays in boardly, beside the skill's name and description constants in
-`platformbundle.go`, because boardly-mcp matches its `name:` and
+stays in zenith-team, beside the skill's name and description constants in
+`platformbundle.go`, because zenith-team-mcp matches its `name:` and
 `description:` frontmatter lines byte for byte, and its "Connected apps"
 and "Attached files" sections mirror the daemon's Run policy and the Task
 footer. A content author can therefore never break every Task Run by
@@ -66,14 +66,17 @@ the skill caps.
 - **The server** does not start. `cmd/server` loads the Workflow catalog and
   every pin before it opens the database, and logs each pin's plugin,
   component, version, SHA256 and commit.
-- **boardly-mcp** drops the failing bundle and says so on stderr. It keeps
+- **zenith-team-mcp** drops the failing bundle and says so on stderr. It keeps
   serving `zenith-platform` and the Commerce procedure, and the dropped key
   stays reserved, so no custom Skill snapshot can take it.
 
-## Bumping to a new release
+## Bumping to a new release (maintainers only)
 
-Authenticate once per machine, so the import can read boardly-plugins with
-your own credentials:
+`bundle-bump`, `bundle-diff` and `bundle-verify` are maintainer tools.
+Contributors do not need them: the tar and the lock are committed, so every
+build and test works offline.
+
+The import reads boardly-plugins with git, using your own GitHub credentials:
 
 ```sh
 gh auth login && gh auth setup-git
@@ -136,13 +139,13 @@ make bundle-local PLUGINS=../boardly-plugins
 
 That writes a development pin (version `0.0.0-dev+<12-hex commit>`, with
 `.dirty` unless the plugin's files are exactly those of the checkout's
-`HEAD`, and no tag), which the server and boardly-mcp serve like a release.
+`HEAD`, and no tag), which the server and zenith-team-mcp serve like a release.
 Files git ignores, such as a Finder `.DS_Store`, are never read. Undo it with
 `git restore server/internal/platformbundle`. Never commit a development
 pin: `TestPinnedBundlesAreReleases` fails the gate until a bump replaces
 it.
 
-To see every problem boardly would find in a plugins checkout, with the same
+To see every problem zenith-team would find in a plugins checkout, with the same
 parser and loader the server uses:
 
 ```sh
@@ -162,7 +165,7 @@ it holds a plugin this build already pins to the key rules above.
   `server-windows` CI job proves it.
 - `cmd/zen` must never link this package; that is why it is a package of its
   own. It imports `internal/mcp/tools` and the asset-free `internal/contentbundle`
-  verifier, so boardly-mcp stays sealed.
+  verifier, so zenith-team-mcp stays sealed.
 - `testdata/format1.tar` pins the bytes `Encode` writes for format 1, so a Go
   release that changed `archive/tar`'s output cannot silently rewrite every
   committed artifact on the next bump. It changes only with the format.

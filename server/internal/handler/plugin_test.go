@@ -14,10 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 // The catalog read is any member's (ADR 0014): the route takes the member
@@ -54,8 +54,13 @@ func TestPluginListRouteUsesMemberPrincipalAndReturnsWireShape(t *testing.T) {
 			t.Fatalf("List() input = %+v", input)
 		}
 		return agent.PluginCatalogResult{
-			SchemaVersion: 1, ActiveProvider: agent.ConnectorProviderClaude,
-			Runtime:    &agent.PluginRuntimeSummary{ID: runtimeID, Name: "Claude workstation", Online: true},
+			SchemaVersion:  1,
+			ActiveProvider: agent.ConnectorProviderClaude,
+			Runtime: &agent.PluginRuntimeSummary{
+				ID:     runtimeID,
+				Name:   "Claude workstation",
+				Online: true,
+			},
 			ObservedAt: &observedAt,
 		}, nil
 	}}
@@ -602,9 +607,15 @@ func TestPluginDetailRouteUsesMemberPrincipalAndReturnsWireShape(t *testing.T) {
 		return agent.PluginDetailResult{
 			SchemaVersion: 1,
 			Plugin: agent.PluginItemV1{
-				ID: pluginID, Provider: agent.ConnectorProviderCodex, NativeID: "gmail@openai-curated-remote",
-				Name: "Gmail", Status: agent.PluginStatusInstalled, Installed: true, Enabled: true,
-				Action: agent.PluginActionUninstall, ComponentCounts: agent.PluginComponentCounts{Apps: 1},
+				ID:              pluginID,
+				Provider:        agent.ConnectorProviderCodex,
+				NativeID:        "gmail@openai-curated-remote",
+				Name:            "Gmail",
+				Status:          agent.PluginStatusInstalled,
+				Installed:       true,
+				Enabled:         true,
+				Action:          agent.PluginActionUninstall,
+				ComponentCounts: agent.PluginComponentCounts{Apps: 1},
 				ConnectorIdentities: []agent.PluginConnectorIdentity{{
 					Source: agent.ConnectorSourceCodexApp, NativeID: "connector_gmail",
 				}},
@@ -617,9 +628,13 @@ func TestPluginDetailRouteUsesMemberPrincipalAndReturnsWireShape(t *testing.T) {
 			WebsiteURL:      text("https://mail.google.com"),
 			Apps: []agent.PluginDetailApp{
 				{
-					Source: agent.ConnectorSourceCodexApp, NativeID: "connector_gmail",
-					ConnectorID: &connectorID, Name: "Gmail", IconURL: text("https://chatgpt.com/gmail.png"),
-					Status: &status, Action: &action,
+					Source:      agent.ConnectorSourceCodexApp,
+					NativeID:    "connector_gmail",
+					ConnectorID: &connectorID,
+					Name:        "Gmail",
+					IconURL:     text("https://chatgpt.com/gmail.png"),
+					Status:      &status,
+					Action:      &action,
 				},
 				{Source: agent.ConnectorSourceCodexMCP, NativeID: "gmail-mcp", Name: "gmail-mcp"},
 			},
@@ -693,7 +708,12 @@ func TestPluginDetailRouteMapsErrorsAndRejectsNonCanonicalRequests(t *testing.T)
 		wantStatus int
 		wantCode   string
 	}{
-		{name: "not found", err: agent.ErrPluginNotFound, wantStatus: http.StatusNotFound, wantCode: "plugin_not_found"},
+		{
+			name:       "not found",
+			err:        agent.ErrPluginNotFound,
+			wantStatus: http.StatusNotFound,
+			wantCode:   "plugin_not_found",
+		},
 		{
 			name: "forbidden", err: agent.ErrForbidden,
 			wantStatus: http.StatusForbidden, wantCode: "company_permission_required",
@@ -706,15 +726,42 @@ func TestPluginDetailRouteMapsErrorsAndRejectsNonCanonicalRequests(t *testing.T)
 			name: "unexpected", err: errors.New("database unavailable"),
 			wantStatus: http.StatusInternalServerError, wantCode: "plugin_request_failed",
 		},
-		{name: "malformed plugin id", pluginID: "not-a-uuid", wantStatus: http.StatusNotFound, wantCode: "plugin_not_found"},
-		{name: "unknown query", rawQuery: "provider=codex", wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed"},
-		{name: "empty runtime", rawQuery: "runtime_id=", wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed"},
-		{name: "malformed runtime", rawQuery: "runtime_id=abc", wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed"},
 		{
-			name: "repeated runtime", rawQuery: "runtime_id=" + uuid.NewString() + "&runtime_id=" + uuid.NewString(),
-			wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed",
+			name:       "malformed plugin id",
+			pluginID:   "not-a-uuid",
+			wantStatus: http.StatusNotFound,
+			wantCode:   "plugin_not_found",
 		},
-		{name: "malformed escape", rawQuery: "runtime_id=%zz", wantStatus: http.StatusUnprocessableEntity, wantCode: "validation_failed"},
+		{
+			name:       "unknown query",
+			rawQuery:   "provider=codex",
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "validation_failed",
+		},
+		{
+			name:       "empty runtime",
+			rawQuery:   "runtime_id=",
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "validation_failed",
+		},
+		{
+			name:       "malformed runtime",
+			rawQuery:   "runtime_id=abc",
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "validation_failed",
+		},
+		{
+			name:       "repeated runtime",
+			rawQuery:   "runtime_id=" + uuid.NewString() + "&runtime_id=" + uuid.NewString(),
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "validation_failed",
+		},
+		{
+			name:       "malformed escape",
+			rawQuery:   "runtime_id=%zz",
+			wantStatus: http.StatusUnprocessableEntity,
+			wantCode:   "validation_failed",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

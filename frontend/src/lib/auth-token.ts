@@ -1,4 +1,4 @@
-const LOCAL_DEV_ACCESS_TOKEN_STORAGE_KEY = "BOARDLY_ACCESS_TOKEN";
+const LOCAL_DEV_ACCESS_TOKEN_STORAGE_KEY = "ZENITH_TEAM_ACCESS_TOKEN";
 
 let accessToken: string | null = null;
 let hasHydratedDesktopAccessToken = false;
@@ -29,7 +29,7 @@ function getDesktopBridge() {
     return null;
   }
 
-  return window.boardlyDesktop ?? null;
+  return window.zenithTeamDesktop ?? null;
 }
 
 function normalizeAccessToken(token: string | null | undefined): string | null {

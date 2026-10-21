@@ -12,10 +12,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/infra/email"
-	"boardly.dev/boardly/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
 )
 
 func TestMailboxRoutesRequireOwnerForPeopleAndAgents(t *testing.T) {
@@ -40,7 +40,7 @@ func TestMailboxRoutesRequireOwnerForPeopleAndAgents(t *testing.T) {
 					chat := "/conversations/" + uuid.NewString()
 					id := uuid.NewString()
 					// A Run proof on a person route is refused by RunProofPolicy before
-					// the owner check (Access TECH B1); only the Run route that
+					// the owner check; only the Run route that
 					// prepares drafts reaches it with a proof.
 					for _, route := range []struct {
 						method, path string

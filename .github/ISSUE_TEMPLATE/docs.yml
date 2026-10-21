@@ -1,0 +1,33 @@
+name: Documentation
+description: Something in the docs is wrong, missing or unclear.
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the docs. Small fixes are also welcome as a pull request.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page link
+      description: A link to the page or file, for example `docs/content/docs/quickstart.mdx`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong?
+      description: Quote the part that is wrong, missing or unclear.
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested fix
+      description: What should the page say instead?
+    validations:
+      required: false

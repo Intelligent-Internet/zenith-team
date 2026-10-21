@@ -3,7 +3,7 @@ import { useDiscussionRuntime } from "../components/discussion-provider";
 import { discussionsApi } from "../api/discussions-api";
 import type { RootState } from "@/state/store";
 
-// A notice never stores a channel's title (C0-CONTRACT §5), so a surface
+// A notice never stores a channel's title, so a surface
 // outside the chat names the channel from the channel list the viewer can
 // see now. These read that list by conversation id and answer undefined
 // when it has not loaded the channel, so the caller keeps its own words.

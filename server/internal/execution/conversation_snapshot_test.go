@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // runContextChatGoldenPath is the non-empty snapshot shape the daemon parses in
@@ -203,13 +203,17 @@ func TestBoundConversationSnapshotUsesTheStreamWatermarkNotTheNewestChatSeq(t *t
 func queuedRow(position int32, content string) db.ListQueuedRunQueueItemsForTaskRunRow {
 	return db.ListQueuedRunQueueItemsForTaskRunRow{
 		ConversationRunQueueItem: db.ConversationRunQueueItem{
-			ID:                uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("queue-%d", position))),
-			MessageID:         uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("reserved-%d", position))),
+			ID: uuid.NewSHA1(uuid.NameSpaceOID, []byte(fmt.Sprintf("queue-%d", position))),
+			MessageID: uuid.NewSHA1(
+				uuid.NameSpaceOID,
+				[]byte(fmt.Sprintf("reserved-%d", position)),
+			),
 			InitiatedByUserID: uuid.NameSpaceDNS,
 			Content:           content,
 			Position:          position,
 			CreatedAt: pgtype.Timestamptz{
-				Time:  time.Date(2026, 9, 22, 8, 0, 0, 0, time.UTC).Add(time.Duration(position) * time.Minute),
+				Time: time.Date(2026, 9, 22, 8, 0, 0, 0, time.UTC).
+					Add(time.Duration(position) * time.Minute),
 				Valid: true,
 			},
 		},
@@ -242,7 +246,10 @@ func TestBoundConversationSnapshotAppendsQueuedTaskMessagesPastTheWatermark(t *t
 	if first.ID != queued[0].ConversationRunQueueItem.MessageID.String() || first.RunID != "" ||
 		first.Author.Kind != "user" || first.Author.Name != "Colleague" ||
 		first.Author.ID != uuid.NameSpaceDNS.String() {
-		t.Fatalf("queued item = %+v, want the reserved message id, an empty runId and the colleague as author", first)
+		t.Fatalf(
+			"queued item = %+v, want the reserved message id, an empty runId and the colleague as author",
+			first,
+		)
 	}
 
 	// The budgets still drop the OLDEST items first, so queued Messages
@@ -252,9 +259,17 @@ func TestBoundConversationSnapshotAppendsQueuedTaskMessagesPastTheWatermark(t *t
 		t.Fatalf("boundConversationSnapshot(full) error = %v", err)
 	}
 	snapshot = decodeSnapshot(t, raw)
-	if len(snapshot.Items) != 64 || !snapshot.Truncated || snapshot.Items[63].Seq != 66 || snapshot.Items[0].Seq != 3 {
-		t.Fatalf("full window = %d items, truncated = %v, first seq %d, last seq %d; want 64 items 3..66",
-			len(snapshot.Items), snapshot.Truncated, snapshot.Items[0].Seq, snapshot.Items[len(snapshot.Items)-1].Seq)
+	if len(snapshot.Items) != 64 || !snapshot.Truncated || snapshot.Items[63].Seq != 66 ||
+		snapshot.Items[0].Seq != 3 {
+		t.Fatalf(
+			"full window = %d items, truncated = %v, first seq %d, last seq %d; want 64 items 3..66",
+			len(
+				snapshot.Items,
+			),
+			snapshot.Truncated,
+			snapshot.Items[0].Seq,
+			snapshot.Items[len(snapshot.Items)-1].Seq,
+		)
 	}
 }
 

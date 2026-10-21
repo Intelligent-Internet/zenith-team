@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 func TestNewAttachmentServiceRejectsInvalidDependenciesAndOptions(t *testing.T) {

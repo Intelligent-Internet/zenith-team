@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 // TaskMergeStatus is the closed daemon-plane result status.

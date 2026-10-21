@@ -17,7 +17,7 @@
 -- with project_permission_required. Its arm states
 -- project_permission_held's rule for that one person and permission, row by
 -- row, because the function runs as one opaque call per row and is never used
--- in a list (TECH section 10, "Functions"): an active membership and an
+-- in a list: an active membership and an
 -- enabled account (the assignee_inactive arm before it), then a fenced grant
 -- row (one primary-key probe), or a fenced membership of a Group holding the
 -- permission there (company_group_members_user_idx, then the
@@ -39,7 +39,7 @@
 -- assignee_outside_project: the Task sits in a restricted Project and its
 -- assignee has no project_access row there, so they cannot read or run it.
 -- One correlated lookup per row naming the Project and the assignee, never
--- the assignee's whole readable set (TECH "How queries use the views").
+-- the assignee's whole readable set.
 
 -- name: ListTaskProjectionsForActiveMember :many
 WITH actor AS MATERIALIZED (
@@ -201,7 +201,7 @@ LEFT JOIN agents AS executed_by_agents
   ON executed_by_agents.company_id = tasks.company_id
  AND executed_by_agents.id = tasks.executed_by_agent_id
 -- Correlated lookup: a plain join to this view reads tasks a second time and
--- plans as a scan of every Task (TECH section 10).
+-- plans as a scan of every Task.
 LEFT JOIN LATERAL (
     SELECT run_agent.agent_id FROM task_run_agents AS run_agent
     WHERE run_agent.task_id = tasks.id AND run_agent.company_id = tasks.company_id
@@ -362,7 +362,7 @@ LEFT JOIN agents AS executed_by_agents
   ON executed_by_agents.company_id = tasks.company_id
  AND executed_by_agents.id = tasks.executed_by_agent_id
 -- Correlated lookup: a plain join to this view reads tasks a second time and
--- plans as a scan of every Task (TECH section 10).
+-- plans as a scan of every Task.
 LEFT JOIN LATERAL (
     SELECT run_agent.agent_id FROM task_run_agents AS run_agent
     WHERE run_agent.task_id = tasks.id AND run_agent.company_id = tasks.company_id

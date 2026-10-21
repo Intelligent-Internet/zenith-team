@@ -11,7 +11,7 @@ import {
   genericForgotPasswordSuccess,
   getAuthPanelCopy,
 } from "@/features/auth/model/auth-panel-copy";
-import { boardlyPublicLegalUrls } from "@/features/auth/model/public-legal-links";
+import { zenithTeamPublicLegalUrls } from "@/features/auth/model/public-legal-links";
 
 export function LoginPage() {
   const authFlow = useAuthFlowController();
@@ -118,13 +118,13 @@ export function LoginPage() {
   return (
     <AuthLayout
       footer={
-        showLegalCopy ? (
+        showLegalCopy && zenithTeamPublicLegalUrls ? (
           <p className="auth-legal">
             {authFlow.mode === "signup"
               ? "By creating an account, you agree to the "
               : "By continuing, you agree to the "}
-            <a href={boardlyPublicLegalUrls.terms}>Terms</a> and acknowledge the{" "}
-            <a href={boardlyPublicLegalUrls.privacy}>Privacy Policy</a>.
+            <a href={zenithTeamPublicLegalUrls.terms}>Terms</a> and acknowledge the{" "}
+            <a href={zenithTeamPublicLegalUrls.privacy}>Privacy Policy</a>.
           </p>
         ) : null
       }

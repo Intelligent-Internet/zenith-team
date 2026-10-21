@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/spf13/cobra"
 	"io"
 	"strings"
+
+	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 )
 
 type projectView struct {
@@ -44,11 +45,16 @@ func resolveProject(ctx context.Context, client *apiClient, value string) (proje
 	}
 	return projectView{}, usagef("Project %q was not found", value)
 }
+
 func newProjectCmd() *cobra.Command {
 	root := &cobra.Command{Use: "project", Short: "Manage Company projects"}
 	for _, operation := range []string{"list", "get", "create", "update", "archive"} {
 		name := operation
-		cmd := &cobra.Command{Use: name, Short: strings.ToUpper(name[:1]) + name[1:] + " projects", Args: cobra.NoArgs}
+		cmd := &cobra.Command{
+			Use:   name,
+			Short: strings.ToUpper(name[:1]) + name[1:] + " projects",
+			Args:  cobra.NoArgs,
+		}
 		if name == "get" || name == "update" || name == "archive" {
 			cmd.Use += " <project-id|project-key>"
 			cmd.Args = cobra.ExactArgs(1)
@@ -90,7 +96,12 @@ func newProjectCmd() *cobra.Command {
 				if readErr != nil {
 					return readErr
 				}
-				err = client.post(ctx, path, map[string]any{"key": key, "title": title, "description": description}, &raw)
+				err = client.post(
+					ctx,
+					path,
+					map[string]any{"key": key, "title": title, "description": description},
+					&raw,
+				)
 			default:
 				project, readErr := resolveProject(ctx, client, args[0])
 				if readErr != nil {
@@ -101,7 +112,12 @@ func newProjectCmd() *cobra.Command {
 				case "get":
 					err = client.get(ctx, path, &raw)
 				case "archive":
-					err = client.post(ctx, path+"/archive", map[string]any{"expectedRevision": project.Revision}, &raw)
+					err = client.post(
+						ctx,
+						path+"/archive",
+						map[string]any{"expectedRevision": project.Revision},
+						&raw,
+					)
 				case "update":
 					body := map[string]any{"expectedRevision": project.Revision}
 					if cmd.Flags().Changed("title") {
@@ -144,7 +160,15 @@ func newProjectCmd() *cobra.Command {
 				if err := json.Unmarshal(raw, &p); err != nil {
 					return err
 				}
-				_, err := fmt.Fprintf(out, "%s — %s\n%s\nID: %s\nRevision: %d\n", p.Key, p.Title, p.Description, p.ID, p.Revision)
+				_, err := fmt.Fprintf(
+					out,
+					"%s — %s\n%s\nID: %s\nRevision: %d\n",
+					p.Key,
+					p.Title,
+					p.Description,
+					p.ID,
+					p.Revision,
+				)
 				return err
 			})
 		}

@@ -105,7 +105,7 @@ func (p *ResendProvider) postOutboundJSON(
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Idempotency-Key", idempotencyKey)
-	request.Header.Set("User-Agent", "Boardly-Agent-Mail/1")
+	request.Header.Set("User-Agent", "Zenith-Team-Agent-Mail/1")
 	response, err := p.httpClient.Do(request)
 	if err != nil {
 		return fmt.Errorf("%w: send request failed", ErrUnavailable)

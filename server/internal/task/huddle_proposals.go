@@ -11,9 +11,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type SubmitHuddleProposalInput struct {
@@ -39,10 +39,17 @@ func validateProposalSubmission(in SubmitHuddleProposalInput, target uuid.NullUU
 
 // SubmitHuddleProposal saves a Task without starting execution. The human's
 // immutable confirmation receipt fences retries; speech never authorizes it.
-func (s *DefaultTaskService) SubmitHuddleProposal(ctx context.Context, p auth.UserPrincipal, huddleID, proposalID uuid.UUID, in SubmitHuddleProposalInput) (conversation.HuddleProposal, error) {
+func (s *DefaultTaskService) SubmitHuddleProposal(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	huddleID, proposalID uuid.UUID,
+	in SubmitHuddleProposalInput,
+) (conversation.HuddleProposal, error) {
 	var result conversation.HuddleProposal
 	var effects taskWriteEffects
-	hash := sha256.Sum256([]byte(string(in.MilestoneType) + "\x00" + strconv.FormatInt(in.ExpectedTaskRevision, 10)))
+	hash := sha256.Sum256(
+		[]byte(string(in.MilestoneType) + "\x00" + strconv.FormatInt(in.ExpectedTaskRevision, 10)),
+	)
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		if _, err := authorizeTaskMutation(ctx, q, p); err != nil {
 			return err
@@ -52,7 +59,9 @@ func (s *DefaultTaskService) SubmitHuddleProposal(ctx context.Context, p auth.Us
 			return err
 		}
 		if row.State == "submitted" {
-			if !in.Confirm || row.SubmittedByUserID.UUID != p.UserID || row.SubmittedRevision.Int64 != in.ExpectedRevision || !bytes.Equal(row.SubmissionHash, hash[:]) {
+			if !in.Confirm || row.SubmittedByUserID.UUID != p.UserID ||
+				row.SubmittedRevision.Int64 != in.ExpectedRevision ||
+				!bytes.Equal(row.SubmissionHash, hash[:]) {
 				return conversation.ErrHuddleProposalConflict
 			}
 			result = projection
@@ -61,11 +70,20 @@ func (s *DefaultTaskService) SubmitHuddleProposal(ctx context.Context, p auth.Us
 		if err = validateProposalSubmission(in, row.TaskID); err != nil {
 			return err
 		}
-		if !projection.CanEdit || row.Revision != in.ExpectedRevision || !row.ProjectID.Valid || (row.TaskKey != "" && !row.TaskID.Valid) {
+		if !projection.CanEdit || row.Revision != in.ExpectedRevision || !row.ProjectID.Valid ||
+			(row.TaskKey != "" && !row.TaskID.Valid) {
 			return conversation.ErrHuddleProposalConflict
 		}
 		if row.TaskID.Valid {
-			current, _, access, lockErr := lockTaskMutationTarget(ctx, q, p, row.TaskID.UUID, in.ExpectedTaskRevision, false, "proposal confirmation")
+			current, _, access, lockErr := lockTaskMutationTarget(
+				ctx,
+				q,
+				p,
+				row.TaskID.UUID,
+				in.ExpectedTaskRevision,
+				false,
+				"proposal confirmation",
+			)
 			if lockErr != nil {
 				return lockErr
 			}
@@ -82,7 +100,16 @@ func (s *DefaultTaskService) SubmitHuddleProposal(ctx context.Context, p auth.Us
 			}
 			effects.result.Task = current
 		} else {
-			input, normalizeErr := normalizeCreateInput(CreateInput{ProjectID: row.ProjectID.UUID, MilestoneType: in.MilestoneType, Title: row.Title, Description: row.Brief, ExecutedBy: &ActorRef{Kind: ActorAgent, ID: row.CreatedByAgentID}}, p.UserID)
+			input, normalizeErr := normalizeCreateInput(
+				CreateInput{
+					ProjectID:     row.ProjectID.UUID,
+					MilestoneType: in.MilestoneType,
+					Title:         row.Title,
+					Description:   row.Brief,
+					ExecutedBy:    &ActorRef{Kind: ActorAgent, ID: row.CreatedByAgentID},
+				},
+				p.UserID,
+			)
 			if normalizeErr != nil {
 				return normalizeErr
 			}
@@ -91,10 +118,22 @@ func (s *DefaultTaskService) SubmitHuddleProposal(ctx context.Context, p auth.Us
 		if err != nil {
 			return err
 		}
-		result, err = conversation.RecordHuddleProposalSubmissionInTx(ctx, q, generated.SubmitHuddleProposalParams{
-			CompanyID: p.CompanyID, HuddleID: huddleID, ID: proposalID, SubmittedByUserID: uuid.NullUUID{UUID: p.UserID, Valid: true}, SubmissionHash: hash[:],
-			SubmittedTaskID: uuid.NullUUID{UUID: effects.result.Task.ID, Valid: true}, SubmittedTaskKey: pgtype.Text{String: effects.result.Task.Key, Valid: true},
-		})
+		result, err = conversation.RecordHuddleProposalSubmissionInTx(
+			ctx,
+			q,
+			generated.SubmitHuddleProposalParams{
+				CompanyID:         p.CompanyID,
+				HuddleID:          huddleID,
+				ID:                proposalID,
+				SubmittedByUserID: uuid.NullUUID{UUID: p.UserID, Valid: true},
+				SubmissionHash:    hash[:],
+				SubmittedTaskID: uuid.NullUUID{
+					UUID:  effects.result.Task.ID,
+					Valid: true,
+				},
+				SubmittedTaskKey: pgtype.Text{String: effects.result.Task.Key, Valid: true},
+			},
+		)
 		return err
 	})
 	if err != nil {

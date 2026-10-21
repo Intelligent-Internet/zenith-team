@@ -337,14 +337,14 @@ paths:
       summary: Ask humans a question on behalf of a live run
       description: |
         Requires an ordinary bearer principal plus the supplemental live
-        `X-Boardly-Run-Token`. `Idempotency-Key` is a UUID scoped to this
+        `X-Zenith-Team-Run-Token`. `Idempotency-Key` is a UUID scoped to this
         Question operation and the originating run. First creation is `201`;
         an exact replay returns the same Question with `200` — the status code
         is the whole created-signal. A replay with a different payload is
         `409 question_conflict`.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           schema: { type: string, pattern: '^brt_[0-9a-f]{64}$' }

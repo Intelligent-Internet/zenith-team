@@ -1,4 +1,4 @@
--- The daemon gets its own session (D31). A session belongs to a person (the
+-- The daemon gets its own session. A session belongs to a person (the
 -- web app, the desktop app, the CLI) or to a daemon. A daemon session acts
 -- only on the daemon plane and, beside a live Run proof whose Authorizer is
 -- its person, on the routes that accept a Run; the server refuses it

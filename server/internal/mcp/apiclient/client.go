@@ -1,6 +1,6 @@
 // Package apiclient is how Run-bound code reaches the Zenith Team API.
-// boardly-mcp uses RunChannel: every call goes over the daemon's Run channel
-// and boardly-mcp holds no credential (Access TECH B3b). Client, which reads
+// zenith-team-mcp uses RunChannel: every call goes over the daemon's Run channel
+// and zenith-team-mcp holds no credential. Client, which reads
 // the person's session from auth.json, serves only the daemon's own output
 // presenter, which runs in the daemon and never in the Agent; every call it
 // makes carries the Run proof.
@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
 )
 
 // Client calls the API with the session in auth.json plus the Run proof. Only
@@ -54,7 +54,7 @@ type attachmentResponse struct {
 	ID string `json:"id"`
 }
 
-// APIError is the canonical Boardly HTTP error envelope plus its status.
+// APIError is the canonical Zenith Team HTTP error envelope plus its status.
 // Callers branch on Code, never on human-readable Detail.
 type APIError struct {
 	StatusCode int
@@ -226,7 +226,7 @@ func (c *Client) uploadAttachmentWithCredential(
 	}
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
-	request.Header.Set("X-Boardly-Run-Token", c.runToken)
+	request.Header.Set("X-Zenith-Team-Run-Token", c.runToken)
 	request.Header.Set("Content-Type", multipartWriter.FormDataContentType())
 	response, err := c.attachmentClient.Do(request)
 	if err != nil {
@@ -312,7 +312,7 @@ func (c *Client) doJSONWithCredential(
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
 	if proof.runToken != "" {
-		request.Header.Set("X-Boardly-Run-Token", proof.runToken)
+		request.Header.Set("X-Zenith-Team-Run-Token", proof.runToken)
 		if proof.requestKey != "" {
 			request.Header.Set("Idempotency-Key", proof.requestKey)
 		}

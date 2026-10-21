@@ -8,17 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
-	googleOAuthWebBindingCookieName = "boardly_oauth_google_web"
+	googleOAuthWebBindingCookieName = "zenith_team_oauth_google_web"
 	googleOAuthWebCallbackPath      = "/api/v1/auth/google/web/callback"
 )
 

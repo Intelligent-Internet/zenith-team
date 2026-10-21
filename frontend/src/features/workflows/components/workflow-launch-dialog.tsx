@@ -461,7 +461,7 @@ function WorkflowLaunchForm({
       : restoredDraft,
   );
   // Every role connects and installs apps on its own computer; reviewing an
-  // app's changed tools stays the Company's (owner decision, 2026-09-29).
+  // app's changed tools stays the Company's.
   const appAccess: WorkflowAppAccess = {
     connect: can("plugins.manage"),
     review: can("connectors.manage"),

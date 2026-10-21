@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // desktopSession is the session as this command prints it. It never carries
@@ -34,7 +34,7 @@ type desktopSessionInput struct {
 }
 
 // newDesktopSessionCmd is the desktop app's door to the daemon's own
-// session (D31). The app keeps its own session in its own store; after
+// session. The app keeps its own session in its own store; after
 // sign-in it starts the daemon's session (POST /auth/daemon-session) and
 // installs it here, and on sign-out it clears it. It is an operator
 // command: inside a Run it refuses before it touches the file.

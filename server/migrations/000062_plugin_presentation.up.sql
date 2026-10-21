@@ -1,4 +1,4 @@
--- The Codex presentation a Runtime observes for each Plugin (D26): the long
+-- The Codex presentation a Runtime observes for each Plugin: the long
 -- description, up to three suggested prompts, the brand colour, the developer
 -- and the developer's links. Like the rest of the row it is presentation only
 -- and grants nothing. A Claude observation, and one from a daemon that predates

@@ -1,4 +1,4 @@
-html[data-boardly-workspace-theme] .workspace-cta-button {
+html[data-zenith-team-workspace-theme] .workspace-cta-button {
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
   border: 1px solid transparent;
@@ -8,12 +8,12 @@ html[data-boardly-workspace-theme] .workspace-cta-button {
   font-size: 14px;
 }
 
-html[data-boardly-workspace-theme] .workspace-cta-button:hover:not(:disabled) {
+html[data-zenith-team-workspace-theme] .workspace-cta-button:hover:not(:disabled) {
   background: var(--workspace-accent-hover) !important;
   filter: none;
 }
 
-html[data-boardly-workspace-theme] .workspace-cta-button:disabled {
+html[data-zenith-team-workspace-theme] .workspace-cta-button:disabled {
   background: var(--muted) !important;
   color: var(--muted-foreground) !important;
   border-color: var(--border);

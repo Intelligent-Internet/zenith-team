@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type {
   EntityRevisionRequest,
   AgentCreateRequest,
@@ -7,7 +10,7 @@ import type {
 } from "@/shared/api/types";
 import { agentDirectoryService } from "@/shared/api/agent-directory.service";
 
-export const agentApi = boardlyApi.injectEndpoints({
+export const agentApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     createWorkspaceAgent: builder.mutation<
       Awaited<ReturnType<typeof agentDirectoryService.createAgent>>,
@@ -17,7 +20,7 @@ export const agentApi = boardlyApi.injectEndpoints({
         { id: argument.companyId, type: "Agent" },
       ],
       queryFn: (argument) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentDirectoryService.createAgent(
               argument.companyId,
@@ -42,7 +45,7 @@ export const agentApi = boardlyApi.injectEndpoints({
         request: AgentUpdateRequest;
         agentId: string;
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             agentDirectoryService.updateAgent(
               argument.companyId,
@@ -59,7 +62,7 @@ export const agentApi = boardlyApi.injectEndpoints({
 
 function agentLifecycleMutation(
   builder: Parameters<
-    typeof boardlyApi.injectEndpoints
+    typeof zenithTeamApi.injectEndpoints
   >[0]["endpoints"] extends (builder: infer T) => unknown
     ? T
     : never,
@@ -77,7 +80,7 @@ function agentLifecycleMutation(
       request: EntityRevisionRequest;
       agentId: string;
     }) =>
-      executeBoardlyQuery(
+      executeZenithTeamQuery(
         () =>
           operation === "archive"
             ? agentDirectoryService.archiveAgent(

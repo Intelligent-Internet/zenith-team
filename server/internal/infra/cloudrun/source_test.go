@@ -15,7 +15,7 @@ func TestPrepareSourceArchiveNormalizesWrappedViteProject(t *testing.T) {
 
 	source := zipFixture(t, map[string]string{
 		"generated-app/package.json": `{"scripts":{"build":"vite build"},"dependencies":{"vite":"latest"}}`,
-		"generated-app/index.html":   "<main>Boardly</main>",
+		"generated-app/index.html":   "<main>Zenith Team</main>",
 		"generated-app/src/main.tsx": "export default null",
 	})
 	digest := sha256.Sum256(source)
@@ -89,7 +89,7 @@ func TestPrepareSourceArchivePreservesUserDockerfile(t *testing.T) {
 func TestPrepareSourceArchiveAcceptsAuthoritativeSizeWithoutStoredDigest(t *testing.T) {
 	t.Parallel()
 
-	source := zipFixture(t, map[string]string{"public/index.html": "<main>Boardly</main>"})
+	source := zipFixture(t, map[string]string{"public/index.html": "<main>Zenith Team</main>"})
 	prepared, err := prepareSourceArchive(
 		t.Context(), bytes.NewReader(source), int64(len(source)), nil,
 	)
@@ -106,8 +106,8 @@ func TestPrepareSourceArchivePublishesOnlySafeStaticFiles(t *testing.T) {
 	t.Parallel()
 
 	source := zipFixture(t, map[string]string{
-		"public/index.html":         "<main>Boardly</main>",
-		"public/assets/main.js":     "console.log('Boardly')",
+		"public/index.html":         "<main>Zenith Team</main>",
+		"public/assets/main.js":     "console.log('Zenith Team')",
 		"public/assets/styles.css":  "body { color: black; }",
 		"public/content/data.json":  `{"safe":true}`,
 		"index.html":                "source entry point",
@@ -168,7 +168,7 @@ func TestPrepareSourceArchivePublishesOnlySafeStaticFiles(t *testing.T) {
 		}
 	}
 	dockerfile := files[generatedDockerfilePath]
-	if !strings.Contains(dockerfile, "COPY .boardly/site/") ||
+	if !strings.Contains(dockerfile, "COPY .zenith-team/site/") ||
 		strings.Contains(dockerfile, "COPY . /usr/share/nginx/html") {
 		t.Fatalf("generated static Dockerfile exposes the source tree: %q", dockerfile)
 	}
@@ -197,7 +197,7 @@ func TestPrepareSourceArchiveRejectsUnsafeOrMismatchedSource(t *testing.T) {
 		},
 		{
 			name:   "static archive without explicit public directory",
-			source: zipFixture(t, map[string]string{"index.html": "<main>Boardly</main>"}),
+			source: zipFixture(t, map[string]string{"index.html": "<main>Zenith Team</main>"}),
 			size:   -1,
 			digest: nil,
 		},

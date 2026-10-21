@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // StageTaskReportTurnInTx stages the Conversation projections for a
@@ -21,7 +21,14 @@ func StageTaskReportTurnInTx(
 	messageRow generated.ConversationItem,
 ) error {
 	message := messageFromRow(messageRow)
-	bumped, err := bumpConversationProjection(ctx, queries, message.ConversationID, companyID, pending, events.UserActor(actorUserID.String()))
+	bumped, err := bumpConversationProjection(
+		ctx,
+		queries,
+		message.ConversationID,
+		companyID,
+		pending,
+		events.UserActor(actorUserID.String()),
+	)
 	if err != nil {
 		return err
 	}

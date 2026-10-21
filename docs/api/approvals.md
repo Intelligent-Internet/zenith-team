@@ -15,7 +15,7 @@ Both are company-scoped and gated on **member**; a non-member gets `404`, never
 Humans resolve them over the client plane.
 
 Both resources are served. Raising one requires the ordinary bearer principal
-plus `X-Boardly-Run-Token`; the token is supplemental proof of a currently
+plus `X-Zenith-Team-Run-Token`; the token is supplemental proof of a currently
 running Run and never becomes a second user principal.
 
 ## The mechanic that matters: durable human input does not park a run
@@ -213,7 +213,7 @@ reporting what actually happened.
 {
   "id": "0197f6a0-1122-7c33-8d44-5e6f7a8b9c01",
   "status": "approved",
-  "decidedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+  "decidedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
   "decisionNote": "Fine — those are all build output.",
   "execution": {
     "status": "executed",
@@ -381,7 +381,7 @@ more prompts and, optionally, choices.
 
 ```
 POST /api/v1/companies/{companyId}/questions
-X-Boardly-Run-Token: brt_<64 lowercase hex characters>
+X-Zenith-Team-Run-Token: brt_<64 lowercase hex characters>
 Idempotency-Key: <uuid>
 {
   "title": "Which environment should this deploy to?",

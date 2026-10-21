@@ -1,0 +1,8 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Zenith Team",
+    "documentationUrl": "{{ORIGIN}}/llms.txt"
+  },
+  "entries": []
+}

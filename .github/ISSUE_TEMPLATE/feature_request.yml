@@ -1,0 +1,46 @@
+name: Feature request
+description: Suggest a new feature or a change to how Zenith Team works.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Please search [existing issues](https://github.com/Intelligent-Internet/zenith-team/issues) first.
+
+        For new features, please wait until a maintainer agrees on the direction before you open a pull request. Open-ended ideas fit better in [Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Who runs into it, and when?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What do you propose?
+      description: Describe what should happen. Mockups or examples help.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Other ways to solve the problem, including workarounds you use today.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to open a PR?
+      options:
+        - "Yes, I would like to build it"
+        - "Maybe, with some guidance"
+        - "No"
+    validations:
+      required: true

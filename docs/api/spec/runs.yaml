@@ -9,12 +9,12 @@ paths:
       tags: [runs, deliverables]
       operationId: inspectArtifactForRun
       summary: Inspect immutable Artifact evidence for a live Run
-      description: Requires the Run Authorizer's session and live Run proof. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The artifact ID pins its immutable output items and Asset Versions; no source workspace path is exposed.
+      description: Requires the Run Authorizer's session and live Run proof. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it. An Artifact the Authorizer cannot read is 404. The artifact ID pins its immutable output items and Asset Versions; no source workspace path is exposed.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - $ref: './_common.yaml#/parameters/runId'
         - $ref: '#/parameters/artifactId'
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           schema: { type: string }
@@ -31,7 +31,7 @@ paths:
       tags: [runs, deliverables]
       operationId: downloadArtifactForRun
       summary: Download a pinned Artifact file for a live consuming Run
-      description: Requires the Run Authorizer's session and live Run proof, rechecked before streaming bytes. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it (D31). An Artifact the Authorizer cannot read is 404. The runId identifies the consuming Run, not the Run that produced the Artifact. Does not redirect to storage.
+      description: Requires the Run Authorizer's session and live Run proof, rechecked before streaming bytes. Checks current Artifact access for the Run's Authorizer. Every Run, a Task Run's included, reads exactly the Artifacts its Authorizer reads, and no chat audience narrows it. An Artifact the Authorizer cannot read is 404. The runId identifies the consuming Run, not the Run that produced the Artifact. Does not redirect to storage.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - $ref: './_common.yaml#/parameters/runId'
@@ -40,7 +40,7 @@ paths:
           in: path
           required: true
           schema: { type: integer, minimum: 0, maximum: 31 }
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           schema: { type: string }
@@ -258,7 +258,7 @@ paths:
           in: path
           required: true
           schema: { type: integer, minimum: 0, maximum: 31 }
-        - name: X-Boardly-Artifact-Cache
+        - name: X-Zenith-Team-Artifact-Cache
           in: header
           description: Opt into desktop disk-cache revalidation after current artifact authorization.
           schema: { type: string, enum: [revalidate] }
@@ -313,8 +313,9 @@ paths:
         repeated query parameter is `422` API-wide, so the multi-status filter
         has to travel in one value.
 
-        Task-conversation runs are visible to every company member. Direct-
-        conversation runs are visible only to the conversation creator.
+        A task's runs are visible to the people who can read its Project, and
+        stay so after the task is deleted. Direct-conversation and Schedule
+        runs are visible only to their creator.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - $ref: './_common.yaml#/parameters/limit'
@@ -421,7 +422,7 @@ paths:
 
         A Run reads its own record here with its proof (`zen run get`), a
         Run tagged in a channel or group DM included. With
-        `X-Boardly-Run-Token` the path must name the token's own Run
+        `X-Zenith-Team-Run-Token` the path must name the token's own Run
         (`403 task_outside_run_scope`).
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
@@ -919,7 +920,7 @@ paths:
           in: header
           required: true
           schema: { type: string, format: uuid }
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: true
           schema: { type: string, minLength: 1 }
@@ -1217,7 +1218,7 @@ paths:
           in: path
           required: true
           schema: { type: integer, minimum: 0, maximum: 31 }
-        - name: X-Boardly-Artifact-Cache
+        - name: X-Zenith-Team-Artifact-Cache
           in: header
           description: Opt into desktop disk-cache revalidation after current artifact authorization.
           schema: { type: string, enum: [revalidate] }

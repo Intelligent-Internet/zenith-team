@@ -16,7 +16,7 @@ import {
   LoadFailed,
 } from "@/features/company-plan/projects/access/project-access-status";
 import { accessErrorCopy } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { CompanyRole } from "@/shared/permissions";
 import {
   Dialog,
@@ -114,7 +114,7 @@ function shownChange(row: PersonRow, role?: CompanyRole): PersonChange {
     : row.change;
 }
 
-// A Group change that asks first (Access DESIGN 6.3), as a confirm like
+// A Group change that asks first, as a confirm like
 // every other access question: the question beside a red alert when
 // someone loses a Project (else a calm pause), one compact row per person
 // (avatar, name, a plus, a neutral arrow when they keep every Project with
@@ -166,7 +166,7 @@ export function GroupChangeReview({
         setPhase({
           kind: "failed",
           message:
-            accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+            accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
             "Couldn't check change",
         });
       },
@@ -190,7 +190,7 @@ export function GroupChangeReview({
       onSavingChange?.(false);
       onSaved();
     } catch (reason) {
-      const failure = reason as Partial<BoardlyApiError>;
+      const failure = reason as Partial<ZenithTeamApiError>;
       if (failure.code && review.staleCodes.includes(failure.code)) {
         setPhase({ kind: "stale" });
       } else {

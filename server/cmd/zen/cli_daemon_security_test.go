@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 func TestWriteDaemonProcessRecordDoesNotFollowDestinationSymlink(t *testing.T) {
@@ -56,7 +56,7 @@ func TestWriteDaemonProcessRecordDoesNotFollowDestinationSymlink(t *testing.T) {
 func TestDaemonStopSignalsOnlyTheHealthVerifiedProcessInstance(t *testing.T) {
 	shortenDaemonWaits(t)
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	startedAt := time.Date(2026, time.August, 30, 9, 0, 0, 0, time.UTC)
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -77,7 +77,7 @@ func TestDaemonStopSignalsOnlyTheHealthVerifiedProcessInstance(t *testing.T) {
 	server.Start()
 	defer server.Close()
 	port := listener.Addr().(*net.TCPAddr).Port
-	t.Setenv("BOARDLY_HEALTH_PORT", strconv.Itoa(port))
+	t.Setenv("ZENITH_TEAM_HEALTH_PORT", strconv.Itoa(port))
 
 	writeRecord := func(value string) {
 		t.Helper()

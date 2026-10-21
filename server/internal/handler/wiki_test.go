@@ -11,10 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 type wikiServiceStub struct {
@@ -26,18 +26,38 @@ type wikiServiceStub struct {
 	deleteCollection func(uuid.UUID, int64) error
 }
 
-func (s *wikiServiceStub) DeleteCollection(_ context.Context, _ auth.UserPrincipal, id uuid.UUID, revision int64) error {
+func (s *wikiServiceStub) DeleteCollection(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	id uuid.UUID,
+	revision int64,
+) error {
 	return s.deleteCollection(id, revision)
 }
 
-func (s *wikiServiceStub) PublishPage(_ context.Context, _ auth.UserPrincipal, id uuid.UUID, input wiki.PublishPageInput) (wiki.PageResponse, error) {
+func (s *wikiServiceStub) PublishPage(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	id uuid.UUID,
+	input wiki.PublishPageInput,
+) (wiki.PageResponse, error) {
 	return s.publishPage(id, input)
 }
-func (s *wikiServiceStub) CreatePage(_ context.Context, _ auth.UserPrincipal, input wiki.CreatePageInput) (wiki.PageResponse, error) {
+
+func (s *wikiServiceStub) CreatePage(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	input wiki.CreatePageInput,
+) (wiki.PageResponse, error) {
 	return s.createPage(input)
 }
 
-func (s *wikiServiceStub) UpdateDraftMetadata(_ context.Context, _ auth.UserPrincipal, id uuid.UUID, input wiki.DraftMetadataInput) (wiki.Document, error) {
+func (s *wikiServiceStub) UpdateDraftMetadata(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	id uuid.UUID,
+	input wiki.DraftMetadataInput,
+) (wiki.Document, error) {
 	return s.updateMetadata(id, input)
 }
 
@@ -71,16 +91,20 @@ func TestDeleteWikiCollectionRequiresRevisionAndMapsConflict(t *testing.T) {
 	principal := phase4Principal(uuid.New(), uuid.New())
 	id := uuid.New()
 	calls := 0
-	h := wikiTestHandler(principal, nil, &wikiServiceStub{deleteCollection: func(gotID uuid.UUID, revision int64) error {
-		calls++
-		if gotID != id {
-			t.Fatalf("id = %v, want %v", gotID, id)
-		}
-		if revision == 2 {
-			return wiki.ErrCollectionConflict
-		}
-		return nil
-	}})
+	h := wikiTestHandler(
+		principal,
+		nil,
+		&wikiServiceStub{deleteCollection: func(gotID uuid.UUID, revision int64) error {
+			calls++
+			if gotID != id {
+				t.Fatalf("id = %v, want %v", gotID, id)
+			}
+			if revision == 2 {
+				return wiki.ErrCollectionConflict
+			}
+			return nil
+		}},
+	)
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/wiki/collections/" + id.String()
 	for _, tc := range []struct {
 		body   string
@@ -106,13 +130,19 @@ func TestWikiPublishRequiresExactSavedDraft(t *testing.T) {
 	t.Parallel()
 	principal := phase4Principal(uuid.New(), uuid.New())
 	var received []wiki.PublishPageInput
-	h := wikiTestHandler(principal, nil, &wikiServiceStub{publishPage: func(_ uuid.UUID, input wiki.PublishPageInput) (wiki.PageResponse, error) {
-		received = append(received, input)
-		if input.ExpectedSequence == 9 {
-			return wiki.PageResponse{}, wiki.ErrPageConflict
-		}
-		return wiki.PageResponse{}, nil
-	}})
+	h := wikiTestHandler(
+		principal,
+		nil,
+		&wikiServiceStub{
+			publishPage: func(_ uuid.UUID, input wiki.PublishPageInput) (wiki.PageResponse, error) {
+				received = append(received, input)
+				if input.ExpectedSequence == 9 {
+					return wiki.PageResponse{}, wiki.ErrPageConflict
+				}
+				return wiki.PageResponse{}, nil
+			},
+		},
+	)
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/wiki/pages/" + uuid.NewString() + "/publish"
 	for _, tc := range []struct {
 		body   string
@@ -147,10 +177,14 @@ func TestWikiDraftMetadataRequiresCompleteSavedMetadata(t *testing.T) {
 	t.Parallel()
 	principal := phase4Principal(uuid.New(), uuid.New())
 	var received []wiki.DraftMetadataInput
-	h := wikiTestHandler(principal, nil, &wikiServiceStub{updateMetadata: func(_ uuid.UUID, in wiki.DraftMetadataInput) (wiki.Document, error) {
-		received = append(received, in)
-		return wiki.Document{}, nil
-	}})
+	h := wikiTestHandler(
+		principal,
+		nil,
+		&wikiServiceStub{updateMetadata: func(_ uuid.UUID, in wiki.DraftMetadataInput) (wiki.Document, error) {
+			received = append(received, in)
+			return wiki.Document{}, nil
+		}},
+	)
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/wiki/pages/" + uuid.NewString() + "/document/metadata"
 	for _, tc := range []struct {
 		body   string
@@ -184,11 +218,21 @@ func TestWikiFavoriteRequiresTheFavoriteKey(t *testing.T) {
 		},
 	})
 	path := "/api/v1/companies/" + principal.CompanyID.String() + "/wiki/pages/" + uuid.NewString() + "/favorite"
-	if result := serveBearerJSON(h, http.MethodPut, path, []byte(`{}`)); result.Code != http.StatusUnprocessableEntity ||
+	if result := serveBearerJSON(
+		h,
+		http.MethodPut,
+		path,
+		[]byte(`{}`),
+	); result.Code != http.StatusUnprocessableEntity ||
 		!strings.Contains(result.Body.String(), "favorite") {
 		t.Fatalf("empty favorite = %d %s", result.Code, result.Body.String())
 	}
-	if result := serveBearerJSON(h, http.MethodPut, path, []byte(`{"favorite":false}`)); result.Code != http.StatusNoContent {
+	if result := serveBearerJSON(
+		h,
+		http.MethodPut,
+		path,
+		[]byte(`{"favorite":false}`),
+	); result.Code != http.StatusNoContent {
 		t.Fatalf("unfavorite = %d %s", result.Code, result.Body.String())
 	}
 	if len(received) != 1 || received[0] {
@@ -248,7 +292,13 @@ func TestWikiWritesRefuseMembersWithoutPublish(t *testing.T) {
 		result := serveBearerJSON(h, request.method, request.path, []byte(`{}`))
 		if result.Code != http.StatusForbidden ||
 			!strings.Contains(result.Body.String(), `"code":"company_permission_required"`) {
-			t.Fatalf("member %s %s = %d %s", request.method, request.path, result.Code, result.Body.String())
+			t.Fatalf(
+				"member %s %s = %d %s",
+				request.method,
+				request.path,
+				result.Code,
+				result.Body.String(),
+			)
 		}
 	}
 }
@@ -304,8 +354,12 @@ func TestWikiPageRevisionBounds(t *testing.T) {
 				revision string
 				want     int
 			}{
-				{"", 422}, {"null", 400}, {"-1", 422},
-				{"0", 200}, {"1", 200}, {"9007199254740991", 200},
+				{"", 422},
+				{"null", 400},
+				{"-1", 422},
+				{"0", 200},
+				{"1", 200},
+				{"9007199254740991", 200},
 				{"9007199254740992", 422},
 			} {
 				body := "{"
@@ -333,7 +387,13 @@ func TestWikiPageRevisionBounds(t *testing.T) {
 				response := httptest.NewRecorder()
 				router.ServeHTTP(response, request)
 				if response.Code != tc.want {
-					t.Errorf("body %s = %d %s, want %d", body, response.Code, response.Body.String(), tc.want)
+					t.Errorf(
+						"body %s = %d %s, want %d",
+						body,
+						response.Code,
+						response.Body.String(),
+						tc.want,
+					)
 				}
 			}
 		})

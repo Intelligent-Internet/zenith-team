@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
 )
 
 func TestWhiteboardCommitHintRoutesOnlyToReaders(t *testing.T) {
@@ -61,8 +61,18 @@ func TestWhiteboardHintsReachOnlyViewers(t *testing.T) {
 	}
 	to := "company_user/" + company.String() + "/" + viewer.String()
 	for seq := int64(1); seq <= 3; seq++ {
-		publish(t, bus, company, canvas.TopicBoard, canvas.EventBoardChanged,
-			canvas.BoardChanged{BoardID: board, Sequence: seq, RecipientUserIDs: []uuid.UUID{viewer, reader}})
+		publish(
+			t,
+			bus,
+			company,
+			canvas.TopicBoard,
+			canvas.EventBoardChanged,
+			canvas.BoardChanged{
+				BoardID:          board,
+				Sequence:         seq,
+				RecipientUserIDs: []uuid.UUID{viewer, reader},
+			},
+		)
 	}
 	if sent, _ := recorder.recorded(); !slices.Equal(sent, []string{to, to, to}) {
 		t.Fatalf("hints = %v; want the viewer only", sent)

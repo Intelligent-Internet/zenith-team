@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type artifactGrantRequest struct {
@@ -171,7 +171,7 @@ func (h *Handler) downloadArtifactFile(c *gin.Context) {
 // Desktop keeps disposable file bytes on disk. Every use goes through current
 // artifact authorization before reaching this helper, even for a matching tag.
 func (h *Handler) downloadResolvedArtifact(c *gin.Context, companyID, attachmentID uuid.UUID) {
-	revalidate := c.GetHeader("X-Boardly-Artifact-Cache") == "revalidate"
+	revalidate := c.GetHeader("X-Zenith-Team-Artifact-Cache") == "revalidate"
 	input := attachment.ResolvedDownloadInput{ID: attachmentID, CompanyID: companyID, OutputAccessResolved: true}
 	if revalidate {
 		prefix := `"attachment:` + attachmentID.String() + ":"

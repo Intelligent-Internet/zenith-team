@@ -10,11 +10,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Run history follows the chat a Run ran in (ADR 0017): a Task chat's Runs
@@ -122,7 +122,14 @@ func TestCancellingATaskRunNeedsExecuteInItsProject(t *testing.T) {
 	member := func(email string) auth.UserPrincipal {
 		t.Helper()
 		id := dbtest.NewUUID(t)
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`, id, email)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
+			id,
+			email,
+		)
 		dbtest.MustExec(t, ctx, pool,
 			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'admin')`,
 			fixture.CompanyA, id)
@@ -131,7 +138,15 @@ func TestCancellingATaskRunNeedsExecuteInItsProject(t *testing.T) {
 	reader, outsider := member("reader@example.com"), member("outsider@example.com")
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, reader.UserID, "project.read")
 
-	if _, err := service.Cancel(ctx, reader, run.ID, "user_cancelled"); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.Cancel(
+		ctx,
+		reader,
+		run.ID,
+		"user_cancelled",
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Errorf("Cancel(admin with project.read) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	if _, err := service.Cancel(ctx, outsider, run.ID, "user_cancelled"); !errors.Is(err, ErrRunNotFound) {

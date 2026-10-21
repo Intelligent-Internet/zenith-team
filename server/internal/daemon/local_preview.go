@@ -296,7 +296,7 @@ func (d *Daemon) prepareLocalPreview(listener net.Listener) error {
 	if err != nil {
 		return err
 	}
-	directory, err := BoardlyHome()
+	directory, err := ZenithTeamHome()
 	if err != nil {
 		return err
 	}

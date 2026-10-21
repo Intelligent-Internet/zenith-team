@@ -20,7 +20,7 @@ The chat you read and the transcript you inspect are not two records. They are t
 You can hold several independent direct chats with the same agent. Starting a new chat (a fresh `requestKey`) opens a new conversation and a new provider session without touching your earlier chats; opening a chat without a key reuses your oldest active chat with that agent, or creates one when you have none. A direct chat can carry an optional title of up to 120 characters.
 
 <Callout type="info">
-Direct conversations are creator-private even from the company owner. Two members share the same agent but see disjoint chat lists, and another member's direct chat answers as if it did not exist. This protects cloud chat visibility, not local filesystem access: the assigned machine/provider receives the Run input, and direct Runs use the shared Company workspace.
+Direct conversations are creator-private even from the company owner. Two members share the same agent but see disjoint chat lists, and another member's direct chat answers as if it did not exist. This protects chat visibility on the server, not local filesystem access: the assigned machine/provider receives the Run input, and direct Runs use the shared Company workspace.
 </Callout>
 
 ## Messages and the transcript
@@ -44,7 +44,7 @@ Items are immutable. An item is written once, with its content — there is no p
 
 Answers arrive as completed provider items, without waiting for the Run to finish. The browser receives those committed items, not individual tokens; Desktop may also show disposable local token preview. Cancelling a Run keeps every already committed item. Reasoning/tool-only items stay in the transcript, and a conversation with only those items has no answer preview in the chat list.
 
-The cloud transcript and a provider's native session are separate. Every Run receives the frozen trigger prompt, the Agent/Task brief and a bounded snapshot of the Conversation's recent chat with each message's author, so a fresh provider session still knows what was said and by whom. A resumed session receives only what it missed, and a session that could not be restored is told so. This is not full transcript replay: the agent reads older history on demand.
+The server's transcript and a provider's native session are separate. Every Run receives the frozen trigger prompt, the Agent/Task brief and a bounded snapshot of the Conversation's recent chat with each message's author, so a fresh provider session still knows what was said and by whom. A resumed session receives only what it missed, and a session that could not be restored is told so. This is not full transcript replay: the agent reads older history on demand.
 
 Every item belongs to a run — the run that consumed your words, or the run that wrote the agent's. A conversation with no agent to answer therefore refuses a message outright: a task assigned to a person, or a direct chat whose agent was deleted, cannot take one.
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Every chatgpt.com image answers 403 outside a signed-in ChatGPT session;
@@ -383,11 +383,36 @@ func TestNamedForSkipsALenderFromAnotherDeveloper(t *testing.T) {
 		publisher pluginPublisher
 		want      string
 	}{
-		{name: "another developer is skipped", borrower: "data", publisher: developer("Astronomer"), want: "https://cdn.test/astronomer-data.png"},
-		{name: "only contradicting lenders lend nothing", borrower: "data", publisher: developer("Snowflake"), want: ""},
-		{name: "a longer spelling of one developer agrees", borrower: "notion", publisher: developer("Notion Labs"), want: "https://cdn.test/notion.png"},
-		{name: "a borrower without a developer takes the first lender", borrower: "data", publisher: pluginPublisher{}, want: "https://cdn.test/openai-data.png"},
-		{name: "a lender without a developer never contradicts", borrower: "miro", publisher: developer("Miro"), want: "https://cdn.test/miro-app.png"},
+		{
+			name:      "another developer is skipped",
+			borrower:  "data",
+			publisher: developer("Astronomer"),
+			want:      "https://cdn.test/astronomer-data.png",
+		},
+		{
+			name:      "only contradicting lenders lend nothing",
+			borrower:  "data",
+			publisher: developer("Snowflake"),
+			want:      "",
+		},
+		{
+			name:      "a longer spelling of one developer agrees",
+			borrower:  "notion",
+			publisher: developer("Notion Labs"),
+			want:      "https://cdn.test/notion.png",
+		},
+		{
+			name:      "a borrower without a developer takes the first lender",
+			borrower:  "data",
+			publisher: pluginPublisher{},
+			want:      "https://cdn.test/openai-data.png",
+		},
+		{
+			name:      "a lender without a developer never contradicts",
+			borrower:  "miro",
+			publisher: developer("Miro"),
+			want:      "https://cdn.test/miro-app.png",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

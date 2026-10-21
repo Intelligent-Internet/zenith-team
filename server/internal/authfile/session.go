@@ -135,7 +135,7 @@ func Refresh(ctx context.Context, doer Doer, credential Credential) (Credential,
 	request.Header.Set("Content-Type", "application/json")
 	response, err := doer.Do(request)
 	if err != nil {
-		return Credential{}, fmt.Errorf("refresh boardly session: %w", err)
+		return Credential{}, fmt.Errorf("refresh zenith-team session: %w", err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
@@ -144,8 +144,8 @@ func Refresh(ctx context.Context, doer Doer, credential Credential) (Credential,
 	return DecodeSession(credential, response.Body)
 }
 
-// MintDaemonSession asks the server for the daemon's own session (D31,
-// POST /auth/daemon-session) with a person's credential, and returns it for
+// MintDaemonSession asks the server for the daemon's own session
+// (POST /auth/daemon-session) with a person's credential, and returns it for
 // the same API URL. The caller stores it in daemon-auth.json. The person's
 // credential must hold a valid access token; Ensure it first.
 func MintDaemonSession(ctx context.Context, doer Doer, person Credential) (Credential, error) {
@@ -219,7 +219,7 @@ func DecodeSession(base Credential, body io.Reader) (Credential, error) {
 		} `json:"session"`
 	}
 	if err := json.NewDecoder(io.LimitReader(body, 1<<20)).Decode(&payload); err != nil {
-		return Credential{}, fmt.Errorf("decode boardly session response: %w", err)
+		return Credential{}, fmt.Errorf("decode zenith-team session response: %w", err)
 	}
 	return sessionCredential(base, payload.Session.Transport, payload.Session.AccessToken,
 		payload.Session.RefreshToken, payload.Session.AccessExpiresAt, payload.Session.RefreshExpiresAt)
@@ -231,15 +231,15 @@ func sessionCredential(
 ) (Credential, error) {
 	if transport != "bearer" || strings.TrimSpace(accessToken) == "" ||
 		strings.TrimSpace(refreshToken) == "" {
-		return Credential{}, errors.New("boardly session response is invalid")
+		return Credential{}, errors.New("zenith-team session response is invalid")
 	}
 	accessExpiry, err := time.Parse(time.RFC3339, accessExpiresAt)
 	if err != nil {
-		return Credential{}, errors.New("boardly session access expiry is invalid")
+		return Credential{}, errors.New("zenith-team session access expiry is invalid")
 	}
 	refreshExpiry, err := time.Parse(time.RFC3339, refreshExpiresAt)
 	if err != nil {
-		return Credential{}, errors.New("boardly session refresh expiry is invalid")
+		return Credential{}, errors.New("zenith-team session refresh expiry is invalid")
 	}
 	version := base.Version
 	if version == 0 {
@@ -262,13 +262,13 @@ func SessionURL(baseURL, path string) (string, error) {
 	base, err := url.Parse(strings.TrimSpace(baseURL))
 	if err != nil || (base.Scheme != "http" && base.Scheme != "https") || base.User != nil ||
 		base.RawQuery != "" || base.Fragment != "" || base.Path != "/api/v1" {
-		return "", errors.New("boardly API URL in the credential file is invalid")
+		return "", errors.New("zenith-team API URL in the credential file is invalid")
 	}
 	if base.Scheme == "http" && !isLoopbackHost(base.Hostname()) {
-		return "", errors.New("boardly API URL must use HTTPS unless it is loopback")
+		return "", errors.New("zenith-team API URL must use HTTPS unless it is loopback")
 	}
 	if !strings.HasPrefix(path, "/") {
-		return "", errors.New("boardly API path is invalid")
+		return "", errors.New("zenith-team API path is invalid")
 	}
 	return base.JoinPath(path).String(), nil
 }
@@ -295,5 +295,5 @@ func sessionError(response *http.Response) error {
 	if response.StatusCode == http.StatusUnauthorized {
 		return fmt.Errorf("%w (%s); run `zen auth login` again", ErrSessionRejected, detail)
 	}
-	return fmt.Errorf("boardly session request failed: %s", detail)
+	return fmt.Errorf("zenith-team session request failed: %s", detail)
 }

@@ -1,7 +1,7 @@
-# Groups (Access TECH D3). Authored domain section of the Zenith Team API
-# contract. docs/api/spec/openapi.yaml is the index that references it, and
+# Groups. Authored domain section of the Zenith Team API contract.
+# docs/api/spec/openapi.yaml is the index that references it, and
 # docs/api/groups.md is its prose counterpart. A Group's grant on a Project
-# is a Project route (projects.yaml, D4).
+# is a Project route (projects.yaml).
 
 paths:
   groups:

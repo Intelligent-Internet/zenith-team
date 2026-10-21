@@ -45,9 +45,16 @@ func (p *HTTPRoomProvider) DispatchHuddleAI(ctx context.Context, room string, id
 			return nil
 		}
 	}
-	_, err = p.callService(ctx, "AgentDispatchService", "CreateDispatch", room, map[string]any{"room": room, "agentName": "zenith-helia", "metadata": id.String()})
+	_, err = p.callService(
+		ctx,
+		"AgentDispatchService",
+		"CreateDispatch",
+		room,
+		map[string]any{"room": room, "agentName": "zenith-helia", "metadata": id.String()},
+	)
 	return err
 }
+
 func (p *HTTPRoomProvider) RemoveHuddleAI(ctx context.Context, room string, id uuid.UUID) error {
 	ready, err := p.RoomReady(ctx, room)
 	if err != nil {
@@ -62,7 +69,13 @@ func (p *HTTPRoomProvider) RemoveHuddleAI(ctx context.Context, room string, id u
 	}
 	for _, row := range rows {
 		if row.Metadata == id.String() {
-			if _, err = p.callService(ctx, "AgentDispatchService", "DeleteDispatch", room, map[string]any{"room": room, "dispatchId": row.ID}); err != nil {
+			if _, err = p.callService(
+				ctx,
+				"AgentDispatchService",
+				"DeleteDispatch",
+				room,
+				map[string]any{"room": room, "dispatchId": row.ID},
+			); err != nil {
 				return err
 			}
 		}
@@ -104,7 +117,13 @@ func (p *HTTPRoomProvider) DispatchHuddleNotes(ctx context.Context, room string,
 			return nil
 		}
 	}
-	_, err = p.callService(ctx, "AgentDispatchService", "CreateDispatch", room, map[string]any{"room": room, "agentName": "zenith-helia", "metadata": metadata})
+	_, err = p.callService(
+		ctx,
+		"AgentDispatchService",
+		"CreateDispatch",
+		room,
+		map[string]any{"room": room, "agentName": "zenith-helia", "metadata": metadata},
+	)
 	return err
 }
 
@@ -120,7 +139,13 @@ func (p *HTTPRoomProvider) RemoveHuddleNotes(ctx context.Context, room string, i
 	}
 	for _, row := range rows {
 		if row.Metadata == "notes:"+id.String() {
-			if _, err = p.callService(ctx, "AgentDispatchService", "DeleteDispatch", room, map[string]any{"room": room, "dispatchId": row.ID}); err != nil {
+			if _, err = p.callService(
+				ctx,
+				"AgentDispatchService",
+				"DeleteDispatch",
+				room,
+				map[string]any{"room": room, "dispatchId": row.ID},
+			); err != nil {
 				return err
 			}
 		}
@@ -139,7 +164,13 @@ func (p *HTTPRoomProvider) RemoveHuddleNotes(ctx context.Context, room string, i
 	}
 	for _, participant := range response.Participants {
 		if participant.Identity == "notes:"+id.String() {
-			_, err = p.callService(ctx, "RoomService", "RemoveParticipant", room, map[string]any{"room": room, "identity": participant.Identity})
+			_, err = p.callService(
+				ctx,
+				"RoomService",
+				"RemoveParticipant",
+				room,
+				map[string]any{"room": room, "identity": participant.Identity},
+			)
 			return err
 		}
 	}

@@ -14,7 +14,7 @@ const {
 
 const shellEnvKeys = new Set(Object.keys(process.env));
 const desktopEnvironment = normalizeDesktopEnvironment(
-  process.env.BOARDLY_DESKTOP_ENV,
+  process.env.ZENITH_TEAM_DESKTOP_ENV,
 );
 loadElectronEnvFiles({
   files: desktopEnvironment === "dev" ? DEV_ENV_FILES : PROD_ENV_FILES,
@@ -34,9 +34,9 @@ writeReleaseEnvFile({ env: forgeEnv });
 const forgeProcess = spawnPnpm(["exec", "electron-forge", ...forgeArgs], {
   env: {
     ...forgeEnv,
-    BOARDLY_DESKTOP_ENV: desktopEnvironment,
-    BOARDLY_DESKTOP_TARGET_PLATFORM:
-      process.env.BOARDLY_DESKTOP_TARGET_PLATFORM ??
+    ZENITH_TEAM_DESKTOP_ENV: desktopEnvironment,
+    ZENITH_TEAM_DESKTOP_TARGET_PLATFORM:
+      process.env.ZENITH_TEAM_DESKTOP_TARGET_PLATFORM ??
       targetPlatform ??
       process.platform,
     // Forge only uses the package manager for its environment check here.
@@ -69,7 +69,7 @@ function createForgeEnv({ shellEnvKeys, targetPlatform }) {
   applyLocalMacSigningDefaults({
     env,
     shellEnvKeys,
-    targetPlatform: env.BOARDLY_DESKTOP_TARGET_PLATFORM ??
+    targetPlatform: env.ZENITH_TEAM_DESKTOP_TARGET_PLATFORM ??
       targetPlatform ??
       process.platform,
   });

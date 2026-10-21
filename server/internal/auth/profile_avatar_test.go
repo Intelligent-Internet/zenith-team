@@ -55,7 +55,9 @@ func TestProfileAvatarValidatesImageDataAndDimensions(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := normalizeProfileInput(UpdateProfileInput{DisplayName: "Member", AvatarDataURL: &test.value})
+			got, err := normalizeProfileInput(
+				UpdateProfileInput{DisplayName: "Member", AvatarDataURL: &test.value},
+			)
 			if test.wantError {
 				if !errors.Is(err, ErrInvalidInput) {
 					t.Fatalf("avatar error = %v, want ErrInvalidInput", err)

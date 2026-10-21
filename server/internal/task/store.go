@@ -9,13 +9,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // This file holds the Task domain's sqlc calls. Every function takes the query
@@ -154,7 +154,7 @@ func insertTaskWithConversation(
 		AssigneeUserID:            input.Assignee.ID,
 		ExecutedByAgentID:         util.NullUUIDFromPtr(executedByAgentID(*input.ExecutedBy)),
 		// A Task a Run creates keeps the member as its creator and also names
-		// the Run's Agent (IA-FR5). The member's own Task still runs with
+		// the Run's Agent. The member's own Task still runs with
 		// the Company's root Agent (task_run_agents).
 		CreatorUserID:  uuid.NullUUID{UUID: principal.UserID, Valid: true},
 		CreatorAgentID: input.Run.creatorAgentID(),

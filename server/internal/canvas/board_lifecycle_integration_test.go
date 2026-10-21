@@ -16,8 +16,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // A lock stops movement, not membership: undoing a frame deletion puts a
@@ -34,13 +34,23 @@ func TestBoardLockedObjectsFollowFrameUndoWithoutMoving(t *testing.T) {
 	}
 	child := stickyCommand("note", "Pinned")
 	child.ParentRef = "frame"
-	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{frame, child}})
+	created, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{frame, child}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	note, parent := created.IDs["note"], created.IDs["frame"]
 	if _, err = s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{
-		{Type: "content", ID: &note, ExpectedRevision: 1, Properties: &BoardProperties{Color: "#fef08a", Locked: true}},
+		{
+			Type:             "content",
+			ID:               &note,
+			ExpectedRevision: 1,
+			Properties:       &BoardProperties{Color: "#fef08a", Locked: true},
+		},
 	}}); err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +149,15 @@ func TestBoardCommandsNameMissingObjects(t *testing.T) {
 		},
 		"unknown edge": {Type: "update_edge", ID: &unknown, ExpectedRevision: 1, Label: "x"},
 	} {
-		if _, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{command}}); !errors.Is(err, ErrBoardItemNotFound) {
+		if _, err := s.Mutate(
+			ctx,
+			p,
+			scope,
+			BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{command}},
+		); !errors.Is(
+			err,
+			ErrBoardItemNotFound,
+		) {
 			t.Errorf("%s = %v, want ErrBoardItemNotFound", name, err)
 		}
 	}
@@ -159,11 +177,24 @@ func TestBoardRequestKeyReuseIsRefused(t *testing.T) {
 	key := uuid.New()
 	board := createTestBoard(t, s, p)
 	scope := BoardScope{BoardID: board.ID}
-	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: key, Commands: []BoardCommand{stickyCommand("a", "one")}})
+	created, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: key, Commands: []BoardCommand{stickyCommand("a", "one")}},
+	)
 	if err != nil || created.Replayed {
 		t.Fatalf("first batch = %+v, %v", created, err)
 	}
-	if _, err = s.Mutate(ctx, p, scope, BoardBatch{RequestKey: key, Commands: []BoardCommand{stickyCommand("a", "two")}}); !errors.Is(err, ErrBoardRequestKeyReused) {
+	if _, err = s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: key, Commands: []BoardCommand{stickyCommand("a", "two")}},
+	); !errors.Is(
+		err,
+		ErrBoardRequestKeyReused,
+	) {
 		t.Fatalf("batch with a reused key = %v", err)
 	}
 	note := created.IDs["a"]
@@ -182,10 +213,23 @@ func TestBoardRequestKeyReuseIsRefused(t *testing.T) {
 		return doc.EncodeStateAsUpdate()
 	}
 	textKey := uuid.New()
-	if _, err = s.Text(ctx, p, scope, BoardTextInput{RequestKey: textKey, ItemID: note, LifecycleRevision: 1, Update: update("A ")}); err != nil {
+	if _, err = s.Text(
+		ctx,
+		p,
+		scope,
+		BoardTextInput{RequestKey: textKey, ItemID: note, LifecycleRevision: 1, Update: update("A ")},
+	); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = s.Text(ctx, p, scope, BoardTextInput{RequestKey: textKey, ItemID: note, LifecycleRevision: 1, Update: update("B ")}); !errors.Is(err, ErrBoardRequestKeyReused) {
+	if _, err = s.Text(
+		ctx,
+		p,
+		scope,
+		BoardTextInput{RequestKey: textKey, ItemID: note, LifecycleRevision: 1, Update: update("B ")},
+	); !errors.Is(
+		err,
+		ErrBoardRequestKeyReused,
+	) {
 		t.Fatalf("text with a reused key = %v", err)
 	}
 }
@@ -198,10 +242,23 @@ func TestBoardNoteSizeLimitsReportTheLimit(t *testing.T) {
 	board := createTestBoard(t, s, p)
 	scope := BoardScope{BoardID: board.ID}
 	long := strings.Repeat("x", boardMaxNoteText+1)
-	if _, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", long)}}); !errors.Is(err, ErrBoardLimit) {
+	if _, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", long)}},
+	); !errors.Is(
+		err,
+		ErrBoardLimit,
+	) {
 		t.Fatalf("oversized sticky = %v, want ErrBoardLimit", err)
 	}
-	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "short")}})
+	created, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "short")}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +300,12 @@ func TestBoardChangeFeedKeepsRecentCommits(t *testing.T) {
 	ctx := t.Context()
 	board := createTestBoard(t, s, p)
 	scope := BoardScope{BoardID: board.ID}
-	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "busy")}})
+	created, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "busy")}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,12 +325,24 @@ func TestBoardChangeFeedKeepsRecentCommits(t *testing.T) {
 	if err != nil || delta.Full || len(delta.Items) != 1 || delta.Items[0].X != 1099 {
 		t.Fatalf("delta across 1,100 commits = full %t, %d items, %v", delta.Full, len(delta.Items), err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE board_changes SET created_at=now()-interval '11 minutes' WHERE board_id=$1`, board.ID)
-	if _, err = s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("b", "next")}}); err != nil {
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE board_changes SET created_at=now()-interval '11 minutes' WHERE board_id=$1`,
+		board.ID,
+	)
+	if _, err = s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("b", "next")}},
+	); err != nil {
 		t.Fatal(err)
 	}
 	var kept int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM board_changes WHERE board_id=$1`, board.ID).Scan(&kept); err != nil ||
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM board_changes WHERE board_id=$1`, board.ID).
+		Scan(&kept); err != nil ||
 		kept > boardChangeFeed+1 {
 		t.Fatalf("feed after the window = %d rows, %v; want old commits compacted", kept, err)
 	}
@@ -282,7 +356,12 @@ func TestBoardReadsDoNotWaitForWriters(t *testing.T) {
 	ctx := t.Context()
 	board := createTestBoard(t, s, p)
 	scope := BoardScope{BoardID: board.ID}
-	created, err := s.Mutate(ctx, p, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "read me")}})
+	created, err := s.Mutate(
+		ctx,
+		p,
+		scope,
+		BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{stickyCommand("a", "read me")}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,7 +378,12 @@ func TestBoardReadsDoNotWaitForWriters(t *testing.T) {
 	if snapshot, err := s.Snapshot(bounded, p, scope, 0); err != nil || snapshot.Sequence != created.Sequence {
 		t.Fatalf("snapshot under a writer = %+v, %v", snapshot, err)
 	}
-	if _, err := s.Hydrate(bounded, p, scope, BoardHydrateInput{ItemIDs: []uuid.UUID{created.IDs["a"]}}); err != nil {
+	if _, err := s.Hydrate(
+		bounded,
+		p,
+		scope,
+		BoardHydrateInput{ItemIDs: []uuid.UUID{created.IDs["a"]}},
+	); err != nil {
 		t.Fatalf("hydrate under a writer = %v", err)
 	}
 	if _, err := s.Context(bounded, p, scope, BoardContextInput{}); err != nil {
@@ -347,15 +431,31 @@ func TestBoardContextFitsEscapedTextIntoItsBudget(t *testing.T) {
 	for i := range 20 {
 		commands = append(commands, stickyCommand(fmt.Sprint("idea-", i), fmt.Sprint("Ý tưởng số ", i)))
 	}
-	if _, err := s.Mutate(ctx, p, BoardScope{BoardID: board.ID}, BoardBatch{RequestKey: uuid.New(), Commands: commands}); err != nil {
+	if _, err := s.Mutate(
+		ctx,
+		p,
+		BoardScope{BoardID: board.ID},
+		BoardBatch{RequestKey: uuid.New(), Commands: commands},
+	); err != nil {
 		t.Fatal(err)
 	}
-	read, err := s.Context(ctx, p, BoardScope{BoardID: board.ID}, BoardContextInput{MaxItems: 200, MaxBytes: 131072})
+	read, err := s.Context(
+		ctx,
+		p,
+		BoardScope{BoardID: board.ID},
+		BoardContextInput{MaxItems: 200, MaxBytes: 131072},
+	)
 	if err != nil {
 		t.Fatalf("context with escaped notes = %v", err)
 	}
 	raw, err := json.Marshal(read)
 	if err != nil || len(raw) > 131072 || len(read.Items) == 0 || !read.Truncated {
-		t.Fatalf("context = %d bytes, %d items, truncated %t, %v", len(raw), len(read.Items), read.Truncated, err)
+		t.Fatalf(
+			"context = %d bytes, %d items, truncated %t, %v",
+			len(raw),
+			len(read.Items),
+			read.Truncated,
+			err,
+		)
 	}
 }

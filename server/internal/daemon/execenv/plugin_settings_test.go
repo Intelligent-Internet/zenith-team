@@ -10,7 +10,11 @@ import (
 func TestClaudePluginDenialsComposeWithRunLocalPermissions(t *testing.T) {
 	dir := t.TempDir()
 	base := filepath.Join(dir, "settings.json")
-	if err := os.WriteFile(base, []byte(`{"permissions":{"deny":["Write(//readonly/**)"]},"skillOverrides":{"design":"off"}}`), 0600); err != nil {
+	if err := os.WriteFile(
+		base,
+		[]byte(`{"permissions":{"deny":["Write(//readonly/**)"]},"skillOverrides":{"design":"off"}}`),
+		0o600,
+	); err != nil {
 		t.Fatal(err)
 	}
 	result, err := prepareClaudePluginSettings(dir, base, []string{"design@local"})
@@ -34,7 +38,10 @@ func TestClaudePluginDenialsComposeWithRunLocalPermissions(t *testing.T) {
 		t.Fatalf("settings = %s", data)
 	}
 	untouched, err := os.ReadFile(base)
-	if err != nil || string(untouched) != `{"permissions":{"deny":["Write(//readonly/**)"]},"skillOverrides":{"design":"off"}}` {
+	if err != nil ||
+		string(
+			untouched,
+		) != `{"permissions":{"deny":["Write(//readonly/**)"]},"skillOverrides":{"design":"off"}}` {
 		t.Fatal("base settings mutated")
 	}
 }

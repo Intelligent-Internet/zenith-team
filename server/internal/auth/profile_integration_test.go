@@ -12,9 +12,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestUpdateProfileAvatarPersistsWithoutCompanyAndHonorsRevision(t *testing.T) {
@@ -29,7 +29,13 @@ func TestUpdateProfileAvatarPersistsWithoutCompanyAndHonorsRevision(t *testing.T
 	}
 	fixture := dbtest.SeedFixture(t, ctx, pool)
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM company_members WHERE user_id=$1`, fixture.UserA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE users SET avatar_url='https://example.com/original.png' WHERE id=$1`, fixture.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE users SET avatar_url='https://example.com/original.png' WHERE id=$1`,
+		fixture.UserA,
+	)
 	bus := authTestBus(t)
 	eventLog := recordTopic[UserResponse](t, bus, TopicUser)
 	service := &DefaultAuthService{store: store, bus: bus}
@@ -42,7 +48,8 @@ func TestUpdateProfileAvatarPersistsWithoutCompanyAndHonorsRevision(t *testing.T
 	input.ExpectedRevision = preserved.Version
 	input.AvatarDataURL = &avatar
 	updated, err := service.UpdateProfile(ctx, fixture.UserA, input)
-	if err != nil || updated.AvatarURL == nil || *updated.AvatarURL != avatar || updated.Version != preserved.Version+1 {
+	if err != nil || updated.AvatarURL == nil || *updated.AvatarURL != avatar ||
+		updated.Version != preserved.Version+1 {
 		t.Fatalf("avatar update did not persist: %v", err)
 	}
 	fresh, err := service.CurrentUser(ctx, fixture.UserA)
@@ -236,30 +243,30 @@ func TestUpdateProfileValidatesDisplayNameAndBiography(t *testing.T) {
 	for name, input := range map[string]UpdateProfileInput{
 		"empty name":      {ExpectedRevision: 1, DisplayName: " \u3000", Biography: ""},
 		"name characters": {ExpectedRevision: 1, DisplayName: strings.Repeat("a", 121), Biography: ""},
-		"bio characters":  {ExpectedRevision: 1, DisplayName: "Quy", Biography: strings.Repeat("a", 1201)},
-		"bio lines":       {ExpectedRevision: 1, DisplayName: "Quy", Biography: strings.Repeat("x\n", 12) + "x"},
-		"bio NUL":         {ExpectedRevision: 1, DisplayName: "Quy", Biography: "before\x00after"},
-		"invalid UTF-8":   {ExpectedRevision: 1, DisplayName: "Quy", Biography: string([]byte{0xff})},
+		"bio characters":  {ExpectedRevision: 1, DisplayName: "Sam", Biography: strings.Repeat("a", 1201)},
+		"bio lines":       {ExpectedRevision: 1, DisplayName: "Sam", Biography: strings.Repeat("x\n", 12) + "x"},
+		"bio NUL":         {ExpectedRevision: 1, DisplayName: "Sam", Biography: "before\x00after"},
+		"invalid UTF-8":   {ExpectedRevision: 1, DisplayName: "Sam", Biography: string([]byte{0xff})},
 		"country only": {
-			ExpectedRevision: 1, DisplayName: "Quy", PhoneCountryISO2: stringPointer("VN"),
+			ExpectedRevision: 1, DisplayName: "Sam", PhoneCountryISO2: stringPointer("VN"),
 		},
 		"number only": {
-			ExpectedRevision: 1, DisplayName: "Quy", PhoneNumber: stringPointer("912345678"),
+			ExpectedRevision: 1, DisplayName: "Sam", PhoneNumber: stringPointer("912345678"),
 		},
 		"country shape": {
-			ExpectedRevision: 1, DisplayName: "Quy",
+			ExpectedRevision: 1, DisplayName: "Sam",
 			PhoneCountryISO2: stringPointer("VNM"), PhoneNumber: stringPointer("912345678"),
 		},
 		"unsupported country": {
-			ExpectedRevision: 1, DisplayName: "Quy",
+			ExpectedRevision: 1, DisplayName: "Sam",
 			PhoneCountryISO2: stringPointer("ZZ"), PhoneNumber: stringPointer("912345678"),
 		},
 		"phone characters": {
-			ExpectedRevision: 1, DisplayName: "Quy",
+			ExpectedRevision: 1, DisplayName: "Sam",
 			PhoneCountryISO2: stringPointer("VN"), PhoneNumber: stringPointer("912-345-678"),
 		},
 		"phone length": {
-			ExpectedRevision: 1, DisplayName: "Quy",
+			ExpectedRevision: 1, DisplayName: "Sam",
 			PhoneCountryISO2: stringPointer("VN"), PhoneNumber: stringPointer(strings.Repeat("1", 16)),
 		},
 	} {

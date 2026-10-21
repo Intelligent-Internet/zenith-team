@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 const (
@@ -113,7 +113,7 @@ func (d *Daemon) localPluginRefreshHandler() http.HandlerFunc {
 // localPluginReadHandler answers the desktop plugin page with a live read.
 // Codex apps carry the logo the daemon's own app catalog observed for them
 // when it loads outside a ChatGPT session; a session-only one is left out so
-// the page keeps the loadable logo the server chose for that app (D26).
+// the page keeps the loadable logo the server chose for that app.
 func (d *Daemon) localPluginReadHandler() http.HandlerFunc {
 	return d.localCapabilityOperationHandler(func(r *http.Request, request localCapabilityRequest) (any, error) {
 		if !validLocalNativeID(request.NativeID) {

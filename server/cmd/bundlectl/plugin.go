@@ -15,16 +15,16 @@ import (
 	"strconv"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/platformbundle"
-	"boardly.dev/boardly/server/internal/workflow"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/workflow"
 )
 
-// The Boardly parts of a plugin, relative to plugins/<name>/ (ADR 0016).
+// The Zenith Team parts of a plugin, relative to plugins/<name>/ (ADR 0016).
 const (
 	manifestPath     = ".boardly-plugin/plugin.json"
 	retiredKeysPath  = ".boardly-plugin/retired-keys.json"
@@ -161,7 +161,7 @@ func parseManifest(raw []byte, plugin string) (pluginManifest, []string) {
 			`workflows.path must be "./boardly/workflows" or managedTools.path must be "./boardly/managed-tools"`,
 		)
 	case manifest.Workflows != nil && manifest.ManagedTools != nil:
-		problems = append(problems, "a plugin must declare exactly one Boardly component")
+		problems = append(problems, "a plugin must declare exactly one Zenith Team component")
 	case manifest.ManagedTools != nil && manifest.ManagedTools.Path != "./"+managedToolsPath:
 		problems = append(problems, `managedTools.path must be "./boardly/managed-tools"`)
 	case manifest.Workflows != nil && manifest.Workflows.Path != "./"+workflowsPath:
@@ -196,7 +196,7 @@ func parseRetiredKeys(raw []byte) ([]string, []string) {
 	return keys, nil
 }
 
-// pluginSource is one plugin's Boardly parts as its author wrote them, read
+// pluginSource is one plugin's Zenith Team parts as its author wrote them, read
 // from a folder on disk or from a tagged commit.
 type pluginSource struct {
 	// display is the plugin's folder as problems name it: the argument the
@@ -224,7 +224,7 @@ func (source pluginSource) component() contentbundle.ComponentType {
 
 func (source pluginSource) contentPath() string { return contentbundle.ContentPath(source.component()) }
 
-// acceptsFile binds all Boardly content to the manifest's single component.
+// acceptsFile binds all Zenith Team content to the manifest's single component.
 func (source *pluginSource) acceptsFile(name string) bool {
 	if strings.HasPrefix(name, source.contentPath()+"/") {
 		return true
@@ -292,7 +292,7 @@ func readPluginDir(ctx context.Context, dir, display string) pluginSource {
 	for _, inner := range []string{".boardly-plugin", "boardly", workflowsPath, managedToolsPath} {
 		info, err := os.Lstat(filepath.Join(absolute, inner))
 		if err == nil && info.Mode()&fs.ModeSymlink != 0 {
-			source.fail(inner, "is a symlink; a plugin's Boardly folders are real directories")
+			source.fail(inner, "is a symlink; a plugin's Zenith Team folders are real directories")
 			return source
 		}
 	}
@@ -439,7 +439,7 @@ func readPluginCommit(ctx context.Context, repo *gitRepository, commit, plugin s
 			// tree: a symlink, a file or a submodule in its place.
 			source.fail(
 				relative,
-				"has git mode %s; a plugin's Boardly folders are real directories",
+				"has git mode %s; a plugin's Zenith Team folders are real directories",
 				entry.mode,
 			)
 			continue

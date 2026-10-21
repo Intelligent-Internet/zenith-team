@@ -7,8 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/calendar"
 	"github.com/gin-gonic/gin"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
 )
 
 func TestCalendarRequestBindingPreservesEventFieldsAndRevision(t *testing.T) {
@@ -67,14 +68,48 @@ func TestCalendarErrorContracts(t *testing.T) {
 		status       int
 		detail, code string
 	}{
-		{"calendar not found", writeCalendarError, calendar.ErrNotFound, 404, "calendar event not found", "calendar_not_found"},
-		{"calendar invalid", writeCalendarError, calendar.ErrInvalid, 422, "check the event fields, time zone and date range", "calendar_invalid"},
-		{"calendar conflict", writeCalendarError, calendar.ErrConflict, 409, "this event changed; refresh before saving", "calendar_conflict"},
-		{"calendar range", writeCalendarError, calendar.ErrRange, 422, "choose a smaller calendar date range", "calendar_range_exceeded"},
+		{
+			"calendar not found",
+			writeCalendarError,
+			calendar.ErrNotFound,
+			404,
+			"calendar event not found",
+			"calendar_not_found",
+		},
+		{
+			"calendar invalid",
+			writeCalendarError,
+			calendar.ErrInvalid,
+			422,
+			"check the event fields, time zone and date range",
+			"calendar_invalid",
+		},
+		{
+			"calendar conflict",
+			writeCalendarError,
+			calendar.ErrConflict,
+			409,
+			"this event changed; refresh before saving",
+			"calendar_conflict",
+		},
+		{
+			"calendar range",
+			writeCalendarError,
+			calendar.ErrRange,
+			422,
+			"choose a smaller calendar date range",
+			"calendar_range_exceeded",
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			assertMappedErrorResponse(t, func(c *gin.Context) { tt.write(c, errors.Join(errors.New("private provider detail"), tt.sentinel)) }, tt.status, tt.detail, tt.code)
+			assertMappedErrorResponse(
+				t,
+				func(c *gin.Context) { tt.write(c, errors.Join(errors.New("private provider detail"), tt.sentinel)) },
+				tt.status,
+				tt.detail,
+				tt.code,
+			)
 		})
 	}
 }
@@ -94,7 +129,13 @@ func TestCalendarCustomRecurrenceBinding(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			c, _ := gin.CreateTestContext(httptest.NewRecorder())
-			c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"type":"event","title":"Review","color":"sage","startLocal":"2026-09-23T09:00","endLocal":"2026-09-23T10:00","timeZone":"UTC","recurrence":"weekly",`+tt.fields+`}`))
+			c.Request = httptest.NewRequest(
+				http.MethodPost,
+				"/",
+				bytes.NewBufferString(
+					`{"type":"event","title":"Review","color":"sage","startLocal":"2026-09-23T09:00","endLocal":"2026-09-23T10:00","timeZone":"UTC","recurrence":"weekly",`+tt.fields+`}`,
+				),
+			)
 			c.Request.Header.Set("Content-Type", "application/json")
 			request, err := bindRequest[calendarCreateRequest](c, 4096)
 			if (err == nil) != tt.wantValid {
@@ -102,7 +143,9 @@ func TestCalendarCustomRecurrenceBinding(t *testing.T) {
 			}
 			if tt.wantValid {
 				got := request.input()
-				if got.RecurrenceInterval != 2 || len(got.RecurrenceWeekdays) != 2 || got.RecurrenceCount == nil || *got.RecurrenceCount != 13 {
+				if got.RecurrenceInterval != 2 || len(got.RecurrenceWeekdays) != 2 ||
+					got.RecurrenceCount == nil ||
+					*got.RecurrenceCount != 13 {
 					t.Fatalf("custom fields lost: %+v", got)
 				}
 			}

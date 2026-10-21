@@ -4,8 +4,8 @@ package agent
 // active member may create one on a runtime they may use; changing one
 // afterwards — configuration, binding, archive, restore — is for the member
 // who created it and for the holders of agents.manage (the Company's owners
-// and admins, ADR 0012). The rule mirrors the reference architecture's "only
-// the agent owner can manage this agent, or an admin", with the creator
+// and admins, ADR 0012). The rule is "only the agent's owner, or an admin,
+// can manage this agent", with the creator
 // standing in for an owner the Company-owned Agent does not have. The root
 // Agent is the exception both ways: creating and configuring it need
 // agents.manage, so an onboarding owner who is later demoted does not keep
@@ -14,16 +14,16 @@ package agent
 import (
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// AgentAccess is the viewer's server-derived standing on one Agent, sent on
+// Access is the viewer's server-derived standing on one Agent, sent on
 // every Agent projection so a client renders controls from it instead of
 // reconstructing permission from a role. It is the viewer's, not the row's:
 // a lifecycle event carries the acting member's verdict, and a client
 // applying such a frame keeps its own.
-type AgentAccess struct {
+type Access struct {
 	// Configure: the viewer may update, archive or restore the Agent.
 	Configure bool `json:"configure"`
 	// Execute: the viewer has the Agent set up on one of their own runtimes

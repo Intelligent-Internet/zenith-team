@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // testProjectFrame is a payload the stamp can decide for: scoped says whether
@@ -157,12 +157,21 @@ func TestStampProjectAudiencesDecidesEachBranch(t *testing.T) {
 		payload        testProjectFrame
 		want           *ProjectAudience
 	}{
-		{"payload names a restricted Project", uuid.Nil, uuid.Nil,
-			testProjectFrame{scoped: true, projectID: restricted}, readers},
-		{"payload names a Company-visible Project", uuid.Nil, uuid.Nil,
-			testProjectFrame{scoped: true, projectID: open}, company},
-		{"payload names a Project that is gone", uuid.Nil, uuid.Nil,
-			testProjectFrame{scoped: true, projectID: gone}, nobody},
+		{
+			"payload names a restricted Project", uuid.Nil, uuid.Nil,
+			testProjectFrame{scoped: true, projectID: restricted},
+			readers,
+		},
+		{
+			"payload names a Company-visible Project", uuid.Nil, uuid.Nil,
+			testProjectFrame{scoped: true, projectID: open},
+			company,
+		},
+		{
+			"payload names a Project that is gone", uuid.Nil, uuid.Nil,
+			testProjectFrame{scoped: true, projectID: gone},
+			nobody,
+		},
 		{"a Task chat's Project", taskChat, uuid.Nil, testProjectFrame{scoped: true}, readers},
 		{"a legacy Task chat with no Project", legacyChat, uuid.Nil, testProjectFrame{scoped: true}, company},
 		{"a direct chat falls back to the Task", directChat, task, testProjectFrame{scoped: true}, readers},
@@ -171,8 +180,11 @@ func TestStampProjectAudiencesDecidesEachBranch(t *testing.T) {
 		{"the Task's Project", uuid.Nil, task, testProjectFrame{scoped: true}, readers},
 		{"a Task that is gone keeps its route", uuid.Nil, deletedTask, testProjectFrame{scoped: true}, nil},
 		{"an unscoped frame is left alone", taskChat, task, testProjectFrame{}, nil},
-		{"an already stamped frame is kept", taskChat, task,
-			testProjectFrame{scoped: true, ProjectFrame: ProjectFrame{Audience: stamped}}, stamped},
+		{
+			"an already stamped frame is kept", taskChat, task,
+			testProjectFrame{scoped: true, ProjectFrame: ProjectFrame{Audience: stamped}},
+			stamped,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -181,7 +193,10 @@ func TestStampProjectAudiencesDecidesEachBranch(t *testing.T) {
 				projects: map[uuid.UUID]string{restricted: "restricted", open: "company"},
 				readers:  map[uuid.UUID][]uuid.UUID{restricted: {reader}},
 				conversations: map[uuid.UUID]generated.GetConversationProjectIDRow{
-					taskChat:   {Kind: "task", ProjectID: uuid.NullUUID{UUID: restricted, Valid: true}},
+					taskChat: {
+						Kind:      "task",
+						ProjectID: uuid.NullUUID{UUID: restricted, Valid: true},
+					},
 					legacyChat: {Kind: "task"},
 					directChat: {Kind: "direct"},
 				},
@@ -191,7 +206,11 @@ func TestStampProjectAudiencesDecidesEachBranch(t *testing.T) {
 				Name: "task.updated", CompanyID: companyID,
 				ConversationID: test.conversationID, TaskID: test.taskID, Payload: test.payload,
 			}}
-			if err := StampProjectAudiencesInTx(context.Background(), generated.New(database), pending); err != nil {
+			if err := StampProjectAudiencesInTx(
+				context.Background(),
+				generated.New(database),
+				pending,
+			); err != nil {
 				t.Fatalf("StampProjectAudiencesInTx() error = %v", err)
 			}
 			got := pending[0].Payload.(testProjectFrame).Audience
@@ -229,16 +248,36 @@ func TestStampProjectAudiencesReadsEachProjectOnce(t *testing.T) {
 		tasks: map[uuid.UUID]uuid.UUID{task: project},
 	}
 	pending := []events.Event{
-		{Name: "task.updated", CompanyID: companyID, Payload: testProjectFrame{scoped: true, projectID: project}},
-		{Name: "conversation.updated", CompanyID: companyID, ConversationID: taskChat, Payload: testProjectFrame{scoped: true}},
-		{Name: "message.created", CompanyID: companyID, ConversationID: taskChat, Payload: testProjectFrame{scoped: true}},
-		{Name: "task.report_changed", CompanyID: companyID, TaskID: task, Payload: testProjectFrame{scoped: true}},
+		{
+			Name:      "task.updated",
+			CompanyID: companyID,
+			Payload:   testProjectFrame{scoped: true, projectID: project},
+		},
+		{
+			Name:           "conversation.updated",
+			CompanyID:      companyID,
+			ConversationID: taskChat,
+			Payload:        testProjectFrame{scoped: true},
+		},
+		{
+			Name:           "message.created",
+			CompanyID:      companyID,
+			ConversationID: taskChat,
+			Payload:        testProjectFrame{scoped: true},
+		},
+		{
+			Name:      "task.report_changed",
+			CompanyID: companyID,
+			TaskID:    task,
+			Payload:   testProjectFrame{scoped: true},
+		},
 	}
 	if err := StampProjectAudiencesInTx(context.Background(), generated.New(database), pending); err != nil {
 		t.Fatalf("StampProjectAudiencesInTx() error = %v", err)
 	}
 	for _, event := range pending {
-		if got := event.Payload.(testProjectFrame).Audience; got == nil || !slices.Equal(got.UserIDs, []uuid.UUID{reader}) {
+		if got := event.Payload.(testProjectFrame).Audience; got == nil ||
+			!slices.Equal(got.UserIDs, []uuid.UUID{reader}) {
 			t.Fatalf("%s audience = %+v, want the one reader", event.Name, got)
 		}
 	}

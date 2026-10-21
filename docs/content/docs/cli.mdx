@@ -11,8 +11,8 @@ The desktop app's daemon is separate. The app supervises its own daemon with its
 
 | Mode | Who | Credential | Company | Allowed |
 |---|---|---|---|---|
-| **Operator** | a person at a terminal | the session from `zen auth login` in `~/.boardly/auth.json` | `--company`, then `BOARDLY_COMPANY_ID`, then `zen company use` | everything |
-| **Agent** | a provider process the daemon launched for a Run | none — `run.json` in the Run's private `BOARDLY_HOME` names a daemon channel | fixed to the Run's Company; a different `--company` is refused | the commands the Run's policy admits |
+| **Operator** | a person at a terminal | the session from `zen auth login` in `~/.zenith-team/auth.json` | `--company`, then `ZENITH_TEAM_COMPANY_ID`, then `zen company use` | everything |
+| **Agent** | a provider process the daemon launched for a Run | none — `run.json` in the Run's private `ZENITH_TEAM_HOME` names a daemon channel | fixed to the Run's Company; a different `--company` is refused | the commands the Run's policy admits |
 
 `zen auth status` says which mode a shell is in and where its server and company came from. The two modes never fall back to each other: a Run whose channel is missing fails, it does not borrow your session.
 
@@ -68,7 +68,7 @@ zen company use 0197f4a1-9d33-7c55-b0a2-51c7e8d90f42
 zen company get
 ```
 
-`zen company use` saves the default. `--company` on any command and `BOARDLY_COMPANY_ID` win over it, in that order.
+`zen company use` saves the default. `--company` on any command and `ZENITH_TEAM_COMPANY_ID` win over it, in that order.
 
 ## Run the daemon
 
@@ -81,24 +81,24 @@ zen company get
 | **`zen daemon logs`** | Print the log file paths and tail the main log (`-f` follows, `-n` sets the line count) |
 | **`zen doctor`** | Session, server reachability, daemon health, provider CLIs and effective configuration, each with a next action; `--output json` for support bundles |
 
-A detached start writes the daemon's output to log files under `~/.boardly` and waits for the health port to report `running` before returning. The daemon runs on a session of its own, not on yours: `daemon start` creates it from your `zen auth login` session the first time, and refuses to launch when you are not signed in — run `zen auth login` first. That session works only for the daemon's own calls and for a running Agent's calls for you, never as you. `zen auth logout` ends both. A daemon started from the terminal follows the `zen` binary it was started from and, once idle, restarts into a replaced binary; turn that off with `--no-auto-reload`, `BOARDLY_AUTO_RELOAD=false`, or `zen config set disable_auto_reload true`.
+A detached start writes the daemon's output to log files under `~/.zenith-team` and waits for the health port to report `running` before returning. The daemon runs on a session of its own, not on yours: `daemon start` creates it from your `zen auth login` session the first time, and refuses to launch when you are not signed in — run `zen auth login` first. That session works only for the daemon's own calls and for a running Agent's calls for you, never as you. `zen auth logout` ends both. A daemon started from the terminal follows the `zen` binary it was started from and, once idle, restarts into a replaced binary; turn that off with `--no-auto-reload`, `ZENITH_TEAM_AUTO_RELOAD=false`, or `zen config set disable_auto_reload true`.
 
 Everything the CLI persists lives in one directory (`zen config path` prints it):
 
 | Path | What it holds |
 |---|---|
-| **`~/.boardly/auth.json`** | Your session — access token and rotating refresh token |
-| **`~/.boardly/daemon-auth.json`** | The daemon's own session, created by `daemon start` |
-| **`~/.boardly/config.json`** | The saved settings from `zen config set` and `zen company use` |
-| **`~/.boardly/daemon.id`** | This machine's stable daemon identifier, minted on first start |
-| **`~/.boardly/daemon.log`** | The daemon's log — what `daemon logs` tails |
-| **`~/.boardly/daemon.err.log`** | Crash output, near-empty on a healthy machine |
+| **`~/.zenith-team/auth.json`** | Your session — access token and rotating refresh token |
+| **`~/.zenith-team/daemon-auth.json`** | The daemon's own session, created by `daemon start` |
+| **`~/.zenith-team/config.json`** | The saved settings from `zen config set` and `zen company use` |
+| **`~/.zenith-team/daemon.id`** | This machine's stable daemon identifier, minted on first start |
+| **`~/.zenith-team/daemon.log`** | The daemon's log — what `daemon logs` tails |
+| **`~/.zenith-team/daemon.err.log`** | Crash output, near-empty on a healthy machine |
 
 On a Mac, Agents cannot read or change this directory: the daemon starts every provider CLI inside a sandbox that keeps it, and the desktop app's own session, out of reach, and reports the computer as protected. The same sandbox stops a run from reading another run's connection to Zenith Team, and, inside the workspaces folder, from writing anything but its own folders, so it cannot leave code there for another run. A run started by tagging an agent in a channel or group DM cannot even read the rest of the workspaces folder (your Company `main` workspace and its memory included) or your bound local directories: its answer goes to everyone in the chat, and project access does not cover your own folders and memory, so nothing from them should end up there. App previews start in it too. On Windows and Linux there is no such wall yet, and the daemon reports the computer as not protected.
 
 ## Configuration
 
-`zen config show` prints the saved settings; `zen config set <key> <value>` changes one; an empty string clears it. The keys are `server_url`, `company_id`, `device_name`, `workspaces_root`, `poll_interval`, `heartbeat_interval`, `max_concurrent_runs`, `agent_timeout`, `codex_semantic_inactivity_timeout`, `codex_handshake_timeout`, `log_level` and `disable_auto_reload`. The daemon keys mirror `daemon start` flags and `BOARDLY_*` environment variables; precedence is always `--flag` &gt; `BOARDLY_*` env &gt; `config.json` &gt; built-in default, and `zen doctor` shows which rung each value came from.
+`zen config show` prints the saved settings; `zen config set <key> <value>` changes one; an empty string clears it. The keys are `server_url`, `company_id`, `device_name`, `workspaces_root`, `poll_interval`, `heartbeat_interval`, `max_concurrent_runs`, `agent_timeout`, `codex_semantic_inactivity_timeout`, `codex_handshake_timeout`, `log_level` and `disable_auto_reload`. The daemon keys mirror `daemon start` flags and `ZENITH_TEAM_*` environment variables; precedence is always `--flag` &gt; `ZENITH_TEAM_*` env &gt; `config.json` &gt; built-in default, and `zen doctor` shows which rung each value came from.
 
 ## Tasks
 
@@ -156,7 +156,7 @@ Bodies such as `--description` and `--content` accept a `-file` or `-stdin` vari
 
 ## Agent mode
 
-The daemon places one exact copy of `zen` on the PATH of every Task and direct-conversation Run, together with a private `run.json` in that Run's `BOARDLY_HOME`. The file names the daemon's loopback endpoint, a capability bound to the Run, the frozen Run identity and the admitted commands. Every product call the CLI makes in this mode goes to the daemon's **Run channel**, and the daemon forwards it to the server with its own session and the Run proof after checking the request against the Run's policy. The Zenith Team MCP tools reach the server through the same channel. The agent process never holds a credential, cannot widen its scope through flags or environment, and loses the channel the moment the Run ends.
+The daemon places one exact copy of `zen` on the PATH of every Task and direct-conversation Run, together with a private `run.json` in that Run's `ZENITH_TEAM_HOME`. The file names the daemon's loopback endpoint, a capability bound to the Run, the frozen Run identity and the admitted commands. Every product call the CLI makes in this mode goes to the daemon's **Run channel**, and the daemon forwards it to the server with its own session and the Run proof after checking the request against the Run's policy. The Zenith Team MCP tools reach the server through the same channel. The agent process never holds a credential, cannot widen its scope through flags or environment, and loses the channel the moment the Run ends.
 
 The system prompt tells the Agent exactly which commands its Run admits; a Task Run typically gets `zen run context`, `zen task get`, `zen task dependencies`, `zen conversation messages`, `zen conversation transcript`, `zen agent list`, `zen company get`, `zen question ask`, `zen task fail`, `zen task create`; a Run outside a task, such as a direct conversation, adds `zen project list`, `zen project get` and `zen task list` (unless the agent's Company planning is off). Artifact presentation uses the `present_output` MCP tool. The daemon receives its structured input through the Run channel, snapshots workspace files, uploads them, saves the Output, and registers local app previews. This operation is not a `zen` command. Task Runs can also load the built-in `zenith-platform` Skill through `search_skills` for the full reference. Operator commands (`auth login`, `daemon start`, `config set`, `company use`) fail inside a Run on purpose, with exit code `3`.
 

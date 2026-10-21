@@ -80,7 +80,7 @@ body:
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -123,10 +123,10 @@ body:
 
 | Cookie | Path | HttpOnly | Lifetime |
 |---|---|---|---|
-| `boardly_access` | `/` | yes | access TTL, default 15m |
-| `boardly_refresh` | `/api/v1/auth` | yes | refresh TTL, default 7d |
-| `boardly_csrf` | `/` | no | access TTL |
-| `boardly_refresh_csrf` | `/` | no | refresh TTL |
+| `zenith_team_access` | `/` | yes | access TTL, default 15m |
+| `zenith_team_refresh` | `/api/v1/auth` | yes | refresh TTL, default 7d |
+| `zenith_team_csrf` | `/` | no | access TTL |
+| `zenith_team_refresh_csrf` | `/` | no | refresh TTL |
 
 All four are `SameSite=Strict`; `Secure` and `Domain` come from deployment
 configuration. The refresh cookie's narrow path is why refresh and logout carry
@@ -139,7 +139,7 @@ a *different* CSRF token from every other mutation.
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -167,7 +167,7 @@ a *different* CSRF token from every other mutation.
 
 The access token is an HS256 JWT and the refresh token is `brf_` followed by
 base64url over 32 random bytes; they are the same values the cookie branch puts
-in `boardly_access` and `boardly_refresh`. Treat both as opaque —
+in `zenith_team_access` and `zenith_team_refresh`. Treat both as opaque —
 `accessExpiresAt` is the supported way to know when to refresh.
 
 `id` is the session's own identifier, and it is **not a credential**: it grants
@@ -199,7 +199,7 @@ On the way back in, either container is accepted and the **`Authorization`
 header wins**: if it is present at all it is used, and a malformed one (no
 `Bearer ` prefix, internal whitespace, a comma) is `401 authentication_required`
 rather than a fallback to the cookie. Only with no `Authorization` header is
-`boardly_access` read.
+`zenith_team_access` read.
 
 `companies` is the caller's complete active-membership collection, ordered
 exactly as `GET /companies` orders it (`createdAt`, then `id`). `items: []` is
@@ -247,14 +247,14 @@ CSRF applies **only when an authentication cookie is present**; bearer callers
 never encounter it. Unsafe methods then require `X-CSRF-Token` matching the
 cookie:
 
-- `/auth/refresh` and `/auth/logout` validate against **`boardly_refresh_csrf`**,
-  not `boardly_csrf` — they are authenticated by the refresh cookie, whose CSRF
+- `/auth/refresh` and `/auth/logout` validate against **`zenith_team_refresh_csrf`**,
+  not `zenith_team_csrf` — they are authenticated by the refresh cookie, whose CSRF
   token is minted against that cookie.
 - Signup, login, all three email-verification routes, both password-reset
   routes and `/auth/google/web/start` are *credential-entry* paths: a browser
-  holding only `boardly_refresh` (lapsed access) still has to pass CSRF there,
-  also against `boardly_refresh_csrf`.
-- Everything else validates `boardly_csrf` against `boardly_access`.
+  holding only `zenith_team_refresh` (lapsed access) still has to pass CSRF there,
+  also against `zenith_team_refresh_csrf`.
+- Everything else validates `zenith_team_csrf` against `zenith_team_access`.
 
 Request bodies are strict JSON objects. The cap is 64 KiB on every `/auth/*`
 route and on `DELETE /me`, and 8 KiB on `PATCH /me/profile`.
@@ -277,7 +277,7 @@ These apply to every operation below and are not repeated per operation:
 ```
 POST /api/v1/auth/signup
 {
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "password": "correct horse battery staple",
   "displayName": "Sam Lee",
   "client": "web",
@@ -310,7 +310,7 @@ only.
 {
   "result": "pending_verification",
   "status": "pending_verification",
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "expiresAt": "2026-08-16T10:22:31.114882000Z",
   "resendAvailableAt": "2026-08-16T10:13:31.114882000Z",
@@ -361,7 +361,7 @@ back.
 ```
 POST /api/v1/auth/login
 {
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "password": "correct horse battery staple",
   "client": "desktop",
   "clientMetadata": { "appVersion": "1.4.0", "platform": "darwin-arm64" }
@@ -396,7 +396,7 @@ read.** `companies` on the response is the same page `GET /companies` returns.
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -465,7 +465,7 @@ POST /api/v1/auth/refresh
 | Parameter | In | Required | Description |
 |---|---|---|---|
 | `client` | body | yes | `web` or `desktop` |
-| `refreshToken` | body | desktop only | **Ignored when `client` is `web`** — the web branch reads the `boardly_refresh` cookie and never looks at the body |
+| `refreshToken` | body | desktop only | **Ignored when `client` is `web`** — the web branch reads the `zenith_team_refresh` cookie and never looks at the body |
 | `rotationId` | body | no | Idempotency UUID for one rotation. Desktop clients persist it before the first attempt and reuse it until the rotated session is safely stored |
 | `clientMetadata` | body | no | Re-stamped on the rotated session |
 
@@ -491,7 +491,7 @@ winning request stored.
 {
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -573,7 +573,7 @@ Authorization: Bearer <the person's accessToken>
 {}
 ```
 
-Starts a new session for the signed-in person, held by their daemon (D31).
+Starts a new session for the signed-in person, held by their daemon.
 The desktop app calls it after sign-in and before it starts its daemon; `zen
 daemon start` calls it when its home holds no `daemon-auth.json`. Both store
 the answer there, and the daemon renews it with `POST /auth/refresh`
@@ -600,7 +600,7 @@ or `{}`.
 
 A daemon session is never its person. The server accepts it on the daemon
 plane (`/api/v1/daemon/*`) and, beside exactly one live
-`X-Boardly-Run-Token` whose Run works for the same person, on the routes that
+`X-Zenith-Team-Run-Token` whose Run works for the same person, on the routes that
 accept a Run. Everywhere else it is `403 run_proof_required` — including
 `GET /me` and this route. It is a session of its own: signing the person out
 of the app does not end it; `zen desktop-session clear` and `zen auth logout`
@@ -621,7 +621,7 @@ end it with `POST /auth/logout`.
 
 ```
 POST /api/v1/auth/password-reset/request
-{ "email": "quy@example.com" }
+{ "email": "sam@example.com" }
 ```
 
 | Parameter | In | Required | Description |
@@ -708,7 +708,7 @@ indistinguishable to the holder and both need the same next step.
 ```
 POST /api/v1/auth/email-verification/verify
 {
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "code": "418302",
   "client": "web"
@@ -748,7 +748,7 @@ attempt.
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-16T10:12:31.114882000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -792,7 +792,7 @@ attempt.
 ```
 POST /api/v1/auth/email-verification/resend
 {
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "client": "web"
 }
@@ -812,7 +812,7 @@ moment this returns** — a user who has both mails open must use the newer one.
 {
   "result": "pending_verification",
   "status": "pending_verification",
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "expiresAt": "2026-08-16T10:32:44.771903000Z",
   "resendAvailableAt": "2026-08-16T10:23:44.771903000Z",
@@ -840,7 +840,7 @@ moment this returns** — a user who has both mails open must use the newer one.
 ```
 POST /api/v1/auth/email-verification/status
 {
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "client": "web"
 }
@@ -869,7 +869,7 @@ client that resumes a flow — a reopened tab, a desktop app restarted mid-signu
 {
   "result": "pending_verification",
   "status": "pending_verification",
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "verificationId": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
   "expiresAt": "2026-08-16T10:22:31.114882000Z",
   "resendAvailableAt": "2026-08-16T10:13:31.114882000Z",
@@ -986,7 +986,7 @@ returns the URL to send the browser to.
 }
 ```
 
-The response also sets `boardly_oauth_google_web`: HttpOnly, `SameSite=Lax`,
+The response also sets `zenith_team_oauth_google_web`: HttpOnly, `SameSite=Lax`,
 scoped to the callback path only. **It binds the flow to this browser, and the
 callback fails without it** — so a flow started in one browser cannot be
 completed in another, and a mail-forwarded callback URL is inert. Flow lifetime
@@ -1023,7 +1023,7 @@ exactly one of `code`/`error`, each appearing once with a non-empty value.
 Additional Google response parameters such as `scope`, `authuser`, `hd` and
 `prompt` are ignored; they cannot supply identity or a return path. A repeated
 authorization parameter, malformed encoding or an unrecognized `error` value
-fails before the flow is looked up. `boardly_oauth_google_web` must be present
+fails before the flow is looked up. `zenith_team_oauth_google_web` must be present
 exactly once and is cleared on every response through this path, so a failed
 callback cannot be retried by reloading.
 
@@ -1129,7 +1129,7 @@ Sending both `code` and `error`, or neither, is `422 validation_failed`.
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-16T10:18:02.664301000Z",
     "hasPassword": false,
     "linkedProviders": ["google"],
@@ -1242,7 +1242,7 @@ redeemed twice even if the first attempt arrives late: a second attempt sees
   "result": "session",
   "user": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],
@@ -1316,7 +1316,7 @@ and by the `user` slot of the session envelope and of the `user.updated` event.
 ```json
 {
   "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
   "hasPassword": true,
   "linkedProviders": [],
@@ -1418,7 +1418,7 @@ Success is **200** with the authoritative User at the top level. Post-commit,
 ```json
 {
   "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-  "email": "quy@example.com",
+  "email": "sam@example.com",
   "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
   "hasPassword": true,
   "linkedProviders": [],
@@ -1445,7 +1445,7 @@ nothing there on a conflict.
   "requestId": "0197f590-10b8-7cc0-a6c6-160ed7a18b2c",
   "currentUser": {
     "id": "0197f58e-6a44-7e11-9c2f-3f1c0a9d4b21",
-    "email": "quy@example.com",
+    "email": "sam@example.com",
     "emailVerifiedAt": "2026-08-01T09:12:44.918273000Z",
     "hasPassword": true,
     "linkedProviders": [],

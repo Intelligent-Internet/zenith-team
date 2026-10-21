@@ -6,7 +6,7 @@ import {
   convergeRealtimeCaches,
   createRealtimeRefreshQueue,
 } from "@/app/shell/realtime-sync/realtime-cache-sync";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import store, { useAppDispatch } from "@/state/store";
 
 export function RealtimeSyncController({
@@ -26,7 +26,7 @@ export function RealtimeSyncController({
 
   useEffect(() => {
     if (!companyId) {
-      boardlyRealtimeClient.stop();
+      zenithTeamRealtimeClient.stop();
       return undefined;
     }
 
@@ -39,7 +39,7 @@ export function RealtimeSyncController({
       convergeRealtimeCaches(dispatch, companyId);
     };
     let initialConnectionConverged = false;
-    const removeEventListener = boardlyRealtimeClient.onEvent((event) => {
+    const removeEventListener = zenithTeamRealtimeClient.onEvent((event) => {
       applyRealtimeCacheEvent(
         {
           companyId,
@@ -62,32 +62,34 @@ export function RealtimeSyncController({
       );
     });
     const removeRecoveryListener =
-      boardlyRealtimeClient.onRecovery(convergeCaches);
+      zenithTeamRealtimeClient.onRecovery(convergeCaches);
     const removeAuthenticationFailureListener =
-      boardlyRealtimeClient.onAuthenticationFailure(() => {
+      zenithTeamRealtimeClient.onAuthenticationFailure(() => {
         void clearInvalidClientSessionState().catch(() => undefined);
       });
-    const removeStatusListener = boardlyRealtimeClient.onStatus((snapshot) => {
-      // An event can land after the initial HTTP reads but before the socket
-      // opens. Reconcile once on first readiness to close that snapshot gap;
-      // later reconnects converge through the recovery listener above.
-      if (snapshot.status === "ready" && !initialConnectionConverged) {
-        initialConnectionConverged = true;
-        convergeCaches();
-      }
-      if (
-        snapshot.status === "reconnecting" ||
-        snapshot.status === "terminal"
-      ) {
-        console.warn(`[realtime] connection ${snapshot.status}`, snapshot);
-      }
-    });
+    const removeStatusListener = zenithTeamRealtimeClient.onStatus(
+      (snapshot) => {
+        // An event can land after the initial HTTP reads but before the socket
+        // opens. Reconcile once on first readiness to close that snapshot gap;
+        // later reconnects converge through the recovery listener above.
+        if (snapshot.status === "ready" && !initialConnectionConverged) {
+          initialConnectionConverged = true;
+          convergeCaches();
+        }
+        if (
+          snapshot.status === "reconnecting" ||
+          snapshot.status === "terminal"
+        ) {
+          console.warn(`[realtime] connection ${snapshot.status}`, snapshot);
+        }
+      },
+    );
 
     // Connectivity returning is the moment a waiting reconnect should run:
     // without these nudges a slow-tier retry sits out its full delay after a
     // laptop wake or a network drop even though the link is already back.
-    const retryNow = () => boardlyRealtimeClient.retryNow();
-    const reconnectNow = () => boardlyRealtimeClient.reconnectNow();
+    const retryNow = () => zenithTeamRealtimeClient.retryNow();
+    const reconnectNow = () => zenithTeamRealtimeClient.reconnectNow();
     const retryWhenVisible = () => {
       if (document.visibilityState === "visible") retryNow();
     };
@@ -95,7 +97,7 @@ export function RealtimeSyncController({
     window.addEventListener("focus", retryNow);
     document.addEventListener("visibilitychange", retryWhenVisible);
 
-    boardlyRealtimeClient.start(companyId);
+    zenithTeamRealtimeClient.start(companyId);
     return () => {
       window.removeEventListener("online", reconnectNow);
       window.removeEventListener("focus", retryNow);
@@ -105,7 +107,7 @@ export function RealtimeSyncController({
       removeAuthenticationFailureListener();
       removeStatusListener();
       refreshQueue.dispose();
-      boardlyRealtimeClient.stop();
+      zenithTeamRealtimeClient.stop();
     };
   }, [companyId, dispatch]);
 

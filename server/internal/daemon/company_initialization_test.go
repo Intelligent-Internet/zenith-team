@@ -10,8 +10,11 @@ import (
 // the policy must name every tool the Run was granted, and no other Run gets it.
 func TestResearchRunGetsItsPolicyAndOnlyTheWikiTools(t *testing.T) {
 	t.Parallel()
-	research := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "company_research"}, Agent: RunAgentContext{IsRoot: true}}
-	tools := boardlyMCPToolsForRun(research)
+	research := RunContext{
+		ExecutionProfile: RunExecutionProfileContext{Source: "company_research"},
+		Agent:            RunAgentContext{IsRoot: true},
+	}
+	tools := zenithTeamMCPToolsForRun(research)
 	if want := []string{"wiki_list", "wiki_read", "wiki_search", "wiki_write"}; !slices.Equal(tools, want) {
 		t.Fatalf("research platform tools = %v, want exactly %v", tools, want)
 	}
@@ -26,7 +29,14 @@ func TestResearchRunGetsItsPolicyAndOnlyTheWikiTools(t *testing.T) {
 			t.Errorf("research policy never names its tool %s", tool)
 		}
 	}
-	if direct := buildRunSystemPrompt(RunContext{}, "/work/current", runMemoryContext{}); strings.Contains(direct, "Company initialization policy") {
+	if direct := buildRunSystemPrompt(
+		RunContext{},
+		"/work/current",
+		runMemoryContext{},
+	); strings.Contains(
+		direct,
+		"Company initialization policy",
+	) {
 		t.Fatal("a direct Run received the initialization policy")
 	}
 }
@@ -42,10 +52,17 @@ func TestOnlyTheResearchRunGetsWikiWrite(t *testing.T) {
 		"schedule": {ExecutionProfile: RunExecutionProfileContext{Source: "schedule"}},
 		"channel":  {ChannelInvocation: &RunChannelInvocation{}},
 	} {
-		if tools := boardlyMCPToolsForRun(doc); slices.Contains(tools, "wiki_write") {
+		if tools := zenithTeamMCPToolsForRun(doc); slices.Contains(tools, "wiki_write") {
 			t.Errorf("%s Run was given wiki_write: %v", name, tools)
 		}
-		if prompt := buildRunSystemPrompt(doc, "/work/current", runMemoryContext{}); strings.Contains(prompt, "wiki_write") {
+		if prompt := buildRunSystemPrompt(
+			doc,
+			"/work/current",
+			runMemoryContext{},
+		); strings.Contains(
+			prompt,
+			"wiki_write",
+		) {
 			t.Errorf("%s prompt mentions wiki_write", name)
 		}
 	}
@@ -58,7 +75,7 @@ func TestResearchRunHonoursTheWikiSwitchAndFailsClearlyWithoutIt(t *testing.T) {
 		t.Fatalf("research with the Wiki on = %v", err)
 	}
 	research.Agent.Capabilities = RunCapabilitySettings{DisabledBuiltIns: []string{"wiki"}}
-	if tools := boardlyMCPToolsForRun(research); len(tools) != 0 {
+	if tools := zenithTeamMCPToolsForRun(research); len(tools) != 0 {
 		t.Fatalf("research tools with the Wiki off = %v, want none", tools)
 	}
 	err := requireResearchWikiTools(research)

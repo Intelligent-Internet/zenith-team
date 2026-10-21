@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/google/uuid"
 )
@@ -46,7 +46,7 @@ func boardJoin[T ~string](values []T) string {
 	return strings.Join(names, ", ")
 }
 
-// Board limits (TECH.md "Initial limits"). Request binding tags repeat the
+// Board limits. Request binding tags repeat the
 // batch and selection limits because tags cannot name constants.
 const (
 	boardMaxItems         = 5000             // live items per Board

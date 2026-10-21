@@ -13,8 +13,8 @@ import (
 	"unicode/utf8"
 )
 
-// Each platform skill carries the product namespace in its key, the way the
-// reference architecture names its built-in: zenith-<name>.
+// Each platform skill carries the product namespace in its key:
+// zenith-<name>.
 // A compiled skill's name is the directory under builtin/ and the `name:` in
 // its SKILL.md; the description is pinned here because the daemon's prompts
 // and the app quote it, and search_skills matches queries against it.
@@ -44,7 +44,7 @@ const ZenithPlatformSkillKey = zenithPlatformSkillKey
 // this binary or verified at start.
 var reservedPlatformSkillKeys = []string{zenithPlatformSkillKey, zenithWorkflowsSkillKey}
 
-// platformSkill names one release-owned procedure boardly-mcp serves.
+// platformSkill names one release-owned procedure zenith-team-mcp serves.
 // Keys are reserved: a custom Skill can never shadow one.
 type platformSkill struct {
 	Key string
@@ -68,7 +68,7 @@ var compiledPlatformSkills = []platformSkill{
 	},
 }
 
-// PlatformBundle is a release-owned platform skill whose files boardly pins
+// PlatformBundle is a release-owned platform skill whose files zenith-team pins
 // outside this package, in internal/platformbundle, so the zen CLI never links
 // them. Its key must be reserved and not a compiled skill's; its SKILL.md
 // must carry `name: <key>` and `description: <Description>` byte for byte.
@@ -121,7 +121,7 @@ func PlatformSkills(bundles []PlatformBundle) ([]PlatformSkillSummary, error) {
 	return summaries, nil
 }
 
-// platformSkillFiles is release-owned and compiled into boardly-mcp so Task
+// platformSkillFiles is release-owned and compiled into zenith-team-mcp so Task
 // Runs can load security-critical platform procedures without a Run-scoped
 // Skill snapshot or a network dependency. The pattern names zenith-platform
 // alone, so a stray directory under builtin/ can never join the skills.

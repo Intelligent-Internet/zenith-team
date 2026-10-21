@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"boardly.dev/boardly/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
 )
 
 // NewFromConfig constructs the process-wide S3-compatible object store.

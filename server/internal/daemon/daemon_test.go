@@ -18,25 +18,25 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/runchannel"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))
 }
 
-// newTestDaemon builds a Daemon wired at a temp BOARDLY_HOME and workspaces
+// newTestDaemon builds a Daemon wired at a temp ZENITH_TEAM_HOME and workspaces
 // root, pointed at serverURL, with claude/codex discovery stubbed off.
 func newTestDaemon(t *testing.T, serverURL string) *Daemon {
 	t.Helper()
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	// Resolved because the darwin temp root is a symlink (/var -> /private/var)
 	// and the local-directory path lock rejects symlinked paths.
 	workspacesRoot, err := filepath.EvalSymlinks(t.TempDir())
@@ -58,9 +58,9 @@ func newTestDaemon(t *testing.T, serverURL string) *Daemon {
 		t.Fatalf("new daemon: %v", err)
 	}
 	t.Cleanup(func() {
-		if d.cleanupBoardlyExecutable != nil {
-			if err := d.cleanupBoardlyExecutable(); err != nil {
-				t.Errorf("cleanup pinned Boardly executable: %v", err)
+		if d.cleanupZenithTeamExecutable != nil {
+			if err := d.cleanupZenithTeamExecutable(); err != nil {
+				t.Errorf("cleanup pinned Zenith Team executable: %v", err)
 			}
 		}
 	})
@@ -125,25 +125,25 @@ func TestNormalizeServerBaseURL(t *testing.T) {
 func TestLoadConfigEnvMirror(t *testing.T) {
 	isolateProviderDiscovery(t, t.TempDir())
 	stubLoginShellResolver(t, nil)
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_SERVER_URL", "wss://api.boardly.test")
-	t.Setenv("BOARDLY_POLL_INTERVAL", "7s")
-	t.Setenv("BOARDLY_HEARTBEAT_INTERVAL", "3s")
-	t.Setenv("BOARDLY_MAX_CONCURRENT_RUNS", "5")
-	t.Setenv("BOARDLY_WORKSPACES_ROOT", t.TempDir())
-	t.Setenv("BOARDLY_CLAUDE_ARGS", `--flag "quoted value"`)
-	t.Setenv("BOARDLY_CODEX_ARGS", "-c a=1")
-	t.Setenv("BOARDLY_CODEX_HANDSHAKE_TIMEOUT", "9s")
-	t.Setenv("BOARDLY_CODEX_SEMANTIC_INACTIVITY", "4m")
-	t.Setenv("BOARDLY_MCP_EXECUTABLE", "/usr/local/bin/boardly-mcp")
-	t.Setenv("BOARDLY_DAEMON_ID", "pinned-id")
-	t.Setenv("BOARDLY_LAUNCHED_BY", "desktop")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_SERVER_URL", "wss://api.zenith-team.test")
+	t.Setenv("ZENITH_TEAM_POLL_INTERVAL", "7s")
+	t.Setenv("ZENITH_TEAM_HEARTBEAT_INTERVAL", "3s")
+	t.Setenv("ZENITH_TEAM_MAX_CONCURRENT_RUNS", "5")
+	t.Setenv("ZENITH_TEAM_WORKSPACES_ROOT", t.TempDir())
+	t.Setenv("ZENITH_TEAM_CLAUDE_ARGS", `--flag "quoted value"`)
+	t.Setenv("ZENITH_TEAM_CODEX_ARGS", "-c a=1")
+	t.Setenv("ZENITH_TEAM_CODEX_HANDSHAKE_TIMEOUT", "9s")
+	t.Setenv("ZENITH_TEAM_CODEX_SEMANTIC_INACTIVITY", "4m")
+	t.Setenv("ZENITH_TEAM_MCP_EXECUTABLE", "/usr/local/bin/zenith-team-mcp")
+	t.Setenv("ZENITH_TEAM_DAEMON_ID", "pinned-id")
+	t.Setenv("ZENITH_TEAM_LAUNCHED_BY", "desktop")
 
 	cfg, err := LoadConfig(Overrides{AllowNoAgents: true})
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
-	if cfg.ServerBaseURL != "https://api.boardly.test" {
+	if cfg.ServerBaseURL != "https://api.zenith-team.test" {
 		t.Fatalf("server url = %q", cfg.ServerBaseURL)
 	}
 	if cfg.PollInterval != 7*time.Second || cfg.HeartbeatInterval != 3*time.Second {
@@ -164,7 +164,7 @@ func TestLoadConfigEnvMirror(t *testing.T) {
 	if cfg.CodexSemanticInactivityTimeout != 4*time.Minute {
 		t.Fatalf("semantic inactivity = %v", cfg.CodexSemanticInactivityTimeout)
 	}
-	if cfg.MCPExecutable != "/usr/local/bin/boardly-mcp" {
+	if cfg.MCPExecutable != "/usr/local/bin/zenith-team-mcp" {
 		t.Fatalf("mcp executable = %q", cfg.MCPExecutable)
 	}
 	if cfg.DaemonID != "pinned-id" {
@@ -178,8 +178,8 @@ func TestLoadConfigEnvMirror(t *testing.T) {
 func TestLoadConfigRejectsUnknownLauncher(t *testing.T) {
 	isolateProviderDiscovery(t, t.TempDir())
 	stubLoginShellResolver(t, nil)
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_LAUNCHED_BY", "some-wrapper")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_LAUNCHED_BY", "some-wrapper")
 
 	if _, err := LoadConfig(Overrides{AllowNoAgents: true}); err == nil {
 		t.Fatal("LoadConfig() accepted an unknown launcher")
@@ -187,7 +187,7 @@ func TestLoadConfigRejectsUnknownLauncher(t *testing.T) {
 }
 
 func TestEnsureDaemonIDPersists(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	first, err := EnsureDaemonID()
 	if err != nil {
 		t.Fatalf("first ensure: %v", err)
@@ -202,7 +202,7 @@ func TestEnsureDaemonIDPersists(t *testing.T) {
 }
 
 func TestCLIConfigRoundTrip(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	want := CLIConfig{ServerURL: "https://api.test", CompanyID: "c1"}
 	if err := SaveCLIConfig(want); err != nil {
 		t.Fatalf("save: %v", err)
@@ -214,7 +214,7 @@ func TestCLIConfigRoundTrip(t *testing.T) {
 	if got != want {
 		t.Fatalf("config = %+v, want %+v", got, want)
 	}
-	home, _ := BoardlyHome()
+	home, _ := ZenithTeamHome()
 	info, err := os.Stat(home + "/config.json")
 	if err != nil {
 		t.Fatal(err)
@@ -438,7 +438,7 @@ func TestDaemonSendsItsDaemonIDOnEveryControlPlaneRequest(t *testing.T) {
 	seen := map[string]string{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
-		seen[r.URL.Path] = r.Header.Get("X-Boardly-Daemon-ID")
+		seen[r.URL.Path] = r.Header.Get("X-Zenith-Team-Daemon-ID")
 		mu.Unlock()
 		switch r.URL.Path {
 		case "/api/v1/daemon/heartbeat":
@@ -475,7 +475,7 @@ func TestDaemonSendsItsDaemonIDOnEveryControlPlaneRequest(t *testing.T) {
 		"/api/v1/daemon/runtimes/rt-1/recover-orphans",
 	} {
 		if seen[path] != "daemon-1" {
-			t.Errorf("%s: X-Boardly-Daemon-ID = %q, want daemon-1", path, seen[path])
+			t.Errorf("%s: X-Zenith-Team-Daemon-ID = %q, want daemon-1", path, seen[path])
 		}
 	}
 }
@@ -1459,11 +1459,11 @@ func TestRunSlotSemaphore(t *testing.T) {
 // --- wakeup -----------------------------------------------------------------
 
 func TestRunWakeupURL(t *testing.T) {
-	got, err := runWakeupURL("https://api.boardly.test", []string{"b", "a"})
+	got, err := runWakeupURL("https://api.zenith-team.test", []string{"b", "a"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "wss://api.boardly.test/api/v1/daemon/ws?runtime_ids=a%2Cb"
+	want := "wss://api.zenith-team.test/api/v1/daemon/ws?runtime_ids=a%2Cb"
 	if got != want {
 		t.Fatalf("url = %q, want %q", got, want)
 	}
@@ -1482,15 +1482,15 @@ func TestDecodeRunContextLenient(t *testing.T) {
 	}
 }
 
-// boardly-mcp is handed the Run's isolated home, whose run.json opens the Run
-// channel, and no credential: not the daemon's BOARDLY_HOME (where
+// zenith-team-mcp is handed the Run's isolated home, whose run.json opens the Run
+// channel, and no credential: not the daemon's ZENITH_TEAM_HOME (where
 // daemon-auth.json lives), and not the Run token, which only the daemon's
-// forward carries (Access TECH B3b).
-func TestBoardlyMcpConfigMergesAgentServers(t *testing.T) {
+// forward carries.
+func TestZenithTeamMcpConfigMergesAgentServers(t *testing.T) {
 	d := newTestDaemon(t, "http://unreachable.invalid")
-	d.cfg.MCPExecutable = "/opt/boardly-mcp"
-	runHome := filepath.Join(t.TempDir(), ".boardly-home-71")
-	merged := d.boardlyMcpConfig(
+	d.cfg.MCPExecutable = "/opt/zenith-team-mcp"
+	runHome := filepath.Join(t.TempDir(), ".zenith-team-home-71")
+	merged := d.zenithTeamMcpConfig(
 		json.RawMessage(`{"mcpServers":{"custom":{"command":"x"}}}`),
 		Run{
 			ID: uuid.MustParse(
@@ -1520,33 +1520,33 @@ func TestBoardlyMcpConfigMergesAgentServers(t *testing.T) {
 	if doc.McpServers["custom"].Command != "x" {
 		t.Fatal("agent server lost in merge")
 	}
-	boardly := doc.McpServers["boardly"]
-	if _, leaked := boardly.Env["BOARDLY_RUN_TOKEN"]; leaked {
-		t.Fatalf("boardly-mcp was handed the Run token: %+v", boardly.Env)
+	zenithTeam := doc.McpServers["zenith-team"]
+	if _, leaked := zenithTeam.Env["ZENITH_TEAM_RUN_TOKEN"]; leaked {
+		t.Fatalf("zenith-team-mcp was handed the Run token: %+v", zenithTeam.Env)
 	}
 	if strings.Contains(string(merged), "brt_tok") {
 		t.Fatalf("the MCP config carries the Run token: %s", merged)
 	}
-	if boardly.Command != "/opt/boardly-mcp" ||
-		boardly.Env["BOARDLY_HOME"] != runHome ||
-		boardly.Env["BOARDLY_COMPANY_ID"] != "company-id" ||
-		boardly.Env["BOARDLY_MCP_COMPANY_ID"] != "company-id" ||
-		boardly.Env["BOARDLY_MCP_CONVERSATION_ID"] != "conversation-id" ||
-		boardly.Env["BOARDLY_MCP_TASK_ID"] != "task-id" ||
-		boardly.Env["BOARDLY_MCP_RUN_ID"] != "00000000-0000-4000-8000-000000000071" ||
-		boardly.Env["BOARDLY_MCP_AGENT_ID"] != "agent-id" ||
-		!strings.Contains(boardly.Env["BOARDLY_MCP_ALLOWED_TOOLS"], "create_mail_drafts") ||
-		strings.Contains(boardly.Env["BOARDLY_MCP_ALLOWED_TOOLS"], "mark_task_failed") ||
-		boardly.Env["BOARDLY_MCP_CLAIM_ID"] != "" ||
-		boardly.Env["BOARDLY_SKILL_SNAPSHOT_DIR"] != "/snap" ||
-		boardly.Env["BOARDLY_MCP_PLAN_ROOT"] != "/scratch/run-71/company-plan" ||
-		boardly.Env["BOARDLY_MCP_WORKSPACE_ROOT"] != "" ||
-		boardly.Env["BOARDLY_MCP_APP_PREVIEW_ENDPOINT"] != "" ||
-		boardly.Env["BOARDLY_MCP_APP_PREVIEW_CAPABILITY"] != "" {
-		t.Fatalf("boardly server entry = %+v", boardly)
+	if zenithTeam.Command != "/opt/zenith-team-mcp" ||
+		zenithTeam.Env["ZENITH_TEAM_HOME"] != runHome ||
+		zenithTeam.Env["ZENITH_TEAM_COMPANY_ID"] != "company-id" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_COMPANY_ID"] != "company-id" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_CONVERSATION_ID"] != "conversation-id" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_TASK_ID"] != "task-id" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_RUN_ID"] != "00000000-0000-4000-8000-000000000071" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_AGENT_ID"] != "agent-id" ||
+		!strings.Contains(zenithTeam.Env["ZENITH_TEAM_MCP_ALLOWED_TOOLS"], "create_mail_drafts") ||
+		strings.Contains(zenithTeam.Env["ZENITH_TEAM_MCP_ALLOWED_TOOLS"], "mark_task_failed") ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_CLAIM_ID"] != "" ||
+		zenithTeam.Env["ZENITH_TEAM_SKILL_SNAPSHOT_DIR"] != "/snap" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_PLAN_ROOT"] != "/scratch/run-71/company-plan" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_WORKSPACE_ROOT"] != "" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_APP_PREVIEW_ENDPOINT"] != "" ||
+		zenithTeam.Env["ZENITH_TEAM_MCP_APP_PREVIEW_CAPABILITY"] != "" {
+		t.Fatalf("zenith-team server entry = %+v", zenithTeam)
 	}
 
-	connectorOnly := d.boardlyMcpConfig(
+	connectorOnly := d.zenithTeamMcpConfig(
 		json.RawMessage(`{"mcpServers":{"connector":{"command":"connector"}}}`),
 		Run{
 			ID:             uuid.MustParse("00000000-0000-4000-8000-000000000072"),
@@ -1564,14 +1564,14 @@ func TestBoardlyMcpConfigMergesAgentServers(t *testing.T) {
 	if err := json.Unmarshal(connectorOnly, &doc); err != nil {
 		t.Fatalf("connector-only config: %v", err)
 	}
-	if _, exists := doc.McpServers["boardly"]; exists || doc.McpServers["connector"].Command != "connector" {
+	if _, exists := doc.McpServers["zenith-team"]; exists || doc.McpServers["connector"].Command != "connector" {
 		t.Fatalf("connector-only MCP config = %+v", doc.McpServers)
 	}
 
-	// No channel, no boardly server: boardly-mcp has no other way to reach
+	// No channel, no zenith-team server: zenith-team-mcp has no other way to reach
 	// the server, and it never falls back to a bearer.
 	agentServers := json.RawMessage(`{"mcpServers":{"custom":{"command":"x"}}}`)
-	withoutChannel := d.boardlyMcpConfig(
+	withoutChannel := d.zenithTeamMcpConfig(
 		agentServers,
 		Run{
 			ID:             uuid.MustParse("00000000-0000-4000-8000-000000000073"),
@@ -1591,10 +1591,10 @@ func TestBoardlyMcpConfigMergesAgentServers(t *testing.T) {
 }
 
 // The MCP entry names the same isolated home whose run.json opens the
-// channel, so boardly-mcp's channel is the Run's own; and a Run whose daemon
-// has no local endpoint gets no channel and therefore no boardly server.
-func TestBoardlyMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", filepath.Join(t.TempDir(), "daemon-home"))
+// channel, so zenith-team-mcp's channel is the Run's own; and a Run whose daemon
+// has no local endpoint gets no channel and therefore no zenith-team server.
+func TestZenithTeamMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
+	t.Setenv("ZENITH_TEAM_HOME", filepath.Join(t.TempDir(), "daemon-home"))
 	run := Run{
 		ID:             uuid.MustParse("00000000-0000-4000-8000-000000000074"),
 		CompanyID:      "01900000-0000-4000-8000-0000000000f0",
@@ -1608,10 +1608,10 @@ func TestBoardlyMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			d := &Daemon{
-				cfg:                Config{MCPExecutable: "/opt/boardly-mcp"},
-				logger:             testLogger(),
-				boardlyExecutable:  pinnedTestExecutable(t),
-				localPlaneEndpoint: endpoint,
+				cfg:                  Config{MCPExecutable: "/opt/zenith-team-mcp"},
+				logger:               testLogger(),
+				zenithTeamExecutable: pinnedTestExecutable(t),
+				localPlaneEndpoint:   endpoint,
 			}
 			cliEnvironment, err := d.prepareRunCLIEnvironment(
 				run, RunContext{}, t.TempDir(), "", execenv.SeatbeltOptions{},
@@ -1620,8 +1620,8 @@ func TestBoardlyMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
 				t.Fatalf("prepareRunCLIEnvironment() error = %v", err)
 			}
 			t.Cleanup(func() { _ = cliEnvironment.cleanup() })
-			merged := d.boardlyMcpConfig(
-				nil, run, boardlyMCPToolsForRun(RunContext{}), "", "", cliEnvironment.channelHome(),
+			merged := d.zenithTeamMcpConfig(
+				nil, run, zenithTeamMCPToolsForRun(RunContext{}), "", "", cliEnvironment.channelHome(),
 				cliEnvironment.outputChannel,
 			)
 			if endpoint == "" {
@@ -1638,24 +1638,24 @@ func TestBoardlyMcpGetsTheRunChannelHomeOrNothing(t *testing.T) {
 			if err := json.Unmarshal(merged, &doc); err != nil {
 				t.Fatalf("merged config: %v", err)
 			}
-			home := doc.McpServers["boardly"].Env["BOARDLY_HOME"]
-			if home != cliEnvironment.boardlyHome || home == os.Getenv("BOARDLY_HOME") {
+			home := doc.McpServers["zenith-team"].Env["ZENITH_TEAM_HOME"]
+			if home != cliEnvironment.zenithTeamHome || home == os.Getenv("ZENITH_TEAM_HOME") {
 				t.Fatalf(
-					"boardly-mcp BOARDLY_HOME = %q, want the Run's isolated home %q",
+					"zenith-team-mcp ZENITH_TEAM_HOME = %q, want the Run's isolated home %q",
 					home,
-					cliEnvironment.boardlyHome,
+					cliEnvironment.zenithTeamHome,
 				)
 			}
 			control, err := runchannel.LoadRunControlConfig(home)
 			if err != nil || control.RunID != run.ID.String() {
-				t.Fatalf("run.json in boardly-mcp's home = %+v, %v", control, err)
+				t.Fatalf("run.json in zenith-team-mcp's home = %+v, %v", control, err)
 			}
 		})
 	}
 }
 
 func TestIsBlockedEnvKey(t *testing.T) {
-	for _, blocked := range []string{"BOARDLY_RUN_TOKEN", "boardly_server_url", "HOME", "PATH", "CODEX_HOME", "TMPDIR"} {
+	for _, blocked := range []string{"ZENITH_TEAM_RUN_TOKEN", "zenith_team_server_url", "HOME", "PATH", "CODEX_HOME", "TMPDIR"} {
 		if !isBlockedEnvKey(blocked) {
 			t.Fatalf("%q not blocked", blocked)
 		}
@@ -1739,7 +1739,7 @@ func TestResolveRunPromptReadsOnlyTheFrozenContext(t *testing.T) {
 
 // The Company Plan scratch is a per-Run directory under the environment root
 // the daemon already owns for that Run, so a draft never lands in the
-// repository the Agent works in (Runs TECH §11.2).
+// repository the Agent works in.
 func TestEnsureRunCompanyPlanRootLivesInTheRunEnvironment(t *testing.T) {
 	envRoot := t.TempDir()
 	planRoot, err := ensureRunCompanyPlanRoot(envRoot)
@@ -1760,11 +1760,11 @@ func TestEnsureRunCompanyPlanRootLivesInTheRunEnvironment(t *testing.T) {
 
 func TestOutputMCPConfigRequiresBoundChannel(t *testing.T) {
 	d := newTestDaemon(t, "http://unreachable.invalid")
-	d.cfg.MCPExecutable = "/opt/boardly-mcp"
+	d.cfg.MCPExecutable = "/opt/zenith-team-mcp"
 	run := Run{ID: uuid.New()}
 	channelHome := t.TempDir()
 	for _, channel := range []*runchannel.RunControlConfig{nil, {Endpoint: "http://127.0.0.1:1234", Capability: "run-capability"}} {
-		config := d.boardlyMcpConfig(
+		config := d.zenithTeamMcpConfig(
 			nil,
 			run,
 			[]string{"ask_human", "present_output"},
@@ -1781,11 +1781,15 @@ func TestOutputMCPConfigRequiresBoundChannel(t *testing.T) {
 		if err := json.Unmarshal(config, &decoded); err != nil {
 			t.Fatal(err)
 		}
-		env := decoded.Servers[boardlyMCPServerName].Env
+		env := decoded.Servers[zenithTeamMCPServerName].Env
 		// The output tool reaches the channel through run.json in
-		// BOARDLY_HOME, like every other tool; no capability in the env.
-		if env["BOARDLY_HOME"] != channelHome {
-			t.Fatalf("BOARDLY_HOME = %q, want the Run channel home %q", env["BOARDLY_HOME"], channelHome)
+		// ZENITH_TEAM_HOME, like every other tool; no capability in the env.
+		if env["ZENITH_TEAM_HOME"] != channelHome {
+			t.Fatalf(
+				"ZENITH_TEAM_HOME = %q, want the Run channel home %q",
+				env["ZENITH_TEAM_HOME"],
+				channelHome,
+			)
 		}
 		for name, value := range env {
 			if strings.Contains(value, "run-capability") || strings.Contains(name, "CAPABILITY") ||
@@ -1793,7 +1797,7 @@ func TestOutputMCPConfigRequiresBoundChannel(t *testing.T) {
 				t.Fatalf("MCP child env carries the Run channel %s=%q", name, value)
 			}
 		}
-		offered := strings.Contains(env["BOARDLY_MCP_ALLOWED_TOOLS"], "present_output")
+		offered := strings.Contains(env["ZENITH_TEAM_MCP_ALLOWED_TOOLS"], "present_output")
 		if channel == nil && offered {
 			t.Fatal("advertised unbound output tool")
 		}

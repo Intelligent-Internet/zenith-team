@@ -11,7 +11,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 func skillMarkdown(name string) []byte {
@@ -160,19 +160,32 @@ func TestReadSkillUploadNormalizesNamesBeforeReview(t *testing.T) {
 			}
 			bundle := items[0].Bundle
 			if bundle.Name != test.want || items[0].OriginalName != test.input {
-				t.Fatalf("name = %q (%q), want %q (%q)", bundle.Name, items[0].OriginalName, test.want, test.input)
+				t.Fatalf(
+					"name = %q (%q), want %q (%q)",
+					bundle.Name,
+					items[0].OriginalName,
+					test.want,
+					test.input,
+				)
 			}
 			front := strings.SplitN(bundle.Content, "---", 3)
 			var metadata struct {
 				Name string `yaml:"name"`
 			}
-			if err := yaml.Unmarshal([]byte(front[1]), &metadata); err != nil || metadata.Name != test.want {
+			if err := yaml.Unmarshal(
+				[]byte(front[1]),
+				&metadata,
+			); err != nil ||
+				metadata.Name != test.want {
 				t.Fatalf("installed frontmatter = %+v, %v, want name %q", metadata, err, test.want)
 			}
 			if test.input == test.want && bundle.Content != string(original) {
 				t.Fatal("changed an already portable skill")
 			}
-			if err := contentbundle.ValidateSkill(contentbundle.SkillReference(bundle), bundle); err != nil {
+			if err := contentbundle.ValidateSkill(
+				contentbundle.SkillReference(bundle),
+				bundle,
+			); err != nil {
 				t.Fatalf("normalized bundle does not verify: %v", err)
 			}
 		})
@@ -185,8 +198,10 @@ func TestReadSkillUploadRenamingPreservesInstructionsAndRelativeFiles(t *testing
 	markdown := "---\r\nname: >-\r\n  Market Research\r\ndescription: |\r\n  Review the work.\r\nlicense: MIT\r\nmetadata:\r\n  author: Example\r\n---\r\n" + body
 	script := []byte("#!/bin/sh\necho 'Market Research'\n")
 	items, err := readSkillUpload("skills.zip", skillZIP(t, map[string][]byte{
-		"repository/skills/unrelated-folder/SKILL.md":                   []byte(markdown),
-		"repository/skills/unrelated-folder/references/guide.md":        []byte("[script](../scripts/Market_Research.sh)"),
+		"repository/skills/unrelated-folder/SKILL.md": []byte(markdown),
+		"repository/skills/unrelated-folder/references/guide.md": []byte(
+			"[script](../scripts/Market_Research.sh)",
+		),
 		"repository/skills/unrelated-folder/scripts/Market_Research.sh": script,
 		"repository/skills/unrelated-folder/assets/image.bin":           {0, 255, 128},
 	}))
@@ -201,20 +216,26 @@ func TestReadSkillUploadRenamingPreservesInstructionsAndRelativeFiles(t *testing
 		License  string            `yaml:"license"`
 		Metadata map[string]string `yaml:"metadata"`
 	}
-	if err := yaml.Unmarshal([]byte(strings.SplitN(bundle.Content, "---", 3)[1]), &front); err != nil || front.License != "MIT" || front.Metadata["author"] != "Example" {
+	if err := yaml.Unmarshal(
+		[]byte(strings.SplitN(bundle.Content, "---", 3)[1]),
+		&front,
+	); err != nil || front.License != "MIT" ||
+		front.Metadata["author"] != "Example" {
 		t.Fatalf("metadata = %+v, %v", front, err)
 	}
 	if items[0].Path != "repository/skills/unrelated-folder/SKILL.md" {
 		t.Fatalf("source path = %q", items[0].Path)
 	}
 	for _, file := range bundle.Files {
-		if file.Path == "scripts/Market_Research.sh" && !bytes.Equal(contentbundle.SkillFileBytes(file), script) {
+		if file.Path == "scripts/Market_Research.sh" &&
+			!bytes.Equal(contentbundle.SkillFileBytes(file), script) {
 			t.Fatal("renamed script contents")
 		}
 	}
-	copy, err := renameImportedSkill(items[0], "market-research-2")
-	if err != nil || copy.Bundle.Name != "market-research-2" || copy.Bundle.Hash == bundle.Hash || !strings.HasSuffix(copy.Bundle.Content, "---\r\n"+body) {
-		t.Fatalf("renamed copy = %+v, %v", copy, err)
+	renamed, err := renameImportedSkill(items[0], "market-research-2")
+	if err != nil || renamed.Bundle.Name != "market-research-2" || renamed.Bundle.Hash == bundle.Hash ||
+		!strings.HasSuffix(renamed.Bundle.Content, "---\r\n"+body) {
+		t.Fatalf("renamed copy = %+v, %v", renamed, err)
 	}
 }
 

@@ -12,7 +12,7 @@
 -- management set and the roles holding projects.manage. Permission names
 -- appear only in the table definition (the CHECK, and the generated
 -- read_permission column that ties every grant to its project.read row) and
--- in the one-off owner backfill (owner decision 2, ADR 0017), which also
+-- in the one-off owner backfill (ADR 0017), which also
 -- names the owner role, and in the one-off cutover at the end (section 8).
 -- TestProjectGrantsCheckMatchesCatalog pins the CHECK against
 -- auth.ProjectPermissions().
@@ -74,7 +74,7 @@ CREATE INDEX project_grants_user_idx ON project_grants (company_id, user_id, pro
 -- holds every permission on every Project of their Company; nobody else holds
 -- any row until someone with project.grants.manage adds them. This one-off
 -- backfill is the only place the migration names the owner role and lists the
--- catalog (owner decision 2, ADR 0017); TestProjectGrantsCheckMatchesCatalog
+-- catalog (ADR 0017); TestProjectGrantsCheckMatchesCatalog
 -- pins the list. The account's disabled state is not checked here: every view
 -- and the function already exclude disabled accounts.
 INSERT INTO project_grants (company_id, project_id, user_id, permission)

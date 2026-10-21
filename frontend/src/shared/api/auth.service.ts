@@ -1,6 +1,6 @@
 import {
   apiClient,
-  BOARDLY_API_BASE_URL,
+  ZENITH_TEAM_API_BASE_URL,
   refreshAuthSession,
 } from "@/lib/api-client";
 import {
@@ -67,10 +67,10 @@ function desktopSessionResponse(
 class AuthService {
   async signup(payload: PasswordSignupRequest): Promise<PasswordAuthResponse> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge?.signupWithPassword) {
       const result = await bridge.signupWithPassword({
-        apiBaseUrl: BOARDLY_API_BASE_URL,
+        apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
         displayName: payload.displayName,
         email: payload.email,
         password: payload.password,
@@ -92,10 +92,10 @@ class AuthService {
     payload: PasswordLoginRequest,
   ): Promise<PasswordAuthResponse> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge?.loginWithPassword) {
       const result = await bridge.loginWithPassword({
-        apiBaseUrl: BOARDLY_API_BASE_URL,
+        apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
         email: payload.email,
         password: payload.password,
         clientMetadata: desktopClientMetadata,
@@ -135,13 +135,13 @@ class AuthService {
     payload: EmailOtpVerificationRequest,
   ): Promise<ClientLoginResponse> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge) {
       if (!bridge.verifyEmail) {
         throw new Error("Desktop email verification is unavailable.");
       }
       const result = await bridge.verifyEmail({
-        apiBaseUrl: BOARDLY_API_BASE_URL,
+        apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
         ...payload,
       });
       if (!result.ok) {
@@ -159,13 +159,13 @@ class AuthService {
     payload: EmailOtpResendRequest,
   ): Promise<EmailOtpResendResponse> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge) {
       if (!bridge.resendEmailVerification) {
         throw new Error("Desktop email verification is unavailable.");
       }
       const result = await bridge.resendEmailVerification({
-        apiBaseUrl: BOARDLY_API_BASE_URL,
+        apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
         ...payload,
       });
       if (!result.ok) {
@@ -183,13 +183,13 @@ class AuthService {
     payload: PendingVerificationStatusRequest,
   ): Promise<PendingVerificationStatusResponse> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge) {
       if (!bridge.getEmailVerificationStatus) {
         throw new Error("Desktop email verification is unavailable.");
       }
       const result = await bridge.getEmailVerificationStatus({
-        apiBaseUrl: BOARDLY_API_BASE_URL,
+        apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
         ...payload,
       });
       if (!result.ok) {
@@ -226,9 +226,9 @@ class AuthService {
 
   async logout(): Promise<void> {
     const bridge =
-      typeof window === "undefined" ? undefined : window.boardlyDesktop;
+      typeof window === "undefined" ? undefined : window.zenithTeamDesktop;
     if (bridge?.logoutAuthSession && getStoredAccessToken() !== null) {
-      const result = await bridge.logoutAuthSession(BOARDLY_API_BASE_URL);
+      const result = await bridge.logoutAuthSession(ZENITH_TEAM_API_BASE_URL);
       if (!result.ok) {
         throw new Error(result.reason);
       }

@@ -12,10 +12,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func admitPageRun(
@@ -25,23 +25,43 @@ func admitPageRun(
 	runID uuid.UUID,
 	write bool,
 ) (uuid.UUID, uuid.UUID, error) {
-	document, documentErr := q.GetDocumentAgentRun(ctx, generated.GetDocumentAgentRunParams{CompanyID: p.CompanyID, RunID: runID, ActorUserID: p.UserID})
+	document, documentErr := q.GetDocumentAgentRun(
+		ctx,
+		generated.GetDocumentAgentRunParams{CompanyID: p.CompanyID, RunID: runID, ActorUserID: p.UserID},
+	)
 	if documentErr == nil {
 		project := document.ProjectID.UUID
 		if _, err := authorize(ctx, q, p, project, write); err != nil {
 			return project, uuid.Nil, err
 		}
-		if err := auth.RequireProjectPermissionHeld(ctx, q, p.CompanyID, project, p.UserID, auth.ProjectPermissionTasksExecute); err != nil {
+		if err := auth.RequireProjectPermissionHeld(
+			ctx,
+			q,
+			p.CompanyID,
+			project,
+			p.UserID,
+			auth.ProjectPermissionTasksExecute,
+		); err != nil {
 			return project, uuid.Nil, err
 		}
-		if _, err := q.LockConversationForSystemRunQueueMutation(ctx, generated.LockConversationForSystemRunQueueMutationParams{CompanyID: p.CompanyID, ConversationID: document.ConversationID}); err != nil {
+		if _, err := q.LockConversationForSystemRunQueueMutation(
+			ctx,
+			generated.LockConversationForSystemRunQueueMutationParams{
+				CompanyID:      p.CompanyID,
+				ConversationID: document.ConversationID,
+			},
+		); err != nil {
 			return project, uuid.Nil, lookup(err)
 		}
-		run, err := q.LockRunForOutputPresentation(ctx, generated.LockRunForOutputPresentationParams{CompanyID: p.CompanyID, RunID: runID})
+		run, err := q.LockRunForOutputPresentation(
+			ctx,
+			generated.LockRunForOutputPresentationParams{CompanyID: p.CompanyID, RunID: runID},
+		)
 		if err != nil {
 			return project, uuid.Nil, lookup(err)
 		}
-		if run.Status != "running" || !run.ExecutionAuthorizedByUserID.Valid || run.ExecutionAuthorizedByUserID.UUID != p.UserID {
+		if run.Status != "running" || !run.ExecutionAuthorizedByUserID.Valid ||
+			run.ExecutionAuthorizedByUserID.UUID != p.UserID {
 			return project, uuid.Nil, ErrForbidden
 		}
 		return project, uuid.Nil, nil

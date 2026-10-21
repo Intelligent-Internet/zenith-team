@@ -16,13 +16,13 @@ import {
   getApiErrorMessage,
 } from "@/lib/api-client";
 import {
-  boardlyApi,
+  zenithTeamApi,
   useDeleteWorkspaceCompanyMutation,
   useGetWorkspaceCompanyQuery,
   useLazyListWorkspaceCompaniesQuery,
   useUpdateWorkspaceCompanyProfileMutation,
 } from "@/shared/api";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { CompanyDetail } from "@/shared/api/types";
 import { Icon } from "@/shared/ui/icon";
 import {
@@ -67,7 +67,7 @@ function createCompanyProfileFormValues(
 }
 
 function companyProfileConflict(error: unknown): CompanyDetail | null {
-  const queryError = error as BoardlyApiError | null | undefined;
+  const queryError = error as ZenithTeamApiError | null | undefined;
   const code = getApiErrorCode(error) ?? queryError?.code ?? null;
   if (code !== "company_profile_revision_conflict") {
     return null;
@@ -395,7 +395,7 @@ export function CompanySettingsPage() {
         session.userId,
         nextCompany,
       );
-      dispatch(boardlyApi.util.resetApiState());
+      dispatch(zenithTeamApi.util.resetApiState());
       navigate(getNextRoute(nextSession ?? readSessionSnapshot()), {
         replace: true,
       });

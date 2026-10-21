@@ -7,11 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/task"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 type huddleProposalHTTPStub struct {
@@ -25,7 +26,12 @@ type proposalSubmitHTTPStub struct {
 	principal auth.UserPrincipal
 }
 
-func (s *proposalSubmitHTTPStub) SubmitHuddleProposal(_ context.Context, p auth.UserPrincipal, _, _ uuid.UUID, in task.SubmitHuddleProposalInput) (conversation.HuddleProposal, error) {
+func (s *proposalSubmitHTTPStub) SubmitHuddleProposal(
+	_ context.Context,
+	p auth.UserPrincipal,
+	_, _ uuid.UUID,
+	_ task.SubmitHuddleProposalInput,
+) (conversation.HuddleProposal, error) {
 	s.calls++
 	s.principal = p
 	return conversation.HuddleProposal{State: "submitted"}, nil
@@ -43,12 +49,21 @@ func TestSubmitHuddleProposalHTTPBoundary(t *testing.T) {
 		{"forged Agent", `{"expectedRevision":1,"confirm":true,"agentId":"other"}`, 400},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			p := auth.UserPrincipal{UserID: uuid.New(), CompanyID: uuid.New(), SessionID: uuid.New(), AuthKind: auth.TokenKindSession}
+			p := auth.UserPrincipal{
+				UserID:    uuid.New(),
+				CompanyID: uuid.New(),
+				SessionID: uuid.New(),
+				AuthKind:  auth.TokenKindSession,
+			}
 			stub := &proposalSubmitHTTPStub{}
 			h := &Handler{TaskService: stub}
 			router := gin.New()
 			router.POST("/:huddleId/:proposalId", h.submitHuddleProposal)
-			req := httptest.NewRequest("POST", "/"+uuid.NewString()+"/"+uuid.NewString(), strings.NewReader(tt.body))
+			req := httptest.NewRequest(
+				http.MethodPost,
+				"/"+uuid.NewString()+"/"+uuid.NewString(),
+				strings.NewReader(tt.body),
+			)
 			req.Header.Set("Content-Type", "application/json")
 			req = req.WithContext(auth.WithUserPrincipal(req.Context(), p))
 			rec := httptest.NewRecorder()
@@ -66,7 +81,12 @@ func TestSubmitHuddleProposalHTTPBoundary(t *testing.T) {
 	}
 }
 
-func (s *huddleProposalHTTPStub) ProposeWork(context.Context, uuid.UUID, string, conversation.HuddleProposalInput) (conversation.HuddleProposal, error) {
+func (s *huddleProposalHTTPStub) ProposeWork(
+	context.Context,
+	uuid.UUID,
+	string,
+	conversation.HuddleProposalInput,
+) (conversation.HuddleProposal, error) {
 	s.calls++
 	return conversation.HuddleProposal{State: "pending"}, nil
 }
@@ -87,7 +107,11 @@ func TestHuddleProposalHTTPBoundary(t *testing.T) {
 			router := gin.New()
 			h.registerHuddleAIRoutes(router.Group("/api/v1"))
 			body := `{"requestKey":"draft-1","projectId":"22222222-2222-4222-8222-222222222222","title":"Fix login","brief":"Verify login"` + tt.extra + `}`
-			request := httptest.NewRequest(http.MethodPost, "/api/v1/internal/huddle-ai/22222222-2222-4222-8222-222222222222/proposals", strings.NewReader(body))
+			request := httptest.NewRequest(
+				http.MethodPost,
+				"/api/v1/internal/huddle-ai/22222222-2222-4222-8222-222222222222/proposals",
+				strings.NewReader(body),
+			)
 			request.Header.Set("Content-Type", "application/json")
 			request.Header.Set("Authorization", "Bearer test")
 			response := httptest.NewRecorder()

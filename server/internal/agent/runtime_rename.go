@@ -17,9 +17,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RuntimeRenameInput is the rename request after the handler bound it.
@@ -57,7 +57,16 @@ func (s *DefaultRuntimeService) Rename(
 	var renamedIDs []string
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
 		renamedIDs = renamedIDs[:0]
-		if _, err := lockMemberRole(ctx, tx, principal.CompanyID, principal.UserID, "runtime rename"); errors.Is(err, ErrNotFound) {
+		if _, err := lockMemberRole(
+			ctx,
+			tx,
+			principal.CompanyID,
+			principal.UserID,
+			"runtime rename",
+		); errors.Is(
+			err,
+			ErrNotFound,
+		) {
 			return ErrRuntimeNotFound
 		} else if err != nil {
 			return err
@@ -125,7 +134,14 @@ func (s *DefaultRuntimeService) Rename(
 	// The UPDATE returns rows in no particular order; the frame is stable
 	// so two viewers reconciling the same rename see the same ids.
 	sort.Strings(renamedIDs)
-	s.publishRoster(ctx, protocol.DaemonRosterActionUpdate, principal.CompanyID, principal.UserID, daemonID, renamedIDs)
+	s.publishRoster(
+		ctx,
+		protocol.DaemonRosterActionUpdate,
+		principal.CompanyID,
+		principal.UserID,
+		daemonID,
+		renamedIDs,
+	)
 	return renamed, nil
 }
 

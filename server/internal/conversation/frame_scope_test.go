@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // Only a Task chat's frames belong to a Project (ADR 0017): the stamp decides
@@ -22,7 +22,14 @@ func TestOnlyTaskChatFramesAreProjectFrames(t *testing.T) {
 		} {
 			projectID, scoped := payload.ProjectFrameScope()
 			if scoped != want || projectID != uuid.Nil {
-				t.Errorf("%s in a %s chat: scope = (%s, %t), want (nil, %t)", name, kind, projectID, scoped, want)
+				t.Errorf(
+					"%s in a %s chat: scope = (%s, %t), want (nil, %t)",
+					name,
+					kind,
+					projectID,
+					scoped,
+					want,
+				)
 			}
 			audience := &auth.ProjectAudience{UserIDs: []uuid.UUID{uuid.New()}}
 			stamped, ok := payload.WithProjectAudience(audience).(auth.ProjectFramePayload)

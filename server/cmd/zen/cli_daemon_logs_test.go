@@ -30,7 +30,7 @@ func TestDaemonLogStreamIsTheFileDaemonLogsTails(t *testing.T) {
 // the path the tail reads.
 func TestDaemonLogsTailsTheChildsStdoutFile(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 
 	logPath := filepath.Join(home, daemonLogFileName)
 	if err := os.WriteFile(logPath, []byte("registered runtime claude\nheartbeat accepted\n"), 0o644); err != nil {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"

@@ -1,7 +1,7 @@
 // Package cloudrun deploys provider-neutral source streams through Google
 // Cloud Storage, Cloud Build, Artifact Registry, and Cloud Run. It is isolated
 // beneath infra because Google API types and credentials must not enter a
-// Boardly business domain.
+// Zenith Team business domain.
 package cloudrun
 
 import (

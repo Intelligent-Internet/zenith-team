@@ -1,5 +1,5 @@
 -- Removes "Review task results" (project.results.review) from the Project
--- catalog (D31 revision, owner ruling 2026-10-07). Nothing on the server
+-- catalog. Nothing on the server
 -- checked it once result review was retired, so holding it gave nothing.
 -- The catalog is nine permissions.
 --

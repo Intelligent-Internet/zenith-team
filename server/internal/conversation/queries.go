@@ -6,18 +6,18 @@ import (
 	"fmt"
 	"time"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // lockActiveMembership serializes the acting member against concurrent
@@ -161,7 +161,7 @@ func buildDirectListItems(
 	if err != nil {
 		return nil, fmt.Errorf("list direct Conversation agent refs in bulk: %w", err)
 	}
-	return assembleDirectListItems(actorID, rows, bases, messages, latestRuns, agentRefs), nil
+	return assembleDirectListItems(rows, bases, messages, latestRuns, agentRefs), nil
 }
 
 // agentRefFromBulkRow projects the agent columns of a bulk row. A
@@ -188,7 +188,6 @@ func agentRefFromBulkRow(row generated.ListDirectConversationAgentRefsBulkRow) *
 // items without touching the database, so the fixed bulk-query count of
 // directConversationPage stays structural rather than asserted.
 func assembleDirectListItems(
-	actorID uuid.UUID,
 	rows []generated.Conversation,
 	bases []generated.ListDirectConversationSummaryBasesBulkRow,
 	messages []generated.ListDirectConversationLatestMessagesBulkRow,
@@ -403,7 +402,14 @@ func resolveConversationStateTarget(
 		target.HasState = true
 	}
 	if target.Kind == KindTask {
-		row, err := q.GetTaskConversationUserState(ctx, generated.GetTaskConversationUserStateParams{ActorUserID: actorID, CompanyID: target.CompanyID, ConversationID: conversationID})
+		row, err := q.GetTaskConversationUserState(
+			ctx,
+			generated.GetTaskConversationUserStateParams{
+				ActorUserID:    actorID,
+				CompanyID:      target.CompanyID,
+				ConversationID: conversationID,
+			},
+		)
 		if err == nil {
 			target.State = taskChatUserState(row)
 			target.HasState = true
@@ -453,7 +459,16 @@ func bumpConversationProjection(
 	if err != nil {
 		return Response{}, mapConversationMutationError("bump Conversation projection", err)
 	}
-	if err := activity.RecordInTx(ctx, q, pending, actor, EventConversationUpdated, before, Topic, row.ID); err != nil {
+	if err := activity.RecordInTx(
+		ctx,
+		q,
+		pending,
+		actor,
+		EventConversationUpdated,
+		before,
+		Topic,
+		row.ID,
+	); err != nil {
 		return Response{}, err
 	}
 	return conversationFromRow(row), nil

@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import {
   blockDocumentPath,
   type OutputDocumentScope,
@@ -16,7 +19,7 @@ type CheckpointResult =
 type Scope = { companyId: string; outputId: string };
 const path = ({ companyId, outputId }: Scope) =>
   `/companies/${encodeURIComponent(companyId)}/artifacts/${encodeURIComponent(outputId)}/review`;
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     openOutputDocument: builder.mutation<
       OpenDocumentResult,
@@ -26,7 +29,7 @@ const api = boardlyApi.injectEndpoints({
         { type: "Artifact", id: `review:${scope.outputId}` },
       ],
       queryFn: (scope) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<OpenDocumentResult>(
               `${blockDocumentPath(scope, "")}/open`,
@@ -43,7 +46,7 @@ const api = boardlyApi.injectEndpoints({
         { type: "Artifact", id: `review:${scope.outputId}` },
       ],
       queryFn: (scope) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const path = blockDocumentPath(scope, "");
           const draft = await apiClient.get<
             components["schemas"]["CanvasDocument"]
@@ -58,7 +61,7 @@ const api = boardlyApi.injectEndpoints({
       Scope & { versionId: string }
     >({
       queryFn: ({ versionId, ...scope }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["CanvasBody"]>(
               `${path(scope)}/versions/${encodeURIComponent(versionId)}/body`,
@@ -72,7 +75,7 @@ const api = boardlyApi.injectEndpoints({
         { type: "Artifact", id: `review:${scope.outputId}` },
       ],
       queryFn: (scope, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["OutputReview"]>(path(scope), {
               signal,
@@ -88,7 +91,7 @@ const api = boardlyApi.injectEndpoints({
         { type: "Artifact", id: `review:${scope.outputId}` },
       ],
       queryFn: ({ command, ...scope }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<components["schemas"]["CanvasResult"]>(
               `${path(scope)}/operations`,

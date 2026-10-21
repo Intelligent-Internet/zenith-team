@@ -11,30 +11,22 @@ is the read projection over runs, the per-Run transcript head, the cancel action
 the runtime roster, and discovery of an exact runtime's models by any member
 who may use it.
 
-Run preparation and native configuration are specified in the
-[Run PRD](../specs/runs/PRD.md) and [TECH](../specs/runs/TECH.md). The
-[workspace API boundary](workspaces.md) distinguishes cloud Run state from
-local files and records the Planned managed-only release. No cwd, environment
-object, direct-folder selector or GitHub repository reference is added to
-this public Run API.
+The [workspace API boundary](workspaces.md) separates Run state on the server
+from local files and records the Planned managed-only release. No cwd,
+environment object, direct-folder selector or GitHub repository reference is
+added to this public Run API. [daemon.md](daemon.md) covers registration,
+claim, start, transcript receipts and terminal reconciliation; it adds no
+other Run or transcript API.
 
-The [Runtime and Run sequence guide](../specs/runs/runtime-and-run-sequences.TECH.md)
-traces registration, enqueue, claim, start, transcript receipts and terminal
-reconciliation without introducing another Run or transcript API.
-
-For input freeze timing and current producer gaps, see
-[Run snapshot coverage](../specs/runs/TECH.md#81-snapshot-timing-and-producer-coverage).
-
-The [Run tracking design](../specs/runs/tracking-history.TECH.md) implements
-UUID identity, explicit `runType` and one frozen source `revision`, without a
-lifecycle version. The [consumer contract](run-tracking-history.md) covers
-Agent history pages, Company Activity filters, privacy and realtime recovery.
+A Run has a UUID identity, an explicit `runType` and one frozen source
+`revision`. It has no lifecycle version. Agent history pages are covered under
+[List the company's runs](#list-the-companys-runs), and Company Activity
+filters in [activity-and-usage.md](activity-and-usage.md#list-the-activity-feed).
 The served [OpenAPI](spec/openapi.yaml) generates the frontend's canonical types.
-See the [cutover procedure](run-history-cutover.md) before deploying this change.
 
 Prompt/brief freeze at Run creation, Connector authority at claim, and local
 files/native policy resolve during preparation. A native session pointer is
-not a cloud transcript replay or a filesystem snapshot.
+not a server-side transcript replay or a filesystem snapshot.
 
 Every route is company-scoped and gated on **member**; a non-member gets `404`,
 never `403`. Task-conversation runs are visible to the readers of the task
@@ -94,10 +86,27 @@ required tie-breaker for runs created at the same instant.
 | `conversation_id` | query | no | Runs in one conversation |
 | `agent_id` | query | no | Runs executed by one agent |
 | `runtime_id` | query | no | Runs dispatched to one of **the caller's own** runtimes; another member's runtime returns no runs (ADR 0014) |
+| `run_type` | query | no | `task`, `direct_chat` or `schedule`. With `task_id`, only `task` is allowed |
+| `revision` | query | no | Exact frozen source revision, 1..9007199254740991. Needs `task_id` or `conversation_id`, because revision numbers of unrelated sources cannot be compared |
+| `from`, `to` | query | no | Inclusive and exclusive RFC 3339 bounds on `createdAt`. When both are sent, `from` must be before `to` |
 
 > **Added.** `runtime_id`. The runtimes roster shows a machine; the only
 > question anyone asks next is what that machine is working on. Without the
 > filter a client reads the company's runs and matches `runtime.id` itself.
+
+Filters combine with AND. A well-formed filter that names something the caller
+cannot see gives an empty page, not an error.
+
+**Agent Run history uses this list.** `agent_id` means *executed by* this
+Agent; send it on every page. It is not the Activity filter
+`actor_type=agent&actor_id=…`, which means *acted by* this Agent. That filter
+cannot rebuild Run history, because a lifecycle change can have a System
+actor. A cursor belongs to the filters it came from: start again from the
+first page when the Company, the Agent or any filter changes. A cursor is not
+a realtime checkpoint either; re-read the first page to pick up new Runs.
+Never page or deduplicate by `revision`: a retry inherits its parent's
+revision, so two Runs with one revision are still two rows. Only `nextCursor`
+says another page exists; a full page does not.
 
 ```json
 {
@@ -220,7 +229,7 @@ those candidates from the claim entirely rather than ranking them lower, so an
 at-capacity agent dispatches a direct-chat run ahead of an `urgent` task run
 that has waited far longer. Publishing the number would invite clients to
 render a queue position it does not describe. See
-[the Run lifecycle](../specs/runs/TECH.md#4-lifecycle).
+[Run lifecycle](#run-lifecycle).
 
 There is no `retryQueued` flag either —
 whether a failed run earned a retry is read from the retry child's
@@ -652,7 +661,7 @@ transient action against the record, not a runtime write.
       "id": "0197f3d0-4411-7a90-8c22-19be7f3d55a1",
       "companyId": "0197f4a1-9d33-7c55-b0a2-51c7e8d90f42",
       "daemonId": "8f1c0b6a-3d92-4d1e-9a77-2b5f0c8e1d34",
-      "name": "duong-macbook",
+      "name": "alex-macbook",
       "customName": null,
       "provider": "claude",
       "status": "online",
@@ -665,7 +674,7 @@ transient action against the record, not a runtime write.
       "owner": {
         "id": "0197f4a0-2200-7b31-9d44-8a0e5c1b7f22",
         "kind": "user",
-        "name": "Duong Phung",
+        "name": "Alex Rivera",
         "avatarUrl": null
       },
       "deviceInfo": "macOS 15.5 (arm64)",
@@ -840,7 +849,7 @@ Returns the renamed runtime, the same object the reads serve:
   "id": "0197f3d0-4411-7a90-8c22-19be7f3d55a1",
   "companyId": "0197f4a1-9d33-7c55-b0a2-51c7e8d90f42",
   "daemonId": "8f1c0b6a-3d92-4d1e-9a77-2b5f0c8e1d34",
-  "name": "duong-macbook",
+  "name": "alex-macbook",
   "customName": "Office Mac",
   "provider": "claude",
   "status": "online",
@@ -853,7 +862,7 @@ Returns the renamed runtime, the same object the reads serve:
   "owner": {
     "id": "0197f4a0-2200-7b31-9d44-8a0e5c1b7f22",
     "kind": "user",
-    "name": "Duong Phung",
+    "name": "Alex Rivera",
     "avatarUrl": null
   },
   "deviceInfo": "macOS 15.5 (arm64)",
@@ -1121,7 +1130,7 @@ large and remains available only on the authorized run read. `failureReason`,
 client needs to render "failed — retrying in 30s" without a read; the retry
 child itself arrives as its own `run.queued`.
 
-The cloud API carries no token-delta event. `run.message_created` is published only
+The server's realtime plane carries no token-delta event. `run.message_created` is published only
 after the item and Run head commit, then relayed to every client eligible for
 the owning conversation. It is published before the daemon can submit the
 terminal callback, preserving provider item-before-finished ordering. Web

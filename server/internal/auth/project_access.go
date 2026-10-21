@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Project access errors (ADR 0017). A Project or Task the caller cannot see
@@ -588,10 +588,13 @@ func ProjectAudienceInTx(
 	}
 	userIDs = readers
 	if includeProjectsManageHolders {
-		managers, err := q.ListActiveCompanyMemberIDsByRoles(ctx, generated.ListActiveCompanyMemberIDsByRolesParams{
-			CompanyID: companyID,
-			Roles:     RolesWith(PermissionProjectsManage),
-		})
+		managers, err := q.ListActiveCompanyMemberIDsByRoles(
+			ctx,
+			generated.ListActiveCompanyMemberIDsByRolesParams{
+				CompanyID: companyID,
+				Roles:     RolesWith(PermissionProjectsManage),
+			},
+		)
 		if err != nil {
 			return nil, false, fmt.Errorf("list project managers: %w", err)
 		}

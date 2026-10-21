@@ -2,22 +2,22 @@ import { clearInvalidClientSessionState } from "@/app/session/client-session-sta
 import { clearPendingEmailVerification } from "@/features/auth/model/auth-view-state";
 import { authService } from "@/shared/api/auth.service";
 
-async function clearBoardlyClientSession() {
+async function clearZenithTeamClientSession() {
   clearPendingEmailVerification();
   await clearInvalidClientSessionState();
 }
 
-export async function logoutBoardlySession() {
+export async function logoutZenithTeamSession() {
   try {
     await authService.logout();
   } finally {
-    await clearBoardlyClientSession();
+    await clearZenithTeamClientSession();
   }
 }
 
-export async function deleteBoardlyAccount() {
+export async function deleteZenithTeamAccount() {
   await authService.deleteAccount();
-  await clearBoardlyClientSession();
+  await clearZenithTeamClientSession();
 }
 
-export const logoutLocalMockSession = logoutBoardlySession;
+export const logoutLocalMockSession = logoutZenithTeamSession;

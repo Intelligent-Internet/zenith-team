@@ -13,10 +13,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/daemon"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // The daemon plane is two binaries sharing one wire contract with no shared
@@ -479,7 +479,7 @@ func TestDaemonWireContractRoundTrips(t *testing.T) {
 					w.WriteHeader(http.StatusNotFound)
 					return
 				}
-				gotDaemonID = r.Header.Get("X-Boardly-Daemon-ID")
+				gotDaemonID = r.Header.Get("X-Zenith-Team-Daemon-ID")
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Errorf("read request body: %v", err)
@@ -504,7 +504,7 @@ func TestDaemonWireContractRoundTrips(t *testing.T) {
 			// Every request on the plane — POSTs and the companies GET —
 			// names the machine, which is what the server-side fence reads.
 			if gotDaemonID != "daemon-1" {
-				t.Errorf("X-Boardly-Daemon-ID = %q, want daemon-1", gotDaemonID)
+				t.Errorf("X-Zenith-Team-Daemon-ID = %q, want daemon-1", gotDaemonID)
 			}
 
 			if tc.serverRequest == nil {

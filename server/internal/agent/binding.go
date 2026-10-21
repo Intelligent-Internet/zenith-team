@@ -17,13 +17,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -148,9 +148,12 @@ func (s *DefaultBindingService) Bind(
 		if runtime.Provider != agent.Provider {
 			return ErrBindingProviderMismatch
 		}
-		current, err := tx.GetAgentRuntimeBindingForUserForUpdate(ctx, generated.GetAgentRuntimeBindingForUserForUpdateParams{
-			CompanyID: principal.CompanyID, AgentID: agentID, UserID: principal.UserID,
-		})
+		current, err := tx.GetAgentRuntimeBindingForUserForUpdate(
+			ctx,
+			generated.GetAgentRuntimeBindingForUserForUpdateParams{
+				CompanyID: principal.CompanyID, AgentID: agentID, UserID: principal.UserID,
+			},
+		)
 		hadBinding := err == nil
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("lock current binding: %w", err)
@@ -188,7 +191,10 @@ func (s *DefaultBindingService) Bind(
 			}
 		}
 		pending = append(pending, bindingChangeEvent(
-			principal.CompanyID, principal.UserID, agentID, bindingRefFromRow(binding, runtimeRefFromRow(runtime)),
+			principal.CompanyID,
+			principal.UserID,
+			agentID,
+			bindingRefFromRow(binding, runtimeRefFromRow(runtime)),
 		))
 		result, err = projectionForMember(ctx, tx, principal, agentID)
 		return err
@@ -264,9 +270,12 @@ func (s *DefaultBindingService) Unbind(
 		if _, err := projectionForMember(ctx, tx, principal, agentID); err != nil {
 			return err
 		}
-		current, err := tx.GetAgentRuntimeBindingForUserForUpdate(ctx, generated.GetAgentRuntimeBindingForUserForUpdateParams{
-			CompanyID: principal.CompanyID, AgentID: agentID, UserID: principal.UserID,
-		})
+		current, err := tx.GetAgentRuntimeBindingForUserForUpdate(
+			ctx,
+			generated.GetAgentRuntimeBindingForUserForUpdateParams{
+				CompanyID: principal.CompanyID, AgentID: agentID, UserID: principal.UserID,
+			},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil
 		}
@@ -316,11 +325,12 @@ func (s *DefaultBindingService) ListForViewer(
 	if err := authorizeMemberRead(ctx, s.store.Queries(), principal); err != nil {
 		return nil, err
 	}
-	rows, err := s.store.Queries().ListAgentRuntimeBindingsForUser(ctx, generated.ListAgentRuntimeBindingsForUserParams{
-		CompanyID: principal.CompanyID,
-		UserID:    principal.UserID,
-		RuntimeID: util.NullUUIDFromPtr(options.RuntimeID),
-	})
+	rows, err := s.store.Queries().
+		ListAgentRuntimeBindingsForUser(ctx, generated.ListAgentRuntimeBindingsForUserParams{
+			CompanyID: principal.CompanyID,
+			UserID:    principal.UserID,
+			RuntimeID: util.NullUUIDFromPtr(options.RuntimeID),
+		})
 	if err != nil {
 		return nil, fmt.Errorf("list Agent bindings: %w", err)
 	}
@@ -330,13 +340,20 @@ func (s *DefaultBindingService) ListForViewer(
 			ID:      row.AgentRuntimeBinding.ID,
 			AgentID: row.AgentRuntimeBinding.AgentID,
 			Runtime: RuntimeRef{
-				ID:             row.AgentRuntimeBinding.RuntimeID,
-				Name:           row.RuntimeName,
-				CustomName:     util.TextToPtr(row.RuntimeCustomName),
-				Status:         row.RuntimeStatus,
-				Provider:       row.AgentRuntimeBinding.Provider,
-				SignIn:         runtimeSignInRef(row.RuntimeSignInState, row.RuntimeSignInDetail, row.RuntimeSignInCheckedAt),
-				UnusableReason: runtimeUnusableReasonRef(row.RuntimeUnusableReasonCode, row.RuntimeUnusableReasonMessage),
+				ID:         row.AgentRuntimeBinding.RuntimeID,
+				Name:       row.RuntimeName,
+				CustomName: util.TextToPtr(row.RuntimeCustomName),
+				Status:     row.RuntimeStatus,
+				Provider:   row.AgentRuntimeBinding.Provider,
+				SignIn: runtimeSignInRef(
+					row.RuntimeSignInState,
+					row.RuntimeSignInDetail,
+					row.RuntimeSignInCheckedAt,
+				),
+				UnusableReason: runtimeUnusableReasonRef(
+					row.RuntimeUnusableReasonCode,
+					row.RuntimeUnusableReasonMessage,
+				),
 			},
 			CreatedAt: row.AgentRuntimeBinding.CreatedAt.Time.UTC(),
 		})
@@ -348,12 +365,16 @@ func (s *DefaultBindingService) ListForViewer(
 // binding carries.
 func runtimeRefFromRow(row generated.Runtime) RuntimeRef {
 	return RuntimeRef{
-		ID:             row.ID,
-		Name:           row.Name,
-		CustomName:     util.TextToPtr(row.CustomName),
-		Status:         row.Status,
-		Provider:       row.Provider,
-		SignIn:         runtimeSignInRef(row.ProviderSignInState, row.ProviderSignInDetail, row.ProviderSignInCheckedAt),
+		ID:         row.ID,
+		Name:       row.Name,
+		CustomName: util.TextToPtr(row.CustomName),
+		Status:     row.Status,
+		Provider:   row.Provider,
+		SignIn: runtimeSignInRef(
+			row.ProviderSignInState,
+			row.ProviderSignInDetail,
+			row.ProviderSignInCheckedAt,
+		),
 		UnusableReason: runtimeUnusableReasonRef(row.UnusableReasonCode, row.UnusableReasonMessage),
 	}
 }

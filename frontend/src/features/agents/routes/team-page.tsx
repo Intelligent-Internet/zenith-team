@@ -82,11 +82,10 @@ function CompanyTeam({ companyId }: { companyId: string }) {
     !leaveDecision.allowed &&
     leaveDecision.reason === "last_owner";
   const companyName = session.company?.workspaceName ?? "your company";
-  // Members, or one Project's access (owner decision 2026-10-02: access is
-  // managed here). Groups live in Project access, listed with the people
-  // (2026-10-07), so an old Groups link opens it, and so does the tab's
-  // own name. The view and Project live in the URL, so links can open a
-  // Project's access directly.
+  // Members, or one Project's access: access is managed here. Groups live
+  // in Project access, listed with the people, so an old Groups link opens
+  // it, and so does the tab's own name. The view and Project live in the
+  // URL, so links can open a Project's access directly.
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsRef = useRef<HTMLDivElement>(null);
   const view = opensProjectAccess(searchParams.get("view"))

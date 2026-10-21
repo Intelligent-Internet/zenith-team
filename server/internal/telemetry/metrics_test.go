@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
 )
 
 func TestHTTPMetricsExposeOnlyRouteTemplates(t *testing.T) {
@@ -24,7 +24,7 @@ func TestHTTPMetricsExposeOnlyRouteTemplates(t *testing.T) {
 	body := response.Body.String()
 	if !strings.Contains(
 		body,
-		`boardly_http_requests_total{method="GET",route="/api/v1/tasks/:taskId",status="200"} 1`,
+		`zenith_team_http_requests_total{method="GET",route="/api/v1/tasks/:taskId",status="200"} 1`,
 	) {
 		t.Fatalf("metrics missing route-template counter:\n%s", body)
 	}
@@ -48,15 +48,15 @@ func TestMailboxMetricsExposeOnlyClosedNonPIILabels(t *testing.T) {
 	registry.Handler().ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	body := response.Body.String()
 	for _, expected := range []string{
-		`boardly_mailbox_webhooks_total{outcome="delivered"} 1`,
-		`boardly_mailbox_webhooks_total{outcome="invalid"} 1`,
-		`boardly_mailbox_provider_requests_total{outcome="rate_limited"} 1`,
-		`boardly_mailbox_provider_requests_total{outcome="invalid"} 1`,
-		`boardly_mailbox_cache_total{outcome="hit"} 1`,
-		`boardly_mailbox_cache_total{outcome="invalid"} 1`,
-		`boardly_mailbox_retention_deleted_total{kind="attachments"} 3`,
-		`boardly_mailbox_retention_deleted_total{kind="messages"} 2`,
-		`boardly_mailbox_retention_deleted_total{kind="receipts"} 4`,
+		`zenith_team_mailbox_webhooks_total{outcome="delivered"} 1`,
+		`zenith_team_mailbox_webhooks_total{outcome="invalid"} 1`,
+		`zenith_team_mailbox_provider_requests_total{outcome="rate_limited"} 1`,
+		`zenith_team_mailbox_provider_requests_total{outcome="invalid"} 1`,
+		`zenith_team_mailbox_cache_total{outcome="hit"} 1`,
+		`zenith_team_mailbox_cache_total{outcome="invalid"} 1`,
+		`zenith_team_mailbox_retention_deleted_total{kind="attachments"} 3`,
+		`zenith_team_mailbox_retention_deleted_total{kind="messages"} 2`,
+		`zenith_team_mailbox_retention_deleted_total{kind="receipts"} 4`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Errorf("metrics missing %q:\n%s", expected, body)
@@ -98,14 +98,14 @@ func TestRunMetricsExposeOnlyClosedBoundedLabels(t *testing.T) {
 	}
 	body := response.Body.String()
 	for _, expected := range []string{
-		`boardly_run_tokens_total{kind="input",provider="codex"} 11`,
-		`boardly_run_tokens_total{kind="output",provider="codex"} 7`,
-		`boardly_run_tokens_total{kind="reasoning",provider="codex"} 5`,
-		`boardly_run_tokens_total{kind="cache_read",provider="codex"} 3`,
-		`boardly_run_tokens_total{kind="cache_write",provider="codex"} 2`,
-		`boardly_run_terminal_total{failure_kind="none",outcome="message",provider="claude"} 1`,
-		`boardly_run_terminal_total{failure_kind="infrastructure",outcome="failed",provider="other"} 1`,
-		`boardly_run_terminal_total{failure_kind="invalid",outcome="invalid",provider="other"} 1`,
+		`zenith_team_run_tokens_total{kind="input",provider="codex"} 11`,
+		`zenith_team_run_tokens_total{kind="output",provider="codex"} 7`,
+		`zenith_team_run_tokens_total{kind="reasoning",provider="codex"} 5`,
+		`zenith_team_run_tokens_total{kind="cache_read",provider="codex"} 3`,
+		`zenith_team_run_tokens_total{kind="cache_write",provider="codex"} 2`,
+		`zenith_team_run_terminal_total{failure_kind="none",outcome="message",provider="claude"} 1`,
+		`zenith_team_run_terminal_total{failure_kind="infrastructure",outcome="failed",provider="other"} 1`,
+		`zenith_team_run_terminal_total{failure_kind="invalid",outcome="invalid",provider="other"} 1`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Errorf("metrics missing %q:\n%s", expected, body)

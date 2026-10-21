@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestCanonicalizeDraftInputsNormalizesAddressesAndKeepsDeliveriesPrivate(t *testing.T) {
@@ -124,7 +124,7 @@ func TestDraftFromRowsSerializesEmptyCCAsArray(t *testing.T) {
 	draftID := uuid.Must(uuid.NewV7())
 	draft := draftFromRows(generated.MailboxDraft{
 		ID: draftID, CompanyID: companyID, GroupID: uuid.Must(uuid.NewV7()),
-		Subject: "Hello", BodyText: "Body", FromName: "Boardly",
+		Subject: "Hello", BodyText: "Body", FromName: "Zenith Team",
 		FromAddress: "hello@example.com", Status: string(DraftStatusDraft),
 		CreatedAt: timestamp(now), UpdatedAt: timestamp(now), Version: 1,
 	}, []generated.MailboxDraftDelivery{{

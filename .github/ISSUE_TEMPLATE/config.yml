@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/Intelligent-Internet/zenith-team/security/advisories/new
+    about: Report security problems privately. Please do not open a public issue.
+  - name: Ask a question
+    url: https://github.com/Intelligent-Internet/zenith-team/discussions
+    about: Get help with setup or usage, or share an idea, in GitHub Discussions.
+  - name: Read the docs
+    url: https://github.com/Intelligent-Internet/zenith-team/tree/main/docs/content/docs
+    about: Guides and reference for using, hosting and building Zenith Team.

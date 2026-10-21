@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 const wikiAgentRunToken = "brt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
@@ -35,7 +35,13 @@ type wikiAgentSearchCall struct {
 	limit int
 }
 
-func (s *wikiAgentReadServiceStub) Search(_ context.Context, _ auth.UserPrincipal, runID uuid.UUID, query string, limit int) (wiki.AgentSearchResponse, error) {
+func (s *wikiAgentReadServiceStub) Search(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	runID uuid.UUID,
+	query string,
+	limit int,
+) (wiki.AgentSearchResponse, error) {
 	s.searches = append(s.searches, wikiAgentSearchCall{runID, query, limit})
 	return wiki.AgentSearchResponse{Items: []wiki.AgentSearchItem{}}, s.searchErr
 }
@@ -47,22 +53,46 @@ type wikiAgentListCall struct {
 	limit        int
 }
 
-func (s *wikiAgentReadServiceStub) List(_ context.Context, _ auth.UserPrincipal, runID uuid.UUID, collectionID *uuid.UUID, offset, limit int) (wiki.AgentListResponse, error) {
+func (s *wikiAgentReadServiceStub) List(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	runID uuid.UUID,
+	collectionID *uuid.UUID,
+	offset, limit int,
+) (wiki.AgentListResponse, error) {
 	s.lists = append(s.lists, wikiAgentListCall{runID, collectionID, offset, limit})
-	return wiki.AgentListResponse{Collections: []wiki.AgentListCollection{}, Items: []wiki.AgentListItem{}}, s.listErr
+	return wiki.AgentListResponse{
+		Collections: []wiki.AgentListCollection{},
+		Items:       []wiki.AgentListItem{},
+	}, s.listErr
 }
 
-func (s *wikiAgentReadServiceStub) Read(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, int) (wiki.AgentReadResponse, error) {
+func (s *wikiAgentReadServiceStub) Read(
+	context.Context,
+	auth.UserPrincipal,
+	uuid.UUID,
+	uuid.UUID,
+	int,
+) (wiki.AgentReadResponse, error) {
 	s.reads++
 	return wiki.AgentReadResponse{}, nil
 }
 
-func (s *wikiAgentReadServiceStub) ListRunReads(_ context.Context, _ auth.UserPrincipal, runID uuid.UUID) (wiki.RunWikiReadList, error) {
+func (s *wikiAgentReadServiceStub) ListRunReads(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	runID uuid.UUID,
+) (wiki.RunWikiReadList, error) {
 	s.runReads = append(s.runReads, runID)
 	return wiki.RunWikiReadList{Items: []wiki.RunWikiRead{}}, nil
 }
 
-func (s *wikiAgentReadServiceStub) ListPageAgentReads(_ context.Context, _ auth.UserPrincipal, _ uuid.UUID, limit int) (wiki.PageAgentReadList, error) {
+func (s *wikiAgentReadServiceStub) ListPageAgentReads(
+	_ context.Context,
+	_ auth.UserPrincipal,
+	_ uuid.UUID,
+	limit int,
+) (wiki.PageAgentReadList, error) {
 	s.pageReads = append(s.pageReads, limit)
 	return wiki.PageAgentReadList{Items: []wiki.PageAgentRead{}}, nil
 }
@@ -157,8 +187,16 @@ func TestWikiAgentRoutesAdmitOnlyTheRunsOwnProof(t *testing.T) {
 				{"/pages/" + uuid.NewString(), func() int { return fixture.service.reads }},
 			} {
 				result := fixture.get(h, runID, route.suffix, token)
-				if result.Code != tc.status || (tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
-					t.Fatalf("%s = %d %s, want %d %s", route.suffix, result.Code, result.Body.String(), tc.status, tc.code)
+				if result.Code != tc.status ||
+					(tc.code != "" && !strings.Contains(result.Body.String(), `"code":"`+tc.code+`"`)) {
+					t.Fatalf(
+						"%s = %d %s, want %d %s",
+						route.suffix,
+						result.Code,
+						result.Body.String(),
+						tc.status,
+						tc.code,
+					)
 				}
 				if tc.status != http.StatusOK && route.served() != 0 {
 					t.Fatalf("%s refused request reached the service", route.suffix)
@@ -173,22 +211,38 @@ func TestWikiAgentSearchParsesItsQueryParameters(t *testing.T) {
 	fixture := newWikiAgentFixture("task")
 	h := fixture.handler()
 
-	if result := fixture.get(h, fixture.runID, "/search?q=refund+policy", wikiAgentRunToken); result.Code != http.StatusOK {
+	if result := fixture.get(
+		h,
+		fixture.runID,
+		"/search?q=refund+policy",
+		wikiAgentRunToken,
+	); result.Code != http.StatusOK {
 		t.Fatalf("default search = %d %s", result.Code, result.Body.String())
 	}
-	if result := fixture.get(h, fixture.runID, "/search?q=refund&limit=10", wikiAgentRunToken); result.Code != http.StatusOK {
+	if result := fixture.get(
+		h,
+		fixture.runID,
+		"/search?q=refund&limit=10",
+		wikiAgentRunToken,
+	); result.Code != http.StatusOK {
 		t.Fatalf("explicit limit = %d %s", result.Code, result.Body.String())
 	}
 	want := []wikiAgentSearchCall{
 		{fixture.runID, "refund policy", wiki.DefaultAgentSearchLimit},
 		{fixture.runID, "refund", 10},
 	}
-	if len(fixture.service.searches) != 2 || fixture.service.searches[0] != want[0] || fixture.service.searches[1] != want[1] {
+	if len(fixture.service.searches) != 2 || fixture.service.searches[0] != want[0] ||
+		fixture.service.searches[1] != want[1] {
 		t.Fatalf("service calls = %+v, want %+v", fixture.service.searches, want)
 	}
 
 	for _, suffix := range []string{"/search?q=x&limit=abc", "/pages/not-a-uuid", "/pages/" + uuid.NewString() + "?offset=x"} {
-		assertErrorResponse(t, fixture.get(h, fixture.runID, suffix, wikiAgentRunToken), http.StatusUnprocessableEntity, "validation_failed")
+		assertErrorResponse(
+			t,
+			fixture.get(h, fixture.runID, suffix, wikiAgentRunToken),
+			http.StatusUnprocessableEntity,
+			"validation_failed",
+		)
 	}
 	if len(fixture.service.searches) != 2 || fixture.service.reads != 0 {
 		t.Fatalf("invalid request reached the service")
@@ -224,7 +278,12 @@ func TestWikiAgentListParsesItsQueryParameters(t *testing.T) {
 	}
 
 	for _, suffix := range []string{"/list?collectionId=nope", "/list?offset=x", "/list?limit=abc"} {
-		assertErrorResponse(t, fixture.get(h, fixture.runID, suffix, wikiAgentRunToken), http.StatusUnprocessableEntity, "validation_failed")
+		assertErrorResponse(
+			t,
+			fixture.get(h, fixture.runID, suffix, wikiAgentRunToken),
+			http.StatusUnprocessableEntity,
+			"validation_failed",
+		)
 	}
 	if len(fixture.service.lists) != 2 {
 		t.Fatalf("invalid request reached the service")
@@ -250,9 +309,19 @@ func TestWikiAgentRoutesReportDisabledAccessAndPrivateCaching(t *testing.T) {
 	search := fixture.get(h, fixture.runID, "/search?q=refunds", wikiAgentRunToken)
 	assertErrorResponse(t, search, http.StatusForbidden, "wiki_agent_access_disabled")
 	fixture.service.listErr = wiki.ErrAgentAccessDisabled
-	assertErrorResponse(t, fixture.get(h, fixture.runID, "/list", wikiAgentRunToken), http.StatusForbidden, "wiki_agent_access_disabled")
+	assertErrorResponse(
+		t,
+		fixture.get(h, fixture.runID, "/list", wikiAgentRunToken),
+		http.StatusForbidden,
+		"wiki_agent_access_disabled",
+	)
 	fixture.service.listErr = wiki.ErrCollectionNotFound
-	assertErrorResponse(t, fixture.get(h, fixture.runID, "/list", wikiAgentRunToken), http.StatusNotFound, "wiki_collection_not_found")
+	assertErrorResponse(
+		t,
+		fixture.get(h, fixture.runID, "/list", wikiAgentRunToken),
+		http.StatusNotFound,
+		"wiki_collection_not_found",
+	)
 }
 
 func TestWikiEvidenceRoutesAreHumanOnlyAndNameMissingRunsAsNotFound(t *testing.T) {
@@ -278,7 +347,12 @@ func TestWikiEvidenceRoutesAreHumanOnlyAndNameMissingRunsAsNotFound(t *testing.T
 	if result := serveBearerJSON(h, http.MethodGet, page, nil); result.Code != http.StatusOK {
 		t.Fatalf("default limit = %d %s", result.Code, result.Body.String())
 	}
-	if result := serveBearerJSON(h, http.MethodGet, page+"?limit=abc", nil); result.Code != http.StatusUnprocessableEntity {
+	if result := serveBearerJSON(
+		h,
+		http.MethodGet,
+		page+"?limit=abc",
+		nil,
+	); result.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("bad limit = %d %s", result.Code, result.Body.String())
 	}
 	if len(fixture.service.pageReads) != 1 || fixture.service.pageReads[0] != wiki.DefaultPageAgentReadsLimit {

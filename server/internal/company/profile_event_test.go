@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // A event event is opaque by design — holding one proves only that its
@@ -20,7 +20,7 @@ func TestCompanyUpdatedEventCarriesTheCanonicalCompanyProjection(t *testing.T) {
 	companyID := uuid.Must(uuid.NewV7())
 	actorID := uuid.Must(uuid.NewV7())
 	value := Response{
-		ID: companyID, Name: "Boardly", Revision: 2,
+		ID: companyID, Name: "Zenith Team", Revision: 2,
 		Role: "owner", Permissions: []auth.Permission{auth.PermissionCompanyDelete},
 	}
 

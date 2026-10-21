@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // TestClaudeTerminalReasonFailure covers the mapping in isolation: only the one

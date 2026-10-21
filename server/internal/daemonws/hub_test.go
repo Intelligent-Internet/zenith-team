@@ -12,8 +12,8 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestNotifyRunAvailable(t *testing.T) {

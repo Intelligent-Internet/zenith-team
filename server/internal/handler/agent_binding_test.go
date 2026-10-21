@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 type agentBindingServiceStub struct {
@@ -66,11 +66,17 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 	bound := agent.Response{
 		ID: agentID, CompanyID: companyID, Name: "Lyra", Title: "Engineer", Provider: "codex",
 		Binding: &agent.BindingRef{
-			ID: uuid.Must(uuid.NewV7()), AgentID: agentID,
-			Runtime:   agent.RuntimeRef{ID: runtimeID, Name: "Codex (MacBook)", Status: "online", Provider: "codex"},
+			ID:      uuid.Must(uuid.NewV7()),
+			AgentID: agentID,
+			Runtime: agent.RuntimeRef{
+				ID:       runtimeID,
+				Name:     "Codex (MacBook)",
+				Status:   "online",
+				Provider: "codex",
+			},
 			CreatedAt: now,
 		},
-		RuntimeAvailable: true, Access: agent.AgentAccess{Configure: true, Execute: true},
+		RuntimeAvailable: true, Access: agent.Access{Configure: true, Execute: true},
 		CreatedAt: now, UpdatedAt: now, Revision: 1,
 	}
 	var unbound []uuid.UUID
@@ -102,7 +108,14 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 				if options.RuntimeID != nil {
 					return nil, nil
 				}
-				return []agent.Binding{{ID: bound.Binding.ID, AgentID: agentID, Runtime: bound.Binding.Runtime, CreatedAt: now}}, nil
+				return []agent.Binding{
+					{
+						ID:        bound.Binding.ID,
+						AgentID:   agentID,
+						Runtime:   bound.Binding.Runtime,
+						CreatedAt: now,
+					},
+				}, nil
 			},
 		},
 	})
@@ -116,7 +129,11 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 	var got map[string]json.RawMessage
 	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil || got["binding"] == nil ||
 		got["runtime"] != nil || string(got["runtimeAvailable"]) != "true" {
-		t.Fatalf("bind response = %s, %v; want the agent with the caller's binding", response.Body.String(), err)
+		t.Fatalf(
+			"bind response = %s, %v; want the agent with the caller's binding",
+			response.Body.String(),
+			err,
+		)
 	}
 	var binding struct {
 		AgentID string `json:"agentId"`
@@ -130,8 +147,14 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 	}
 
 	response = serveBearerRequest(handler, http.MethodDelete, base+"/agents/"+agentID.String()+"/binding", nil)
-	if response.Code != http.StatusNoContent || response.Body.Len() != 0 || len(unbound) != 1 || unbound[0] != agentID {
-		t.Fatalf("unbind = %d %q (unbound %v), want 204 with no body", response.Code, response.Body.String(), unbound)
+	if response.Code != http.StatusNoContent || response.Body.Len() != 0 || len(unbound) != 1 ||
+		unbound[0] != agentID {
+		t.Fatalf(
+			"unbind = %d %q (unbound %v), want 204 with no body",
+			response.Code,
+			response.Body.String(),
+			unbound,
+		)
 	}
 
 	response = serveBearerRequest(handler, http.MethodGet, base+"/agent-bindings", nil)
@@ -145,7 +168,12 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 		page.Items[0].AgentID != agentID || page.Items[0].Runtime.ID != runtimeID {
 		t.Fatalf("list = %s, %v", response.Body.String(), err)
 	}
-	response = serveBearerRequest(handler, http.MethodGet, base+"/agent-bindings?runtime_id="+runtimeID.String(), nil)
+	response = serveBearerRequest(
+		handler,
+		http.MethodGet,
+		base+"/agent-bindings?runtime_id="+runtimeID.String(),
+		nil,
+	)
 	if response.Code != http.StatusOK || response.Body.String() != `{"items":[]}` {
 		t.Fatalf("filtered list = %d %s, want an empty items array", response.Code, response.Body.String())
 	}
@@ -169,24 +197,38 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 			status int
 			code   string
 		}{
-			"missing runtime": {http.MethodPut, base + "/agents/" + agentID.String() + "/binding", []byte(`{}`),
-				http.StatusUnprocessableEntity, "validation_failed"},
-			"malformed runtime": {http.MethodPut, base + "/agents/" + agentID.String() + "/binding",
-				[]byte(`{"runtimeId":"not-a-uuid"}`), http.StatusUnprocessableEntity, "validation_failed"},
-			"unknown field": {http.MethodPut, base + "/agents/" + agentID.String() + "/binding",
-				[]byte(`{"runtimeId":"` + runtimeID.String() + `","force":true}`), http.StatusBadRequest, "invalid_request"},
-			"malformed agent id": {http.MethodPut, base + "/agents/not-a-uuid/binding",
-				[]byte(`{"runtimeId":"` + runtimeID.String() + `"}`), http.StatusNotFound, "agent_not_found"},
-			"malformed agent id on unbind": {http.MethodDelete, base + "/agents/not-a-uuid/binding", nil,
-				http.StatusNotFound, "agent_not_found"},
-			"unknown list filter": {http.MethodGet, base + "/agent-bindings?agent_id=" + agentID.String(), nil,
-				http.StatusUnprocessableEntity, "validation_failed"},
-			"malformed list filter": {http.MethodGet, base + "/agent-bindings?runtime_id=x", nil,
-				http.StatusUnprocessableEntity, "validation_failed"},
+			"missing runtime": {
+				http.MethodPut, base + "/agents/" + agentID.String() + "/binding", []byte(`{}`),
+				http.StatusUnprocessableEntity, "validation_failed",
+			},
+			"malformed runtime": {
+				http.MethodPut, base + "/agents/" + agentID.String() + "/binding",
+				[]byte(`{"runtimeId":"not-a-uuid"}`), http.StatusUnprocessableEntity, "validation_failed",
+			},
+			"unknown field": {
+				http.MethodPut, base + "/agents/" + agentID.String() + "/binding",
+				[]byte(`{"runtimeId":"` + runtimeID.String() + `","force":true}`), http.StatusBadRequest, "invalid_request",
+			},
+			"malformed agent id": {
+				http.MethodPut, base + "/agents/not-a-uuid/binding",
+				[]byte(`{"runtimeId":"` + runtimeID.String() + `"}`), http.StatusNotFound, "agent_not_found",
+			},
+			"malformed agent id on unbind": {
+				http.MethodDelete, base + "/agents/not-a-uuid/binding", nil,
+				http.StatusNotFound, "agent_not_found",
+			},
+			"unknown list filter": {
+				http.MethodGet, base + "/agent-bindings?agent_id=" + agentID.String(), nil,
+				http.StatusUnprocessableEntity, "validation_failed",
+			},
+			"malformed list filter": {
+				http.MethodGet, base + "/agent-bindings?runtime_id=x", nil,
+				http.StatusUnprocessableEntity, "validation_failed",
+			},
 		} {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
-				var response = serveBearerRequest(refusing, test.method, test.path, nil)
+				response := serveBearerRequest(refusing, test.method, test.path, nil)
 				if test.body != nil {
 					response = serveBearerJSON(refusing, test.method, test.path, test.body)
 				}
@@ -221,8 +263,12 @@ func TestAgentBindingRoutesBindUnbindAndListForTheCaller(t *testing.T) {
 						},
 					},
 				})
-				assertErrorResponse(t, serveBearerJSON(failing, http.MethodPut,
-					base+"/agents/"+agentID.String()+"/binding", []byte(`{"runtimeId":"`+runtimeID.String()+`"}`)),
+				assertErrorResponse(t, serveBearerJSON(
+					failing,
+					http.MethodPut,
+					base+"/agents/"+agentID.String()+"/binding",
+					[]byte(`{"runtimeId":"`+runtimeID.String()+`"}`),
+				),
 					test.status, test.code)
 			})
 		}

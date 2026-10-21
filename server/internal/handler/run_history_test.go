@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -28,7 +29,7 @@ func TestRunHistoryFiltersRequireSourceScope(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-			ctx.Request = httptest.NewRequest("GET", "/?"+tt.query, nil)
+			ctx.Request = httptest.NewRequest(http.MethodGet, "/?"+tt.query, nil)
 			_, err := parseRunListQuery(ctx)
 			if (err == nil) != tt.valid {
 				t.Fatalf("parseRunListQuery(%q) error = %v, want valid=%v", tt.query, err, tt.valid)

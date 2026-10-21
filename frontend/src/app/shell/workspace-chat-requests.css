@@ -155,7 +155,7 @@
     0 8px 24px rgb(15 23 42 / 7%);
 }
 
-html[data-boardly-color-mode="dark"]
+html[data-zenith-team-color-mode="dark"]
   .workspace-chat-page
   .agent-question-card[data-task="true"] {
   border: 1px solid var(--workspace-divider-strong);
@@ -211,7 +211,7 @@ html[data-boardly-color-mode="dark"]
   border-color: var(--workspace-native-accent);
 }
 
-html[data-boardly-color-mode="dark"]
+html[data-zenith-team-color-mode="dark"]
   .workspace-chat-page
   .agent-question-card[data-task="true"]
   .agent-question-prompt__response {

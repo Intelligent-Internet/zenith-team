@@ -1,0 +1,14 @@
+# BuildKit per-Dockerfile ignore: the build runs from the repository root but
+# the image needs only the web workspace and the Caddy config.
+*
+!frontend
+!deploy/Caddyfile
+!LICENSE
+!THIRD_PARTY_NOTICES.md
+frontend/node_modules
+frontend/dist
+frontend/out
+frontend/.vite
+frontend/electron/generated
+frontend/.env
+frontend/.env.*

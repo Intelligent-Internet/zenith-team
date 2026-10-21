@@ -9,10 +9,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func (s *DefaultDraftService) UpdateDraft(
@@ -389,10 +389,16 @@ func (s *DefaultDraftService) QueueGroup(
 					continue
 				}
 				change, eventErr := newDraftChangedEvent(
-					ctx, queries,
-					principal.CompanyID, conversationID, events.UserActor(principal.UserID.String()),
-					draft, mailboxDraftChangeQueued, rows[0].ConversationKind,
-					util.NullUUIDPtr(rows[0].CreatedByUserID), now,
+					ctx,
+					queries,
+					principal.CompanyID,
+					conversationID,
+					events.UserActor(principal.UserID.String()),
+					draft,
+					mailboxDraftChangeQueued,
+					rows[0].ConversationKind,
+					util.NullUUIDPtr(rows[0].CreatedByUserID),
+					now,
 				)
 				if eventErr != nil {
 					return eventErr

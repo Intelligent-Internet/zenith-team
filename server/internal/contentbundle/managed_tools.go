@@ -372,7 +372,7 @@ func ValidateSkill(ref SkillRef, bundle Skill) error {
 			}
 		}
 		if file.Path != "SKILL.md" &&
-			(path.Base(file.Path) == "SKILL.md" || path.Base(file.Path) == ".boardly.json") {
+			(path.Base(file.Path) == "SKILL.md" || path.Base(file.Path) == ".zenith-team.json") {
 			return fmt.Errorf("%w: reserved file", ErrSkillFilesInvalid)
 		}
 		fileHash := sha256.Sum256(data)

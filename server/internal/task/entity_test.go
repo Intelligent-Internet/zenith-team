@@ -42,7 +42,11 @@ func TestNormalizeCreateInputSettlesAssigneeAndExecutedBy(t *testing.T) {
 	}
 	if got.Assignee != (ActorRef{Kind: ActorUser, ID: callerID}) ||
 		got.ExecutedBy == nil || *got.ExecutedBy != got.Assignee {
-		t.Fatalf("defaults = assignee %+v executedBy %+v, want the caller doing their own work", got.Assignee, got.ExecutedBy)
+		t.Fatalf(
+			"defaults = assignee %+v executedBy %+v, want the caller doing their own work",
+			got.Assignee,
+			got.ExecutedBy,
+		)
 	}
 
 	other := uuid.MustParse("0198bb00-0000-7000-8000-0000000000bb")
@@ -107,8 +111,17 @@ func TestNormalizeCreateInputAppliesDefaultsWithoutClientOwnedIdentities(t *test
 	for range maxCreateAttachments {
 		withFiles.AttachmentIDs = append(withFiles.AttachmentIDs, uuid.Must(uuid.NewV7()))
 	}
-	if got, err := normalizeCreateInput(withFiles, callerID); err != nil || len(got.AttachmentIDs) != maxCreateAttachments {
-		t.Fatalf("normalizeCreateInput(%d files) = %d files, %v", maxCreateAttachments, len(got.AttachmentIDs), err)
+	if got, err := normalizeCreateInput(
+		withFiles,
+		callerID,
+	); err != nil ||
+		len(got.AttachmentIDs) != maxCreateAttachments {
+		t.Fatalf(
+			"normalizeCreateInput(%d files) = %d files, %v",
+			maxCreateAttachments,
+			len(got.AttachmentIDs),
+			err,
+		)
 	}
 
 	userAssigned := input

@@ -12,11 +12,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const maxMergeResultTextBytes = 256
@@ -134,7 +134,10 @@ func (s *DefaultMergeService) Claim(
 		} else if err != nil {
 			return fmt.Errorf("lock Task merge claim fence: %w", err)
 		}
-		row, err := tx.ClaimTaskMergeJob(ctx, mergeClaimParams(candidate.JobID, principal.UserID, runtimeID, daemonID))
+		row, err := tx.ClaimTaskMergeJob(
+			ctx,
+			mergeClaimParams(candidate.JobID, principal.UserID, runtimeID, daemonID),
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrMergeClaimNotFound
 		}
@@ -461,7 +464,16 @@ func (s *DefaultMergeService) RecordResult(
 				previous := taskFromRow(currentRow)
 				target := previous
 				target.Status = StatusDone
-				if _, err := updateTask(ctx, tx, target, previous.Revision, &pending, events.UserActor(job.AuthorityUserID.String()), false, projectWriteFence{}); err != nil {
+				if _, err := updateTask(
+					ctx,
+					tx,
+					target,
+					previous.Revision,
+					&pending,
+					events.UserActor(job.AuthorityUserID.String()),
+					false,
+					projectWriteFence{},
+				); err != nil {
 					return err
 				}
 				projection, err := tx.GetTaskProjectionForSystem(

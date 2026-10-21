@@ -17,11 +17,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/contentbundle"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -280,7 +280,13 @@ func (s *DefaultSkillService) PreviewUpload(
 	if strings.EqualFold(path.Ext(input.Filename), ".md") {
 		source = "markdown"
 	}
-	return s.saveSkillPreview(ctx, principal, agentID, skillImportSource{Type: source, ReplaceSkillID: input.ReplaceSkillID}, items)
+	return s.saveSkillPreview(
+		ctx,
+		principal,
+		agentID,
+		skillImportSource{Type: source, ReplaceSkillID: input.ReplaceSkillID},
+		items,
+	)
 }
 
 type skillImportSource struct {
@@ -302,7 +308,7 @@ func (s *DefaultSkillService) saveSkillPreview(
 	}
 	var record generated.SkillImport
 	var versions []generated.SkillVersion
-	var copies = make(map[int]generated.SkillVersion)
+	copies := make(map[int]generated.SkillVersion)
 	var drafts []skillPreviewDraft
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		if err := lockSkillConfiguration(ctx, q, principal, agentID); err != nil {
@@ -381,11 +387,11 @@ func (s *DefaultSkillService) saveSkillPreview(
 			item.OriginalName = draft.Item.OriginalName
 		}
 		if draft.Copy != nil {
-			copy, err := s.uploadSkillPreviewVersion(ctx, copies[i], *draft.Copy)
+			addAsNew, err := s.uploadSkillPreviewVersion(ctx, copies[i], *draft.Copy)
 			if err != nil {
 				return SkillPreview{}, err
 			}
-			item.AddAsNew = &copy
+			item.AddAsNew = &addAsNew
 		}
 		preview.Skills = append(preview.Skills, item)
 	}
@@ -430,7 +436,14 @@ func (s *DefaultSkillService) uploadSkillPreviewVersion(
 	if err != nil {
 		return SkillPreviewVersion{}, err
 	}
-	if err := s.objects.Upload(ctx, skillObjectKey(version), bytes.NewReader(data), int64(len(data)), "application/json", "bundle.json"); err != nil {
+	if err := s.objects.Upload(
+		ctx,
+		skillObjectKey(version),
+		bytes.NewReader(data),
+		int64(len(data)),
+		"application/json",
+		"bundle.json",
+	); err != nil {
 		return SkillPreviewVersion{}, fmt.Errorf("%w: upload bundle", ErrSkillUnavailable)
 	}
 	return SkillPreviewVersion{
@@ -591,7 +604,9 @@ func skillInstallReplacements(input SkillInstallInput, ids []uuid.UUID) (map[uui
 		if len(ids) != 1 || input.ExpectedRevision < 1 || len(items) != 0 {
 			return nil, ErrSkillInvalid
 		}
-		items = []SkillReplacementInput{{VersionID: ids[0], SkillID: input.ReplaceSkillID, ExpectedRevision: input.ExpectedRevision}}
+		items = []SkillReplacementInput{
+			{VersionID: ids[0], SkillID: input.ReplaceSkillID, ExpectedRevision: input.ExpectedRevision},
+		}
 	} else if input.ExpectedRevision != 0 {
 		return nil, ErrSkillInvalid
 	}
@@ -601,7 +616,8 @@ func skillInstallReplacements(input SkillInstallInput, ids []uuid.UUID) (map[uui
 	result := make(map[uuid.UUID]SkillReplacementInput, len(items))
 	seen := make(map[uuid.UUID]bool, len(items))
 	for _, item := range items {
-		if item.SkillID == uuid.Nil || item.ExpectedRevision < 1 || !slices.Contains(ids, item.VersionID) || seen[item.SkillID] {
+		if item.SkillID == uuid.Nil || item.ExpectedRevision < 1 || !slices.Contains(ids, item.VersionID) ||
+			seen[item.SkillID] {
 			return nil, ErrSkillInvalid
 		}
 		if _, duplicate := result[item.VersionID]; duplicate {
@@ -862,7 +878,7 @@ func (s *DefaultSkillService) Cleanup(ctx context.Context) error {
 	)
 }
 
-// MessageSkill is a currently selectable installation, labelled with its
+// MessageSkill is a currently selectable installation, labeled with its
 // source Agent. Selecting it grants procedures to a message, not permissions.
 type MessageSkill struct {
 	ID          uuid.UUID `json:"id"`
@@ -878,17 +894,32 @@ type MessageSkillScope struct {
 	AgentID        uuid.UUID
 }
 
-func (s *DefaultSkillService) ListForMessage(ctx context.Context, principal auth.UserPrincipal, scope MessageSkillScope) ([]MessageSkill, error) {
+func (s *DefaultSkillService) ListForMessage(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	scope MessageSkillScope,
+) ([]MessageSkill, error) {
 	if err := authorizeMemberRead(ctx, s.store.Queries(), principal); err != nil {
 		return nil, err
 	}
-	rows, err := s.store.Queries().ListMessageSkillCatalog(ctx, generated.ListMessageSkillCatalogParams{CompanyID: principal.CompanyID, ActorUserID: principal.UserID, ConversationID: scope.ConversationID, AgentID: scope.AgentID})
+	rows, err := s.store.Queries().
+		ListMessageSkillCatalog(ctx, generated.ListMessageSkillCatalogParams{CompanyID: principal.CompanyID, ActorUserID: principal.UserID, ConversationID: scope.ConversationID, AgentID: scope.AgentID})
 	if err != nil {
 		return nil, err
 	}
 	result := make([]MessageSkill, 0, len(rows))
 	for _, row := range rows {
-		result = append(result, MessageSkill{ID: row.ID, AgentID: row.AgentID, VersionID: row.VersionID, Name: row.Name, Description: row.Description, AgentName: row.AgentName})
+		result = append(
+			result,
+			MessageSkill{
+				ID:          row.ID,
+				AgentID:     row.AgentID,
+				VersionID:   row.VersionID,
+				Name:        row.Name,
+				Description: row.Description,
+				AgentName:   row.AgentName,
+			},
+		)
 	}
 	return result, nil
 }

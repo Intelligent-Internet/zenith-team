@@ -16,11 +16,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (
@@ -325,7 +325,7 @@ func (s *DefaultDraftService) Create(
 				change, eventErr := newDraftChangedEvent(
 					ctx, queries,
 					trusted.CompanyID, trusted.ConversationID,
-					// The Run writes the drafts for its member (D31).
+					// The Run writes the drafts for its member.
 					events.RunActor(
 						trusted.AgentID.String(),
 						trusted.RunID.String(),

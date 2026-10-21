@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 //go:embed tool_studio.cjs
@@ -58,6 +58,10 @@ func (d *Daemon) localStudioProjectHandler() http.HandlerFunc {
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if token == "" || token == r.Header.Get("Authorization") {
 			writeLocalCapabilityError(w, 401, "unauthorized", "Run proof is required.")
+			return
+		}
+		if d.cfg.StudioAPIOrigin == "" {
+			writeLocalCapabilityError(w, 409, "studio_not_configured", errStudioNotConfigured.Error())
 			return
 		}
 		runtimeID, err := uuid.Parse(r.PathValue("runtimeId"))
@@ -110,7 +114,12 @@ func (d *Daemon) localStudioProjectHandler() http.HandlerFunc {
 		}
 		if authAction == "auth_wait" || authAction == "auth_ready" {
 			if err := d.client.WaitForStudioAuth(ctx, runID, authAction == "auth_wait"); err != nil {
-				writeLocalCapabilityError(w, http.StatusConflict, "studio_auth_wait_unavailable", "This Run can no longer wait for Studio sign-in.")
+				writeLocalCapabilityError(
+					w,
+					http.StatusConflict,
+					"studio_auth_wait_unavailable",
+					"This Run can no longer wait for Studio sign-in.",
+				)
 				return
 			}
 		}

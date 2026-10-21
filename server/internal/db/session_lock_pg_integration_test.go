@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestSessionAdvisoryLockElectsExactlyOneHolderAndTransfersAfterUnlock(t *testing.T) {
@@ -21,7 +21,7 @@ func TestSessionAdvisoryLockElectsExactlyOneHolderAndTransfersAfterUnlock(t *tes
 	}
 
 	first, acquired, err := store.TryAcquireSessionAdvisoryLock(
-		ctx, "boardly/daemon/periodic-leader/v1", time.Minute,
+		ctx, "zenith-team/daemon/periodic-leader/v1", time.Minute,
 	)
 	if err != nil || !acquired || first == nil {
 		t.Fatalf("first TryAcquireSessionAdvisoryLock() = %v, %t, %v", first, acquired, err)
@@ -29,7 +29,7 @@ func TestSessionAdvisoryLockElectsExactlyOneHolderAndTransfersAfterUnlock(t *tes
 	defer func() { _ = first.Release(context.Background()) }()
 
 	contender, acquired, err := store.TryAcquireSessionAdvisoryLock(
-		ctx, "boardly/daemon/periodic-leader/v1", time.Minute,
+		ctx, "zenith-team/daemon/periodic-leader/v1", time.Minute,
 	)
 	if err != nil || acquired || contender != nil {
 		t.Fatalf("contending TryAcquireSessionAdvisoryLock() = %v, %t, %v", contender, acquired, err)
@@ -39,7 +39,7 @@ func TestSessionAdvisoryLockElectsExactlyOneHolderAndTransfersAfterUnlock(t *tes
 	}
 
 	successor, acquired, err := store.TryAcquireSessionAdvisoryLock(
-		ctx, "boardly/daemon/periodic-leader/v1", time.Minute,
+		ctx, "zenith-team/daemon/periodic-leader/v1", time.Minute,
 	)
 	if err != nil || !acquired || successor == nil {
 		t.Fatalf("successor TryAcquireSessionAdvisoryLock() = %v, %t, %v", successor, acquired, err)
@@ -59,14 +59,14 @@ func TestSessionAdvisoryLockConnectionLossSignalsAndAllowsTakeover(t *testing.T)
 	}
 
 	decoy, acquired, err := store.TryAcquireSessionAdvisoryLock(
-		ctx, "boardly/test/session-loss-decoy/v1", time.Minute,
+		ctx, "zenith-team/test/session-loss-decoy/v1", time.Minute,
 	)
 	if err != nil || !acquired || decoy == nil {
 		t.Fatalf("acquire decoy SessionAdvisoryLock = %v, %t, %v", decoy, acquired, err)
 	}
 	defer func() { _ = decoy.Release(context.Background()) }()
 
-	const lockKey = "boardly/test/session-loss/v1"
+	const lockKey = "zenith-team/test/session-loss/v1"
 	lock, acquired, err := store.TryAcquireSessionAdvisoryLock(
 		ctx, lockKey, time.Millisecond,
 	)

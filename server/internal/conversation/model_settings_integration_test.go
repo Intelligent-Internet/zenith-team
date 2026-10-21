@@ -13,10 +13,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestChatModelSettingsUpdatesCarryTheirAudience(t *testing.T) {
@@ -270,7 +270,12 @@ func TestChatModelChangeHistory(t *testing.T) {
 		t.Fatalf("initial changes = %+v, want empty", got)
 	}
 	model, thinking := "new-model", "high"
-	input := ModelSettingsInput{AgentID: f.AgentA, ExpectedRevision: settings.Revision, Model: &model, ThinkingLevel: &thinking}
+	input := ModelSettingsInput{
+		AgentID:          f.AgentA,
+		ExpectedRevision: settings.Revision,
+		Model:            &model,
+		ThinkingLevel:    &thinking,
+	}
 	saved, err := s.UpdateModelSettings(ctx, p, id, input)
 	if err != nil {
 		t.Fatal(err)
@@ -291,18 +296,29 @@ func TestChatModelChangeHistory(t *testing.T) {
 			t.Fatalf("same model update = %+v, %v", saved, err)
 		}
 	}
-	sent, err := s.Send(ctx, p, MessageTarget{Kind: TargetConversation, ID: id}, SendInput{RequestKey: uuid.New(), Content: "hello"})
+	sent, err := s.Send(
+		ctx,
+		p,
+		MessageTarget{Kind: TargetConversation, ID: id},
+		SendInput{RequestKey: uuid.New(), Content: "hello"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var throughSeq int64
-	if err := pool.QueryRow(ctx, `SELECT max(seq) FROM conversation_items WHERE conversation_id=$1`, id).Scan(&throughSeq); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT max(seq) FROM conversation_items WHERE conversation_id=$1`, id).
+		Scan(&throughSeq); err != nil {
 		t.Fatal(err)
 	}
 	if sent.RunID == nil || throughSeq == 0 {
 		t.Fatal("send did not create a durable message")
 	}
-	_, err = s.UpdateModelSettings(ctx, p, id, ModelSettingsInput{AgentID: f.AgentA, ExpectedRevision: saved.Revision})
+	_, err = s.UpdateModelSettings(
+		ctx,
+		p,
+		id,
+		ModelSettingsInput{AgentID: f.AgentA, ExpectedRevision: saved.Revision},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

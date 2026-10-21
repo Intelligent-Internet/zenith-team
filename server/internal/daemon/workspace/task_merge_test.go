@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/repocache"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
 )
 
 const (
@@ -60,8 +60,11 @@ func TestManagerReviewAndMergeTaskWithLargeBinaryFiles(t *testing.T) {
 
 			manager, root := newTaskMergeTestManager(t)
 			seed, err := manager.AcquireScopedScratch(
-				t.Context(), taskMergeTestCompanyID, "product",
-				"01900000-0000-4000-8000-0000000000d3", uuid.MustParse("00000000-0000-4000-8000-000000001600"),
+				t.Context(),
+				taskMergeTestCompanyID,
+				"product",
+				"01900000-0000-4000-8000-0000000000d3",
+				uuid.MustParse("00000000-0000-4000-8000-000000001600"),
 				0,
 			)
 			if err != nil {
@@ -235,7 +238,7 @@ func TestManagerMergeTaskUsesSignedScopedIdentityAndIsIdempotent(t *testing.T) {
 		"-c",
 		"user.name=Test",
 		"-c",
-		"user.email=test@boardly.local",
+		"user.email=test@zenith-team.local",
 		"commit",
 		"--allow-empty",
 		"-m",
@@ -556,7 +559,7 @@ func TestManagerMergeTaskIgnoresSigningHooksAndInheritedGitControl(t *testing.T)
 	}
 	runTaskMergeTestGit(t, mainDir, "config", "--local", "core.hooksPath", hooksDir)
 	runTaskMergeTestGit(t, mainDir, "config", "--local", "commit.gpgSign", "true")
-	runTaskMergeTestGit(t, mainDir, "config", "--local", "user.signingKey", "missing-boardly-test-key")
+	runTaskMergeTestGit(t, mainDir, "config", "--local", "user.signingKey", "missing-zenith-team-test-key")
 
 	t.Setenv("GIT_DIR", filepath.Join(t.TempDir(), "attacker.git"))
 	t.Setenv("GIT_WORK_TREE", t.TempDir())
@@ -627,7 +630,7 @@ func commitTaskMergeTestFiles(t *testing.T, dir, message string) {
 		"-c",
 		"user.name=Test",
 		"-c",
-		"user.email=test@boardly.local",
+		"user.email=test@zenith-team.local",
 		"commit",
 		"-m",
 		message,

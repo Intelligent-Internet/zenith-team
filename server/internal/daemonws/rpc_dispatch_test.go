@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // dialRPCTestConn spins up a hub-backed WS server and returns a connected

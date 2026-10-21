@@ -12,7 +12,7 @@ import (
 func TestS3ObjectStorageContract(t *testing.T) {
 	t.Parallel()
 
-	store := newS3Store("boardly-test", newMemoryS3Client())
+	store := newS3Store("zenith-team-test", newMemoryS3Client())
 	key := "companies/acme/attachments/contract.txt"
 	payload := []byte("streamed attachment")
 	if err := store.Upload(
@@ -46,7 +46,7 @@ func TestS3ObjectStorageContract(t *testing.T) {
 func TestS3UploadRejectsDeclaredSizeMismatch(t *testing.T) {
 	t.Parallel()
 
-	store := newS3Store("boardly-test", newMemoryS3Client())
+	store := newS3Store("zenith-team-test", newMemoryS3Client())
 	for name, test := range map[string]struct {
 		payload  string
 		declared int64
@@ -70,7 +70,7 @@ func TestS3UploadRejectsDeclaredSizeMismatch(t *testing.T) {
 func TestS3ConcurrentUploadHasOneCreateOnlyWinner(t *testing.T) {
 	t.Parallel()
 
-	store := newS3Store("boardly-test", newMemoryS3Client())
+	store := newS3Store("zenith-team-test", newMemoryS3Client())
 	key := "companies/acme/attachments/concurrent.txt"
 	payloads := [][]byte{[]byte("writer a"), []byte("writer b")}
 	results := make([]error, len(payloads))
@@ -120,7 +120,7 @@ func TestS3ConcurrentUploadHasOneCreateOnlyWinner(t *testing.T) {
 func TestS3CanceledUploadDoesNotReadOrPublish(t *testing.T) {
 	t.Parallel()
 
-	store := newS3Store("boardly-test", newMemoryS3Client())
+	store := newS3Store("zenith-team-test", newMemoryS3Client())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	read := false

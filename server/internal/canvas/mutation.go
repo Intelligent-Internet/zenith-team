@@ -14,9 +14,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type mutation struct {
@@ -867,7 +867,7 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 	}
 	switch {
 	case c.Type == "import_output_document":
-		page, revision, e := importOutputDocumentInTx(ctx, q, m, artifact)
+		page, revision, e := importOutputDocumentInTx(ctx, q, m)
 		if e != nil {
 			return uuid.Nil, e
 		}

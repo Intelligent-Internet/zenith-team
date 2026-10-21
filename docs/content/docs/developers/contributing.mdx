@@ -1,101 +1,81 @@
 ---
 title: Contributing
-description: Set up a local Zenith Team development environment, run the stack, and verify changes before submitting.
+description: Set up a local Zenith Team development environment, run the stack, and check your change before you open a pull request.
 ---
 
-Zenith Team is a Go server plus a pnpm frontend workspace. For a product-facing walkthrough of using Zenith Team, see the [Quickstart](/quickstart) — this page is about working on the code. The engineering rulebook is `AGENTS.md` in the repository root (with `server/CODEMAP.md` for the server); this page orients and links, it does not restate the rules.
+Zenith Team is a Go server plus a pnpm workspace for the web and desktop apps. This page gets you to a running stack. The rules for issues, commits, sign-off and pull requests live in [CONTRIBUTING.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/CONTRIBUTING.md), and the engineering rulebook is `AGENTS.md` in the repository root. Read both before you open a pull request.
 
 ## Requirements
 
 - **Go** 1.26
-- **Node.js** 22 or newer
-- **pnpm** 9 — `corepack enable` picks the pinned `9.14.2`
-- **Docker** for the bundled PostgreSQL, Redis, and Silo stack and for the integration tests
+- **Node.js** 24 (`.nvmrc`; Electron needs 22.12 or newer)
+- **pnpm** 9.14.2: `corepack enable` picks the pinned version
+- **Docker** for the local PostgreSQL, Redis and Silo stack, and for the integration tests
+- **`codex` or `claude`** on your `PATH` if you want to run agents
 
-Treat `server/go.mod`, `frontend/package.json`, and the CI workflows as the source of truth for versions.
+`server/go.mod`, `.nvmrc` and `frontend/package.json` are the source of truth for versions. `make doctor` checks what you have.
 
-## First start
+## Run the stack
 
-Each long-running process gets its own terminal.
+Give each long-running command its own terminal.
 
-1. Install the client workspace once — `frontend/` is its own pnpm workspace, so install inside it, not at the root:
+1. Install the client workspace once. `frontend/` is its own pnpm workspace, so install inside it:
 
    ```bash
    cd frontend && pnpm install
    ```
 
-2. Start the infrastructure, the server, and the client:
+2. Start the infrastructure, the server and the web app in one terminal:
 
    ```bash
-   make infra-up         # PostgreSQL + Redis + Silo (docker/compose.yml)
-   make server           # Go API → :8788
-   make frontend         # Client app (Vite) → :5173
+   make dev         # PostgreSQL, Redis and Silo in Docker, then the Go API on :8788 and the web app on :5173
    ```
 
-3. Open **http://localhost:5173** and check the server:
+   Or run `make infra-up`, `make server` and `make frontend` in three terminals.
 
-   ```bash
-   curl -s http://127.0.0.1:8788/healthz   # liveness
-   curl -s http://127.0.0.1:8788/readyz    # readiness (database reachable at the embedded schema version)
-   ```
+3. Open **http://localhost:5173** and create an account.
 
-`make server-local` is the alternative for services you already run natively: copy `server/.env.example` to `server/.env` once and point it at your own PostgreSQL, Redis, and object storage. To actually execute agents you also need a [daemon](/daemon-and-runtimes) and a signed-in provider CLI: `cd server && go run ./cmd/zen auth login`, then `go run ./cmd/zen daemon start`. The full walkthrough is `docs/quickstart.md`; `make help` lists every target.
+Already run PostgreSQL, Redis and S3-compatible storage yourself? Copy `server/.env.example` to `server/.env`, point it at your services, and use `make server-local` instead.
 
-## Verification
-
-The unit-side lanes a change must pass, all from the repository root:
+To run agents, start a [daemon](/daemon-and-runtimes):
 
 ```bash
-make go-unit          # Go: build, vet (both tag lanes), shape + sqlc drift checks, unit tests -race — no Docker
-make go-lint          # golangci-lint, pinned repo-locally (make go-fmt formats)
-make lint             # Frontend lint        (runs in frontend/)
-make typecheck        # Frontend typecheck
-make test             # Frontend tests
-make build            # Frontend build
-make api-lint         # Validate docs/api/spec/openapi.yaml
+make zenith-team-mcp-dev   # from the repository root: build the agent tool server
+cd server
+go run ./cmd/zen auth login --server http://127.0.0.1:8788
+ZENITH_TEAM_MCP_EXECUTABLE="$PWD/../.dev/bin/zenith-team-mcp" go run ./cmd/zen daemon start
 ```
 
-`make gate` runs the full release-quality set — including the tagged Go suites — and is the pre-merge command.
+The full walkthrough is `docs/quickstart.md`. Run `make help` to see every target.
 
-### The API contract loop
+## Check your change
 
-`docs/api/spec/openapi.yaml` is the source of truth for the HTTP surface; it `$ref`s one file per domain beside it — edit those, not the index. After changing the spec (or a Go DTO that the spec must mirror), regenerate the committed TypeScript contract:
+The main checks, from the repository root:
 
 ```bash
-make api-generate     # regenerate frontend/src/shared/api/generated/api.generated.ts, then commit it
-make api-types-check  # fails when the committed contract is stale
+make go-fmt-check go-unit               # Go format, build, vet and unit tests (no Docker)
+make lint typecheck                     # frontend checks
+make api-lint api-types-check           # OpenAPI contract and generated types
 ```
 
-### Integration suites
-
-Files named `*_integration_test.go` carry a `//go:build integration` tag, so plain `go test ./...` never compiles them and needs no Docker. The tag adds those files on top of the unit tests; the tagged lane runs on one shared PostgreSQL container owned by `server/tests/testpostgres`, which hands children the database via `BOARDLY_TEST_DATABASE_URL` — a tagged test run without that variable skips. See `server/tests/README.md`.
+CI runs the PostgreSQL, Redis and object-storage suites every night, not on pull requests. Run them yourself when you change migrations, sqlc queries or test fixtures:
 
 ```bash
-make go-integration   # the tagged suites, on the shared container (Docker required)
-make go-test GO_TEST_ARGS='./internal/task -run TestName'   # one package or test, same container
+make go-integration                                          # all tagged suites (Docker required)
+make go-test GO_TEST_ARGS='./internal/task -run TestName'    # one package or test
 ```
 
-## Where tests live
+`make gate` runs every lane, including the integration suites. [Testing](/developers/testing) lists every target and what CI runs.
 
-Tests are co-located with their package — there is no separate integration tree.
+## Generated code
 
-| Change | Test location | Lane |
-|---|---|---|
-| Server logic | `*_test.go` beside the package | `make go-unit` |
-| Server behavior against PostgreSQL, Silo, or Redis | `*_integration_test.go` beside the package | `make go-integration` |
-| Frontend | the `frontend/` workspace | `make test` |
-
-Run the check closest to the change first, then expand the scope.
-
-## Before submitting
-
-- Read `AGENTS.md` (and `server/CODEMAP.md` for server work). Where a doc and the code disagree, the code wins — fix the doc in the same change.
-- `make gate` passes.
-- CI's Go lane gates on `make go-unit`; the integration job is dispatch-only. Run `make go-integration` yourself before merging changes to migrations, sqlc queries, or fixtures.
-- If you touched the API surface, `make api-generate` ran and the regenerated contract is committed.
-- No credentials, no generated build output, and unrelated local changes left out of the commit.
+- **API types.** The HTTP contract is `docs/api/spec/openapi.yaml`, an index that points to one file per domain. After you change it, run `make api-generate` and commit the regenerated types.
+- **Database queries.** After you change a migration or a query, run `make go-sqlc` and commit the result. It uses the pinned sqlc version.
+- **Migrations** are append-only. Never edit one that is already on `main`; add a new one.
 
 ## Next steps
 
-- **[Project architecture](/developers/architecture)** — how the code is layered.
-- **[Design](/developers/design)** — the decisions behind the shape of the system.
+- **[CONTRIBUTING.md](https://github.com/Intelligent-Internet/zenith-team/blob/main/CONTRIBUTING.md)**: issues, commit style, DCO sign-off and pull requests.
+- **[Project architecture](/developers/architecture)**: how the code is layered.
+- **[Conventions](/developers/conventions)**: the house rules in short.
+- **[Design decisions](/developers/design)**: the rules behind the execution path.

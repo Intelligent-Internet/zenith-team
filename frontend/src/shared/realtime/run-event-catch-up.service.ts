@@ -4,7 +4,7 @@ import type {
   ConversationTranscriptListOptions,
   ConversationTranscriptPageDto,
 } from "@/shared/api/types";
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 
 const CATCH_UP_PAGE_LIMIT = 200;
 const MAX_CATCH_UP_CYCLES = 8;
@@ -19,8 +19,7 @@ const TERMINAL_RUN_EVENTS = new Set([
 
 // The whole of a Run's committed head. There is no companion chain digest:
 // an append holds the Conversation row lock and a committed item is never
-// rewritten, so one `throughSeq` names one history — see
-// docs/adr/0005-one-conversation-stream.md.
+// rewritten, so one `throughSeq` names one history.
 export type RunTranscriptHead = {
   throughSeq: number;
 };
@@ -32,7 +31,7 @@ export type FrozenConversationTranscriptCatchUpResult = Map<
 
 type FrozenConversationTranscriptCatchUpOptions = {
   acceptTranscriptHead: (runId: string, head: RunTranscriptHead) => boolean;
-  deliver: (event: BoardlyRealtimeEvent) => boolean;
+  deliver: (event: ZenithTeamRealtimeEvent) => boolean;
   deliverMessage: (message: ConversationTranscriptEntryDto) => boolean;
   fetchPage: (
     options: ConversationTranscriptListOptions,
@@ -47,7 +46,7 @@ type FrozenConversationTranscriptCatchUpOptions = {
 // separate integrity boundary, and lifecycle frames drain only after every
 // target Run has reached its exact committed head.
 export class FrozenConversationTranscriptCatchUp {
-  private readonly buffered: BoardlyRealtimeEvent[] = [];
+  private readonly buffered: ZenithTeamRealtimeEvent[] = [];
   private readonly bufferedTargetHeads = new Map<string, RunTranscriptHead>();
   private bufferedBytes = 0;
   private bufferFailure: Error | undefined;
@@ -56,7 +55,7 @@ export class FrozenConversationTranscriptCatchUp {
     private readonly options: FrozenConversationTranscriptCatchUpOptions,
   ) {}
 
-  buffer(event: BoardlyRealtimeEvent): boolean {
+  buffer(event: ZenithTeamRealtimeEvent): boolean {
     if (this.bufferFailure) return false;
     const encodedBytes = encodedFrameBytes(event);
     if (
@@ -285,7 +284,7 @@ export class FrozenConversationTranscriptCatchUp {
     return transcriptHeads;
   }
 
-  private prependBuffered(events: readonly BoardlyRealtimeEvent[]): boolean {
+  private prependBuffered(events: readonly ZenithTeamRealtimeEvent[]): boolean {
     const bytes = events.reduce(
       (sum, event) => sum + encodedFrameBytes(event),
       0,
@@ -344,7 +343,7 @@ function validatedTargets(
   return copy;
 }
 
-function eventRunId(event: BoardlyRealtimeEvent): string | undefined {
+function eventRunId(event: ZenithTeamRealtimeEvent): string | undefined {
   return canonicalUuid(
     event.type === "run.message_created"
       ? event.payload.runId
@@ -352,12 +351,12 @@ function eventRunId(event: BoardlyRealtimeEvent): string | undefined {
   );
 }
 
-function messageSequence(event: BoardlyRealtimeEvent): number {
+function messageSequence(event: ZenithTeamRealtimeEvent): number {
   return validSequence(event.payload?.seq) ? Number(event.payload?.seq) : -1;
 }
 
 export function terminalRunTranscriptHead(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): RunTranscriptHead | undefined {
   return TERMINAL_RUN_EVENTS.has(event.type)
     ? parseRunTranscriptHead(event.payload.transcriptThroughSeq)
@@ -365,7 +364,7 @@ export function terminalRunTranscriptHead(
 }
 
 export function runMessageTranscriptHead(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): RunTranscriptHead | undefined {
   if (event.type !== "run.message_created") return undefined;
   const head = parseRunTranscriptHead(event.payload.throughSeq);
@@ -391,7 +390,7 @@ export function sameRunTranscriptHead(
   );
 }
 
-function encodedFrameBytes(event: BoardlyRealtimeEvent): number {
+function encodedFrameBytes(event: ZenithTeamRealtimeEvent): number {
   try {
     return utf8Encoder.encode(JSON.stringify(event)).byteLength;
   } catch {

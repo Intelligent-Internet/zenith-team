@@ -5,7 +5,7 @@ import type {
 } from "@/shared/api/types";
 import { hasRecentPresenceActivity } from "../model/presence-activity";
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
 type Schema = components["schemas"];
@@ -80,7 +80,7 @@ const channelTags = (companyId: string, conversationId?: string) => [
     : []),
 ];
 
-export const discussionsApi = boardlyApi.injectEndpoints({
+export const discussionsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getChannelInvocations: builder.query<
       Schema["ChannelInvocationPage"],
@@ -92,7 +92,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         { type: "ChannelAgent", id: conversationId },
       ],
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["ChannelInvocationPage"]>(
               `${channelPath(arg)}/agent-invocations`,
@@ -111,7 +111,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         { type: "ChannelAgentActivity", id: conversationId },
       ],
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["ChannelAgentActivity"]>(
               `${channelPath(arg)}/agents/${encodeURIComponent(arg.agentId)}/activity`,
@@ -133,7 +133,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         { type: "ChannelAgentActivity", id: conversationId },
       ],
       queryFn: (arg) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["ChannelInvocationPage"]>(
               `${channelPath(arg)}/agent-invocations/${encodeURIComponent(arg.invocationId)}/retry`,
@@ -149,7 +149,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       keepUnusedDataFor: 0,
       providesTags: ["MemberPresence"],
       queryFn: ({ companyId, userIds, reportActivity }, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const items = new Map<
             string,
             Schema["MemberPresenceResponse"]["items"][number]
@@ -185,7 +185,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: ["MemberPresence"],
       queryFn: ({ companyId, manualAway }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["MemberPresenceResponse"]>(
               `${companyPath(companyId)}/member-presence`,
@@ -207,7 +207,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         getPreviousPageParam: (page) => page.olderCursor ?? undefined,
       },
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<DiscussionPage>(
               `${conversationPath(queryArg)}/discussion-messages`,
@@ -229,7 +229,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         getPreviousPageParam: (page) => page.olderCursor ?? undefined,
       },
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<DiscussionPage>(
               `${conversationPath(queryArg)}/threads/${encodeURIComponent(queryArg.rootId!)}/messages`,
@@ -244,7 +244,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DiscussionContext"]>(
               `${conversationPath(arg)}/discussion-messages/${encodeURIComponent(arg.messageId)}/context`,
@@ -266,7 +266,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         getPreviousPageParam: () => undefined,
       },
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DiscussionPins"]>(
               `${conversationPath(queryArg)}/discussion-pins`,
@@ -288,7 +288,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         getPreviousPageParam: () => undefined,
       },
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DiscussionReactions"]>(
               `${conversationPath(queryArg)}/discussion-messages/${encodeURIComponent(queryArg.messageId)}/reactions`,
@@ -306,7 +306,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(() => {
+        executeZenithTeamQuery(() => {
           const message = `${conversationPath(arg)}/discussion-messages/${encodeURIComponent(arg.messageId)}`;
           const action = arg.action;
           if (action.type === "edit")
@@ -338,7 +338,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             companySearchService.search(
               arg.companyId,
@@ -366,7 +366,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Schema["DiscussionUserState"]>(
               `${conversationPath(arg)}/discussion-read-state`,
@@ -385,7 +385,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<DiscussionThreadState>(
               `${conversationPath(arg)}/threads/${encodeURIComponent(arg.rootId)}/state`,
@@ -401,7 +401,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       keepUnusedDataFor: 0,
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["DiscussionStatesResponse"]>(
               `${companyPath(arg.companyId)}/conversation-states/query`,
@@ -425,7 +425,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       },
       providesTags: (_result, _error, arg) => channelTags(arg.companyId),
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DiscussionList"]>(
               `${companyPath(queryArg.companyId)}/human-conversations`,
@@ -453,7 +453,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       },
       providesTags: (_result, _error, arg) => channelTags(arg.companyId),
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DiscussionList"]>(
               `${companyPath(queryArg.companyId)}/channels`,
@@ -484,7 +484,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       },
       providesTags: (_result, _error, arg) => channelTags(arg.companyId),
       queryFn: ({ queryArg, pageParam }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["ChannelManagementList"]>(
               `${companyPath(queryArg.companyId)}/channels`,
@@ -507,7 +507,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         { type: "DiscussionDetail", id: arg.conversationId },
       ],
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<DiscussionDetail>(
               arg.type === "channel"
@@ -527,7 +527,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
         { type: "DiscussionDetail", id: arg.conversationId },
       ],
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ChannelManagement>(channelPath(arg), {
               params: { view: "manage" },
@@ -542,7 +542,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: (_result, _error, arg) => channelTags(arg.companyId),
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["HumanDirectResult"]>(
               `${companyPath(arg.companyId)}/human-conversations`,
@@ -562,7 +562,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       invalidatesTags: (_result, _error, arg) =>
         channelTags(arg.companyId, arg.conversationId),
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["HumanDirectDetail"]>(
               `${companyPath(arg.companyId)}/human-conversations/${encodeURIComponent(arg.conversationId)}/members`,
@@ -578,7 +578,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: (_result, _error, arg) => channelTags(arg.companyId),
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["ChannelReceipt"]>(
               `${companyPath(arg.companyId)}/channels`,
@@ -595,7 +595,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       invalidatesTags: (_result, _error, arg) =>
         channelTags(arg.companyId, arg.conversationId),
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const url = channelPath(arg);
           const body: Schema["ChannelRevisionRequest"] = {
             expectedRevision: arg.expectedRevision,
@@ -639,7 +639,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       DiscussionScope & { body: SendDiscussionRequest }
     >({
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<DiscussionReceipt>(
               `${conversationPath(arg)}/discussion-messages`,
@@ -656,7 +656,7 @@ export const discussionsApi = boardlyApi.injectEndpoints({
       invalidatesTags: (_result, _error, arg) =>
         channelTags(arg.companyId, arg.conversationId),
       queryFn: (arg, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<Schema["DiscussionUserState"]>(
               `${conversationPath(arg)}/discussion-state`,

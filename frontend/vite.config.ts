@@ -1,18 +1,18 @@
 import { readFileSync } from "node:fs";
 import process from "node:process";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, loadEnv, type Plugin, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import svgr from "vite-plugin-svgr";
 
 const env = process.env;
-const host = env.BOARDLY_DEV_HOST;
-const isElectronRendererBuild = env.BOARDLY_ELECTRON_BUILD === "true";
+const host = env.ZENITH_TEAM_DEV_HOST;
+const isElectronRendererBuild = env.ZENITH_TEAM_ELECTRON_BUILD === "true";
 const uploadSentrySourceMaps =
   isElectronRendererBuild &&
-  env.BOARDLY_DESKTOP_CRASH_REPORTS_ENABLED === "true" &&
-  env.BOARDLY_DESKTOP_CRASH_REPORT_PROVIDER === "sentry" &&
+  env.ZENITH_TEAM_DESKTOP_CRASH_REPORTS_ENABLED === "true" &&
+  env.ZENITH_TEAM_DESKTOP_CRASH_REPORT_PROVIDER === "sentry" &&
   Boolean(env.SENTRY_AUTH_TOKEN?.trim());
 const browserFrameProtectionHeaders = {
   "Content-Security-Policy": "frame-ancestors 'none'",
@@ -20,16 +20,17 @@ const browserFrameProtectionHeaders = {
 };
 
 // https://vite.dev/config/
-export default defineConfig((): UserConfig => ({
+export default defineConfig(({ mode }): UserConfig => ({
   base: isElectronRendererBuild ? "./" : "/",
   // Web and desktop dev servers may run together with different environments.
-  cacheDir: env.BOARDLY_DESKTOP_ENV
+  cacheDir: env.ZENITH_TEAM_DESKTOP_ENV
     ? "node_modules/.vite-desktop"
     : "node_modules/.vite",
   plugins: [
     react(),
     tailwindcss(),
     svgr(),
+    publicSiteFiles(loadEnv(mode, process.cwd(), "VITE_")),
     // Sentry must run last so its debug IDs refer to the final bundles.
     ...(uploadSentrySourceMaps ? [createSentrySourceMapPlugin()] : []),
   ],
@@ -176,4 +177,85 @@ function createSentrySourceMapPlugin() {
       filesToDeleteAfterUpload: "./dist/**/*.map",
     },
   });
+}
+
+// The public site's canonical link, social image, crawler and AI-discovery
+// files exist only in builds that serve it (VITE_ZENITH_TEAM_PUBLIC_SITE_ORIGIN);
+// every other build is a private app and asks crawlers to stay out. The
+// discovery files are templates in public-site/.
+function publicSiteFiles(env: Record<string, string>): Plugin {
+  const origin = env.VITE_ZENITH_TEAM_PUBLIC_SITE_ORIGIN?.trim().replace(
+    /\/+$/,
+    "",
+  );
+  const supportEmail = env.VITE_ZENITH_TEAM_SUPPORT_EMAIL?.trim();
+  const fillTemplate = (name: string) =>
+    readFileSync(new URL(`./public-site/${name}`, import.meta.url), "utf8")
+      .split("{{ORIGIN}}")
+      .join(origin ?? "")
+      .split("{{SUPPORT_LINE}}")
+      .join(
+        supportEmail
+          ? `- [Support](mailto:${supportEmail}): Questions about setup and the product.\n`
+          : "",
+      );
+  const socialImage = `${origin}/images/og/zenith-team-social-card.png`;
+  return {
+    name: "zenith-team-public-site-files",
+    transformIndexHtml() {
+      if (!origin) {
+        return [
+          {
+            tag: "meta",
+            attrs: { name: "robots", content: "noindex, nofollow" },
+            injectTo: "head",
+          },
+        ];
+      }
+      return [
+        { tag: "meta", attrs: { name: "robots", content: "index, follow" } },
+        { tag: "link", attrs: { rel: "canonical", href: `${origin}/` } },
+        { tag: "meta", attrs: { property: "og:url", content: `${origin}/` } },
+        { tag: "meta", attrs: { property: "og:image", content: socialImage } },
+        { tag: "meta", attrs: { name: "twitter:image", content: socialImage } },
+        {
+          tag: "link",
+          attrs: {
+            rel: "ai-catalog ard",
+            href: `${origin}/.well-known/ai-catalog.json`,
+            type: "application/json",
+          },
+        },
+      ].map((tag) => ({ ...tag, injectTo: "head" as const }));
+    },
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "robots.txt",
+        source: origin
+          ? `User-agent: *\nAllow: /\n\nSitemap: ${origin}/sitemap.xml\n`
+          : "User-agent: *\nDisallow: /\n",
+      });
+      if (origin) {
+        this.emitFile({
+          type: "asset",
+          fileName: "llms.txt",
+          source: fillTemplate("llms.txt"),
+        });
+        this.emitFile({
+          type: "asset",
+          fileName: ".well-known/ai-catalog.json",
+          source: fillTemplate("ai-catalog.json"),
+        });
+        const urls = ["/", "/privacy", "/terms"]
+          .map((path) => `  <url>\n    <loc>${origin}${path}</loc>\n  </url>`)
+          .join("\n");
+        this.emitFile({
+          type: "asset",
+          fileName: "sitemap.xml",
+          source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+        });
+      }
+    },
+  };
 }

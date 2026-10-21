@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
 func TestInvitationErrors(t *testing.T) {

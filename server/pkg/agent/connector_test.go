@@ -193,7 +193,7 @@ func TestCodexConnectorOnlyToolsAreDirectlyCallable(t *testing.T) {
 		apps    []ConnectorApp
 		want    []string
 	}{
-		{name: "page comments", servers: []string{"boardly"}, want: []string{"mcp__boardly"}},
+		{name: "page comments", servers: []string{"zenith-team"}, want: []string{"mcp__zenith-team"}},
 		{name: "scheduled connectors", servers: []string{"calendar"}, apps: []ConnectorApp{{ID: "mail"}}, want: []string{"mcp__calendar", "mcp__mail"}},
 		{name: "writing without tools", want: []string{}},
 	} {
@@ -201,14 +201,17 @@ func TestCodexConnectorOnlyToolsAreDirectlyCallable(t *testing.T) {
 			t.Parallel()
 			params := map[string]any{}
 			applyCodexConnectorOnlyThreadPolicy(params, ExecOptions{
-				ToolPolicy: ToolPolicyConnectorOnly, AllowedMCPServers: test.servers, ConnectorApps: test.apps,
+				ToolPolicy:        ToolPolicyConnectorOnly,
+				AllowedMCPServers: test.servers,
+				ConnectorApps:     test.apps,
 			})
 			features := params["config"].(map[string]any)["features"].(map[string]any)
 			mode := features["code_mode"].(map[string]any)
 			if got := mode["direct_only_tool_namespaces"]; !reflect.DeepEqual(got, test.want) {
 				t.Fatalf("direct namespaces = %v, want %v", got, test.want)
 			}
-			if mode["enabled"] != false || features["code_mode_host"] != false || features["code_mode_only_strict_3p_tools"] != false {
+			if mode["enabled"] != false || features["code_mode_host"] != false ||
+				features["code_mode_only_strict_3p_tools"] != false {
 				t.Fatalf("restricted tools must not require code-mode execution: %v", features)
 			}
 		})
@@ -233,7 +236,7 @@ func TestApplyCodexConnectorOnlyTurnPolicyIsReadOnlyAndOffline(t *testing.T) {
 
 // Inside the daemon's macOS sandbox Codex cannot start its own Seatbelt, so
 // a connector-only launch asks for danger-full-access at both the thread and
-// the turn; the daemon's profile fences writes instead (Access TECH B3d).
+// the turn; the daemon's profile fences writes instead.
 func TestCodexConnectorOnlyPolicyInsideTheDaemonSandboxAsksForNoSeatbelt(t *testing.T) {
 	t.Parallel()
 

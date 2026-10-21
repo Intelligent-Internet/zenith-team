@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 func TestRunPreparationDiagnosticEventUsesStablePhaseWithoutErrorText(t *testing.T) {

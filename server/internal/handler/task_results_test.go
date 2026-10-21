@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 func TestTaskResultCursorKeepsExhaustedSectionsClosed(t *testing.T) {

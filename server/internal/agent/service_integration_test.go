@@ -17,10 +17,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestCreateAgentAtomicallyPersistsDatabaseGeneratedID(t *testing.T) {
@@ -280,7 +280,7 @@ func seedAgentCompany(t *testing.T, ctx context.Context, pool *pgxpool.Pool, rol
 	short := companyID.String()
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Owner')`,
-		userID, fmt.Sprintf("%s@boardly.test", short))
+		userID, fmt.Sprintf("%s@zenith-team.test", short))
 	mustAgentExec(t, ctx, pool,
 		`INSERT INTO companies (id, name, slug, task_prefix) VALUES ($1, 'Company', $2, 'BRD')`,
 		companyID, "company-"+short)

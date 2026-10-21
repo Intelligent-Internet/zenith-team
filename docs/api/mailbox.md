@@ -36,7 +36,7 @@ using that member's ordinary bearer principal plus
 the same supplemental headers as other Run-authorized operations:
 
 ```
-X-Boardly-Run-Token: brt_<64 lowercase hex characters>
+X-Zenith-Team-Run-Token: brt_<64 lowercase hex characters>
 Idempotency-Key: <uuid>
 ```
 

@@ -10,9 +10,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 )
 
 type companyArtifactsStub struct {
@@ -98,7 +98,10 @@ func TestResolveArtifactsDeduplicatesIDs(t *testing.T) {
 	t.Parallel()
 	handler, stub, base := companyArtifactsHandler(t)
 	first, second := uuid.New(), uuid.New()
-	response := serveArtifactRequest(handler, base+"/resolve?id="+first.String()+"&id="+second.String()+"&id="+first.String())
+	response := serveArtifactRequest(
+		handler,
+		base+"/resolve?id="+first.String()+"&id="+second.String()+"&id="+first.String(),
+	)
 	if response.Code != http.StatusOK || strings.TrimSpace(response.Body.String()) != `{"items":[]}` {
 		t.Fatalf("resolve = %d %s", response.Code, response.Body)
 	}
@@ -147,7 +150,13 @@ func TestParseConversationArtifactRunFilter(t *testing.T) {
 			t.Parallel()
 			got, err := parseConversationArtifactListOptions(tt.query)
 			if (err != nil) != tt.wantError || got.RunID != tt.wantID {
-				t.Fatalf("options = %+v, error = %v; want run %s, error %v", got, err, tt.wantID, tt.wantError)
+				t.Fatalf(
+					"options = %+v, error = %v; want run %s, error %v",
+					got,
+					err,
+					tt.wantID,
+					tt.wantError,
+				)
 			}
 		})
 	}

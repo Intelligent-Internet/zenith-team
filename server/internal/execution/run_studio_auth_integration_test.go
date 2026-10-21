@@ -28,7 +28,8 @@ func TestStudioAuthWaitKeepsTheLiveRunAndResumesWithoutRequeue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resumed.Status != "running" || resumed.WaitReason.Valid || resumed.Attempt != before.Attempt || string(resumed.Context) != string(before.Context) {
+	if resumed.Status != "running" || resumed.WaitReason.Valid || resumed.Attempt != before.Attempt ||
+		string(resumed.Context) != string(before.Context) {
 		t.Fatalf("resume changed live execution: %+v", resumed)
 	}
 	if _, err := h.svc.CancelRun(ctx, id, "user stopped execution"); err != nil {

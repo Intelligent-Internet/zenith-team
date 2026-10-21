@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // This file owns the Claude Code stream-json wire shapes and the terminal

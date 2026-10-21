@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // The access report (ADR 0017) lists, per restricted Project that is not
@@ -29,8 +29,14 @@ func TestProjectAccessReportListsPeopleOutsideTheirWork(t *testing.T) {
 		id := dbtest.NewUUID(t)
 		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
 			id, name+"-"+id.String()+"@report.test")
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
-			f.CompanyA, id)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+			f.CompanyA,
+			id,
+		)
 		return id
 	}
 	veteran, disabled, closer, stalled := person("veteran"), person("disabled"), person("closer"), person("stalled")
@@ -39,11 +45,31 @@ func TestProjectAccessReportListsPeopleOutsideTheirWork(t *testing.T) {
 	// A Task in its own Project, in the given state, and its chat.
 	seedProjectTask := func(key, visibility string, archived bool, assignee uuid.UUID, status string, number int) (uuid.UUID, uuid.UUID) {
 		projectID, taskID, conversationID := dbtest.NewUUID(t), dbtest.NewUUID(t), dbtest.NewUUID(t)
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title, visibility, archived_at)
-			VALUES ($1, $2, $3, $3, $4, CASE WHEN $5 THEN now() END)`, projectID, f.CompanyA, key, visibility, archived)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO projects (id, company_id, key, title, visibility, archived_at)
+			VALUES ($1, $2, $3, $3, $4, CASE WHEN $5 THEN now() END)`,
+			projectID,
+			f.CompanyA,
+			key,
+			visibility,
+			archived,
+		)
 		dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
-			dbtest.MustExecTx(t, ctx, tx, `INSERT INTO conversations (id, company_id, kind, task_id, title, project_id)
-				VALUES ($1, $2, 'task', $3, $4, $5)`, conversationID, f.CompanyA, taskID, key, projectID)
+			dbtest.MustExecTx(
+				t,
+				ctx,
+				tx,
+				`INSERT INTO conversations (id, company_id, kind, task_id, title, project_id)
+				VALUES ($1, $2, 'task', $3, $4, $5)`,
+				conversationID,
+				f.CompanyA,
+				taskID,
+				key,
+				projectID,
+			)
 			dbtest.MustExecTx(t, ctx, tx, `INSERT INTO tasks
 				(id, company_id, conversation_id, project_id, milestone_type, number, key, title,
 				 assignee_user_id, executed_by_agent_id, creator_user_id, status)
@@ -104,7 +130,14 @@ func TestProjectAccessReportListsPeopleOutsideTheirWork(t *testing.T) {
 	want := []listed{
 		{"closed", veteran, []ProjectAccessReportReason{ProjectAccessReportReasonRunAuthorizer}},
 		{"work", w.admin.UserID, []ProjectAccessReportReason{ProjectAccessReportReasonRunAuthorizer}},
-		{"work", w.member.UserID, []ProjectAccessReportReason{ProjectAccessReportReasonRunAuthorizer, ProjectAccessReportReasonTaskAssignee}},
+		{
+			"work",
+			w.member.UserID,
+			[]ProjectAccessReportReason{
+				ProjectAccessReportReasonRunAuthorizer,
+				ProjectAccessReportReasonTaskAssignee,
+			},
+		},
 		{"work", stalled, []ProjectAccessReportReason{ProjectAccessReportReasonRunAuthorizer}},
 	}
 	slices.SortFunc(want[1:], func(a, b listed) int { return slices.Compare(a.userID[:], b.userID[:]) })
@@ -134,13 +167,19 @@ func TestProjectAccessReportListsPeopleOutsideTheirWork(t *testing.T) {
 
 	// Granting the member read takes them off the report.
 	var revision int64
-	if err := pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, f.ProjectA).Scan(&revision); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, f.ProjectA).
+		Scan(&revision); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := w.projects.SetGrants(ctx, w.owner, f.ProjectA, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{string(auth.ProjectPermissionRead)}, ExpectedRevision: revision,
+		UserID:           w.member.UserID,
+		Permissions:      []string{string(auth.ProjectPermissionRead)},
+		ExpectedRevision: revision,
 	}); err != nil {
 		t.Fatalf("grant read: %v", err)
 	}
-	assertReport(w.owner, slices.DeleteFunc(slices.Clone(want), func(l listed) bool { return l.userID == w.member.UserID }))
+	assertReport(
+		w.owner,
+		slices.DeleteFunc(slices.Clone(want), func(l listed) bool { return l.userID == w.member.UserID }),
+	)
 }

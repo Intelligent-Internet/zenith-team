@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 type createProjectRequest struct {
@@ -99,16 +99,28 @@ func (h *Handler) registerProjectRoutes(group *gin.RouterGroup) {
 	routes.GET("/:projectId", none, visible, h.getProject)
 	routes.PATCH("/:projectId", none, human, visible, h.updateProject)
 	routes.POST("/:projectId/archive", none, human, permitted(auth.ProjectPermissionArchive), h.archiveProject)
-	routes.PUT("/:projectId/files", none, human, permitted(auth.ProjectPermissionFilesManage), h.replaceProjectFiles)
+	routes.PUT(
+		"/:projectId/files",
+		none,
+		human,
+		permitted(auth.ProjectPermissionFilesManage),
+		h.replaceProjectFiles,
+	)
 	routes.GET("/:projectId/grants", none, human, visible, h.listProjectGrants)
-	routes.PUT("/:projectId/grants/:userId", none, human, permitted(auth.ProjectPermissionGrantsManage), h.setProjectGrant)
+	routes.PUT(
+		"/:projectId/grants/:userId",
+		none,
+		human,
+		permitted(auth.ProjectPermissionGrantsManage),
+		h.setProjectGrant,
+	)
 	routes.DELETE("/:projectId/grants/:userId", none, human, permitted(auth.ProjectPermissionGrantsManage),
 		h.removeProjectGrant)
 	// What a person's grant change or removal would do, so the app asks
 	// first only when it stops Runs or takes the Project away.
 	routes.POST("/:projectId/grants/:userId/preview", none, human, permitted(auth.ProjectPermissionGrantsManage),
 		h.previewProjectGrant)
-	// A Group's grant on the Project (Access TECH D4): the same guards as a
+	// A Group's grant on the Project: the same guards as a
 	// person's, and a preview of what the change would do.
 	routes.PUT("/:projectId/group-grants/:groupId", none, human, permitted(auth.ProjectPermissionGrantsManage),
 		h.setProjectGroupGrant)
@@ -207,7 +219,12 @@ func (h *Handler) createProject(c *gin.Context) {
 	value, err := h.ProjectService.Create(
 		c.Request.Context(),
 		principal,
-		company.ProjectCreateInput{Key: request.Key, Title: request.Title, Description: request.Description, Files: request.Files},
+		company.ProjectCreateInput{
+			Key:         request.Key,
+			Title:       request.Title,
+			Description: request.Description,
+			Files:       request.Files,
+		},
 	)
 	if err != nil {
 		writeProjectError(c, err)
@@ -275,7 +292,8 @@ func (h *Handler) updateProject(c *gin.Context) {
 		return
 	}
 	input := company.ProjectUpdateInput{
-		ExpectedRevision: request.ExpectedRevision, ExpectedAccessRevision: request.ExpectedAccessRevision.ptr(),
+		ExpectedRevision:       request.ExpectedRevision,
+		ExpectedAccessRevision: request.ExpectedAccessRevision.ptr(),
 	}
 	input.Title = request.Title.ptr()
 	input.Description = request.Description.ptr()
@@ -395,7 +413,13 @@ func (h *Handler) removeProjectGrant(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
-	result, err := h.ProjectService.RemoveGrants(c.Request.Context(), principal, id, userID, request.ExpectedRevision)
+	result, err := h.ProjectService.RemoveGrants(
+		c.Request.Context(),
+		principal,
+		id,
+		userID,
+		request.ExpectedRevision,
+	)
 	if err != nil {
 		writeProjectError(c, err)
 		return
@@ -598,7 +622,7 @@ var projectErrorMappings = []errorMapping{
 		"Everyone keeps read, task and run access on a Project open to the Company; make it restricted first",
 		"project_visibility_floor",
 	},
-	// A Group grant (Access TECH D4) names a Group of the Company, and a
+	// A Group grant names a Group of the Company, and a
 	// Project holds a limited number of them. Both answer as on the Group
 	// routes.
 	groupNotFoundMapping,

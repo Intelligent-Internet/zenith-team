@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 type daemonToolReportRequest struct {
@@ -32,8 +32,8 @@ type daemonRuntimeRef struct {
 
 // daemonRuntimeBindings answers which Agents the daemon's person has bound
 // to one of its runtimes. The daemon checks it before a local Tool sign-in
-// and before it publishes Tool status. It is the daemon plane's own read
-// (D31): the daemon's own session cannot read the member routes for the
+// and before it publishes Tool status. It is the daemon plane's own read:
+// the daemon's own session cannot read the member routes for the
 // runtime and its bindings. The runtime must be this daemon's and its
 // person's, in a Company the person still belongs to; anything else is the
 // same 404 as an unknown runtime.

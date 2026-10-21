@@ -9,7 +9,7 @@ import {
   useUpdateWorkspaceProactiveModeMutation,
 } from "@/shared/api/company-api";
 import { ProjectControls } from "../components/project-controls";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { NewTaskButton } from "@/features/company-plan/components/new-task-button";
 import { WorkViewSelector } from "@/features/company-plan/components/work-view-selector";
 import { WorkTaskTable } from "@/features/company-plan/components/work-task-table";
@@ -713,7 +713,10 @@ function OwnerCompanyPlanPage({
       toast.success("Task marked as done.");
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(error, "Task could not be marked as done."),
+        getZenithTeamQueryErrorMessage(
+          error,
+          "Task could not be marked as done.",
+        ),
       );
     } finally {
       actionInFlight.current = false;
@@ -1144,7 +1147,10 @@ function MemberWorkPage({
       toast.success("Task marked as done.");
     } catch (error) {
       toast.error(
-        getBoardlyQueryErrorMessage(error, "Task could not be marked as done."),
+        getZenithTeamQueryErrorMessage(
+          error,
+          "Task could not be marked as done.",
+        ),
       );
     }
   };

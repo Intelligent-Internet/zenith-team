@@ -1,0 +1,95 @@
+---
+title: Upgrading
+description: Move a self-hosted Zenith Team server to a new release safely, and keep connected computers and desktop apps in step.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+An upgrade is short: back up, switch to the new release, start the stack. The server updates the database by itself when it starts.
+
+## Before you upgrade
+
+1. **Read the release notes.** Each [GitHub Release](https://github.com/Intelligent-Internet/zenith-team/releases) lists its changes, with breaking changes first.
+2. **Look for new settings.** Compare the settings template between your version and the new one:
+
+   ```bash
+   git fetch --tags
+   git diff v1.2.0 v1.3.0 -- deploy/production.env.example deploy/docker-compose.production.yml
+   ```
+
+   Copy any new setting you need into `deploy/.env`. A new setting left empty keeps its feature off or uses its default.
+3. **Back up PostgreSQL, then the files.** The commands are in [File storage](/self-hosting/storage#back-up). Do not skip this: a database upgrade cannot be undone without a backup.
+
+## Upgrade from source
+
+If you run `make selfhost-up`, which builds the images from your checkout:
+
+```bash
+git fetch --tags
+git checkout v1.3.0
+make selfhost-up
+```
+
+## Upgrade with the prebuilt images
+
+If you run the published images, move your checkout to the new tag, so the Compose file matches, and change the image tags in `deploy/.env`:
+
+```bash
+git fetch --tags
+git checkout v1.3.0
+```
+
+```dotenv
+APP_SERVER_IMAGE=ghcr.io/intelligent-internet/zenith-team-server:1.3.0
+APP_WEB_IMAGE=ghcr.io/intelligent-internet/zenith-team-web:1.3.0
+```
+
+```bash
+docker compose -f deploy/docker-compose.production.yml pull server web
+docker compose -f deploy/docker-compose.production.yml up -d --wait
+```
+
+## What happens at start
+
+There is no separate migration step. Before it serves any traffic, the new server applies every pending database migration that ships inside it. Migrations are append-only: a release adds new ones after the last and never edits old ones, so a server that skipped versions applies them all in order.
+
+If a migration fails, the server stops with an error. With Docker Compose the old container is already gone at that point, so keep the previous release tag and your backup at hand.
+
+Check the result:
+
+```bash
+docker compose -f deploy/docker-compose.production.yml ps          # server is "healthy"
+curl -fsS http://localhost:8788/readyz                             # {"status":"ready"}
+docker compose -f deploy/docker-compose.production.yml logs server  # if it is not
+```
+
+`/readyz` fails while the database's schema version differs from the one built into the server.
+
+## Rolling back
+
+<Callout type="warning">
+You cannot simply start the older image again after the new one has migrated the database. An older server sees a newer schema version and never reports ready.
+</Callout>
+
+To go back, stop the stack, [restore the backup](/self-hosting/storage#restore) you took before the upgrade, and start the previous release:
+
+```bash
+git checkout v1.2.0
+make selfhost-up     # or set the previous image tags, then pull and up
+```
+
+A restore loses everything written since the backup. When you can, prefer a fix forward to the next release.
+
+## Connected computers and desktop apps
+
+Keep the `zen` CLI, `zenith-team-mcp` and the desktop app on the same release as the server.
+
+- **`zen` and `zenith-team-mcp`.** Replace both binaries with the ones from the new release, or rebuild them from the new tag. A daemon started from the terminal notices when its `zen` binary is replaced. It restarts into the new one once no run is in flight. Until then, `zen daemon status` shows a `restart pending` line. `zen daemon restart` does it right away, after in-flight runs finish.
+- **Desktop app.** Rebuild it from the new tag with your server's address, as in [Desktop app](/desktop-app#build-it), and install it over the old one. The app restarts its own daemon when it updates.
+
+Queued work waits while a computer is being upgraded: a queued run waits for its computer to come back. A run that nobody claims within two hours fails with `queued_expired`, so finish the upgrade promptly.
+
+## Next steps
+
+- **[File storage](/self-hosting/storage)**: backups and restores.
+- **[Security model](/self-hosting/security-model)**: keep the server up to date as part of the hardening checklist.

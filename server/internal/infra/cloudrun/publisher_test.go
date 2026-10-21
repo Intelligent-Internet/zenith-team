@@ -55,11 +55,11 @@ func TestOperationFailuresClassifyRPCStatus(t *testing.T) {
 				Error: &cloudbuildapi.Status{Code: int64(test.code)},
 			})
 			runErr := publisher.waitForRunOperation(t.Context(), &runapi.GoogleLongrunningOperation{
-				Name: "projects/my-project/locations/us-central1/operations/deploy-1", Done: true,
+				Name: "projects/example-project/locations/us-central1/operations/deploy-1", Done: true,
 				Error: &runapi.GoogleRpcStatus{Code: int64(test.code)},
 			}, FailureDeployFailed)
 			artifactErr := publisher.waitForArtifactOperation(t.Context(), &artifactapi.Operation{
-				Name: "projects/my-project/locations/us-central1/operations/delete-1", Done: true,
+				Name: "projects/example-project/locations/us-central1/operations/delete-1", Done: true,
 				Error: &artifactapi.Status{Code: int64(test.code)},
 			})
 			for _, operation := range []struct {
@@ -143,12 +143,12 @@ func TestValidConfigRequiresDedicatedServiceAccounts(t *testing.T) {
 	t.Parallel()
 
 	valid := Config{
-		ProjectID:             "my-project",
+		ProjectID:             "example-project",
 		Region:                "us-central1",
-		SourceBucket:          "my-project-app-sources",
-		ArtifactRegistry:      "us-central1-docker.pkg.dev/my-project/user-apps",
-		BuildServiceAccount:   "boardly-build@my-project.iam.gserviceaccount.com",
-		RuntimeServiceAccount: "boardly-runtime@my-project.iam.gserviceaccount.com",
+		SourceBucket:          "example-project-app-sources",
+		ArtifactRegistry:      "us-central1-docker.pkg.dev/example-project/user-apps",
+		BuildServiceAccount:   "builder@example-project.iam.gserviceaccount.com",
+		RuntimeServiceAccount: "runtime@example-project.iam.gserviceaccount.com",
 		MaxInstances:          10,
 		Memory:                "512Mi",
 		CPU:                   "1",
@@ -191,10 +191,10 @@ func TestBindingIDPinsResourceAuthority(t *testing.T) {
 	t.Parallel()
 
 	config := Config{
-		ProjectID:        "my-project",
+		ProjectID:        "example-project",
 		Region:           "us-central1",
-		SourceBucket:     "my-project-app-sources",
-		ArtifactRegistry: "us-central1-docker.pkg.dev/my-project/user-apps",
+		SourceBucket:     "example-project-app-sources",
+		ArtifactRegistry: "us-central1-docker.pkg.dev/example-project/user-apps",
 	}
 	publisher := &PublisherService{config: config}
 	got := publisher.BindingID()
@@ -247,11 +247,11 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 			buildRequestBody = string(body)
 			buildRequestPath = request.URL.Path
 			return jsonHTTPResponse(request, http.StatusOK, `{
-                "name":"operations/build/my-project/opaque-operation",
+                "name":"operations/build/example-project/opaque-operation",
                 "metadata":{"@type":"type.googleapis.com/google.devtools.cloudbuild.v1.BuildOperationMetadata",
                     "build":{"id":"build-1","name":"projects/12345/locations/us-central1/builds/build-1","status":"QUEUED"}}
             }`)
-		case request.URL.Path == "/v1/projects/my-project/locations/us-central1/builds/build-1":
+		case request.URL.Path == "/v1/projects/example-project/locations/us-central1/builds/build-1":
 			buildGetCalls++
 			if buildGetCalls == 1 {
 				return jsonHTTPResponse(request, http.StatusOK, `{"id":"build-1","status":"WORKING"}`)
@@ -261,15 +261,15 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 					"status":"SUCCESS",
                     "results":{"images":[{"digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}]}
             }`)
-		case strings.HasSuffix(request.URL.Path, "/services/boardly-application") &&
+		case strings.HasSuffix(request.URL.Path, "/services/zenith-team-application") &&
 			request.Method == http.MethodGet:
 			runGetCalls++
 			if runGetCalls == 1 {
 				return jsonHTTPResponse(request, http.StatusNotFound, `{"error":{"code":404}}`)
 			}
 			return jsonHTTPResponse(request, http.StatusOK, `{
-				"name":"projects/my-project/locations/us-central1/services/boardly-application",
-				"uri":"https://boardly-application.example.run.app",
+				"name":"projects/example-project/locations/us-central1/services/zenith-team-application",
+				"uri":"https://zenith-team-application.example.run.app",
 				"terminalCondition":{"state":"CONDITION_SUCCEEDED"}
 			}`)
 		case strings.HasSuffix(request.URL.Path, "/services") && request.Method == http.MethodPost:
@@ -286,11 +286,11 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 					`{"error":{"code":400,"message":"service.name must be empty on CreateServiceRequest"}}`,
 				)
 			}
-			if got := request.URL.Query().Get("serviceId"); got != "boardly-application" {
-				t.Errorf("create serviceId = %q, want boardly-application", got)
+			if got := request.URL.Query().Get("serviceId"); got != "zenith-team-application" {
+				t.Errorf("create serviceId = %q, want zenith-team-application", got)
 			}
 			return jsonHTTPResponse(request, http.StatusOK, `{
-				"name":"projects/my-project/locations/us-central1/operations/deploy-1",
+				"name":"projects/example-project/locations/us-central1/operations/deploy-1",
 				"done":true
 			}`)
 		default:
@@ -312,22 +312,22 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 	}
 	publisher := &PublisherService{
 		config: Config{
-			ProjectID: "my-project", Region: "us-central1",
-			SourceBucket:          "my-project-app-sources",
-			ArtifactRegistry:      "us-central1-docker.pkg.dev/my-project/user-apps",
-			BuildServiceAccount:   "boardly-build@my-project.iam.gserviceaccount.com",
-			RuntimeServiceAccount: "boardly-runtime@my-project.iam.gserviceaccount.com",
+			ProjectID: "example-project", Region: "us-central1",
+			SourceBucket:          "example-project-app-sources",
+			ArtifactRegistry:      "us-central1-docker.pkg.dev/example-project/user-apps",
+			BuildServiceAccount:   "builder@example-project.iam.gserviceaccount.com",
+			RuntimeServiceAccount: "runtime@example-project.iam.gserviceaccount.com",
 			MaxInstances:          10, Memory: "512Mi", CPU: "1",
 			Timeout: 5 * time.Minute, Concurrency: 80,
 		},
 		storage: storageService, build: buildService, run: runService, pollInterval: time.Millisecond,
 	}
-	source := zipFixture(t, map[string]string{"public/index.html": "<main>Boardly</main>"})
+	source := zipFixture(t, map[string]string{"public/index.html": "<main>Zenith Team</main>"})
 	digest := sha256.Sum256(source)
 	var progress []Progress
 	result, err := publisher.Publish(t.Context(), Request{
 		PublicationID: "01900000-0000-7000-8000-000000000001",
-		ServiceName:   "boardly-application", Attempt: 1,
+		ServiceName:   "zenith-team-application", Attempt: 1,
 		SourceSize: int64(len(source)), SourceSHA256: digest[:],
 	}, bytes.NewReader(source), func(_ context.Context, update Progress) error {
 		progress = append(progress, update)
@@ -339,7 +339,7 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 	if result.Template != TemplateStatic || result.SourceGeneration != 7 ||
 		result.BuildID != "build-1" ||
 		result.ImageDigest != "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" ||
-		result.ServiceURI != "https://boardly-application.example.run.app" || len(progress) != 2 ||
+		result.ServiceURI != "https://zenith-team-application.example.run.app" || len(progress) != 2 ||
 		progress[0].Stage != StageBuilding || progress[1].Stage != StageDeploying {
 		t.Fatalf("Publish() result/progress = %+v / %+v", result, progress)
 	}
@@ -349,16 +349,16 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 		}
 	}
 	if !strings.Contains(buildRequestBody,
-		"projects/my-project/serviceAccounts/boardly-build@my-project.iam.gserviceaccount.com") ||
+		"projects/example-project/serviceAccounts/builder@example-project.iam.gserviceaccount.com") ||
 		!strings.Contains(runRequestBody,
-			"us-central1-docker.pkg.dev/my-project/user-apps/boardly-application@sha256:bbbb") ||
-		!strings.Contains(runRequestBody, "boardly-runtime@my-project.iam.gserviceaccount.com") {
+			"us-central1-docker.pkg.dev/example-project/user-apps/zenith-team-application@sha256:bbbb") ||
+		!strings.Contains(runRequestBody, "runtime@example-project.iam.gserviceaccount.com") {
 		t.Fatalf("build/run request bodies = %s / %s", buildRequestBody, runRequestBody)
 	}
 	if buildGetCalls != 2 {
 		t.Fatalf("regional build polling calls = %d, want 2", buildGetCalls)
 	}
-	if buildRequestPath != "/v1/projects/my-project/locations/us-central1/builds" {
+	if buildRequestPath != "/v1/projects/example-project/locations/us-central1/builds" {
 		t.Fatalf("Cloud Build request path = %q, want configured region", buildRequestPath)
 	}
 }
@@ -366,7 +366,7 @@ func TestPublishUploadsBuildsAndDeploysDigestPinnedApplication(t *testing.T) {
 func TestDeployServiceUpdatesExistingApplication(t *testing.T) {
 	t.Parallel()
 
-	name := "projects/my-project/locations/us-central1/services/boardly-application"
+	name := "projects/example-project/locations/us-central1/services/zenith-team-application"
 	var methods []string
 	client := &http.Client{Transport: roundTripFunc(func(request *http.Request) *http.Response {
 		methods = append(methods, request.Method)
@@ -376,7 +376,7 @@ func TestDeployServiceUpdatesExistingApplication(t *testing.T) {
 		switch request.Method {
 		case http.MethodGet:
 			return jsonHTTPResponse(request, http.StatusOK, `{
-				"uri":"https://boardly-application.example.run.app",
+				"uri":"https://zenith-team-application.example.run.app",
 				"terminalCondition":{"state":"CONDITION_SUCCEEDED"}
 			}`)
 		case http.MethodPatch:
@@ -394,7 +394,7 @@ func TestDeployServiceUpdatesExistingApplication(t *testing.T) {
 			return jsonHTTPResponse(
 				request,
 				http.StatusOK,
-				`{"name":"projects/my-project/locations/us-central1/operations/update-1","done":true}`,
+				`{"name":"projects/example-project/locations/us-central1/operations/update-1","done":true}`,
 			)
 		default:
 			t.Errorf("unexpected service request method = %q", request.Method)
@@ -409,9 +409,9 @@ func TestDeployServiceUpdatesExistingApplication(t *testing.T) {
 		config: Config{MaxInstances: 10, Memory: "512Mi", CPU: "1", Timeout: 5 * time.Minute, Concurrency: 80},
 		run:    runService,
 	}
-	got, err := publisher.deployService(t.Context(), Target{ProjectID: "my-project", Region: "us-central1"},
-		Request{ServiceName: "boardly-application"}, 8080, "registry/app@sha256:digest")
-	if err != nil || got != "https://boardly-application.example.run.app" {
+	got, err := publisher.deployService(t.Context(), Target{ProjectID: "example-project", Region: "us-central1"},
+		Request{ServiceName: "zenith-team-application"}, 8080, "registry/app@sha256:digest")
+	if err != nil || got != "https://zenith-team-application.example.run.app" {
 		t.Fatalf("deployService() = %q, %v", got, err)
 	}
 	if want := []string{http.MethodGet, http.MethodPatch, http.MethodGet}; !slices.Equal(methods, want) {
@@ -457,14 +457,14 @@ func TestDeleteRemovesServiceSourceAndImages(t *testing.T) {
 	}
 	if err := publisher.Delete(t.Context(), DeleteRequest{
 		PublicationID: "01900000-0000-7000-8000-000000000001",
-		ServiceName:   "boardly-application",
+		ServiceName:   "zenith-team-application",
 	}); err != nil {
 		t.Fatalf("Delete() error = %v", err)
 	}
 	want := []string{
-		"/v2/projects/pinned-project/locations/asia-southeast1/services/boardly-application",
-		"/v1/projects/pinned-project/locations/asia-southeast1/repositories/user-apps/packages/boardly-application",
-		"/storage/v1/b/pinned-source-bucket/o/boardly%2Fpublications%2F01900000-0000-7000-8000-000000000001%2Fsource.zip",
+		"/v2/projects/pinned-project/locations/asia-southeast1/services/zenith-team-application",
+		"/v1/projects/pinned-project/locations/asia-southeast1/repositories/user-apps/packages/zenith-team-application",
+		"/storage/v1/b/pinned-source-bucket/o/zenith-team%2Fpublications%2F01900000-0000-7000-8000-000000000001%2Fsource.zip",
 	}
 	if !slices.Equal(requestedPaths, want) {
 		t.Fatalf("Delete() paths = %#v, want %#v", requestedPaths, want)
@@ -513,7 +513,7 @@ func TestDeleteContinuesCleanupAfterOneResourceFails(t *testing.T) {
 	}
 	err = publisher.Delete(t.Context(), DeleteRequest{
 		PublicationID: "01900000-0000-7000-8000-000000000001",
-		ServiceName:   "boardly-application",
+		ServiceName:   "zenith-team-application",
 	})
 	var failure *Failure
 	if !errors.As(err, &failure) || requestCount != 3 {
@@ -569,7 +569,7 @@ func TestDeleteGivesEveryCleanupAttemptALiveContext(t *testing.T) {
 	}
 	err = publisher.Delete(t.Context(), DeleteRequest{
 		PublicationID: "01900000-0000-7000-8000-000000000001",
-		ServiceName:   "boardly-application",
+		ServiceName:   "zenith-team-application",
 	})
 	var failure *Failure
 	if !errors.As(err, &failure) || requestCount != 3 {

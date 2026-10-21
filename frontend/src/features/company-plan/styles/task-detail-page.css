@@ -1,7 +1,7 @@
-.boardly-workspace-theme[data-boardly-theme] .company-work-page--task-expanded {
+.zenith-team-workspace-theme[data-zenith-team-theme] .company-work-page--task-expanded {
   padding: 0;
 }
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .company-work-page--task-expanded
   > header {
   display: none;
@@ -81,7 +81,7 @@
   gap: 8px;
   max-width: 300px;
 }
-.boardly-workspace-theme[data-boardly-theme] .task-detail-actions footer button,
+.zenith-team-workspace-theme[data-zenith-team-theme] .task-detail-actions footer button,
 .task-detail-open-chat {
   display: inline-flex;
   align-items: center;

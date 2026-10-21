@@ -22,7 +22,7 @@ const (
 	TokenKindBearer  TokenKind = "bearer"
 )
 
-// SessionClient says who holds a session (auth_sessions.client, D31): a
+// SessionClient says who holds a session (auth_sessions.client): a
 // person, through the web app, the desktop app or the CLI, or a daemon. A
 // daemon session acts for the same person but only on the daemon plane and
 // beside a live Run proof whose Authorizer is that person; the auth

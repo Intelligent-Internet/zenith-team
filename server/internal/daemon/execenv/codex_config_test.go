@@ -58,7 +58,7 @@ func TestEnsureCodexSandboxConfigPreservesUserContentAndStripsLegacy(t *testing.
 	if !strings.Contains(content, "[model_providers.x]") || !strings.Contains(content, "base_url") {
 		t.Fatalf("user content lost: %q", content)
 	}
-	if !strings.HasPrefix(content, boardlyManagedBeginMarker) {
+	if !strings.HasPrefix(content, zenithTeamManagedBeginMarker) {
 		t.Fatalf("managed block not hoisted to top: %q", content)
 	}
 }
@@ -87,7 +87,7 @@ func TestEnsureCodexMultiAgentConfigIdempotentAndInTable(t *testing.T) {
 	}
 	first, _ := os.ReadFile(configPath)
 	content := string(first)
-	if !strings.Contains(content, boardlyMultiAgentBeginMarker) {
+	if !strings.Contains(content, zenithTeamMultiAgentBeginMarker) {
 		t.Fatalf("managed block missing: %q", content)
 	}
 	if strings.Contains(content, "multi_agent = true") {
@@ -110,7 +110,7 @@ func TestEnsureCodexMultiAgentConfigIdempotentAndInTable(t *testing.T) {
 }
 
 func TestEnsureCodexMultiAgentConfigEscapeHatch(t *testing.T) {
-	t.Setenv(BoardlyCodexMultiAgentEnv, "1")
+	t.Setenv(ZenithTeamCodexMultiAgentEnv, "1")
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.toml")
 	if err := ensureCodexMultiAgentConfig(configPath, testLogger()); err != nil {
@@ -178,7 +178,7 @@ func TestEnsureCodexMemoryConfigInTableForms(t *testing.T) {
 }
 
 func TestEnsureCodexMemoryConfigEscapeHatch(t *testing.T) {
-	t.Setenv(BoardlyCodexMemoryEnv, "true")
+	t.Setenv(ZenithTeamCodexMemoryEnv, "true")
 	dir := t.TempDir()
 	configPath := filepath.Join(dir, "config.toml")
 	if err := ensureCodexMemoryConfig(configPath, testLogger()); err != nil {
@@ -207,20 +207,20 @@ func TestCodexShellEnvAllowlist(t *testing.T) {
 	inherited := []string{
 		"HOME=/home/u",
 		"MY_API_KEY=inherit-secret",
-		"BOARDLY_SERVER_URL=http://daemon-only",
+		"ZENITH_TEAM_SERVER_URL=http://daemon-only",
 		"GH_TOKEN=abc",
 	}
 	explicit := map[string]string{
-		"PATH":              "/run/boardly-bin:/usr/bin",
-		"BOARDLY_RUN_TOKEN": "brt_x",
-		"BOARDLY_HOME":      "/run/boardly-home",
-		"ANTHROPIC_API_KEY": "sk-x",
-		"UNSANCTIONED_KEY":  "y",
-		"PLAIN":             "1",
+		"PATH":                  "/run/zenith-team-bin:/usr/bin",
+		"ZENITH_TEAM_RUN_TOKEN": "brt_x",
+		"ZENITH_TEAM_HOME":      "/run/zenith-team-home",
+		"ANTHROPIC_API_KEY":     "sk-x",
+		"UNSANCTIONED_KEY":      "y",
+		"PLAIN":                 "1",
 	}
 	got := CodexShellEnvAllowlist(inherited, explicit, []string{"ANTHROPIC_API_KEY"})
 	want := map[string]bool{
-		"PATH": true, "HOME": true, "BOARDLY_RUN_TOKEN": true, "BOARDLY_HOME": true,
+		"PATH": true, "HOME": true, "ZENITH_TEAM_RUN_TOKEN": true, "ZENITH_TEAM_HOME": true,
 		"ANTHROPIC_API_KEY": true, "PLAIN": true,
 	}
 	if len(got) != len(want) {
@@ -245,7 +245,7 @@ func TestEnsureCodexShellEnvPolicyConfigIdempotentAndReplacesUserPolicy(t *testi
 	}
 	first, _ := os.ReadFile(configPath)
 	content := string(first)
-	if !strings.Contains(content, boardlyShellEnvBeginMarker) {
+	if !strings.Contains(content, zenithTeamShellEnvBeginMarker) {
 		t.Fatalf("managed shell env block missing: %q", content)
 	}
 	if strings.Contains(content, `inherit = 'none'`) || strings.Contains(content, `inherit = "none"`) {

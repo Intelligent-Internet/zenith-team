@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// A Run reads only its own Tasks (owner decision, 2026-09-26): the ones its
-// Agent does for the member the Run works for. Tagged in a channel and asked
+// A Run reads only its own Tasks: the ones its Agent does for the member the
+// Run works for. Tagged in a channel and asked
 // to "run BSC-8", an Agent read a colleague's Task and acted out its
 // description on the wrong computer; that read is now refused instead.
 func TestRunScopeAdmitsOnlyTheRunsOwnTasks(t *testing.T) {
@@ -99,7 +99,7 @@ func TestRunScopeRefusesAReadWithThePlainSentinel(t *testing.T) {
 		}
 	}
 	// The Run's own Task passes the ownership half; its Project is then the
-	// delegate rule's to decide in the database (D31), which the
+	// delegate rule's to decide in the database, which the
 	// integration tests read.
 	if !scope.admits(Response{Assignee: alice, ExecutedBy: lyra}) {
 		t.Fatal("admits() refuses the Run's own Task")
@@ -139,7 +139,10 @@ func TestRunScopeForcesTheListOntoItsOwnTasks(t *testing.T) {
 	}
 
 	var member *RunScope
-	if unscoped := member.listOptions(asked); unscoped.AssigneeUserID != &bob || unscoped.ExecutedByAgentID != &eli {
+	if unscoped := member.listOptions(
+		asked,
+	); unscoped.AssigneeUserID != &bob ||
+		unscoped.ExecutedByAgentID != &eli {
 		t.Fatalf("a read without a Run was scoped: %+v", unscoped)
 	}
 
@@ -156,7 +159,7 @@ func TestRunScopeForcesTheListOntoItsOwnTasks(t *testing.T) {
 }
 
 // Every Run's Project bound is the delegate rule in the database
-// (run_permission_held, D31), so no Run is bounded in Go and none goes
+// (run_permission_held), so no Run is bounded in Go and none goes
 // unbounded. A member's own request carries no Run: it reads every Project
 // its own read found, files only for itself, and needs no database for that
 // (the nil queries below would panic if it were asked).
@@ -202,7 +205,7 @@ func TestAMembersOwnRequestIsNotBoundedByARun(t *testing.T) {
 }
 
 // The Planner is the root Agent's Run in its person's direct chat with its
-// Company Plan tools on (IA-FR12). It reads every Task its person reads: a
+// Company Plan tools on. It reads every Task its person reads: a
 // colleague's Task is admitted, the list keeps the caller's own filters, and
 // every dependent stays. The same Agent's Run without the flag reads only
 // its own Tasks.
@@ -217,7 +220,7 @@ func TestPlannerScopeReadsEveryTaskItsPersonReads(t *testing.T) {
 	ownOnly := &RunScope{AgentID: ada.ID, UserID: alice.ID}
 	colleagues := Response{Key: "BSC-8", Assignee: bob, ExecutedBy: eli}
 
-	// The Project half of the read is still the delegate rule's (D31), in
+	// The Project half of the read is still the delegate rule's, in
 	// the database; TestPlannerProofReadsEveryTaskItsPersonReads reads it.
 	if !planner.admits(colleagues) {
 		t.Fatal("the Planner was refused a colleague's Task")

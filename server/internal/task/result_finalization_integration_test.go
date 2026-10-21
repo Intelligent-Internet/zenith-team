@@ -10,14 +10,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type finalizationTestCase struct {
@@ -256,7 +256,12 @@ func testAgentFinalization(t *testing.T, test finalizationTestCase) {
 	}
 	if want == StatusDone {
 		title := "Edited completed Task"
-		updated, err := service.Update(ctx, p, f.TaskA, UpdateInput{ExpectedRevision: completed.Revision, Title: &title})
+		updated, err := service.Update(
+			ctx,
+			p,
+			f.TaskA,
+			UpdateInput{ExpectedRevision: completed.Revision, Title: &title},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -264,11 +269,23 @@ func testAgentFinalization(t *testing.T, test finalizationTestCase) {
 		if err != nil || selection.ApprovedAt != nil {
 			t.Fatalf("metadata edit authored approval: %+v, %v", selection, err)
 		}
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`, f.CompanyA, f.UserB)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
+			f.CompanyA,
+			f.UserB,
+		)
 		dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, f.UserB, "project.tasks.write")
 		editor := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserB, Role: auth.CompanyRoleMember}
 		title = "Edited by another member"
-		updated, err = service.Update(ctx, editor, f.TaskA, UpdateInput{ExpectedRevision: updated.Task.Revision, Title: &title})
+		updated, err = service.Update(
+			ctx,
+			editor,
+			f.TaskA,
+			UpdateInput{ExpectedRevision: updated.Task.Revision, Title: &title},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -277,11 +294,21 @@ func testAgentFinalization(t *testing.T, test finalizationTestCase) {
 			t.Fatalf("Project editor authored approval: %+v, %v", selection, err)
 		}
 		done := StatusDone
-		_, err = service.Update(ctx, editor, f.TaskA, UpdateInput{ExpectedRevision: updated.Task.Revision, Status: &done})
+		_, err = service.Update(
+			ctx,
+			editor,
+			f.TaskA,
+			UpdateInput{ExpectedRevision: updated.Task.Revision, Status: &done},
+		)
 		if !errors.Is(err, ErrReviewPermissionRequired) {
 			t.Fatalf("Project editor approval = %v, want permission error", err)
 		}
-		_, err = service.Update(ctx, p, f.TaskA, UpdateInput{ExpectedRevision: updated.Task.Revision, Status: &done})
+		_, err = service.Update(
+			ctx,
+			p,
+			f.TaskA,
+			UpdateInput{ExpectedRevision: updated.Task.Revision, Status: &done},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -290,5 +317,4 @@ func testAgentFinalization(t *testing.T, test finalizationTestCase) {
 			t.Fatalf("explicit approval missing: %+v, %v", selection, err)
 		}
 	}
-
 }

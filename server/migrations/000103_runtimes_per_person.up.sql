@@ -1,4 +1,4 @@
--- A runtime is one person's use of one machine (D33). Until now a row was
+-- A runtime is one person's use of one machine. Until now a row was
 -- keyed by (company, daemon, provider) and its owner followed whoever
 -- registered last, so a second person signing in on the same computer took
 -- the row over and the first person's bindings on it were deleted. Now the

@@ -1,4 +1,4 @@
--- Groups (D31, Access TECH Part D). A Group is a named set of Team members
+-- Groups. A Group is a named set of Team members
 -- in one Company: flat (no Group inside a Group) and people only (never an
 -- Agent). A Group holds Project grants like a person does, and every member
 -- holds them too. A person's access is the union of their own grant, each of

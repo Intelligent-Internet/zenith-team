@@ -8,7 +8,7 @@ import {
   RotateCw,
 } from "@/shared/ui/icons";
 
-import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 import type { ConversationArtifact } from "@/features/chat-panel/api/conversation-artifacts-api";
 import { DesktopWebsitePreview } from "@/features/chat-panel/components/desktop-website-preview";
 import { ArtifactFileActions } from "@/features/chat-panel/components/artifacts/artifact-file-actions";
@@ -35,7 +35,7 @@ export function ArtifactAppView({
   const publishedUrl = artifactAppUrl(
     publication?.customUrl || publication?.url || "",
   );
-  const desktop = getBoardlyDesktopBridge();
+  const desktop = getZenithTeamDesktopBridge();
   const [preview, setPreview] = useState<
     | { state: "loading" }
     | { state: "error"; reason: string }
@@ -527,7 +527,7 @@ function ExternalAppLink({ url }: { url: string }) {
       className="artifacts-icon-button"
       href={safeUrl}
       onClick={(event) => {
-        const bridge = getBoardlyDesktopBridge();
+        const bridge = getZenithTeamDesktopBridge();
         if (!bridge) return;
         event.preventDefault();
         void bridge

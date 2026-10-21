@@ -9,7 +9,7 @@ import {
 
 import { Link } from "react-router";
 
-import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useCan, useTaskAccess } from "@/shared/permissions";
 
@@ -457,7 +457,7 @@ function TaskConversationPane({
   const canReviewTask = Boolean(
     task &&
     taskAwaitsViewerReview(task, viewerUserId, canAssignTasks) &&
-    getBoardlyDesktopBridge()?.reviewTaskWorkspace,
+    getZenithTeamDesktopBridge()?.reviewTaskWorkspace,
   );
   const closeTaskReview = useCallback(() => setIsTaskReviewOpen(false), []);
 

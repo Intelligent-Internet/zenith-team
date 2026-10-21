@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"gopkg.in/yaml.v3"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // The app vocabulary is the Workflow contract's WorkflowConnectorType enum,
@@ -81,7 +81,9 @@ func TestConnectorAppPinsAreValidExactAndUnique(t *testing.T) {
 					ConnectorProviderClaude: "@claude-plugins-official",
 				}[provider]
 				if !validConnectorText(nativeID, maxConnectorNativeBytes) ||
-					nativeID != strings.TrimSpace(nativeID) || !strings.HasSuffix(nativeID, wantSuffix) {
+					nativeID != strings.TrimSpace(
+						nativeID,
+					) || !strings.HasSuffix(nativeID, wantSuffix) {
 					t.Errorf("%s/%s pins invalid Plugin %q", app, provider, nativeID)
 				}
 				key := string(provider) + "\x00" + nativeID
@@ -111,7 +113,7 @@ func TestConnectorAppPinsAreValidExactAndUnique(t *testing.T) {
 		got[0].NativeID != "asdk_app_69bd664f2a908191a3a0a47eca8559d1" {
 		t.Errorf("apollo must pin Apollo.io, got %+v", got)
 	}
-	// D24: the catalog names only apps with a first-party Codex app, so every
+	// The catalog names only apps with a first-party Codex app, so every
 	// type resolves on Codex.
 	for _, app := range connectorAppTypes {
 		if len(codex(app).Connectors) == 0 && len(codex(app).Plugins) == 0 {
@@ -214,74 +216,212 @@ func TestPickConnectorAppState(t *testing.T) {
 		want        ConnectorAppState
 		wantIndex   int
 	}{
-		{"eligible and fresh is ready", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{eligible}, false, ConnectorAppStateReady, 0},
-		{"eligible but stale is pending", ConnectorProviderCodex, ConnectorDiscoveryStateStale,
-			[]connectorAppCandidate{eligible}, false, ConnectorAppStatePending, 0},
-		{"eligible but denied", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+		{
+			"eligible and fresh is ready", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{eligible},
+			false, ConnectorAppStateReady, 0,
+		},
+		{
+			"eligible but stale is pending", ConnectorProviderCodex, ConnectorDiscoveryStateStale,
+			[]connectorAppCandidate{eligible},
+			false, ConnectorAppStatePending, 0,
+		},
+		{
+			"eligible but denied", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
 			[]connectorAppCandidate{with(eligible, func(c *connectorAppCandidate) { c.Denied = true })},
-			false, ConnectorAppStateDisabledForAgent, 0},
-		{"connected and executable but not yet enabled", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{executable}, false, ConnectorAppStatePending, 0},
-		{"connected and executable, denied before enablement", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			false, ConnectorAppStateDisabledForAgent, 0,
+		},
+		{
+			"connected and executable but not yet enabled",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{executable},
+			false,
+			ConnectorAppStatePending,
+			0,
+		},
+		{
+			"connected and executable, denied before enablement",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
 			[]connectorAppCandidate{with(executable, func(c *connectorAppCandidate) { c.Denied = true })},
-			false, ConnectorAppStateDisabledForAgent, 0},
-		{"changed contract needs review", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{with(executable, func(c *connectorAppCandidate) { c.ReviewRequired = true })},
-			false, ConnectorAppStateReviewRequired, 0},
-		{"a disconnected enabled app asks to connect, not review", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{with(codexApp(ConnectorStatusNeedsAuth), func(c *connectorAppCandidate) { c.ReviewRequired = true })},
-			false, ConnectorAppStateNeedsConnection, 0},
-		{"available", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable)}, false, ConnectorAppStateNeedsConnection, 0},
-		{"installed not ready", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusInstalledNotReady)}, false, ConnectorAppStateNeedsConnection, 0},
-		{"needs auth", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusNeedsAuth)}, false, ConnectorAppStateNeedsConnection, 0},
-		{"error", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusError)}, false, ConnectorAppStateNeedsConnection, 0},
-		{"connected without a verified contract is pending", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusManagedInProvider)}, false, ConnectorAppStatePending, 0},
-		{"unavailable is not offered", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusUnavailable)}, false, ConnectorAppStateNotOffered, -1},
-		{"no pinned identity observed", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{notObserved}, false, ConnectorAppStateNotOffered, -1},
-		{"no pin at all", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			nil, false, ConnectorAppStateNotOffered, -1},
-		{"codex mcp is provider managed", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{{Source: ConnectorSourceCodexMCP, Observed: true, Status: ConnectorStatusConnected}},
-			false, ConnectorAppStateProviderManaged, 0},
-		{"Claude.ai cloud connector is provider managed", ConnectorProviderClaude, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{claudeNotObserved, cloud}, false, ConnectorAppStateProviderManaged, 1},
-		{"an installable pinned Plugin beats the cloud connector", ConnectorProviderClaude, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{claudeNotObserved, cloud}, true, ConnectorAppStateNeedsConnection, -1},
-		{"an installable pinned Plugin alone", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{notObserved}, true, ConnectorAppStateNeedsConnection, -1},
-		{"a connectable connector outranks the Plugin on a tie", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable)}, true, ConnectorAppStateNeedsConnection, 0},
-		{"a ready connector ignores the Plugin", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{eligible}, true, ConnectorAppStateReady, 0},
-		{"Rovo Legacy ready beats Rovo needing connection", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable), eligible}, false, ConnectorAppStateReady, 1},
-		{"review outranks needs connection across candidates", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			false,
+			ConnectorAppStateDisabledForAgent,
+			0,
+		},
+		{
+			"changed contract needs review",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{
+				with(executable, func(c *connectorAppCandidate) { c.ReviewRequired = true }),
+			},
+			false,
+			ConnectorAppStateReviewRequired,
+			0,
+		},
+		{
+			"a disconnected enabled app asks to connect, not review",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{
+				with(
+					codexApp(ConnectorStatusNeedsAuth),
+					func(c *connectorAppCandidate) { c.ReviewRequired = true },
+				),
+			},
+			false,
+			ConnectorAppStateNeedsConnection,
+			0,
+		},
+		{
+			"available", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable)},
+			false, ConnectorAppStateNeedsConnection, 0,
+		},
+		{
+			"installed not ready", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusInstalledNotReady)},
+			false, ConnectorAppStateNeedsConnection, 0,
+		},
+		{
+			"needs auth", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusNeedsAuth)},
+			false, ConnectorAppStateNeedsConnection, 0,
+		},
+		{
+			"error", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusError)},
+			false, ConnectorAppStateNeedsConnection, 0,
+		},
+		{
+			"connected without a verified contract is pending",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusManagedInProvider)},
+			false,
+			ConnectorAppStatePending,
+			0,
+		},
+		{
+			"unavailable is not offered", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusUnavailable)},
+			false, ConnectorAppStateNotOffered, -1,
+		},
+		{
+			"no pinned identity observed", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{notObserved},
+			false, ConnectorAppStateNotOffered, -1,
+		},
+		{
+			"no pin at all", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			nil, false, ConnectorAppStateNotOffered, -1,
+		},
+		{
+			"codex mcp is provider managed",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{
+				{Source: ConnectorSourceCodexMCP, Observed: true, Status: ConnectorStatusConnected},
+			},
+			false,
+			ConnectorAppStateProviderManaged,
+			0,
+		},
+		{
+			"Claude.ai cloud connector is provider managed",
+			ConnectorProviderClaude,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{claudeNotObserved, cloud},
+			false,
+			ConnectorAppStateProviderManaged,
+			1,
+		},
+		{
+			"an installable pinned Plugin beats the cloud connector",
+			ConnectorProviderClaude,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{claudeNotObserved, cloud},
+			true,
+			ConnectorAppStateNeedsConnection,
+			-1,
+		},
+		{
+			"an installable pinned Plugin alone", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{notObserved},
+			true, ConnectorAppStateNeedsConnection, -1,
+		},
+		{
+			"a connectable connector outranks the Plugin on a tie",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable)},
+			true,
+			ConnectorAppStateNeedsConnection,
+			0,
+		},
+		{
+			"a ready connector ignores the Plugin", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{eligible},
+			true, ConnectorAppStateReady, 0,
+		},
+		{
+			"Rovo Legacy ready beats Rovo needing connection",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{codexApp(ConnectorStatusAvailable), eligible},
+			false,
+			ConnectorAppStateReady,
+			1,
+		},
+		{
+			"review outranks needs connection across candidates",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
 			[]connectorAppCandidate{
 				with(executable, func(c *connectorAppCandidate) { c.ReviewRequired = true }),
 				codexApp(ConnectorStatusAvailable),
-			}, false, ConnectorAppStateReviewRequired, 0},
-		{"a tie keeps pin preference", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			},
+			false,
+			ConnectorAppStateReviewRequired,
+			0,
+		},
+		{
+			"a tie keeps pin preference", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
 			[]connectorAppCandidate{codexApp(ConnectorStatusNeedsAuth), codexApp(ConnectorStatusAvailable)},
-			false, ConnectorAppStateNeedsConnection, 0},
-		{"an installed Plugin's identity resolves a re-issued app id", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
-			[]connectorAppCandidate{notObserved, eligible}, false, ConnectorAppStateReady, 1},
-		{"disabled outranks review", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
+			false, ConnectorAppStateNeedsConnection, 0,
+		},
+		{
+			"an installed Plugin's identity resolves a re-issued app id",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateFresh,
+			[]connectorAppCandidate{notObserved, eligible},
+			false,
+			ConnectorAppStateReady,
+			1,
+		},
+		{
+			"disabled outranks review", ConnectorProviderCodex, ConnectorDiscoveryStateFresh,
 			[]connectorAppCandidate{
 				with(executable, func(c *connectorAppCandidate) { c.ReviewRequired = true }),
 				with(eligible, func(c *connectorAppCandidate) { c.Denied = true }),
-			}, false, ConnectorAppStateDisabledForAgent, 1},
-		{"an Agent the viewer has not set up is unknown", ConnectorProviderCodex, ConnectorDiscoveryStateUnbound,
-			[]connectorAppCandidate{eligible}, true, ConnectorAppStateUnknown, -1},
-		{"missing discovery is unknown", ConnectorProviderCodex, ConnectorDiscoveryStateMissing,
-			[]connectorAppCandidate{eligible}, true, ConnectorAppStateUnknown, -1},
+			},
+			false, ConnectorAppStateDisabledForAgent, 1,
+		},
+		{
+			"an Agent the viewer has not set up is unknown",
+			ConnectorProviderCodex,
+			ConnectorDiscoveryStateUnbound,
+			[]connectorAppCandidate{eligible},
+			true,
+			ConnectorAppStateUnknown,
+			-1,
+		},
+		{
+			"missing discovery is unknown", ConnectorProviderCodex, ConnectorDiscoveryStateMissing,
+			[]connectorAppCandidate{eligible},
+			true, ConnectorAppStateUnknown, -1,
+		},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -337,7 +477,14 @@ func TestNormalizeConnectorDiscoveryReaffirmation(t *testing.T) {
 		} else {
 			mutate(&input)
 		}
-		if _, err := normalizeConnectorDiscoveryReaffirmation(provider, input, now); !errors.Is(err, ErrInvalidInput) {
+		if _, err := normalizeConnectorDiscoveryReaffirmation(
+			provider,
+			input,
+			now,
+		); !errors.Is(
+			err,
+			ErrInvalidInput,
+		) {
 			t.Errorf("%s: error = %v, want ErrInvalidInput", name, err)
 		}
 	}
@@ -357,7 +504,10 @@ func TestConnectorAppIconPrefersTheWinnerThenCandidatesThenThePlugin(t *testing.
 		{Name: "slack"},
 	}
 	candidates := []connectorAppCandidate{{}, {Observed: true}, {Observed: true}, {Observed: true}}
-	plugin := &generated.ListPluginsForRuntimeByNativeIDRow{Name: "Plugin", IconUrl: icon("https://cdn.test/plugin.png")}
+	plugin := &generated.ListPluginsForRuntimeByNativeIDRow{
+		Name:    "Plugin",
+		IconUrl: icon("https://cdn.test/plugin.png"),
+	}
 	borrowed := appLogoFallbacks{byName: namedLogos(map[string]string{"slack": "https://cdn.test/codex-slack.png"})}
 
 	tests := []struct {
@@ -368,10 +518,37 @@ func TestConnectorAppIconPrefersTheWinnerThenCandidatesThenThePlugin(t *testing.
 		plugin     *generated.ListPluginsForRuntimeByNativeIDRow
 		want       string
 	}{
-		{name: "winner", rows: rows, candidates: candidates, winner: 2, plugin: plugin, want: "https://cdn.test/winner.png"},
-		{name: "observed candidate", rows: rows, candidates: candidates, winner: 3, plugin: plugin, want: "https://cdn.test/candidate.png"},
-		{name: "pinned plugin", rows: rows[3:], candidates: candidates[3:], winner: 0, plugin: plugin, want: "https://cdn.test/plugin.png"},
-		{name: "borrowed by name", rows: rows[3:], candidates: candidates[3:], winner: 0, want: "https://cdn.test/codex-slack.png"},
+		{
+			name:       "winner",
+			rows:       rows,
+			candidates: candidates,
+			winner:     2,
+			plugin:     plugin,
+			want:       "https://cdn.test/winner.png",
+		},
+		{
+			name:       "observed candidate",
+			rows:       rows,
+			candidates: candidates,
+			winner:     3,
+			plugin:     plugin,
+			want:       "https://cdn.test/candidate.png",
+		},
+		{
+			name:       "pinned plugin",
+			rows:       rows[3:],
+			candidates: candidates[3:],
+			winner:     0,
+			plugin:     plugin,
+			want:       "https://cdn.test/plugin.png",
+		},
+		{
+			name:       "borrowed by name",
+			rows:       rows[3:],
+			candidates: candidates[3:],
+			winner:     0,
+			want:       "https://cdn.test/codex-slack.png",
+		},
 		{
 			name: "unobserved candidate only", rows: rows[:1], candidates: candidates[:1], winner: -1,
 			plugin: &generated.ListPluginsForRuntimeByNativeIDRow{Name: "Nothing"},
@@ -396,7 +573,7 @@ func TestConnectorAppIconPrefersTheWinnerThenCandidatesThenThePlugin(t *testing.
 
 // A logo that loads only in a ChatGPT session yields to any loadable one, in
 // the same order with a bundling installed Plugin after the candidates; with
-// nothing loadable the winner keeps its own (D26).
+// nothing loadable the winner keeps its own.
 func TestConnectorAppIconSkipsSessionOnlyLogos(t *testing.T) {
 	t.Parallel()
 
@@ -449,13 +626,21 @@ func TestConnectorAppIconSkipsSessionOnlyLogos(t *testing.T) {
 			plugin: sessionPlugin, fallbacks: names, want: byAppName,
 		},
 		{
-			name: "borrowed by the plugin's name", rows: []generated.ListConnectorAppReadinessRow{winner},
-			plugin:    sessionPlugin,
-			fallbacks: appLogoFallbacks{byName: namedLogos(map[string]string{"Plugin": byPlugin})}, want: byPlugin,
+			name:   "borrowed by the plugin's name",
+			rows:   []generated.ListConnectorAppReadinessRow{winner},
+			plugin: sessionPlugin,
+			fallbacks: appLogoFallbacks{
+				byName: namedLogos(map[string]string{"Plugin": byPlugin}),
+			},
+			want: byPlugin,
 		},
 		{
 			name: "nothing loadable keeps the winner's own",
-			rows: []generated.ListConnectorAppReadinessRow{winner}, plugin: sessionPlugin, want: sessionOnly,
+			rows: []generated.ListConnectorAppReadinessRow{
+				winner,
+			},
+			plugin: sessionPlugin,
+			want:   sessionOnly,
 		},
 	}
 	for _, test := range tests {

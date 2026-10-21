@@ -13,7 +13,7 @@ import (
 // closed port so the test never reaches a daemon running on this machine.
 func doctorChecks(t *testing.T) map[string]doctorCheck {
 	t.Helper()
-	t.Setenv("BOARDLY_HEALTH_PORT", "1")
+	t.Setenv("ZENITH_TEAM_HEALTH_PORT", "1")
 	out, err := executeCLI(t, newRootCmd, "doctor", "--output", "json")
 	if err != nil {
 		t.Fatalf("doctor: %v", err)
@@ -48,7 +48,7 @@ func serveDoctorProbe(t *testing.T, me http.HandlerFunc) *httptest.Server {
 	return srv
 }
 
-// CL-AC4: an unreachable server is a connectivity failure, never a
+// An unreachable server is a connectivity failure, never a
 // credential one. The session row must not send the operator to sign in
 // again when nothing answered.
 func TestDoctorDoesNotBlameTheSessionWhenTheServerIsUnreachable(t *testing.T) {

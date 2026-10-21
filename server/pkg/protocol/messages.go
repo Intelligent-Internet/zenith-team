@@ -123,7 +123,7 @@ const (
 	RunItemRoleSystem RunItemRole = "system"
 )
 
-// RunItemPartType is the closed Boardly vocabulary for durable Run output.
+// RunItemPartType is the closed Zenith Team vocabulary for durable Run output.
 // Adapters discard their vendor envelopes after producing these safe parts.
 type RunItemPartType string
 
@@ -249,7 +249,7 @@ type RunTranscriptAppendRequest struct {
 }
 
 // RunTranscriptAppendReceipt is returned only after PostgreSQL commits the
-// item. ItemDigest is lowercase SHA-256 hex over the canonical Boardly item.
+// item. ItemDigest is lowercase SHA-256 hex over the canonical Zenith Team item.
 //
 // Seq and ThroughSeq are int64 because seq is now the conversation-wide
 // counter, not a per-run ordinal: one busy run pushes a conversation's seq far

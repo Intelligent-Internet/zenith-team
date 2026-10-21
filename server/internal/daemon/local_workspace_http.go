@@ -29,8 +29,8 @@ import (
 
 	pathpkg "path"
 
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 const (
@@ -151,27 +151,52 @@ func (d *Daemon) localWorkspaceFileResolveHandler() http.HandlerFunc {
 		if !decodeLocalWorkspaceJSON(w, r, &request) || request.SchemaVersion != 1 ||
 			len(request.Path) > maximumLocalWorkspacePathBytes || !utf8.ValidString(request.Path) ||
 			!filepath.IsAbs(request.Path) || filepath.Clean(request.Path) != request.Path {
-			writeLocalWorkspaceError(w, http.StatusBadRequest, "invalid_request", "Workspace file link is invalid.")
+			writeLocalWorkspaceError(
+				w,
+				http.StatusBadRequest,
+				"invalid_request",
+				"Workspace file link is invalid.",
+			)
 			return
 		}
 		runID, ok := parseLocalWorkspaceRunID(request.RunID)
 		if !ok {
-			writeLocalWorkspaceError(w, http.StatusBadRequest, "invalid_request", "Workspace file link is invalid.")
+			writeLocalWorkspaceError(
+				w,
+				http.StatusBadRequest,
+				"invalid_request",
+				"Workspace file link is invalid.",
+			)
 			return
 		}
 		if d.workspaces == nil {
-			writeLocalWorkspaceError(w, http.StatusServiceUnavailable, "workspace_unavailable", "Generated file access is unavailable.")
+			writeLocalWorkspaceError(
+				w,
+				http.StatusServiceUnavailable,
+				"workspace_unavailable",
+				"Generated file access is unavailable.",
+			)
 			return
 		}
 		rootPath, err := d.resolveLocalRunWorkDir(r.Context(), runID)
 		if err != nil {
-			writeLocalWorkspaceError(w, http.StatusNotFound, "workspace_unavailable", "The workspace for this generated file is no longer available.")
+			writeLocalWorkspaceError(
+				w,
+				http.StatusNotFound,
+				"workspace_unavailable",
+				"The workspace for this generated file is no longer available.",
+			)
 			return
 		}
 		relativePath, err := filepath.Rel(rootPath, request.Path)
 		relativePath = filepath.ToSlash(relativePath)
 		if err != nil || !canonicalLocalWorkspacePath(relativePath) {
-			writeLocalWorkspaceError(w, http.StatusNotFound, "file_unavailable", "This generated file is no longer available.")
+			writeLocalWorkspaceError(
+				w,
+				http.StatusNotFound,
+				"file_unavailable",
+				"This generated file is no longer available.",
+			)
 			return
 		}
 		opened, openErr := openLocalWorkspaceFile(rootPath, relativePath, false)

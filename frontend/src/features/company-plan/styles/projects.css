@@ -115,7 +115,7 @@
   outline: 2px solid var(--workspace-native-text-muted);
   outline-offset: -2px;
 }
-html[data-boardly-workspace-theme]
+html[data-zenith-team-workspace-theme]
   .projects-page
   .projects-page__title:focus-visible {
   outline: none;

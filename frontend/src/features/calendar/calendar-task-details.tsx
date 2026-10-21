@@ -2,7 +2,7 @@ import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { useState, type CSSProperties } from "react";
 import { Link } from "react-router";
 
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { hasProjectPermission } from "@/shared/permissions";
 import {
   CalendarDays,
@@ -112,7 +112,7 @@ export function CalendarTaskDetails({
       toast.success(cancel ? "Occurrence cancelled" : "Task updated");
       onClose();
     } catch (caught) {
-      setError(getBoardlyQueryErrorMessage(caught));
+      setError(getZenithTeamQueryErrorMessage(caught));
     }
   }
   return (
@@ -157,7 +157,7 @@ export function CalendarTaskDetails({
           role="alert"
           className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
         >
-          {getBoardlyQueryErrorMessage(query.error)}
+          {getZenithTeamQueryErrorMessage(query.error)}
         </p>
       ) : !task ? (
         <p role="status">Loading task…</p>
@@ -172,7 +172,7 @@ export function CalendarTaskDetails({
               className="text-[length:13px] leading-[1.6] text-workspace-danger p-[10px_0]"
               role="alert"
             >
-              {getBoardlyQueryErrorMessage(schedule.error)}
+              {getZenithTeamQueryErrorMessage(schedule.error)}
             </p>
           ) : schedule.currentData ? (
             <TaskScheduleEditor

@@ -217,11 +217,6 @@ that keeps its slot on the server while its frames stop looking like task runs.
 Treat the next agent read as authoritative and do not resolve the disagreement
 in the client's favour.
 
-Both of those — the missing frame and the missing lane — are argued in
-the retired ADR 0004's `activeRunCount` exception, now recorded in
-[Agents TECH](../specs/agents/TECH.md) and summarized in
-[ADR 0008](../adr/0008-run-and-activity-history.md).
-
 **Reads return refs; writes take ids.** `reportsTo` and `binding` are
 read-side projections. The corresponding request fields are
 `reportsToAgentId` (create and update) and `runtimeId` (create, and the
@@ -744,7 +739,7 @@ accepted.
 | Field | Values and effect |
 |---|---|
 | `enabledTools` | Optional, at most one entry, today only `zenith-studio`; absent or empty means off. Opts the Agent into a managed Zenith Team tool |
-| `disabledBuiltIns` | Up to five stable ids: `planning`, `coordination`, `saved-work`, `founder-input`, `wiki`; removes the corresponding `boardly-mcp` tools and Run-channel `zen` commands (`planning` on the root Agent also makes the server read its direct-chat Run's Tasks as any Run's, its own only, from the next request; see [Reads from inside a Run](tasks.md#reads-from-inside-a-run); `coordination` also withholds `zen task create`, `saved-work` withholds the `present_output` MCP tool, `wiki` withholds the `wiki_search` and `wiki_read` tools, and `wiki_write` from the company-research Run, and makes the server refuse that Agent's Company Wiki reads and writes with `wiki_agent_access_disabled`) |
+| `disabledBuiltIns` | Up to five stable ids: `planning`, `coordination`, `saved-work`, `founder-input`, `wiki`; removes the corresponding `zenith-team-mcp` tools and Run-channel `zen` commands (`planning` on the root Agent also makes the server read its direct-chat Run's Tasks as any Run's, its own only, from the next request; see [Reads from inside a Run](tasks.md#reads-from-inside-a-run); `coordination` also withholds `zen task create`, `saved-work` withholds the `present_output` MCP tool, `wiki` withholds the `wiki_search` and `wiki_read` tools, and `wiki_write` from the company-research Run, and makes the server refuse that Agent's Company Wiki reads and writes with `wiki_agent_access_disabled`) |
 | `disabledPlugins` | Up to 500 discovered Plugin UUIDs; disables the native plugin bundle, including its Skills and contributed Connector identities |
 | `disabledMcpServers` | Up to 500 Connector UUIDs with source `codex_mcp` or `claude_mcp`; excludes them from the Run’s MCP preparation |
 
@@ -926,7 +921,7 @@ playbooks for the Workflows page but are not references.
 | `references` | File paths the Agent can load beside `SKILL.md`, in bytewise path order (Workflow playbooks by key; the `workflow.yaml` forms are not references) |
 
 The skills cannot be switched off. The Agent's `disabledBuiltIns` above
-gate the `boardly-mcp` tool groups a Run receives; the procedures stay in
+gate the `zenith-team-mcp` tool groups a Run receives; the procedures stay in
 the catalog and tell the Agent what those tools do.
 
 ---
@@ -1177,7 +1172,7 @@ carry `0` and are not a source for it. See
 
 ## Custom skills
 
-`GET /companies/{companyId}/agents/{agentId}/skills` lists cloud installations.
+`GET /companies/{companyId}/agents/{agentId}/skills` lists the Agent's installed custom skills, stored on the server.
 `POST .../skill-imports/upload` previews one multipart ZIP/Markdown file;
 `POST .../skill-imports/github` previews a full public repository, folder or
 SKILL.md file URL. Its request accepts only `url`; separate `ref` and `path`
@@ -1185,7 +1180,8 @@ fields are rejected. `POST .../skills` confirms selected version IDs from
 that exact, unexpired preview. `replaceSkillId` plus `expectedRevision` explicitly
 updates an existing same-named installation. `PATCH .../skills/{skillId}` changes
 `enabled`, and `DELETE` takes `expectedRevision`. `GET .../reference?path=...`
-reads a verified installed text file. See the OpenAPI AgentSkill schemas.
+reads a verified installed text file. See the `AgentSkill` schemas in
+[agents.yaml](spec/agents.yaml).
 
 The creator or `agents.manage` can configure an Agent; the root Agent requires
 `agents.manage`. Confirmation rechecks membership and configuration rights.

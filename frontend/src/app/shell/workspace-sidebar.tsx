@@ -224,7 +224,7 @@ export function WorkspaceSidebarLink({
       <Popover.Portal>
         <Popover.Content
           ref={registerContent}
-          className="boardly-workspace-theme workspace-sidebar-popup"
+          className="zenith-team-workspace-theme workspace-sidebar-popup"
           aria-label={`${page.label} sidebar`}
           tabIndex={-1}
           side="right"

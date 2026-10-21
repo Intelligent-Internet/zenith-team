@@ -57,7 +57,7 @@ ORDER BY link.message_id, link.position;
 -- Run's Authorizer, may open (attachment_access, row by row). That already
 -- hides a Project file from someone who reads none of its Projects (ADR 0017
 -- decision 8). The Run uses its Authorizer's access and nothing else narrows
--- it (D31): the person who tagged the Agent answers for what it shares.
+-- it: the person who tagged the Agent answers for what it shares.
 SELECT link.message_id, sqlc.embed(attachments) FROM attachments
 JOIN message_attachments link ON link.attachment_id=attachments.id AND link.company_id=attachments.company_id
 CROSS JOIN LATERAL (

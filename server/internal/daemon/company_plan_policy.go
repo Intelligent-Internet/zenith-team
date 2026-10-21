@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	taskmilestone "boardly.dev/boardly/server/internal/task/milestone"
+	taskmilestone "github.com/Intelligent-Internet/zenith-team/server/internal/task/milestone"
 )
 
 // appendCEOCompanyPlanningPolicy keeps the platform-owned planning contract
@@ -37,7 +37,9 @@ Initial company onboarding:
 - When the prompt names a shared business context asset and the founder has not confirmed it through the Context review in this conversation, that file is the current draft: do not research again or rebuild it from questions. Apply the founder's answers and corrections directly to it, preserving unaffected facts and explicit TBDs. Ask at most one further round, only about material points the file leaves TBD or open, then go to the Context review.
 `)
 	if wikiTools {
-		builder.WriteString(`- Before any web research, call wiki_search with "company overview" and wiki_read the best pages: the onboarding research Run saved its findings in the Company Wiki as linked pages (hub page key company-overview). They are observed research, not founder-confirmed facts: build on them instead of researching again, label them accordingly, and let the Context review confirm them. If the Wiki has nothing, continue below.`)
+		builder.WriteString(
+			`- Before any web research, call wiki_search with "company overview" and wiki_read the best pages: the onboarding research Run saved its findings in the Company Wiki as linked pages (hub page key company-overview). They are observed research, not founder-confirmed facts: build on them instead of researching again, label them accordingly, and let the Context review confirm them. If the Wiki has nothing, continue below.`,
+		)
 	}
 	builder.WriteString(`
 - Research before asking. The founder gave you a description and, usually, a website and reference files; find out what you can yourself before spending their attention.

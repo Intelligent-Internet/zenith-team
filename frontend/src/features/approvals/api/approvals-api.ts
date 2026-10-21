@@ -1,7 +1,10 @@
 import type { BaseQueryApi } from "@reduxjs/toolkit/query";
 
 import { approvalService, questionService } from "@/shared/api";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type {
   ApprovalCancelRequest,
   ApprovalDto,
@@ -75,7 +78,7 @@ async function collectHumanInputPages<T extends ApprovalDto | QuestionDto>(
   }
 }
 
-export const approvalsApi = boardlyApi.injectEndpoints({
+export const approvalsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listApprovals: builder.query<ApprovalPage, ApprovalListArgument>({
       providesTags: (result, _error, { companyId }) => [
@@ -86,7 +89,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         })) ?? []),
       ],
       queryFn: ({ allPages, companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             allPages
               ? collectHumanInputPages(
@@ -107,7 +110,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         { id: approvalStatsTag(companyId), type: "Approval" },
       ],
       queryFn: ({ companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => approvalService.stats(query, companyId),
           "Approval statistics could not be loaded.",
         ),
@@ -117,7 +120,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         { id: approvalItemTag(companyId, approvalId), type: "Approval" },
       ],
       queryFn: ({ approvalId, companyId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => approvalService.get(approvalId, companyId),
           "Approval could not be loaded.",
         ),
@@ -128,7 +131,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         { id: approvalItemTag(companyId, approvalId), type: "Approval" },
       ],
       queryFn: ({ approvalId, companyId, ...request }, api) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const approval = await approvalService.approve(
             approvalId,
             request,
@@ -144,7 +147,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         { id: approvalItemTag(companyId, approvalId), type: "Approval" },
       ],
       queryFn: ({ approvalId, companyId, ...request }, api) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const approval = await approvalService.reject(
             approvalId,
             request,
@@ -161,7 +164,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
           { id: approvalItemTag(companyId, approvalId), type: "Approval" },
         ],
         queryFn: ({ approvalId, companyId, ...request }, api) =>
-          executeBoardlyQuery(async () => {
+          executeZenithTeamQuery(async () => {
             const approval = await approvalService.cancel(
               approvalId,
               request,
@@ -181,7 +184,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         })) ?? []),
       ],
       queryFn: ({ allPages, companyId, ...query }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             allPages
               ? collectHumanInputPages(
@@ -236,7 +239,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: ({ companyId, questionId, ...request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => questionService.answer(questionId, request, companyId),
           "Question could not be answered.",
         ),
@@ -248,7 +251,7 @@ export const approvalsApi = boardlyApi.injectEndpoints({
           { id: questionItemTag(companyId, questionId), type: "Question" },
         ],
         queryFn: ({ companyId, questionId, ...request }) =>
-          executeBoardlyQuery(
+          executeZenithTeamQuery(
             () => questionService.withdraw(questionId, request, companyId),
             "Question could not be withdrawn.",
           ),

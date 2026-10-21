@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // runContextGolden is the document the server writes into runs.context. It
@@ -64,7 +64,7 @@ func TestLocalDirectoryForReadsTheServerDocument(t *testing.T) {
 	t.Run("a tagged Run never claims its person's directory", func(t *testing.T) {
 		// A channel answer never draws on its person's local folders, so it
 		// starts in its own scratch even on the machine the directory is
-		// bound to (Access TECH B7).
+		// bound to.
 		tagged := document
 		tagged.ChannelInvocation = &RunChannelInvocation{ID: "0198aa00-0000-7000-8000-0000000000c1"}
 		if resource := localDirectoryFor(tagged, "daemon-a"); resource != nil {
@@ -162,7 +162,8 @@ func TestRunContextChatGoldenDecodesAuthorsAndTrigger(t *testing.T) {
 	if snapshot.Items[0].Author.Name != "Alice Nguyen" || snapshot.Items[0].Author.Kind != protocol.ActorKindUser {
 		t.Errorf("item 0 author = %+v, want Alice Nguyen, a user", snapshot.Items[0].Author)
 	}
-	if snapshot.Items[1].Author.Kind != protocol.ActorKindAgent || snapshot.Items[1].Author.ID != "0197f5b0-4000-7000-8000-000000000032" {
+	if snapshot.Items[1].Author.Kind != protocol.ActorKindAgent ||
+		snapshot.Items[1].Author.ID != "0197f5b0-4000-7000-8000-000000000032" {
 		t.Errorf("item 1 author = %+v, want the agent", snapshot.Items[1].Author)
 	}
 	if snapshot.Items[2].Seq != 12 || snapshot.Items[2].Content != "Email and name. Phone is optional." {

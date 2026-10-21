@@ -17,8 +17,12 @@ func loadStorageConfig(lookup LookupEnv, environment string) (StorageConfig, err
 		// Match docker/compose.yml and its silo-init bucket. Local mode uses
 		// the same S3 adapter; it changes only development configuration.
 		defaults = StorageConfig{
-			Bucket: "boardly-attachments", Region: "us-east-1", Endpoint: "http://localhost:9000",
-			AccessKeyID: "boardly", SecretAccessKey: "boardly-development-secret", UsePathStyle: true,
+			Bucket:          "zenith-team-attachments",
+			Region:          "us-east-1",
+			Endpoint:        "http://localhost:9000",
+			AccessKeyID:     "zenith-team",
+			SecretAccessKey: "zenith-team-development-secret",
+			UsePathStyle:    true,
 		}
 	default:
 		return StorageConfig{}, errors.New("STORAGE_DRIVER must be s3 or local")

@@ -52,9 +52,9 @@ func TestSanitizeHTMLRemovesActiveContentAndRemoteImages(t *testing.T) {
 
 	input := `<p onclick="steal()">Hello <strong>team</strong></p>` +
 		`<script>steal()</script><img src="https://tracker.test/pixel">` +
-		`<a href="javascript:steal()">bad</a><a href="https://boardly.test/help">help</a>`
+		`<a href="javascript:steal()">bad</a><a href="https://zenith-team.test/help">help</a>`
 	want := `<p>Hello <strong>team</strong></p><a>bad</a>` +
-		`<a href="https://boardly.test/help">help</a>`
+		`<a href="https://zenith-team.test/help">help</a>`
 	if got := sanitizeHTML(input); got != want {
 		t.Fatalf("sanitizeHTML() = %q, want %q", got, want)
 	}

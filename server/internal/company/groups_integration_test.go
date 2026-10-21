@@ -16,13 +16,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-// Access TECH D3 and D5: a Group change moves access exactly as a person
+// A Group change moves access exactly as a person
 // grant change would. The Project is the fixture's Project A ("Payroll"),
 // restricted, where the owner holds every permission; the member is Mia and
 // her Runs execute on her own computer.
@@ -710,7 +710,7 @@ func TestAGroupChangeOfSeveralPeopleIsRecordedOncePerProject(t *testing.T) {
 	}
 }
 
-// Access TECH D7 at the scale measured on 2026-10-07: adding 250 people to a
+// A change at the scale measured on 2026-10-07: adding 250 people to a
 // Group granted on 50 restricted Projects, then deleting the Group, each in
 // one transaction under the Company lock. The trail stays one row per
 // Project and one notice per grant manager per Project, and everyone loses
@@ -788,7 +788,7 @@ func TestAGroupChangeAtScaleStaysOnePerProject(t *testing.T) {
 	}
 }
 
-// D5: leaving the Company ends every Group membership; Payroll records what
+// Leaving the Company ends every Group membership; Payroll records what
 // the person held there through Finance, and a rejoin restores nothing.
 func TestLeavingTheCompanyEndsEveryGroupMembership(t *testing.T) {
 	ctx, w := newProjectAccessWorld(t)

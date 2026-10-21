@@ -1,4 +1,4 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import { connectorService } from "@/shared/api/connector.service";
 import type {
   ConnectorCatalogResponseV1,
@@ -12,7 +12,7 @@ type ConnectorReviewArguments = {
   connectorId: string;
 };
 
-export const connectorReviewsApi = boardlyApi.injectEndpoints({
+export const connectorReviewsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listConnectorReviews: builder.query<
       ConnectorCatalogResponseV1,
@@ -25,7 +25,7 @@ export const connectorReviewsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Connector" },
       ],
       queryFn: ({ companyId, provider, runtimeId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             connectorService.listAllConnectors(companyId, {
               reviewRequired: true,
@@ -44,7 +44,7 @@ export const connectorReviewsApi = boardlyApi.injectEndpoints({
         { id: companyId, type: "Connector" },
       ],
       queryFn: ({ companyId, connectorId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => connectorService.reconnect(companyId, connectorId),
           "Connector reconnect could not be completed.",
         ),

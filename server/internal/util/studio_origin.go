@@ -9,8 +9,6 @@ import (
 	"unicode/utf8"
 )
 
-const DefaultStudioOrigin = "https://api-agent.ii.inc"
-
 var errStudioOrigin = errors.New("invalid studio origin")
 
 // CanonicalStudioOrigin validates a credential origin without accepting API paths.

@@ -7,9 +7,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // RequireUserAuth authenticates the request (bearer header or session
@@ -34,7 +34,7 @@ func RequireUserAuth(service auth.AuthService) gin.HandlerFunc {
 
 // RequireDaemonAuth authenticates the daemon plane. Header-only on purpose:
 // the daemon never holds cookies, and skipping the cookie path keeps CSRF
-// entirely out of this plane. It admits the daemon's own session (D31) and,
+// entirely out of this plane. It admits the daemon's own session and,
 // as older daemons send, a person's.
 func RequireDaemonAuth(service auth.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {

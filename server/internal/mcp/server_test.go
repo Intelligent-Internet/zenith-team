@@ -10,7 +10,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type toolsStub struct {
@@ -31,7 +31,7 @@ func (s *toolsStub) ListAgents(
 	s.listCalls++
 	return tools.ListAgentsResult{
 		CompanyID:   "company-id",
-		CompanySlug: "boardly-local",
+		CompanySlug: "zenith-team-local",
 		TotalCount:  2,
 		Agents: []tools.PlanAgent{
 			{
@@ -95,7 +95,7 @@ func TestAskHumanToolAdvertisesAndEnforcesFreeTextContract(t *testing.T) {
 	go func() { _ = server.Run(ctx, serverTransport) }()
 
 	client := mcpsdk.NewClient(
-		&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"},
+		&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"},
 		nil,
 	)
 	session, err := client.Connect(ctx, clientTransport, nil)
@@ -262,7 +262,7 @@ func TestServerAdvertisesFileBasedCompanyPlanToolsAndCallsThem(t *testing.T) {
 	serverDone := make(chan error, 1)
 	go func() { serverDone <- server.Run(ctx, serverTransport) }()
 
-	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"}, nil)
+	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"}, nil)
 	session, err := client.Connect(ctx, clientTransport, nil)
 	if err != nil {
 		t.Fatalf("Connect() error = %v", err)
@@ -362,7 +362,7 @@ func TestServerAdvertisesOnlyAllowedTools(t *testing.T) {
 	serverTransport, clientTransport := mcpsdk.NewInMemoryTransports()
 	go func() { _ = server.Run(ctx, serverTransport) }()
 
-	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"}, nil)
+	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"}, nil)
 	session, err := client.Connect(ctx, clientTransport, nil)
 	if err != nil {
 		t.Fatalf("Connect() error = %v", err)
@@ -390,7 +390,7 @@ func TestApplyRequestsDurableCompanyPlanApproval(t *testing.T) {
 	serverTransport, clientTransport := mcpsdk.NewInMemoryTransports()
 	go func() { _ = server.Run(ctx, serverTransport) }()
 	client := mcpsdk.NewClient(
-		&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"},
+		&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"},
 		nil,
 	)
 	session, err := client.Connect(ctx, clientTransport, nil)
@@ -450,7 +450,7 @@ func TestServerAdvertisesSkillToolsOnlyWithSnapshotAndExplicitAllowlist(t *testi
 			serverTransport, clientTransport := mcpsdk.NewInMemoryTransports()
 			go func() { _ = server.Run(ctx, serverTransport) }()
 			client := mcpsdk.NewClient(
-				&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"},
+				&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"},
 				nil,
 			)
 			session, err := client.Connect(ctx, clientTransport, nil)
@@ -485,7 +485,7 @@ func TestServerCallsReadOnlySkillTools(t *testing.T) {
 	server := newServer(stub, stub, stub, allowed)
 	serverTransport, clientTransport := mcpsdk.NewInMemoryTransports()
 	go func() { _ = server.Run(ctx, serverTransport) }()
-	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "boardly-mcp-test", Version: "test"}, nil)
+	client := mcpsdk.NewClient(&mcpsdk.Implementation{Name: "zenith-team-mcp-test", Version: "test"}, nil)
 	session, err := client.Connect(ctx, clientTransport, nil)
 	if err != nil {
 		t.Fatalf("Connect() error = %v", err)

@@ -14,8 +14,8 @@ export function invitationTokenFromLink(value: string): string | null {
     case "http:":
       path = url.pathname;
       break;
-    case "boardly:":
-    case "boardly-dev:":
+    case "zenith-team:":
+    case "zenith-team-dev:":
       if (url.hostname !== "invite" || url.port) return null;
       path = `/invite${url.pathname}`;
       break;

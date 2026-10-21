@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-// TestContextExhaustedCompletion is the precision regression for GH #6402.
-// The wordings marked "captured" were taken from the Claude Code binary /
-// a live reproduction (resuming a saturated transcript against an endpoint
-// returning the provider's 400 prompt-too-long shape), not from the issue
-// report's paraphrase — the report said "a message like ...", which is exactly
-// what a matcher must not be built on.
+// TestContextExhaustedCompletion is the precision regression for a run whose
+// context window filled up. The wordings marked "captured" were taken from the
+// Claude Code binary / a live reproduction (resuming a saturated transcript
+// against an endpoint returning the provider's 400 prompt-too-long shape), not
+// from a bug report's paraphrase — a report that says "a message like ..." is
+// exactly what a matcher must not be built on.
 func TestContextExhaustedCompletion(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -56,7 +56,7 @@ func TestContextExhaustedCompletion(t *testing.T) {
 		},
 		{
 			name: "the issue report's paraphrase is not a fingerprint",
-			// GH #6402 wrote "a message like 'context too long, please run
+			// A bug report described "a message like 'context too long, please run
 			// /compact'". Neither half is safe alone, so the paraphrase itself
 			// must not match — matching it would mean matching every agent
 			// reply that suggests /compact.
@@ -111,7 +111,7 @@ func TestContextExhaustedCompletion(t *testing.T) {
 // argument for leaving the CLI's bare sentence out of the completed-output
 // predicate: on the captured frames it always arrives with is_error set, so it
 // reaches the server as a FAILURE, where Classify has routed it to
-// context_overflow since long before GH #6402. Leaving it out of the
+// context_overflow since long before this predicate existed. Leaving it out of the
 // success-path predicate therefore costs no coverage — it only removes the
 // chance of failing a run whose entire answer was that one English sentence.
 func TestBarePromptTooLongIsCoveredByTheFailurePath(t *testing.T) {
@@ -145,8 +145,8 @@ func TestContextExhaustedCompletionLengthCap(t *testing.T) {
 // contract: the daemon quotes the structured terminal reason into the error it
 // reports, and Classify must land that on the reason the resume blacklist
 // covers. Without this the run would fail as agent_error.unknown — labeled
-// wrong AND resume-safe by omission, which is the stuck (agent, issue) pair
-// GH #6402 describes.
+// wrong AND resume-safe by omission, which leaves the Agent stuck: every retry
+// resumes the same full session.
 func TestTerminalReasonPromptTooLongClassifies(t *testing.T) {
 	errMsg := "claude ended the turn with terminal_reason=" + TerminalReasonPromptTooLong +
 		": the session's context window is exhausted and compaction could not recover it"

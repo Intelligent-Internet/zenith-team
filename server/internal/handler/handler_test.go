@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
 )
 
 var _ http.Handler = (*Handler)(nil)
@@ -51,7 +51,7 @@ func TestNewBuildsAnApplicationHandler(t *testing.T) {
 	input := fullyWiredHandler()
 	allowedOrigin := input.AllowedOrigins[0]
 	handler := New(input)
-	input.AllowedOrigins[0] = "https://mutated.boardly.test"
+	input.AllowedOrigins[0] = "https://mutated.zenith-team.test"
 
 	if handler.router == nil {
 		t.Fatal("New returned a Handler without a Gin router")
@@ -153,7 +153,7 @@ func TestRouterExposesLowCardinalityHTTPMetrics(t *testing.T) {
 	if metricsResponse.Code != http.StatusOK {
 		t.Fatalf("metrics status = %d, want %d", metricsResponse.Code, http.StatusOK)
 	}
-	if !strings.Contains(body, `boardly_http_requests_total{method="GET",route="unmatched",status="404"} 1`) {
+	if !strings.Contains(body, `zenith_team_http_requests_total{method="GET",route="unmatched",status="404"} 1`) {
 		t.Fatalf("metrics missing unmatched route counter:\n%s", body)
 	}
 	if strings.Contains(body, "0197f590-10b8-7cc0-a6c6-160ed7a18b2c") ||
@@ -292,13 +292,13 @@ func TestCORSEnforcesCredentialedOriginAllowlist(t *testing.T) {
 	t.Parallel()
 
 	handler := New(Handler{AllowedOrigins: []string{
-		"https://app.boardly.test",
-		"boardly-app://renderer",
+		"https://app.zenith-team.test",
+		"zenith-team-app://renderer",
 	}})
 
 	t.Run("allowed preflight", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodOptions, "/api/v1/tasks", nil)
-		request.Header.Set("Origin", "https://app.boardly.test")
+		request.Header.Set("Origin", "https://app.zenith-team.test")
 		request.Header.Set("Access-Control-Request-Method", http.MethodPost)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -306,7 +306,7 @@ func TestCORSEnforcesCredentialedOriginAllowlist(t *testing.T) {
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("status = %d, want %d", response.Code, http.StatusNoContent)
 		}
-		if got := response.Header().Get("Access-Control-Allow-Origin"); got != "https://app.boardly.test" {
+		if got := response.Header().Get("Access-Control-Allow-Origin"); got != "https://app.zenith-team.test" {
 			t.Errorf("Access-Control-Allow-Origin = %q", got)
 		}
 		if got := response.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
@@ -319,11 +319,11 @@ func TestCORSEnforcesCredentialedOriginAllowlist(t *testing.T) {
 
 	t.Run("packaged desktop renderer preflight", func(t *testing.T) {
 		request := httptest.NewRequest(http.MethodOptions, "/api/v1/tasks", nil)
-		request.Header.Set("Origin", "boardly-app://renderer")
+		request.Header.Set("Origin", "zenith-team-app://renderer")
 		request.Header.Set("Access-Control-Request-Method", http.MethodPost)
 		request.Header.Set(
 			"Access-Control-Request-Headers",
-			"authorization,content-type,idempotency-key,x-boardly-run-token",
+			"authorization,content-type,idempotency-key,x-zenith-team-run-token",
 		)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
@@ -331,14 +331,14 @@ func TestCORSEnforcesCredentialedOriginAllowlist(t *testing.T) {
 		if response.Code != http.StatusNoContent {
 			t.Fatalf("status = %d, want %d", response.Code, http.StatusNoContent)
 		}
-		if got := response.Header().Get("Access-Control-Allow-Origin"); got != "boardly-app://renderer" {
+		if got := response.Header().Get("Access-Control-Allow-Origin"); got != "zenith-team-app://renderer" {
 			t.Errorf("Access-Control-Allow-Origin = %q", got)
 		}
 		if got := response.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
 			t.Errorf("Access-Control-Allow-Credentials = %q", got)
 		}
 		gotHeaders := response.Header().Get("Access-Control-Allow-Headers")
-		for _, want := range []string{"Authorization", "Idempotency-Key", "X-Boardly-Run-Token"} {
+		for _, want := range []string{"Authorization", "Idempotency-Key", "X-Zenith-Team-Run-Token"} {
 			if !strings.Contains(gotHeaders, want) {
 				t.Errorf("Access-Control-Allow-Headers = %q, want %s", gotHeaders, want)
 			}
@@ -367,7 +367,7 @@ func TestCORSEnforcesCredentialedOriginAllowlist(t *testing.T) {
 func TestCORSRejectsLiteralNullOriginEvenWhenConfigured(t *testing.T) {
 	t.Parallel()
 
-	handler := New(Handler{AllowedOrigins: []string{"null", "https://app.boardly.test"}})
+	handler := New(Handler{AllowedOrigins: []string{"null", "https://app.zenith-team.test"}})
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	request.Header.Set("Origin", "null")
 	response := httptest.NewRecorder()
@@ -390,7 +390,7 @@ func TestCORSDelegatesClientWebSocketOriginPolicyToTheSocketServer(t *testing.T)
 	t.Parallel()
 
 	handler := New(Handler{
-		AllowedOrigins: []string{"https://app.boardly.test"},
+		AllowedOrigins: []string{"https://app.zenith-team.test"},
 		ClientWebSocket: http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 			writer.WriteHeader(http.StatusUpgradeRequired)
 		}),

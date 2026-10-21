@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestTranscriptReadsOneAuthorizedConversationAcrossRunsInSequenceOrder(t *testing.T) {
@@ -80,7 +81,15 @@ func TestTranscriptReadsOneAuthorizedConversationAcrossRunsInSequenceOrder(t *te
 	if got, want := transcriptSeqs(firstPage.Items), []int64{2, 4}; !slices.Equal(got, want) {
 		t.Fatalf("first page seqs = %v, want %v", got, want)
 	}
-	if got, want := transcriptRunIDs(firstPage.Items), []uuid.UUID{firstRunID, secondRunID}; !slices.Equal(got, want) {
+	if got, want := transcriptRunIDs(
+		firstPage.Items,
+	), []uuid.UUID{
+		firstRunID,
+		secondRunID,
+	}; !slices.Equal(
+		got,
+		want,
+	) {
 		t.Fatalf("first page Run ids = %v, want %v", got, want)
 	}
 	if firstPage.ThroughSeq != 5 || !firstPage.HasMore {

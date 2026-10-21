@@ -30,7 +30,7 @@ export interface CapabilityCard {
 }
 
 // The five run-scoped tool groups whoever configures the agent can switch off. They
-// gate boardly-mcp tools. The compiled platform skill sits in the same list
+// gate zenith-team-mcp tools. The compiled platform skill sits in the same list
 // (see platformSkillCards) but is always on.
 export const builtInToolGroups: CapabilityCard[] = [
   {

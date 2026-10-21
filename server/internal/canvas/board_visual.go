@@ -16,8 +16,8 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/sync/semaphore"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const boardVisualTileSize = 1216.0

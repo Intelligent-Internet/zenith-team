@@ -16,7 +16,7 @@ func TestDaemonConfigReturnsOnlyEndpointAndRequiresBearer(t *testing.T) {
 	h.StudioAPIOrigin = "http://localhost:8000"
 	router := New(h)
 	for _, authorized := range []bool{false, true} {
-		request := httptest.NewRequest("GET", "/api/v1/daemon/config", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/v1/daemon/config", nil)
 		if authorized {
 			request.Header.Set("Authorization", "Bearer session")
 		}

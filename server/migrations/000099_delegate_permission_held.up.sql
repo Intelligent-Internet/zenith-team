@@ -1,4 +1,4 @@
--- The delegate rule in one place (D31, IA-FR10). A delegate acts with one
+-- The delegate rule in one place. A delegate acts with one
 -- person's access and never more: a Run, or the Huddle voice assistant. Its
 -- person is its Authorizer. Enqueue, claim, every Run-proof read and the
 -- voice reads ask these two functions; nothing restates the rule.
@@ -7,7 +7,7 @@
 -- Its Authorizer holds the permission and read there (never through the
 -- management bridge: a delegate never manages); a Task chat's answer stays
 -- in that chat's Project; a group chat's audience must all read the
--- Project. agent_id is the acting Agent; a later migration (Access TECH C1) adds
+-- Project. agent_id is the acting Agent; a later migration adds
 -- its policy term.
 -- Go binds every permission; SQL names none.
 --

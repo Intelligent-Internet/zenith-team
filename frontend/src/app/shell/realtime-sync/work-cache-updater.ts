@@ -1,7 +1,7 @@
 import { activityApi } from "@/shared/api/activity-api";
 import { taskApi } from "@/shared/api/task-api";
 import type { TaskDto, TaskListOptions } from "@/shared/api/types";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 
 import { taskLatestRunTag } from "@/features/company-plan/api/task-detail-api";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/features/company-plan/api/work-next-up-api";
 import {
   realtimeEventConversationId,
-  type BoardlyRealtimeEvent,
+  type ZenithTeamRealtimeEvent,
 } from "@/shared/realtime/realtime-client.service";
 import {
   removeVersioned,
@@ -46,7 +46,7 @@ const slotRunEvents = new Set([
 
 export function applyWorkCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   switch (event.type) {
     case "task.created":
@@ -63,7 +63,7 @@ export function applyWorkCacheEvent(
     case "deliverable.reviewed":
     case "deliverable.superseded": {
       context.dispatch(
-        boardlyApi.util.invalidateTags([
+        zenithTeamApi.util.invalidateTags([
           { type: "Artifact" },
           { type: "Deliverable" },
           { type: "Run" },
@@ -80,7 +80,7 @@ export function applyWorkCacheEvent(
         const conversationId = realtimeEventConversationId(event);
         if (typeof runId === "string") {
           context.dispatch(
-            boardlyApi.util.invalidateTags([
+            zenithTeamApi.util.invalidateTags([
               { id: context.companyId, type: "Run" },
               { id: String(runId), type: "Run" },
               ...(typeof taskId === "string" ? [taskLatestRunTag(taskId)] : []),

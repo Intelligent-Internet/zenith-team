@@ -5,7 +5,7 @@ summary: Conversations, messages, attachments, read state, and the run queue
 
 A Conversation is **one ordered stream**. Agent direct, Task and Schedule
 conversations use the Run-backed protocol below. Human DMs and private channels
-use the separate [human discussion protocol](#human-discussions-c1).
+use the separate [human discussion protocol](#human-discussions).
 Every Run-backed item — the user's words, the agent's answer, and
 the run detail in between — is a row of the same sequence, immutable, carrying a
 monotonic per-conversation `seq`. Attachments are uploaded separately and
@@ -35,10 +35,9 @@ agent. A task conversation is visible to the readers of its task's Project
 in it needs `project.tasks.write` there. A task chat detached before Project
 access existed has no Project and stays visible to every active member.
 
-The [Conversation PRD](../specs/conversations/PRD.md) and
-[TECH](../specs/conversations/TECH.md) distinguish the served protocol from
-Planned send-retry, complete-suffix recovery and provider-history snapshots.
-Private chat controls cloud visibility; its Agent still executes on the
+Send-retry, complete-suffix recovery and provider-history snapshots are
+Planned; the served protocol below does not include them. A private chat
+controls who can see it on the server; its Agent still executes on the
 assigned machine in the managed shared Company workspace. It does
 not create a per-person filesystem sandbox or authorize a direct-workdir.
 
@@ -76,7 +75,7 @@ Conversation item when it was saved. The update and history entry commit togethe
 thinking-only edits, unchanged models and rejected writes add no entry. Clients
 render these entries as timeline notices, never as messages sent to the provider.
 
-## Human discussions (C1)
+## Human discussions
 
 The [OpenAPI conversation contract](spec/conversations.yaml) serves human-only,
 Company-scoped routes under `/api/v1/companies/{companyId}`:
@@ -137,7 +136,7 @@ Company-scoped routes under `/api/v1/companies/{companyId}`:
 Channel owners have content access without joining; sending does not enroll them.
 Pin/hide enrolls an owner in the same transaction. Admins outside a channel have
 management access and must join for content. DM access always requires the
-participant's current grant. Agent grants authorize retained history, with no C1 Agent
+participant's current grant. Agent grants authorize retained history, with no Agent
 history API/tool or invocation. Legacy transcript, message and context-snapshot
 routes reject human discussion types.
 
@@ -162,7 +161,7 @@ reads up to 50 requested members. Active heartbeats expire after 90 seconds;
 manual Away is stored per Company membership and overrides every device. Clients
 report at 45-second intervals while focused, with inactivity after five minutes.
 `@here` uses the same shared presence state. Agents are not human presence entries. See the
-[implementation status and validation](../specs/conversations/TECH.md#implementation-status-and-validation).
+implementation status and validation.
 
 ## Call budget
 
@@ -206,9 +205,8 @@ The Conversation head is a paging bound, not a replacement for per-Run
 integrity. Reconciliation requires that Run's exact `transcriptThroughSeq`,
 but merely observing the largest seq does not prove that earlier items were
 received. Read an authoritative suffix from the last verified scan boundary;
-do not advance that boundary from a live frame alone. The current client's
-head-only shortcut and its Planned correction are recorded in
-[Conversation TECH §11.2](../specs/conversations/TECH.md#112-verified-scan-coverage-cv-c8). See
+do not advance that boundary from a live frame alone. The current client
+still takes a head-only shortcut here; correcting it is Planned. See
 [Runs](runs.md#read-a-conversations-provider-transcript) for the structured
 item shape and terminal-proof relationship.
 
@@ -316,9 +314,9 @@ runs themselves asks the runs endpoint for that conversation.
 > **Changed.** `kind` is now `type`, over the two chat values `user_message`
 > and `agent_text`. `run_output` and `no_response` are gone with the second
 > write that produced them: agent text is an ordinary item of the stream, and a
-> run that answered nothing leaves no item rather than an empty one. See
-> [ADR 0008](../adr/0008-run-and-activity-history.md), which records the
-> retired ADR 0005's one-stream decision.
+> run that answered nothing leaves no item rather than an empty one.
+> [ADR 0008](../adr/0008-run-and-activity-history.md) records the one-stream
+> decision.
 
 The caller's `pinnedAt` and `archivedAt` timestamps match the state endpoint
 and `conversation.read` event. Active pins exclude archived chats; restoring a
@@ -772,7 +770,7 @@ key finds that durable queue row on replay.
     "conversationId": "0197f5a1-4c30-7a11-9d02-6f2b8c1e4d55",
     "seq": 42,
     "type": "user_message",
-    "author": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+    "author": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
     "runId": "00000000-0000-0000-0000-0000000012d6",
     "content": "Summarise last week's revenue.",
     "createdAt": "2026-08-15T16:10:02.118221Z",
@@ -807,7 +805,7 @@ The queued branch:
     "messageId": "0197f5a9-0011-7c33-a844-5d2e9f108b41",
     "content": "Also break it down by channel.",
     "attachments": [],
-    "initiatedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+    "initiatedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
     "queuedAt": "2026-08-15T16:11:30.004112Z",
     "revision": 1
   }
@@ -929,7 +927,7 @@ client can render it with its neighbours without loading the whole thread.
     { "id": "0197f5a2-88b1-7f04-9e13-5c7d2a4b8e60",
       "conversationId": "0197f5a1-4c30-7a11-9d02-6f2b8c1e4d55",
       "seq": 40, "type": "user_message",
-      "author": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+      "author": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
       "runId": "00000000-0000-0000-0000-0000000012d5", "content": "How did last week go?",
       "createdAt": "2026-08-15T16:00:11.402001Z", "attachments": [] }
   ],
@@ -1063,7 +1061,7 @@ none.
   "items": [
     { "id": "0197f5a8-4411-7b90-8c22-19be7f3d55a1", "messageId": "0197f5a9-0011-7c33-a844-5d2e9f108b41",
       "content": "Also break it down by channel.", "attachments": [],
-      "initiatedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+      "initiatedBy": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
       "queuedAt": "2026-08-15T16:11:30.004112Z", "revision": 1 }
   ],
   "limit": 20

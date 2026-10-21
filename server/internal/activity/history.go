@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 // Snapshot is a safe, complete owner-state projection read under the mutation's
@@ -171,7 +171,7 @@ func appendChange(ctx context.Context, q *generated.Queries, pending *[]events.E
 type historyContext struct {
 	ActorDisplayName *string `json:"actorDisplayName"`
 	// OnBehalfOfDisplayName is the name of the person an Agent acted for in a
-	// Run, frozen like the actor's (D31). Every other row leaves it out.
+	// Run, frozen like the actor's. Every other row leaves it out.
 	OnBehalfOfDisplayName *string `json:"onBehalfOfDisplayName,omitempty"`
 	EntityKey             *string `json:"entityKey"`
 	EntityTitle           *string `json:"entityTitle"`
@@ -199,7 +199,7 @@ func (labels *historyContext) captureActor(
 }
 
 // actorAttribution is the person an Agent acted for and the Run it acted in
-// (D31), as the two Activity columns. Both are NULL for a person, the
+// as the two Activity columns. Both are NULL for a person, the
 // platform, and an Agent that names no Run.
 func actorAttribution(actor events.Actor) (onBehalfOf, run uuid.NullUUID, err error) {
 	if !actor.Valid() {

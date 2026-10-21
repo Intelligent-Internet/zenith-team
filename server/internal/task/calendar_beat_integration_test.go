@@ -12,7 +12,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"boardly.dev/boardly/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
 )
 
 func TestCalendarAsynqReplicasAndBrokerLoss(t *testing.T) {

@@ -2,12 +2,13 @@ package usage
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 func TestParseAnalyticsQuery(t *testing.T) {
@@ -24,9 +25,24 @@ func TestParseAnalyticsQuery(t *testing.T) {
 		{name: "breakdown", endpoint: "breakdown", query: window + "&by=model&sort=cost&limit=10"},
 		{name: "unknown parameter", endpoint: "summary", query: window + "&extra=1", wantErr: true},
 		{name: "repeated parameter", endpoint: "summary", query: window + "&scope=mine", wantErr: true},
-		{name: "non-midnight", endpoint: "summary", query: "scope=company&start_at=2026-09-01T01%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh", wantErr: true},
-		{name: "mine member filter", endpoint: "summary", query: "scope=mine&start_at=2026-09-01T00%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh&member_id=00000000-0000-4000-8000-000000000001", wantErr: true},
-		{name: "breakdown missing limit", endpoint: "breakdown", query: window + "&by=model&sort=cost", wantErr: true},
+		{
+			name:     "non-midnight",
+			endpoint: "summary",
+			query:    "scope=company&start_at=2026-09-01T01%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh",
+			wantErr:  true,
+		},
+		{
+			name:     "mine member filter",
+			endpoint: "summary",
+			query:    "scope=mine&start_at=2026-09-01T00%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh&member_id=00000000-0000-4000-8000-000000000001",
+			wantErr:  true,
+		},
+		{
+			name:     "breakdown missing limit",
+			endpoint: "breakdown",
+			query:    window + "&by=model&sort=cost",
+			wantErr:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -41,7 +57,11 @@ func TestParseAnalyticsQuery(t *testing.T) {
 func TestAnalyticsSummaryRejectsInvalidWindowBeforeComparison(t *testing.T) {
 	t.Parallel()
 	service := &DefaultUsageService{}
-	if _, err := service.GetAnalyticsSummary(context.Background(), auth.UserPrincipal{}, AnalyticsQuery{TimeZone: "invalid/zone"}); err != ErrInvalidInput {
+	if _, err := service.GetAnalyticsSummary(
+		context.Background(),
+		auth.UserPrincipal{},
+		AnalyticsQuery{TimeZone: "invalid/zone"},
+	); !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("error = %v, want invalid input", err)
 	}
 }
@@ -54,7 +74,10 @@ func TestAnalyticsDecimalTotalsPreserveLargeValues(t *testing.T) {
 }
 
 func TestAnalyticsComparisonUsesElapsedLocalWindow(t *testing.T) {
-	q, err := ParseAnalyticsQuery("scope=company&start_at=2026-09-01T00%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh", "summary")
+	q, err := ParseAnalyticsQuery(
+		"scope=company&start_at=2026-09-01T00%3A00%3A00%2B07%3A00&end_at=2026-09-08T00%3A00%3A00%2B07%3A00&time_zone=Asia%2FHo_Chi_Minh",
+		"summary",
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +93,7 @@ func TestAnalyticsComparisonUsesElapsedLocalWindow(t *testing.T) {
 	}
 }
 
-// Mine always reads the caller's own Runs (D20); Company scope reads every
+// Mine always reads the caller's own Runs; Company scope reads every
 // Run unless a member filter narrows it.
 func TestAnalyticsAuthorizerBindsTheCallerOnMine(t *testing.T) {
 	t.Parallel()
@@ -82,7 +105,11 @@ func TestAnalyticsAuthorizerBindsTheCallerOnMine(t *testing.T) {
 	if got := analyticsAuthorizer(p, AnalyticsQuery{Scope: AnalyticsScopeCompany}); got.Valid {
 		t.Fatalf("company authorizer = %+v, want none", got)
 	}
-	if got := analyticsAuthorizer(p, AnalyticsQuery{Scope: AnalyticsScopeCompany, MemberID: &other}); !got.Valid || got.UUID != other {
+	if got := analyticsAuthorizer(
+		p,
+		AnalyticsQuery{Scope: AnalyticsScopeCompany, MemberID: &other},
+	); !got.Valid ||
+		got.UUID != other {
 		t.Fatalf("member filter authorizer = %+v, want the member", got)
 	}
 }
@@ -94,8 +121,16 @@ func TestAnalyticsGroupsParamsViewIsTheCallers(t *testing.T) {
 	caller, other := uuid.New(), uuid.New()
 	p := auth.UserPrincipal{UserID: caller, CompanyID: uuid.New()}
 	start := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
-	params := analyticsGroupsParams(p, AnalyticsQuery{Scope: AnalyticsScopeCompany, MemberID: &other, TimeZone: "UTC"},
-		start, start.AddDate(0, 0, 1), "project", "tokens", 26, 25)
+	params := analyticsGroupsParams(
+		p,
+		AnalyticsQuery{Scope: AnalyticsScopeCompany, MemberID: &other, TimeZone: "UTC"},
+		start,
+		start.AddDate(0, 0, 1),
+		"project",
+		"tokens",
+		26,
+		25,
+	)
 	if params.ViewerUserID != caller || params.AuthorizerUserID.UUID != other || params.CompanyID != p.CompanyID {
 		t.Fatalf("params = %+v, want the caller as viewer and the member as authorizer", params)
 	}

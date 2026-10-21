@@ -8,10 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // Feed reads the company activity feed and per-entity timelines.
@@ -190,12 +190,26 @@ func entryOf(row db.ActivityEvent) Entry {
 		runID = &id
 	}
 	return Entry{
-		CompanyID: row.CompanyID, VisibilityUserID: row.VisibilityUserID,
-		ID: row.ID.String(), Action: row.Action,
-		Actor:      ActorRef{ID: util.TextToPtr(row.ActorID), Kind: row.ActorType, DisplayName: details.Context.ActorDisplayName},
-		OnBehalfOf: onBehalfOf, RunID: runID,
-		Entity:   EntityRef{ID: row.EntityID, Type: protocol.EntityType(row.EntityType), Key: details.Context.EntityKey, Title: details.Context.EntityTitle},
-		Revision: revision, Details: withoutMachines(row.EntityType, row.Details), CreatedAt: row.CreatedAt.Time.UTC(),
+		CompanyID:        row.CompanyID,
+		VisibilityUserID: row.VisibilityUserID,
+		ID:               row.ID.String(),
+		Action:           row.Action,
+		Actor: ActorRef{
+			ID:          util.TextToPtr(row.ActorID),
+			Kind:        row.ActorType,
+			DisplayName: details.Context.ActorDisplayName,
+		},
+		OnBehalfOf: onBehalfOf,
+		RunID:      runID,
+		Entity: EntityRef{
+			ID:    row.EntityID,
+			Type:  protocol.EntityType(row.EntityType),
+			Key:   details.Context.EntityKey,
+			Title: details.Context.EntityTitle,
+		},
+		Revision:  revision,
+		Details:   withoutMachines(row.EntityType, row.Details),
+		CreatedAt: row.CreatedAt.Time.UTC(),
 	}
 }
 
@@ -256,7 +270,7 @@ type ActorRef struct {
 	DisplayName *string `json:"displayName"`
 }
 
-// PersonRef is the person an Agent acted for in a Run (D31), with their
+// PersonRef is the person an Agent acted for in a Run, with their
 // display name as it read when the row was written.
 type PersonRef struct {
 	ID          string  `json:"id"`
@@ -281,7 +295,7 @@ type Entry struct {
 	Action           string        `json:"action"`
 	Actor            ActorRef      `json:"actor"`
 	// OnBehalfOf and RunID name the person an Agent acted for and the Run
-	// it acted in (D31); both are null on every other row, including rows
+	// it acted in; both are null on every other row, including rows
 	// written before Activity stored them.
 	OnBehalfOf *PersonRef      `json:"onBehalfOf"`
 	RunID      *string         `json:"runId"`

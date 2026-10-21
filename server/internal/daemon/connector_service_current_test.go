@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 type connectorPublisherRecorder struct {

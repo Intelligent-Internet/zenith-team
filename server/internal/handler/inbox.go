@@ -10,10 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 var errInvalidInboxCursor = errors.New("invalid Inbox cursor")
@@ -67,7 +67,12 @@ func (h *Handler) registerInboxRoutes(group *gin.RouterGroup) {
 	routes.POST("/read", h.readConversationInbox)
 	routes.GET("/:itemId", h.getInboxItem)
 	routes.POST("/:itemId/:mutation", h.mutateInboxItem)
-	account := group.Group("/me/inbox", middleware.NoStore(), middleware.RequireUserAuth(h.AuthService), middleware.RequireHumanActor())
+	account := group.Group(
+		"/me/inbox",
+		middleware.NoStore(),
+		middleware.RequireUserAuth(h.AuthService),
+		middleware.RequireHumanActor(),
+	)
 	account.GET("", h.listInbox)
 	account.GET("/counts", h.inboxCounts)
 	account.POST("/read-all", h.readAllInbox)

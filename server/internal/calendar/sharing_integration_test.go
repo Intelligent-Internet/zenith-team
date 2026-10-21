@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
@@ -21,7 +22,12 @@ func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -46,7 +52,16 @@ func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
 	if personal == "" || company == "" {
 		t.Fatalf("calendars = %#v", catalog)
 	}
-	input := Input{CalendarID: personal, Type: "event", Title: "Planning", StartLocal: "2026-09-22T09:00", EndLocal: "2026-09-22T10:00", TimeZone: "Asia/Ho_Chi_Minh", Recurrence: "none", Color: "sage"}
+	input := Input{
+		CalendarID: personal,
+		Type:       "event",
+		Title:      "Planning",
+		StartLocal: "2026-09-22T09:00",
+		EndLocal:   "2026-09-22T10:00",
+		TimeZone:   "Asia/Ho_Chi_Minh",
+		Recurrence: "none",
+		Color:      "sage",
+	}
 	event, err := s.Create(ctx, a, input)
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +134,12 @@ func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
 	if err = s.Delete(ctx, b, shared.ID, shared.Revision); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("member delete = %v", err)
 	}
-	if _, err = pool.Exec(ctx, `UPDATE company_members SET role='admin' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserB); err != nil {
+	if _, err = pool.Exec(
+		ctx,
+		`UPDATE company_members SET role='admin' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	input.ExpectedRevision = shared.Revision
@@ -131,7 +151,12 @@ func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
 	if _, err = s.Update(ctx, b, event.ID, input); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("company admin edited another member's personal event: %v", err)
 	}
-	if _, err = pool.Exec(ctx, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserB); err != nil {
+	if _, err = pool.Exec(
+		ctx,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	rows, err = s.List(ctx, auth.UserPrincipal{UserID: f.UserB}, from, to)
@@ -141,7 +166,12 @@ func TestSharedCalendarVisibilityAndResponses(t *testing.T) {
 	if err = s.Respond(ctx, b, event.ID, event.Revision, "declined"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("revoked RSVP = %v", err)
 	}
-	if _, err = pool.Exec(ctx, `UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`, f.CompanyA, f.UserA); err != nil {
+	if _, err = pool.Exec(
+		ctx,
+		`UPDATE company_members SET status='revoked' WHERE company_id=$1 AND user_id=$2`,
+		f.CompanyA,
+		f.UserA,
+	); err != nil {
 		t.Fatal(err)
 	}
 	personalActor := auth.UserPrincipal{UserID: f.UserA}
@@ -164,7 +194,12 @@ func TestCompanyCalendarWritesDoNotInvertAccountDeletionLocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -193,7 +228,12 @@ func TestCompanyCalendarWritesDoNotInvertAccountDeletionLocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer deletion.Rollback(ctx)
-	if _, err = deletion.Exec(ctx, `SELECT id FROM users WHERE id IN ($1,$2) ORDER BY id FOR NO KEY UPDATE`, f.UserA, f.UserB); err != nil {
+	if _, err = deletion.Exec(
+		ctx,
+		`SELECT id FROM users WHERE id IN ($1,$2) ORDER BY id FOR NO KEY UPDATE`,
+		f.UserA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	writeCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -207,7 +247,12 @@ func TestCompanyCalendarWritesDoNotInvertAccountDeletionLocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("calendar write behind account deletion User locks: %v", err)
 	}
-	if err = s.Occurrence(writeCtx, p, event.ID, OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-22", Action: "complete"}); err != nil {
+	if err = s.Occurrence(
+		writeCtx,
+		p,
+		event.ID,
+		OccurrenceInput{ExpectedRevision: event.Revision, OccurrenceDate: "2026-09-22", Action: "complete"},
+	); err != nil {
 		t.Fatalf("personal receipt behind account deletion User locks: %v", err)
 	}
 }

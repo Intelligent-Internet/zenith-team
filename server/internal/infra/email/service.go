@@ -31,7 +31,7 @@ type Delivery struct {
 }
 
 // TemplateProvider is the narrow boundary implemented by email providers such
-// as Resend. Auth and other Boardly domains must not depend on provider APIs.
+// as Resend. Auth and other Zenith Team domains must not depend on provider APIs.
 type TemplateProvider interface {
 	SendTemplate(context.Context, TemplateMessage) (Delivery, error)
 }

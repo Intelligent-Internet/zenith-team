@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 // pinSpec is one plugin's pin for a diff test. The files need only pass the
@@ -194,7 +194,7 @@ func TestDiffReadsTheBaseFromGit(t *testing.T) {
 	t.Parallel()
 	repo := newFixtureRepo(t)
 	out := filepath.Join(repo.dir, "server", "internal", "platformbundle")
-	writeFile(t, filepath.Join(repo.dir, "README.md"), []byte("boardly\n"))
+	writeFile(t, filepath.Join(repo.dir, "README.md"), []byte("zenith-team\n"))
 	repo.commit("before the pin")
 	writeSnapshot(t, out, snapshotOf(t, map[string]pinSpec{
 		"zenith-workflows": {version: "1.0.0", files: workflowFiles("account-brief", "battle-card")},

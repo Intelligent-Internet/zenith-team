@@ -18,8 +18,8 @@ import {
 } from "@xyflow/react";
 import { Download, FileText, LockKeyhole } from "@/shared/ui/icons";
 import { toast } from "@/shared/ui/sonner";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import type { components } from "@/shared/api/generated/api.generated";
 import {
   boardFilePath,
@@ -113,7 +113,7 @@ export const BoardNode = memo(function BoardNode({
   };
   useEffect(() => {
     if (item.type !== "image") return;
-    return boardlyRealtimeClient.onEvent((event) => {
+    return zenithTeamRealtimeClient.onEvent((event) => {
       if (
         event.companyId === context.scope.companyId &&
         event.type === "project.access_changed"
@@ -403,7 +403,9 @@ export const BoardNode = memo(function BoardNode({
             downloadBoardFile(
               boardFilePath(fileBase, item.file.attachmentId, "original"),
               item.file.filename,
-            ).catch((error) => toast.error(getBoardlyQueryErrorMessage(error)))
+            ).catch((error) =>
+              toast.error(getZenithTeamQueryErrorMessage(error)),
+            )
           }
         />
       ) : item.type === "shape" && isCompartmented(shape) ? (

@@ -23,8 +23,18 @@ func TestDiscussionSkillReference(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			ref, _ := json.Marshal(map[string]any{"type": "skill", "skillId": id, "versionId": version, "start": test.start, "end": test.end})
-			_, err := decodeDiscussionReferences(DiscussionBody{Version: 1, Markdown: test.text, References: []json.RawMessage{ref}})
+			ref, _ := json.Marshal(
+				map[string]any{
+					"type":      "skill",
+					"skillId":   id,
+					"versionId": version,
+					"start":     test.start,
+					"end":       test.end,
+				},
+			)
+			_, err := decodeDiscussionReferences(
+				DiscussionBody{Version: 1, Markdown: test.text, References: []json.RawMessage{ref}},
+			)
 			if (err == nil) != test.valid {
 				t.Fatalf("valid = %v, want %v (%v)", err == nil, test.valid, err)
 			}

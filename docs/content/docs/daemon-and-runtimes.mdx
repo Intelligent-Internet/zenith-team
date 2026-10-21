@@ -3,7 +3,7 @@ title: Daemon and runtimes
 description: The background process that connects your computer to Zenith Team, and the provider runtimes it registers.
 ---
 
-Zenith Team's cloud records the work; your computer executes it. The bridge is the daemon — the process that registers what your machine can run, claims queued [runs](/runs), prepares [workspaces](/workspaces), launches the [provider CLIs](/providers), and streams results back. This page is about connecting a computer and keeping it online; the full run path lives in [How Zenith Team works](/how-zenith-team-works).
+Your Zenith Team server records the work; your computer executes it. The bridge is the daemon — the process that registers what your machine can run, claims queued [runs](/runs), prepares [workspaces](/workspaces), launches the [provider CLIs](/providers), and streams results back. This page is about connecting a computer and keeping it online; the full run path lives in [How Zenith Team works](/how-zenith-team-works).
 
 ## Daemon and runtime
 
@@ -21,9 +21,9 @@ zen auth login
 zen daemon start
 ```
 
-`zen daemon start` detaches by default (`--foreground` keeps it in your terminal) and refuses to start if neither `claude` nor `codex` is installed and on `PATH`. The daemon keeps a persistent identity in `~/.boardly/daemon.id`, so restarting it re-registers the same runtimes instead of creating new ones.
+`zen daemon start` detaches by default (`--foreground` keeps it in your terminal) and refuses to start if neither `claude` nor `codex` is installed and on `PATH`. The daemon keeps a persistent identity in `~/.zenith-team/daemon.id`, so restarting it re-registers the same runtimes instead of creating new ones.
 
-**More than one Codex.** A computer often has several copies of the Codex CLI: one from Homebrew or npm, one inside the ChatGPT app, and one Codex keeps up to date in `~/.codex`. The daemon asks each copy for its version and uses the newest. It keeps the path it found, not the versioned folder behind it, so an upgrade reaches the next run. Installed a newer copy while the daemon runs? Choose **Refresh setup** on the runtime page, or restart the daemon. To choose a copy yourself, set `BOARDLY_CODEX_PATH` to its full path before you start the daemon.
+**More than one Codex.** A computer often has several copies of the Codex CLI: one from Homebrew or npm, one inside the ChatGPT app, and one Codex keeps up to date in `~/.codex`. The daemon asks each copy for its version and uses the newest. It keeps the path it found, not the versioned folder behind it, so an upgrade reaches the next run. Installed a newer copy while the daemon runs? Choose **Refresh setup** on the runtime page, or restart the daemon. To choose a copy yourself, set `ZENITH_TEAM_CODEX_PATH` to its full path before you start the daemon.
 
 Restarting is safe at any time. `zen daemon restart` first checks that your session still works, then lets in-flight runs finish, waits for the old process to exit, and only then starts the new one. A daemon you started from the terminal also notices when the `zen` binary it runs from is replaced (an upgrade, or a rebuild) and restarts into it once no run is in flight; while it waits, `zen daemon status` shows a `restart pending` line. The desktop app manages its own daemon and restarts it itself when the app updates. Its Settings → Updates & Support page shows the daemon as the **Agent service** card, with its state, the providers it found (with versions) and skipped (with the reason), and lets you start, stop, or restart it and read its log; stopping while runs are in flight asks first, because those runs fail and retry once the daemon is back.
 
@@ -37,7 +37,7 @@ Heartbeats decide online and offline. The daemon heartbeats continuously; when a
 
 Dispatch is hint-first: when work becomes claimable, the server nudges the daemon over its open connection, and a 30-second poll is the backstop — a lost hint costs one poll, never the run. Claiming a run checks the agent's [task-lane capacity](/runs#lanes-and-capacity) and freezes the run's reviewed [connector contract](/connectors-and-plugins); a run whose reviewed contract is no longer available in full is cancelled rather than dispatched with partial authority.
 
-A queued run does not need the machine to be on. It waits — through a closed laptop, a reboot, an offline week — until its runtime comes back and claims it.
+A queued run does not need the machine to be on right away. It waits through a closed laptop or a reboot until its runtime comes back and claims it. An ordinary run that nobody claims within two hours fails with `queued_expired`; see [Runs](/runs#failure-reason-reference).
 
 When a machine drops out while it is holding work, Zenith Team says so instead of leaving you to notice the agent has gone quiet: the person who registered the machine gets a [notification](/notifications) — "MacBook Pro went offline with 1 run in flight" — that opens the runtime's page. Nobody has to clear it. The moment the machine registers or heartbeats again, every copy of that notification is marked read and archived on its own, and a later outage raises a fresh one. A demotion that costs no work is silent.
 
@@ -53,7 +53,7 @@ When a task runs, it runs on the computer of the member it belongs to — its as
 
 Open **Settings → Runtimes** (Computers & runtimes) and choose **View runtime** on a provider row to see one runtime in full: its provider and CLI versions, whether the desktop app or a terminal started its daemon, who owns the machine, when it was last seen, the other runtimes on the same machine, the agents you set up on it, and the runs active on it.
 
-**Rename** gives the machine a name of your own — "Office Mac" instead of "Claude (duong-macbook)". The name shows everywhere Zenith Team names a runtime and applies to every runtime that machine registered, so both provider rows of one laptop read the same. Clear the name to go back to the daemon's own. Only you can rename your own machine, because only you can see it.
+**Rename** gives the machine a name of your own — "Office Mac" instead of "Claude (alex-macbook)". The name shows everywhere Zenith Team names a runtime and applies to every runtime that machine registered, so both provider rows of one laptop read the same. Clear the name to go back to the daemon's own. Only you can rename your own machine, because only you can see it.
 
 **Remove** takes a runtime off the roster for good — a laptop that is gone, or one you no longer use. Two rules keep it safe. The runtime must be offline, or it registers again moments later: quit Zenith Team on that computer first, or run `zen daemon stop` there if the daemon was started from the command line. For the computer you are using, stop the **Agent service** under **Updates & Support** instead. The runtime page says which one applies — it shows how the computer was launched — and the Remove button stays off until the computer goes offline. If agents are set up on it, the dialog asks what happens to them: move them to another of your computers with the same provider, because an agent keeps its provider, and your queued work moves with them; or remove them, which cancels your queued work there. The agents stay in the company either way, and you can set them up again later. Nobody else's setup is touched, because a computer only ever holds its registrant's. Run history stays readable after a removal, and if the same machine registers the runtime again it simply returns.
 

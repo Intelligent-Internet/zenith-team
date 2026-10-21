@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"boardly.dev/boardly/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
 )
 
 // Session supplies the bearer access token the daemon sends to the server.

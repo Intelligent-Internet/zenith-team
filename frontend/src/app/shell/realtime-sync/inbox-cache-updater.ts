@@ -4,7 +4,7 @@ import type {
   InboxItem,
   InboxListOptions,
 } from "@/features/notifications/model/notification";
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import {
   replaceVersioned,
   type RealtimeSyncContext,
@@ -16,7 +16,7 @@ type InboxItemEventPayload = InboxItem & { counts: InboxCounts };
 
 export function applyInboxCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ) {
   switch (event.type) {
     case "inbox.created":

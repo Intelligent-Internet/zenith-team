@@ -12,11 +12,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	internaldb "boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	internaldb "github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func startProjectAccessRunFixture(t *testing.T) (context.Context, *pgxpool.Pool, dbtest.Fixture) {
@@ -147,7 +147,10 @@ func TestClaimSkipsTaskRunsWhoseAuthorizerCannotExecute(t *testing.T) {
 	fence := claimCandidateParams()
 	claimable := func() (uuid.UUID, bool) {
 		t.Helper()
-		candidates, err := queries.ListQueuedClaimCandidatesByRuntimes(ctx, claimCandidateParams(fixture.RuntimeA))
+		candidates, err := queries.ListQueuedClaimCandidatesByRuntimes(
+			ctx,
+			claimCandidateParams(fixture.RuntimeA),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}

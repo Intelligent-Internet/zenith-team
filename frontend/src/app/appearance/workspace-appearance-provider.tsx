@@ -69,8 +69,8 @@ export function useDocumentPalette(
   useLayoutEffect(() => {
     const root = document.documentElement;
     const attributes = [
-      "data-boardly-workspace-theme",
-      "data-boardly-color-mode",
+      "data-zenith-team-workspace-theme",
+      "data-zenith-team-color-mode",
     ];
     const originalAttributes = attributes.map(
       (name) => [name, root.getAttribute(name)] as const,
@@ -95,8 +95,8 @@ export function useDocumentPalette(
 
   useLayoutEffect(() => {
     const root = document.documentElement;
-    root.setAttribute("data-boardly-workspace-theme", themeId);
-    root.setAttribute("data-boardly-color-mode", colorMode);
+    root.setAttribute("data-zenith-team-workspace-theme", themeId);
+    root.setAttribute("data-zenith-team-color-mode", colorMode);
     for (const [name, value] of Object.entries(palette)) {
       root.style.setProperty(name, value);
     }

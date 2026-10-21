@@ -192,7 +192,7 @@ function AgentCapabilityContent({
     connectors.currentData?.runtime?.id === boundRuntimeId
       ? connectors.currentData.connectors
       : [];
-  // Local plugin logos come through the desktop app's boardly-plugin-icon
+  // Local plugin logos come through the desktop app's zenith-team-plugin-icon
   // scheme, so they are only asked for while the runtime is online.
   const iconContext: LocalPluginIconContext | undefined =
     shouldUseDesktopHashRouter() && plugins.currentData?.runtime?.online

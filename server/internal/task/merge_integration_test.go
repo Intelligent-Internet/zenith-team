@@ -15,13 +15,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const mergeIntegrationGeneration int64 = 7
@@ -259,7 +259,12 @@ func TestProactiveMergeWaitsForTaskHumanInputContinuation(t *testing.T) {
 			}
 			_, err = claimQueries.ClaimTaskMergeJob(
 				h.ctx,
-				mergeClaimParams(candidate.JobID, h.principal.UserID, h.fixture.RuntimeA, h.fixture.DaemonA),
+				mergeClaimParams(
+					candidate.JobID,
+					h.principal.UserID,
+					h.fixture.RuntimeA,
+					h.fixture.DaemonA,
+				),
 			)
 			if !errors.Is(err, pgx.ErrNoRows) {
 				t.Fatalf("claim after pending %s error = %v, want %v", requestType, err, pgx.ErrNoRows)

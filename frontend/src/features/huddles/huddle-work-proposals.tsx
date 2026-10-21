@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import type { components } from "@/shared/api/generated/api.generated";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { Button } from "@/shared/ui/core/button";
 import { HuddleWorkProgress } from "./huddle-work-progress";
 import { HuddleProposalSubmitDialog } from "./huddle-proposal-submit-dialog";
@@ -96,7 +96,7 @@ function ProposalCard({
       }).unwrap();
       setDraft(null);
     } catch (cause) {
-      setError(getBoardlyQueryErrorMessage(cause));
+      setError(getZenithTeamQueryErrorMessage(cause));
     } finally {
       onRefresh();
     }

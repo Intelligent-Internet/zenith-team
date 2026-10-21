@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // recordingTx is a generated.DBTX that remembers the statements issued against
@@ -39,9 +39,9 @@ func (t *recordingTx) QueryRow(context.Context, string, ...any) pgx.Row {
 }
 
 const (
-	openSavepoint     = "SAVEPOINT boardly_attempt"
-	rollbackSavepoint = "ROLLBACK TO SAVEPOINT boardly_attempt"
-	releaseSavepoint  = "RELEASE SAVEPOINT boardly_attempt"
+	openSavepoint     = "SAVEPOINT zenith_team_attempt"
+	rollbackSavepoint = "ROLLBACK TO SAVEPOINT zenith_team_attempt"
+	releaseSavepoint  = "RELEASE SAVEPOINT zenith_team_attempt"
 )
 
 func TestTryWithinSavepointReleasesAnAttemptThatSucceeded(t *testing.T) {

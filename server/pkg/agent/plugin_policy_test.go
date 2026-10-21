@@ -65,14 +65,20 @@ func TestCodexPluginPolicyRejectsAnEnabledProviderOverride(t *testing.T) {
 		{`{}`, true},
 		{`{"marketplaces":[],"marketplaceLoadErrors":[{}]}`, true},
 	} {
-		if err := checkCodexDisabledPlugins(json.RawMessage(tc.raw), []string{"design@local"}); (err != nil) != tc.fail {
+		if err := checkCodexDisabledPlugins(
+			json.RawMessage(tc.raw),
+			[]string{"design@local"},
+		); (err != nil) != tc.fail {
 			t.Errorf("check %s = %v", tc.raw, err)
 		}
 	}
 }
 
 func TestClaudePluginPolicyRejectsStillLoadedPlugins(t *testing.T) {
-	if err := checkClaudeDisabledPlugins(json.RawMessage(`[{"name":"design"}]`), []string{"design@local"}); err == nil {
+	if err := checkClaudeDisabledPlugins(
+		json.RawMessage(`[{"name":"design"}]`),
+		[]string{"design@local"},
+	); err == nil {
 		t.Fatal("accepted loaded disabled plugin")
 	}
 	if err := checkClaudeDisabledPlugins(json.RawMessage(`[]`), []string{"design@local"}); err != nil {
@@ -81,7 +87,13 @@ func TestClaudePluginPolicyRejectsStillLoadedPlugins(t *testing.T) {
 }
 
 func TestCodexAgentPluginDenialsOverrideCallerConfig(t *testing.T) {
-	args := buildCodexArgs(ExecOptions{DisabledPlugins: []string{"design@local"}, ExtraArgs: []string{"-c", `plugins."design@local".enabled=true`}}, nil)
+	args := buildCodexArgs(
+		ExecOptions{
+			DisabledPlugins: []string{"design@local"},
+			ExtraArgs:       []string{"-c", `plugins."design@local".enabled=true`},
+		},
+		nil,
+	)
 	if len(args) < 2 || args[len(args)-2] != "-c" || args[len(args)-1] != `plugins."design@local".enabled=false` {
 		t.Fatalf("args = %v", args)
 	}
@@ -90,7 +102,10 @@ func TestCodexAgentPluginDenialsOverrideCallerConfig(t *testing.T) {
 			t.Fatalf("unexpected argv newline: %q", part)
 		}
 	}
-	scheduled := buildCodexArgs(ExecOptions{ToolPolicy: ToolPolicyConnectorOnly, DisabledPlugins: []string{"design@local"}}, nil)
+	scheduled := buildCodexArgs(
+		ExecOptions{ToolPolicy: ToolPolicyConnectorOnly, DisabledPlugins: []string{"design@local"}},
+		nil,
+	)
 	if len(scheduled) != 3 {
 		t.Fatalf("scheduled arguments = %v", scheduled)
 	}

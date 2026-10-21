@@ -15,12 +15,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A tagged Run's proof names the channel it answers into. The field marks a
-// tagged Run and bounds nothing (D31); a Run in any other chat names none.
+// tagged Run and bounds nothing; a Run in any other chat names none.
 func TestRunOriginNamesTheChannelATaggedRunAnswersInto(t *testing.T) {
 	h := newRunHarness(t)
 	ctx := context.Background()
@@ -49,7 +49,7 @@ func TestRunOriginNamesTheChannelATaggedRunAnswersInto(t *testing.T) {
 	}
 }
 
-// A channel Run uses its caller's access and nothing else narrows it (D31):
+// A channel Run uses its caller's access and nothing else narrows it:
 // it freezes the files its caller may open. A plain chat upload is frozen, a
 // Project file is frozen while the caller reads its Project though a channel
 // member cannot, and stays out once the caller cannot.
@@ -256,8 +256,8 @@ func TestChannelArtifactReferencesFollowTheCallersAccess(t *testing.T) {
 	if got := freeze(); !slices.Equal(got, []uuid.UUID{outputID}) {
 		t.Fatalf("the caller's own Artifact = %v", got)
 	}
-	// The Run uses its caller's access and no chat audience narrows it
-	// (D31): a member who cannot read the Artifact joining changes nothing.
+	// The Run uses its caller's access and no chat audience narrows it:
+	// a member who cannot read the Artifact joining changes nothing.
 	dbtest.MustExec(
 		t,
 		ctx,

@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
 )
 
 type socialPlatformCollection struct {
@@ -124,7 +124,7 @@ func (h *Handler) completeSocialOAuth(c *gin.Context) {
 		writeBoundaryError(c, boundaryErrorRouteNotFound)
 		return
 	}
-	binding, _ := c.Cookie("boardly_social_" + platform)
+	binding, _ := c.Cookie("zenith_team_social_" + platform)
 	h.setSocialBinding(c, platform, "", -1)
 	desktopReturn, err := h.SocialService.Complete(
 		c.Request.Context(),
@@ -163,7 +163,7 @@ func (h *Handler) setSocialBinding(c *gin.Context, platform, value string, maxAg
 	http.SetCookie(
 		c.Writer,
 		&http.Cookie{
-			Name:     "boardly_social_" + platform,
+			Name:     "zenith_team_social_" + platform,
 			Value:    value,
 			Path:     "/api/v1/social/oauth/" + platform + "/callback",
 			MaxAge:   maxAge,

@@ -14,7 +14,7 @@ func TestLoadAppliesSafeSingleNodeDefaults(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
@@ -53,7 +53,7 @@ func TestLoadAppliesSafeSingleNodeDefaults(t *testing.T) {
 	if !reflect.DeepEqual(cfg.WebOrigins, []string{"http://localhost:5173"}) {
 		t.Errorf("WebOrigins = %#v, want localhost Vite origin", cfg.WebOrigins)
 	}
-	if cfg.Storage.Bucket != "boardly-test" || cfg.Storage.Region != "us-east-1" {
+	if cfg.Storage.Bucket != "zenith-team-test" || cfg.Storage.Region != "us-east-1" {
 		t.Errorf("Storage defaults = %#v", cfg.Storage)
 	}
 	if cfg.Attachment.AbandonedReadyGrace != 24*time.Hour {
@@ -72,7 +72,7 @@ func TestLoadReadsHuddleSettingsByNewAndLegacyNames(t *testing.T) {
 
 	secret := "development-only-huddle-ai-workload-secret"
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":          "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":          "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"HUDDLE_AI_ENABLED":         "true",
 		"HUDDLE_AI_WORKLOAD_SECRET": secret,
 		"LIVEKIT_URL":               "wss://example.livekit.cloud",
@@ -82,26 +82,15 @@ func TestLoadReadsHuddleSettingsByNewAndLegacyNames(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	want := LiveKitConfig{AIEnabled: true, AIWorkloadSecret: secret, URL: "https://example.livekit.cloud", APIKey: "key", APISecret: "livekit-secret"}
+	want := LiveKitConfig{
+		AIEnabled:        true,
+		AIWorkloadSecret: secret,
+		URL:              "https://example.livekit.cloud",
+		APIKey:           "key",
+		APISecret:        "livekit-secret",
+	}
 	if cfg.LiveKit != want {
 		t.Fatalf("LiveKit = %+v, want %+v", cfg.LiveKit, want)
-	}
-
-	legacy, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":                  "postgres://boardly:boardly@localhost/boardly",
-		"BOARDLY_HUDDLE_AI_ENABLED":         "true",
-		"BOARDLY_HUDDLE_AI_WORKLOAD_SECRET": secret,
-		"BOARDLY_LIVEKIT_URL":               "http://127.0.0.1:7880",
-		"BOARDLY_LIVEKIT_API_KEY":           "devkey",
-		"BOARDLY_LIVEKIT_API_SECRET":        "legacy-secret",
-		"LIVEKIT_API_SECRET":                "new-secret",
-	}))
-	if err != nil {
-		t.Fatalf("Load() legacy error = %v", err)
-	}
-	want = LiveKitConfig{AIEnabled: true, AIWorkloadSecret: secret, URL: "http://127.0.0.1:7880", APIKey: "devkey", APISecret: "new-secret"}
-	if legacy.LiveKit != want {
-		t.Fatalf("legacy LiveKit = %+v, want %+v (new names win)", legacy.LiveKit, want)
 	}
 }
 
@@ -109,7 +98,7 @@ func TestLoadTurnsHuddlesOffWithTheFlag(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":   "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":   "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"HUDDLES_ENABLED":    "false",
 		"HUDDLE_AI_ENABLED":  "true",
 		"LIVEKIT_URL":        "http://127.0.0.1:7880",
@@ -128,7 +117,7 @@ func TestLoadParsesDaemonIDRequired(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":       "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":       "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_DAEMON_ID_REQUIRED": "true",
 	}))
 	if err != nil {
@@ -139,7 +128,7 @@ func TestLoadParsesDaemonIDRequired(t *testing.T) {
 	}
 
 	_, err = Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":       "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":       "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_DAEMON_ID_REQUIRED": "maybe",
 	}))
 	if err == nil || err.Error() != "APP_DAEMON_ID_REQUIRED must be a boolean" {
@@ -151,30 +140,30 @@ func TestLoadReadsReferenceCloudRunEnvironment(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":          "postgres://boardly:boardly@localhost/boardly",
-		"GCP_PROJECT_ID":            "boardly-production",
+		"APP_DATABASE_URL":          "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"GCP_PROJECT_ID":            "example-production",
 		"GCP_REGION":                "asia-southeast1",
-		"GCP_SOURCE_BUCKET":         "boardly-app-sources",
-		"GCP_ARTIFACT_REGISTRY":     "asia-southeast1-docker.pkg.dev/boardly-production/user-apps",
+		"GCP_SOURCE_BUCKET":         "example-app-sources",
+		"GCP_ARTIFACT_REGISTRY":     "asia-southeast1-docker.pkg.dev/example-production/user-apps",
 		"CLOUD_RUN_MAX_INSTANCES":   "7",
 		"CLOUD_RUN_MIN_INSTANCES":   "0",
 		"CLOUD_RUN_MEMORY":          "1Gi",
 		"CLOUD_RUN_CPU":             "2",
-		"GCP_SERVICE_ACCOUNT_EMAIL": "boardly-build@my-production-project.iam.gserviceaccount.com",
-		"CLOUD_RUN_SERVICE_ACCOUNT": "boardly-runtime@my-production-project.iam.gserviceaccount.com",
+		"GCP_SERVICE_ACCOUNT_EMAIL": "builder@example-production.iam.gserviceaccount.com",
+		"CLOUD_RUN_SERVICE_ACCOUNT": "runtime@example-production.iam.gserviceaccount.com",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if !cfg.CloudRun.Enabled || cfg.CloudRun.ProjectID != "boardly-production" ||
+	if !cfg.CloudRun.Enabled || cfg.CloudRun.ProjectID != "example-production" ||
 		cfg.CloudRun.Region != "asia-southeast1" ||
-		cfg.CloudRun.SourceBucket != "boardly-app-sources" ||
+		cfg.CloudRun.SourceBucket != "example-app-sources" ||
 		cfg.CloudRun.ArtifactRegistry !=
-			"asia-southeast1-docker.pkg.dev/boardly-production/user-apps" ||
+			"asia-southeast1-docker.pkg.dev/example-production/user-apps" ||
 		cfg.CloudRun.BuildServiceAccount !=
-			"boardly-build@my-production-project.iam.gserviceaccount.com" ||
+			"builder@example-production.iam.gserviceaccount.com" ||
 		cfg.CloudRun.RuntimeServiceAccount !=
-			"boardly-runtime@my-production-project.iam.gserviceaccount.com" ||
+			"runtime@example-production.iam.gserviceaccount.com" ||
 		cfg.CloudRun.MaxInstances != 7 || cfg.CloudRun.MinInstances != 0 ||
 		cfg.CloudRun.Memory != "1Gi" || cfg.CloudRun.CPU != "2" {
 		t.Fatalf("CloudRun config = %#v", cfg.CloudRun)
@@ -185,49 +174,49 @@ func TestLoadDefaultsAndValidatesCloudRunEnvironment(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":          "postgres://boardly:boardly@localhost/boardly",
-		"GCP_PROJECT_ID":            "my-project",
-		"GCP_SERVICE_ACCOUNT_EMAIL": "boardly-build@my-project.iam.gserviceaccount.com",
-		"CLOUD_RUN_SERVICE_ACCOUNT": "boardly-runtime@my-project.iam.gserviceaccount.com",
+		"APP_DATABASE_URL":          "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"GCP_PROJECT_ID":            "example-project",
+		"GCP_SERVICE_ACCOUNT_EMAIL": "builder@example-project.iam.gserviceaccount.com",
+		"CLOUD_RUN_SERVICE_ACCOUNT": "runtime@example-project.iam.gserviceaccount.com",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
 	if cfg.CloudRun.Region != "us-central1" ||
-		cfg.CloudRun.SourceBucket != "my-project-app-sources" ||
-		cfg.CloudRun.ArtifactRegistry != "us-central1-docker.pkg.dev/my-project/user-apps" ||
+		cfg.CloudRun.SourceBucket != "example-project-app-sources" ||
+		cfg.CloudRun.ArtifactRegistry != "us-central1-docker.pkg.dev/example-project/user-apps" ||
 		cfg.CloudRun.MaxInstances != 10 || cfg.CloudRun.Memory != "512Mi" || cfg.CloudRun.CPU != "1" {
 		t.Fatalf("CloudRun defaults = %#v", cfg.CloudRun)
 	}
 
 	validIdentity := map[string]string{
-		"GCP_SERVICE_ACCOUNT_EMAIL": "boardly-build@my-project.iam.gserviceaccount.com",
-		"CLOUD_RUN_SERVICE_ACCOUNT": "boardly-runtime@my-project.iam.gserviceaccount.com",
+		"GCP_SERVICE_ACCOUNT_EMAIL": "builder@example-project.iam.gserviceaccount.com",
+		"CLOUD_RUN_SERVICE_ACCOUNT": "runtime@example-project.iam.gserviceaccount.com",
 	}
 	invalid := []map[string]string{
 		{"GCP_PROJECT_ID": "INVALID_PROJECT"},
-		{"GCP_PROJECT_ID": "my-project", "GCP_REGION": "https://region.invalid"},
-		{"GCP_PROJECT_ID": "my-project", "GCP_SOURCE_BUCKET": "Bad Bucket"},
-		{"GCP_PROJECT_ID": "my-project", "GCP_ARTIFACT_REGISTRY": "https://registry.invalid"},
-		{"GCP_PROJECT_ID": "my-project", "CLOUD_RUN_MIN_INSTANCES": "11"},
-		{"GCP_PROJECT_ID": "my-project", "CLOUD_RUN_CPU": "3"},
-		{"GCP_PROJECT_ID": "my-project", "CLOUD_RUN_MEMORY": "secret"},
+		{"GCP_PROJECT_ID": "example-project", "GCP_REGION": "https://region.invalid"},
+		{"GCP_PROJECT_ID": "example-project", "GCP_SOURCE_BUCKET": "Bad Bucket"},
+		{"GCP_PROJECT_ID": "example-project", "GCP_ARTIFACT_REGISTRY": "https://registry.invalid"},
+		{"GCP_PROJECT_ID": "example-project", "CLOUD_RUN_MIN_INSTANCES": "11"},
+		{"GCP_PROJECT_ID": "example-project", "CLOUD_RUN_CPU": "3"},
+		{"GCP_PROJECT_ID": "example-project", "CLOUD_RUN_MEMORY": "secret"},
 		{
-			"GCP_PROJECT_ID":            "my-project",
+			"GCP_PROJECT_ID":            "example-project",
 			"GCP_SERVICE_ACCOUNT_EMAIL": " ",
 			"CLOUD_RUN_SERVICE_ACCOUNT": validIdentity["CLOUD_RUN_SERVICE_ACCOUNT"],
 		},
 		{
-			"GCP_PROJECT_ID":            "my-project",
+			"GCP_PROJECT_ID":            "example-project",
 			"GCP_SERVICE_ACCOUNT_EMAIL": validIdentity["GCP_SERVICE_ACCOUNT_EMAIL"],
 			"CLOUD_RUN_SERVICE_ACCOUNT": " ",
 		},
 		{
-			"GCP_PROJECT_ID":            "my-project",
+			"GCP_PROJECT_ID":            "example-project",
 			"GCP_SERVICE_ACCOUNT_EMAIL": "default",
 		},
 		{
-			"GCP_PROJECT_ID":            "my-project",
+			"GCP_PROJECT_ID":            "example-project",
 			"CLOUD_RUN_SERVICE_ACCOUNT": "default",
 		},
 	}
@@ -240,7 +229,7 @@ func TestLoadDefaultsAndValidatesCloudRunEnvironment(t *testing.T) {
 				values["CLOUD_RUN_SERVICE_ACCOUNT"] = validIdentity["CLOUD_RUN_SERVICE_ACCOUNT"]
 			}
 		}
-		values["APP_DATABASE_URL"] = "postgres://boardly:boardly@localhost/boardly"
+		values["APP_DATABASE_URL"] = "postgres://zenith_team:zenith_team@localhost/zenith_team"
 		if _, err := Load(configuredLookup(values)); err == nil {
 			t.Fatalf("Load(invalid Cloud Run case %d) error = nil", index)
 		}
@@ -253,7 +242,7 @@ func TestLoadConfiguresDedicatedMailboxResendCredentials(t *testing.T) {
 	const apiKey = "sentinel-mailbox-resend-key"
 	const webhookSecret = "whsec_bWFpbGJveCB3ZWJob29rIHRlc3Qgc2VjcmV0"
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":                 "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":                 "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"MAILBOX_RESEND_API_KEY":           apiKey,
 		"MAILBOX_RESEND_WEBHOOK_SECRET":    webhookSecret,
 		"MAILBOX_DOMAIN":                   "mail.example.com",
@@ -281,7 +270,7 @@ func TestLoadAllowsMailboxWithoutWebhookSecret(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":       "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":       "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"MAILBOX_RESEND_API_KEY": "mailbox-key",
 		"MAILBOX_DOMAIN":         "mail.example.com",
 	}))
@@ -310,7 +299,7 @@ func TestLoadRejectsPartialOrUnsafeMailboxConfiguration(t *testing.T) {
 		},
 		"noncanonical domain": {
 			"MAILBOX_RESEND_API_KEY": "mailbox-key", "MAILBOX_RESEND_WEBHOOK_SECRET": webhookSecret,
-			"MAILBOX_DOMAIN": "Mail.Boardly.ii.inc",
+			"MAILBOX_DOMAIN": "Mail.Example.com",
 		},
 		"unsafe provider rate": {
 			"MAILBOX_RESEND_API_KEY": "mailbox-key", "MAILBOX_RESEND_WEBHOOK_SECRET": webhookSecret,
@@ -320,7 +309,7 @@ func TestLoadRejectsPartialOrUnsafeMailboxConfiguration(t *testing.T) {
 	for name, values := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			values["APP_DATABASE_URL"] = "postgres://boardly:boardly@localhost/boardly"
+			values["APP_DATABASE_URL"] = "postgres://zenith_team:zenith_team@localhost/zenith_team"
 			if _, err := Load(configuredLookup(values)); err == nil {
 				t.Fatal("Load() error = nil")
 			}
@@ -359,11 +348,12 @@ func TestLoadConfiguresResendEmailVerificationWithoutExposingSecrets(t *testing.
 	const apiKey = "sentinel-resend-api-key"
 	const verificationSecret = "01234567890123456789012345678901"
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":                    "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":                    "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"AUTH_EMAIL_PROVIDER":                 "resend",
 		"AUTH_RESEND_API_KEY":                 apiKey,
 		"AUTH_EMAIL_VERIFICATION_SECRET":      verificationSecret,
 		"AUTH_EMAIL_VERIFICATION_TEMPLATE_ID": "published-template-id",
+		"AUTH_PASSWORD_RESET_TEMPLATE_ID":     "password-reset-template-id",
 		"AUTH_WEB_APP_ORIGIN":                 "http://localhost:5173",
 	}))
 	if err != nil {
@@ -375,7 +365,7 @@ func TestLoadConfiguresResendEmailVerificationWithoutExposingSecrets(t *testing.
 		email.ProviderTimeout != 10*time.Second {
 		t.Fatalf("email verification config = %#v", email)
 	}
-	if email.PasswordResetTemplateID != defaultPasswordResetTemplateID ||
+	if email.PasswordResetTemplateID != "password-reset-template-id" ||
 		email.PasswordResetTTL != 30*time.Minute || email.PasswordResetResendCooldown != time.Minute {
 		t.Fatalf("password reset email config = %#v", email)
 	}
@@ -405,7 +395,7 @@ func TestLoadRejectsPartialOrUnsupportedEmailVerificationConfiguration(t *testin
 			"AUTH_EMAIL_PROVIDER": "other", "AUTH_RESEND_API_KEY": "resend-key", "AUTH_EMAIL_VERIFICATION_SECRET": "01234567890123456789012345678901",
 		},
 	} {
-		values["APP_DATABASE_URL"] = "postgres://boardly:boardly@localhost/boardly"
+		values["APP_DATABASE_URL"] = "postgres://zenith_team:zenith_team@localhost/zenith_team"
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			if _, err := Load(configuredLookup(values)); err == nil {
@@ -419,7 +409,7 @@ func TestLoadBoundsAttachmentAbandonedReadyGrace(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":                         "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":                         "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"ATTACHMENT_ABANDONED_READY_GRACE_SECONDS": "172800",
 	}))
 	if err != nil {
@@ -430,7 +420,7 @@ func TestLoadBoundsAttachmentAbandonedReadyGrace(t *testing.T) {
 	}
 	for _, grace := range []string{"3540", "2595600"} {
 		_, err := Load(configuredLookup(map[string]string{
-			"APP_DATABASE_URL":                         "postgres://boardly:boardly@localhost/boardly",
+			"APP_DATABASE_URL":                         "postgres://zenith_team:zenith_team@localhost/zenith_team",
 			"ATTACHMENT_ABANDONED_READY_GRACE_SECONDS": grace,
 		}))
 		if err == nil || !strings.Contains(err.Error(), "ATTACHMENT_ABANDONED_READY_GRACE_SECONDS") {
@@ -453,10 +443,10 @@ func TestLoadRequiresStrongCSRFSecret(t *testing.T) {
 
 	for name, values := range map[string]map[string]string{
 		"missing": {
-			"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+			"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		},
 		"too short": {
-			"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+			"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 			"AUTH_CSRF_SECRET": "short",
 		},
 	} {
@@ -476,17 +466,17 @@ func TestLoadRejectsUnsafeLogLevelAndBrowserOrigins(t *testing.T) {
 		"unknown log level":            {"APP_LOG_LEVEL": "verbose"},
 		"wildcard origin":              {"AUTH_WEB_ORIGINS": "*"},
 		"null origin":                  {"AUTH_WEB_ORIGINS": "null"},
-		"relative origin":              {"AUTH_WEB_ORIGINS": "app.boardly.test"},
-		"origin with path":             {"AUTH_WEB_ORIGINS": "https://app.boardly.test/api"},
-		"origin with query":            {"AUTH_WEB_ORIGINS": "https://app.boardly.test?token=secret"},
-		"unknown desktop app host":     {"AUTH_WEB_ORIGINS": "boardly-app://attacker"},
-		"desktop app origin with path": {"AUTH_WEB_ORIGINS": "boardly-app://renderer/"},
-		"desktop app origin with port": {"AUTH_WEB_ORIGINS": "boardly-app://renderer:443"},
+		"relative origin":              {"AUTH_WEB_ORIGINS": "app.zenith-team.test"},
+		"origin with path":             {"AUTH_WEB_ORIGINS": "https://app.zenith-team.test/api"},
+		"origin with query":            {"AUTH_WEB_ORIGINS": "https://app.zenith-team.test?token=secret"},
+		"unknown desktop app host":     {"AUTH_WEB_ORIGINS": "zenith-team-app://attacker"},
+		"desktop app origin with path": {"AUTH_WEB_ORIGINS": "zenith-team-app://renderer/"},
+		"desktop app origin with port": {"AUTH_WEB_ORIGINS": "zenith-team-app://renderer:443"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			values := map[string]string{
-				"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+				"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 			}
 			for key, value := range overrides {
 				values[key] = value
@@ -502,13 +492,13 @@ func TestLoadAcceptsAndDeduplicatesPackagedDesktopRendererOrigin(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
-		"AUTH_WEB_ORIGINS": "https://app.boardly.test, boardly-app://renderer, boardly-app://renderer",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"AUTH_WEB_ORIGINS": "https://app.zenith-team.test, zenith-team-app://renderer, zenith-team-app://renderer",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	want := []string{"https://app.boardly.test", "boardly-app://renderer"}
+	want := []string{"https://app.zenith-team.test", "zenith-team-app://renderer"}
 	if !reflect.DeepEqual(cfg.WebOrigins, want) {
 		t.Errorf("WebOrigins = %#v, want %#v", cfg.WebOrigins, want)
 	}
@@ -518,13 +508,13 @@ func TestLoadCanonicalizesAndDeduplicatesBrowserOrigins(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
-		"AUTH_WEB_ORIGINS": "HTTPS://APP.BOARDLY.TEST/, https://app.boardly.test, http://localhost:5173/",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"AUTH_WEB_ORIGINS": "HTTPS://APP.ZENITH-TEAM.TEST/, https://app.zenith-team.test, http://localhost:5173/",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	want := []string{"https://app.boardly.test", "http://localhost:5173"}
+	want := []string{"https://app.zenith-team.test", "http://localhost:5173"}
 	if !reflect.DeepEqual(cfg.WebOrigins, want) {
 		t.Errorf("WebOrigins = %#v, want %#v", cfg.WebOrigins, want)
 	}
@@ -534,8 +524,8 @@ func TestLoadDerivesSecureCookiesFromHTTPSOrigins(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
-		"AUTH_WEB_ORIGINS": "https://app.boardly.test",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"AUTH_WEB_ORIGINS": "https://app.zenith-team.test",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
@@ -550,16 +540,16 @@ func TestLoadRejectsInsecureProductionCookieConfigurations(t *testing.T) {
 
 	for name, overrides := range map[string]map[string]string{
 		"remote HTTP origin": {
-			"AUTH_WEB_ORIGINS": "http://app.boardly.test",
+			"AUTH_WEB_ORIGINS": "http://app.zenith-team.test",
 		},
 		"secure cookie disabled for HTTPS": {
-			"AUTH_WEB_ORIGINS":   "https://app.boardly.test",
+			"AUTH_WEB_ORIGINS":   "https://app.zenith-team.test",
 			"AUTH_COOKIE_SECURE": "false",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			overrides["APP_DATABASE_URL"] = "postgres://boardly:boardly@localhost/boardly"
+			overrides["APP_DATABASE_URL"] = "postgres://zenith_team:zenith_team@localhost/zenith_team"
 			if _, err := Load(configuredLookup(overrides)); err == nil {
 				t.Fatal("Load() error = nil")
 			}
@@ -571,7 +561,7 @@ func TestLoadRequiresRedisForMultipleAPIReplicas(t *testing.T) {
 	t.Parallel()
 
 	_, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_API_REPLICAS": "2",
 		"APP_REDIS_URL":    "",
 	}))
@@ -580,7 +570,7 @@ func TestLoadRequiresRedisForMultipleAPIReplicas(t *testing.T) {
 	}
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_API_REPLICAS": "2",
 		"APP_REDIS_URL":    "redis://localhost:6379/0",
 	}))
@@ -599,11 +589,11 @@ func TestLoadUsesExplicitServerAndStorageSettings(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_HTTP_ADDR":                "127.0.0.1:9999",
 		"APP_LOG_LEVEL":                "debug",
 		"APP_SHUTDOWN_TIMEOUT_SECONDS": "30",
-		"AUTH_WEB_ORIGINS":             "https://app.boardly.test, https://desktop.boardly.test",
+		"AUTH_WEB_ORIGINS":             "https://app.zenith-team.test, https://desktop.zenith-team.test",
 		"STORAGE_S3_BUCKET":            "production-attachments",
 		"STORAGE_S3_REGION":            "eu-west-1",
 	}))
@@ -621,8 +611,8 @@ func TestLoadUsesExplicitServerAndStorageSettings(t *testing.T) {
 		t.Errorf("ShutdownTimeout = %s", cfg.ShutdownTimeout)
 	}
 	if !reflect.DeepEqual(cfg.WebOrigins, []string{
-		"https://app.boardly.test",
-		"https://desktop.boardly.test",
+		"https://app.zenith-team.test",
+		"https://desktop.zenith-team.test",
 	}) {
 		t.Errorf("WebOrigins = %#v", cfg.WebOrigins)
 	}
@@ -635,7 +625,7 @@ func TestLoadRequiresAndMapsS3Configuration(t *testing.T) {
 	t.Parallel()
 
 	_, err := Load(mapLookup(map[string]string{
-		"APP_DATABASE_URL": "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL": "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"AUTH_CSRF_SECRET": "01234567890123456789012345678901",
 	}))
 	if err == nil {
@@ -643,8 +633,8 @@ func TestLoadRequiresAndMapsS3Configuration(t *testing.T) {
 	}
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
-		"STORAGE_S3_BUCKET":            "boardly-attachments",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"STORAGE_S3_BUCKET":            "zenith-team-attachments",
 		"STORAGE_S3_REGION":            "us-east-1",
 		"STORAGE_S3_ENDPOINT":          "http://localhost:9000",
 		"STORAGE_S3_ACCESS_KEY_ID":     "test-access",
@@ -654,7 +644,7 @@ func TestLoadRequiresAndMapsS3Configuration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Storage.Bucket != "boardly-attachments" || cfg.Storage.Region != "us-east-1" {
+	if cfg.Storage.Bucket != "zenith-team-attachments" || cfg.Storage.Region != "us-east-1" {
 		t.Errorf("S3 identity = %#v", cfg.Storage)
 	}
 	if cfg.Storage.Endpoint != "http://localhost:9000" || !cfg.Storage.UsePathStyle {
@@ -669,7 +659,7 @@ func TestLoadConfiguresDatabasePool(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":                         "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":                         "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_DATABASE_MAX_CONNS":                   "40",
 		"APP_DATABASE_MIN_CONNS":                   "8",
 		"APP_DATABASE_MAX_CONN_LIFETIME_SECONDS":   "7200",
@@ -701,7 +691,7 @@ func TestLoadRejectsDatabasePoolMinimumAboveMaximum(t *testing.T) {
 	t.Parallel()
 
 	_, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":       "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":       "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"APP_DATABASE_MAX_CONNS": "4",
 		"APP_DATABASE_MIN_CONNS": "5",
 	}))
@@ -714,7 +704,7 @@ func TestLoadGoogleOAuthDisabledDefaultsAndIndependentWebAppOrigin(t *testing.T)
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"AUTH_WEB_APP_ORIGIN":          "http://localhost:5173",
 		"GOOGLE_WEB_CLIENT_ID":         "",
 		"GOOGLE_WEB_CLIENT_SECRET":     "",
@@ -740,7 +730,7 @@ func TestLoadGoogleOAuthAllowsDesktopOnlyConfiguration(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
 		"GOOGLE_DESKTOP_CLIENT_ID":     "desktop-client.apps.googleusercontent.test",
 		"GOOGLE_DESKTOP_CLIENT_SECRET": "sentinel-desktop-client-secret",
 	}))
@@ -762,12 +752,12 @@ func TestLoadGoogleOAuthAllowsWebOnlyConfiguration(t *testing.T) {
 	t.Parallel()
 
 	cfg, err := Load(configuredLookup(map[string]string{
-		"APP_DATABASE_URL":         "postgres://boardly:boardly@localhost/boardly",
-		"AUTH_WEB_ORIGINS":         "https://app.boardly.test",
-		"AUTH_WEB_APP_ORIGIN":      "https://app.boardly.test",
+		"APP_DATABASE_URL":         "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"AUTH_WEB_ORIGINS":         "https://app.zenith-team.test",
+		"AUTH_WEB_APP_ORIGIN":      "https://app.zenith-team.test",
 		"GOOGLE_WEB_CLIENT_ID":     "web-client.apps.googleusercontent.test",
 		"GOOGLE_WEB_CLIENT_SECRET": "sentinel-web-client-secret",
-		"GOOGLE_WEB_REDIRECT_URI":  "https://api.boardly.test/api/v1/auth/google/web/callback",
+		"GOOGLE_WEB_REDIRECT_URI":  "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 	}))
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
@@ -786,11 +776,11 @@ func TestLoadGoogleOAuthRejectsPresentWhitespaceOnlyConfiguration(t *testing.T) 
 
 	for _, values := range []map[string]string{
 		{
-			"APP_DATABASE_URL":         "postgres://boardly:boardly@localhost/boardly",
+			"APP_DATABASE_URL":         "postgres://zenith_team:zenith_team@localhost/zenith_team",
 			"GOOGLE_WEB_CLIENT_SECRET": "   ",
 		},
 		{
-			"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
+			"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
 			"GOOGLE_WEB_CLIENT_ID":         " ",
 			"GOOGLE_WEB_CLIENT_SECRET":     "\t",
 			"GOOGLE_WEB_REDIRECT_URI":      "\n",
@@ -813,7 +803,7 @@ func TestLoadGoogleOAuthRejectsEveryIncompleteClientCredentialGroupWithoutLeakin
 	}{
 		{key: "GOOGLE_WEB_CLIENT_ID", value: "web-client.apps.googleusercontent.test"},
 		{key: "GOOGLE_WEB_CLIENT_SECRET", value: "sentinel-web-client-secret"},
-		{key: "GOOGLE_WEB_REDIRECT_URI", value: "https://api.boardly.test/api/v1/auth/google/web/callback"},
+		{key: "GOOGLE_WEB_REDIRECT_URI", value: "https://api.zenith-team.test/api/v1/auth/google/web/callback"},
 		{key: "GOOGLE_DESKTOP_CLIENT_ID", value: "desktop-client.apps.googleusercontent.test"},
 		{key: "GOOGLE_DESKTOP_CLIENT_SECRET", value: "sentinel-desktop-client-secret"},
 	}
@@ -825,9 +815,9 @@ func TestLoadGoogleOAuthRejectsEveryIncompleteClientCredentialGroupWithoutLeakin
 		t.Run(strconv.Itoa(mask), func(t *testing.T) {
 			t.Parallel()
 			values := map[string]string{
-				"APP_DATABASE_URL":    "postgres://boardly:boardly@localhost/boardly",
-				"AUTH_WEB_ORIGINS":    "https://app.boardly.test",
-				"AUTH_WEB_APP_ORIGIN": "https://app.boardly.test",
+				"APP_DATABASE_URL":    "postgres://zenith_team:zenith_team@localhost/zenith_team",
+				"AUTH_WEB_ORIGINS":    "https://app.zenith-team.test",
+				"AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test",
 			}
 			for index, credential := range credentials {
 				if mask&(1<<index) != 0 {
@@ -879,27 +869,27 @@ func TestLoadGoogleOAuthRequiresCanonicalMemberWebAppOriginAndSeparateClientIDs(
 		overrides map[string]string
 	}{
 		{name: "missing Web app origin", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": ""}},
-		{name: "noncanonical trailing slash", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.boardly.test/"}},
-		{name: "noncanonical scheme case", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "HTTPS://app.boardly.test"}},
-		{name: "noncanonical host case", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://APP.BOARDLY.TEST", "AUTH_WEB_APP_ORIGIN": "https://APP.BOARDLY.TEST"}},
-		{name: "explicit default port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.boardly.test:443", "AUTH_WEB_APP_ORIGIN": "https://app.boardly.test:443"}},
-		{name: "noncanonical leading-zero port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.boardly.test:0443", "AUTH_WEB_APP_ORIGIN": "https://app.boardly.test:0443"}},
-		{name: "out-of-range port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.boardly.test:65536", "AUTH_WEB_APP_ORIGIN": "https://app.boardly.test:65536"}},
-		{name: "origin path", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.boardly.test/login"}},
-		{name: "origin query", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.boardly.test?next=/login"}},
-		{name: "origin fragment", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.boardly.test#login"}},
-		{name: "origin userinfo", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://user@app.boardly.test"}},
+		{name: "noncanonical trailing slash", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test/"}},
+		{name: "noncanonical scheme case", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "HTTPS://app.zenith-team.test"}},
+		{name: "noncanonical host case", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://APP.ZENITH-TEAM.TEST", "AUTH_WEB_APP_ORIGIN": "https://APP.ZENITH-TEAM.TEST"}},
+		{name: "explicit default port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.zenith-team.test:443", "AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test:443"}},
+		{name: "noncanonical leading-zero port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.zenith-team.test:0443", "AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test:0443"}},
+		{name: "out-of-range port", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.zenith-team.test:65536", "AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test:65536"}},
+		{name: "origin path", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test/login"}},
+		{name: "origin query", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test?next=/login"}},
+		{name: "origin fragment", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test#login"}},
+		{name: "origin userinfo", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://user@app.zenith-team.test"}},
 		{name: "Unicode host is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://bücher.example", "AUTH_WEB_APP_ORIGIN": "https://bücher.example"}},
 		{name: "expanded IPv6 is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "http://[0:0:0:0:0:0:0:1]:5173", "AUTH_WEB_APP_ORIGIN": "http://[0:0:0:0:0:0:0:1]:5173"}},
 		{name: "short legacy IPv4 is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://127.1", "AUTH_WEB_APP_ORIGIN": "https://127.1"}},
 		{name: "octal legacy IPv4 is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://0177.0.0.1", "AUTH_WEB_APP_ORIGIN": "https://0177.0.0.1"}},
 		{name: "integer legacy IPv4 is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://2130706433", "AUTH_WEB_APP_ORIGIN": "https://2130706433"}},
 		{name: "hex legacy IPv4 is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://0x7f000001", "AUTH_WEB_APP_ORIGIN": "https://0x7f000001"}},
-		{name: "trailing-dot host is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.boardly.test.", "AUTH_WEB_APP_ORIGIN": "https://app.boardly.test."}},
+		{name: "trailing-dot host is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://app.zenith-team.test.", "AUTH_WEB_APP_ORIGIN": "https://app.zenith-team.test."}},
 		{name: "DNS host ending in decimal number is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://example.127", "AUTH_WEB_APP_ORIGIN": "https://example.127"}},
 		{name: "DNS host ending in octal number is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://example.0177", "AUTH_WEB_APP_ORIGIN": "https://example.0177"}},
 		{name: "DNS host ending in hex number is not browser canonical", overrides: map[string]string{"AUTH_WEB_ORIGINS": "https://example.0x7f", "AUTH_WEB_APP_ORIGIN": "https://example.0x7f"}},
-		{name: "not in CORS allowlist", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://other.boardly.test"}},
+		{name: "not in CORS allowlist", overrides: map[string]string{"AUTH_WEB_APP_ORIGIN": "https://other.zenith-team.test"}},
 		{name: "same Web and Desktop ID", overrides: map[string]string{"GOOGLE_DESKTOP_CLIENT_ID": "web-client.apps.googleusercontent.test"}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -918,7 +908,7 @@ func TestLoadGoogleOAuthRequiresCanonicalMemberWebAppOriginAndSeparateClientIDs(
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if !cfg.Auth.Google.Enabled || cfg.Auth.WebAppOrigin != "https://app.boardly.test" ||
+	if !cfg.Auth.Google.Enabled || cfg.Auth.WebAppOrigin != "https://app.zenith-team.test" ||
 		cfg.Auth.Google.WebClientID != "web-client.apps.googleusercontent.test" ||
 		cfg.Auth.Google.DesktopClientID != "desktop-client.apps.googleusercontent.test" {
 		t.Fatalf("Google OAuth config = %#v / origin %q", cfg.Auth.Google, cfg.Auth.WebAppOrigin)
@@ -955,15 +945,15 @@ func TestLoadGoogleOAuthValidatesCallbackSchemeShapeAndLocalDevelopmentPolicy(t 
 			"GOOGLE_WEB_REDIRECT_URI": "http://127.0.0.1:8788/api/v1/auth/google/web/callback",
 		}},
 		{name: "remote HTTP callback", overrides: map[string]string{
-			"GOOGLE_WEB_REDIRECT_URI": "http://api.boardly.test/api/v1/auth/google/web/callback",
+			"GOOGLE_WEB_REDIRECT_URI": "http://api.zenith-team.test/api/v1/auth/google/web/callback",
 		}},
 		{name: "relative callback", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "/api/v1/auth/google/web/callback"}},
-		{name: "wrong callback path", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test/api/v1/auth/google/web/other"}},
-		{name: "callback query", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test/api/v1/auth/google/web/callback?code=sentinel"}},
-		{name: "callback fragment", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test/api/v1/auth/google/web/callback#fragment"}},
-		{name: "callback userinfo", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://user@api.boardly.test/api/v1/auth/google/web/callback"}},
-		{name: "callback noncanonical port", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test:0443/api/v1/auth/google/web/callback"}},
-		{name: "callback out-of-range port", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test:65536/api/v1/auth/google/web/callback"}},
+		{name: "wrong callback path", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test/api/v1/auth/google/web/other"}},
+		{name: "callback query", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test/api/v1/auth/google/web/callback?code=sentinel"}},
+		{name: "callback fragment", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test/api/v1/auth/google/web/callback#fragment"}},
+		{name: "callback userinfo", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://user@api.zenith-team.test/api/v1/auth/google/web/callback"}},
+		{name: "callback noncanonical port", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test:0443/api/v1/auth/google/web/callback"}},
+		{name: "callback out-of-range port", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test:65536/api/v1/auth/google/web/callback"}},
 		{name: "callback over byte limit", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://" + strings.Repeat("a", 2050) + ".test/api/v1/auth/google/web/callback"}},
 		{name: "callback Unicode host", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://bücher.example/api/v1/auth/google/web/callback"}},
 		{name: "callback expanded IPv6 host", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://[0:0:0:0:0:0:0:1]/api/v1/auth/google/web/callback"}},
@@ -971,12 +961,12 @@ func TestLoadGoogleOAuthValidatesCallbackSchemeShapeAndLocalDevelopmentPolicy(t 
 		{name: "callback octal legacy IPv4", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://0177.0.0.1/api/v1/auth/google/web/callback"}},
 		{name: "callback integer legacy IPv4", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://2130706433/api/v1/auth/google/web/callback"}},
 		{name: "callback hex legacy IPv4", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://0x7f000001/api/v1/auth/google/web/callback"}},
-		{name: "callback trailing-dot host", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.boardly.test./api/v1/auth/google/web/callback"}},
+		{name: "callback trailing-dot host", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://api.zenith-team.test./api/v1/auth/google/web/callback"}},
 		{name: "callback DNS host ending in decimal number", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://example.127/api/v1/auth/google/web/callback"}},
 		{name: "callback DNS host ending in octal number", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://example.0177/api/v1/auth/google/web/callback"}},
 		{name: "callback DNS host ending in hex number", overrides: map[string]string{"GOOGLE_WEB_REDIRECT_URI": "https://example.0x7f/api/v1/auth/google/web/callback"}},
 		{name: "mixed HTTPS origin forces secure cookie", overrides: map[string]string{
-			"AUTH_WEB_ORIGINS":        "http://localhost:5173,https://admin.boardly.test",
+			"AUTH_WEB_ORIGINS":        "http://localhost:5173,https://admin.zenith-team.test",
 			"AUTH_WEB_APP_ORIGIN":     "http://localhost:5173",
 			"GOOGLE_WEB_REDIRECT_URI": "http://127.0.0.1:8788/api/v1/auth/google/web/callback",
 		}},
@@ -1069,7 +1059,7 @@ func TestLoadBoundsDesktopHandoffCodeTTL(t *testing.T) {
 		t.Run("AUTH_DESKTOP_HANDOFF_CODE_TTL_SECONDS="+test.value, func(t *testing.T) {
 			t.Parallel()
 			cfg, err := Load(configuredLookup(map[string]string{
-				"APP_DATABASE_URL":                      "postgres://boardly:boardly@localhost/boardly",
+				"APP_DATABASE_URL":                      "postgres://zenith_team:zenith_team@localhost/zenith_team",
 				"AUTH_DESKTOP_HANDOFF_CODE_TTL_SECONDS": test.value,
 			}))
 			if !test.valid {
@@ -1095,12 +1085,12 @@ func TestLoadBoundsDesktopHandoffCodeTTL(t *testing.T) {
 
 func completeGoogleOAuthConfig() map[string]string {
 	return map[string]string{
-		"APP_DATABASE_URL":             "postgres://boardly:boardly@localhost/boardly",
-		"AUTH_WEB_ORIGINS":             "https://app.boardly.test",
-		"AUTH_WEB_APP_ORIGIN":          "https://app.boardly.test",
+		"APP_DATABASE_URL":             "postgres://zenith_team:zenith_team@localhost/zenith_team",
+		"AUTH_WEB_ORIGINS":             "https://app.zenith-team.test",
+		"AUTH_WEB_APP_ORIGIN":          "https://app.zenith-team.test",
 		"GOOGLE_WEB_CLIENT_ID":         "web-client.apps.googleusercontent.test",
 		"GOOGLE_WEB_CLIENT_SECRET":     "sentinel-web-client-secret",
-		"GOOGLE_WEB_REDIRECT_URI":      "https://api.boardly.test/api/v1/auth/google/web/callback",
+		"GOOGLE_WEB_REDIRECT_URI":      "https://api.zenith-team.test/api/v1/auth/google/web/callback",
 		"GOOGLE_DESKTOP_CLIENT_ID":     "desktop-client.apps.googleusercontent.test",
 		"GOOGLE_DESKTOP_CLIENT_SECRET": "sentinel-desktop-client-secret",
 	}
@@ -1117,7 +1107,7 @@ func configuredLookup(values map[string]string) LookupEnv {
 	merged := map[string]string{
 		"AUTH_CSRF_SECRET":  "01234567890123456789012345678901",
 		"APP_REDIS_URL":     "redis://localhost:6379/0",
-		"STORAGE_S3_BUCKET": "boardly-test",
+		"STORAGE_S3_BUCKET": "zenith-team-test",
 		"STORAGE_S3_REGION": "us-east-1",
 	}
 	for key, value := range values {
@@ -1161,7 +1151,7 @@ func TestLoadStudioAPIOrigin(t *testing.T) {
 		name, value, want string
 		wantError         bool
 	}{
-		{name: "default", want: "https://api-agent.ii.inc"},
+		{name: "unset leaves Studio off", want: ""},
 		{name: "loopback", value: "http://localhost:8000/", want: "http://localhost:8000"},
 		{name: "canonical", value: "https://STUDIO.example:443/", want: "https://studio.example"},
 		{name: "remote http", value: "http://studio.example", wantError: true},
@@ -1170,7 +1160,7 @@ func TestLoadStudioAPIOrigin(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			cfg, err := Load(configuredLookup(map[string]string{
-				"APP_DATABASE_URL":      "postgres://localhost/boardly",
+				"APP_DATABASE_URL":      "postgres://localhost/zenith_team",
 				"ZENITH_STUDIO_API_URL": test.value,
 			}))
 			if (err != nil) != test.wantError {
@@ -1195,5 +1185,31 @@ func TestScheduleQueueConfiguration(t *testing.T) {
 		if _, err := Load(configuredLookup(values)); err == nil {
 			t.Errorf("accepted invalid Schedule configuration: %v", values)
 		}
+	}
+}
+
+func TestLoadRefusesTemplateCSRFSecretOutsideLocal(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name, environment, secret string
+		wantError                 bool
+	}{
+		{name: "local keeps the dev value", environment: "local", secret: "development-only-32-byte-secret!"},
+		{name: "staging", environment: "staging", secret: "development-only-32-byte-secret!", wantError: true},
+		{name: "production", environment: "production", secret: "development-only-32-byte-secret!", wantError: true},
+		{name: "placeholder", environment: "production", secret: "<generate: openssl rand -hex 32>", wantError: true},
+		{name: "generated", environment: "production", secret: strings.Repeat("ab", 32)},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := Load(configuredLookup(map[string]string{
+				"APP_DATABASE_URL": "postgres://localhost/zenith_team",
+				"APP_ENVIRONMENT":  test.environment,
+				"AUTH_CSRF_SECRET": test.secret,
+			}))
+			if test.wantError != (err != nil && strings.Contains(err.Error(), "AUTH_CSRF_SECRET is a placeholder")) {
+				t.Fatalf("Load() error = %v, want placeholder refusal %v", err, test.wantError)
+			}
+		})
 	}
 }

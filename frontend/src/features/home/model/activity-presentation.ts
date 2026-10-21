@@ -106,7 +106,7 @@ export function activityPresentation(
   };
 }
 
-// What an access row carries (Access TECH, the trail). A Group row: the
+// What an access row carries. A Group row: the
 // Group's id and the name it had then; who joined or left; on a
 // project_grant row the Project, and either the Group's permissions before
 // and after (group_changed) or everyone whose access there moved
@@ -154,7 +154,7 @@ function accessProjectName(
 /**
  * The second line of a person's own grant row, and of a visibility row:
  * whom it was for and on which Project, "Mia Member · Payroll", or the
- * Project alone (Access DESIGN 5). Null for every other row; Group rows
+ * Project alone. Null for every other row; Group rows
  * have their own sentence.
  */
 function grantContext(
@@ -187,7 +187,7 @@ function actsOnSelf(
 }
 
 /**
- * A person's own grant row about themself (Access DESIGN 5 and 23): "Joined
+ * A person's own grant row about themself: "Joined
  * project" for a Join or giving themself access, "Left project" for taking
  * their own away, "Changed own access" for anything else, over the Project.
  * The By column names them, so neither line does. Null for every other row,
@@ -252,7 +252,7 @@ function movedPeopleLabel(
 }
 
 /**
- * A Group row (Access DESIGN 5 and 23). The By column names who did it, so
+ * A Group row. The By column names who did it, so
  * the title never does, and the second line holds the rest: a group row
  * reads "Added Mia Member" over the Group, a Group's row on a Project "Gave
  * Finance View" or "Added 3 people to Finance" over the Project. Someone who
@@ -316,7 +316,7 @@ export function groupActivity(
 }
 
 /**
- * What an access row's details show (Access DESIGN 23): the permissions a
+ * What an access row's details show: the permissions a
  * grant added and took away; a visibility change's two settings; the people
  * a Group's row counts ("3 people"). Null for a row that is not about
  * access, and for an access row with nothing to show beyond its title.

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -212,7 +212,7 @@ func seedAttachmentSchemaOwner(
 	userID, companyID := dbtest.NewUUID(t), dbtest.NewUUID(t)
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO users(id,email,display_name) VALUES ($1,$2,'Attachment Owner')`,
-		userID, userID.String()+"@attachments.boardly.test"); err != nil {
+		userID, userID.String()+"@attachments.zenith-team.test"); err != nil {
 		t.Fatalf("seed attachment schema user: %v", err)
 	}
 	if _, err := pool.Exec(ctx, `

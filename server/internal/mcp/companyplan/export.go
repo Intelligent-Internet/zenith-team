@@ -17,11 +17,11 @@ var (
 	ErrMultipleCompanies = errors.New("multiple Companies are not supported")
 )
 
-// API reads the Company Plan snapshot as the Run. boardly-mcp sends every
+// API reads the Company Plan snapshot as the Run. zenith-team-mcp sends every
 // read over the daemon's Run channel with the Run proof, so the server, not
 // the daemon, decides what the export shows: every Task the person reads for
 // the root Agent's direct-chat Run with planning on, only the Run's own
-// Tasks for any other (Access TECH B6).
+// Tasks for any other.
 type API interface {
 	FetchRunJSON(context.Context, string, any) error
 }
@@ -29,15 +29,15 @@ type API interface {
 type Document struct {
 	FormatVersion int       `yaml:"format_version" json:"formatVersion"`
 	Company       string    `yaml:"company"        json:"company"`
-	Projects      []Project `yaml:"projects" json:"projects"`
+	Projects      []Project `yaml:"projects"       json:"projects"`
 	Tasks         []Task    `yaml:"tasks"          json:"tasks"`
 }
 
 type Project struct {
-	Key         string `yaml:"key" json:"key"`
-	Title       string `yaml:"title" json:"title"`
+	Key         string `yaml:"key"         json:"key"`
+	Title       string `yaml:"title"       json:"title"`
 	Description string `yaml:"description" json:"description"`
-	Archived    bool   `yaml:"archived" json:"archived"`
+	Archived    bool   `yaml:"archived"    json:"archived"`
 	// ReadOnly marks a Project the reader may read but whose Tasks they may
 	// not change (no project.tasks.write, ADR 0017). A plan leaves it as
 	// it is, and the apply leaves it and its Tasks alone.
@@ -58,7 +58,7 @@ type projectResponse struct {
 
 type Task struct {
 	Key           string           `yaml:"key"            json:"key"`
-	ProjectKey    string           `yaml:"project_key" json:"projectKey"`
+	ProjectKey    string           `yaml:"project_key"    json:"projectKey"`
 	AgentID       string           `yaml:"agent_id"       json:"agentId"`
 	MilestoneType string           `yaml:"milestone_type" json:"milestoneType"`
 	Title         string           `yaml:"title"          json:"title"`
@@ -294,7 +294,12 @@ func buildDocument(
 	tasks []taskResponse,
 	dependencySets ...map[string][]dependencyResponse,
 ) (Document, error) {
-	document := Document{Projects: []Project{}, FormatVersion: FormatVersion, Company: slug, Tasks: make([]Task, 0, len(tasks))}
+	document := Document{
+		Projects:      []Project{},
+		FormatVersion: FormatVersion,
+		Company:       slug,
+		Tasks:         make([]Task, 0, len(tasks)),
+	}
 
 	projectKeys := map[string]string{}
 	for _, project := range projects {
@@ -316,7 +321,10 @@ func buildDocument(
 	}
 	for _, value := range tasks {
 		if _, exists := projectKeys[value.ProjectID]; !exists {
-			return Document{}, fmt.Errorf("Project for Task %q is absent from the snapshot; export again", value.Key)
+			return Document{}, fmt.Errorf(
+				"Project for Task %q is absent from the snapshot; export again",
+				value.Key,
+			)
 		}
 		// Work an Agent does names that Agent, even an archived one that
 		// finished it: the server accepts it on a Task that keeps it. Work

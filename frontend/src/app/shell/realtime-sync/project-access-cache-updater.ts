@@ -2,9 +2,9 @@ import { taskApi } from "@/shared/api/task-api";
 import type { components as ApiComponents } from "@/shared/api/generated/api.generated";
 import { projectApi } from "@/features/company-plan/api/project-api";
 import { ACCOUNT_INBOX_SCOPE } from "@/features/notifications/model/notification";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 
-import type { BoardlyRealtimeEvent } from "@/shared/realtime/realtime-client.service";
+import type { ZenithTeamRealtimeEvent } from "@/shared/realtime/realtime-client.service";
 import { toast } from "@/shared/ui/sonner";
 import { forgetTaskChats } from "@/state/slice/chat";
 import { forgetConversationWorkspaceTasks } from "@/state/slice/conversation-dock";
@@ -23,7 +23,7 @@ type ProjectTasks = { taskIds: Set<string>; conversationIds: Set<string> };
  */
 export function applyProjectAccessCacheEvent(
   context: RealtimeSyncContext,
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
 ): boolean {
   if (event.type !== "project.access_changed") return false;
   const { projectId } = event.payload as Partial<ProjectAccessChangedPayload>;
@@ -33,7 +33,7 @@ export function applyProjectAccessCacheEvent(
   // refetch drops them, so a lost Project also closes its Task chats.
   const tasks = cachedProjectTasks(context, projectId);
   context.dispatch(
-    boardlyApi.util.invalidateTags([
+    zenithTeamApi.util.invalidateTags([
       { type: "Project", id: companyId },
       { type: "Project", id: projectId },
       { type: "Project", id: `${projectId}:grants` },

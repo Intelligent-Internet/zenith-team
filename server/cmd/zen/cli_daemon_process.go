@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	daemonpkg "boardly.dev/boardly/server/internal/daemon"
+	daemonpkg "github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // Process supervision for the local daemon: spawn a detached instance and
@@ -74,7 +74,7 @@ var errDaemonNotRunning = errors.New("daemon is not running")
 
 // The three process seams. Tests replace them so a lifecycle command can be
 // exercised end to end against a fake health port without forking or
-// signalling anything.
+// signaling anything.
 var (
 	signalDaemonProcess = func(pid int) error {
 		return syscall.Kill(pid, syscall.SIGTERM)
@@ -91,7 +91,7 @@ var (
 	spawnDaemonProcess = func(binary string, args []string, stdout, stderr *os.File) (int, error) {
 		// Deliberately exec.Command and not exec.CommandContext: this child is
 		// the detached daemon and must outlive the process that spawned it.
-		//nolint:noctx // the detached daemon outlives this process by design
+
 		child := exec.Command(binary, args...)
 		child.Stdout = stdout
 		child.Stderr = stderr
@@ -116,25 +116,25 @@ type daemonProcessRecord struct {
 
 // spawnDetachedDaemon launches binary as `daemon start --foreground <args>`
 // with its output on the log files under home, waits for /health to report
-// the new process as running, records its identity, and returns that health.
+// the new process as running, and records its identity.
 func spawnDetachedDaemon(
 	ctx context.Context,
 	out io.Writer,
 	home, binary string,
 	args []string,
-) (*daemonpkg.HealthResponse, error) {
+) error {
 	logPath := filepath.Join(home, daemonLogFileName)
 	errPath := filepath.Join(home, daemonErrLogFileName)
 	rotateLog(logPath)
 	rotateLog(errPath)
 	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		return nil, fmt.Errorf("open daemon log: %w", err)
+		return fmt.Errorf("open daemon log: %w", err)
 	}
 	defer logFile.Close()
 	errFile, err := os.OpenFile(errPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		return nil, fmt.Errorf("open daemon error log: %w", err)
+		return fmt.Errorf("open daemon error log: %w", err)
 	}
 	defer errFile.Close()
 
@@ -145,7 +145,7 @@ func spawnDetachedDaemon(
 		errFile,
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	fmt.Fprintf(out, "daemon starting (pid %d)\n", pid)
 
@@ -154,7 +154,9 @@ func spawnDetachedDaemon(
 		health, err := fetchDaemonHealth(ctx)
 		if err == nil && health.Status == "running" {
 			if health.PID != pid || health.StartedAt.IsZero() {
-				return nil, errors.New("daemon health identity does not match the process that was started")
+				return errors.New(
+					"daemon health identity does not match the process that was started",
+				)
 			}
 			if err := writeDaemonProcessRecord(home, daemonProcessRecord{
 				SchemaVersion: 1,
@@ -164,30 +166,34 @@ func spawnDetachedDaemon(
 				fmt.Fprintf(out, "warning: write daemon process record failed: %v\n", err)
 			}
 			fmt.Fprintf(out, "daemon ready (pid %d, version %s)\n", health.PID, health.CLIVersion)
-			return health, nil
+			return nil
 		}
 		if !processAlive(pid) {
-			return nil, fmt.Errorf("daemon exited during startup; check %s", errPath)
+			return fmt.Errorf("daemon exited during startup; check %s", errPath)
 		}
 		if !time.Now().Before(deadline) {
-			return nil, fmt.Errorf("daemon did not become ready within %s; check %s", daemonReadyTimeout, errPath)
+			return fmt.Errorf(
+				"daemon did not become ready within %s; check %s",
+				daemonReadyTimeout,
+				errPath,
+			)
 		}
 		if err := sleepDaemonPoll(ctx); err != nil {
-			return nil, err
+			return err
 		}
 	}
 }
 
 // restartIntoBinary is the daemon's own handoff: once Run has returned because
-// a replaced boardly binary was detected, the old process starts the
+// a replaced zenith-team binary was detected, the old process starts the
 // replacement detached with the same start flags and only exits once the
 // replacement reports ready.
 func restartIntoBinary(ctx context.Context, out io.Writer, binary string, args []string) error {
-	home, err := daemonpkg.BoardlyHome()
+	home, err := daemonpkg.ZenithTeamHome()
 	if err != nil {
 		return err
 	}
-	if _, err := spawnDetachedDaemon(ctx, out, home, binary, args); err != nil {
+	if err := spawnDetachedDaemon(ctx, out, home, binary, args); err != nil {
 		return fmt.Errorf("restart into %s: %w", binary, err)
 	}
 	return nil
@@ -195,7 +201,7 @@ func restartIntoBinary(ctx context.Context, out io.Writer, binary string, args [
 
 // stopDaemonProcess signals only the exact process instance currently
 // answering on the health port, then waits up to wait for that process to
-// exit. It returns the health of the instance it signalled and whether the
+// exit. It returns the health of the instance it signaled and whether the
 // instance is gone; a false second value means the daemon is still draining
 // in-flight runs, still holds the health port, and will exit on its own.
 func stopDaemonProcess(
@@ -352,10 +358,10 @@ func rotateLog(path string) {
 
 // daemonHealthPort is the loopback port of the daemon this shell belongs
 // to: the operator's configured port, or — inside a Run — the port the
-// daemon injected as BOARDLY_DAEMON_PORT, so `zen daemon status` in an
+// daemon injected as ZENITH_TEAM_DAEMON_PORT, so `zen daemon status` in an
 // agent shell can never describe a different daemon.
 func daemonHealthPort() int {
-	for _, name := range []string{"BOARDLY_HEALTH_PORT", "BOARDLY_DAEMON_PORT"} {
+	for _, name := range []string{"ZENITH_TEAM_HEALTH_PORT", "ZENITH_TEAM_DAEMON_PORT"} {
 		if raw := strings.TrimSpace(os.Getenv(name)); raw != "" {
 			if port, err := strconv.Atoi(raw); err == nil && port > 0 {
 				return port

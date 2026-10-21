@@ -315,7 +315,7 @@ func (p *GoogleProvider) configForClient(client ClientKind) (oauth2.Config, erro
 }
 
 // ClientEnabled reports whether the provider has a complete credential pair
-// for the requested Boardly client surface.
+// for the requested Zenith Team client surface.
 func (p *GoogleProvider) ClientEnabled(client ClientKind) bool {
 	if p == nil {
 		return false

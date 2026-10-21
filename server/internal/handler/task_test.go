@@ -15,11 +15,11 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 func TestTaskRoutesCreateAndUpdateStrictContracts(t *testing.T) {
@@ -454,7 +454,7 @@ func TestTaskCreateThroughARunNeedsItsLiveProof(t *testing.T) {
 	}
 }
 
-// A Run reads only its own Tasks (owner decision, 2026-09-26): the ones its
+// A Run reads only its own Tasks: the ones its
 // Agent does for the member the Run works for, its authorizer (ADR 0014).
 // Tagged in a channel and asked to "run BSC-8", Lyra read a Task Eli does
 // for Bob and acted out its question on Alice's computer. The reads a Run
@@ -854,7 +854,7 @@ func TestTaskDependencyRouteIsReadOnly(t *testing.T) {
 			ID: prerequisiteID, Key: "approve_spec", Title: "Approve spec",
 			Status: task.StatusDone,
 			Assignee: task.ActorRef{
-				Kind: task.ActorUser, ID: userID, DisplayName: "Quy",
+				Kind: task.ActorUser, ID: userID, DisplayName: "Sam",
 			},
 			ExecutedBy: task.ActorRef{
 				Kind: task.ActorAgent, ID: uuid.Must(uuid.NewV7()), DisplayName: "Ada",
@@ -915,17 +915,13 @@ func TestTaskDependencyGraphRouteForwardsDocumentedFilters(t *testing.T) {
 	dependentID, prerequisiteID := uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7())
 	principal := phase4Principal(userID, companyID)
 	now := time.Date(2026, time.August, 5, 1, 2, 3, 0, time.UTC)
-	var receivedOptions []task.DependencyGraphOptions
+	calls := 0
 	service := &taskServiceStub{
-		listDependencyGraph: func(
-			_ context.Context,
-			got auth.UserPrincipal,
-			options task.DependencyGraphOptions,
-		) (task.DependencyGraph, error) {
+		listDependencyGraph: func(_ context.Context, got auth.UserPrincipal) (task.DependencyGraph, error) {
 			if got != principal {
 				t.Fatalf("ListDependencyGraph() = %+v", got)
 			}
-			receivedOptions = append(receivedOptions, options)
+			calls++
 			return task.DependencyGraph{
 				Dependencies: []task.DependencyGraphEdge{
 					{
@@ -961,8 +957,8 @@ func TestTaskDependencyGraphRouteForwardsDocumentedFilters(t *testing.T) {
 		t.Fatalf("dependency graph response = %d %s", response.Code, response.Body.String())
 	}
 
-	if len(receivedOptions) != 1 || receivedOptions[0] != (task.DependencyGraphOptions{}) {
-		t.Fatalf("ListDependencyGraph() options = %#v", receivedOptions)
+	if calls != 1 {
+		t.Fatalf("ListDependencyGraph() calls = %d, want 1", calls)
 	}
 	// The graph is Company-wide: there is no narrower scope to ask for.
 	for _, query := range []string{"?department_key=engineering", "?agent_id=" + companyID.String()} {
@@ -1071,12 +1067,8 @@ type taskServiceStub struct {
 	startExecution      func(context.Context, auth.UserPrincipal, uuid.UUID, task.StartExecutionInput) (task.MutationResult, error)
 	markFailed          func(context.Context, auth.UserPrincipal, execution.RunOrigin, task.FailureInput) (task.Response, error)
 	listDependencies    func(context.Context, auth.UserPrincipal, uuid.UUID, *task.RunScope) (task.DependencySet, error)
-	listDependencyGraph func(
-		context.Context,
-		auth.UserPrincipal,
-		task.DependencyGraphOptions,
-	) (task.DependencyGraph, error)
-	workspace func(
+	listDependencyGraph func(context.Context, auth.UserPrincipal) (task.DependencyGraph, error)
+	workspace           func(
 		context.Context,
 		auth.UserPrincipal,
 		uuid.UUID,
@@ -1125,12 +1117,11 @@ func (s *taskServiceStub) ListDependencies(
 func (s *taskServiceStub) ListDependencyGraph(
 	ctx context.Context,
 	principal auth.UserPrincipal,
-	options task.DependencyGraphOptions,
 ) (task.DependencyGraph, error) {
 	if s.listDependencyGraph == nil {
 		return task.DependencyGraph{}, errors.New("unexpected Task ListDependencyGraph")
 	}
-	return s.listDependencyGraph(ctx, principal, options)
+	return s.listDependencyGraph(ctx, principal)
 }
 
 func (s *taskServiceStub) Create(

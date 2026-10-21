@@ -16,13 +16,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // Who reads each Activity row (ADR 0017): a Company-wide row about a
@@ -45,8 +45,15 @@ func TestActivityFeedFollowsProjectAccess(t *testing.T) {
 		id := dbtest.NewUUID(t)
 		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $3)`,
 			id, name+"@example.com", name)
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
-			fixture.CompanyA, id, role)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
+			fixture.CompanyA,
+			id,
+			role,
+		)
 		return id
 	}
 	member := newMember("member", "member")
@@ -309,9 +316,11 @@ func TestActivityProjectResolvesEverySubject(t *testing.T) {
 		params generated.ResolveActivityProjectParams
 	}{
 		{"envelope chat", generated.ResolveActivityProjectParams{
-			ConversationID: id(fixture.ConversationA), EntityType: "agent", SubjectID: id(fixture.AgentA)}},
+			ConversationID: id(fixture.ConversationA), EntityType: "agent", SubjectID: id(fixture.AgentA),
+		}},
 		{"envelope Task", generated.ResolveActivityProjectParams{
-			TaskID: id(fixture.TaskA), EntityType: "agent", SubjectID: id(fixture.AgentA)}},
+			TaskID: id(fixture.TaskA), EntityType: "agent", SubjectID: id(fixture.AgentA),
+		}},
 		{"Task", generated.ResolveActivityProjectParams{EntityType: "task", SubjectID: id(fixture.TaskA)}},
 		{"Project", generated.ResolveActivityProjectParams{EntityType: "project", SubjectID: id(fixture.ProjectA)}},
 		{"grant", generated.ResolveActivityProjectParams{EntityType: "project_grant", SubjectID: id(fixture.ProjectA)}},
@@ -325,7 +334,13 @@ func TestActivityProjectResolvesEverySubject(t *testing.T) {
 		subject.params.CompanyID = fixture.CompanyA
 		project, err := queries.ResolveActivityProject(ctx, subject.params)
 		if err != nil || project != fixture.ProjectA {
-			t.Errorf("ResolveActivityProject(%s) = %s, %v; want %s", subject.name, project, err, fixture.ProjectA)
+			t.Errorf(
+				"ResolveActivityProject(%s) = %s, %v; want %s",
+				subject.name,
+				project,
+				err,
+				fixture.ProjectA,
+			)
 		}
 	}
 	// A subject in the other Company resolves to nothing.
@@ -341,8 +356,14 @@ func TestActivityProjectResolvesEverySubject(t *testing.T) {
 	}
 	for topic, subject := range map[string]uuid.UUID{"approval": approvalID, "question": questionID} {
 		bus.Publish(ctx, topic, events.Event{
-			EntityType: topic, Name: topic + ".created", CompanyID: fixture.CompanyA, CreatedAt: time.Now().UTC(),
-			Actor: events.AgentActor(fixture.AgentA.String()), Payload: map[string]any{"id": subject.String()},
+			EntityType: topic,
+			Name:       topic + ".created",
+			CompanyID:  fixture.CompanyA,
+			CreatedAt:  time.Now().UTC(),
+			Actor: events.AgentActor(
+				fixture.AgentA.String(),
+			),
+			Payload: map[string]any{"id": subject.String()},
 		})
 		var project uuid.NullUUID
 		if err := pool.QueryRow(ctx, `
@@ -427,8 +448,14 @@ func TestActivityReadsProbeProjectAccessPerRow(t *testing.T) {
 	memberID := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, 'explain@example.com', 'Explain')`, memberID)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, memberID)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		memberID,
+	)
 	var readable uuid.UUID
 	if err := pool.QueryRow(ctx, `SELECT id FROM projects WHERE company_id = $1 AND key = 'bulk_7'`,
 		fixture.CompanyA).Scan(&readable); err != nil {

@@ -15,10 +15,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // shellQuote writes value as one single-quoted POSIX shell word.
@@ -40,11 +40,11 @@ func writeFakeProvider(t *testing.T, path, script string) {
 func desktopLayout(t *testing.T) (string, string) {
 	t.Helper()
 	support := filepath.Join(t.TempDir(), "Application Support", "Zenith Team Dev")
-	home := filepath.Join(support, "boardly-home")
+	home := filepath.Join(support, "zenith-team-home")
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	store := filepath.Join(support, "desktop-session.v1.bin")
 	t.Setenv(DesktopSessionPathEnv, store)
 	for path, content := range map[string]string{
@@ -88,7 +88,7 @@ func TestProbeEnforcesOnlyWhenTheSandboxHidesTheSessionFile(t *testing.T) {
 		t.Fatalf("verdict with the workspaces root in the home = %+v, want not_enforced", verdict)
 	}
 
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	d.cfg.WorkspacesRoot = t.TempDir()
 	if verdict := d.probeCredentialIsolation(
 		t.Context(),
@@ -97,7 +97,7 @@ func TestProbeEnforcesOnlyWhenTheSandboxHidesTheSessionFile(t *testing.T) {
 	}
 }
 
-// Access TECH B3d, IA-AC5: a whole Run on this Mac, through the real Claude
+// A whole Run on this Mac, through the real Claude
 // launch path. The Agent's shell cannot read or write the daemon's session,
 // the person's auth.json, local-preview.json or the desktop app's session
 // store (nor its half-written copy), cannot list the home, and cannot move
@@ -146,7 +146,7 @@ func TestAgentShellCannotReadTheSignInFilesOnMacOS(t *testing.T) {
 				"then echo 'workspace refused' >> \"$report\"; fi\n",
 		)
 		script.WriteString(
-			"if ! /bin/sh -c 'echo mine > \"$BOARDLY_HOME/probe\" && cat \"$BOARDLY_HOME/probe\"' >/dev/null 2>&1; " +
+			"if ! /bin/sh -c 'echo mine > \"$ZENITH_TEAM_HOME/probe\" && cat \"$ZENITH_TEAM_HOME/probe\"' >/dev/null 2>&1; " +
 				"then echo 'isolated home refused' >> \"$report\"; fi\n",
 		)
 		script.WriteString("echo done >> \"$report\"\n")
@@ -308,7 +308,7 @@ func otherRunHome(t *testing.T, workspacesRoot string) string {
 	return home
 }
 
-// Access TECH B3e: a whole Run on this Mac, through the real Claude launch
+// A whole Run on this Mac, through the real Claude launch
 // path, with its Run channel open. The Agent's shell reads its own run.json
 // but cannot read or list another Run's isolated home, so it cannot call
 // through that Run's channel. It cannot
@@ -343,7 +343,7 @@ func TestAgentShellCannotReachAnotherRunsChannelOnMacOS(t *testing.T) {
 			script.WriteString("; then echo " + shellQuote(check.ran) + " >> \"$report\"; fi\n")
 		}
 		script.WriteString(
-			"if ! /bin/sh -c 'grep -q capability \"$BOARDLY_HOME/run.json\"' >/dev/null 2>&1; " +
+			"if ! /bin/sh -c 'grep -q capability \"$ZENITH_TEAM_HOME/run.json\"' >/dev/null 2>&1; " +
 				"then echo 'own run.json refused' >> \"$report\"; fi\n",
 		)
 		script.WriteString(
@@ -433,7 +433,7 @@ func makeOtherRunsUnderTheRoot(t *testing.T, d *Daemon) otherRunsUnderTheRoot {
 	}
 	for path, content := range map[string]string{
 		filepath.Join(layout.otherWorktree, "notes.md"):                 "theirs\n",
-		filepath.Join(layout.otherScratch, ".boardly-bin-1", "zen"):     "#!/bin/sh\n",
+		filepath.Join(layout.otherScratch, ".zenith-team-bin-1", "zen"): "#!/bin/sh\n",
 		filepath.Join(layout.otherScratch, "codex-home", "config.toml"): "model = \"theirs\"\n",
 		filepath.Join(layout.companyMain, ".memory", "team.md"):         "# Team\n",
 		filepath.Join(layout.projectMain, "README.md"):                  "# Project\n",
@@ -465,7 +465,7 @@ func (o otherRunsUnderTheRoot) requireUntouched(t *testing.T, root string) {
 	t.Helper()
 	for path, want := range map[string]string{
 		filepath.Join(o.otherWorktree, "notes.md"):                 "theirs\n",
-		filepath.Join(o.otherScratch, ".boardly-bin-1", "zen"):     "#!/bin/sh\n",
+		filepath.Join(o.otherScratch, ".zenith-team-bin-1", "zen"): "#!/bin/sh\n",
 		filepath.Join(o.otherScratch, "codex-home", "config.toml"): "model = \"theirs\"\n",
 		filepath.Join(o.companyMain, ".memory", "team.md"):         "# Team\n",
 		o.tool: "// reviewed\n",
@@ -533,7 +533,7 @@ func writeShellChecksProvider(
 var plantingSteps = []shellCheck{
 	{"a file in another Task's worktree", `echo planted > "$1/planted.md"`},
 	{"another Task's note changed", `echo planted >> "$1/notes.md"`},
-	{"another Run's zen changed", `echo planted >> "$2/.boardly-bin-1/zen"`},
+	{"another Run's zen changed", `echo planted >> "$2/.zenith-team-bin-1/zen"`},
 	{"another Run's Codex settings changed", `echo planted >> "$2/codex-home/config.toml"`},
 	{"another Run's scratch removed", `rm -rf "$2"`},
 	{"a Git hook in the Project main", `echo planted > "$4/.git/hooks/post-checkout"`},
@@ -546,7 +546,7 @@ var plantingSteps = []shellCheck{
 	},
 }
 
-// Access TECH B3f: a whole Run on this Mac, through the real Claude launch
+// A whole Run on this Mac, through the real Claude launch
 // path. Under the workspaces root the Agent's shell writes only its own
 // folders. A Task Run writes its worktree (Memory included), its env root and
 // isolated home, and Git restores a file there through its worktree's own
@@ -579,7 +579,7 @@ func TestAgentShellWritesOnlyItsOwnFoldersOnMacOS(t *testing.T) {
 				{"its workdir", `echo mine > workspace-probe.txt && cat workspace-probe.txt`},
 				{"its Memory", `echo note > .memory/b3f.md`},
 				{"its env root", `echo mine > "$(dirname "$PWD")/env-probe.txt"`},
-				{"its isolated home", `echo mine > "$BOARDLY_HOME/probe"`},
+				{"its isolated home", `echo mine > "$ZENITH_TEAM_HOME/probe"`},
 				{"git status", `git status --short`},
 				{
 					"git restores a file",
@@ -641,7 +641,7 @@ func TestAgentShellWritesOnlyItsOwnFoldersOnMacOS(t *testing.T) {
 					`echo note > .memory/direct.md && git add .memory/direct.md && ` +
 						`git -c user.name=a -c user.email=a@a commit -q -m memory`,
 				},
-				{"its isolated home", `echo mine > "$BOARDLY_HOME/probe"`},
+				{"its isolated home", `echo mine > "$ZENITH_TEAM_HOME/probe"`},
 			}
 			writeShellChecksProvider(t, fakeClaude, report,
 				append(layout.args(), d.cfg.WorkspacesRoot), allowed, plantingSteps)
@@ -664,7 +664,7 @@ func TestAgentShellWritesOnlyItsOwnFoldersOnMacOS(t *testing.T) {
 }
 
 // privateFolders is what a person's computer holds that a Run tagged in a
-// chat must not open (Access TECH B7b): the Company main with its Memory, its
+// chat must not open: the Company main with its Memory, its
 // notes and its business context, another Run's workdir and the repository
 // cache, beside the local folder the person bound.
 type privateFolders struct {
@@ -719,7 +719,7 @@ func makePrivateFolders(t *testing.T, d *Daemon, bound string) privateFolders {
 	return p
 }
 
-// Access TECH B7b, IA-AC29: a Run tagged in a channel, whole, on this Mac,
+// A Run tagged in a channel, whole, on this Mac,
 // through the real Claude launch path, on a computer whose person bound a
 // local folder and whose Company main holds Memory. The Agent's shell works
 // in its own scratch, <root>/<id>/workdir with its isolated home beside it,
@@ -781,14 +781,14 @@ func TestATaggedRunsShellCannotOpenItsPersonsPrivateFoldersOnMacOS(t *testing.T)
 			{
 				"working in <root>/<id>/workdir beside its home",
 				`[ "$(basename "$(pwd -P)")" = workdir ] && ` +
-					`[ "$(dirname "$(pwd -P)")" = "$(cd "$(dirname "$BOARDLY_HOME")" && pwd -P)" ] && ` +
+					`[ "$(dirname "$(pwd -P)")" = "$(cd "$(dirname "$ZENITH_TEAM_HOME")" && pwd -P)" ] && ` +
 					`[ "$(dirname "$(dirname "$(pwd -P)")")" = "$5" ]`,
 			},
 			{"its workdir", `echo mine > answer.md && cat answer.md && ls >/dev/null`},
 			{"its env root", `echo mine > ../env-probe.txt && ls .. >/dev/null`},
 			{
 				"its isolated home",
-				`echo mine > "$BOARDLY_HOME/probe" && grep -q capability "$BOARDLY_HOME/run.json"`,
+				`echo mine > "$ZENITH_TEAM_HOME/probe" && grep -q capability "$ZENITH_TEAM_HOME/run.json"`,
 			},
 			{"the business context", `cat "$1/assets/general/business_context.md"`},
 			{"the temporary folder", `f=$(mktemp) && echo x > "$f" && rm "$f"`},
@@ -828,10 +828,10 @@ func TestATaggedRunsShellCannotOpenItsPersonsPrivateFoldersOnMacOS(t *testing.T)
 	})
 }
 
-// Access TECH B3e: an app preview's commands, which an Agent wrote, run in
+// An app preview's commands, which an Agent wrote, run in
 // the Runs' sandbox on this Mac, through the real supervisor. They cannot
 // read the daemon's session or another Run's run.json, nor start launchctl,
-// nor write another Run's folder under the workspaces root (B3f), and still
+// nor write another Run's folder under the workspaces root, and still
 // work in their own folder there and serve the preview. The computer keeps
 // reporting enforced while the preview runs, and the preview stops cleanly.
 func TestAppPreviewCommandsRunInTheSandboxOnMacOS(t *testing.T) {
@@ -859,7 +859,7 @@ func TestAppPreviewCommandsRunInTheSandboxOnMacOS(t *testing.T) {
 	port := availableAppPreviewPort(t)
 	manifest := testAppPreviewManifest(t, port)
 	// The preview's folder is a Run's workdir under the workspaces root,
-	// which it writes; another Run's folder there it may not (B3f).
+	// which it writes; another Run's folder there it may not.
 	manifest.WorkDir = filepath.Join(d.cfg.WorkspacesRoot, uuid.NewString(), "workdir")
 	if err := os.MkdirAll(manifest.WorkDir, 0o700); err != nil {
 		t.Fatal(err)
@@ -913,7 +913,7 @@ func TestAppPreviewCommandsRunInTheSandboxOnMacOS(t *testing.T) {
 	}
 }
 
-// Access TECH B7b: the app a tagged Run presented, through the real
+// The app a tagged Run presented, through the real
 // supervisor on this Mac. Its commands, which the Agent wrote, hide what the
 // Run hid: they cannot read the Company Memory, the bound folder or another
 // Run's folder, nor start a program there, and still work in the preview's

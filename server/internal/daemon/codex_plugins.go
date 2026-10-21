@@ -37,7 +37,7 @@ const (
 	codexPluginMaximumIconBytes       = 4 << 20
 )
 
-// CodexPluginStatus is Boardly's sanitized view of the native Codex plugin state.
+// CodexPluginStatus is Zenith Team's sanitized view of the native Codex plugin state.
 type CodexPluginStatus string
 
 const (
@@ -47,7 +47,7 @@ const (
 	CodexPluginStatusError     CodexPluginStatus = "error"
 )
 
-// CodexPluginAction is the provider-native lifecycle action Boardly may request.
+// CodexPluginAction is the provider-native lifecycle action Zenith Team may request.
 type CodexPluginAction string
 
 const (
@@ -65,7 +65,7 @@ type CodexPluginComponentCounts struct {
 }
 
 // CodexPlugin contains only bounded catalog and lifecycle metadata safe to send
-// to Boardly Cloud. NativeID remains Codex's opaque plugin identity.
+// to Zenith Team Cloud. NativeID remains Codex's opaque plugin identity.
 type CodexPlugin struct {
 	NativeID            string                     `json:"nativeId"`
 	Name                string                     `json:"name"`
@@ -264,7 +264,7 @@ func (osCodexPluginTransport) Read(
 // logCodexPluginDiscoveryFailure records why discovery failed, which the
 // public ErrCodexPluginsUnavailable deliberately hides, so a catalog that
 // stopped updating (an item or frame limit, a timeout) is diagnosable from
-// the daemon log. The cause carries Boardly's own messages and Go's I/O
+// the daemon log. The cause carries Zenith Team's own messages and Go's I/O
 // errors, never Codex's response text. A cancelled daemon context is
 // shutdown, not a failure.
 func logCodexPluginDiscoveryFailure(ctx context.Context, err error) {
@@ -697,7 +697,7 @@ func NewOSCodexPluginBackend(path string) *CodexPluginBackend {
 }
 
 // Discover returns a complete sanitized plugin catalog. force asks Codex to
-// bypass its remote catalog cache, but never clears Boardly's last good snapshot.
+// bypass its remote catalog cache, but never clears Zenith Team's last good snapshot.
 func (b *CodexPluginBackend) Discover(
 	ctx context.Context,
 	force bool,
@@ -1443,7 +1443,7 @@ func loadableFirstCodexIconURL(candidates ...string) string {
 // the first-party app paths /images/ecosystem/apps/<slug>/icon.png and the
 // signed /backend-api/estuary/content URLs alike, answers 403 to anyone else,
 // while files.openai.com serves logos to everyone (measured 2026-09-25). This
-// is the daemon's one test of it (D26).
+// is the daemon's one test of it.
 func sessionOnlyCodexIconURL(value string) bool {
 	parsed, err := url.Parse(value)
 	return err == nil && strings.EqualFold(parsed.Hostname(), "chatgpt.com")
@@ -1730,7 +1730,7 @@ func codexPluginDetailFromRead(
 	return detail, true
 }
 
-// codexPluginAuthPolicy maps Codex's PluginAuthPolicy to Boardly's
+// codexPluginAuthPolicy maps Codex's PluginAuthPolicy to Zenith Team's
 // spelling; anything else is unknown.
 func codexPluginAuthPolicy(value string) string {
 	switch value {

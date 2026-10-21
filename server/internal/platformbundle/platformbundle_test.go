@@ -16,12 +16,12 @@ import (
 	"testing/fstest"
 	"time"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
-// pinnedPlugins is every plugin boardly pins today. A bump that adds or
+// pinnedPlugins is every plugin zenith-team pins today. A bump that adds or
 // drops one changes this list on purpose.
 var pinnedPlugins = []string{"zenith-workflows"}
 
@@ -79,7 +79,7 @@ func TestEveryArtifactHasALock(t *testing.T) {
 }
 
 // The catalog the page parses and the skill a Run loads are the pinned files
-// with boardly's harness SKILL.md at ".", byte for byte.
+// with zenith-team's harness SKILL.md at ".", byte for byte.
 func TestWorkflowCatalogOverlaysTheHarness(t *testing.T) {
 	t.Parallel()
 	catalog, locks, err := WorkflowCatalog()
@@ -624,7 +624,7 @@ func pinFS(t *testing.T, plugins map[string]map[string][]byte) fstest.MapFS {
 }
 
 // A component that fails verification is dropped and named; the others are
-// still returned, which is what lets boardly-mcp keep serving.
+// still returned, which is what lets zenith-team-mcp keep serving.
 func TestLoadDropsOnlyTheFailingBundle(t *testing.T) {
 	t.Parallel()
 	other := map[string][]byte{

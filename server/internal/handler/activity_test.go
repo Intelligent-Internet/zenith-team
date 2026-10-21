@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
 )
 
 func TestParseActivityQuery(t *testing.T) {
@@ -18,7 +18,13 @@ func TestParseActivityQuery(t *testing.T) {
 
 	agentID := uuid.MustParse("0198b3c4-b0d5-7e62-8f19-3ac75d09e403")
 	cursorFixture := activityCursorFixture()
-	cursorOptions := activity.ListOptions{EntityType: "task", EntityID: "TASK-42", Action: "task.updated", ActorType: "agent", ActorID: agentID.String()}
+	cursorOptions := activity.ListOptions{
+		EntityType: "task",
+		EntityID:   "TASK-42",
+		Action:     "task.updated",
+		ActorType:  "agent",
+		ActorID:    agentID.String(),
+	}
 	from := time.Date(2026, time.August, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2026, time.September, 1, 0, 0, 0, 0, time.UTC)
 	cursorOptions.From, cursorOptions.To = &from, &to
@@ -69,16 +75,26 @@ func TestParseActivityQuery(t *testing.T) {
 		{name: "invalid action", rawQuery: "action=changed", wantErr: errInvalidActivityInput},
 		{name: "shouting action", rawQuery: "action=Task.Created", wantErr: errInvalidActivityInput},
 		// Activity-only domains may be two words (ADR 0017 project_grant rows).
-		{name: "project grant rows", rawQuery: "entity_type=project_grant&action=project_grant.joined", check: func(t *testing.T, got activity.ListOptions) {
-			if got.EntityType != "project_grant" || got.Action != "project_grant.joined" {
-				t.Fatal(got)
-			}
-		}},
-		{name: "entity type alone", rawQuery: "entity_type=task", check: func(t *testing.T, got activity.ListOptions) {
-			if got.EntityType != "task" {
-				t.Fatal(got)
-			}
-		}},
+		{
+			name:     "project grant rows",
+			rawQuery: "entity_type=project_grant&action=project_grant.joined",
+			check: func(t *testing.T, got activity.ListOptions) {
+				t.Helper()
+				if got.EntityType != "project_grant" || got.Action != "project_grant.joined" {
+					t.Fatal(got)
+				}
+			},
+		},
+		{
+			name:     "entity type alone",
+			rawQuery: "entity_type=task",
+			check: func(t *testing.T, got activity.ListOptions) {
+				t.Helper()
+				if got.EntityType != "task" {
+					t.Fatal(got)
+				}
+			},
+		},
 		{name: "entity id alone", rawQuery: "entity_id=1", wantErr: errInvalidActivityInput},
 		// An entity type is a lowercase domain name.
 		{

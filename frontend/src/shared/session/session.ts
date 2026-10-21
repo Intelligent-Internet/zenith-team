@@ -18,12 +18,12 @@ import {
   writeStorageJson,
 } from "@/shared/lib/browser-storage";
 
-export const SESSION_STORAGE_KEY = "boardly.local-session.v1";
-export const SESSION_CHANGE_EVENT = "boardly-session-change";
+export const SESSION_STORAGE_KEY = "zenith-team.local-session.v1";
+export const SESSION_CHANGE_EVENT = "zenith-team-session-change";
 // The company each user last worked in on this device, one key per user. It
 // outlives sign-out on purpose: sign-out clears the session snapshot, and
 // without it the next sign-in would open the oldest company instead.
-const LAST_COMPANY_STORAGE_KEY_PREFIX = "boardly.last-company.v1:";
+const LAST_COMPANY_STORAGE_KEY_PREFIX = "zenith-team.last-company.v1:";
 
 type SessionStorageEvent = Pick<StorageEvent, "key" | "newValue">;
 let sessionSnapshotVersion = 0;

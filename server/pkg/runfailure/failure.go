@@ -40,13 +40,20 @@ func classForReason(reason Reason) string {
 		return "sign_in_access"
 	case ReasonAgentProviderQuotaLimit, ReasonAgentProviderCapacityOrRateLimit:
 		return "quota_rate_limits"
-	case ReasonAgentProviderServerError, ReasonAgentProviderNetwork, ReasonAgentModelNotFoundOrUnavailable, ReasonAPIInvalidRequest:
+	case ReasonAgentProviderServerError,
+		ReasonAgentProviderNetwork,
+		ReasonAgentModelNotFoundOrUnavailable,
+		ReasonAPIInvalidRequest:
 		return "provider_errors"
 	case ReasonTimeout, ReasonAgentTimeout, ReasonIdleWatchdog:
 		return "timeouts"
 	case ReasonAgentContextOverflow, ReasonIterationLimit:
 		return "context_limits"
-	case ReasonRuntimeOffline, ReasonRuntimeRecovery, ReasonQueuedExpired, ReasonAgentRuntimeVersionUnsupported, ReasonAgentRuntimeMissingExecutable:
+	case ReasonRuntimeOffline,
+		ReasonRuntimeRecovery,
+		ReasonQueuedExpired,
+		ReasonAgentRuntimeVersionUnsupported,
+		ReasonAgentRuntimeMissingExecutable:
 		return "computer_runtime"
 	case ReasonSkillBundleUnavailable, ReasonRunContextInvalid:
 		return "preparation"
@@ -77,7 +84,7 @@ type Reason string
 const agentErrorPrefix = "agent_error."
 
 const (
-	// Platform / scheduler side: failure attributable to Boardly
+	// Platform / scheduler side: failure attributable to Zenith Team
 	// infrastructure rather than anything the agent process did. These
 	// are emitted by server-side sweepers (ExpireStaleQueuedRuns,
 	// FailStaleRuns, FailRunsForOfflineRuntimes,
@@ -106,7 +113,7 @@ const (
 
 	// ReasonIterationLimit: the agent reached its per-run iteration
 	// cap and emitted a fallback "I reached the iteration limit"
-	// message. Treated as platform-side because it is a Boardly-imposed
+	// message. Treated as platform-side because it is a Zenith-Team-imposed
 	// budget rather than an external API rejection.
 	ReasonIterationLimit Reason = "iteration_limit"
 

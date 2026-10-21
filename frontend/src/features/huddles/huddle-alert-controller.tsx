@@ -4,7 +4,7 @@ import {
   subscribeToDesktopHuddleCallActions,
 } from "@/shared/desktop/desktop-environment.service";
 import { huddleNotificationCopy } from "@/features/notifications/lib/huddle-notification-copy";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import {
   listPendingHuddleInvitations,
   respondToHuddleInvitation,
@@ -60,7 +60,7 @@ export function HuddleAlertController({
         // Recovery also runs after the realtime connection is restored.
       }
     };
-    const removeRealtime = boardlyRealtimeClient.onEvent((event) => {
+    const removeRealtime = zenithTeamRealtimeClient.onEvent((event) => {
       if (
         event.companyId === companyId &&
         (event.type === "conversation.discussion_access_revoked" ||
@@ -94,7 +94,7 @@ export function HuddleAlertController({
         return current.filter((row) => row.id !== invitation.id);
       });
     });
-    const removeRecovery = boardlyRealtimeClient.onRecovery(
+    const removeRecovery = zenithTeamRealtimeClient.onRecovery(
       () => void refresh(),
     );
     void refresh();

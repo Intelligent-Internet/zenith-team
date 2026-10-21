@@ -25,7 +25,9 @@ func checkCodexDisabledPlugins(raw json.RawMessage, disabled []string) error {
 	for _, marketplace := range *response.Marketplaces {
 		for _, plugin := range marketplace.Plugins {
 			if plugin.Enabled && slices.Contains(disabled, plugin.ID) {
-				return errors.New("Codex still enables a disabled agent plugin; check provider managed settings")
+				return errors.New(
+					"Codex still enables a disabled agent plugin; check provider managed settings",
+				)
 			}
 		}
 	}
@@ -46,7 +48,9 @@ func checkClaudeDisabledPlugins(raw json.RawMessage, disabled []string) error {
 		for _, id := range disabled {
 			name, _, _ := strings.Cut(id, "@")
 			if plugin.Name == id || plugin.Name == name {
-				return errors.New("Claude still loads a disabled agent plugin; check provider managed settings")
+				return errors.New(
+					"Claude still loads a disabled agent plugin; check provider managed settings",
+				)
 			}
 		}
 	}

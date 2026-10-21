@@ -57,7 +57,7 @@ function AgentSettingsContent({ companyId }: { companyId: string }) {
   const setupRefresh = useRuntimeSetupRefresh(companyId);
   // Existing local-directory bindings, shown per computer with unlink.
   // Binding is not offered here: the managed-workspace direction retires
-  // it (Workspaces PRD §7), and a bound directory is a machine-wide rule.
+  // it, and a bound directory is a machine-wide rule.
   const resourcesQuery = useListWorkspaceResourcesQuery(companyId, {
     skip: !companyId,
   });

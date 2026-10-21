@@ -136,8 +136,8 @@ type CreateActivityParams struct {
 
 // Activity owner snapshots and evidence. Mutations use the caller's transaction.
 // Visibility is retained with each row and precedes filtering and pagination.
-// An Agent's row in a Run also names the person it acted for and the Run
-// (D31); every other row stores NULL in both.
+// An Agent's row in a Run also names the person it acted for and the Run;
+// every other row stores NULL in both.
 func (q *Queries) CreateActivity(ctx context.Context, arg CreateActivityParams) (ActivityEvent, error) {
 	row := q.db.QueryRow(ctx, createActivity,
 		arg.CompanyID,

@@ -39,17 +39,35 @@ func TestConversationMessagesScrollsBackWithThroughSeq(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
-	out, err := executeCLI(t, newRootCmd, "conversation", "messages", conversationID, "--through-seq", "9", "--limit", "100")
+	out, err := executeCLI(
+		t,
+		newRootCmd,
+		"conversation",
+		"messages",
+		conversationID,
+		"--through-seq",
+		"9",
+		"--limit",
+		"100",
+	)
 	if err != nil {
 		t.Fatalf("conversation messages --through-seq: %v", err)
 	}
 	if !strings.Contains(out, "Alice Nguyen") {
 		t.Fatalf("messages table %q does not name the author", out)
 	}
-	if _, err := executeCLI(t, newRootCmd, "conversation", "messages", conversationID, "--after-seq", "3"); err != nil {
+	if _, err := executeCLI(
+		t,
+		newRootCmd,
+		"conversation",
+		"messages",
+		conversationID,
+		"--after-seq",
+		"3",
+	); err != nil {
 		t.Fatalf("conversation messages --after-seq: %v", err)
 	}
 	if len(queries) != 2 || queries[0] != "through_seq=9&limit=100" || queries[1] != "after_seq=3&limit=50" {

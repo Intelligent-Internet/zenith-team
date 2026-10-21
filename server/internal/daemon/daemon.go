@@ -14,10 +14,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/authfile"
-	"boardly.dev/boardly/server/internal/daemon/repocache"
-	"boardly.dev/boardly/server/internal/daemon/workspace"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/authfile"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/repocache"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/workspace"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -224,14 +224,14 @@ type Daemon struct {
 
 	rootCtx context.Context // set by Run(); used by recoveries that outlive per-runtime ctx
 	// cancelFunc ends Run's root context; triggerRestart uses it to hand the
-	// process over to a replaced boardly binary (self_reload.go).
+	// process over to a replaced zenith-team binary (self_reload.go).
 	cancelFunc context.CancelFunc
 
 	// restartMu guards restartBinary: non-empty once a handoff is scheduled,
 	// read by the CLI after Run returns.
 	restartMu     sync.Mutex
 	restartBinary string
-	// selfDigest is the digest of the boardly binary this process started
+	// selfDigest is the digest of the zenith-team binary this process started
 	// from; reloadPendingReason explains a confirmed change the daemon has
 	// not restarted into yet. Both are diagnostic only.
 	selfDigest          atomic.Pointer[string]
@@ -257,11 +257,11 @@ type Daemon struct {
 	appPreviews       *appPreviewService
 	// localPlaneEndpoint is the loopback origin of the health/control
 	// listener; run_cli_channel.go writes it into every Run's run.json.
-	localPlaneEndpoint       string
-	runChannelMu             sync.RWMutex
-	runChannels              map[runChannelKey]*runChannel
-	boardlyExecutable        *os.File
-	cleanupBoardlyExecutable func() error
+	localPlaneEndpoint          string
+	runChannelMu                sync.RWMutex
+	runChannels                 map[runChannelKey]*runChannel
+	zenithTeamExecutable        *os.File
+	cleanupZenithTeamExecutable func() error
 
 	tools              *localToolService
 	runner             runner        // set to d.doRun by New; overridable in tests
@@ -279,15 +279,15 @@ func New(cfg Config, logger *slog.Logger) (*Daemon, error) {
 	if _, err := loadReviewedToolCatalog(); err != nil {
 		return nil, fmt.Errorf("initialize managed tools: %w", err)
 	}
-	boardlyExecutablePath, err := os.Executable()
+	zenithTeamExecutablePath, err := os.Executable()
 	if err != nil {
-		return nil, fmt.Errorf("resolve boardly executable: %w", err)
+		return nil, fmt.Errorf("resolve zenith-team executable: %w", err)
 	}
-	boardlyExecutablePath, err = filepath.Abs(boardlyExecutablePath)
+	zenithTeamExecutablePath, err = filepath.Abs(zenithTeamExecutablePath)
 	if err != nil {
-		return nil, fmt.Errorf("resolve absolute boardly executable: %w", err)
+		return nil, fmt.Errorf("resolve absolute zenith-team executable: %w", err)
 	}
-	boardlyExecutable, cleanupBoardlyExecutable, err := pinBoardlyExecutable(boardlyExecutablePath)
+	zenithTeamExecutable, cleanupZenithTeamExecutable, err := pinZenithTeamExecutable(zenithTeamExecutablePath)
 	if err != nil {
 		return nil, err
 	}
@@ -306,34 +306,36 @@ func New(cfg Config, logger *slog.Logger) (*Daemon, error) {
 	if err != nil {
 		return nil, errors.Join(
 			fmt.Errorf("construct workspace manager: %w", err),
-			cleanupBoardlyExecutable(),
+			cleanupZenithTeamExecutable(),
 		)
 	}
 	d := &Daemon{
-		cfg:                       cfg,
-		tools:                     newLocalToolService(filepath.Join(cfg.WorkspacesRoot, ".tools")),
-		client:                    client,
-		workspaces:                manager,
-		localDirs:                 workspace.NewLocalDirectoryManager(),
-		skillCache:                NewSkillBundleCache(filepath.Join(cfg.WorkspacesRoot, ".skill-cache", "v1")),
-		logger:                    logger,
-		companies:                 make(map[string]*companyState),
-		runtimeIndex:              make(map[string]Runtime),
-		runtimeSet:                newRuntimeSetWatcher(),
-		agentVersions:             make(map[string]string),
-		probes:                    defaultCLIProbes(),
-		skippedAgents:             make(map[string]string),
-		wsHBLastAck:               make(map[string]time.Time),
-		runtimeGoneInflight:       make(map[string]struct{}),
-		reregisterNextAttempt:     make(map[string]time.Time),
-		reregisterLastCompletedAt: make(map[string]time.Time),
-		pendingWorkInflight:       make(map[string]struct{}),
-		pendingWorkLastRun:        make(map[string]time.Time),
-		reconcile:                 newReconcileBroadcaster(),
-		wsRPC:                     newWSRPCClient(wsRPCResponseGrace),
-		localPreview:              newLocalPreviewHub(256 << 10),
-		boardlyExecutable:         boardlyExecutable,
-		cleanupBoardlyExecutable:  cleanupBoardlyExecutable,
+		cfg:        cfg,
+		tools:      newLocalToolService(filepath.Join(cfg.WorkspacesRoot, ".tools")),
+		client:     client,
+		workspaces: manager,
+		localDirs:  workspace.NewLocalDirectoryManager(),
+		skillCache: NewSkillBundleCache(
+			filepath.Join(cfg.WorkspacesRoot, ".skill-cache", "v1"),
+		),
+		logger:                      logger,
+		companies:                   make(map[string]*companyState),
+		runtimeIndex:                make(map[string]Runtime),
+		runtimeSet:                  newRuntimeSetWatcher(),
+		agentVersions:               make(map[string]string),
+		probes:                      defaultCLIProbes(),
+		skippedAgents:               make(map[string]string),
+		wsHBLastAck:                 make(map[string]time.Time),
+		runtimeGoneInflight:         make(map[string]struct{}),
+		reregisterNextAttempt:       make(map[string]time.Time),
+		reregisterLastCompletedAt:   make(map[string]time.Time),
+		pendingWorkInflight:         make(map[string]struct{}),
+		pendingWorkLastRun:          make(map[string]time.Time),
+		reconcile:                   newReconcileBroadcaster(),
+		wsRPC:                       newWSRPCClient(wsRPCResponseGrace),
+		localPreview:                newLocalPreviewHub(256 << 10),
+		zenithTeamExecutable:        zenithTeamExecutable,
+		cleanupZenithTeamExecutable: cleanupZenithTeamExecutable,
 		providerAdoption: newProviderBackoff(
 			providerAvailabilityProbeInterval,
 			providerAvailabilityProbeMaxBackoff,
@@ -342,7 +344,7 @@ func New(cfg Config, logger *slog.Logger) (*Daemon, error) {
 		runPrepareTimeout:  defaultRunPrepareTimeout,
 	}
 	// App previews run Agent-written commands, so they start in the Runs'
-	// sandbox and count toward its report (Access TECH B3e).
+	// sandbox and count toward its report.
 	d.appPreviews, err = newAppPreviewService(
 		filepath.Join(cfg.WorkspacesRoot, ".app-previews", cfg.DaemonID),
 		logger,
@@ -351,7 +353,7 @@ func New(cfg Config, logger *slog.Logger) (*Daemon, error) {
 	if err != nil {
 		return nil, errors.Join(
 			fmt.Errorf("construct app preview supervisor: %w", err),
-			cleanupBoardlyExecutable(),
+			cleanupZenithTeamExecutable(),
 		)
 	}
 	d.tools.studioOrigin = cfg.StudioAPIOrigin
@@ -421,7 +423,7 @@ func repositoryCacheRoot(workspacesRoot string) string {
 // the daemon identity: metadata authenticates this daemon's own directories
 // to itself, so a machine-stable derivation is exactly the needed strength.
 func workspaceMetadataKey(daemonID string) []byte {
-	key := []byte("boardly-workspace-metadata:" + daemonID)
+	key := []byte("zenith-team-workspace-metadata:" + daemonID)
 	for len(key) < 32 {
 		key = append(key, '.')
 	}
@@ -525,9 +527,9 @@ func (d *Daemon) agentVersion(provider string) string {
 // resolve auth, discover providers, register runtimes per company, then start
 // the wakeup WS, heartbeat, and poller loops.
 func (d *Daemon) Run(ctx context.Context) error {
-	if d.cleanupBoardlyExecutable != nil {
+	if d.cleanupZenithTeamExecutable != nil {
 		defer func() {
-			if err := d.cleanupBoardlyExecutable(); err != nil {
+			if err := d.cleanupZenithTeamExecutable(); err != nil {
 				d.logger.Warn("remove pinned Zenith Team executable failed", "error", err)
 			}
 		}()
@@ -587,7 +589,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 	// The health server outlives the signal on purpose: it keeps answering
 	// for the whole shutdown, so `zen daemon stop` and the desktop
 	// supervisor see a daemon that is still draining rather than one that is
-	// gone (§9.3). This deferred cleanup is what ends it, and it runs after
+	// gone. This deferred cleanup is what ends it, and it runs after
 	// the drain and after deregisterRuntimes.
 	defer func() {
 		cancel()
@@ -633,7 +635,7 @@ func (d *Daemon) Run(ctx context.Context) error {
 	return err
 }
 
-// resolveAuth installs the daemon's own session (daemon-auth.json, D31),
+// resolveAuth installs the daemon's own session (daemon-auth.json),
 // which `zen daemon start` mints from the person's session or the desktop app
 // installs. The daemon never falls back to the person's auth.json: that
 // session is the CLI's, and the server refuses a daemon session wherever a

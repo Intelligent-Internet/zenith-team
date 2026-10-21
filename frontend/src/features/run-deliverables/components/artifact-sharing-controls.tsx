@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { components } from "@/shared/api/generated/api.generated";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { useAppDispatch } from "@/state";
 import { useListActiveCompanyMembersQuery } from "@/features/agents/api/team-directory-api";
 import { createChatWorkspaceHref } from "@/features/chat-workspace/model/chat-workspace-route";
@@ -214,7 +214,7 @@ function SharingContent({
       return true;
     } catch (error) {
       setNotice({
-        text: getBoardlyQueryErrorMessage(
+        text: getZenithTeamQueryErrorMessage(
           error,
           "Could not update access. Please try again.",
         ),

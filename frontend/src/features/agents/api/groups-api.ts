@@ -1,8 +1,8 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
-// Groups (Access TECH D3): a Company's named sets of Team members. Every
+// Groups: a Company's named sets of Team members. Every
 // active member reads them; owners and admins (members.manage) change them.
 // Every Group read carries the Company's Group tag, which the realtime
 // frames group.changed, group.deleted and project.access_changed invalidate
@@ -30,11 +30,11 @@ const accessMovedTags = (companyId: string) => [
   { type: "Activity" as const, id: companyId },
 ];
 
-export const groupsApi = boardlyApi.injectEndpoints({
+export const groupsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listGroups: builder.query<{ items: GroupSummary[] }, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<{ items: GroupSummary[] }>(groupsPath(companyId)),
           "Couldn't load groups",
         ),
@@ -42,7 +42,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
     }),
     getGroup: builder.query<Group, { companyId: string; id: string }>({
       queryFn: ({ companyId, id }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Group>(groupPath(companyId, id)),
           "Couldn't load group",
         ),
@@ -53,7 +53,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
       { companyId: string; name: string; description: string }
     >({
       queryFn: ({ companyId, name, description }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Group>(groupsPath(companyId), { name, description }),
           "Couldn't create group",
@@ -74,7 +74,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, name, description, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<Group>(groupPath(companyId, id), {
               ...(name === undefined ? {} : { name }),
@@ -94,7 +94,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
       { companyId: string; id: string; expectedRevision: number }
     >({
       queryFn: ({ companyId, id, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<void>(groupPath(companyId, id), {
               data: { expectedRevision },
@@ -120,7 +120,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
         removeUserIds,
         expectedRevision,
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Group>(`${groupPath(companyId, id)}/members`, {
               addUserIds,
@@ -144,7 +144,7 @@ export const groupsApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, addUserIds, removeUserIds, delete: remove }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<GroupChangePreview>(
               `${groupPath(companyId, id)}/preview`,

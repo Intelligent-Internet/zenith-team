@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestStudioCapabilityIsOptInForEveryAgent(t *testing.T) {
@@ -61,7 +61,11 @@ func TestCapabilitySettingsAreTemplateStateAndContainOnlyDenials(t *testing.T) {
 		}
 	}
 	legacy := capabilitySettingsFromRow(generated.Agent{
-		Settings: json.RawMessage(`{"capabilities":{"runtimeId":"` + uuid.New().String() + `","disabledPlugins":["` + pluginID.String() + `"]}}`),
+		Settings: json.RawMessage(
+			`{"capabilities":{"runtimeId":"` + uuid.New().
+				String() +
+				`","disabledPlugins":["` + pluginID.String() + `"]}}`,
+		),
 	})
 	if len(legacy.DisabledPlugins) != 1 || legacy.DisabledPlugins[0] != pluginID {
 		t.Fatalf("legacy selection = %+v, want the denial kept and the runtime key ignored", legacy)
@@ -72,7 +76,11 @@ func TestWikiIsASwitchableBuiltInWithinTheFiveGroupLimit(t *testing.T) {
 	t.Parallel()
 	all := []string{"wiki", "saved-work", "planning", "founder-input", "coordination"}
 	got, err := normalizeCapabilitySettings(CapabilitySettings{DisabledBuiltIns: all})
-	if err != nil || !slices.Equal(got.DisabledBuiltIns, []string{"coordination", "founder-input", "planning", "saved-work", "wiki"}) {
+	if err != nil ||
+		!slices.Equal(
+			got.DisabledBuiltIns,
+			[]string{"coordination", "founder-input", "planning", "saved-work", "wiki"},
+		) {
 		t.Fatalf("all five groups = %+v, %v", got, err)
 	}
 }

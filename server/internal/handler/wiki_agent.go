@@ -7,9 +7,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 // registerWikiAgentRoutes mounts the Wiki an Agent's Run uses and the members'
@@ -134,9 +134,9 @@ func (h *Handler) readWikiPageForRun(c *gin.Context) {
 const maxWikiAgentWriteBytes = 1 << 20
 
 type wikiAgentWritePage struct {
-	Key      string `json:"key" binding:"required,max=64"`
-	Title    string `json:"title" binding:"required,max=1000"`
-	Summary  string `json:"summary" binding:"max=10000"`
+	Key      string `json:"key"      binding:"required,max=64"`
+	Title    string `json:"title"    binding:"required,max=1000"`
+	Summary  string `json:"summary"  binding:"max=10000"`
 	Markdown string `json:"markdown"`
 }
 
@@ -147,7 +147,12 @@ type wikiAgentWriteRequest struct {
 func (r wikiAgentWriteRequest) domainInput() wiki.AgentWriteInput {
 	input := wiki.AgentWriteInput{Pages: make([]wiki.AgentWritePageInput, len(r.Pages))}
 	for i, page := range r.Pages {
-		input.Pages[i] = wiki.AgentWritePageInput{Key: page.Key, Title: page.Title, Summary: page.Summary, Markdown: page.Markdown}
+		input.Pages[i] = wiki.AgentWritePageInput{
+			Key:      page.Key,
+			Title:    page.Title,
+			Summary:  page.Summary,
+			Markdown: page.Markdown,
+		}
 	}
 	return input
 }

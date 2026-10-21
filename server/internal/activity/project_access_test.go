@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // errStop ends a scripted run at the statement under test.
@@ -117,11 +117,23 @@ func TestFeedBindsProjectManagementRoles(t *testing.T) {
 	feed := NewFeed(db.New(database))
 	companyID, userID := uuid.New(), uuid.New()
 
-	if _, _, err := feed.List(context.Background(), companyID, ListOptions{UserID: userID, Limit: 10}); !errors.Is(err, errStop) {
+	if _, _, err := feed.List(
+		context.Background(),
+		companyID,
+		ListOptions{UserID: userID, Limit: 10},
+	); !errors.Is(
+		err,
+		errStop,
+	) {
 		t.Fatalf("List() error = %v, want the scripted stop", err)
 	}
 	if list := database.call(t, "ListActivity"); !hasArg(list.args, managers) || !hasArg(list.args, userID) {
-		t.Fatalf("ListActivity args = %v, want the reader %s and management roles %v", list.args, userID, managers)
+		t.Fatalf(
+			"ListActivity args = %v, want the reader %s and management roles %v",
+			list.args,
+			userID,
+			managers,
+		)
 	}
 	now := time.Now().UTC()
 	if _, err := feed.Calendar(context.Background(), companyID, CalendarOptions{
@@ -160,7 +172,8 @@ func TestRecordStoresTheEnvelopeAndItsProject(t *testing.T) {
 	}
 	resolve := database.call(t, "ResolveActivityProject")
 	for _, want := range []any{
-		uuid.NullUUID{UUID: taskID, Valid: true}, uuid.NullUUID{UUID: conversationID, Valid: true},
+		uuid.NullUUID{UUID: taskID, Valid: true},
+		uuid.NullUUID{UUID: conversationID, Valid: true},
 		uuid.NullUUID{UUID: subject, Valid: true},
 	} {
 		if !hasArg(resolve.args, want) {
@@ -169,7 +182,8 @@ func TestRecordStoresTheEnvelopeAndItsProject(t *testing.T) {
 	}
 	create := database.call(t, "CreateActivity")
 	for _, want := range []any{
-		uuid.NullUUID{UUID: taskID, Valid: true}, uuid.NullUUID{UUID: conversationID, Valid: true},
+		uuid.NullUUID{UUID: taskID, Valid: true},
+		uuid.NullUUID{UUID: conversationID, Valid: true},
 		uuid.NullUUID{UUID: project, Valid: true},
 	} {
 		if !hasArg(create.args, want) {
@@ -232,21 +246,43 @@ func TestRecordEvidenceInTxReadsTheProjectFromItsSubject(t *testing.T) {
 		CompanyID: uuid.New(), EntityID: subject, Action: "run.evidence_recorded",
 		Actor: events.SystemActor(), Payload: map[string]any{},
 	}
-	if err := RecordEvidenceInTx(context.Background(), db.New(database), &pending, input); !errors.Is(err, errStop) {
+	if err := RecordEvidenceInTx(
+		context.Background(),
+		db.New(database),
+		&pending,
+		input,
+	); !errors.Is(
+		err,
+		errStop,
+	) {
 		t.Fatalf("RecordEvidenceInTx() error = %v, want the scripted stop", err)
 	}
 	if resolve := database.call(t, "ResolveActivityProject"); !hasArg(resolve.args, "run") ||
 		!hasArg(resolve.args, uuid.NullUUID{UUID: subject, Valid: true}) {
 		t.Fatalf("ResolveActivityProject args = %v, want the run subject %s", resolve.args, subject)
 	}
-	if create := database.call(t, "CreateActivity"); !hasArg(create.args, uuid.NullUUID{UUID: project, Valid: true}) {
+	if create := database.call(
+		t,
+		"CreateActivity",
+	); !hasArg(
+		create.args,
+		uuid.NullUUID{UUID: project, Valid: true},
+	) {
 		t.Fatalf("CreateActivity args = %v, want Project %s", create.args, project)
 	}
 
 	named := uuid.New()
 	database.calls = nil
 	input.ProjectID = named
-	if err := RecordEvidenceInTx(context.Background(), db.New(database), &pending, input); !errors.Is(err, errStop) {
+	if err := RecordEvidenceInTx(
+		context.Background(),
+		db.New(database),
+		&pending,
+		input,
+	); !errors.Is(
+		err,
+		errStop,
+	) {
 		t.Fatalf("RecordEvidenceInTx() error = %v, want the scripted stop", err)
 	}
 	if slices.Contains(database.names(), "ResolveActivityProject") {

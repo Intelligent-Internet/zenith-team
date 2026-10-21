@@ -6,14 +6,20 @@ import (
 	"testing"
 	"time"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestNormalizeHuddleProposal(t *testing.T) {
 	t.Parallel()
-	valid := HuddleProposalInput{RequestKey: "draft-1", ProjectID: uuid.New(), Title: " Fix login ", Brief: " Verify the login flow "}
+	valid := HuddleProposalInput{
+		RequestKey: "draft-1",
+		ProjectID:  uuid.New(),
+		Title:      " Fix login ",
+		Brief:      " Verify the login flow ",
+	}
 	for _, tt := range []struct {
 		name   string
 		change func(*HuddleProposalInput)
@@ -60,8 +66,16 @@ func TestHuddleProposalProjectionExpiresWithoutDeletingDraft(t *testing.T) {
 			if tt.expired {
 				until = time.Now().Add(-time.Second)
 			}
-			row := generated.HuddleWorkProposal{Title: "Keep my draft", State: "pending", InvitationRevision: 2, ExpiresAt: pgtype.Timestamptz{Time: until, Valid: true}}
-			h := generated.Huddle{State: tt.callState, DeadlineAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true}}
+			row := generated.HuddleWorkProposal{
+				Title:              "Keep my draft",
+				State:              "pending",
+				InvitationRevision: 2,
+				ExpiresAt:          pgtype.Timestamptz{Time: until, Valid: true},
+			}
+			h := generated.Huddle{
+				State:      tt.callState,
+				DeadlineAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+			}
 			got := huddleProposalProjection(row, h, tt.revision, tt.disabled, true)
 			if got.State != tt.want || got.Title != row.Title || got.CanEdit != (tt.want == "pending") {
 				t.Fatalf("got = %+v, want state %s", got, tt.want)

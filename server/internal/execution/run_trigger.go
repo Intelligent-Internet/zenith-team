@@ -11,12 +11,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // RunEnqueueSource identifies which kind of write started a run.
@@ -119,8 +119,8 @@ func ExecutePermissionRefusal(ctx context.Context, q *db.Queries, companyID, ass
 
 // requireRunExecutePermissionInTx is the kernel's Project access fence
 // (ADR 0017): a Run in a Task chat needs the delegate rule's
-// project.tasks.execute on the chat's Project (delegate_permission_held,
-// D31), the rule the claim fence applies through run_permission_held. The
+// project.tasks.execute on the chat's Project (delegate_permission_held),
+// the rule the claim fence applies through run_permission_held. The
 // Run does not exist yet, so its Authorizer is bound here. The
 // Task service and the Task chat already refuse before they write; this is
 // the backstop every Run passes, so a path that forgot the check still cannot
@@ -148,7 +148,7 @@ func requireRunExecutePermissionInTx(ctx context.Context, q *db.Queries, in RunT
 }
 
 // claimCandidateParams binds the claim's Project access arm (ADR 0017), the
-// delegate rule asked for project.tasks.execute (run_permission_held, D31),
+// delegate rule asked for project.tasks.execute (run_permission_held),
 // for the empty-claim cache's candidate listing; ClaimRun passes the same
 // values to SelectClaimableRun, so the two never disagree.
 func claimCandidateParams(runtimeIDs ...uuid.UUID) db.ListQueuedClaimCandidatesByRuntimesParams {
@@ -184,7 +184,7 @@ type RunTrigger struct {
 	// it arms the one-pending-per-(task, agent) serialization slot.
 	TaskID uuid.NullUUID
 	// TriggerPrompt is the user's words this Run is being started on, frozen
-	// into the Run's context under `prompt` (ADR 0003).
+	// into the Run's context under `prompt` at enqueue.
 	//
 	// It arrives as text rather than as a message id because the order flipped:
 	// runs.id is a database-generated UUID that needs nothing from the conversation stream,
@@ -212,7 +212,7 @@ type RunTrigger struct {
 	ActorUserID uuid.UUID
 	// Actor, when set, is who the run.queued Activity row and frame name
 	// instead of ActorUserID's member: an Agent that started this Run from
-	// its own Run, for that Run's authorizer (D31). The zero value keeps the
+	// its own Run, for that Run's authorizer. The zero value keeps the
 	// member or the system.
 	Actor events.Actor
 	// AuthorizedByUserID is the member whose permitted action asks for this
@@ -227,7 +227,7 @@ type RunTrigger struct {
 	AuthorizedByUserID uuid.UUID
 }
 
-// PriorityToInt maps boardly's task priority vocabulary onto the runs
+// PriorityToInt maps zenith-team's task priority vocabulary onto the runs
 // priority column.
 func PriorityToInt(p string) int32 {
 	switch p {

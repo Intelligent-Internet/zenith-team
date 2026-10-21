@@ -15,7 +15,7 @@ import { GlassButton } from "./glass-primitives";
 
 export type CollectionViewMode = "grid" | "list";
 
-const collectionDropdownOpenEvent = "boardly:collection-dropdown-open";
+const collectionDropdownOpenEvent = "zenith-team:collection-dropdown-open";
 
 export function SearchControl({
   ariaLabel,

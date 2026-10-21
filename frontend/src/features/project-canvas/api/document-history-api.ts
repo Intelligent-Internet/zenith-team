@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import {
   blockDocumentPath,
@@ -16,7 +19,7 @@ const tag = (target: Target) => ({
   type: "CanvasHistory" as const,
   id: path(target),
 });
-const api = boardlyApi.injectEndpoints({
+const api = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     documentHistory: builder.query<
       Schema["DocumentHistory"],
@@ -29,7 +32,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       providesTags: (_result, _error, target) => [tag(target)],
       queryFn: (target, { signal }) =>
-        executeBoardlyQuery(() => {
+        executeZenithTeamQuery(() => {
           const params = new URLSearchParams();
           if (target.actorId) params.set("actor_id", target.actorId);
           if (target.after) params.set("after", target.after);
@@ -48,7 +51,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       providesTags: (_result, _error, target) => [tag(target)],
       queryFn: (target, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<Schema["DocumentHistoryState"]>(
               `${path(target)}/${target.sequence}`,
@@ -63,7 +66,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: (_result, _error, target) => [tag(target)],
       queryFn: (target) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Schema["DocumentHistoryState"]>(
               `${path(target)}/${target.sequence}/restore`,
@@ -78,7 +81,7 @@ const api = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: (_result, _error, target) => [tag(target)],
       queryFn: (target) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<void>(`${path(target)}/${target.sequence}/name`, {
               label: target.label,

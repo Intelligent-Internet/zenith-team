@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // BoardSweep reports what one retention pass removed.
@@ -45,19 +45,31 @@ func (s *DefaultBoardService) Sweep(ctx context.Context, now time.Time) (BoardSw
 		run   func(*generated.Queries) (int64, error)
 	}{
 		{&result.Items, func(q *generated.Queries) (int64, error) {
-			return q.PurgeBoardTombstones(ctx, generated.PurgeBoardTombstonesParams{Cutoff: tombstones, BatchSize: boardSweepBatch})
+			return q.PurgeBoardTombstones(
+				ctx,
+				generated.PurgeBoardTombstonesParams{Cutoff: tombstones, BatchSize: boardSweepBatch},
+			)
 		}},
 		{&result.Edges, func(q *generated.Queries) (int64, error) {
 			return q.PurgeBoardEdgeTombstones(
 				ctx,
-				generated.PurgeBoardEdgeTombstonesParams{Cutoff: tombstones, BatchSize: boardSweepBatch},
+				generated.PurgeBoardEdgeTombstonesParams{
+					Cutoff:    tombstones,
+					BatchSize: boardSweepBatch,
+				},
 			)
 		}},
 		{&result.ReleasedFiles, func(q *generated.Queries) (int64, error) {
-			return q.ReleaseUnplacedBoardFiles(ctx, generated.ReleaseUnplacedBoardFilesParams{Cutoff: files, BatchSize: boardSweepBatch})
+			return q.ReleaseUnplacedBoardFiles(
+				ctx,
+				generated.ReleaseUnplacedBoardFilesParams{Cutoff: files, BatchSize: boardSweepBatch},
+			)
 		}},
 		{&result.Receipts, func(q *generated.Queries) (int64, error) {
-			return q.PurgeBoardReceipts(ctx, generated.PurgeBoardReceiptsParams{Cutoff: receipts, BatchSize: boardSweepBatch})
+			return q.PurgeBoardReceipts(
+				ctx,
+				generated.PurgeBoardReceiptsParams{Cutoff: receipts, BatchSize: boardSweepBatch},
+			)
 		}},
 	}
 	for _, step := range steps {

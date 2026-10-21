@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestAssembleDirectListItemsMergesBulkProjectionRows(t *testing.T) {
@@ -33,7 +33,7 @@ func TestAssembleDirectListItemsMergesBulkProjectionRows(t *testing.T) {
 			ConversationID: conversationID, UpdatedAt: now,
 		})
 	}
-	items := assembleDirectListItems(uuid.Nil, rows, bases, nil, nil, nil)
+	items := assembleDirectListItems(rows, bases, nil, nil, nil)
 	if len(items) != len(rows) {
 		t.Fatalf("assembleDirectListItems() items = %d", len(items))
 	}

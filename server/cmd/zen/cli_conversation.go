@@ -179,7 +179,7 @@ func runConversationCreate(cmd *cobra.Command, _ []string) error {
 	if title, _ := cmd.Flags().GetString("title"); strings.TrimSpace(title) != "" {
 		body["title"] = strings.TrimSpace(title)
 	}
-	body["requestKey"] = client.bodyRequestKey("POST", client.companyPath("conversations"), []byte(agentID))
+	body["requestKey"] = client.bodyRequestKey(client.companyPath("conversations"), []byte(agentID))
 	ctx, cancel := apiContext()
 	defer cancel()
 	var raw json.RawMessage
@@ -221,7 +221,16 @@ func printMessages(cmd *cobra.Command, raw json.RawMessage) error {
 		if author == "" {
 			author = item.Author.Kind
 		}
-		rows = append(rows, []string{strconv.FormatInt(item.Seq, 10), item.CreatedAt, dashIfEmpty(author), item.Type, truncate(item.Content, 100)})
+		rows = append(
+			rows,
+			[]string{
+				strconv.FormatInt(item.Seq, 10),
+				item.CreatedAt,
+				dashIfEmpty(author),
+				item.Type,
+				truncate(item.Content, 100),
+			},
+		)
 	}
 	printTable(cmd.OutOrStdout(), []string{"SEQ", "AT", "AUTHOR", "TYPE", "CONTENT"}, rows)
 	noteCursor(cmd, page.NextCursor)
@@ -324,7 +333,7 @@ func runConversationSend(cmd *cobra.Command, args []string) error {
 		return usagef("--content, --content-file or --content-stdin is required")
 	}
 	path := messagesPath("conversations", conversationID)
-	body := map[string]any{"requestKey": client.bodyRequestKey("POST", path, []byte(content)), "content": content}
+	body := map[string]any{"requestKey": client.bodyRequestKey(path, []byte(content)), "content": content}
 	ctx, cancel := apiContext()
 	defer cancel()
 	var raw json.RawMessage

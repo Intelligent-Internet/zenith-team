@@ -71,7 +71,7 @@ export function AuthFormField({
           aria-required={required}
           aria-invalid={isInvalid || undefined}
           aria-describedby={isInvalid ? errorId : undefined}
-          className="auth-field__input boardly-auth-input"
+          className="auth-field__input zenith-team-auth-input"
         />
         {isPasswordField ? (
           <button

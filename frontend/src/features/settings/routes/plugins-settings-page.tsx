@@ -392,7 +392,7 @@ export function PluginsSettingsPage() {
   const [refreshPlugins, refreshMutation] = useRefreshPluginsMutation();
   // Every member installs and connects here, on their own computer; only
   // owners and admins accept an app's changed tools for the Company, so the
-  // reconnect card is theirs alone (owner decision, 2026-09-29).
+  // reconnect card is theirs alone.
   const canReview = useCan("connectors.manage");
   const connectorReviewsQuery = useListConnectorReviewsQuery(
     {

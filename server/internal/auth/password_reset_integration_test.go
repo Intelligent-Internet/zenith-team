@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func TestPasswordResetIsSingleUseAndRevokesLiveSessions(t *testing.T) {
@@ -19,7 +19,7 @@ func TestPasswordResetIsSingleUseAndRevokesLiveSessions(t *testing.T) {
 	bus, eventLog := recordedAuthBus(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	user, sessionID, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "password-reset@boardly.test",
+		Email:        "password-reset@zenith-team.test",
 		PasswordHash: "old-password-hash", DisplayName: "Password Reset",
 	}, NewSession{
 		TokenPrefix: "brf_password_reset",
@@ -32,7 +32,7 @@ func TestPasswordResetIsSingleUseAndRevokesLiveSessions(t *testing.T) {
 	userID := user.ID
 	tokenHash := bytes.Repeat([]byte{7}, 32)
 	started, err := startPasswordReset(ctx, store.Queries(), NewPasswordReset{
-		UserID: userID, Email: "password-reset@boardly.test", DisplayName: "Password Reset",
+		UserID: userID, Email: "password-reset@zenith-team.test", DisplayName: "Password Reset",
 		TokenHash: tokenHash, ExpiresAt: now.Add(30 * time.Minute),
 		ResendAvailableAt: now.Add(time.Minute), Now: now,
 	})

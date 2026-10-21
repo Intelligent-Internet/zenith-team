@@ -93,11 +93,11 @@ func IsRuntimeSignInState(state string) bool {
 }
 
 // The closed credential-isolation vocabulary a runtime reports at
-// registration and on every heartbeat (Access TECH B3d). enforced: the
+// registration and on every heartbeat. enforced: the
 // daemon starts every provider process of this runtime in a macOS sandbox
 // that cannot read or write a Zenith Team sign-in on the computer, and its
 // probe proved it this round. not_enforced: anything else (Windows, Linux,
-// a failed probe, or BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced).
+// a failed probe, or ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION=not_enforced).
 const (
 	CredentialIsolationEnforced    = "enforced"
 	CredentialIsolationNotEnforced = "not_enforced"

@@ -1,8 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 
-const resultSelectionApi = boardlyApi.injectEndpoints({
+const resultSelectionApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getTaskSelectedOutputs: builder.query<
       components["schemas"]["ResolvedArtifacts"],
@@ -10,7 +13,7 @@ const resultSelectionApi = boardlyApi.injectEndpoints({
     >({
       providesTags: [{ type: "Artifact" }],
       queryFn: ({ companyId, ids }, { signal }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<components["schemas"]["ResolvedArtifacts"]>(
               `/companies/${encodeURIComponent(companyId)}/artifacts/resolve`,
@@ -32,7 +35,7 @@ const resultSelectionApi = boardlyApi.injectEndpoints({
         { type: "Deliverable" },
       ],
       queryFn: ({ companyId, taskId }, { signal }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const page = await apiClient.get<
             components["schemas"]["TaskResultPage"]
           >(

@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/unicode/norm"
 	"gopkg.in/yaml.v3"
 
-	"boardly.dev/boardly/server/internal/contentbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/contentbundle"
 )
 
 type skillPreviewDraft struct {
@@ -28,7 +28,10 @@ func targetSkillPreviewNames(items []importedSkill, current []SkillView, targetI
 	target := current[index]
 	index = slices.IndexFunc(items, func(item importedSkill) bool { return item.Path == target.SourcePath })
 	if index < 0 {
-		index = slices.IndexFunc(items, func(item importedSkill) bool { return item.Bundle.Name == target.Name })
+		index = slices.IndexFunc(
+			items,
+			func(item importedSkill) bool { return item.Bundle.Name == target.Name },
+		)
 	}
 	if len(items) == 1 {
 		index = 0
@@ -70,12 +73,12 @@ func prepareSkillPreviewNames(items []importedSkill, current []SkillView) ([]ski
 	for _, item := range items {
 		draft := skillPreviewDraft{Item: item}
 		if skill, found := existing[item.Bundle.Name]; found {
-			copy, err := renameImportedSkill(item, availableSkillName(item.Bundle.Name, taken))
+			renamed, err := renameImportedSkill(item, availableSkillName(item.Bundle.Name, taken))
 			if err != nil {
 				return nil, err
 			}
-			taken[copy.Bundle.Name] = true
-			draft.Existing, draft.Copy = &skill, &copy
+			taken[renamed.Bundle.Name] = true
+			draft.Existing, draft.Copy = &skill, &renamed
 		}
 		drafts = append(drafts, draft)
 	}

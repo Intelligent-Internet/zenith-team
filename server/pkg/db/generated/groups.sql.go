@@ -144,7 +144,7 @@ type DeleteCompanyGroupMembershipsForUserParams struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
-// Leaving the Company ends every Group membership (D5); a rejoin restores
+// Leaving the Company ends every Group membership; a rejoin restores
 // none. Returns the Groups the person was in.
 func (q *Queries) DeleteCompanyGroupMembershipsForUser(ctx context.Context, arg DeleteCompanyGroupMembershipsForUserParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, deleteCompanyGroupMembershipsForUser, arg.CompanyID, arg.UserID)
@@ -397,7 +397,7 @@ type ListCompanyGroupsRow struct {
 	MemberCount     int64              `json:"member_count"`
 }
 
-// Groups (Access TECH Part D, migration 000101): a named, flat set of Team
+// Groups (migration 000101): a named, flat set of Team
 // members in one Company that can hold Project grants. Every statement
 // repeats the Company scope. A membership counts only for an active member
 // and only when it was written since their latest (re)join (the rejoin fence

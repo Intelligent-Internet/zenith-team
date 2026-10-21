@@ -12,13 +12,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestHistoryCommitsWithTheMutationAndPreservesBothStates(t *testing.T) {
@@ -133,10 +133,12 @@ func TestPrivateConversationHistorySurvivesDeletionWithoutCompanyDisclosure(t *t
 	var conversationID uuid.UUID
 	var pending []events.Event
 	err = store.WithinRawTx(ctx, pgx.TxOptions{}, func(raw generated.DBTX, q *generated.Queries) error {
-		if err := raw.QueryRow(ctx,
+		if err := raw.QueryRow(
+			ctx,
 			`INSERT INTO conversations (company_id, kind, created_by_user_id, title) VALUES ($1, 'direct', $2, 'Private title') RETURNING id`,
 			fixture.CompanyA,
-			fixture.UserA).Scan(&conversationID); err != nil {
+			fixture.UserA,
+		).Scan(&conversationID); err != nil {
 			return err
 		}
 		return activity.RecordInTx(ctx,
@@ -156,9 +158,13 @@ func TestPrivateConversationHistorySurvivesDeletionWithoutCompanyDisclosure(t *t
 		userID uuid.UUID
 		count  int
 	}{{fixture.UserA, 1}, {fixture.UserB, 0}} {
-		items, _, err := activity.NewFeed(store.Queries()).List(context.Background(), fixture.CompanyA, activity.ListOptions{
-			UserID: test.userID, EntityType: "conversation", EntityID: conversationID.String(), Limit: 10,
-		})
+		items, _, err := activity.NewFeed(store.Queries()).
+			List(context.Background(), fixture.CompanyA, activity.ListOptions{
+				UserID:     test.userID,
+				EntityType: "conversation",
+				EntityID:   conversationID.String(),
+				Limit:      10,
+			})
 		if err != nil || len(items) != test.count {
 			t.Fatalf("history for %s = %+v, %v; want %d rows", test.userID, items, err, test.count)
 		}
@@ -185,9 +191,11 @@ func TestBaselineIsResumableAndHistoryFailureAbortsTheEntityWrite(t *testing.T) 
 		}
 	}
 	var count int
-	if err := pool.QueryRow(ctx,
+	if err := pool.QueryRow(
+		ctx,
 		`SELECT count(*) FROM activity_events WHERE entity_type = 'task' AND entity_id = $1 AND revision = 1 AND action = 'task.history_baselined' AND actor_type = 'system' AND details->'before' = 'null'::jsonb`,
-		fixture.TaskA.String()).Scan(&count); err != nil ||
+		fixture.TaskA.String(),
+	).Scan(&count); err != nil ||
 		count != 1 {
 		t.Fatalf("resumed baseline = %d, %v", count, err)
 	}
@@ -245,9 +253,11 @@ func TestBaselineIsResumableAndHistoryFailureAbortsTheEntityWrite(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := pool.QueryRow(ctx,
+	if err := pool.QueryRow(
+		ctx,
 		`SELECT revision FROM activity_events WHERE entity_id = $1 AND action = 'task.deleted' AND details->'after' = 'null'::jsonb AND (details->'before'->>'revision')::bigint = 1`,
-		fixture.TaskA.String()).Scan(&revision); err != nil ||
+		fixture.TaskA.String(),
+	).Scan(&revision); err != nil ||
 		revision != 2 {
 		t.Fatalf("deletion revision = %d, %v", revision, err)
 	}
@@ -283,9 +293,11 @@ func TestBaselineStartsHistoryForSubjectsWithOnlyEventEvidence(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	rows, err := pool.Query(ctx,
+	rows, err := pool.Query(
+		ctx,
 		`SELECT action, schema_version FROM activity_events WHERE entity_type = 'task' AND entity_id = $1 ORDER BY schema_version`,
-		fixture.TaskA.String())
+		fixture.TaskA.String(),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,12 +352,14 @@ func TestRevisionPagingSkipsUnobservedRevisionsAndUnversionedEvidence(t *testing
 		}); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t,
+	dbtest.MustExec(
+		t,
 		ctx,
 		pool,
 		`INSERT INTO activity_events(company_id,actor_type,action,entity_type,entity_id,visibility,details) VALUES($1,'system','task.updated','task',$2,'company','{"schemaVersion":0,"payload":{}}')`,
 		fixture.CompanyA,
-		fixture.TaskA.String())
+		fixture.TaskA.String(),
+	)
 	feed := activity.NewFeed(store.Queries())
 	upper := int64(9)
 	var cursor *activity.Cursor

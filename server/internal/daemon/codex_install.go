@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"boardly.dev/boardly/server/internal/daemon/execenv"
-	"boardly.dev/boardly/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon/execenv"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
 // One machine often holds several copies of the Codex CLI: one from Homebrew

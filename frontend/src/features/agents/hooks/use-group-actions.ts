@@ -7,7 +7,7 @@ import {
 } from "@/features/company-plan/api/project-api";
 import type { AccessConfirmation } from "@/features/company-plan/projects/access/project-access-confirm-dialog";
 import { accessErrorCopy } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import { useCan } from "@/shared/permissions";
 import { toast } from "@/shared/ui/sonner";
 
@@ -65,7 +65,7 @@ export function useGroupReviewNames(companyId: string): GroupReviewNames {
 }
 
 /**
- * Deleting a Group (Access DESIGN 6.4): a delete can't be undone, so it
+ * Deleting a Group: a delete can't be undone, so it
  * always asks "Delete {Group}?", with what the server says it would do as
  * counts. It deletes exactly the Group that was previewed (its revision).
  * `checking` is the Group being previewed or deleted, so its menu can wait.
@@ -86,7 +86,7 @@ export function useDeleteGroup(
       }).unwrap();
     } catch (reason) {
       toast.error(
-        accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+        accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
           "Couldn't delete group",
       );
     }
@@ -115,7 +115,7 @@ export function useDeleteGroup(
       });
     } catch (reason) {
       toast.error(
-        accessErrorCopy((reason as Partial<BoardlyApiError>).code) ??
+        accessErrorCopy((reason as Partial<ZenithTeamApiError>).code) ??
           "Couldn't check change",
       );
     } finally {

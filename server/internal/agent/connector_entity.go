@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -572,7 +572,7 @@ func canonicalConnectorCategory(
 }
 
 // canonicalConnectorCategoryLabel keeps the read projection compatible with
-// catalogs written before Boardly introduced its closed browse taxonomy. New
+// catalogs written before Zenith Team introduced its closed browse taxonomy. New
 // discovery generations are already canonicalized before persistence, while
 // legacy or unknown provider labels safely collapse into Other.
 func canonicalConnectorCategoryLabel(rawCategory string) connectorCategory {

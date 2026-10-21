@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -581,9 +581,17 @@ func TestRevisionBindingRejectsRevisionsOutsideTheRange(t *testing.T) {
 	t.Parallel()
 
 	requests := map[string]any{
-		"submitHuddleNotesRequest":       &submitHuddleNotesRequest{ProjectID: "00000000-0000-0000-0000-000000000001", Title: "Do work", MilestoneType: "product", Confirm: true},
-		"editHuddleNotesRecapRequest":    &editHuddleNotesRecapRequest{},
-		"setHuddleNotesRequest":          &setHuddleNotesRequest{Enabled: new(bool), RequestKey: "00000000-0000-0000-0000-000000000001"},
+		"submitHuddleNotesRequest": &submitHuddleNotesRequest{
+			ProjectID:     "00000000-0000-0000-0000-000000000001",
+			Title:         "Do work",
+			MilestoneType: "product",
+			Confirm:       true,
+		},
+		"editHuddleNotesRecapRequest": &editHuddleNotesRecapRequest{},
+		"setHuddleNotesRequest": &setHuddleNotesRequest{
+			Enabled:    new(bool),
+			RequestKey: "00000000-0000-0000-0000-000000000001",
+		},
 		"huddleNotesPolicyRequest":       &huddleNotesPolicyRequest{Enabled: new(bool), RetentionDays: 30},
 		"taskScheduleRequest":            &taskScheduleRequest{},
 		"taskOccurrenceRequest":          &taskOccurrenceRequest{OccurrenceAt: time.Now()},

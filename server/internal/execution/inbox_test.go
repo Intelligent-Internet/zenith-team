@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/inbox"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestRunInboxContentMatchesTheTerminalOutcome(t *testing.T) {
@@ -360,7 +360,13 @@ func TestProjectAccessRevokedInboxInputNamesTheAgentAndTheWorkOnly(t *testing.T)
 	if fallback.Title != "Run stopped: Marketing Agent" {
 		t.Fatalf("Title without a work title = %q", fallback.Title)
 	}
-	long := projectAccessRevokedInboxInput(run, recipient, strings.Repeat("🤖", 200), strings.Repeat("界", 200), "task")
+	long := projectAccessRevokedInboxInput(
+		run,
+		recipient,
+		strings.Repeat("🤖", 200),
+		strings.Repeat("界", 200),
+		"task",
+	)
 	if utf8.RuneCountInString(long.Title) > 160 || !strings.HasSuffix(long.Title, "…") ||
 		!strings.HasPrefix(long.Body, strings.Repeat("🤖", 127)+"… stopped:") || !inbox.ValidCreateInput(long) {
 		t.Fatalf("long notice not cut to the limits: title=%q body=%q", long.Title, long.Body)
@@ -371,21 +377,39 @@ func TestCompanyResearchInboxContentIsDedicated(t *testing.T) {
 	t.Parallel()
 	page := uuid.New()
 	target := runInboxTarget{agentName: "Andrew", conversationKind: "direct"}
-	itemType, title, body, link := companyResearchInboxContent("completed", target, companyResearchOutcome{research: true, pages: 1, overview: &page})
-	if itemType != inbox.TypeRunCompleted || title != "Your company wiki is ready" || !strings.Contains(body, "1 page ") || link != "/wiki/pages/"+page.String() {
+	itemType, title, body, link := companyResearchInboxContent(
+		"completed",
+		target,
+		companyResearchOutcome{research: true, pages: 1, overview: &page},
+	)
+	if itemType != inbox.TypeRunCompleted || title != "Your company wiki is ready" ||
+		!strings.Contains(body, "1 page ") ||
+		link != "/wiki/pages/"+page.String() {
 		t.Fatalf("completed = %s/%q/%q/%q", itemType, title, body, link)
 	}
 	_, _, body, link = companyResearchInboxContent("completed", target, companyResearchOutcome{research: true})
 	if link != "/wiki" || strings.Contains(body, "Reply") {
 		t.Fatalf("empty completed = %q/%q", body, link)
 	}
-	itemType, title, body, link = companyResearchInboxContent("failed", target, companyResearchOutcome{research: true})
-	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" || !strings.Contains(body, "retry") || link != "/wiki" {
+	itemType, title, body, link = companyResearchInboxContent(
+		"failed",
+		target,
+		companyResearchOutcome{research: true},
+	)
+	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" ||
+		!strings.Contains(body, "retry") ||
+		link != "/wiki" {
 		t.Fatalf("failed = %s/%q/%q/%q", itemType, title, body, link)
 	}
 	// A cancelled research Run did not finish either: same copy, never "ready".
-	itemType, title, body, link = companyResearchInboxContent("cancelled", target, companyResearchOutcome{research: true})
-	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" || !strings.Contains(body, "retry") || link != "/wiki" {
+	itemType, title, body, link = companyResearchInboxContent(
+		"cancelled",
+		target,
+		companyResearchOutcome{research: true},
+	)
+	if itemType != inbox.TypeRunFailed || title != "Company research could not finish" ||
+		!strings.Contains(body, "retry") ||
+		link != "/wiki" {
 		t.Fatalf("cancelled = %s/%q/%q/%q", itemType, title, body, link)
 	}
 	// A failure to prepare the founder's computer reads as that, not as an
@@ -393,7 +417,8 @@ func TestCompanyResearchInboxContentIsDedicated(t *testing.T) {
 	prepared := target
 	prepared.failureReason, prepared.failureText, prepared.provider = "agent_error.unknown", "run.preparation_failed.workspace", "codex"
 	_, _, body, _ = companyResearchInboxContent("failed", prepared, companyResearchOutcome{research: true})
-	if strings.Contains(body, "classify") || strings.Contains(body, "Details") || !strings.Contains(body, "workspace") {
+	if strings.Contains(body, "classify") || strings.Contains(body, "Details") ||
+		!strings.Contains(body, "workspace") {
 		t.Fatalf("preparation failure body = %q", body)
 	}
 }

@@ -17,8 +17,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestResolvedDownloadRequiresOutputAuthorization(t *testing.T) {
@@ -202,7 +202,7 @@ func TestInitiateStoresCanonicalContentAndReturnsPendingProjection(t *testing.T)
 	pool, _, fixture, service, objects, _ := newSharedAttachmentStack(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	payload := []byte("boardly attachment")
+	payload := []byte("zenith-team attachment")
 	input := attachmentInitiateInputFor(fixture, payload)
 
 	result, err := service.Initiate(ctx, input, bytes.NewReader(payload))

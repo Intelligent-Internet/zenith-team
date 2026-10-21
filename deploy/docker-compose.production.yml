@@ -1,21 +1,23 @@
-# Zenith Team single-node production stack.
+# Zenith Team single-node self-hosted stack: the web app, the API server,
+# PostgreSQL, Redis, and S3-compatible attachment storage.
 #
-# Copy production.env.example to .env in this directory, fill in the
-# required values, then run:
+#   make selfhost-env   # writes deploy/.env with generated secrets
+#   make selfhost-up    # builds and starts the stack
 #
-#   docker compose -f deploy/docker-compose.production.yml up -d
+# Then open http://localhost:8080. The full guide, including TLS and external
+# databases, is docs/content/docs/self-hosting/quickstart.mdx; the runbook is
+# deploy/README.md. No secret has a committed default: a missing required
+# value stops `docker compose` before any container starts.
 #
-# The full runbook — configuration reference, operations, upgrades,
-# rollback, and backups — is deploy/README.md. No secret has a committed
-# default: missing required values fail fast at container startup, never
-# silently fall back.
+# Ports bind to 127.0.0.1 by default because Docker publishes ports past the
+# host firewall. Put a TLS reverse proxy in front and set APP_BIND_ADDRESS
+# only when you mean to expose a port directly.
 #
-# PostgreSQL and Redis ship as bundled services with persistent volumes.
-# To use managed/external instances instead, set APP_DATABASE_URL and
-# APP_REDIS_URL in .env and remove the bundled services plus the
-# server's depends_on entries.
+# To use managed PostgreSQL, Redis, or S3 instead, set APP_DATABASE_URL,
+# APP_REDIS_URL, or the STORAGE_S3_* values in .env and remove the matching
+# bundled services plus the server's depends_on entries.
 
-name: boardly-production
+name: zenith-team-production
 
 x-json-logging: &json-logging
   driver: json-file
@@ -25,28 +27,35 @@ x-json-logging: &json-logging
 
 services:
   server:
-    image: ${APP_SERVER_IMAGE:-boardly-server:latest}
+    image: ${APP_SERVER_IMAGE:-zenith-team-server:latest}
     build:
       context: ..
       dockerfile: server/Dockerfile
     restart: unless-stopped
     stop_grace_period: 30s
     logging: *json-logging
+    # Every setting in deploy/.env reaches the server, including tuning keys
+    # not listed below; the environment block only adds defaults.
+    env_file:
+      - path: .env
+        required: false
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     ports:
-      - "${APP_HTTP_PORT:-8788}:8788"
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_HTTP_PORT:-8788}:8788"
     environment:
       # --- Required ---
       APP_DATABASE_URL: >-
-        ${APP_DATABASE_URL:-postgresql://boardly:${APP_POSTGRES_PASSWORD:-}@postgres:5432/boardly?sslmode=disable}
-      AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:-}
+        ${APP_DATABASE_URL:-postgresql://zenith_team:${APP_POSTGRES_PASSWORD:-}@postgres:5432/zenith_team?sslmode=disable}
+      AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:?AUTH_CSRF_SECRET is required; run make selfhost-env or set it with openssl rand -hex 32}
       # --- Origins and cookies (HTTPS origins force secure cookies) ---
-      AUTH_WEB_ORIGINS: ${AUTH_WEB_ORIGINS:-}
-      AUTH_WEB_APP_ORIGIN: ${AUTH_WEB_APP_ORIGIN:-}
+      AUTH_WEB_ORIGINS: ${AUTH_WEB_ORIGINS:-http://localhost:8080,zenith-team-app://renderer}
+      AUTH_WEB_APP_ORIGIN: ${AUTH_WEB_APP_ORIGIN:-http://localhost:8080}
       # --- Core process ---
       APP_NAME: ${APP_NAME:-Zenith Team API}
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
@@ -78,15 +87,15 @@ services:
       MAILBOX_DOMAIN: ${MAILBOX_DOMAIN:-}
       MAILBOX_REQUESTS_PER_SECOND: ${MAILBOX_REQUESTS_PER_SECOND:-}
       MAILBOX_PROVIDER_TIMEOUT_SECONDS: ${MAILBOX_PROVIDER_TIMEOUT_SECONDS:-}
-      # --- S3-compatible attachment storage (see deploy/README.md) ---
+      # --- S3-compatible attachment storage (bundled service by default) ---
       STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
-      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
-      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
-      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
-      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
-      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-zenith-team-attachments}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-us-east-1}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-http://storage:9000}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-zenith-team}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:?STORAGE_S3_SECRET_ACCESS_KEY is required; run make selfhost-env}
       STORAGE_S3_SESSION_TOKEN: ${STORAGE_S3_SESSION_TOKEN:-}
-      STORAGE_S3_USE_PATH_STYLE: ${STORAGE_S3_USE_PATH_STYLE:-}
+      STORAGE_S3_USE_PATH_STYLE: ${STORAGE_S3_USE_PATH_STYLE:-true}
       ATTACHMENT_ABANDONED_READY_GRACE_SECONDS: ${ATTACHMENT_ABANDONED_READY_GRACE_SECONDS:-86400}
       # --- Output publication to Google Cloud Run (optional) ---
       GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
@@ -124,28 +133,43 @@ services:
       SOCIAL_LINKEDIN_CLIENT_SECRET: ${SOCIAL_LINKEDIN_CLIENT_SECRET:-}
       SOCIAL_META_GRAPH_VERSION: ${SOCIAL_META_GRAPH_VERSION:-v23.0}
       # --- Reverse-proxy trust for the WebSocket origin check ---
-      BOARDLY_TRUSTED_PROXIES: ${BOARDLY_TRUSTED_PROXIES:-}
+      ZENITH_TEAM_TRUSTED_PROXIES: ${ZENITH_TEAM_TRUSTED_PROXIES:-}
+      # --- Zenith Studio integration (optional; off when empty) ---
+      ZENITH_STUDIO_API_URL: ${ZENITH_STUDIO_API_URL:-}
       # Every other APP_/AUTH_/MAILBOX_/STORAGE_/GOOGLE_/SOCIAL_/ATTACHMENT_ tunable in
       # deploy/README.md may be added here or exported in .env with a mapping.
     healthcheck:
-      test: ["CMD", "/usr/local/bin/boardly-readyz"]
+      test: ["CMD", "/usr/local/bin/zenith-team-readyz"]
       interval: 10s
       timeout: 5s
       retries: 6
       start_period: 60s
+
+  web:
+    image: ${APP_WEB_IMAGE:-zenith-team-web:latest}
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    logging: *json-logging
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_WEB_PORT:-8080}:8080"
 
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
     logging: *json-logging
     environment:
-      POSTGRES_DB: boardly
-      POSTGRES_USER: boardly
-      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:-}
+      POSTGRES_DB: zenith_team
+      POSTGRES_USER: zenith_team
+      POSTGRES_PASSWORD: ${APP_POSTGRES_PASSWORD:?APP_POSTGRES_PASSWORD is required; run make selfhost-env or set it with openssl rand -hex 24}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U boardly -d boardly"]
+      test: ["CMD-SHELL", "pg_isready -U zenith_team -d zenith_team"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -164,6 +188,42 @@ services:
       timeout: 3s
       retries: 30
 
+  # S3-compatible object storage for attachments. Internal to the stack; set
+  # STORAGE_S3_ENDPOINT to a public S3 service if you need share links that
+  # open outside your network.
+  storage:
+    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    restart: unless-stopped
+    logging: *json-logging
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_S3_ACCESS_KEY_ID:-zenith-team}
+      MINIO_ROOT_PASSWORD: ${STORAGE_S3_SECRET_ACCESS_KEY:?STORAGE_S3_SECRET_ACCESS_KEY is required; run make selfhost-env}
+    volumes:
+      - storage-data:/data
+    healthcheck:
+      test: ["CMD", "silo", "healthcheck", "ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  storage-init:
+    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
+    depends_on:
+      storage:
+        condition: service_healthy
+    environment:
+      ACCESS_KEY: ${STORAGE_S3_ACCESS_KEY_ID:-zenith-team}
+      SECRET_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:?STORAGE_S3_SECRET_ACCESS_KEY is required; run make selfhost-env}
+      BUCKET: ${STORAGE_S3_BUCKET:-zenith-team-attachments}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mcli alias set local http://storage:9000 "$$ACCESS_KEY" "$$SECRET_KEY"
+        mcli mb --ignore-existing "local/$$BUCKET"
+
 volumes:
   postgres-data:
   redis-data:
+  storage-data:

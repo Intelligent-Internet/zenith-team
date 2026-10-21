@@ -794,7 +794,7 @@
   width: 100%;
   grid-auto-columns: minmax(min(220px, 100%), 1fr);
 }
-.boardly-workspace-theme[data-boardly-theme] .project-task-view > .status-board,
+.zenith-team-workspace-theme[data-zenith-team-theme] .project-task-view > .status-board,
 .project-task-view .status-board__column-body {
   padding-inline: 0;
 }

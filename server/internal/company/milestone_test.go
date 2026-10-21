@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	taskdomain "boardly.dev/boardly/server/internal/task"
+	taskdomain "github.com/Intelligent-Internet/zenith-team/server/internal/task"
 )
 
 func TestNormalizeMilestoneAttestationsRejectsValuesOutsideTheCatalogue(t *testing.T) {

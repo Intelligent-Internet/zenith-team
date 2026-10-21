@@ -1,11 +1,11 @@
 import type { RootOptions } from "react-dom/client";
 import sentryOptions from "../../../electron/shared/sentry-options.json";
-import { getBoardlyDesktopBridge } from "../../shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "../../shared/desktop/desktop-environment.service";
 
 export async function initializeDesktopErrorReporting(): Promise<
   RootOptions | undefined
 > {
-  const bridge = getBoardlyDesktopBridge();
+  const bridge = getZenithTeamDesktopBridge();
   if (!bridge?.getCrashReportingState) return;
 
   try {

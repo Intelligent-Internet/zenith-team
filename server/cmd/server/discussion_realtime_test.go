@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 )
@@ -17,14 +17,20 @@ func TestDiscussionDispatcherRetainsHuddleInvalidation(t *testing.T) {
 	company, source := uuid.New(), uuid.New()
 	for _, revision := range []int64{9, 2} {
 		if err := d.enqueue(t.Context(), events.Event{
-			EntityType: conversation.Topic, Name: conversation.EventDiscussionHuddleChanged,
-			CompanyID: company, ConversationID: source,
-			Payload: conversation.DiscussionHuddleChanged{ConversationID: source, HuddleID: uuid.New(), Revision: revision},
+			EntityType:     conversation.Topic,
+			Name:           conversation.EventDiscussionHuddleChanged,
+			CompanyID:      company,
+			ConversationID: source,
+			Payload: conversation.DiscussionHuddleChanged{
+				ConversationID: source,
+				HuddleID:       uuid.New(),
+				Revision:       revision,
+			},
 		}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	jobs := d.take(8)
+	jobs := d.take()
 	if len(jobs) != 1 || jobs[0].event.ConversationID != source || jobs[0].userID != uuid.Nil {
 		t.Fatalf("huddle invalidations = %+v, want one source-recipient broadcast", jobs)
 	}
@@ -74,7 +80,7 @@ func TestDiscussionDispatcherCoalescesAndRetainsRevokeAudience(t *testing.T) {
 	if err := d.enqueue(context.Background(), overflow); err != nil {
 		t.Fatal(err)
 	}
-	jobs := d.take(8)
+	jobs := d.take()
 	if len(jobs) != 3 {
 		t.Fatalf("jobs=%+v", jobs)
 	}
@@ -98,7 +104,7 @@ func TestDiscussionRetryRetainsUnresolvedExecutionParent(t *testing.T) {
 		Name: conversation.EventChannelAgentsChanged, Payload: conversation.ChannelAgentsChanged{},
 	}}
 	d.retry(job)
-	if jobs := d.take(8); len(jobs) != 0 {
+	if jobs := d.take(); len(jobs) != 0 {
 		t.Fatal("failed delivery retried without backoff")
 	}
 	d.mu.Lock()
@@ -110,7 +116,7 @@ func TestDiscussionRetryRetainsUnresolvedExecutionParent(t *testing.T) {
 		d.changes[key] = pending
 	}
 	d.mu.Unlock()
-	if jobs := d.take(8); len(jobs) != 1 {
+	if jobs := d.take(); len(jobs) != 1 {
 		t.Fatalf("retry lost invalidation: %+v", jobs)
 	}
 }
@@ -137,7 +143,7 @@ func TestChannelAgentStatusHintSurvivesActivityCoalescing(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		jobs := d.take(8)
+		jobs := d.take()
 		if len(jobs) != 1 {
 			t.Fatalf("coalesced jobs = %d", len(jobs))
 		}

@@ -14,10 +14,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // A report batch delivered into a member's direct chat with the root Agent
@@ -40,8 +40,14 @@ func TestTaskReportBatchesCarryOnlyReadableProjects(t *testing.T) {
 	// A second Project the owner has no grant on (the fixture granted the
 	// owners every Project that existed when it was seeded).
 	hidden := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'hidden', 'Hidden')`,
-		hidden, fixture.CompanyA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'hidden', 'Hidden')`,
+		hidden,
+		fixture.CompanyA,
+	)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO task_report_events (
 			company_id, task_id, task_version, task_key, task_title,
@@ -62,15 +68,22 @@ func TestTaskReportBatchesCarryOnlyReadableProjects(t *testing.T) {
 	}
 
 	preview, err := service.Preview(ctx, principal, fixture.DirectConversationA)
-	if err != nil || preview.PendingCount != 1 || len(preview.Events) != 1 || preview.Events[0].TaskTitle != "Readable" {
+	if err != nil || preview.PendingCount != 1 || len(preview.Events) != 1 ||
+		preview.Events[0].TaskTitle != "Readable" {
 		t.Fatalf("Preview() = %+v, %v; want only the readable Project's report", preview, err)
 	}
-	sent, err := service.Send(ctx, principal, fixture.DirectConversationA, SendReportInput{RequestKey: dbtest.NewUUID(t)})
+	sent, err := service.Send(
+		ctx,
+		principal,
+		fixture.DirectConversationA,
+		SendReportInput{RequestKey: dbtest.NewUUID(t)},
+	)
 	if err != nil || sent.EventCount != 1 {
 		t.Fatalf("Send() = %+v, %v; want a batch of the one readable report", sent, err)
 	}
 	var message string
-	if err := pool.QueryRow(ctx, `SELECT content FROM conversation_items WHERE id = $1`, sent.MessageID).Scan(&message); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT content FROM conversation_items WHERE id = $1`, sent.MessageID).
+		Scan(&message); err != nil {
 		t.Fatal(err)
 	}
 	if want := "<title>Hidden</title>"; strings.Contains(message, want) {
@@ -116,7 +129,7 @@ func TestTaskReportBatchesCarryOnlyReadableProjects(t *testing.T) {
 }
 
 // A report reaches a Run only as a batch in one person's direct chat with
-// the root Agent (D31). The Run a sent batch starts works for its sender: the
+// the root Agent. The Run a sent batch starts works for its sender: the
 // sender authorized it, it runs on the sender's own setup of the root Agent,
 // and it answers in the sender's own direct chat, never in another member's.
 // It carries the reports whose Project the sender reads, and the reports
@@ -325,8 +338,14 @@ func TestTaskReportBatchSignalsEveryProjectItCarries(t *testing.T) {
 	}
 	fixture := dbtest.SeedFixture(t, ctx, pool)
 	second := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'second', 'Second')`,
-		second, fixture.CompanyA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO projects (id, company_id, key, title) VALUES ($1, $2, 'second', 'Second')`,
+		second,
+		fixture.CompanyA,
+	)
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, second, fixture.UserA, "project.read")
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO task_report_events (
@@ -358,7 +377,12 @@ func TestTaskReportBatchSignalsEveryProjectItCarries(t *testing.T) {
 		t.Fatalf("construct Task report service: %v", err)
 	}
 	principal := auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner}
-	sent, err := service.Send(ctx, principal, fixture.DirectConversationA, SendReportInput{RequestKey: dbtest.NewUUID(t)})
+	sent, err := service.Send(
+		ctx,
+		principal,
+		fixture.DirectConversationA,
+		SendReportInput{RequestKey: dbtest.NewUUID(t)},
+	)
 	if err != nil || sent.EventCount != 3 {
 		t.Fatalf("Send() = %+v, %v; want a batch of all three reports", sent, err)
 	}

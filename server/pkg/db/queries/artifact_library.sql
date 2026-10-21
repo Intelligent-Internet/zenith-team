@@ -44,7 +44,7 @@ FOR SHARE OF output;
 -- name: ListRunChannelArtifacts :many
 -- The Artifact references a channel or group-DM Run freezes: those its
 -- caller, the Run's Authorizer, may read. The Run uses its Authorizer's
--- access and nothing else narrows it (D31): the person who tagged the Agent
+-- access and nothing else narrows it: the person who tagged the Agent
 -- answers for what it shares, as for the chat files it freezes.
 WITH artifact_references AS (
     SELECT link.company_id, link.message_id, link.output_id

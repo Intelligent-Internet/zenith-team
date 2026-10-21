@@ -15,11 +15,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const maxClientMetadataBytes = 4 << 10
@@ -37,7 +37,7 @@ type ServiceOptions struct {
 // AuthService owns user credentials and sessions: signup, login, token
 // refresh and authentication, plus the account-facing profile, email
 // verification, and password reset flows.
-type AuthService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type AuthService interface {
 	Signup(context.Context, SignupInput) (SignupResult, error)
 	Login(context.Context, LoginInput) (LoginResult, error)
 	Refresh(context.Context, RefreshInput) (RefreshResult, error)
@@ -78,7 +78,7 @@ func NewAuthService(options ServiceOptions) (*DefaultAuthService, error) {
 			"auth store, event bus, password hasher, token manager, and session invalidator are required",
 		)
 	}
-	dummyHash, err := options.Passwords.Hash("boardly-dummy-password-never-used")
+	dummyHash, err := options.Passwords.Hash("zenith-team-dummy-password-never-used")
 	if err != nil {
 		return nil, fmt.Errorf("construct password timing defense: %w", err)
 	}
@@ -385,7 +385,7 @@ func (s *DefaultAuthService) Authenticate(
 }
 
 // MintDaemonSession starts a daemon session for the person signed in on
-// principal's session (D31, POST /auth/daemon-session). It is a new session
+// principal's session (POST /auth/daemon-session). It is a new session
 // of its own, not a rotation of the caller's, so signing the person out of
 // the app leaves the daemon signed in until it is cleared too. It carries
 // the desktop bearer transport, because the daemon renews it as the CLI

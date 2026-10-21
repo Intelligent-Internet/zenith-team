@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 // CORSOptions configures the credentialed allowlist.
@@ -52,7 +52,7 @@ func CORS(options CORSOptions) gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		c.Header(
 			"Access-Control-Allow-Headers",
-			"Authorization, Content-Type, Idempotency-Key, X-Boardly-Client, X-Boardly-Run-Token, X-CSRF-Token, X-Request-ID",
+			"Authorization, Content-Type, Idempotency-Key, X-Zenith-Team-Client, X-Zenith-Team-Run-Token, X-CSRF-Token, X-Request-ID",
 		)
 		c.Header("Access-Control-Expose-Headers", "X-Request-ID")
 		if c.Request.Method == http.MethodOptions {

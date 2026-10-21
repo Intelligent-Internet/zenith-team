@@ -16,11 +16,20 @@ func TestTokenIssuerCreatesScopedParticipantToken(t *testing.T) {
 	}
 	now := time.Now().UTC()
 	room := uuid.NewString()
-	tokenString, err := issuer.IssueParticipantToken(now, ParticipantTokenRequest{RoomName: room, Identity: "user-1", Name: "A", CanPublish: true, PublishSources: []string{"microphone", "camera", "screen_share"}})
+	tokenString, err := issuer.IssueParticipantToken(
+		now,
+		ParticipantTokenRequest{
+			RoomName:       room,
+			Identity:       "user-1",
+			Name:           "A",
+			CanPublish:     true,
+			PublishSources: []string{"microphone", "camera", "screen_share"},
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	parsed, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) { return []byte("secret"), nil })
+	parsed, err := jwt.Parse(tokenString, func(_ *jwt.Token) (any, error) { return []byte("secret"), nil })
 	if err != nil || !parsed.Valid {
 		t.Fatalf("token valid=%v err=%v", parsed.Valid, err)
 	}
@@ -32,7 +41,14 @@ func TestTokenIssuerCreatesScopedParticipantToken(t *testing.T) {
 	if video["room"] != room || video["roomJoin"] != true || video["canPublish"] != true {
 		t.Fatalf("video=%v", video)
 	}
-	if got, want := video["canPublishSources"], []any{"microphone", "camera", "screen_share"}; !reflect.DeepEqual(got, want) {
+	if got, want := video["canPublishSources"], []any{
+		"microphone",
+		"camera",
+		"screen_share",
+	}; !reflect.DeepEqual(
+		got,
+		want,
+	) {
 		t.Fatalf("canPublishSources = %v, want %v", got, want)
 	}
 }
@@ -42,7 +58,9 @@ func TestTokenIssuerCreatesRoomAdminToken(t *testing.T) {
 	for _, room := range []string{"", "huddle-test"} {
 		t.Run("room="+room, func(t *testing.T) {
 			t.Parallel()
-			issuer, err := NewTokenIssuer(TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute})
+			issuer, err := NewTokenIssuer(
+				TokenOptions{APIKey: "key", APISecret: "secret", TTL: time.Minute},
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,8 +68,11 @@ func TestTokenIssuerCreatesRoomAdminToken(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			parsed, err := jwt.Parse(tokenString, func(*jwt.Token) (any, error) { return []byte("secret"), nil },
-				jwt.WithValidMethods([]string{"HS256"}))
+			parsed, err := jwt.Parse(
+				tokenString,
+				func(*jwt.Token) (any, error) { return []byte("secret"), nil },
+				jwt.WithValidMethods([]string{"HS256"}),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}

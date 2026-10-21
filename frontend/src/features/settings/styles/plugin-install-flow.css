@@ -270,7 +270,7 @@
 /* Toasts: the plugin's logo, one line and one action. The toaster's own
    card (global.css, in the components layer) steps aside for this one. */
 @layer components {
-  .boardly-toast [data-sonner-toast].plugin-install-toast-host {
+  .zenith-team-toast [data-sonner-toast].plugin-install-toast-host {
     width: auto !important;
     min-height: 0 !important;
     border: 0 !important;

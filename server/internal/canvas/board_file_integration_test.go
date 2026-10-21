@@ -18,11 +18,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // boardMemoryObjects is object storage held in memory for Board file tests.
@@ -348,7 +348,9 @@ func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
 	newMedia := func(pool *pgxpool.Pool) (*DefaultBoardMediaService, attachment.AttachmentService) {
 		store, _ := db.NewStore(pool)
 		bus, _ := events.NewBus(events.BusOptions{})
-		files, err := attachment.NewAttachmentService(attachment.ServiceOptions{Store: store, Bus: bus, Objects: objects})
+		files, err := attachment.NewAttachmentService(
+			attachment.ServiceOptions{Store: store, Bus: bus, Objects: objects},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -422,9 +424,16 @@ func TestBoardRetentionDrainsBacklogsAndSparesRestoredItems(t *testing.T) {
 	boards, pool, owner, _ := boardFixture(t)
 	ctx := t.Context()
 	board := createTestBoard(t, boards, owner)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO board_items(company_id,board_id,type,x,y,width,height,created_by,updated_by,deleted_at)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO board_items(company_id,board_id,type,x,y,width,height,created_by,updated_by,deleted_at)
 		SELECT $1,$2,'shape',0,0,10,10,$3,$3,now()-interval '31 days' FROM generate_series(1,2500)`,
-		owner.CompanyID, board.ID, owner.UserID)
+		owner.CompanyID,
+		board.ID,
+		owner.UserID,
+	)
 	sweep, err := boards.Sweep(ctx, time.Now())
 	if err != nil || sweep.Items != 2500 {
 		t.Fatalf("sweep = %+v, %v; want the whole backlog in one pass", sweep, err)

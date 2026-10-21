@@ -14,11 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type PresentationInput struct {
@@ -1497,8 +1497,8 @@ func presentationDocumentKey(version string, live bool) string {
 
 func presentationMarkdown(root wiki.BlockNode) string {
 	raw, _ := json.Marshal(root)
-	var copy wiki.BlockNode
-	_ = json.Unmarshal(raw, &copy)
+	var clone wiki.BlockNode
+	_ = json.Unmarshal(raw, &clone)
 	var walk func(*wiki.BlockNode)
 	walk = func(node *wiki.BlockNode) {
 		if node.Type == "artifactReference" && node.Attrs["format"] == "live" {
@@ -1508,6 +1508,6 @@ func presentationMarkdown(root wiki.BlockNode) string {
 			walk(&node.Content[i])
 		}
 	}
-	walk(&copy)
-	return wiki.BlocksMarkdown(copy)
+	walk(&clone)
+	return wiki.BlocksMarkdown(clone)
 }

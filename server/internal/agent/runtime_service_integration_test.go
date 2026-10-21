@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func TestRuntimeServiceListsCanonicalCompanyProjection(t *testing.T) {
@@ -228,9 +228,23 @@ func TestRuntimeServiceModelDiscoveryUsesExactOnlineRuntime(t *testing.T) {
 	if _, err := service.InitiateModelDiscovery(ctx, member, fixture.RuntimeA); err != nil {
 		t.Fatalf("InitiateModelDiscovery(registrant as member) error = %v", err)
 	}
-	bystander := principalFor(fixture, seedMember(t, ctx, pool, fixture, "eli.test", "member"), auth.CompanyRoleMember)
-	if _, err := service.InitiateModelDiscovery(ctx, bystander, fixture.RuntimeA); !errors.Is(err, ErrRuntimeNotFound) {
-		t.Fatalf("InitiateModelDiscovery(another member, private runtime) error = %v, want ErrRuntimeNotFound", err)
+	bystander := principalFor(
+		fixture,
+		seedMember(t, ctx, pool, fixture, "eli.test", "member"),
+		auth.CompanyRoleMember,
+	)
+	if _, err := service.InitiateModelDiscovery(
+		ctx,
+		bystander,
+		fixture.RuntimeA,
+	); !errors.Is(
+		err,
+		ErrRuntimeNotFound,
+	) {
+		t.Fatalf(
+			"InitiateModelDiscovery(another member, private runtime) error = %v, want ErrRuntimeNotFound",
+			err,
+		)
 	}
 	if err := service.RequestRefresh(ctx, bystander, fixture.RuntimeA); !errors.Is(err, ErrRuntimeNotFound) {
 		t.Fatalf("RequestRefresh(another member, private runtime) error = %v, want ErrRuntimeNotFound", err)

@@ -10,12 +10,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // AnalyticsWorker emits soft budget notifications. Usage facts remain the
@@ -45,21 +45,28 @@ func (w *AnalyticsWorker) scanCompanies(ctx context.Context) error {
 	// follow-up write transaction is per Company, which avoids holding a global
 	// lock while a large installation is priced.
 	var companies []uuid.UUID
-	if err := w.store.WithinRawTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(tx generated.DBTX, _ *generated.Queries) error {
-		rows, err := tx.Query(ctx, `SELECT DISTINCT company_id FROM analytics_budgets WHERE enabled ORDER BY company_id`)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var companyID uuid.UUID
-			if err := rows.Scan(&companyID); err != nil {
+	if err := w.store.WithinRawTx(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(tx generated.DBTX, _ *generated.Queries) error {
+			rows, err := tx.Query(
+				ctx,
+				`SELECT DISTINCT company_id FROM analytics_budgets WHERE enabled ORDER BY company_id`,
+			)
+			if err != nil {
 				return err
 			}
-			companies = append(companies, companyID)
-		}
-		return rows.Err()
-	}); err != nil {
+			defer rows.Close()
+			for rows.Next() {
+				var companyID uuid.UUID
+				if err := rows.Scan(&companyID); err != nil {
+					return err
+				}
+				companies = append(companies, companyID)
+			}
+			return rows.Err()
+		},
+	); err != nil {
 		return err
 	}
 	var failures []error
@@ -90,7 +97,12 @@ func (w *AnalyticsWorker) scanCompany(ctx context.Context, companyID uuid.UUID) 
 		if err != nil {
 			return err
 		}
-		recipientRows, err := tx.Query(ctx, `SELECT user_id FROM company_members WHERE company_id=$1 AND status='active' AND role=ANY($2::text[]) ORDER BY user_id FOR SHARE`, companyID, auth.RolesWith(auth.PermissionUsageRead))
+		recipientRows, err := tx.Query(
+			ctx,
+			`SELECT user_id FROM company_members WHERE company_id=$1 AND status='active' AND role=ANY($2::text[]) ORDER BY user_id FOR SHARE`,
+			companyID,
+			auth.RolesWith(auth.PermissionUsageRead),
+		)
 		if err != nil {
 			return err
 		}
@@ -139,7 +151,9 @@ func (w *AnalyticsWorker) scanCompany(ctx context.Context, companyID uuid.UUID) 
 					continue
 				}
 				_, err := q.InsertAnalyticsBudgetAlert(ctx, generated.InsertAnalyticsBudgetAlertParams{
-					BudgetID: target.ID, PeriodStart: target.PeriodStart, ThresholdPercent: threshold,
+					BudgetID:         target.ID,
+					PeriodStart:      target.PeriodStart,
+					ThresholdPercent: threshold,
 				})
 				if errors.Is(err, pgx.ErrNoRows) {
 					continue
@@ -151,13 +165,22 @@ func (w *AnalyticsWorker) scanCompany(ctx context.Context, companyID uuid.UUID) 
 				for _, recipientID := range recipients {
 					deepLink := "/analytics?tab=overview"
 					result, err := inbox.CreateInTx(ctx, q, &pending, inbox.CreateInput{
-						CompanyID: companyID, RecipientUserID: recipientID,
-						Type:      inbox.TypeAnalyticsBudget,
-						Entity:    inbox.Entity{Type: protocol.EntityCompany, ID: companyID.String()},
-						Title:     title,
-						Body:      body,
-						DeepLink:  &deepLink,
-						DedupeKey: fmt.Sprintf("analytics-budget:%s:%s:%d", target.ID, target.PeriodStart.Time.Format("2006-01"), threshold),
+						CompanyID:       companyID,
+						RecipientUserID: recipientID,
+						Type:            inbox.TypeAnalyticsBudget,
+						Entity: inbox.Entity{
+							Type: protocol.EntityCompany,
+							ID:   companyID.String(),
+						},
+						Title:    title,
+						Body:     body,
+						DeepLink: &deepLink,
+						DedupeKey: fmt.Sprintf(
+							"analytics-budget:%s:%s:%d",
+							target.ID,
+							target.PeriodStart.Time.Format("2006-01"),
+							threshold,
+						),
 					})
 					if err != nil {
 						return err

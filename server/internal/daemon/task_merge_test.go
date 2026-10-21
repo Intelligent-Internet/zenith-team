@@ -66,7 +66,9 @@ func TestClientTaskMergeUsesRuntimeScopedDaemonContract(t *testing.T) {
 				t.Errorf("decode manual claim body: %v", err)
 			}
 			if body.DaemonID != taskMergeDaemonID || body.TaskID != taskMergeTaskID ||
-				body.RunID != uuid.MustParse("00000000-0000-4000-8000-000000001601") || body.ExpectedRevision != 9 ||
+				body.RunID != uuid.MustParse(
+					"00000000-0000-4000-8000-000000001601",
+				) || body.ExpectedRevision != 9 ||
 				body.ExpectedExecutionGeneration != 7 {
 				t.Errorf("manual claim body = %+v", body)
 			}
@@ -142,8 +144,10 @@ func TestClientTaskMergeUsesRuntimeScopedDaemonContract(t *testing.T) {
 	if claim == nil {
 		t.Fatal("ClaimTaskMerge() = nil, want a claim")
 	}
-	if claim.JobID != taskMergeJobID || claim.RunID != uuid.MustParse("00000000-0000-4000-8000-000000001601") || claim.Attempt != 3 ||
-		claim.TaskExecutionGeneration != 7 || claim.ConversationID != taskMergeConversationID {
+	if claim.JobID != taskMergeJobID || claim.RunID != uuid.MustParse("00000000-0000-4000-8000-000000001601") ||
+		claim.Attempt != 3 ||
+		claim.TaskExecutionGeneration != 7 ||
+		claim.ConversationID != taskMergeConversationID {
 		t.Fatalf("ClaimTaskMerge() = %+v", claim)
 	}
 	manual, err := client.ClaimManualTaskMerge(
@@ -197,16 +201,18 @@ func TestPollLoopProcessesTaskMergeWithNoProviderSlots(t *testing.T) {
 		"-c",
 		"user.name=Test",
 		"-c",
-		"user.email=test@boardly.local",
+		"user.email=test@zenith-team.local",
 		"commit",
 		"-m",
 		"Initial commit",
 	)
-	head := strings.TrimSpace(runTaskMergeDaemonTestGit(t, localDir, "rev-parse", "HEAD"))
 	contextDocument, err := json.Marshal(RunContext{
-		ExecutionProfile: RunExecutionProfileContext{Project: &RunProjectContext{ID: taskMergeTaskID}, Task: &RunTaskContext{
-			ConversationID: taskMergeConversationID,
-		}},
+		ExecutionProfile: RunExecutionProfileContext{
+			Project: &RunProjectContext{ID: taskMergeTaskID},
+			Task: &RunTaskContext{
+				ConversationID: taskMergeConversationID,
+			},
+		},
 		Resources: []RunResourceContext{{
 			ResourceType:  "local_directory",
 			LocalDaemonID: taskMergeDaemonID,
@@ -283,7 +289,15 @@ func TestPollLoopProcessesTaskMergeWithNoProviderSlots(t *testing.T) {
 
 	d := newTestDaemon(t, srv.URL)
 	d.cfg.DaemonID = taskMergeDaemonID
-	head = seedManagedMergeClaim(t, d, TaskMergeClaim{CompanyID: taskMergeCompanyID, ConversationID: taskMergeConversationID, RunID: uuid.MustParse("00000000-0000-4000-8000-000000001701")})
+	head := seedManagedMergeClaim(
+		t,
+		d,
+		TaskMergeClaim{
+			CompanyID:      taskMergeCompanyID,
+			ConversationID: taskMergeConversationID,
+			RunID:          uuid.MustParse("00000000-0000-4000-8000-000000001701"),
+		},
+	)
 	d.cfg.MaxConcurrentRuns = 0
 	d.cfg.PollInterval = 10 * time.Millisecond
 	trackRuntime(d, Runtime{
@@ -629,16 +643,19 @@ func newTaskMergeLocalClaim(t *testing.T, runID uuid.UUID, attempt int32) (TaskM
 		"-c",
 		"user.name=Test",
 		"-c",
-		"user.email=test@boardly.local",
+		"user.email=test@zenith-team.local",
 		"commit",
 		"-m",
 		"Initial commit",
 	)
 	head := strings.TrimSpace(runTaskMergeDaemonTestGit(t, localDir, "rev-parse", "HEAD"))
 	contextDocument, err := json.Marshal(RunContext{
-		ExecutionProfile: RunExecutionProfileContext{Project: &RunProjectContext{ID: taskMergeTaskID}, Task: &RunTaskContext{
-			ConversationID: taskMergeConversationID,
-		}},
+		ExecutionProfile: RunExecutionProfileContext{
+			Project: &RunProjectContext{ID: taskMergeTaskID},
+			Task: &RunTaskContext{
+				ConversationID: taskMergeConversationID,
+			},
+		},
 		Resources: []RunResourceContext{{
 			ResourceType:  "local_directory",
 			LocalDaemonID: taskMergeDaemonID,
@@ -673,7 +690,14 @@ func runTaskMergeDaemonTestGit(t *testing.T, dir string, args ...string) string 
 
 func seedManagedMergeClaim(t *testing.T, d *Daemon, claim TaskMergeClaim) string {
 	t.Helper()
-	acquired, err := d.workspaces.AcquireScopedScratch(t.Context(), claim.CompanyID, "projects/"+taskMergeTaskID, claim.ConversationID, claim.RunID, 0)
+	acquired, err := d.workspaces.AcquireScopedScratch(
+		t.Context(),
+		claim.CompanyID,
+		"projects/"+taskMergeTaskID,
+		claim.ConversationID,
+		claim.RunID,
+		0,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

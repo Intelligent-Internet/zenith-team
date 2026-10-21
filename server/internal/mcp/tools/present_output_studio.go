@@ -10,8 +10,8 @@ import (
 	"io"
 	"strings"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/pkg/studiocanvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/studiocanvas"
 )
 
 const studioCanvasFilename = "zenith-studio.canvas.json"

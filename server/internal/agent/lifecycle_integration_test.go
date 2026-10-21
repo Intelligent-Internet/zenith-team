@@ -13,10 +13,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/schedule"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestUpdateAgentAtomicallyPersistsCanonicalLifecycle(t *testing.T) {
@@ -596,7 +596,7 @@ func seedLifecycleRuntime(
 	return id
 }
 
-// The rebind matrix of Agents TECH §12.2, rule 1: model and thinking level
+// The rebind matrix, rule 1: model and thinking level
 // are one provider's vocabulary, so a rebind that crosses providers clears
 // each of them the request does not supply — a supplied value is the
 // client's choice for the new provider and wins — and a rebind within a

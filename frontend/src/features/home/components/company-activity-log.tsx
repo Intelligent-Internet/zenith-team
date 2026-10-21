@@ -306,7 +306,7 @@ function ActivityFilter({
 }
 
 // The names an access row falls back to when it carries none of its own
-// (rows written before 2026-10-08; Access DESIGN 5): members from the
+// (rows written before 2026-10-08): members from the
 // roster, the Company's Groups, and the Projects the viewer reads or
 // manages, archived ones included. A row names nothing the viewer could not
 // already see.

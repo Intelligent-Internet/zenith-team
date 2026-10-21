@@ -6,7 +6,7 @@ import type {
   MailboxMessagePage,
   MailboxState,
 } from "@/features/mailbox/model/mailbox";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 
 type CompanyMailboxArgument = { companyId: string };
 type MessageArgument = CompanyMailboxArgument & { messageId: string };
@@ -35,14 +35,14 @@ export function mailboxInvalidationTags(
   ];
 }
 
-export const mailboxApi = boardlyApi.injectEndpoints({
+export const mailboxApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getMailboxState: builder.query<MailboxState, string>({
       providesTags: (_result, _error, companyId) => [
         { id: stateTag(companyId), type: "Mailbox" },
       ],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => mailboxService.getState(companyId),
           "Mailbox could not be loaded.",
           { retry: true },
@@ -69,7 +69,7 @@ export const mailboxApi = boardlyApi.injectEndpoints({
         }
       },
       queryFn: ({ companyId, localPart }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => mailboxService.create(companyId, localPart),
           "Mailbox could not be created.",
         ),
@@ -86,7 +86,7 @@ export const mailboxApi = boardlyApi.injectEndpoints({
         })) ?? []),
       ],
       queryFn: ({ companyId, ...options }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => mailboxService.listMessages(companyId, options),
           "Mailbox messages could not be loaded.",
           { retry: true },
@@ -97,7 +97,7 @@ export const mailboxApi = boardlyApi.injectEndpoints({
         { id: messageTag(companyId, messageId), type: "Mailbox" },
       ],
       queryFn: ({ companyId, messageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => mailboxService.getMessage(companyId, messageId),
           "Mailbox message could not be loaded.",
         ),
@@ -106,7 +106,7 @@ export const mailboxApi = boardlyApi.injectEndpoints({
       invalidatesTags: (result, error, { companyId, messageId }) =>
         result && !error ? mailboxInvalidationTags(companyId, [messageId]) : [],
       queryFn: ({ companyId, messageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => mailboxService.markRead(companyId, messageId),
           "Mailbox message could not be marked as read.",
         ),
@@ -116,7 +116,7 @@ export const mailboxApi = boardlyApi.injectEndpoints({
       AttachmentArgument
     >({
       queryFn: ({ attachmentId, companyId, messageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             mailboxService.getAttachment(companyId, messageId, attachmentId),
           "Mailbox attachment could not be opened.",

@@ -18,8 +18,13 @@ func TestSupersedeScheduleRunInTxRejectsInvalidInput(t *testing.T) {
 		return id
 	}
 	input := SupersedeScheduleRunInput{
-		RunID: uuid.MustParse("00000000-0000-4000-8000-000000000001"), FiringID: validID(), ScheduleID: validID(),
-		CompanyID: validID(), ConversationID: validID(),
+		RunID: uuid.MustParse(
+			"00000000-0000-4000-8000-000000000001",
+		),
+		FiringID:       validID(),
+		ScheduleID:     validID(),
+		CompanyID:      validID(),
+		ConversationID: validID(),
 	}
 
 	if err := SupersedeScheduleRunInTx(context.Background(), nil, nil, input); err == nil {

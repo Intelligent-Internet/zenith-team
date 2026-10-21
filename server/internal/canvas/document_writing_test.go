@@ -5,9 +5,10 @@ import (
 	"testing"
 	"unicode/utf16"
 
-	"boardly.dev/boardly/server/internal/wiki"
-	db "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestWritingReplacementWhitespace(t *testing.T) {
@@ -31,7 +32,12 @@ func TestWritingReplacementWhitespace(t *testing.T) {
 			wiki.AssignBlockIDs(&base, uuid.NewString)
 			block := base.Content[0]
 			text, _ := writingBlockText(block)
-			target := DocumentWritingTarget{BlockID: block.Attrs["blockId"].(string), Text: text, From: test.from, To: test.to}
+			target := DocumentWritingTarget{
+				BlockID: block.Attrs["blockId"].(string),
+				Text:    text,
+				From:    test.from,
+				To:      test.to,
+			}
 			replacement := writingReplacement(base, target, writingResponse(test.response))
 			got, _ := writingBlockText(replacement.Content[0])
 			if got != test.want {
@@ -58,7 +64,11 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 			wiki.AssignBlockIDs(&base, uuid.NewString)
 			block := base.Content[0]
 			text, _ := writingBlockText(block)
-			target := DocumentWritingTarget{BlockID: block.Attrs["blockId"].(string), Text: text, To: len(utf16.Encode([]rune(text)))}
+			target := DocumentWritingTarget{
+				BlockID: block.Attrs["blockId"].(string),
+				Text:    text,
+				To:      len(utf16.Encode([]rune(text))),
+			}
 			replacement := writingReplacement(base, target, writingResponse(test.response))
 			wiki.AssignBlockIDs(&replacement, uuid.NewString)
 			operations := writingOperations(base, target, replacement)
@@ -81,14 +91,22 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			row := db.ProjectPageChange{BeforeContent: beforeJSON, Operations: operationsJSON, Decisions: []byte("{}"), Status: "proposed"}
+			row := db.ProjectPageChange{
+				BeforeContent: beforeJSON,
+				Operations:    operationsJSON,
+				Decisions:     []byte("{}"),
+				Status:        "proposed",
+			}
 			review, err := pageSuggestionState(row, base, "default", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			for _, suggestion := range review.suggestions {
 				if suggestion.Status != "pending" || len(suggestion.Group) != len(operations) {
-					t.Fatalf("review = %+v, want all operations pending in one group", review.suggestions)
+					t.Fatalf(
+						"review = %+v, want all operations pending in one group",
+						review.suggestions,
+					)
 				}
 			}
 			if _, err = suggestionSelection(review, PageChangeReviewInput{Action: "apply"}); err != nil {

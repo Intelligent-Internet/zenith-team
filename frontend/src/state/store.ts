@@ -15,7 +15,7 @@ import {
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import rootReducer from "@/state/reducer";
 
 function removeRetiredDashboardState(state: PersistedState): PersistedState {
@@ -46,7 +46,7 @@ const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(boardlyApi.middleware),
+    }).concat(zenithTeamApi.middleware),
   devTools: !import.meta.env.PROD,
 });
 

@@ -34,10 +34,10 @@ The Project catalog is closed: `project.read`, `project.tasks.write`,
 `project.grants.manage`, `project.archive`. `project.read` is always stored
 beside any other permission. A name outside the catalog is refused with
 `422 project_permission_unknown`, whose `detail` names it, including
-`project.results.review`, which was removed on 2026-10-08 because nothing
-checked it; every grant that held it lost that one permission. A desktop
-built before then still sends it in its Approve and Manage presets and is
-told which permission it was.
+`project.results.review`, which was removed because nothing checked it;
+every grant that held it lost that one permission. An older desktop still
+sends it in its Approve and Manage presets and is told which permission it
+was.
 
 A Project is `restricted` (the default) or `company`. On a restricted Project
 only people with a grant read it. On a Company-visible Project every active
@@ -106,7 +106,7 @@ when you manage the Project without reading it.
 
 `zen project list` and `zen project get` reach `GET /projects` and `GET
 /projects/{projectId}` through a Run's channel, with the member's session
-and the Run's `X-Boardly-Run-Token`. Only a Run outside a task is offered
+and the Run's `X-Zenith-Team-Run-Token`. Only a Run outside a task is offered
 them (and not when its agent's Company planning is off). A task Run is
 offered no Project list and no read of another Project: its channel refuses
 those with `run_scope_denied` (exit code `3`) before they reach the server.
@@ -131,7 +131,7 @@ token. Then:
   /projects` (any other Project left out) is only a second guard.
 - A Run started by a mention in a channel or a direct message between
   people uses the access of the person who mentioned the Agent, like any
-  Run outside a task (D31): it lists and reads the Projects that person
+  Run outside a task: it lists and reads the Projects that person
   reads, whoever else is in the chat. Everyone in the chat reads its
   answer, so that person is responsible for what it shares. A Project
   that person cannot read is `404 project_not_found` and left out of the

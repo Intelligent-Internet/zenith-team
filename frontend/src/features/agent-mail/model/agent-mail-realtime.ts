@@ -1,7 +1,7 @@
 import {
-  boardlyRealtimeClient,
+  zenithTeamRealtimeClient,
   realtimeEventConversationId,
-  type BoardlyRealtimeEvent,
+  type ZenithTeamRealtimeEvent,
 } from "@/shared/realtime/realtime-client.service";
 
 export type AgentMailChange = {
@@ -17,14 +17,14 @@ export function subscribeToAgentMailChanges(
   companyId: string,
   handleChange: (change: AgentMailChange) => void,
 ): () => void {
-  return boardlyRealtimeClient.onEvent((event) => {
+  return zenithTeamRealtimeClient.onEvent((event) => {
     const change = parseAgentMailChange(event, companyId);
     if (change) handleChange(change);
   });
 }
 
 function parseAgentMailChange(
-  event: BoardlyRealtimeEvent,
+  event: ZenithTeamRealtimeEvent,
   companyId: string,
 ): AgentMailChange | null {
   if (event.type !== "mailbox.draft_changed" || event.companyId !== companyId) {

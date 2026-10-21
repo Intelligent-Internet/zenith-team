@@ -1,58 +1,66 @@
-# Zenith Team Docs
+# Zenith Team docs
 
 [`ARCHITECTURE.md`](../ARCHITECTURE.md) is the one-page system overview and
-[`AGENTS.md`](../AGENTS.md) carries the engineering rules. **The code is
-authoritative for behavior** — these documents record intent and convention,
-and when one drifts from the code, the code is right and the doc gets fixed.
+[`AGENTS.md`](../AGENTS.md) holds the engineering rules. **The code is
+authoritative for behavior.** These documents record intent and convention;
+when one drifts from the code, the code is right and the doc gets fixed.
 
-**New here?** [`quickstart.md`](quickstart.md) is the shortest path to a
-running local stack; [`huddles-local.md`](huddles-local.md) adds calls and
-voice Agents.
+**New here?**
 
-## content/docs/ — the product documentation set
+- To run Zenith Team for real use: [`SELF_HOSTING.md`](../SELF_HOSTING.md).
+- To work on the code: [`quickstart.md`](quickstart.md) gets a local stack
+  running, and [`CONTRIBUTING.md`](../CONTRIBUTING.md) is the full guide.
+- To add calls and voice agents locally: [`huddles-local.md`](huddles-local.md).
 
-Product-facing `.mdx` pages: terminology and concepts, how Zenith Team works, the
-run lifecycle, the per-company workspace structure, agents and departments,
-conversations, providers, schedules, and the human-in-the-loop surfaces.
-Start at [content/docs/index.mdx](content/docs/index.mdx); the glossary is
-[content/docs/concepts.mdx](content/docs/concepts.mdx), and
-[content/docs/meta.json](content/docs/meta.json) carries the page order.
-[content/docs/developers/](content/docs/developers/) is the short developer
-section — code layering, the load-bearing invariants behind the ADRs, and
-local setup — which orients and links; `AGENTS.md` stays the rulebook.
+## content/docs/: the product documentation
 
-## design/ — Product and output design notes
+Product pages in `.mdx`: concepts, how Zenith Team works, runs, workspaces,
+agents, conversations, providers, schedules and the human-in-the-loop
+features. Start at [content/docs/index.mdx](content/docs/index.mdx). The
+glossary is [content/docs/concepts.mdx](content/docs/concepts.mdx), and each
+folder's `meta.json` sets the page order.
 
-| Path | Purpose |
-| --- | --- |
-| [design/chat-visual-refinement.md](design/chat-visual-refinement.md) | Accepted chat appearance, theme/gradient rules, geometry, and validation history |
-| [design/05-run-deliverables.md](design/05-run-deliverables.md) | Frozen Run results and founder review |
-| [design/06-output-publication.md](design/06-output-publication.md) | Automatic app Artifact publication and explicit file publication |
+- [content/docs/self-hosting/](content/docs/self-hosting/): running your own
+  server, every environment variable, the security model, and
+  [privacy and network](content/docs/self-hosting/privacy-and-network.mdx).
+- [content/docs/desktop-app.mdx](content/docs/desktop-app.mdx): building and
+  running the desktop app.
+- [content/docs/troubleshooting.mdx](content/docs/troubleshooting.mdx): fixes
+  for common problems, and where the logs live.
+- [content/docs/developers/](content/docs/developers/): architecture, design
+  decisions, [conventions](content/docs/developers/conventions.mdx), testing,
+  releasing and maintaining. These pages orient and link; `AGENTS.md` stays
+  the rulebook.
+- [content/docs/community.mdx](content/docs/community.mdx): who maintains the
+  project and how decisions are made.
 
-## api/
+## adr/: architecture decision records
 
-The server route table and generated OpenAPI contract are authoritative; these
+[adr/](adr/) records why the system is shaped the way it is. Code comments
+cite these as `ADR 00NN`.
+
+## api/: the HTTP and realtime API
+
+The server's route table and the OpenAPI contract are authoritative; these
 pages explain how clients use them.
 
 | Path | Purpose |
 | --- | --- |
-| [api/overview.md](api/overview.md) | API map, scopes, projections, and contract layout |
-| [api/client-migration.md](api/client-migration.md) | Current frontend integration and convergence status |
-| [api/realtime.md](api/realtime.md) | Receive-only client WebSocket, typed audiences, and REST recovery |
-| [api/approvals.md](api/approvals.md) | Durable Approvals, Questions, expiry, and continuation Runs |
-| [api/spec/openapi.yaml](api/spec/openapi.yaml) | Machine-readable contract index used to generate client types |
+| [api/overview.md](api/overview.md) | API map, scopes, and how the contract is laid out and checked |
+| [api/conventions.md](api/conventions.md) | The rules every endpoint follows, including how the client integrates |
+| [api/errors.md](api/errors.md) | Every error code and what a client should do about it |
+| [api/realtime.md](api/realtime.md) | The receive-only client WebSocket, audiences, and REST recovery |
+| [api/approvals.md](api/approvals.md) | Approvals, Questions, expiry, and continuation Runs |
+| [api/spec/openapi.yaml](api/spec/openapi.yaml) | The machine-readable contract index used to generate client types |
 
-## Feature implementation handoffs
+## branding.md
 
-See the [feature spec index](specs/README.md) for owning PRD/TECH pairs and
-delivery status. Studio mode follows the same structure: [product requirements](specs/studio-mode/PRD.md)
-and [technical design](specs/studio-mode/TECH.md) cover the native canvas, binding,
-authentication and collaboration boundary.
+[branding.md](branding.md) lists the product name and every technical
+identity (`ZENITH_TEAM_`, `zenith-team`, `zenith_team`).
 
 ---
 
 Deployment lives next to its manifests: [`deploy/README.md`](../deploy/README.md)
 is the production runbook and environment reference, and
 [`docker/README.md`](../docker/README.md) documents the development
-infrastructure stack. Pre-rewrite documentation was removed with the rewrite;
-use git history for archaeology.
+infrastructure stack.

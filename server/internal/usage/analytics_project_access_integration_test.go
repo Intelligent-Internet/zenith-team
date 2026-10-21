@@ -12,12 +12,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// ADR 0017 on Analytics: usage.read keeps Company-wide totals (D20), but a
+// ADR 0017 on Analytics: usage.read keeps Company-wide totals, but a
 // Project the caller does not read is never named. An admin without a grant
 // sees the restricted Project's tokens in every total and in one unnamed
 // "Other work" row, never its id, key or title, and cannot filter by it or
@@ -44,7 +44,13 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 
 	// ProjectA is restricted; only the owner holds grants on it.
 	dbtest.MustExec(t, ctx, pool, `UPDATE projects SET title = 'Secret Launch' WHERE id = $1`, f.ProjectA)
-	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET title = 'Secret Plan', key = 'secret_key' WHERE id = $1`, f.TaskA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE tasks SET title = 'Secret Plan', key = 'secret_key' WHERE id = $1`,
+		f.TaskA,
+	)
 	admin, member := dbtest.NewUUID(t), dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO users (id, email, display_name) VALUES
@@ -86,7 +92,12 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	insertRun(member, &f.TaskA, f.ConversationA, "task", 7)
 	insertRun(member, nil, f.DirectConversationA, "direct_chat", 3)
 
-	query := AnalyticsQuery{Scope: AnalyticsScopeCompany, StartAt: start, EndAt: start.AddDate(0, 0, 1), TimeZone: "UTC"}
+	query := AnalyticsQuery{
+		Scope:    AnalyticsScopeCompany,
+		StartAt:  start,
+		EndAt:    start.AddDate(0, 0, 1),
+		TimeZone: "UTC",
+	}
 	owner := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
 	adminPrincipal := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: admin, Role: auth.CompanyRoleAdmin}
 	memberPrincipal := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: member, Role: auth.CompanyRoleMember}
@@ -143,8 +154,13 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 			continue
 		}
 		other := rowFor(report, "other_work")
-		if other == nil || other.Key.ID != nil || other.Key.Label != "Other work" || other.Tokens.Input != "107" {
-			t.Fatalf("admin breakdown by %s = %+v, want one unnamed Other work row of 107 tokens", by, report.Rows)
+		if other == nil || other.Key.ID != nil || other.Key.Label != "Other work" ||
+			other.Tokens.Input != "107" {
+			t.Fatalf(
+				"admin breakdown by %s = %+v, want one unnamed Other work row of 107 tokens",
+				by,
+				report.Rows,
+			)
 		}
 	}
 	series, err := service.GetAnalyticsSeries(ctx, adminPrincipal, AnalyticsQuery{
@@ -167,12 +183,26 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	assertNamesNothing("admin failures", failures)
 	filtered := query
 	filtered.ProjectID = &f.ProjectA
-	if _, err := service.GetAnalyticsSummary(ctx, adminPrincipal, filtered); !errors.Is(err, auth.ErrProjectNotVisible) {
+	if _, err := service.GetAnalyticsSummary(
+		ctx,
+		adminPrincipal,
+		filtered,
+	); !errors.Is(
+		err,
+		auth.ErrProjectNotVisible,
+	) {
 		t.Fatalf("admin filter by the hidden Project error = %v, want project not visible", err)
 	}
 	filtered = query
 	filtered.TaskID = &f.TaskA
-	if _, err := service.GetAnalyticsSummary(ctx, adminPrincipal, filtered); !errors.Is(err, auth.ErrTaskNotVisible) {
+	if _, err := service.GetAnalyticsSummary(
+		ctx,
+		adminPrincipal,
+		filtered,
+	); !errors.Is(
+		err,
+		auth.ErrTaskNotVisible,
+	) {
 		t.Fatalf("admin filter by the hidden Task error = %v, want task not visible", err)
 	}
 	if _, err := service.GetTaskUsage(ctx, adminPrincipal, f.TaskA); !errors.Is(err, ErrTaskUsageNotFound) {
@@ -186,7 +216,8 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	}
 	named := false
 	for _, row := range projects.Rows {
-		if row.Key.ID != nil && *row.Key.ID == f.ProjectA && row.Key.Label == "Secret Launch" && row.Tokens.Input == "107" {
+		if row.Key.ID != nil && *row.Key.ID == f.ProjectA && row.Key.Label == "Secret Launch" &&
+			row.Tokens.Input == "107" {
 			named = true
 		}
 	}
@@ -218,14 +249,21 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	mine.Scope = AnalyticsScopeMine
 	memberSummary, err := service.GetAnalyticsSummary(ctx, memberPrincipal, mine)
 	if err != nil || memberSummary.Current.Tokens.Input != "10" || memberSummary.Current.Runs.Total != "2" {
-		t.Fatalf("member Mine totals = %+v, %v; want their 2 Runs and 10 input tokens", memberSummary.Current, err)
+		t.Fatalf(
+			"member Mine totals = %+v, %v; want their 2 Runs and 10 input tokens",
+			memberSummary.Current,
+			err,
+		)
 	}
 	for _, by := range []string{"agent", "model", "project", "task", "run_type", "runtime"} {
 		report := breakdown(memberPrincipal, mine, by)
 		assertNamesNothing("member breakdown by "+by, report)
 		if by == "project" {
 			if other := rowFor(report, "other_work"); other == nil || other.Tokens.Input != "7" {
-				t.Fatalf("member project breakdown = %+v, want their own hidden Run as Other work", report.Rows)
+				t.Fatalf(
+					"member project breakdown = %+v, want their own hidden Run as Other work",
+					report.Rows,
+				)
 			}
 		}
 	}
@@ -248,7 +286,11 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	}
 	for _, run := range usage.Items {
 		if run.UsageRestricted != (run.ID == f.RunA) {
-			t.Fatalf("member sees usage of Run %s restricted=%t; want only their own Run open", run.ID, run.UsageRestricted)
+			t.Fatalf(
+				"member sees usage of Run %s restricted=%t; want only their own Run open",
+				run.ID,
+				run.UsageRestricted,
+			)
 		}
 	}
 
@@ -278,7 +320,13 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 			t.Fatalf("%s active now = %q, %v; want %s", tt.name, active.ActiveNow, err, tt.want)
 		}
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status = 'completed' WHERE company_id = $1 AND finished_at IS NULL`, f.CompanyA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status = 'completed' WHERE company_id = $1 AND finished_at IS NULL`,
+		f.CompanyA,
+	)
 
 	// A deleted Task's Runs stay in its Project, as in Run history: the
 	// Task chat keeps project_id. Readers still see the Project by name;
@@ -287,17 +335,30 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 	projects = breakdown(owner, query, "project")
 	named = false
 	for _, row := range projects.Rows {
-		if row.Key.ID != nil && *row.Key.ID == f.ProjectA && row.Key.Label == "Secret Launch" && row.Tokens.Input == "107" {
+		if row.Key.ID != nil && *row.Key.ID == f.ProjectA && row.Key.Label == "Secret Launch" &&
+			row.Tokens.Input == "107" {
 			named = true
 		}
 	}
 	if noProject := rowFor(projects, "no_project"); !named || noProject == nil || noProject.Tokens.Input != "13" {
-		t.Fatalf("owner project breakdown after the Task is deleted = %+v, want the Project by name", projects.Rows)
+		t.Fatalf(
+			"owner project breakdown after the Task is deleted = %+v, want the Project by name",
+			projects.Rows,
+		)
 	}
 	filtered = query
 	filtered.ProjectID = &f.ProjectA
-	if ownerProject, err := service.GetAnalyticsSummary(ctx, owner, filtered); err != nil || ownerProject.Current.Tokens.Input != "107" {
-		t.Fatalf("owner Project filter after the Task is deleted = %+v, %v; want 107 input tokens", ownerProject.Current, err)
+	if ownerProject, err := service.GetAnalyticsSummary(
+		ctx,
+		owner,
+		filtered,
+	); err != nil ||
+		ownerProject.Current.Tokens.Input != "107" {
+		t.Fatalf(
+			"owner Project filter after the Task is deleted = %+v, %v; want 107 input tokens",
+			ownerProject.Current,
+			err,
+		)
 	}
 	tasks = breakdown(owner, query, "task")
 	if deleted := rowFor(tasks, "deleted_tasks"); deleted == nil || deleted.Tokens.Input != "107" {
@@ -307,7 +368,11 @@ func TestAnalyticsNamesOnlyProjectsTheCallerReads(t *testing.T) {
 		report := breakdown(adminPrincipal, query, by)
 		assertNamesNothing("admin breakdown after the Task is deleted by "+by, report)
 		if other := rowFor(report, "other_work"); other == nil || other.Tokens.Input != "107" {
-			t.Fatalf("admin breakdown by %s after the Task is deleted = %+v, want Other work of 107 tokens", by, report.Rows)
+			t.Fatalf(
+				"admin breakdown by %s after the Task is deleted = %+v, want Other work of 107 tokens",
+				by,
+				report.Rows,
+			)
 		}
 	}
 }

@@ -105,9 +105,9 @@ export function stopsRuns(
 
 /**
  * Whether a change to one person's own grant asks before it saves, from
- * the server's preview (owner rule 2026-10-07, as `changeAsksFirst` for a
- * Group): "loss" when they lose the Project, "runs" when a run of theirs
- * stops, or null to save straight away.
+ * the server's preview (as `changeAsksFirst` for a Group): "loss" when
+ * they lose the Project, "runs" when a run of theirs stops, or null to save
+ * straight away.
  */
 export function grantAsks(preview: {
   runsStopping: number;
@@ -117,7 +117,7 @@ export function grantAsks(preview: {
   return preview.runsStopping > 0 ? "runs" : null;
 }
 
-/** One source of a person's access, as the server lists it (TECH D4). */
+/** One source of a person's access, as the server lists it. */
 export type AccessSource = {
   via: "grant" | "group" | "company" | "management";
   groupId?: string;

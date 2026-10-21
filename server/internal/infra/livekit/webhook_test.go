@@ -14,7 +14,8 @@ func TestVerifyWebhookBindsSignatureToBody(t *testing.T) {
 	t.Parallel()
 	body, _ := json.Marshal(WebhookEvent{Event: "participant_joined"})
 	hash := sha256.Sum256(body)
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"iss": "key", "sha256": base64.StdEncoding.EncodeToString(hash[:]), "iat": time.Now().Unix(), "exp": time.Now().Add(time.Minute).Unix()}).SignedString([]byte("secret"))
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"iss": "key", "sha256": base64.StdEncoding.EncodeToString(hash[:]), "iat": time.Now().Unix(), "exp": time.Now().Add(time.Minute).Unix()}).
+		SignedString([]byte("secret"))
 	if err != nil {
 		t.Fatal(err)
 	}

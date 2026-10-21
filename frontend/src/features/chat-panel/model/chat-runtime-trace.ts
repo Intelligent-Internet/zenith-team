@@ -394,13 +394,13 @@ function humanizeRuntimeName(value: string) {
 }
 
 // The MCP server namespace is a technical identifier, not display prose. Drop
-// the Claude form (`mcp__boardly__ask_human`) and the Codex forms
-// (`boardly/ask_human`, `boardly.ask_human`) so the hidden set, the display
+// the Claude form (`mcp__zenith-team__ask_human`) and the Codex forms
+// (`zenith-team/ask_human`, `zenith-team.ask_human`) so the hidden set, the display
 // labels and the humanizer all see the bare tool name.
 function stripMcpNamespace(toolName: string) {
   return toolName
     .replace(/^mcp__[a-z0-9-]+__/i, "")
-    .replace(/^boardly[/.]/i, "");
+    .replace(/^zenith-team[/.]/i, "");
 }
 
 function latestSkillName(activeSkills: string[] | undefined) {

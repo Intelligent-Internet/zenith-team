@@ -19,8 +19,8 @@ import (
 // This exercises the public package, npm layout, relocation, export, repeat
 // startup, and repair without using a person's Studio credentials.
 func TestPublishedStudioNPMInstallation(t *testing.T) {
-	if os.Getenv("BOARDLY_TEST_MANAGED_NPM") != "1" {
-		t.Skip("set BOARDLY_TEST_MANAGED_NPM=1 for the published npm smoke test")
+	if os.Getenv("ZENITH_TEAM_TEST_MANAGED_NPM") != "1" {
+		t.Skip("set ZENITH_TEAM_TEST_MANAGED_NPM=1 for the published npm smoke test")
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Minute)
 	defer cancel()

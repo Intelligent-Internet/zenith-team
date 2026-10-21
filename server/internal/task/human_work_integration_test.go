@@ -8,12 +8,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // A human Task's chat runs its assisting Agent on the assignee's computer
@@ -38,7 +38,8 @@ func TestHumanTaskRunNeedsProjectTasksExecute(t *testing.T) {
 	countRuns := func() int {
 		t.Helper()
 		var count int
-		if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE task_id = $1`, created.Task.ID).Scan(&count); err != nil {
+		if err := pool.QueryRow(ctx, `SELECT count(*) FROM runs WHERE task_id = $1`, created.Task.ID).
+			Scan(&count); err != nil {
 			t.Fatal(err)
 		}
 		return count
@@ -47,14 +48,24 @@ func TestHumanTaskRunNeedsProjectTasksExecute(t *testing.T) {
 		t.Helper()
 		var refusal *execution.ExecutePermissionError
 		if !errors.As(err, &refusal) || refusal.AgentName != "Agent A" || refusal.AssigneeID != memberID {
-			t.Fatalf("%s error = %v (%+v), want the execute refusal naming the assisting Agent A", what, err, refusal)
+			t.Fatalf(
+				"%s error = %v (%+v), want the execute refusal naming the assisting Agent A",
+				what,
+				err,
+				refusal,
+			)
 		}
 		if count := countRuns(); count != 0 {
 			t.Fatalf("%s enqueued %d Run(s)", what, count)
 		}
 	}
 
-	_, err = service.StartExecution(ctx, member, created.Task.ID, StartExecutionInput{ExpectedRevision: created.Task.Revision})
+	_, err = service.StartExecution(
+		ctx,
+		member,
+		created.Task.ID,
+		StartExecutionInput{ExpectedRevision: created.Task.Revision},
+	)
 	assertRefusal("StartExecution()", err)
 
 	chat, err := conversation.NewConversationService(conversation.ServiceOptions{
@@ -70,8 +81,22 @@ func TestHumanTaskRunNeedsProjectTasksExecute(t *testing.T) {
 		conversation.SendInput{RequestKey: dbtest.NewUUID(t), Content: "Here is what I decided."})
 	assertRefusal("Send(assignee's message)", err)
 
-	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, memberID, "project.tasks.write", "project.tasks.execute")
-	started, err := service.StartExecution(ctx, member, created.Task.ID, StartExecutionInput{ExpectedRevision: created.Task.Revision})
+	dbtest.GrantProject(
+		t,
+		ctx,
+		pool,
+		fixture.CompanyA,
+		fixture.ProjectA,
+		memberID,
+		"project.tasks.write",
+		"project.tasks.execute",
+	)
+	started, err := service.StartExecution(
+		ctx,
+		member,
+		created.Task.ID,
+		StartExecutionInput{ExpectedRevision: created.Task.Revision},
+	)
 	if err != nil || started.RunID == nil {
 		t.Fatalf("StartExecution() with execute = %+v, %v; want a Run", started.RunID, err)
 	}
@@ -91,8 +116,10 @@ func TestHumanTaskRunsWithAnAgentAndKeepsItsHumanExecutor(t *testing.T) {
 				proactive_mode_enabled_by_user_id=$2, proactive_mode_conversation_id=$3 WHERE id=$1`,
 				fixture.CompanyA, fixture.UserA, fixture.DirectConversationA)
 			created, err := service.Create(ctx, principal, CreateInput{
-				ProjectID: fixture.ProjectA, MilestoneType: MilestoneTypeProduct,
-				Title: "Confirm product scope", Description: "Discuss and record the member's decisions.",
+				ProjectID:     fixture.ProjectA,
+				MilestoneType: MilestoneTypeProduct,
+				Title:         "Confirm product scope",
+				Description:   "Discuss and record the member's decisions.",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -100,10 +127,34 @@ func TestHumanTaskRunsWithAnAgentAndKeepsItsHumanExecutor(t *testing.T) {
 			wantAgent := fixture.AgentA
 			if creatorAgent {
 				wantAgent = dbtest.NewUUID(t)
-				dbtest.SeedAgent(t, ctx, pool, wantAgent, fixture.CompanyA, "Product Agent", "codex", &fixture.AgentA)
-				dbtest.SeedAgentBinding(t, ctx, pool, fixture.CompanyA, wantAgent, fixture.UserA, fixture.RuntimeA, "codex")
-				dbtest.MustExec(t, ctx, pool,
-					`UPDATE tasks SET creator_user_id=NULL, creator_agent_id=$2 WHERE id=$1`, created.Task.ID, wantAgent)
+				dbtest.SeedAgent(
+					t,
+					ctx,
+					pool,
+					wantAgent,
+					fixture.CompanyA,
+					"Product Agent",
+					"codex",
+					&fixture.AgentA,
+				)
+				dbtest.SeedAgentBinding(
+					t,
+					ctx,
+					pool,
+					fixture.CompanyA,
+					wantAgent,
+					fixture.UserA,
+					fixture.RuntimeA,
+					"codex",
+				)
+				dbtest.MustExec(
+					t,
+					ctx,
+					pool,
+					`UPDATE tasks SET creator_user_id=NULL, creator_agent_id=$2 WHERE id=$1`,
+					created.Task.ID,
+					wantAgent,
+				)
 			}
 			colleague := seedTaskMember(t, ctx, pool, fixture, "colleague@example.com")
 			if _, err := service.StartExecution(ctx, auth.UserPrincipal{
@@ -116,18 +167,27 @@ func TestHumanTaskRunsWithAnAgentAndKeepsItsHumanExecutor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("start human Task: %v", err)
 			}
-			if started.RunID == nil || started.Task.Status != StatusInProgress || started.Task.ExecutedBy.Kind != ActorUser {
+			if started.RunID == nil || started.Task.Status != StatusInProgress ||
+				started.Task.ExecutedBy.Kind != ActorUser {
 				t.Fatalf("started human Task = %+v", started)
 			}
 			run, err := service.store.Queries().GetRun(ctx, *started.RunID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if run.AgentID != wantAgent || run.ExecutionAuthorizedByUserID.UUID != fixture.UserA || run.RuntimeID != fixture.RuntimeA {
-				t.Fatalf("Run Agent/authorizer/runtime = %s/%s/%s", run.AgentID, run.ExecutionAuthorizedByUserID.UUID, run.RuntimeID)
+			if run.AgentID != wantAgent || run.ExecutionAuthorizedByUserID.UUID != fixture.UserA ||
+				run.RuntimeID != fixture.RuntimeA {
+				t.Fatalf(
+					"Run Agent/authorizer/runtime = %s/%s/%s",
+					run.AgentID,
+					run.ExecutionAuthorizedByUserID.UUID,
+					run.RuntimeID,
+				)
 			}
 			var humanWork bool
-			if err := pool.QueryRow(ctx, `SELECT (context->'executionProfile'->'task'->>'humanWork')::boolean FROM runs WHERE id=$1`, run.ID).Scan(&humanWork); err != nil || !humanWork {
+			if err := pool.QueryRow(ctx, `SELECT (context->'executionProfile'->'task'->>'humanWork')::boolean FROM runs WHERE id=$1`, run.ID).
+				Scan(&humanWork); err != nil ||
+				!humanWork {
 				t.Fatalf("frozen human work = %v, %v", humanWork, err)
 			}
 			if _, err := service.Get(ctx, principal, created.Task.ID, &RunScope{
@@ -148,23 +208,38 @@ func TestHumanTaskRunsWithAnAgentAndKeepsItsHumanExecutor(t *testing.T) {
 				t.Fatalf("human Task after completion = %+v, %v", review, err)
 			}
 			var mergeJobs int
-			if err := pool.QueryRow(ctx, `SELECT count(*) FROM task_merge_jobs WHERE task_id=$1`, review.ID).Scan(&mergeJobs); err != nil || mergeJobs != 0 {
+			if err := pool.QueryRow(ctx, `SELECT count(*) FROM task_merge_jobs WHERE task_id=$1`, review.ID).
+				Scan(&mergeJobs); err != nil ||
+				mergeJobs != 0 {
 				t.Fatalf("human Task proactive merge jobs = %d, %v, want zero", mergeJobs, err)
 			}
-			if _, err := service.store.Queries().InsertNextProactiveTaskMergeJob(ctx, auth.RolesWith(auth.PermissionCompanyProactiveModeManage)); !errors.Is(err, pgx.ErrNoRows) {
+			if _, err := service.store.Queries().
+				InsertNextProactiveTaskMergeJob(ctx, auth.RolesWith(auth.PermissionCompanyProactiveModeManage)); !errors.Is(
+				err,
+				pgx.ErrNoRows,
+			) {
 				t.Fatalf("human Task background merge = %v, want no job", err)
 			}
 			chat, err := conversation.NewConversationService(conversation.ServiceOptions{
 				Store: service.store, Bus: newTestBus(t),
 				TaskMessageRuns: conversation.TaskMessageRunPreparerFuncs{
-					Check: CheckMessageRunInTx, Prepare: PrepareMessageRunInTx, NextStep: RunNextStepInTx,
+					Check:    CheckMessageRunInTx,
+					Prepare:  PrepareMessageRunInTx,
+					NextStep: RunNextStepInTx,
 				},
 			})
 			if err != nil {
 				t.Fatal(err)
 			}
-			sent, err := chat.Send(ctx, principal, conversation.MessageTarget{Kind: conversation.TargetTask, ID: created.Task.ID},
-				conversation.SendInput{RequestKey: dbtest.NewUUID(t), Content: "Let's revise the payment model."})
+			sent, err := chat.Send(
+				ctx,
+				principal,
+				conversation.MessageTarget{Kind: conversation.TargetTask, ID: created.Task.ID},
+				conversation.SendInput{
+					RequestKey: dbtest.NewUUID(t),
+					Content:    "Let's revise the payment model.",
+				},
+			)
 			if err != nil || sent.RunID == nil {
 				t.Fatalf("reply in human Task chat = %+v, %v", sent, err)
 			}
@@ -183,8 +258,14 @@ func TestHumanTaskRunsWithAnAgentAndKeepsItsHumanExecutor(t *testing.T) {
 				t.Fatal(err)
 			}
 			done := StatusDone
-			completed, err := service.Update(ctx, principal, review.ID, UpdateInput{ExpectedRevision: review.Revision, Status: &done})
-			if err != nil || completed.Task.Status != StatusDone || completed.Task.ExecutedBy.Kind != ActorUser {
+			completed, err := service.Update(
+				ctx,
+				principal,
+				review.ID,
+				UpdateInput{ExpectedRevision: review.Revision, Status: &done},
+			)
+			if err != nil || completed.Task.Status != StatusDone ||
+				completed.Task.ExecutedBy.Kind != ActorUser {
 				t.Fatalf("human marks reviewed Task done = %+v, %v", completed, err)
 			}
 		})

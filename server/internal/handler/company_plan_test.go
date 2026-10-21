@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
 func TestCompanyPlanApplyWithoutRunTokenPreservesOwnerMutation(t *testing.T) {
@@ -34,7 +34,12 @@ func TestCompanyPlanApplyWithoutRunTokenPreservesOwnerMutation(t *testing.T) {
 				artifact.CompanyID != companyID.String() {
 				t.Fatalf("ApplyCompanyPlan input = %+v / %+v", gotPrincipal, artifact)
 			}
-			return company.PlanApplyResult{Created: 2, Updated: 1, Deleted: 3, Skipped: []company.PlanSkip{}}, nil
+			return company.PlanApplyResult{
+				Created: 2,
+				Updated: 1,
+				Deleted: 3,
+				Skipped: []company.PlanSkip{},
+			}, nil
 		},
 	}
 	handler := companyPlanTestHandler(t, principal, service)
@@ -44,7 +49,8 @@ func TestCompanyPlanApplyWithoutRunTokenPreservesOwnerMutation(t *testing.T) {
 		"/api/v1/companies/"+companyID.String()+"/company-plan/apply",
 		[]byte(`{"artifactVersion":1,"companyId":"`+companyID.String()+`"}`),
 	)
-	if response.Code != http.StatusOK || response.Body.String() != `{"created":2,"updated":1,"deleted":3,"skipped":[]}` {
+	if response.Code != http.StatusOK ||
+		response.Body.String() != `{"created":2,"updated":1,"deleted":3,"skipped":[]}` {
 		t.Fatalf("apply Company Plan = %d %s", response.Code, response.Body.String())
 	}
 }

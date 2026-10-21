@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // topicLog collects what one topic publishes post-commit. A subscription is

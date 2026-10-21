@@ -13,7 +13,7 @@ desktop ──┘                     │              │
                                 │              └─ Redis (realtime relay,
                                 │                        claim-empty cache)
                                 │
-                        daemon (boardly CLI) ─ codex | claude
+                        daemon (zen CLI) ─ codex | claude
 ```
 
 The server owns PostgreSQL-backed product state and the HTTP/WebSocket contracts. The daemon runs on the user's machine, claims queued runs, prepares workspaces, and launches the provider CLIs; provider credentials and native configuration never leave that machine.
@@ -28,16 +28,17 @@ The server owns PostgreSQL-backed product state and the HTTP/WebSocket contracts
 | `deploy/` | Production manifests, runbook, and environment reference | Docker Compose |
 | `docker/` | Local development infrastructure (`compose.yml`, `dev.env`) | Docker Compose |
 
-## The four binaries
+## The binaries
 
 One directory per executable under `server/cmd/`:
 
 | Binary | Role |
 | --- | --- |
-| `server` | The HTTP/WebSocket API and the composition root; the only one of the four the API container ships |
+| `server` | The HTTP/WebSocket API and the composition root; the API image ships it as `zenith-team-server` |
 | `zen` | The user-facing CLI: `auth`, `daemon start/stop/status/logs`, `config`, `agent`, `runtime`, `task`, `run`, `conversation` and the Run-scoped Agent families |
-| `boardly-mcp` (from `cmd/mcp`) | The stdio MCP server an agent process talks to; ships in the desktop bundle |
+| `zenith-team-mcp` (from `cmd/mcp`) | The stdio MCP server an agent process talks to; ships in the desktop bundle |
 | `migrate` | Standalone migration runner for local and CI databases and manual recovery |
+| `bundlectl` | Pins, verifies and prepares the platform content bundles; see ADR 0016 |
 
 ## The request path
 
@@ -69,6 +70,7 @@ Domain services never touch a socket. They publish to the in-process bus, and th
 - `docs/api/` — the API reference; `docs/api/spec/` is the machine-readable contract.
 - `docs/adr/` — the accepted decisions and their reasoning.
 - [Design](/developers/design) — the invariants this architecture is built to keep, on this site.
+- [Conventions](/developers/conventions) — a short digest of the house rules.
 
 ## Next steps
 

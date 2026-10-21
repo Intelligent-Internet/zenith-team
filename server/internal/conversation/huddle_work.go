@@ -5,11 +5,12 @@ import (
 	"slices"
 	"time"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // HuddleWorkNotice contains routing facts only, never a result or private input.
@@ -44,7 +45,7 @@ func huddleWorkNotices(
 	claim string,
 ) ([]HuddleWorkNotice, *HuddleWorkNotice, error) {
 	// Notices are spoken to the call with the access of the person who
-	// shared Company context (D31), the voice assistant's Authorizer.
+	// shared Company context, the voice assistant's Authorizer.
 	rows, err := q.ReadHuddleWork(ctx, huddleWorkParams(h, sharerID))
 	if err != nil {
 		return nil, nil, err
@@ -74,7 +75,7 @@ func huddleWorkNotices(
 }
 
 // huddleWorkParams reads a Huddle's submitted work as readerID may see it:
-// work is kept only in Projects that person reads by the delegate rule (D31).
+// work is kept only in Projects that person reads by the delegate rule.
 func huddleWorkParams(h generated.Huddle, readerID uuid.UUID) generated.ReadHuddleWorkParams {
 	return generated.ReadHuddleWorkParams{
 		CompanyID: h.CompanyID, HuddleID: h.ID, ReaderUserID: readerID,
@@ -85,7 +86,11 @@ func huddleWorkParams(h generated.Huddle, readerID uuid.UUID) generated.ReadHudd
 
 // The caller establishes Huddle visibility or checks a live voice capability.
 // One bounded query serves UI polling and on-demand voice reads identically.
-func readHuddleWork(ctx context.Context, q *generated.Queries, in generated.ReadHuddleWorkParams) (voice.ContextResult, error) {
+func readHuddleWork(
+	ctx context.Context,
+	q *generated.Queries,
+	in generated.ReadHuddleWorkParams,
+) (voice.ContextResult, error) {
 	result := voice.ContextResult{Items: []voice.ContextItem{}}
 	rows, err := q.ReadHuddleWork(ctx, in)
 	if err != nil {
@@ -94,12 +99,23 @@ func readHuddleWork(ctx context.Context, q *generated.Queries, in generated.Read
 	checkedAt := time.Now().UTC()
 	for _, row := range rows {
 		work := &voice.WorkProgress{
-			State:  huddleWorkState(row.RunStatus, row.RuntimeOnline, row.WaitingInput, row.Resuming),
-			TaskID: util.NullUUIDPtr(row.TaskID), TaskStatus: row.TaskStatus, RunStatus: row.RunStatus,
-			NewerTaskExecution: row.NewerTaskExecution, HasResult: row.HasResult,
-			ResultMessageID: util.NullUUIDPtr(row.ResultMessageID), ResultMessageSeq: row.ResultMessageSeq,
+			State: huddleWorkState(
+				row.RunStatus,
+				row.RuntimeOnline,
+				row.WaitingInput,
+				row.Resuming,
+			),
+			TaskID:               util.NullUUIDPtr(row.TaskID),
+			TaskStatus:           row.TaskStatus,
+			RunStatus:            row.RunStatus,
+			NewerTaskExecution:   row.NewerTaskExecution,
+			HasResult:            row.HasResult,
+			ResultMessageID:      util.NullUUIDPtr(row.ResultMessageID),
+			ResultMessageSeq:     row.ResultMessageSeq,
 			ResultConversationID: util.NullUUIDPtr(row.ResultConversationID),
-			ResultText:           row.ResultText, ResultTruncated: row.ResultTruncated, CheckedAt: checkedAt,
+			ResultText:           row.ResultText,
+			ResultTruncated:      row.ResultTruncated,
+			CheckedAt:            checkedAt,
 		}
 		if row.RunID != uuid.Nil {
 			work.RunID = &row.RunID

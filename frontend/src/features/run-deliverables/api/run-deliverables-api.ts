@@ -11,7 +11,7 @@ import type {
   PublicationSubdomainInput,
   RunResult,
 } from "@/features/run-deliverables/model/run-deliverable";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 
 type RunResultArgument = {
   artifactId?: string;
@@ -28,14 +28,14 @@ type GrantArgument = ArtifactArgument & {
   permission?: ArtifactPermission;
 };
 
-export const runDeliverablesApi = boardlyApi.injectEndpoints({
+export const runDeliverablesApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getRunDetails: builder.query<RunDto, { companyId: string; runId: string }>({
       providesTags: (_result, _error, { runId }) => [
         { type: "Run", id: runId },
       ],
       queryFn: ({ companyId, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runService.getRun(companyId, runId),
           "Run details could not be loaded.",
         ),
@@ -43,7 +43,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
     listUnownedArtifacts: builder.query<UnownedArtifactPage, string>({
       providesTags: [{ type: "Deliverable" }],
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runDeliverableService.listUnownedArtifacts(companyId),
           "Artifacts needing recovery could not be loaded.",
         ),
@@ -54,7 +54,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
     >({
       invalidatesTags: [{ type: "Deliverable" }],
       queryFn: ({ companyId, artifactId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.claimUnownedArtifact(
               companyId,
@@ -69,7 +69,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         { id: argument.artifactId, type: "Deliverable" },
       ],
       queryFn: ({ companyId, artifactId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runDeliverableService.getArtifact(companyId, artifactId),
           "This artifact is unavailable or you do not have access.",
           { retry: true },
@@ -87,7 +87,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         permission,
         expectedRevision,
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.putArtifactGrant(
               companyId,
@@ -105,7 +105,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         { id: `${argument.companyId}:ready`, type: "Deliverable" },
       ],
       queryFn: ({ companyId, artifactId, userId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.deleteArtifactGrant(
               companyId,
@@ -125,7 +125,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
           : []),
       ],
       queryFn: ({ artifactId, companyId, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.fetchRunResult(companyId, runId, artifactId),
           "This run result could not be loaded.",
@@ -140,7 +140,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         { id: argument.runId ?? undefined, type: "Deliverable" },
       ],
       queryFn: ({ companyId, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => runDeliverableService.publish(companyId, runId),
           "This output could not be published.",
         ),
@@ -150,7 +150,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         { id: argument.runId ?? undefined, type: "Deliverable" },
       ],
       queryFn: ({ companyId, expectedRevision, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.unpublish(companyId, runId, expectedRevision),
           "This publication could not be removed.",
@@ -164,7 +164,7 @@ export const runDeliverablesApi = boardlyApi.injectEndpoints({
         { id: argument.runId ?? undefined, type: "Deliverable" },
       ],
       queryFn: ({ companyId, runId, subdomain, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             runDeliverableService.setSubdomain(companyId, runId, {
               subdomain,

@@ -18,7 +18,7 @@ const (
 	claudePluginCatalogLimit     = 5000
 )
 
-// ClaudePluginStatus is Boardly's sanitized view of Claude Code plugin state.
+// ClaudePluginStatus is Zenith Team's sanitized view of Claude Code plugin state.
 type ClaudePluginStatus string
 
 const (
@@ -28,7 +28,7 @@ const (
 	ClaudePluginStatusError     ClaudePluginStatus = "error"
 )
 
-// ClaudePluginAction is the user-scoped native lifecycle action Boardly may request.
+// ClaudePluginAction is the user-scoped native lifecycle action Zenith Team may request.
 type ClaudePluginAction string
 
 const (
@@ -71,7 +71,7 @@ var (
 	ErrClaudePluginsUnavailable = errors.New("Claude plugins are unavailable")
 	// ErrClaudePluginNotFound means the exact ID was absent from the last complete discovery.
 	ErrClaudePluginNotFound = errors.New("Claude plugin was not found")
-	// ErrClaudePluginNotInstallable means the discovered plugin is not installable by Boardly.
+	// ErrClaudePluginNotInstallable means the discovered plugin is not installable by Zenith Team.
 	ErrClaudePluginNotInstallable = errors.New("Claude plugin cannot be installed")
 	// ErrClaudePluginNotUninstallable means no user-scoped installation was discovered.
 	ErrClaudePluginNotUninstallable = errors.New("Claude plugin cannot be uninstalled")
@@ -459,7 +459,7 @@ func parseClaudePluginCatalog(body []byte) (claudePluginCatalog, error) {
 	}
 	installed := make(map[string]installedState, len(*response.Installed))
 	installedOrder := make([]string, 0, len(*response.Installed))
-	// MCP server names are best-effort presentation: a declaration Boardly
+	// MCP server names are best-effort presentation: a declaration Zenith Team
 	// cannot validate hides the names, never the plugin.
 	mcpServers := make(map[string][]string)
 	recordMCPServers := func(nativeID string, raw json.RawMessage) {

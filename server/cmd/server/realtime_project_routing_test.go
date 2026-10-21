@@ -11,17 +11,17 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // project.access_changed reaches exactly the people the change concerned
@@ -35,10 +35,17 @@ func TestProjectAccessChangedRoutesToItsRecipients(t *testing.T) {
 	reader, manager := uuid.New(), uuid.New()
 
 	bus, recorder := routedBus(t)
-	publish(t, bus, companyID, company.TopicProject, company.EventProjectAccessChanged, company.ProjectAccessChanged{
-		ProjectID: projectID, Revision: 7,
-		RecipientUserIDs: []uuid.UUID{reader, manager, reader, uuid.Nil},
-	})
+	publish(
+		t,
+		bus,
+		companyID,
+		company.TopicProject,
+		company.EventProjectAccessChanged,
+		company.ProjectAccessChanged{
+			ProjectID: projectID, Revision: 7,
+			RecipientUserIDs: []uuid.UUID{reader, manager, reader, uuid.Nil},
+		},
+	)
 	want := []string{
 		"company_user/" + companyID.String() + "/" + reader.String(),
 		"company_user/" + companyID.String() + "/" + manager.String(),
@@ -58,17 +65,31 @@ func TestProjectAccessChangedRoutesToItsRecipients(t *testing.T) {
 	}
 
 	bus, recorder = routedBus(t)
-	publish(t, bus, companyID, company.TopicProject, company.EventProjectAccessChanged, company.ProjectAccessChanged{
-		ProjectID: projectID, Revision: 8, RecipientUserIDs: []uuid.UUID{reader}, CompanyWide: true,
-	})
+	publish(
+		t,
+		bus,
+		companyID,
+		company.TopicProject,
+		company.EventProjectAccessChanged,
+		company.ProjectAccessChanged{
+			ProjectID: projectID, Revision: 8, RecipientUserIDs: []uuid.UUID{reader}, CompanyWide: true,
+		},
+	)
 	if want := []string{"company/" + companyID.String()}; !slices.Equal(recorder.sent, want) {
 		t.Fatalf("Company-visible rooms = %v, want %v", recorder.sent, want)
 	}
 
 	bus, recorder = routedBus(t)
-	publish(t, bus, companyID, company.TopicProject, company.EventProjectAccessChanged, company.ProjectAccessChanged{
-		ProjectID: projectID, Revision: 9,
-	})
+	publish(
+		t,
+		bus,
+		companyID,
+		company.TopicProject,
+		company.EventProjectAccessChanged,
+		company.ProjectAccessChanged{
+			ProjectID: projectID, Revision: 9,
+		},
+	)
 	if len(recorder.sent) != 0 {
 		t.Fatalf("rooms with no recipients = %v, want none", recorder.sent)
 	}
@@ -96,10 +117,20 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 			return canvas.Changed{ProjectFrame: frame(a), ProjectID: projectID, Sequence: 1}
 		}},
 		{canvas.Topic, canvas.EventDocumentChanged, func(a *auth.ProjectAudience) any {
-			return canvas.DocumentChanged{ProjectFrame: frame(a), ProjectID: projectID, PageID: uuid.New(), Sequence: 1}
+			return canvas.DocumentChanged{
+				ProjectFrame: frame(a),
+				ProjectID:    projectID,
+				PageID:       uuid.New(),
+				Sequence:     1,
+			}
 		}},
 		{task.Topic, task.EventCreated, func(a *auth.ProjectAudience) any {
-			return task.Response{ID: taskID, ProjectID: projectID, ConversationID: conversationID, ProjectFrame: frame(a)}
+			return task.Response{
+				ID:             taskID,
+				ProjectID:      projectID,
+				ConversationID: conversationID,
+				ProjectFrame:   frame(a),
+			}
 		}},
 		{task.Topic, task.EventDeleted, func(a *auth.ProjectAudience) any {
 			return task.Removal{TaskID: taskID, ProjectID: projectID, ProjectFrame: frame(a)}
@@ -111,7 +142,11 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 			return task.ReportChangedPayload{TaskID: taskID.String(), ProjectFrame: frame(a)}
 		}},
 		{execution.Topic, execution.EventRunCompleted, func(a *auth.ProjectAudience) any {
-			return execution.RunSnapshot{TaskID: &taskID, ConversationID: conversationID, ConversationRoute: route(a)}
+			return execution.RunSnapshot{
+				TaskID:            &taskID,
+				ConversationID:    conversationID,
+				ConversationRoute: route(a),
+			}
 		}},
 		{execution.Topic, execution.EventRunMessageCreated, func(a *auth.ProjectAudience) any {
 			return execution.TranscriptItem{
@@ -121,7 +156,11 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 		}},
 		{conversation.Topic, conversation.EventConversationUpdated, func(a *auth.ProjectAudience) any {
 			return conversation.Snapshot{
-				Conversation: conversation.Response{ID: conversationID, Kind: conversation.KindTask, TaskID: &taskID},
+				Conversation: conversation.Response{
+					ID:     conversationID,
+					Kind:   conversation.KindTask,
+					TaskID: &taskID,
+				},
 				ProjectFrame: frame(a),
 			}
 		}},
@@ -133,7 +172,9 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 		}},
 		{conversation.TopicMessage, conversation.EventMessageUpdated, func(a *auth.ProjectAudience) any {
 			return conversation.MessageUpdated{
-				ConversationID: conversationID, ConversationKind: conversation.KindTask, ProjectFrame: frame(a),
+				ConversationID:   conversationID,
+				ConversationKind: conversation.KindTask,
+				ProjectFrame:     frame(a),
 			}
 		}},
 		{attachment.Topic, attachment.EventDeleted, func(a *auth.ProjectAudience) any {
@@ -143,10 +184,18 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 			}
 		}},
 		{approval.Topic, approval.EventApprovalRequested, func(a *auth.ProjectAudience) any {
-			return approval.Approval{TaskID: &taskID, ConversationID: conversationID, ProjectFrame: frame(a)}
+			return approval.Approval{
+				TaskID:         &taskID,
+				ConversationID: conversationID,
+				ProjectFrame:   frame(a),
+			}
 		}},
 		{approval.TopicQuestion, approval.EventQuestionAsked, func(a *auth.ProjectAudience) any {
-			return approval.Question{TaskID: &taskID, ConversationID: conversationID, ProjectFrame: frame(a)}
+			return approval.Question{
+				TaskID:         &taskID,
+				ConversationID: conversationID,
+				ProjectFrame:   frame(a),
+			}
 		}},
 		{activity.Topic, activity.EventCreated, func(a *auth.ProjectAudience) any {
 			return activity.Entry{
@@ -190,7 +239,12 @@ func TestProjectFramesReachOnlyTheProjectsReaders(t *testing.T) {
 			}
 			for index, room := range recorder.sent {
 				if strings.HasSuffix(room, nonReader.String()) || strings.HasPrefix(room, "company/") {
-					t.Fatalf("room %s received a frame about Task %s / chat %s", room, taskID, conversationID)
+					t.Fatalf(
+						"room %s received a frame about Task %s / chat %s",
+						room,
+						taskID,
+						conversationID,
+					)
 				}
 				encoded, err := json.Marshal(recorder.frames[index].Payload)
 				if err == nil && strings.Contains(string(encoded), readerB.String()) &&
@@ -225,12 +279,26 @@ func TestProjectFramesOfACompanyVisibleProjectUseTheCompanyRoom(t *testing.T) {
 	companyID := uuid.New()
 	for _, frame := range projectFrames(uuid.New(), uuid.New(), uuid.New()) {
 		bus, recorder := routedBus(t)
-		publish(t, bus, companyID, frame.topic, frame.name, frame.payload(&auth.ProjectAudience{CompanyWide: true}))
+		publish(
+			t,
+			bus,
+			companyID,
+			frame.topic,
+			frame.name,
+			frame.payload(&auth.ProjectAudience{CompanyWide: true}),
+		)
 		if want := []string{"company/" + companyID.String()}; !slices.Equal(recorder.sent, want) {
 			t.Fatalf("%s rooms = %v, want %v", frame.name, recorder.sent, want)
 		}
 		bus, recorder = routedBus(t)
-		publish(t, bus, companyID, frame.topic, frame.name, frame.payload(&auth.ProjectAudience{UserIDs: []uuid.UUID{}}))
+		publish(
+			t,
+			bus,
+			companyID,
+			frame.topic,
+			frame.name,
+			frame.payload(&auth.ProjectAudience{UserIDs: []uuid.UUID{}}),
+		)
 		if len(recorder.sent) != 0 {
 			t.Fatalf("%s with no readers reached %v", frame.name, recorder.sent)
 		}

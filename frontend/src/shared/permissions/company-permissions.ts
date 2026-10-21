@@ -74,7 +74,7 @@ export const ROLE_MATRIX: readonly {
   { label: "Assign tasks to other people", permission: "tasks.assign" },
   // Plugins and apps live on each person's own computer (ADR 0014), so
   // every role installs and connects there; accepting an app's changed tools
-  // is the Company's (owner decision, 2026-09-29).
+  // is the Company's.
   {
     label: "Install plugins and connect apps on their own computer",
     permission: "plugins.manage",

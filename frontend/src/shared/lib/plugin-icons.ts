@@ -40,7 +40,7 @@ export function localPluginIconUrl(
     return undefined;
   }
 
-  return `boardly-plugin-icon://local/v1/${plugin.provider}/${context.companyId}/${context.runtimeId}/${encodeURIComponent(plugin.nativeId)}`;
+  return `zenith-team-plugin-icon://local/v1/${plugin.provider}/${context.companyId}/${context.runtimeId}/${encodeURIComponent(plugin.nativeId)}`;
 }
 
 function isCanonicalUuid(value: string) {

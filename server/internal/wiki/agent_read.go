@@ -13,12 +13,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 const (
@@ -351,14 +351,19 @@ func (s *DefaultAgentReadService) List(
 			}
 		}
 		total, err := q.CountWikiPagesForRun(ctx, generated.CountWikiPagesForRunParams{
-			CompanyID: principal.CompanyID, ActorUserID: principal.UserID, CollectionID: nullableUUID(collectionID),
+			CompanyID:    principal.CompanyID,
+			ActorUserID:  principal.UserID,
+			CollectionID: nullableUUID(collectionID),
 		})
 		if err != nil {
 			return fmt.Errorf("count Wiki pages for Run: %w", err)
 		}
 		rows, err := q.ListWikiPagesForRun(ctx, generated.ListWikiPagesForRunParams{
-			CompanyID: principal.CompanyID, ActorUserID: principal.UserID, CollectionID: nullableUUID(collectionID),
-			ResultOffset: int32(offset), ResultLimit: int32(limit),
+			CompanyID:    principal.CompanyID,
+			ActorUserID:  principal.UserID,
+			CollectionID: nullableUUID(collectionID),
+			ResultOffset: int32(offset),
+			ResultLimit:  int32(limit),
 		})
 		if err != nil {
 			return fmt.Errorf("list Wiki pages for Run: %w", err)
@@ -427,13 +432,23 @@ func (s *DefaultAgentReadService) Read(
 		}
 		returned := utf8.RuneCountInString(row.Content)
 		response = AgentReadResponse{
-			PageID: row.ID, Title: row.Title, Summary: row.Summary,
-			CollectionName: textPointer(row.CollectionName), Revision: row.RevisionNumber,
-			RevisionID: row.RevisionID, UpdatedAt: row.UpdatedAt.Time,
-			UpdatedByName: textPointer(row.UpdatedByName), UpdatedByAgentName: textPointer(row.UpdatedByAgentName),
-			Content: row.Content,
-			Offset:  offset, ReturnedChars: returned, TotalChars: total,
-			Truncated: offset+returned < total, Notice: AgentUntrustedNotice,
+			PageID:         row.ID,
+			Title:          row.Title,
+			Summary:        row.Summary,
+			CollectionName: textPointer(row.CollectionName),
+			Revision:       row.RevisionNumber,
+			RevisionID:     row.RevisionID,
+			UpdatedAt:      row.UpdatedAt.Time,
+			UpdatedByName: textPointer(
+				row.UpdatedByName,
+			),
+			UpdatedByAgentName: textPointer(row.UpdatedByAgentName),
+			Content:            row.Content,
+			Offset:             offset,
+			ReturnedChars:      returned,
+			TotalChars:         total,
+			Truncated:          offset+returned < total,
+			Notice:             AgentUntrustedNotice,
 		}
 		if response.Truncated {
 			next := offset + returned
@@ -546,9 +561,12 @@ func (s *DefaultAgentReadService) ListPageAgentReads(
 		for _, row := range rows {
 			result.Total = int(row.Total)
 			result.Items = append(result.Items, PageAgentRead{
-				RunID: row.RunID, TaskID: readableTaskID(row.TaskID, row.TaskReadable), AgentID: row.AgentID,
-				AgentName: row.AgentName, RevisionNumber: row.RevisionNumber.Int32,
-				LastReadAt: row.LastReadAt.Time,
+				RunID:          row.RunID,
+				TaskID:         readableTaskID(row.TaskID, row.TaskReadable),
+				AgentID:        row.AgentID,
+				AgentName:      row.AgentName,
+				RevisionNumber: row.RevisionNumber.Int32,
+				LastReadAt:     row.LastReadAt.Time,
 			})
 		}
 		return nil

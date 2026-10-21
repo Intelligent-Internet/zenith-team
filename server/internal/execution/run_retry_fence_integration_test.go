@@ -12,11 +12,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestCreateRetryRunFencesTaskExecutionOwnership(t *testing.T) {
@@ -36,7 +36,13 @@ func TestCreateRetryRunFencesTaskExecutionOwnership(t *testing.T) {
 	first := enqueueRetryFenceTaskRun(t, ctx, queries, fixture)
 	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status = 'failed' WHERE id = $1`, first.ID)
 
-	dbtest.MustExec(t, ctx, pool, `UPDATE projects SET title='Changed after enqueue',version=version+1 WHERE id=$1`, fixture.ProjectA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE projects SET title='Changed after enqueue',version=version+1 WHERE id=$1`,
+		fixture.ProjectA,
+	)
 	child, err := queries.CreateRetryRun(
 		ctx,
 		generated.CreateRetryRunParams{ParentRunID: first.ID},
@@ -78,16 +84,35 @@ func TestCreateRetryRunFencesTaskExecutionOwnership(t *testing.T) {
 	// is no longer the assignee, so the retry is fenced even with the
 	// Agent restored.
 	otherMember := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Other')`, otherMember, otherMember.String()+"@boardly.test")
-	dbtest.MustExec(t, ctx, pool,
-		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, otherMember)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Other')`,
+		otherMember,
+		otherMember.String()+"@zenith-team.test",
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		otherMember,
+	)
 	dbtest.MustExec(t, ctx, pool, `
 		UPDATE tasks
 		SET status = 'in_progress', executed_by_agent_id = $2, assignee_user_id = $3
 		WHERE id = $1`, fixture.TaskA, fixture.AgentA, otherMember)
 	assertRetrySuppressed(t, ctx, pool, queries, second.ID, "assignee handoff")
-	dbtest.MustExec(t, ctx, pool, `UPDATE tasks SET assignee_user_id = $2 WHERE id = $1`, fixture.TaskA, fixture.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE tasks SET assignee_user_id = $2 WHERE id = $1`,
+		fixture.TaskA,
+		fixture.UserA,
+	)
 
 	prerequisiteID := dbtest.NewUUID(t)
 	prerequisiteConversationID := dbtest.NewUUID(t)

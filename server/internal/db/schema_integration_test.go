@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestSchemaEnforcesRealtimeProjectionAndAccessGenerationContracts(t *testing.T) {
@@ -153,7 +153,7 @@ func TestSchemaEnforcesTenantAndExecutionInvariants(t *testing.T) {
 
 	// A Run no longer owns its transcript: the rows live in conversation_items
 	// and run_id labels them with no foreign key, so a deleted Run takes
-	// nothing with it. See docs/adr/0005-one-conversation-stream.md.
+	// nothing with it.
 	t.Run("deleting a Run leaves its transcript items standing", func(t *testing.T) {
 		var runID uuid.UUID
 		if err := pool.QueryRow(ctx, `
@@ -599,7 +599,7 @@ func seedPreservedOutputGraph(
 		INSERT INTO output_publications (
 			company_id, output_id, output_item_id, requested_by_user_id,
 			service_name, provider_type, provider_binding_id
-		) VALUES ($1, $2, $3, $4, 'boardly-application', 'cloud_run', 'binding')`,
+		) VALUES ($1, $2, $3, $4, 'zenith-team-application', 'cloud_run', 'binding')`,
 		fixture.CompanyA, outputID, outputItemID, fixture.UserA)
 	return outputID
 }

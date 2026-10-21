@@ -16,7 +16,7 @@ func TestRedisDetailCacheStoresOnlySanitizedContentUnderHashedKey(t *testing.T) 
 	server := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
-	cache, err := NewRedisDetailCache(client, "boardly:test:mailbox")
+	cache, err := NewRedisDetailCache(client, "zenith-team:test:mailbox")
 	if err != nil {
 		t.Fatalf("NewRedisDetailCache() error = %v", err)
 	}
@@ -57,7 +57,7 @@ func TestRedisDetailCacheSanitizesContentAtItsBoundary(t *testing.T) {
 	server := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
-	cache, err := NewRedisDetailCache(client, "boardly:test:mailbox-boundary")
+	cache, err := NewRedisDetailCache(client, "zenith-team:test:mailbox-boundary")
 	if err != nil {
 		t.Fatalf("NewRedisDetailCache() error = %v", err)
 	}
@@ -82,7 +82,7 @@ func TestRedisDetailCacheStoresExpirationsAsShortHashedTombstones(t *testing.T) 
 	server := miniredis.RunT(t)
 	client := redis.NewClient(&redis.Options{Addr: server.Addr()})
 	t.Cleanup(func() { _ = client.Close() })
-	cache, err := NewRedisDetailCache(client, "boardly:test:mailbox-expired")
+	cache, err := NewRedisDetailCache(client, "zenith-team:test:mailbox-expired")
 	if err != nil {
 		t.Fatalf("NewRedisDetailCache() error = %v", err)
 	}

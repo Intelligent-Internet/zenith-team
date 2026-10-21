@@ -20,9 +20,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/mcp/tools"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const (
@@ -175,7 +175,7 @@ func TestRunCLIPolicyFollowsTheFrozenExecutionProfile(t *testing.T) {
 				t.Fatalf("%s Run policy refused %s %s", name, allowed[0], allowed[1])
 			}
 		}
-		if slices.Contains(boardlyMCPToolsForRun(doc), "company_plan_export") {
+		if slices.Contains(zenithTeamMCPToolsForRun(doc), "company_plan_export") {
 			t.Fatalf("%s Run was offered the unscoped Company Plan export", name)
 		}
 		doc.Agent.Capabilities.DisabledBuiltIns = []string{"planning"}
@@ -202,7 +202,7 @@ func TestRunCLIPolicyFollowsTheFrozenExecutionProfile(t *testing.T) {
 }
 
 // Agent-mode `zen task create` files work for the member the Run works for
-// (ADR 0014 D6). The channel admits the create and the one Project lookup it
+// (ADR 0014). The channel admits the create and the one Project lookup it
 // needs: a Task Run names its own Project, a non-root direct or channel Run
 // the Projects its planning reads show. The root Agent outside a Task is not
 // offered it. /me stays closed — the server makes the daemon's member the
@@ -356,7 +356,7 @@ func TestRunCLIPatternMatchesOneSegmentPerWildcard(t *testing.T) {
 
 func TestRunControlConfigRoundTripsThroughTheIsolatedHome(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
+	t.Setenv("ZENITH_TEAM_HOME", home)
 	if _, err := runchannel.LoadRunControlConfig(home); !runchannel.IsRunControlUnavailable(err) {
 		t.Fatalf("operator home reported %v, want run control unavailable", err)
 	}
@@ -484,8 +484,8 @@ func TestRunChannelForwardsWithDaemonSessionAndRunProof(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer session-token" {
 			t.Errorf("bearer = %q", r.Header.Get("Authorization"))
 		}
-		if r.Header.Get("X-Boardly-Run-Token") != testChannelRunToken {
-			t.Errorf("run proof = %q", r.Header.Get("X-Boardly-Run-Token"))
+		if r.Header.Get("X-Zenith-Team-Run-Token") != testChannelRunToken {
+			t.Errorf("run proof = %q", r.Header.Get("X-Zenith-Team-Run-Token"))
 		}
 		if r.Header.Get("Idempotency-Key") == "" || r.Header.Get("X-Client-Platform") != "cli" {
 			t.Errorf("headers = %v", r.Header)
@@ -542,16 +542,29 @@ func TestRunChannelCEOCreatesOnlyScheduledTasks(t *testing.T) {
 				Agent: RunAgentContext{IsRoot: true},
 			})
 			response, err := runchannel.NewClient(control).Do(context.Background(), runchannel.Request{
-				Method: http.MethodPost, Path: "/companies/" + testChannelCompany + "/tasks",
+				Method:     http.MethodPost,
+				Path:       "/companies/" + testChannelCompany + "/tasks",
 				RequestKey: uuid.NewString(),
-				Body:       json.RawMessage(`{"projectId":"` + testChannelProject + `","title":"Scheduled work","milestoneType":"launch"` + test.schedule + `}`),
+				Body: json.RawMessage(
+					`{"projectId":"` + testChannelProject + `","title":"Scheduled work","milestoneType":"launch"` + test.schedule + `}`,
+				),
 			})
 			if test.want {
 				if err != nil || response.Status != http.StatusCreated || forwarded.Load() != 1 {
-					t.Fatalf("create = %+v, %v; forwarded = %d, want created once", response, err, forwarded.Load())
+					t.Fatalf(
+						"create = %+v, %v; forwarded = %d, want created once",
+						response,
+						err,
+						forwarded.Load(),
+					)
 				}
 			} else if refusal, ok := channelRefusal(err); !ok || refusal.Code != "run_scope_denied" || forwarded.Load() != 0 {
-				t.Fatalf("create = %+v, %v; forwarded = %d, want local scope refusal", response, err, forwarded.Load())
+				t.Fatalf(
+					"create = %+v, %v; forwarded = %d, want local scope refusal",
+					response,
+					err,
+					forwarded.Load(),
+				)
 			}
 		})
 	}
@@ -567,7 +580,7 @@ func TestRunChannelForwardsTaskCreationForTheRunsMember(t *testing.T) {
 	upstream := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		forwarded <- r.Method + " " + r.URL.Path
 		if r.Header.Get("Authorization") != "Bearer session-token" ||
-			r.Header.Get("X-Boardly-Run-Token") != testChannelRunToken {
+			r.Header.Get("X-Zenith-Team-Run-Token") != testChannelRunToken {
 			t.Errorf("forwarded without the daemon session and Run proof: %v", r.Header)
 		}
 		if r.Method == http.MethodPost {
@@ -1009,7 +1022,7 @@ func TestRunSystemPromptAdvertisesExactlyTheChannelCommands(t *testing.T) {
 	}
 }
 
-// mcpToolDrivers calls every boardly-mcp tool the way boardly-mcp does: the
+// mcpToolDrivers calls every zenith-team-mcp tool the way zenith-team-mcp does: the
 // tool's own service over apiclient.RunChannel, so the route each tool
 // really calls is the one the channel must admit. The two skill tools read
 // the Run's local snapshot and call nothing, so they have no driver.
@@ -1039,7 +1052,15 @@ func mcpToolDrivers(
 	mail, mailErr := tools.NewMailService(api, run)
 	milestones, milestonesErr := tools.NewMilestoneToolService(api, run)
 	whiteboards, whiteboardsErr := tools.NewWhiteboardToolService(api, run)
-	if err := errors.Join(calendarErr, socialErr, wikiErr, pagesErr, mailErr, milestonesErr, whiteboardsErr); err != nil {
+	if err := errors.Join(
+		calendarErr,
+		socialErr,
+		wikiErr,
+		pagesErr,
+		mailErr,
+		milestonesErr,
+		whiteboardsErr,
+	); err != nil {
 		t.Fatalf("build the tool services: %v", err)
 	}
 	// Only a Task Run has the Task the failure tool needs.
@@ -1203,7 +1224,7 @@ func mcpChannelUpstream(t *testing.T, run Run, forwarded *[]string, mu *sync.Mut
 	company := "/api/v1/companies/" + run.CompanyID
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer session-token" ||
-			r.Header.Get("X-Boardly-Run-Token") != testChannelRunToken {
+			r.Header.Get("X-Zenith-Team-Run-Token") != testChannelRunToken {
 			t.Errorf("%s %s forwarded without the daemon session and the Run proof", r.Method, r.URL.Path)
 		}
 		if r.Method != http.MethodGet && r.Header.Get("Idempotency-Key") == "" {
@@ -1248,11 +1269,11 @@ func mcpChannelUpstream(t *testing.T, run Run, forwarded *[]string, mu *sync.Mut
 	})
 }
 
-// Every tool boardly-mcp is offered reaches the server through the Run
+// Every tool zenith-team-mcp is offered reaches the server through the Run
 // channel, and the channel admits exactly the routes the tools call: each
 // call is forwarded with the daemon's session and the Run proof, none is
-// refused as outside the Run's scope, and boardly-mcp itself sends no
-// bearer and no Run token (Access TECH B3b). A tool whose route changes
+// refused as outside the Run's scope, and zenith-team-mcp itself sends no
+// bearer and no Run token. A tool whose route changes
 // without its row fails here. present_output reaches the daemon's
 // presenter, which handles both files and native Pages.
 func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
@@ -1276,15 +1297,15 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 				t, mcpChannelUpstream(t, run, &forwarded, &mu), run, shape.doc,
 				runChannelWorkspace{present: presenter, path: t.TempDir()},
 			)
-			// boardly-mcp's own requests carry the Run capability and nothing
+			// zenith-team-mcp's own requests carry the Run capability and nothing
 			// that could act as the person.
 			mcpSide := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				auth := r.Header.Get("Authorization")
 				if !strings.HasPrefix(auth, runchannel.AuthorizationScheme+" ") {
-					t.Errorf("boardly-mcp sent Authorization %q, want the Run capability", auth)
+					t.Errorf("zenith-team-mcp sent Authorization %q, want the Run capability", auth)
 				}
-				if r.Header.Get("X-Boardly-Run-Token") != "" {
-					t.Error("boardly-mcp sent the Run token")
+				if r.Header.Get("X-Zenith-Team-Run-Token") != "" {
+					t.Error("zenith-team-mcp sent the Run token")
 				}
 				d.runChannelHandler()(w, r)
 			}))
@@ -1298,7 +1319,7 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 				CompanyID: run.CompanyID, ConversationID: run.ConversationID, TaskID: run.TaskID,
 				RunID: run.ID.String(), AgentID: run.AgentID,
 			}, planRoot)
-			// present_output is the local row: boardly-mcp sends it over the
+			// present_output is the local row: zenith-team-mcp sends it over the
 			// same channel and the daemon completes it with its presenter.
 			output, err := tools.NewOutputChannelService(
 				control.Endpoint,
@@ -1367,15 +1388,15 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 			artifactRoute := "/api/v1/companies/" + run.CompanyID + "/runs/" + run.ID.String() +
 				"/agent-artifacts/" + testChannelArtifact
 			presented := 0
-			offered := boardlyMCPToolsForRun(shape.doc)
+			offered := zenithTeamMCPToolsForRun(shape.doc)
 			if len(offered) == 0 {
-				t.Fatal("the shape offers no boardly-mcp tool")
+				t.Fatal("the shape offers no zenith-team-mcp tool")
 			}
 			for _, tool := range offered {
 				drive, ok := drivers[tool]
 				if !ok {
 					if tool != "search_skills" && tool != "load_skill_reference" {
-						t.Fatalf("no driver for boardly-mcp tool %s; add one", tool)
+						t.Fatalf("no driver for zenith-team-mcp tool %s; add one", tool)
 					}
 					continue
 				}
@@ -1430,12 +1451,12 @@ func TestEveryMCPToolCallIsAdmittedByTheRunChannel(t *testing.T) {
 			}
 		})
 	}
-	for _, tool := range boardlyMCPToolCatalog {
+	for _, tool := range zenithTeamMCPToolCatalog {
 		if tool == "search_skills" || tool == "load_skill_reference" {
 			continue
 		}
 		if !exercised[tool] {
-			t.Errorf("boardly-mcp tool %s was never driven through the Run channel", tool)
+			t.Errorf("zenith-team-mcp tool %s was never driven through the Run channel", tool)
 		}
 	}
 }
@@ -1487,8 +1508,7 @@ func TestMCPToolRowsFollowTheOfferedTools(t *testing.T) {
 // artifact_inspect and artifact_fetch post to channel paths no server route
 // has. Their rows are local, with the 60 s default, and the daemon keeps
 // them only when the Run has a workspace to fetch into: without one, or
-// with saved work off, the call is refused and nothing reaches the server
-// (Access TECH B3b).
+// with saved work off, the call is refused and nothing reaches the server.
 func TestArtifactToolRowsAreLocalAndNeedAWorkspace(t *testing.T) {
 	t.Parallel()
 	run := channelTestRun(t, false)
@@ -1649,7 +1669,7 @@ func TestRunChannelRejectsPrebuiltPresentationAndPresentsOutput(t *testing.T) {
 	}
 }
 
-// The channel carries what boardly-mcp sent and read before it moved onto
+// The channel carries what zenith-team-mcp sent and read before it moved onto
 // it: a Company Plan apply up to the server's own 16 MiB, and an answer up to
 // runchannel.MaxResponseBytes, such as the export's one read of every Task. A
 // larger answer is refused whole. Cut short, it is not JSON, and the daemon

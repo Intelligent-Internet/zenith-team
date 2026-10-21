@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // WaitForStudioAuth projects a live Studio command waiting for sign-in.

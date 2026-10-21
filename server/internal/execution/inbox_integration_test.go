@@ -14,13 +14,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 type notificationEventLog struct {
@@ -196,6 +196,7 @@ func TestRunTerminalInboxNamesTheTaskAndSchedule(t *testing.T) {
 			name:      "task title differs from conversation title",
 			wantTitle: "Ready to review: SCA-101 · Brand direction",
 			seed: func(t *testing.T, h *runHarness) uuid.UUID {
+				t.Helper()
 				taskID, conversationID := h.seedTask(t, 101)
 				dbtest.MustExec(t, context.Background(), h.pool,
 					`UPDATE tasks SET title = 'Brand direction' WHERE id = $1`, taskID)
@@ -208,6 +209,7 @@ func TestRunTerminalInboxNamesTheTaskAndSchedule(t *testing.T) {
 			name:      "legacy label-shaped key names the task by its number",
 			wantTitle: "Ready to review: SCA-4 · Design-partner program",
 			seed: func(t *testing.T, h *runHarness) uuid.UUID {
+				t.Helper()
 				taskID, conversationID := h.seedTask(t, 4)
 				dbtest.MustExec(
 					t,
@@ -223,6 +225,7 @@ func TestRunTerminalInboxNamesTheTaskAndSchedule(t *testing.T) {
 			name:      "schedule name",
 			wantTitle: "Schedule finished: Daily brief",
 			seed: func(t *testing.T, h *runHarness) uuid.UUID {
+				t.Helper()
 				schedule := insertCancellationTestSchedule(
 					t, context.Background(), h.queries, h.fixture, "Daily brief",
 				)

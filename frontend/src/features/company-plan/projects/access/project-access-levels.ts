@@ -12,11 +12,11 @@ import {
   type AccessGiver,
 } from "./project-access-model";
 
-// Access levels are quick presets in the access picker only (owner
-// decision 2026-10-02, kept 2026-10-07): picking one sets the selection to
-// its exact permissions, which are stored as the person's raw grant rows.
-// The server and the API know nothing about levels. A row names the highest
-// level a set holds and counts the rest ("View +1"), never a made-up name.
+// Access levels are quick presets in the access picker only: picking one
+// sets the selection to its exact permissions, which are stored as the
+// person's raw grant rows. The server and the API know nothing about
+// levels. A row names the highest level a set holds and counts the rest
+// ("View +1"), never a made-up name.
 // A new permission joins the levels that should include it.
 
 export type ProjectAccessLevelId = "view" | "work" | "decide" | "full";

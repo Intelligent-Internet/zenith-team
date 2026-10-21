@@ -72,7 +72,12 @@ func assertCanvasPresenceBounds(t *testing.T, presence *CanvasPresence) {
 	var sessions []CanvasSession
 	var err error
 	for i := range canvasPresenceSessionsPerUser + 1 {
-		sessions, err = presence.Update(ctx, room, CanvasSession{SessionID: fmt.Sprint("tab-", i), UserID: "a"}, false)
+		sessions, err = presence.Update(
+			ctx,
+			room,
+			CanvasSession{SessionID: fmt.Sprint("tab-", i), UserID: "a"},
+			false,
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -88,11 +93,24 @@ func assertCanvasPresenceBounds(t *testing.T, presence *CanvasPresence) {
 		t.Fatalf("listed sessions = %+v, %v", listed, err)
 	}
 	for i := range canvasPresenceRoomSessions - canvasPresenceSessionsPerUser {
-		if _, err = presence.Update(ctx, room, CanvasSession{SessionID: "tab", UserID: fmt.Sprint("user-", i)}, false); err != nil {
+		if _, err = presence.Update(
+			ctx,
+			room,
+			CanvasSession{SessionID: "tab", UserID: fmt.Sprint("user-", i)},
+			false,
+		); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err = presence.Update(ctx, room, CanvasSession{SessionID: "tab", UserID: "late"}, false); !errors.Is(err, ErrCanvasPresenceFull) {
+	if _, err = presence.Update(
+		ctx,
+		room,
+		CanvasSession{SessionID: "tab", UserID: "late"},
+		false,
+	); !errors.Is(
+		err,
+		ErrCanvasPresenceFull,
+	) {
 		t.Fatalf("full room = %v, want ErrCanvasPresenceFull", err)
 	}
 }
@@ -110,10 +128,20 @@ func assertCanvasPresenceFollowsRuns(t *testing.T, presence *CanvasPresence) {
 	run := uuid.New()
 	rooms := []string{"company:whiteboard:" + uuid.NewString(), "company:whiteboard:" + uuid.NewString()}
 	for _, room := range rooms {
-		if _, err := presence.Update(ctx, room, CanvasSession{SessionID: run.String(), UserID: "member", RunID: &run}, false); err != nil {
+		if _, err := presence.Update(
+			ctx,
+			room,
+			CanvasSession{SessionID: run.String(), UserID: "member", RunID: &run},
+			false,
+		); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := presence.Update(ctx, room, CanvasSession{SessionID: "tab", UserID: "member"}, false); err != nil {
+		if _, err := presence.Update(
+			ctx,
+			room,
+			CanvasSession{SessionID: "tab", UserID: "member"},
+			false,
+		); err != nil {
 			t.Fatal(err)
 		}
 	}

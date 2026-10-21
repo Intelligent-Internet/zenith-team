@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/daemon"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemon"
 )
 
 // fakeDaemon is a scriptable stand-in for the daemon's health port. A nil
@@ -57,7 +57,7 @@ func newFakeDaemon(t *testing.T, health *daemon.HealthResponse) *fakeDaemon {
 	server.Start()
 	t.Cleanup(server.Close)
 	port := listener.Addr().(*net.TCPAddr).Port
-	t.Setenv("BOARDLY_HEALTH_PORT", strconv.Itoa(port))
+	t.Setenv("ZENITH_TEAM_HEALTH_PORT", strconv.Itoa(port))
 	return fake
 }
 
@@ -227,7 +227,7 @@ func stubProcessSeams(t *testing.T, fake *fakeDaemon, oldPID, newPID int) *proce
 	return seams
 }
 
-// sessionAPI starts the daemon's own session from the seeded login (D31)
+// sessionAPI starts the daemon's own session from the seeded login
 // and serves the session check restart performs on the daemon plane,
 // recording that the check happened before anything else.
 func sessionAPI(t *testing.T, seams *processSeams, status int) *httptest.Server {
@@ -240,7 +240,7 @@ func sessionAPI(t *testing.T, seams *processSeams, status int) *httptest.Server 
 		case "/api/v1/daemon/config":
 			seams.record("session check")
 			w.WriteHeader(status)
-			_, _ = w.Write([]byte(`{"studioApiOrigin":"https://studio.boardly.test"}`))
+			_, _ = w.Write([]byte(`{"studioApiOrigin":"https://studio.zenith-team.test"}`))
 		default:
 			http.NotFound(w, r)
 		}
@@ -256,7 +256,7 @@ func TestDaemonRestartStartsTheReplacementOnlyAfterTheOldProcessExits(t *testing
 	fake := newFakeDaemon(t, runningHealth(oldPID, startedAt, "0.9.2", 1))
 	seams := stubProcessSeams(t, fake, oldPID, newPID)
 	seedSession(t, sessionAPI(t, seams, http.StatusOK).URL)
-	home := os.Getenv("BOARDLY_HOME")
+	home := os.Getenv("ZENITH_TEAM_HOME")
 	writeProcessRecord(t, home, runningHealth(oldPID, startedAt, "0.9.2", 1))
 	// The health port goes silent three polls in, while the process keeps
 	// draining for another six liveness checks: only the exit may release
@@ -304,13 +304,17 @@ func TestDaemonRestartRefusesToStopWhenTheReplacementCannotSignIn(t *testing.T) 
 		want    string
 	}{
 		{
-			name:    "no session",
-			session: func(t *testing.T, _ *processSeams) { t.Setenv("BOARDLY_HOME", t.TempDir()) },
-			want:    "not authenticated",
+			name: "no session",
+			session: func(t *testing.T, _ *processSeams) {
+				t.Helper()
+				t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+			},
+			want: "not authenticated",
 		},
 		{
 			name: "rejected session",
 			session: func(t *testing.T, seams *processSeams) {
+				t.Helper()
 				seedSession(t, sessionAPI(t, seams, http.StatusUnauthorized).URL)
 			},
 			want: "rejected the daemon session",
@@ -318,6 +322,7 @@ func TestDaemonRestartRefusesToStopWhenTheReplacementCannotSignIn(t *testing.T) 
 		{
 			name: "unreachable server",
 			session: func(t *testing.T, _ *processSeams) {
+				t.Helper()
 				listener, err := net.Listen("tcp", "127.0.0.1:0")
 				if err != nil {
 					t.Fatalf("listen: %v", err)
@@ -452,7 +457,7 @@ func TestDaemonStopWaitsForTheExitAndSaysSo(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			shortenDaemonWaits(t)
-			t.Setenv("BOARDLY_HOME", t.TempDir())
+			t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 			fake := newFakeDaemon(t, runningHealth(oldPID, time.Now().UTC(), "0.9.2", 1))
 			seams := stubProcessSeams(t, fake, oldPID, oldPID+1)
 			tc.script(fake, seams)
@@ -565,9 +570,9 @@ func TestDaemonStartExplainsWhenTheRunningDaemonIsAnotherVersion(t *testing.T) {
 }
 
 func TestDaemonStatusShowsVersionAndAPendingRestart(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	health := runningHealth(os.Getpid(), time.Now().UTC(), "0.9.2", 0)
-	health.ReloadPendingReason = "boardly binary on disk reports 0.9.3, running 0.9.2"
+	health.ReloadPendingReason = "zenith-team binary on disk reports 0.9.3, running 0.9.2"
 	fake := newFakeDaemon(t, health)
 
 	out, err := executeCLI(t, newRootCmd, "daemon", "status")
@@ -595,7 +600,7 @@ func TestDaemonStatusShowsVersionAndAPendingRestart(t *testing.T) {
 // providers it skipped; the table form has to show both, and in a stable
 // order — the daemon ranges over maps to build them.
 func TestDaemonStatusListsCompaniesAndSkippedProviders(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	health := runningHealth(os.Getpid(), time.Now().UTC(), "0.9.2", 0)
 	health.Agents = []string{"codex", "claude"}
 	health.SkippedAgents = map[string]string{
@@ -641,12 +646,12 @@ func TestDaemonStatusListsCompaniesAndSkippedProviders(t *testing.T) {
 	}
 }
 
-// DR-AC19's last clause: the provider the daemon registered as unusable is
+// The provider the daemon registered as unusable is
 // listed by `daemon status` with the same sentence the roster shows — the
 // daemon records the registered message under /health.skippedAgents, and
 // the table renders that map verbatim.
 func TestDaemonStatusListsSkippedProvidersWithTheirReason(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	health := runningHealth(os.Getpid(), time.Now().UTC(), "0.9.2", 0)
 	health.Agents = []string{"claude", "codex"}
 	health.SkippedAgents = map[string]string{
@@ -681,7 +686,11 @@ func TestFormatHealthCompaniesAndSkippedAgents(t *testing.T) {
 		want      string
 	}{
 		{name: "none", companies: nil, want: "none"},
-		{name: "singular", companies: []daemon.HealthCompany{{ID: "c1", Runtimes: []string{"r1"}}}, want: "c1 (1 runtime)"},
+		{
+			name:      "singular",
+			companies: []daemon.HealthCompany{{ID: "c1", Runtimes: []string{"r1"}}},
+			want:      "c1 (1 runtime)",
+		},
 		{
 			name: "sorted by id with plural counts",
 			companies: []daemon.HealthCompany{
@@ -738,37 +747,37 @@ func TestVersionTemplateMatchesTheDaemonProbe(t *testing.T) {
 
 func TestRestartIntoBinarySpawnsTheReplacementWithTheSameStartFlags(t *testing.T) {
 	shortenDaemonWaits(t)
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	newPID := os.Getpid() + 1
 	fake := newFakeDaemon(t, nil)
 	seams := stubProcessSeams(t, fake, os.Getpid(), newPID)
 
 	var out bytes.Buffer
-	err := restartIntoBinary(context.Background(), &out, "/opt/boardly/bin/zen", []string{"--log-level=debug"})
+	err := restartIntoBinary(context.Background(), &out, "/opt/zenith-team/bin/zen", []string{"--log-level=debug"})
 	if err != nil {
 		t.Fatalf("restartIntoBinary: %v", err)
 	}
-	want := "/opt/boardly/bin/zen daemon start --foreground --log-level=debug"
+	want := "/opt/zenith-team/bin/zen daemon start --foreground --log-level=debug"
 	if got := strings.Join(seams.spawns[0], " "); got != want {
 		t.Fatalf("spawned %q, want %q", got, want)
 	}
-	record, err := readDaemonProcessRecord(os.Getenv("BOARDLY_HOME"))
+	record, err := readDaemonProcessRecord(os.Getenv("ZENITH_TEAM_HOME"))
 	if err != nil || record.PID != newPID {
 		t.Fatalf("process record = %+v (err %v), want the replacement pid %d", record, err, newPID)
 	}
-	if _, err := os.Stat(filepath.Join(os.Getenv("BOARDLY_HOME"), daemonLogFileName)); err != nil {
+	if _, err := os.Stat(filepath.Join(os.Getenv("ZENITH_TEAM_HOME"), daemonLogFileName)); err != nil {
 		t.Fatalf("daemon log was not opened for the replacement: %v", err)
 	}
 }
 
 func TestDaemonOverridesHonorTheAutoReloadLadder(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	if err := daemon.SaveCLIConfig(daemon.CLIConfig{DisableAutoReload: true}); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
 
 	t.Run("config applies when the env is unset", func(t *testing.T) {
-		t.Setenv("BOARDLY_AUTO_RELOAD", "")
+		t.Setenv("ZENITH_TEAM_AUTO_RELOAD", "")
 		overrides, err := daemonOverrides(findSubcommand(t, newDaemonCmd(), "start"))
 		if err != nil {
 			t.Fatalf("daemonOverrides: %v", err)
@@ -778,7 +787,7 @@ func TestDaemonOverridesHonorTheAutoReloadLadder(t *testing.T) {
 		}
 	})
 	t.Run("env wins over config", func(t *testing.T) {
-		t.Setenv("BOARDLY_AUTO_RELOAD", "true")
+		t.Setenv("ZENITH_TEAM_AUTO_RELOAD", "true")
 		overrides, err := daemonOverrides(findSubcommand(t, newDaemonCmd(), "start"))
 		if err != nil {
 			t.Fatalf("daemonOverrides: %v", err)
@@ -788,7 +797,7 @@ func TestDaemonOverridesHonorTheAutoReloadLadder(t *testing.T) {
 		}
 	})
 	t.Run("flag wins over everything", func(t *testing.T) {
-		t.Setenv("BOARDLY_AUTO_RELOAD", "true")
+		t.Setenv("ZENITH_TEAM_AUTO_RELOAD", "true")
 		start := findSubcommand(t, newDaemonCmd(), "start")
 		if err := start.Flags().Set("no-auto-reload", "true"); err != nil {
 			t.Fatalf("set flag: %v", err)
@@ -800,14 +809,20 @@ func TestDaemonOverridesHonorTheAutoReloadLadder(t *testing.T) {
 		if !overrides.DisableAutoReload {
 			t.Fatal("--no-auto-reload was not applied")
 		}
-		if forwarded := strings.Join(forwardedStartFlags(start), " "); !strings.Contains(forwarded, "--no-auto-reload=true") {
+		if forwarded := strings.Join(
+			forwardedStartFlags(start),
+			" ",
+		); !strings.Contains(
+			forwarded,
+			"--no-auto-reload=true",
+		) {
 			t.Fatalf("forwarded flags %q drop --no-auto-reload", forwarded)
 		}
 	})
 }
 
 func TestConfigSetDisableAutoReloadRoundTrip(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
 	if _, err := executeCLI(t, newRootCmd, "config", "set", "disable_auto_reload", "true"); err != nil {
 		t.Fatalf("config set: %v", err)
 	}

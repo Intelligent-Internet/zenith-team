@@ -3,8 +3,8 @@ package calendar
 import (
 	"testing"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func newCalendarTestService(t *testing.T, store *db.Store) *DefaultCalendarService {
@@ -18,7 +18,12 @@ func newCalendarTestService(t *testing.T, store *db.Store) *DefaultCalendarServi
 
 func TestCustomRecurrenceChangesNotifyGuests(t *testing.T) {
 	t.Parallel()
-	before := Event{Recurrence: "weekly", RecurrenceInterval: 1, RecurrenceWeekdays: []int32{1}, RecurrenceMonthlyMode: "day_of_month"}
+	before := Event{
+		Recurrence:            "weekly",
+		RecurrenceInterval:    1,
+		RecurrenceWeekdays:    []int32{1},
+		RecurrenceMonthlyMode: "day_of_month",
+	}
 	for _, tt := range []struct {
 		name   string
 		change func(*Event)

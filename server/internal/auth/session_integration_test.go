@@ -17,10 +17,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestAuthRepositoryLoginSessionCreationLosesToAccountDeletion(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAuthRepositoryLoginSessionCreationLosesToAccountDeletion(t *testing.T) 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	user, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "login-delete-race@boardly.test",
+		Email:        "login-delete-race@zenith-team.test",
 		PasswordHash: "stored", DisplayName: "Login Race",
 	}, NewSession{
 		TokenPrefix: "root",
@@ -39,7 +39,7 @@ func TestAuthRepositoryLoginSessionCreationLosesToAccountDeletion(t *testing.T) 
 		t.Fatalf("CreateUserWithSession() error = %v", err)
 	}
 	userID := user.ID
-	if _, err := findUserByEmail(ctx, store.Queries(), "login-delete-race@boardly.test"); err != nil {
+	if _, err := findUserByEmail(ctx, store.Queries(), "login-delete-race@zenith-team.test"); err != nil {
 		t.Fatalf("FindUserByEmail(pre-race) error = %v", err)
 	}
 	if _, err := pool.Exec(ctx, `
@@ -75,7 +75,7 @@ func TestAuthRepositoryLoadsUserAuthenticationCapabilitiesInOneProjection(t *tes
 		t,
 		ctx,
 		store,
-		"projected-user@boardly.test",
+		"projected-user@zenith-team.test",
 		212,
 		`{"client":"web"}`,
 	)
@@ -91,7 +91,7 @@ func TestAuthRepositoryLoadsUserAuthenticationCapabilitiesInOneProjection(t *tes
 	if _, err := pool.Exec(
 		ctx,
 		`INSERT INTO oauth_accounts (id, user_id, provider, subject, email, profile)
-		 VALUES ($1, $2, 'google', 'projected-user', 'projected-user@boardly.test', '{}')`,
+		 VALUES ($1, $2, 'google', 'projected-user', 'projected-user@zenith-team.test', '{}')`,
 		uuid.Must(uuid.NewV7()),
 		fixture.UserID,
 	); err != nil {
@@ -116,7 +116,7 @@ func TestAuthRepositoryRotatesOnceAndRevokesAReusedSessionChain(t *testing.T) {
 	bus, eventLog := recordedAuthBus(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	user, oldSessionID, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "founder@boardly.test",
+		Email:        "founder@zenith-team.test",
 		PasswordHash: "$2a$04$abcdefghijklmnopqrstuuZ8rP7QGqR1M6CqVvOBqXxI9dV1O",
 		DisplayName:  "Founder",
 	}, NewSession{
@@ -129,7 +129,7 @@ func TestAuthRepositoryRotatesOnceAndRevokesAReusedSessionChain(t *testing.T) {
 		t.Fatalf("CreateUserWithSession() error = %v", err)
 	}
 	userID := user.ID
-	if user.ID == uuid.Nil || user.Email != "founder@boardly.test" || user.Version != 1 {
+	if user.ID == uuid.Nil || user.Email != "founder@zenith-team.test" || user.Version != 1 {
 		t.Fatalf("created user = %#v", user)
 	}
 	if _, err := pool.Exec(ctx, `UPDATE users SET version = 7 WHERE id = $1`, userID); err != nil {
@@ -137,7 +137,7 @@ func TestAuthRepositoryRotatesOnceAndRevokesAReusedSessionChain(t *testing.T) {
 	}
 	for operation, load := range map[string]func() (User, error){
 		"FindUserByEmail": func() (User, error) {
-			return findUserByEmail(ctx, store.Queries(), "founder@boardly.test")
+			return findUserByEmail(ctx, store.Queries(), "founder@zenith-team.test")
 		},
 		"GetUserByID": func() (User, error) {
 			return getUserByID(ctx, store.Queries(), userID)
@@ -276,7 +276,7 @@ func TestAuthServiceRecoversALostRefreshResponseWithTheSameRotationID(t *testing
 		t.Fatalf("IssueRefresh() error = %v", err)
 	}
 	if _, _, err := createUserWithSession(ctx, store, NewUser{
-		Email: "lost-refresh-response@boardly.test", PasswordHash: "stored",
+		Email: "lost-refresh-response@zenith-team.test", PasswordHash: "stored",
 		DisplayName: "Lost Refresh Response",
 	}, NewSession{
 		TokenPrefix: rootRefresh.Prefix, TokenHash: rootRefresh.Hash,
@@ -322,7 +322,7 @@ func TestAuthRepositoryTreatsSimultaneousSameClientRotationAsAlreadyCompleted(t 
 	rootHash := bytes.Repeat([]byte{11}, 32)
 	metadata := []byte(`{"client":"web","details":{"installationId":"browser-a"}}`)
 	user, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "race@boardly.test",
+		Email:        "race@zenith-team.test",
 		PasswordHash: "$argon2id$v=19$m=64,t=1,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 		DisplayName:  "Race",
 	}, NewSession{
@@ -389,7 +389,7 @@ func TestAuthSessionRevocationAcceptsExtensibleReasonsAndCascadesWithRawUserDele
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	user, sessionID, err := createUserWithSession(ctx, store, NewUser{
-		Email: "revocation-schema@boardly.test", PasswordHash: "stored", DisplayName: "Schema",
+		Email: "revocation-schema@zenith-team.test", PasswordHash: "stored", DisplayName: "Schema",
 	}, NewSession{
 		TokenPrefix: "brf_schema",
 		TokenHash:   bytes.Repeat([]byte{91}, 32), ExpiresAt: time.Now().UTC().Add(time.Hour),
@@ -449,7 +449,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 
 	t.Run("natural expiry is not revocation", func(t *testing.T) {
 		bus, eventLog := recordedAuthBus(t)
-		fixture := createAuthTestSession(t, ctx, store, "expired@boardly.test", 101, `{"client":"web"}`)
+		fixture := createAuthTestSession(t, ctx, store, "expired@zenith-team.test", 101, `{"client":"web"}`)
 		var lastUsedAt time.Time
 		if err := pool.QueryRow(ctx, `
 			UPDATE auth_sessions
@@ -513,7 +513,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 			t,
 			ctx,
 			store,
-			"disabled-session@boardly.test",
+			"disabled-session@zenith-team.test",
 			106,
 			`{"client":"web"}`,
 		)
@@ -545,7 +545,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 
 	t.Run("logout follows a stale root and is idempotent", func(t *testing.T) {
 		bus, eventLog := recordedAuthBus(t)
-		root := createAuthTestSession(t, ctx, store, "logout@boardly.test", 111, `{"client":"desktop"}`)
+		root := createAuthTestSession(t, ctx, store, "logout@zenith-team.test", 111, `{"client":"desktop"}`)
 		childHash := bytes.Repeat([]byte{112}, 32)
 		rotation, err := rotateSession(ctx, store, bus, root.TokenHash, NewSession{
 			TokenPrefix: "brf_logout-child", TokenHash: childHash,
@@ -581,7 +581,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 
 	t.Run("client mismatch is confirmed reuse", func(t *testing.T) {
 		bus, eventLog := recordedAuthBus(t)
-		root := createAuthTestSession(t, ctx, store, "mismatch@boardly.test", 121, `{"client":"web"}`)
+		root := createAuthTestSession(t, ctx, store, "mismatch@zenith-team.test", 121, `{"client":"web"}`)
 		childHash := bytes.Repeat([]byte{122}, 32)
 		result, err := rotateSession(ctx, store, bus, root.TokenHash, NewSession{
 			TokenPrefix: "brf_mismatch-child", TokenHash: childHash,
@@ -606,7 +606,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 	})
 
 	t.Run("recent child grace requires a rotation root", func(t *testing.T) {
-		root := createAuthTestSession(t, ctx, store, "grace-reason@boardly.test", 131, `{"client":"web"}`)
+		root := createAuthTestSession(t, ctx, store, "grace-reason@zenith-team.test", 131, `{"client":"web"}`)
 		if _, err := pool.Exec(ctx, `
 			UPDATE auth_sessions
 			SET revoked_at = clock_timestamp(), revocation_reason = 'logout', revoked_by_user_id = user_id
@@ -639,7 +639,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 			t,
 			ctx,
 			store,
-			"grace-metadata@boardly.test",
+			"grace-metadata@zenith-team.test",
 			181,
 			`{"client":"web","details":{"installationId":"browser-a"}}`,
 		)
@@ -673,7 +673,14 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 
 	t.Run("replay traverses an already-revoked multi-generation family", func(t *testing.T) {
 		bus, eventLog := recordedAuthBus(t)
-		root := createAuthTestSession(t, ctx, store, "multi-generation@boardly.test", 161, `{"client":"web"}`)
+		root := createAuthTestSession(
+			t,
+			ctx,
+			store,
+			"multi-generation@zenith-team.test",
+			161,
+			`{"client":"web"}`,
+		)
 		childHash := bytes.Repeat([]byte{162}, 32)
 		first, err := rotateSession(ctx, store, bus, root.TokenHash, NewSession{
 			TokenPrefix: "brf_multi-child", TokenHash: childHash,
@@ -741,7 +748,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 
 	t.Run("ancestor replay fences concurrent descendant rotation", func(t *testing.T) {
 		bus, eventLog := recordedAuthBus(t)
-		root := createAuthTestSession(t, ctx, store, "family-race@boardly.test", 151, `{"client":"web"}`)
+		root := createAuthTestSession(t, ctx, store, "family-race@zenith-team.test", 151, `{"client":"web"}`)
 		childHash := bytes.Repeat([]byte{152}, 32)
 		initial, err := rotateSession(ctx, store, bus, root.TokenHash, NewSession{
 			TokenPrefix: "brf_family-race-child", TokenHash: childHash,
@@ -819,7 +826,7 @@ func TestAuthRepositorySessionMutationBoundariesAndAtomicity(t *testing.T) {
 	})
 
 	t.Run("User lock is acquired before any session-family row lock", func(t *testing.T) {
-		root := createAuthTestSession(t, ctx, store, "lock-order@boardly.test", 171, `{"client":"web"}`)
+		root := createAuthTestSession(t, ctx, store, "lock-order@zenith-team.test", 171, `{"client":"web"}`)
 		holder, err := pool.Begin(ctx)
 		if err != nil {
 			t.Fatalf("begin User lock holder: %v", err)

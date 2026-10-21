@@ -1,40 +1,37 @@
 ---
 title: Workspaces and run environments
-summary: Cloud Task data, daemon-local working files, current directory bindings, and the planned managed-only contract
+summary: Server-side Task data, daemon-local working files, current directory bindings, and the planned managed-only contract
 ---
 
-Zenith Team has two different uses of “workspace”: the cloud Task workspace
-response composes product data for a screen; the company workspace is the
-directory tree on a daemon's machine. A Run environment is the generated
-provider configuration around a working directory. None is a new cloud
-filesystem API.
+Zenith Team has two different uses of “workspace”: the server's Task
+workspace response composes product data for a screen; the company workspace
+is the directory tree on a daemon's machine. A Run environment is the
+generated provider configuration around a working directory. None is a new
+server filesystem API.
 
-The [Workspace PRD](../specs/workspaces/PRD.md) and
-[TECH](../specs/workspaces/TECH.md) own placement, references and retention.
-The [Run PRD](../specs/runs/PRD.md) and [TECH](../specs/runs/TECH.md) own
-preparation, configuration and cleanup. Their requested managed-only release
-is **Planned**: no direct-workdir input and no GitHub repository references.
-The served baseline below still supports a local-directory override.
+A managed-only release is **Planned**: no direct-workdir input and no GitHub
+repository references. The served baseline below still supports a
+local-directory override.
 
 ## Served boundaries
 
 | Plane | Contract | What it does |
 |---|---|---|
-| Cloud, user | `GET /api/v1/companies/{companyId}/tasks/{taskId}/workspace` | Task detail, Conversation and associated structured state; no cwd, directory listing or file bytes |
-| Cloud, owner | Company Resource CRUD in [companies.md](companies.md#list-a-companys-resources) | Binds an existing directory to one daemon; returns a sanitized Resource projection |
-| Cloud, daemon | Claim, prepare-lease, start and terminal callbacks in [daemon.md](daemon.md) | Delivers frozen input and controls Run authority; start accepts no cwd or environment object |
+| Server, user | `GET /api/v1/companies/{companyId}/tasks/{taskId}/workspace` | Task detail, Conversation and associated structured state; no cwd, directory listing or file bytes |
+| Server, owner | Company Resource CRUD in [companies.md](companies.md#list-a-companys-resources) | Binds an existing directory to one daemon; returns a sanitized Resource projection |
+| Server, daemon | Claim, prepare-lease, start and terminal callbacks in [daemon.md](daemon.md) | Delivers frozen input and controls Run authority; start accepts no cwd or environment object |
 | Machine loopback | Workspace files/assets/memory and Task review below | Reads or accepts files on the executing machine under a local capability |
 
-The existing [OpenAPI domain files](spec/) describe the served cloud
-contracts. A future change to an existing operation must land with handler
+The existing [OpenAPI domain files](spec/) describe the contracts the server
+serves. A future change to an existing operation must land with handler
 validation, contract tests, and regenerated client types. Do not mark a
-currently served operation `x-boardly-status: planned` merely because its
-behavior will change, or add local-loopback routes to the cloud route index.
+currently served operation `x-zenith-team-status: planned` merely because its
+behavior will change, or add local-loopback routes to the server's route index.
 
 ## Current placement and resource references
 
-The daemon's `BOARDLY_WORKSPACES_ROOT` / `--workspaces-root` selects its
-managed container (default `~/boardly_workspaces`), not a caller-provided cwd.
+The daemon's `ZENITH_TEAM_WORKSPACES_ROOT` / `--workspaces-root` selects its
+managed container (default `~/zenith_team_workspaces`), not a caller-provided cwd.
 
 | Run | Baseline cwd |
 |---|---|
@@ -61,7 +58,7 @@ The owner-plane Resource reference is:
 This is an excerpt of the Resource projection, not a create body. The
 baseline create body uses `daemonId`, `localPath`, `label`, and optional
 `position`. **Public projection redaction does not mean local paths never
-enter the cloud.** `company_resources.local_path` stores the input, and the
+reach the server.** `company_resources.local_path` stores the input, and the
 enqueue kernel copies it into `runs.context.resources` for daemon claims:
 
 ```json
@@ -88,7 +85,7 @@ permissions.
 
 These existing loopback endpoints use **POST**. They require a loopback
 peer/Host, no `Origin` header, and the rotated local-preview bearer capability
-read by Electron main. They are not exposed under the cloud `/api/v1` prefix
+read by Electron main. They are not exposed under the server's `/api/v1` prefix
 and are not authenticated with a renderer's arbitrary path or Resource id.
 
 | Local route | Request identity | Response |
@@ -102,10 +99,10 @@ and are not authenticated with a renderer's arbitrary path or Resource id.
 | `/v1/task-review/prepare` | `schemaVersion: 1`, Run UUID `runId` | `{schemaVersion,runId,status,baseRef,headRef,diff,message}` |
 | `/v1/task-review/accept` | `schemaVersion: 1`, company/Task/Run/Runtime identities, `expectedRevision`, `expectedExecutionGeneration` | Reviewed merge result after server claim fencing |
 
-`runId` is the database-generated Run UUID, the same id the cloud
+`runId` is the database-generated Run UUID, the same id the server's
 `/runs/{runId}` routes use (see `runId` in `_common.yaml`); any other form,
-including the pre-#279 decimal id, is `400 invalid_request`. The local error
-envelope is `{schemaVersion,code,reason}`, not the cloud
+including an old decimal id, is `400 invalid_request`. The local error
+envelope is `{schemaVersion,code,reason}`, not the server's
 `{detail,code,requestId}`.
 `/v1/task-review/accept` answers `403 project_permission_required` when the
 server refuses the claim because the member lacks `project.tasks.execute`
@@ -129,8 +126,8 @@ stay in the person's repository, and a review may come days later — unlike
 a managed worktree, whose record lapses with the worktree. Accepting
 records the work already in the tree — there is no merge — and the Task
 moves to `done` under the same server claim fencing. A client that gets
-`workspace_unavailable` for a Task in review offers the person the repair
-path (Tasks TK-AC7): read the conversation and the project, then mark the
+`workspace_unavailable` for a Task in review offers the person a repair
+path: read the conversation and the project, then mark the
 Task done by an ordinary status change or keep it in review — never a
 silent done.
 
@@ -146,11 +143,10 @@ separate bounded counts/depths in the local catalog implementation.
 
 These endpoints describe daemon capabilities, not proof that each current
 frontend screen wires them. A browser cannot fetch these files from the
-cloud, and a completed Run does not guarantee its cwd is still retained.
+server, and a completed Run does not guarantee its cwd is still retained.
 
 ## Planned managed-only release
 
-The detailed transition is [Workspace TECH §11](../specs/workspaces/TECH.md#11-planned-changes).
 The following is design, not the currently accepted API:
 
 | Concern | Planned contract |
@@ -166,7 +162,7 @@ The following is design, not the currently accepted API:
 | Retention | Terminal status alone cannot delete unmerged authored work; exact disposition proof and retention are required |
 | Manual acceptance | Local `reviewToken` binds the displayed diff and base to exact Run/root identity; changed bytes require a fresh review; existing server revision/generation/claim checks still apply |
 
-No new active OpenAPI route or public DTO is added by these specs. In
+This design adds no new active OpenAPI route or public DTO. In
 particular the empty local manifest is not a Company Resource API response,
 and a future Resource type must not be added to client types before its
 contract is implemented. Local-directory **reference input**, if introduced
@@ -176,6 +172,6 @@ does not authorize it. GitHub references remain deferred.
 The existing `waiting_local_directory` status and wait endpoint also serve
 contention on managed `main`; removing direct-folder support does not by
 itself remove that wire state. Likewise, managed placement does not deliver
-OS process confinement or cloud backup. Existing stored path snapshots and
+OS process confinement or a server-side backup. Existing stored path snapshots and
 local authored data must be disclosed until their separate retention and
 removal work is implemented.

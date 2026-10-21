@@ -5,11 +5,12 @@ import (
 	"errors"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type HuddleInvitation struct {
@@ -32,14 +33,20 @@ type HuddleInvitationSource struct {
 	Type  DiscussionType `json:"type"`
 	Title string         `json:"title"`
 }
-type InviteHuddleRequest struct{ InviteeUserID, RequestKey uuid.UUID }
-type RespondHuddleInvitationRequest struct {
-	Accept           bool
-	ExpectedRevision int64
-}
+type (
+	InviteHuddleRequest            struct{ InviteeUserID, RequestKey uuid.UUID }
+	RespondHuddleInvitationRequest struct {
+		Accept           bool
+		ExpectedRevision int64
+	}
+)
 
-func (s *DefaultHuddleService) ListPendingInvitations(ctx context.Context, principal auth.UserPrincipal) ([]HuddleInvitation, error) {
-	rows, err := s.store.Queries().ListPendingHuddleInvitations(ctx, generated.ListPendingHuddleInvitationsParams{CompanyID: principal.CompanyID, InviteeUserID: principal.UserID})
+func (s *DefaultHuddleService) ListPendingInvitations(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+) ([]HuddleInvitation, error) {
+	rows, err := s.store.Queries().
+		ListPendingHuddleInvitations(ctx, generated.ListPendingHuddleInvitationsParams{CompanyID: principal.CompanyID, InviteeUserID: principal.UserID})
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +57,12 @@ func (s *DefaultHuddleService) ListPendingInvitations(ctx context.Context, princ
 	return result, hydrateHuddleInvitations(ctx, s.store.Queries(), principal, result)
 }
 
-func (s *DefaultHuddleService) ListInvitationHistory(ctx context.Context, principal auth.UserPrincipal) ([]HuddleInvitation, error) {
-	rows, err := s.store.Queries().ListHuddleInvitationHistory(ctx, generated.ListHuddleInvitationHistoryParams{CompanyID: principal.CompanyID, InviteeUserID: principal.UserID})
+func (s *DefaultHuddleService) ListInvitationHistory(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+) ([]HuddleInvitation, error) {
+	rows, err := s.store.Queries().
+		ListHuddleInvitationHistory(ctx, generated.ListHuddleInvitationHistoryParams{CompanyID: principal.CompanyID, InviteeUserID: principal.UserID})
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +73,12 @@ func (s *DefaultHuddleService) ListInvitationHistory(ctx context.Context, princi
 	return result, hydrateHuddleInvitations(ctx, s.store.Queries(), principal, result)
 }
 
-func hydrateHuddleInvitations(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, invitations []HuddleInvitation) error {
+func hydrateHuddleInvitations(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	invitations []HuddleInvitation,
+) error {
 	if len(invitations) == 0 {
 		return nil
 	}
@@ -106,7 +122,12 @@ func hydrateHuddleInvitations(ctx context.Context, q *generated.Queries, p auth.
 	return nil
 }
 
-func (s *DefaultHuddleService) Invite(ctx context.Context, principal auth.UserPrincipal, huddleID uuid.UUID, request InviteHuddleRequest) (HuddleInvitation, error) {
+func (s *DefaultHuddleService) Invite(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	huddleID uuid.UUID,
+	request InviteHuddleRequest,
+) (HuddleInvitation, error) {
 	if request.InviteeUserID == uuid.Nil || request.RequestKey == uuid.Nil {
 		return HuddleInvitation{}, ErrHuddleInvalid
 	}
@@ -114,13 +135,34 @@ func (s *DefaultHuddleService) Invite(ctx context.Context, principal auth.UserPr
 	created := false
 	var expired *HuddleInvitation
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := q.GetOpenHuddleConnection(ctx, generated.GetOpenHuddleConnectionParams{CompanyID: principal.CompanyID, HuddleID: huddleID, UserID: principal.UserID}); err != nil {
+		if _, err := q.GetOpenHuddleConnection(
+			ctx,
+			generated.GetOpenHuddleConnectionParams{
+				CompanyID: principal.CompanyID,
+				HuddleID:  huddleID,
+				UserID:    principal.UserID,
+			},
+		); err != nil {
 			return ErrHuddleForbidden
 		}
-		if _, err := q.GetDiscussionEligibleUser(ctx, generated.GetDiscussionEligibleUserParams{CompanyID: principal.CompanyID, UserID: request.InviteeUserID}); err != nil {
+		if _, err := q.GetDiscussionEligibleUser(
+			ctx,
+			generated.GetDiscussionEligibleUserParams{
+				CompanyID: principal.CompanyID,
+				UserID:    request.InviteeUserID,
+			},
+		); err != nil {
 			return ErrHuddleNotFound
 		}
-		row, err := q.GetHuddleInvitationByRequestKey(ctx, generated.GetHuddleInvitationByRequestKeyParams{CompanyID: principal.CompanyID, HuddleID: huddleID, InviteeUserID: request.InviteeUserID, RequestKey: request.RequestKey})
+		row, err := q.GetHuddleInvitationByRequestKey(
+			ctx,
+			generated.GetHuddleInvitationByRequestKeyParams{
+				CompanyID:     principal.CompanyID,
+				HuddleID:      huddleID,
+				InviteeUserID: request.InviteeUserID,
+				RequestKey:    request.RequestKey,
+			},
+		)
 		if err == nil {
 			result = invitationFromRow(row)
 			return nil
@@ -148,7 +190,20 @@ func (s *DefaultHuddleService) Invite(ctx context.Context, principal auth.UserPr
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		row, err = q.InsertHuddleInvitation(ctx, generated.InsertHuddleInvitationParams{CompanyID: principal.CompanyID, HuddleID: huddleID, InviterUserID: principal.UserID, InviteeUserID: request.InviteeUserID, RequestKey: request.RequestKey, ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC().Add(5 * time.Minute), Valid: true}})
+		row, err = q.InsertHuddleInvitation(
+			ctx,
+			generated.InsertHuddleInvitationParams{
+				CompanyID:     principal.CompanyID,
+				HuddleID:      huddleID,
+				InviterUserID: principal.UserID,
+				InviteeUserID: request.InviteeUserID,
+				RequestKey:    request.RequestKey,
+				ExpiresAt: pgtype.Timestamptz{
+					Time:  time.Now().UTC().Add(5 * time.Minute),
+					Valid: true,
+				},
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -158,20 +213,39 @@ func (s *DefaultHuddleService) Invite(ctx context.Context, principal auth.UserPr
 	})
 	if err == nil {
 		if expired != nil {
-			s.bus.Publish(ctx, TopicHuddle, huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationChanged, *expired))
+			s.bus.Publish(
+				ctx,
+				TopicHuddle,
+				huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationChanged, *expired),
+			)
 		}
 		if created {
-			s.bus.Publish(ctx, TopicHuddle, huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationCreated, result))
+			s.bus.Publish(
+				ctx,
+				TopicHuddle,
+				huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationCreated, result),
+			)
 		}
 	}
 	return result, err
 }
 
-func (s *DefaultHuddleService) RespondInvitation(ctx context.Context, principal auth.UserPrincipal, invitationID uuid.UUID, request RespondHuddleInvitationRequest) (HuddleInvitation, error) {
+func (s *DefaultHuddleService) RespondInvitation(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	invitationID uuid.UUID,
+	request RespondHuddleInvitationRequest,
+) (HuddleInvitation, error) {
 	var result HuddleInvitation
 	changed := false
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		row, err := q.GetHuddleInvitationForUpdate(ctx, generated.GetHuddleInvitationForUpdateParams{CompanyID: principal.CompanyID, InvitationID: invitationID})
+		row, err := q.GetHuddleInvitationForUpdate(
+			ctx,
+			generated.GetHuddleInvitationForUpdateParams{
+				CompanyID:    principal.CompanyID,
+				InvitationID: invitationID,
+			},
+		)
 		if err != nil || row.InviteeUserID != principal.UserID {
 			return ErrHuddleNotFound
 		}
@@ -183,7 +257,15 @@ func (s *DefaultHuddleService) RespondInvitation(ctx context.Context, principal 
 		if request.Accept {
 			status = "accepted"
 		}
-		row, err = q.UpdateHuddleInvitationStatus(ctx, generated.UpdateHuddleInvitationStatusParams{CompanyID: principal.CompanyID, InvitationID: invitationID, Status: status, Revision: request.ExpectedRevision})
+		row, err = q.UpdateHuddleInvitationStatus(
+			ctx,
+			generated.UpdateHuddleInvitationStatusParams{
+				CompanyID:    principal.CompanyID,
+				InvitationID: invitationID,
+				Status:       status,
+				Revision:     request.ExpectedRevision,
+			},
+		)
 		if err != nil {
 			return ErrHuddleUnavailable
 		}
@@ -192,11 +274,24 @@ func (s *DefaultHuddleService) RespondInvitation(ctx context.Context, principal 
 		return nil
 	})
 	if err == nil && changed {
-		s.bus.Publish(ctx, TopicHuddle, huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationChanged, result))
+		s.bus.Publish(
+			ctx,
+			TopicHuddle,
+			huddleInvitationEvent(principal.CompanyID, EventHuddleInvitationChanged, result),
+		)
 	}
 	return result, err
 }
 
 func invitationFromRow(row generated.HuddleInvitation) HuddleInvitation {
-	return HuddleInvitation{ID: row.ID, HuddleID: row.HuddleID, InviterUserID: row.InviterUserID, InviteeUserID: row.InviteeUserID, Status: row.Status, Revision: row.Revision, ExpiresAt: row.ExpiresAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
+	return HuddleInvitation{
+		ID:            row.ID,
+		HuddleID:      row.HuddleID,
+		InviterUserID: row.InviterUserID,
+		InviteeUserID: row.InviteeUserID,
+		Status:        row.Status,
+		Revision:      row.Revision,
+		ExpiresAt:     row.ExpiresAt.Time.UTC(),
+		UpdatedAt:     row.UpdatedAt.Time.UTC(),
+	}
 }

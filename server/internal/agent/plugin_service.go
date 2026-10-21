@@ -12,12 +12,12 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // PluginService owns the server-side presentation catalog for provider
@@ -142,7 +142,7 @@ func (s *DefaultPluginService) List(
 	// caller registered (ADR 0014): any active member reads their own
 	// machine's catalog — it is what the Agent capabilities view renders for
 	// them — while changing it is a plugins.manage write, which every role
-	// holds for its own computers (owner decision, 2026-09-29).
+	// holds for its own computers.
 	normalized, err := normalizePluginListInput(input)
 	if err != nil {
 		return PluginCatalogResult{}, err
@@ -350,7 +350,9 @@ func (s *DefaultPluginService) Get(
 				return err
 			}
 			uses, err := q.ListPluginAgentUsesForRuntime(ctx, generated.ListPluginAgentUsesForRuntimeParams{
-				PluginID: input.PluginID, CompanyID: principal.CompanyID, RuntimeID: pluginContext.RuntimeID,
+				PluginID:     input.PluginID,
+				CompanyID:    principal.CompanyID,
+				RuntimeID:    pluginContext.RuntimeID,
 				ViewerUserID: principal.UserID,
 			})
 			if err != nil {
@@ -508,7 +510,7 @@ func (s *DefaultPluginService) Uninstall(
 // companyPluginContext resolves the caller's own runtime the catalog is read
 // or changed against, through q so a read can share its snapshot. manage is
 // true on install and uninstall, which take the plugins.manage permission —
-// every role's, since they reach only the caller's own computer (D28) — and
+// every role's, since they reach only the caller's own computer — and
 // a read or a refresh needs membership alone (ADR 0014).
 func companyPluginContext(
 	ctx context.Context,

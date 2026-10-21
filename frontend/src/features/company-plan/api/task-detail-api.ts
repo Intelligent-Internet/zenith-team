@@ -1,4 +1,7 @@
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import { apiClient } from "@/lib/api-client";
 import {
   activityService,
@@ -16,14 +19,14 @@ export function taskLatestRunTag(taskId: string) {
   return { type: "Run" as const, id: `task:${taskId}:latest` };
 }
 
-const taskDetailApi = boardlyApi.injectEndpoints({
+const taskDetailApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     getTaskLatestRun: builder.query<RunDto | null, TaskDetailRequest>({
       providesTags: (_result, _error, { companyId }) => [
         { type: "Run", id: companyId },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const page = await runService.listRuns(companyId, {
             taskId,
             limit: 1,
@@ -44,7 +47,7 @@ const taskDetailApi = boardlyApi.injectEndpoints({
       providesTags: (_result, _error, { taskIds }) =>
         taskIds.map(taskLatestRunTag),
       queryFn: ({ companyId, taskIds }) =>
-        executeBoardlyQuery(async () => {
+        executeZenithTeamQuery(async () => {
           const pages = await Promise.all(
             taskIds.map((taskId) =>
               runService.listRuns(companyId, { taskId, limit: 1 }),
@@ -63,7 +66,7 @@ const taskDetailApi = boardlyApi.injectEndpoints({
         { type: "Activity", id: companyId },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             activityService.listCompanyActivityPage(companyId, {
               entityType: "task",
@@ -79,7 +82,7 @@ const taskDetailApi = boardlyApi.injectEndpoints({
         { type: "Task", id: taskId },
       ],
       queryFn: ({ companyId, taskId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<AnalyticsTaskUsage>(
               `/companies/${encodeURIComponent(companyId)}/tasks/${encodeURIComponent(taskId)}/usage`,

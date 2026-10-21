@@ -72,7 +72,7 @@ function getDesktopCrashReportPolicy({
   env = process.env,
   platform = process.platform,
 } = {}) {
-  if (env.BOARDLY_DESKTOP_CRASH_REPORTS_ENABLED !== "true") {
+  if (env.ZENITH_TEAM_DESKTOP_CRASH_REPORTS_ENABLED !== "true") {
     return {
       enabled: false,
       reason: "Desktop crash reporting is disabled.",
@@ -82,16 +82,16 @@ function getDesktopCrashReportPolicy({
   }
 
   const provider = normalizeCrashReportProvider(
-    env.BOARDLY_DESKTOP_CRASH_REPORT_PROVIDER,
+    env.ZENITH_TEAM_DESKTOP_CRASH_REPORT_PROVIDER,
   );
   const dsn =
     provider === "sentry"
-      ? normalizeSentryDsn(env.BOARDLY_DESKTOP_SENTRY_DSN)
+      ? normalizeSentryDsn(env.ZENITH_TEAM_DESKTOP_SENTRY_DSN)
       : null;
   const submitURL =
     provider === "sentry"
       ? dsn && new URL(dsn).origin
-      : normalizeCrashSubmitUrl(env.BOARDLY_DESKTOP_CRASH_REPORT_SUBMIT_URL);
+      : normalizeCrashSubmitUrl(env.ZENITH_TEAM_DESKTOP_CRASH_REPORT_SUBMIT_URL);
 
   if (provider === "sentry" && !dsn) {
     return {
@@ -102,7 +102,7 @@ function getDesktopCrashReportPolicy({
     };
   }
 
-  if (provider !== "sentry" && !env.BOARDLY_DESKTOP_CRASH_REPORT_SUBMIT_URL) {
+  if (provider !== "sentry" && !env.ZENITH_TEAM_DESKTOP_CRASH_REPORT_SUBMIT_URL) {
     return {
       enabled: false,
       reason: "Desktop crash reporting requires a submit URL.",
@@ -122,7 +122,7 @@ function getDesktopCrashReportPolicy({
   }
 
   const desktopEnvironment = normalizeDesktopEnvironment(
-    env.BOARDLY_DESKTOP_ENV,
+    env.ZENITH_TEAM_DESKTOP_ENV,
     Boolean(app?.isPackaged),
   );
 
@@ -235,25 +235,25 @@ function createCrashReportGlobalExtra({
   runtimeEnvironment,
 }) {
   return {
-    boardly_arch: truncateCrashMetadataValue(normalizeToken(arch, "unknown")),
-    boardly_channel: truncateCrashMetadataValue(
+    zenith_team_arch: truncateCrashMetadataValue(normalizeToken(arch, "unknown")),
+    zenith_team_channel: truncateCrashMetadataValue(
       getCrashReportReleaseChannel(env),
     ),
-    boardly_env: truncateCrashMetadataValue(runtimeEnvironment),
-    boardly_packaged: isPackaged ? "true" : "false",
-    boardly_platform: truncateCrashMetadataValue(
+    zenith_team_env: truncateCrashMetadataValue(runtimeEnvironment),
+    zenith_team_packaged: isPackaged ? "true" : "false",
+    zenith_team_platform: truncateCrashMetadataValue(
       normalizeToken(platform, "unknown"),
     ),
-    boardly_provider: truncateCrashMetadataValue(provider),
+    zenith_team_provider: truncateCrashMetadataValue(provider),
   };
 }
 
 function getCrashReportReleaseChannel(env) {
-  if (env.BOARDLY_DESKTOP_RELEASE_CHANNELS_ENABLED !== "true") {
+  if (env.ZENITH_TEAM_DESKTOP_RELEASE_CHANNELS_ENABLED !== "true") {
     return "none";
   }
 
-  const channel = env.BOARDLY_DESKTOP_RELEASE_CHANNEL;
+  const channel = env.ZENITH_TEAM_DESKTOP_RELEASE_CHANNEL;
   return ["alpha", "beta", "stable"].includes(channel) ? channel : "stable";
 }
 

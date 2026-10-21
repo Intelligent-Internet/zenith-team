@@ -13,7 +13,7 @@ func TestSessionAdvisoryLockReleasesOnlyAfterConfirmedUnlock(t *testing.T) {
 
 	connection := &fakeSessionLockConnection{tryAcquired: true, unlockMatched: true}
 	lock, acquired, err := acquireSessionAdvisoryLock(
-		context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Minute,
+		context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Minute,
 	)
 	if err != nil || !acquired || lock == nil {
 		t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -48,7 +48,7 @@ func TestSessionAdvisoryLockDestroysUncertainUnlockConnection(t *testing.T) {
 				tryAcquired: true, unlockMatched: test.unlockMatched, unlockErr: test.unlockErr,
 			}
 			lock, acquired, err := acquireSessionAdvisoryLock(
-				context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Minute,
+				context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Minute,
 			)
 			if err != nil || !acquired {
 				t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -79,7 +79,7 @@ func TestSessionAdvisoryLockReportsMonitoredConnectionLoss(t *testing.T) {
 		},
 	}
 	lock, acquired, err := acquireSessionAdvisoryLock(
-		context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Millisecond,
+		context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Millisecond,
 	)
 	if err != nil || !acquired {
 		t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -110,7 +110,7 @@ func TestSessionAdvisoryLockReleaseCancellationIsNotConnectionLoss(t *testing.T)
 		},
 	}
 	lock, acquired, err := acquireSessionAdvisoryLock(
-		context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Millisecond,
+		context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Millisecond,
 	)
 	if err != nil || !acquired {
 		t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -136,7 +136,7 @@ func TestSessionAdvisoryLockReturnsUnacquiredConnectionsToPool(t *testing.T) {
 
 	connection := &fakeSessionLockConnection{}
 	lock, acquired, err := acquireSessionAdvisoryLock(
-		context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Second,
+		context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Second,
 	)
 	if err != nil || acquired || lock != nil {
 		t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -149,7 +149,7 @@ func TestSessionAdvisoryLockDestroysConnectionWhenAcquisitionIsUncertain(t *test
 
 	connection := &fakeSessionLockConnection{tryErr: errors.New("secret acquisition detail")}
 	lock, acquired, err := acquireSessionAdvisoryLock(
-		context.Background(), connection, "boardly/daemon/periodic-leader/v1", time.Second,
+		context.Background(), connection, "zenith-team/daemon/periodic-leader/v1", time.Second,
 	)
 	if !errors.Is(err, ErrSessionAdvisoryLockUnavailable) || acquired || lock != nil {
 		t.Fatalf("acquireSessionAdvisoryLock() = %v, %t, %v", lock, acquired, err)
@@ -168,9 +168,9 @@ func TestSessionAdvisoryLockRejectsInvalidInputs(t *testing.T) {
 		key        string
 		interval   time.Duration
 	}{
-		{name: "nil context", connection: valid, key: "boardly/test", interval: time.Second},
-		{name: "nil connection", ctx: context.Background(), key: "boardly/test", interval: time.Second},
-		{name: "short interval", ctx: context.Background(), connection: valid, key: "boardly/test", interval: 0},
+		{name: "nil context", connection: valid, key: "zenith-team/test", interval: time.Second},
+		{name: "nil connection", ctx: context.Background(), key: "zenith-team/test", interval: time.Second},
+		{name: "short interval", ctx: context.Background(), connection: valid, key: "zenith-team/test", interval: 0},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if lock, acquired, err := acquireSessionAdvisoryLock(

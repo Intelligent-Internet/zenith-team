@@ -1,4 +1,4 @@
-// Package protocol holds the wire vocabulary shared by every Boardly
+// Package protocol holds the wire vocabulary shared by every Zenith Team
 // transport and binary: the daemon control-frame names, the message envelope
 // and daemon frame payloads, the activity entity/actor vocabulary, and the
 // wire-side value contracts (phone, text, timestamps, workspace names).

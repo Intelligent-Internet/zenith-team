@@ -360,7 +360,7 @@ func discussionText(markdown string) (string, error) {
 		case *ast.String:
 			plain.Write(n.Value)
 		case *ast.FencedCodeBlock, *ast.CodeBlock:
-			for i := 0; i < node.Lines().Len(); i++ {
+			for i := range node.Lines().Len() {
 				line := node.Lines().At(i)
 				plain.Write(line.Value(source))
 			}

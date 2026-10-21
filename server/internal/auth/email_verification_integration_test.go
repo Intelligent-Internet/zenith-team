@@ -19,7 +19,7 @@ func TestEmailVerificationConsumeCreatesExactlyOneUserSession(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	codeHash := bytes.Repeat([]byte{7}, 32)
 	started, err := startEmailVerification(ctx, store.Queries(), NewEmailVerification{
-		Email: "verify-once@boardly.test", PasswordHash: "stored-password-hash",
+		Email: "verify-once@zenith-team.test", PasswordHash: "stored-password-hash",
 		DisplayName: "Verify Once", Client: ClientWeb, ClientMetadata: []byte(`{"platform":"web"}`),
 		CodeHash: codeHash, ExpiresAt: now.Add(10 * time.Minute),
 		ResendAvailableAt: now.Add(time.Minute), Now: now,
@@ -81,13 +81,13 @@ func TestEmailVerificationMarksLegacyUserWithoutCreatingADuplicate(t *testing.T)
 	userID := uuid.Must(uuid.NewV7())
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO users (id, email, password_hash, display_name)
-		VALUES ($1, 'legacy-verify@boardly.test', 'stored-password-hash', 'Legacy Verify')
+		VALUES ($1, 'legacy-verify@zenith-team.test', 'stored-password-hash', 'Legacy Verify')
 	`, userID); err != nil {
 		t.Fatalf("insert legacy user: %v", err)
 	}
 	codeHash := bytes.Repeat([]byte{11}, 32)
 	started, err := startEmailVerification(ctx, store.Queries(), NewEmailVerification{
-		UserID: &userID, Email: "legacy-verify@boardly.test",
+		UserID: &userID, Email: "legacy-verify@zenith-team.test",
 		PasswordHash: "stored-password-hash", DisplayName: "Legacy Verify", Client: ClientWeb,
 		ClientMetadata: []byte(`{"platform":"web"}`), CodeHash: codeHash,
 		ExpiresAt: now.Add(10 * time.Minute), ResendAvailableAt: now.Add(time.Minute), Now: now,
@@ -109,7 +109,7 @@ func TestEmailVerificationMarksLegacyUserWithoutCreatingADuplicate(t *testing.T)
 		t.Fatalf("verified legacy user = %#v", verified)
 	}
 	var count int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE lower(email) = 'legacy-verify@boardly.test'`).
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE lower(email) = 'legacy-verify@zenith-team.test'`).
 		Scan(&count); err != nil ||
 		count != 1 {
 		t.Fatalf("legacy user count = %d, error = %v", count, err)

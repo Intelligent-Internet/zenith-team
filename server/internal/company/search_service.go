@@ -4,17 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgtype"
 	"strings"
 	"time"
 	"unicode"
 
+	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // SearchService owns cross-entity search within one Company.
@@ -42,12 +43,24 @@ func (s *DefaultSearchService) Search(
 ) (SearchPage, error) {
 	tsQuery, selected := searchParameters(input)
 	rows, err := s.store.Queries().SearchCompany(ctx, generated.SearchCompanyParams{
-		PageSize: int32(input.Limit), Query: strings.ToLower(input.Query), TsQuery: tsQuery,
-		ActorUserID: principal.UserID, CompanyID: principal.CompanyID,
-		IncludeTasks: selected[SearchTypeTask], IncludeConversations: selected[SearchTypeConversation],
-		IncludeMessages: selected[SearchTypeMessage], IncludeArchived: input.IncludeArchived,
-		ConversationFilter: util.NullUUIDFromPtr(input.ConversationID), AuthorFilter: util.NullUUIDFromPtr(input.AuthorID),
-		AfterTime: searchTimestamp(input.After), BeforeTime: searchTimestamp(input.Before), HasFile: input.HasFile,
+		PageSize:             int32(input.Limit),
+		Query:                strings.ToLower(input.Query),
+		TsQuery:              tsQuery,
+		ActorUserID:          principal.UserID,
+		CompanyID:            principal.CompanyID,
+		IncludeTasks:         selected[SearchTypeTask],
+		IncludeConversations: selected[SearchTypeConversation],
+		IncludeMessages:      selected[SearchTypeMessage],
+		IncludeArchived:      input.IncludeArchived,
+		ConversationFilter: util.NullUUIDFromPtr(
+			input.ConversationID,
+		),
+		AuthorFilter: util.NullUUIDFromPtr(input.AuthorID),
+		AfterTime: searchTimestamp(
+			input.After,
+		),
+		BeforeTime: searchTimestamp(input.Before),
+		HasFile:    input.HasFile,
 	})
 	if err != nil {
 		return SearchPage{}, fmt.Errorf("search Company: %w", err)
@@ -189,6 +202,7 @@ func searchTimestamp(value *time.Time) pgtype.Timestamptz {
 	}
 	return pgtype.Timestamptz{Time: *value, Valid: true}
 }
+
 func searchUUID(value uuid.NullUUID) *uuid.UUID {
 	if !value.Valid {
 		return nil

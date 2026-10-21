@@ -8,20 +8,20 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	conversationdomain "boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	conversationdomain "github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -633,7 +633,10 @@ func (w *DefaultLifecycleWorker) enqueueContinuation(
 		if err != nil {
 			return generated.Run{}, 0, "", fmt.Errorf("lock continuation Task: %w", err)
 		}
-		taskAgent, err := q.GetTaskRunAgent(ctx, generated.GetTaskRunAgentParams{CompanyID: companyID, TaskID: taskID.UUID})
+		taskAgent, err := q.GetTaskRunAgent(
+			ctx,
+			generated.GetTaskRunAgentParams{CompanyID: companyID, TaskID: taskID.UUID},
+		)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return generated.Run{}, continuationAbandoned, abandonTaskUnavailable, nil
 		}

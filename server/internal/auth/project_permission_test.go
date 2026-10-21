@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/migrations"
+	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 func TestProjectPermissionCatalogIsSortedAndValid(t *testing.T) {
@@ -47,7 +47,11 @@ func TestManagementProjectPermissionsNeverOpenContent(t *testing.T) {
 	if !slices.IsSorted(management) {
 		t.Errorf("ManagementProjectPermissions() = %v, want sorted", management)
 	}
-	want := []ProjectPermission{ProjectPermissionArchive, ProjectPermissionGrantsManage, ProjectPermissionSettingsUpdate}
+	want := []ProjectPermission{
+		ProjectPermissionArchive,
+		ProjectPermissionGrantsManage,
+		ProjectPermissionSettingsUpdate,
+	}
 	if !slices.Equal(management, want) {
 		t.Errorf("ManagementProjectPermissions() = %v, want %v", management, want)
 	}

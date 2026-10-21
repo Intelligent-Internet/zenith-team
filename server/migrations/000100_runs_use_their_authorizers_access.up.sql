@@ -1,5 +1,5 @@
 -- A Run or the voice assistant uses its Authorizer's Project access, never
--- more (D31, revised 2026-10-06). There is no chat-audience term: the person
+-- more. There is no chat-audience term: the person
 -- who tags an Agent answers for what it shares. A Task chat's answer stays in
 -- that chat's Project. Go binds every permission; SQL names none.
 --

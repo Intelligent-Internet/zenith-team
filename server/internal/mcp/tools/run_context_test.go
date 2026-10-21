@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 func TestRunRequestKeyIncludesExactContextAndPayload(t *testing.T) {
@@ -66,8 +66,8 @@ func TestRunRequestKeyIncludesExactContextAndPayload(t *testing.T) {
 	}
 }
 
-// boardly-mcp's tools reach the server only through the daemon's Run
-// channel (Access TECH B3b). Every call leaves boardly-mcp as a channel
+// zenith-team-mcp's tools reach the server only through the daemon's Run
+// channel. Every call leaves zenith-team-mcp as a channel
 // request with the Run capability, never with a bearer or the Run token, and
 // every mutation names a UUID request key the daemon forwards. The fake
 // channel stands in for the daemon; the daemon's own test drives the same
@@ -88,7 +88,7 @@ func TestRunScopedToolsCallTheServerOnlyThroughTheRunChannel(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != runchannel.AuthorizationScheme+" "+capability {
 			t.Errorf("Authorization = %q, want the Run capability and never a bearer", got)
 		}
-		if r.Header.Get("X-Boardly-Run-Token") != "" {
+		if r.Header.Get("X-Zenith-Team-Run-Token") != "" {
 			t.Error("a tool sent the Run token; only the daemon's forward carries it")
 		}
 		var request runchannel.Request

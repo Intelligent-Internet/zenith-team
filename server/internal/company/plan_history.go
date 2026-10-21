@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"sort"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // planHistory holds preimages while one Company Plan transaction reconciles
@@ -26,7 +27,10 @@ type planHistory struct {
 func observePlanHistoryInTx(ctx context.Context, q *generated.Queries, companyID uuid.UUID,
 	current map[string]persistedTask, desired map[string]desiredTask,
 ) (planHistory, error) {
-	history := planHistory{tasks: make(map[uuid.UUID]*activity.Snapshot), conversations: make(map[uuid.UUID]*activity.Snapshot)}
+	history := planHistory{
+		tasks:         make(map[uuid.UUID]*activity.Snapshot),
+		conversations: make(map[uuid.UUID]*activity.Snapshot),
+	}
 	var deletedTaskIDs []uuid.UUID
 	for _, key := range sortedPersistedTaskKeys(current) {
 		row := current[key]
@@ -44,7 +48,10 @@ func observePlanHistoryInTx(ctx context.Context, q *generated.Queries, companyID
 			deletedTaskIDs = append(deletedTaskIDs, row.ID)
 		}
 	}
-	ids, err := q.ListRunIDsForDeletedTasksForUpdate(ctx, generated.ListRunIDsForDeletedTasksForUpdateParams{CompanyID: companyID, TaskIds: deletedTaskIDs})
+	ids, err := q.ListRunIDsForDeletedTasksForUpdate(
+		ctx,
+		generated.ListRunIDsForDeletedTasksForUpdateParams{CompanyID: companyID, TaskIds: deletedTaskIDs},
+	)
 	if err != nil {
 		return planHistory{}, fmt.Errorf("lock detached Task Runs: %w", err)
 	}
@@ -81,7 +88,16 @@ func (h planHistory) recordInTx(
 			if after == nil {
 				action = subject.entityType + ".deleted"
 			}
-			if err := activity.RecordInTx(ctx, q, pending, actor, action, subject.before[id], subject.entityType, id); err != nil {
+			if err := activity.RecordInTx(
+				ctx,
+				q,
+				pending,
+				actor,
+				action,
+				subject.before[id],
+				subject.entityType,
+				id,
+			); err != nil {
 				return err
 			}
 		}

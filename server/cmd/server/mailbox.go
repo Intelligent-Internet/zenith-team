@@ -8,12 +8,12 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/handler"
-	"boardly.dev/boardly/server/internal/infra/email"
-	"boardly.dev/boardly/server/internal/mailbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/handler"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/email"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mailbox"
 )
 
 type mailboxComponents struct {
@@ -60,7 +60,7 @@ func newMailboxComponents(
 	var cache mailbox.DetailCache
 	var expiryCache mailbox.ProviderExpiryCache
 	if redisClient != nil {
-		redisCache, cacheErr := mailbox.NewRedisDetailCache(redisClient, "boardly:mailbox")
+		redisCache, cacheErr := mailbox.NewRedisDetailCache(redisClient, "zenith-team:mailbox")
 		err = cacheErr
 		if err != nil {
 			return mailboxComponents{}, fmt.Errorf("construct Mailbox detail cache: %w", err)

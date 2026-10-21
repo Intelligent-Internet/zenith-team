@@ -1,0 +1,388 @@
+# Parallel verification for the Go server, the client app in frontend/ (its
+# own pnpm workspace), the voice worker, and the self-hosted images. Each lane
+# runs when the files it reads change; the nightly run and manual runs cover
+# everything. ci-gate is the one required check. Fork pull requests run here
+# with a read-only token and no secrets.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  # Nightly: every lane plus the PostgreSQL integration suites, so drift that
+  # no single change touched still surfaces within a day.
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+    inputs:
+      run_integration:
+        description: "Run the -tags=integration suites (PostgreSQL container)"
+        type: boolean
+        default: true
+
+concurrency:
+  # One group per pull request, per pushed ref, per schedule: a fork branch
+  # named main never shares a group with pushes to main.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  # Cancel superseded runs on pull requests only. Runs for pushes to main must
+  # complete: back-to-back merges cancelling each other leaves the earlier
+  # commit unverified.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Decides which lanes run. ci-gate checks each lane against these outputs.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      server: ${{ steps.filter.outputs.server == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      platform_content: ${{ steps.filter.outputs.platform_content == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      daemon: ${{ steps.filter.outputs.daemon == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+      integration: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_integration) }}
+    steps:
+      # Pull requests are diffed through the API; pushes need the checkout.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'push'
+        with:
+          persist-credentials: false
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
+        with:
+          # Each lane lists every file its checks read, including shared
+          # inputs outside its folder, so a change to one of those alone
+          # still runs the lane. This workflow and the Makefile run them all.
+          filters: |
+            server:
+              - "server/**"
+              # openapi_contract_test and error_codes_test read these.
+              - "docs/api/**"
+              # env_template_test reads these.
+              - "deploy/production.env.example"
+              - "deploy/docker-compose.production.yml"
+              - "Makefile"
+              - ".github/workflows/ci.yml"
+            frontend:
+              - "frontend/**"
+              - "docs/api/spec/**"
+              # Packaged into the desktop app.
+              - "LICENSE"
+              - "THIRD_PARTY_NOTICES.md"
+              - "Makefile"
+              - ".github/workflows/ci.yml"
+            # The pinned platform content and the attributes that keep it
+            # byte-exact (ADR 0016).
+            platform_content:
+              - "server/internal/platformbundle/**"
+              - "server/internal/contentbundle/**"
+              - "server/internal/daemon/tool_releases/**"
+              - "server/internal/daemon/studio_skill.md"
+              - "server/internal/daemon/studio_runtime.md"
+              - "server/internal/mcp/tools/builtin/**"
+              - "server/internal/mcp/tools/platform_skills.go"
+              - ".gitattributes"
+              - ".github/workflows/ci.yml"
+            # The macOS sandbox that keeps sign-in files away from agents.
+            daemon:
+              - "server/internal/daemon/**"
+              - ".github/workflows/ci.yml"
+            voice:
+              - "voice-agent/**"
+              - "Makefile"
+              - ".github/workflows/ci.yml"
+            selfhost:
+              - "deploy/**"
+              - "server/Dockerfile*"
+              - "frontend/Dockerfile*"
+              # Copied into both images.
+              - "LICENSE"
+              - "THIRD_PARTY_NOTICES.md"
+              - "Makefile"
+              - ".github/workflows/ci.yml"
+
+  server:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    # The race-enabled unit suite takes about 15 minutes on a hosted runner.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The lint ratchet compares a pull request with its merge base.
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: make go-fmt-check
+      # Pull requests are held to zero new findings even if main has some.
+      - name: Lint
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            make go-lint GO_LINT_ARGS="--new-from-merge-base=origin/$BASE_REF"
+          else
+            make go-lint
+          fi
+      # Includes the pinned sqlc drift check (go-sqlc-check).
+      - run: make go-unit
+      # zen and the MCP server ship inside the desktop app on every platform.
+      - name: Cross-compile the shipped binaries
+        working-directory: server
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/zen
+          GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/mcp
+          GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/mcp
+
+  # Proves on Windows that the pinned platform content (ADR 0016) reaches a
+  # build byte for byte. The checkout keeps Git for Windows' core.autocrlf
+  # true. Unless .gitattributes holds, that turns the harness SKILL.md and
+  # zenith-platform's files into CRLF, whose frontmatter zenith-team-mcp
+  # refuses, and a converted tar fails Decode's sha256 check.
+  server-windows:
+    needs: changes
+    if: needs.changes.outputs.platform_content == 'true' || needs.changes.outputs.server == 'true'
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      # The runner image already defaults to true; setting it again keeps an
+      # image change from quietly turning this job into a no-op.
+      - run: git config --global core.autocrlf true
+        working-directory: .
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      # The whole package: its tests read the embedded pin, the harness and
+      # testdata/format1.tar, whose bytes are what this job proves.
+      - run: go run ./cmd/bundlectl prepare
+      - run: go test -count=1 ./internal/platformbundle/ ./internal/contentbundle/
+      # zenith-team-mcp's own open path over the real pin, and the
+      # platform-skill loader over the compiled zenith-platform. A -run
+      # pattern that matches nothing passes as "no tests to run", so a renamed
+      # test would quietly prove nothing; the grep refuses that.
+      - shell: bash
+        run: |
+          go test -count=1 -run 'TestOpenTaskSkills' ./internal/mcp/ | tee "$RUNNER_TEMP/mcp.log"
+          go test -count=1 -run 'TestOpenTaskSkillService|TestPlatformSkills' ./internal/mcp/tools/ | tee "$RUNNER_TEMP/tools.log"
+          ! grep -q 'no tests to run' "$RUNNER_TEMP/mcp.log" "$RUNNER_TEMP/tools.log"
+      - run: go build ./cmd/mcp
+      # cmd/zen still needs Windows-specific terminal handling, so it is not
+      # built here.
+
+  # The daemon's macOS sandbox: agents must not read the person's sign-in
+  # files or reach another run's folders. These tests compile only on macOS.
+  server-macos:
+    needs: changes
+    if: needs.changes.outputs.daemon == 'true'
+    runs-on: macos-15
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: go run ./cmd/bundlectl prepare
+      - run: go build ./cmd/zen ./cmd/mcp
+      - name: Sandbox tests
+        run: |
+          go test -count=1 -v \
+            -run 'OnMacOS|TestProbeEnforcesOnlyWhenTheSandboxHidesTheSessionFile|TestConnectorOnlyCodexLaunchRunsUnderTheWriteFence|TestUnixAppPreviewBackend' \
+            ./internal/daemon/ | tee "$RUNNER_TEMP/sandbox.log"
+          ! grep -q 'no tests to run' "$RUNNER_TEMP/sandbox.log"
+
+  server-integration:
+    needs: changes
+    if: needs.changes.outputs.integration == 'true'
+    runs-on: ubuntu-latest
+    # Every PostgreSQL suite with the race detector, on one shared container.
+    timeout-minutes: 60
+    env:
+      TEST_REQUIRE_DOCKER: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: make go-integration
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Nothing here launches Electron; skip its binary download.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - run: make lint typecheck
+      - run: make api-lint api-types-check
+      - name: Production build
+        env:
+          # The renderer build needs more than Node's default heap.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: make build
+      # Static checks of the Electron hardening rules: fuses, CSP, IPC
+      # exposure, permissions and webPreferences.
+      - run: pnpm --dir frontend electron:security:scan
+
+  voice:
+    needs: changes
+    if: needs.changes.outputs.voice == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: voice-agent
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.10.9"
+      - run: uv sync --frozen
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      - run: uv run --frozen python -m unittest -v
+      - run: docker build -t zenith-team-voice:check .
+
+  # Builds both self-hosted images, then boots the stack the way
+  # `make selfhost-up` does and checks that it answers.
+  selfhost:
+    needs: changes
+    if: needs.changes.outputs.selfhost == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      APP_SERVER_IMAGE: zenith-team-server:check
+      APP_WEB_IMAGE: zenith-team-web:check
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker build -f server/Dockerfile -t "$APP_SERVER_IMAGE" .
+      - run: docker build -f frontend/Dockerfile -t "$APP_WEB_IMAGE" .
+      - name: Boot the stack with generated secrets
+        run: |
+          make selfhost-env
+          docker compose -f deploy/docker-compose.production.yml config --quiet
+          docker compose -f deploy/docker-compose.production.yml up -d --wait --wait-timeout 300
+      - name: Check that the server and the web app answer
+        run: |
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 http://127.0.0.1:8788/readyz
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 3 -o /dev/null http://127.0.0.1:8080/
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f deploy/docker-compose.production.yml logs --tail=200
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f deploy/docker-compose.production.yml down --volumes
+
+  # The one required status check. Fail-closed: a lane the changes job
+  # selected must succeed, a lane it did not select must be skipped, and a
+  # job missing from the table below fails the gate.
+  ci-gate:
+    if: always()
+    needs: [changes, server, server-windows, server-macos, server-integration, frontend, voice, selfhost]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check every lane against its scope
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          scope() { jq -r --arg k "$1" '.changes.outputs[$k] // "false"' <<<"$NEEDS"; }
+          either() { if [ "$(scope "$1")" = true ] || [ "$(scope "$2")" = true ]; then echo true; else echo false; fi; }
+          declare -A selected=(
+            [changes]=true
+            [server]="$(scope server)"
+            [server-windows]="$(either platform_content server)"
+            [server-macos]="$(scope daemon)"
+            [server-integration]="$(scope integration)"
+            [frontend]="$(scope frontend)"
+            [voice]="$(scope voice)"
+            [selfhost]="$(scope selfhost)"
+          )
+          fail=0
+          while read -r job; do
+            if [ -z "${selected[$job]+set}" ]; then
+              echo "::error::$job is not in ci-gate's scope table"
+              fail=1
+              continue
+            fi
+            result="$(jq -r --arg j "$job" '.[$j].result' <<<"$NEEDS")"
+            if [ "${selected[$job]}" = true ]; then want=success; else want=skipped; fi
+            if [ "$result" = "$want" ]; then
+              echo "$job: $result"
+            else
+              echo "::error::$job: $result (expected $want)"
+              fail=1
+            fi
+          done < <(jq -r 'keys[]' <<<"$NEEDS")
+          exit "$fail"
+
+  # A failed nightly opens one tracking issue, or comments on the open one.
+  nightly-report:
+    needs: ci-gate
+    if: always() && github.event_name == 'schedule' && needs.ci-gate.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the nightly failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Nightly CI failed"
+          number="$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number" | head -1)"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "Failed again: $RUN_URL"
+          else
+            gh issue create --title "$title" --body "The nightly run failed: $RUN_URL"
+          fi

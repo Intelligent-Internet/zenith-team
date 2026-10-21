@@ -20,18 +20,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/util"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // The daemon plane: the
@@ -184,7 +184,7 @@ func (h *Handler) verifyDaemonCompanyAccess(
 }
 
 // requireDaemonID reads the machine identity the daemon sends on every
-// request (X-Boardly-Daemon-ID, the `daemonId` it registered with) and
+// request (X-Zenith-Team-Daemon-ID, the `daemonId` it registered with) and
 // applies the rollout stage to a missing one: admitted as the unfenced
 // empty id with a warning log, or — when RequireDaemonID is on — refused
 // with 400 invalid_request before any database access. The 400 is
@@ -353,8 +353,8 @@ type daemonRegisterRuntime struct {
 	Status         string                       `json:"status"`
 	UnusableReason *daemonRuntimeUnusableReason `json:"unusableReason"`
 	SignIn         *daemonRuntimeSignIn         `json:"signIn"`
-	// CredentialIsolation is the runtime's report (Access TECH B3d). It is
-	// checked and never stored: no access decision reads it (D31).
+	// CredentialIsolation is the runtime's report. It is checked and never
+	// stored: no access decision reads it.
 	CredentialIsolation string `json:"credentialIsolation" binding:"omitempty,oneof=enforced not_enforced"`
 }
 
@@ -644,7 +644,7 @@ func daemonHasCapability(raw, wanted string) bool {
 	return false
 }
 
-// daemonHeartbeat records the runtime as alive. Boardly phase 1 has no Redis
+// daemonHeartbeat records the runtime as alive. Zenith Team phase 1 has no Redis
 // liveness lane: every beat writes last_seen_at directly and the sweeper
 // trusts the DB stale window. The 404 on a missing runtime row is the
 // runtime-gone signal — the daemon prunes the stale runtime and re-registers.
@@ -732,7 +732,7 @@ func (h *Handler) DaemonWSHeartbeat(
 }
 
 // daemonWebSocket upgrades the daemon control connection. Authentication ran
-// in requireDaemonAuth; the identity pins the daemon id (X-Boardly-Daemon-ID
+// in requireDaemonAuth; the identity pins the daemon id (X-Zenith-Team-Daemon-ID
 // header, daemon_id query fallback — subject to the same rollout stage as
 // the HTTP routes), the runtime_ids query scope narrowed to the caller's own
 // runtimes, and the caller's company set so heartbeats and RPCs reuse the
@@ -1919,7 +1919,7 @@ func writeTerminalHeadMismatch(c *gin.Context, head protocol.RunTerminalHeadMism
 }
 
 // daemonAckRunCancelled receives the daemon's acknowledgement that it
-// observed a run cancellation and finished flushing the transcript. Boardly
+// observed a run cancellation and finished flushing the transcript. Zenith Team
 // has no deferred finalization to settle — cancelled runs just cancel — so
 // the ack is a plain 200 that also wakes the runtime for queued successors.
 func (h *Handler) daemonAckRunCancelled(c *gin.Context) {

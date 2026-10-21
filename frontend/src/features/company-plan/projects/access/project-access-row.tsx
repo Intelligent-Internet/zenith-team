@@ -6,7 +6,7 @@ import {
   PROJECT_VISIBILITY_FLOOR_COPY,
   accessErrorCopy,
 } from "@/lib/api-error-copy";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type {
   CompanyRole,
   ProjectPermission,
@@ -115,7 +115,7 @@ export function ProjectAccessRow({
   const changeable = editable && !outranks;
 
   const fail = (reason: unknown, fallback: string) => {
-    const failure = reason as Partial<BoardlyApiError>;
+    const failure = reason as Partial<ZenithTeamApiError>;
     if (failure.code === "project_grant_exceeds_own") {
       // The viewer's own access likely changed: reload so the greying
       // matches the server, and say why under the row.
@@ -230,7 +230,7 @@ export function ProjectAccessRow({
       fail(reason, "Couldn't remove access");
     }
   };
-  // A removal asks on the same terms as a change (DESIGN 7.4): only when
+  // A removal asks on the same terms as a change: only when
   // they lose the Project (no Group still gives it) or a run of theirs
   // stops; otherwise it happens straight away and their row stays.
   const remove = async () => {

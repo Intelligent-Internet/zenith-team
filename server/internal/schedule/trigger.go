@@ -14,7 +14,7 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var cronFieldPattern = regexp.MustCompile(`^[0-9*/,-]+$`)

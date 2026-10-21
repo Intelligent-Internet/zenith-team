@@ -7,8 +7,8 @@ import (
 	"io"
 	"strconv"
 
-	"boardly.dev/boardly/server/internal/execution"
-	cloudrunadapter "boardly.dev/boardly/server/internal/infra/cloudrun"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	cloudrunadapter "github.com/Intelligent-Internet/zenith-team/server/internal/infra/cloudrun"
 )
 
 type publicationProviderCatalog struct {

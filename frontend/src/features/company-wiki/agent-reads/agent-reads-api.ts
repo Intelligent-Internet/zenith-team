@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import { zenithTeamApi, executeZenithTeamQuery } from "@/shared/api/zenith-team-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import { wikiTags } from "@/shared/api/wiki-tags";
 
@@ -16,7 +16,7 @@ export const WIKI_PAGE_AGENT_READS_LIMIT = 10;
 const companyPath = (companyId: string) =>
   `/companies/${encodeURIComponent(companyId)}`;
 
-export const agentReadsApi = boardlyApi.injectEndpoints({
+export const agentReadsApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     // Provides the Run's own evidence tag for the evidence frame, and the page
     // lists tag so page frames refresh `page.currentRevision` and
@@ -27,7 +27,7 @@ export const agentReadsApi = boardlyApi.injectEndpoints({
       { companyId: string; runId: string }
     >({
       queryFn: ({ companyId, runId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<RunWikiReadList>(
               `${companyPath(companyId)}/runs/${encodeURIComponent(runId)}/wiki-reads`,
@@ -45,7 +45,7 @@ export const agentReadsApi = boardlyApi.injectEndpoints({
       { companyId: string; pageId: string }
     >({
       queryFn: ({ companyId, pageId }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<WikiPageAgentReadList>(
               `${companyPath(companyId)}/wiki/pages/${encodeURIComponent(pageId)}/agent-reads`,

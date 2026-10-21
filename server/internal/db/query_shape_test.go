@@ -19,13 +19,11 @@ import (
 // on them: a statement that binds a person and reads a guarded table must
 // name one of the access views, and Go code must not reach the Project-scoped
 // tables with hand-written SQL. A statement that does neither is listed below
-// with the reason, until the step that sweeps it lands. The step names follow
-// the implementation plan: B3 Task chats, approvals, questions, deliverables
-// and mail (plan rollout step 5, the rest of sweep A); B4 files (rollout 6);
-// B5 Inbox and Activity (rollout 7). Step B8 (rollout 10) moved the Company
-// Plan's hand-written SQL into sqlc queries that join the views, so no entry
-// names it. An entry that stops applying fails the test, so the lists only
-// shrink.
+// with the reason it is not swept. Task chats, approvals, questions,
+// deliverables, mail, files, the Inbox and Activity read through the views,
+// and the Company Plan's SQL lives in sqlc queries that join them, so no
+// entry names it. An entry that stops applying fails the test, so the lists
+// only shrink.
 
 // guardedTables are the tables whose rows belong to a Project, directly or
 // through a Task or a chat.
@@ -61,7 +59,7 @@ var storedPersonParams = map[string]bool{
 
 // accessViews are the relations that state the Project access rule, plus
 // project_permission_held, the same rule as a write fence for one person,
-// the delegate rule (D31): delegate_permission_held for a Run or the voice
+// the delegate rule: delegate_permission_held for a Run or the voice
 // assistant, and run_permission_held for one Run from its own row, and
 // project_access_paths, every stored path (own grant or Group) by which a
 // person holds a permission (000101). The Group tables themselves are not
@@ -78,15 +76,15 @@ const (
 	directChats = "not swept: reads only the caller's own direct chat (kind direct, creator = caller), " +
 		"which has no Project; conversation_readers states the same creator rule"
 	channels = "not swept: a channel or human direct message follows its members, not a Project; " +
-		"step B4's fixture test compares conversation_readers with these"
+		"a fixture test compares conversation_readers with these"
 	ownUploads = "not swept: locks the person's own upload to attach, complete, share or register it; it reads nobody else's file, " +
 		"and wherever the file is then listed attachment_access decides who sees it"
 	liveRunProof = "not swept: locks a live Run's own chat or Run for its proof; the Run stays live only while its authorizer " +
 		"holds project.tasks.execute there (claim fence, revocation sweep), and the caller is checked to be that authorizer (the proof's bearer, or the runtime's owner)"
 	mergeAuthority = "not swept: queues, re-addresses or records a merge job under the Proactive Mode owner's or the claimant's " +
 		"authority; it returns no Task content, and the claim statements check the daemon member's project.tasks.execute"
-	usageTotals = "not swept: usage counts carry no Task content and stay Company-wide (D20; plan: unchanged on purpose)"
-	schedules   = "not swept: Schedule chats are creator-private and have no Project (plan: unchanged on purpose)"
+	usageTotals = "not swept: usage counts carry no Task content and stay Company-wide (unchanged on purpose)"
+	schedules   = "not swept: Schedule chats are creator-private and have no Project (unchanged on purpose)"
 )
 
 // unguardedActorQueries are statements that bind a person, read a guarded
@@ -118,7 +116,7 @@ var unguardedActorQueries = map[string]string{
 	"InsertChannelInvocation":       channels,
 	"ListChannelAgentActivity": "not swept: lists the items of the viewer's own tagged Runs (their Authorizer) in a " +
 		"channel Agent's chat, which has no Project, after the service checks that the viewer sees the channel; " +
-		"a tagged Run reads only what its Authorizer reads (D31, Access TECH B11)",
+		"a tagged Run reads only what its Authorizer reads",
 	"ToggleHuddleAI": "not swept: stores who granted the Huddle voice assistant Company context, a caller the service has " +
 		"checked is in the call (HuddleChatParticipantActive: connected and an active member of the Huddle chat), and reads " +
 		"only the Huddle chat's message head; its Project reads are bounded by the delegate rule for that granter " +
@@ -169,7 +167,7 @@ var rawGuardedSQL = map[string]string{
 	"internal/usage/service.go:509": usageTotals,
 	"internal/usage/service.go:781": "swept: the top Tasks list joins project_access for the caller (ADR 0017); " +
 		"its share denominator counts every Task Run's tokens and names no Task",
-	"internal/testutil/dbtest/dbtest.go:348": "not swept: the test fixture grants its owners every Project permission",
+	"internal/testutil/dbtest/dbtest.go:354": "not swept: the test fixture grants its owners every Project permission",
 	"internal/testutil/dbtest/groups.go:90": "not swept: the test fixture grants its Group colleagues' Groups every " +
 		"Project, for the EXPLAIN pins",
 }
@@ -229,7 +227,7 @@ func TestActorQueriesReadGuardedTablesThroughAccessViews(t *testing.T) {
 		"LockCompanyPlanTaskDependencies", "DeleteCompanyPlanTask", "RenameCompanyPlanTaskConversation",
 		"CanViewRunWikiReads", "ListWikiPageAgentReads",
 		"ListAnalyticsGroups", "GetTaskUsageTaskForReader",
-		// The delegate rule (D31): the enqueue fence and the voice reads.
+		// The delegate rule: the enqueue fence and the voice reads.
 		"RunConversationExecutePermitted", "ListVoiceProjects", "ReadVoiceTasks",
 	} {
 		if !guardedThroughViews[name] {

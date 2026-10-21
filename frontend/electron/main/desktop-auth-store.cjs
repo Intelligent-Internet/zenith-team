@@ -8,25 +8,26 @@ const { execFile } = require("node:child_process");
 const { app, safeStorage } = require("electron");
 
 const { daemonEnvironment } = require("./daemon-environment.cjs");
-const { resolveBoardlyExecutable } = require("./agent-discovery.cjs");
+const { resolveZenithTeamExecutable } = require("./agent-discovery.cjs");
 const { writeMainLog } = require("./diagnostics.cjs");
 const { createDesktopRuntimeEnv } = require("./release-env.cjs");
 const { getDesktopVariant } = require("../shared/desktop-variant.cjs");
 
-// The app's own sign-in (D31). It lives in userData, encrypted with the
+// The app's own sign-in. It lives in userData, encrypted with the
 // operating system's protection for this app (Electron safeStorage), and
 // never in the daemon's home. The daemon has a session of its own,
 // daemon-auth.json in the daemon's home, which the app starts after sign-in
 // (POST /auth/daemon-session) and hands to `zen desktop-session install`.
 const DESKTOP_SESSION_FILENAME = "desktop-session.v1.bin";
-// Before D31 the app and its daemon shared one session in the daemon's
-// home. The first launch after the update moves it into the app's store.
+// Older versions had the app and its daemon share one session in the
+// daemon's home. The first launch after the update moves it into the app's
+// store.
 const SHARED_SESSION_FILENAME = "auth.json";
 const SHARED_SESSION_LOCK_FILENAME = "auth.lock";
 const DAEMON_SESSION_FILENAME = "daemon-auth.json";
 const LEGACY_AUTH_DIRECTORY_NAME = "auth";
-const LEGACY_ACCESS_TOKEN_FILENAME = "boardly-access-token.v1.bin";
-const LEGACY_AUTH_SESSION_FILENAME = "boardly-auth-session.v2.bin";
+const LEGACY_ACCESS_TOKEN_FILENAME = "zenith-team-access-token.v1.bin";
+const LEGACY_AUTH_SESSION_FILENAME = "zenith-team-auth-session.v2.bin";
 const LEGACY_MIGRATION_MARKER = "legacy-session-migrated.v1";
 const DESKTOP_SESSION_MAX_BUFFER_BYTES = 64 << 10;
 const DESKTOP_SESSION_TIMEOUT_MS = 35_000;
@@ -62,7 +63,7 @@ const defaultStore = createDesktopAuthTokenStore({
   fs,
   homeDirectory: os.homedir(),
   path,
-  resolveExecutable: resolveBoardlyExecutable,
+  resolveExecutable: resolveZenithTeamExecutable,
   safeStorage,
   sharedSessionInUse: () => sharedSessionInUse(),
   writeMainLog,
@@ -84,14 +85,14 @@ function createDesktopAuthTokenStore({
   const desktopVariant = getDesktopVariant(env, {
     fallback: electronApp.isPackaged ? "prod" : "local",
   });
-  const boardlyHomeDirectory = () =>
-    pathModule.join(electronApp.getPath("userData"), "boardly-home");
+  const zenithTeamHomeDirectory = () =>
+    pathModule.join(electronApp.getPath("userData"), "zenith-team-home");
   const sessionStorePath = () =>
     pathModule.join(electronApp.getPath("userData"), DESKTOP_SESSION_FILENAME);
   const sharedSessionPath = () =>
-    pathModule.join(boardlyHomeDirectory(), SHARED_SESSION_FILENAME);
+    pathModule.join(zenithTeamHomeDirectory(), SHARED_SESSION_FILENAME);
   const daemonSessionPath = () =>
-    pathModule.join(boardlyHomeDirectory(), DAEMON_SESSION_FILENAME);
+    pathModule.join(zenithTeamHomeDirectory(), DAEMON_SESSION_FILENAME);
   const legacyDirectory = () =>
     pathModule.join(
       electronApp.getPath("userData"),
@@ -120,7 +121,7 @@ function createDesktopAuthTokenStore({
       throw new Error("Zenith Team CLI is unavailable");
     }
     const childEnvironment = daemonEnvironment(env, {
-      BOARDLY_HOME: boardlyHomeDirectory(),
+      ZENITH_TEAM_HOME: zenithTeamHomeDirectory(),
     });
     return executeCommand({
       args,
@@ -157,7 +158,7 @@ function createDesktopAuthTokenStore({
 
   // writeSessionStore saves the app's session, or throws
   // SessionNotSavedError. There is no second place to save it: never a
-  // plain file (D31).
+  // plain file.
   function writeSessionStore(session) {
     try {
       requireSecureStorage();
@@ -299,7 +300,7 @@ function createDesktopAuthTokenStore({
     throw new Error("Desktop authentication session is missing");
   }
 
-  // moveSharedSession is the upgrade path (D31): under the CLI's own lock on
+  // moveSharedSession is the upgrade path: under the CLI's own lock on
   // auth.json, the shared session becomes the app's and leaves the daemon's
   // home. The daemon then gets a session of its own before it next starts
   // (ensureDaemonSession), so nobody else holds the app's refresh token.
@@ -318,12 +319,12 @@ function createDesktopAuthTokenStore({
 
   async function withSharedSessionLock(operation) {
     const lockPath = pathModule.join(
-      boardlyHomeDirectory(),
+      zenithTeamHomeDirectory(),
       SHARED_SESSION_LOCK_FILENAME,
     );
     const owner = { id: crypto.randomUUID(), pid: process.pid };
     const deadline = Date.now() + SHARED_SESSION_LOCK_WAIT_MS;
-    fsModule.mkdirSync(boardlyHomeDirectory(), {
+    fsModule.mkdirSync(zenithTeamHomeDirectory(), {
       mode: 0o700,
       recursive: true,
     });
@@ -532,7 +533,7 @@ function createDesktopAuthTokenStore({
     }
   }
 
-  // ensureDaemonSession gives the daemon its own session (D31) before it
+  // ensureDaemonSession gives the daemon its own session before it
   // starts, and a fresh one after every sign-in (replace), which also
   // replaces one the server ended. Before a start, one already in the
   // daemon's home for the same person and server is kept. The app's session
@@ -707,7 +708,7 @@ function createDesktopAuthTokenStore({
   function readPlainLegacySession() {
     const legacyPath = pathModule.join(
       homeDirectory,
-      legacyBoardlyDirectoryName(desktopVariant),
+      legacyZenithTeamDirectoryName(desktopVariant),
       "auth.json",
     );
     if (!fsModule.existsSync(legacyPath)) return null;
@@ -760,7 +761,7 @@ function createDesktopAuthTokenStore({
     clearStoredAccessToken,
     ensureDaemonSession,
     ensureStoredSession,
-    getCredentialDirectoryPath: boardlyHomeDirectory,
+    getCredentialDirectoryPath: zenithTeamHomeDirectory,
     getDaemonSessionPath: daemonSessionPath,
     getSessionStorePath: sessionStorePath,
     installStoredSession,
@@ -912,14 +913,14 @@ function defaultApiBaseUrl(variant) {
   return `${variant.apiOrigin}/api/v1`;
 }
 
-function legacyBoardlyDirectoryName(variant) {
+function legacyZenithTeamDirectoryName(variant) {
   switch (variant.environment) {
     case "dev":
-      return ".boardly-dev";
+      return ".zenith-team-dev";
     case "local":
-      return ".boardly-local";
+      return ".zenith-team-local";
     default:
-      return ".boardly";
+      return ".zenith-team";
   }
 }
 

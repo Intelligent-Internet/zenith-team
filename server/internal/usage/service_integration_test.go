@@ -14,9 +14,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/telemetry"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 // usageObserver stands in for the metrics registry and keeps every token
@@ -121,9 +121,9 @@ func TestReportedTokensReachTheMetricsEndpoint(t *testing.T) {
 	}
 	body := response.Body.String()
 	for _, want := range []string{
-		`boardly_run_tokens_total{kind="input",provider="codex"} 120`,
-		`boardly_run_tokens_total{kind="output",provider="codex"} 30`,
-		`boardly_run_tokens_total{kind="cache_read",provider="codex"} 7`,
+		`zenith_team_run_tokens_total{kind="input",provider="codex"} 120`,
+		`zenith_team_run_tokens_total{kind="output",provider="codex"} 30`,
+		`zenith_team_run_tokens_total{kind="cache_read",provider="codex"} 7`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("metrics missing %q:\n%s", want, body)

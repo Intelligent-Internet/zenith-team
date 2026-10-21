@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // TopicHuddle carries realtime lifecycle facts for Huddle clients.
@@ -31,11 +31,19 @@ type HuddleStatusChangedEvent struct {
 // PublishHuddleStatusChanged is a post-commit hint to everyone still in the
 // call. A failed recipient read only delays clients until their fallback poll,
 // so it never fails the mutation that already committed.
-func PublishHuddleStatusChanged(ctx context.Context, q *generated.Queries, bus *events.Bus, companyID, huddleID uuid.UUID) {
+func PublishHuddleStatusChanged(
+	ctx context.Context,
+	q *generated.Queries,
+	bus *events.Bus,
+	companyID, huddleID uuid.UUID,
+) {
 	if bus == nil {
 		return
 	}
-	rows, err := q.ListOpenHuddleConnections(ctx, generated.ListOpenHuddleConnectionsParams{CompanyID: companyID, HuddleID: huddleID})
+	rows, err := q.ListOpenHuddleConnections(
+		ctx,
+		generated.ListOpenHuddleConnectionsParams{CompanyID: companyID, HuddleID: huddleID},
+	)
 	if err != nil || len(rows) == 0 {
 		return
 	}
@@ -66,8 +74,16 @@ type HuddleRosterChangedEvent struct {
 // huddleRosterEvent is built inside the transaction that changed a
 // connection. It reaches everyone still reserved or connected plus the users
 // whose connection changed, whose own windows may still show the roster.
-func huddleRosterEvent(ctx context.Context, q *generated.Queries, companyID, huddleID uuid.UUID, changed ...uuid.UUID) (events.Event, error) {
-	rows, err := q.ListOpenHuddleConnections(ctx, generated.ListOpenHuddleConnectionsParams{CompanyID: companyID, HuddleID: huddleID})
+func huddleRosterEvent(
+	ctx context.Context,
+	q *generated.Queries,
+	companyID, huddleID uuid.UUID,
+	changed ...uuid.UUID,
+) (events.Event, error) {
+	rows, err := q.ListOpenHuddleConnections(
+		ctx,
+		generated.ListOpenHuddleConnectionsParams{CompanyID: companyID, HuddleID: huddleID},
+	)
 	if err != nil {
 		return events.Event{}, err
 	}

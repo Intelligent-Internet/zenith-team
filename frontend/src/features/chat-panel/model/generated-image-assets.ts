@@ -1,4 +1,4 @@
-import { BOARDLY_API_BASE_URL } from "@/lib/api-client";
+import { ZENITH_TEAM_API_BASE_URL } from "@/lib/api-client";
 import type { ChatRuntimeActivity } from "@/shared/chat/types";
 
 export type GeneratedImagePreview = {
@@ -14,7 +14,7 @@ export type GeneratedImagePreview = {
 };
 
 const MAX_NESTED_TOOL_OUTPUT_DEPTH = 6;
-const CODEX_GENERATED_IMAGE_SCHEME = "boardly-generated-image://codex";
+const CODEX_GENERATED_IMAGE_SCHEME = "zenith-team-generated-image://codex";
 const CODEX_THREAD_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 const CODEX_IMAGE_FILE_PATTERN =
@@ -201,7 +201,7 @@ function resolveGeneratedImageUrl(
 
     const normalizedUrl = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
     if (normalizedUrl.startsWith("/api/v1/")) {
-      return `${boardlyApiOrigin()}${normalizedUrl}`;
+      return `${zenithTeamApiOrigin()}${normalizedUrl}`;
     }
   }
 
@@ -216,7 +216,7 @@ function resolveGeneratedImageUrl(
     CODEX_THREAD_ID_PATTERN.test(pathSegments[1]) &&
     CODEX_IMAGE_FILE_PATTERN.test(pathSegments[2]) &&
     typeof window !== "undefined" &&
-    window.boardlyDesktop
+    window.zenithTeamDesktop
   ) {
     return `${CODEX_GENERATED_IMAGE_SCHEME}/${pathSegments
       .slice(1)
@@ -230,11 +230,11 @@ function resolveGeneratedImageUrl(
   if (!normalizedPath.startsWith("agent-generated-images/")) {
     return undefined;
   }
-  return `${BOARDLY_API_BASE_URL}/media/generated-assets/${normalizedPath}`;
+  return `${ZENITH_TEAM_API_BASE_URL}/media/generated-assets/${normalizedPath}`;
 }
 
-function boardlyApiOrigin() {
-  const normalizedBase = BOARDLY_API_BASE_URL.replace(/\/+$/, "");
+function zenithTeamApiOrigin() {
+  const normalizedBase = ZENITH_TEAM_API_BASE_URL.replace(/\/+$/, "");
   return normalizedBase.endsWith("/api/v1")
     ? normalizedBase.slice(0, -"/api/v1".length)
     : normalizedBase;

@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/api-client";
-import { boardlyApi, executeBoardlyQuery } from "@/shared/api/boardly-api";
+import {
+  zenithTeamApi,
+  executeZenithTeamQuery,
+} from "@/shared/api/zenith-team-api";
 import type {
   components,
   operations,
@@ -79,11 +82,11 @@ function applyGroupGrant(
   }
 }
 
-export const projectApi = boardlyApi.injectEndpoints({
+export const projectApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
     listProjects: builder.query<{ items: Project[] }, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<{ items: Project[] }>(path(companyId), {
               params: { include_archived: true },
@@ -98,7 +101,7 @@ export const projectApi = boardlyApi.injectEndpoints({
     // and the access screens still name them.
     listManagedProjects: builder.query<{ items: Project[] }, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<{ items: Project[] }>(path(companyId), {
               params: { view: "manage", include_archived: true },
@@ -115,7 +118,7 @@ export const projectApi = boardlyApi.injectEndpoints({
     // changes, since either can add or clear a row.
     getProjectAccessReport: builder.query<ProjectAccessReport, string>({
       queryFn: (companyId) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ProjectAccessReport>(
               `${path(companyId)}/access-report`,
@@ -129,7 +132,7 @@ export const projectApi = boardlyApi.injectEndpoints({
     }),
     getProject: builder.query<Project, { companyId: string; id: string }>({
       queryFn: ({ companyId, id }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.get<Project>(projectPath(companyId, id)),
           "Project could not be loaded.",
         ),
@@ -138,15 +141,15 @@ export const projectApi = boardlyApi.injectEndpoints({
         projectTag(id),
       ],
     }),
-    // Everyone with a stored source on the Project, and its Groups (Access
-    // TECH D4). A Group's name and member count change with group.changed,
+    // Everyone with a stored source on the Project, and its Groups. A
+    // Group's name and member count change with group.changed,
     // so the list also follows the Company's Group tag.
     listProjectGrants: builder.query<
       ProjectGrantCollection,
       { companyId: string; id: string }
     >({
       queryFn: ({ companyId, id }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.get<ProjectGrantCollection>(
               `${projectPath(companyId, id)}/grants`,
@@ -170,7 +173,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, groupId, permissions, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<ProjectGroupGrantResult>(
               `${projectPath(companyId, id)}/group-grants/${encodeURIComponent(groupId)}`,
@@ -214,7 +217,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, groupId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<ProjectGroupGrantResult>(
               `${projectPath(companyId, id)}/group-grants/${encodeURIComponent(groupId)}`,
@@ -259,7 +262,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, groupId, permissions }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<GroupChangePreview>(
               `${projectPath(companyId, id)}/group-grants/${encodeURIComponent(groupId)}/preview`,
@@ -281,7 +284,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, userId, permissions }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<ProjectGrantPreview>(
               `${projectPath(companyId, id)}/grants/${encodeURIComponent(userId)}/preview`,
@@ -301,7 +304,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, userId, permissions, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<ProjectGrantResult>(
               `${projectPath(companyId, id)}/grants/${encodeURIComponent(userId)}`,
@@ -343,7 +346,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       }
     >({
       queryFn: ({ companyId, id, userId, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.delete<ProjectGrantResult>(
               `${projectPath(companyId, id)}/grants/${encodeURIComponent(userId)}`,
@@ -379,7 +382,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       { companyId: string; id: string; expectedRevision: number }
     >({
       queryFn: ({ companyId, id, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Project>(`${projectPath(companyId, id)}/join`, {
               expectedRevision,
@@ -410,7 +413,7 @@ export const projectApi = boardlyApi.injectEndpoints({
         expectedRevision,
         expectedAccessRevision,
       }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.patch<Project>(projectPath(companyId, id), {
               visibility,
@@ -431,7 +434,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       { companyId: string; request: Create }
     >({
       queryFn: ({ companyId, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.post<Project>(path(companyId), request),
           "Project could not be created.",
         ),
@@ -444,7 +447,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       { companyId: string; id: string; request: Update }
     >({
       queryFn: ({ companyId, id, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () => apiClient.patch<Project>(`${path(companyId)}/${id}`, request),
           "Project could not be updated.",
         ),
@@ -457,7 +460,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       { companyId: string; id: string; request: ReplaceFiles }
     >({
       queryFn: ({ companyId, id, request }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.put<Project>(`${path(companyId)}/${id}/files`, request),
           "Project files could not be saved.",
@@ -471,7 +474,7 @@ export const projectApi = boardlyApi.injectEndpoints({
       { companyId: string; id: string; expectedRevision: number }
     >({
       queryFn: ({ companyId, id, expectedRevision }) =>
-        executeBoardlyQuery(
+        executeZenithTeamQuery(
           () =>
             apiClient.post<Project>(`${path(companyId)}/${id}/archive`, {
               expectedRevision,

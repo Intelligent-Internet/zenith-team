@@ -48,8 +48,8 @@ or operation they describe. Add error codes to [errors.md](../errors.md) with th
 server registry change.
 
 Feature behavior, design decisions, and wireframe handoffs live in
-[feature specs](../../specs/README.md). Label future behavior **Planned** there.
-Use `x-boardly-status: planned` only for a contracted operation that is not
+feature specs. Label future behavior **Planned** there.
+Use `x-zenith-team-status: planned` only for a contracted operation that is not
 served yet; remove it when the route ships. A proposed change to a served
 operation does not turn its current contract into a planned route.
 

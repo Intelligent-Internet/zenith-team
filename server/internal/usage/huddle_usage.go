@@ -10,9 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -46,7 +46,14 @@ const DefaultHuddleMonthlyLimitUSDTicks int64 = 2 * 10_000_000_000
 // SeedHuddleBudgetInTx gives a new Company the default voice budget inside its
 // creation transaction. An existing configuration is left unchanged.
 func SeedHuddleBudgetInTx(ctx context.Context, q *generated.Queries, companyID uuid.UUID) error {
-	_, err := q.ConfigureHuddleAIBudget(ctx, generated.ConfigureHuddleAIBudgetParams{CompanyID: companyID, MonthlyLimitUsdTicks: DefaultHuddleMonthlyLimitUSDTicks, ExpectedRevision: 0})
+	_, err := q.ConfigureHuddleAIBudget(
+		ctx,
+		generated.ConfigureHuddleAIBudgetParams{
+			CompanyID:            companyID,
+			MonthlyLimitUsdTicks: DefaultHuddleMonthlyLimitUSDTicks,
+			ExpectedRevision:     0,
+		},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
@@ -85,8 +92,14 @@ func (s *DefaultHuddleBudgetService) Get(ctx context.Context, principal auth.Use
 	return result, err
 }
 
-func (s *DefaultHuddleBudgetService) Configure(ctx context.Context, principal auth.UserPrincipal, input ConfigureHuddleBudgetInput) (HuddleBudget, error) {
-	if input.MonthlyLimitUSDTicks < 0 || input.MonthlyLimitUSDTicks > 9007199254740991 || input.ExpectedRevision < 0 || input.ExpectedRevision >= 9007199254740991 {
+func (s *DefaultHuddleBudgetService) Configure(
+	ctx context.Context,
+	principal auth.UserPrincipal,
+	input ConfigureHuddleBudgetInput,
+) (HuddleBudget, error) {
+	if input.MonthlyLimitUSDTicks < 0 || input.MonthlyLimitUSDTicks > 9007199254740991 ||
+		input.ExpectedRevision < 0 ||
+		input.ExpectedRevision >= 9007199254740991 {
 		return HuddleBudget{}, ErrHuddleBudgetInvalid
 	}
 	var result HuddleBudget
@@ -96,9 +109,23 @@ func (s *DefaultHuddleBudgetService) Configure(ctx context.Context, principal au
 		}
 		var err error
 		if input.ExpectedRevision == 0 {
-			_, err = q.ConfigureHuddleAIBudget(ctx, generated.ConfigureHuddleAIBudgetParams{CompanyID: principal.CompanyID, MonthlyLimitUsdTicks: input.MonthlyLimitUSDTicks, ExpectedRevision: input.ExpectedRevision})
+			_, err = q.ConfigureHuddleAIBudget(
+				ctx,
+				generated.ConfigureHuddleAIBudgetParams{
+					CompanyID:            principal.CompanyID,
+					MonthlyLimitUsdTicks: input.MonthlyLimitUSDTicks,
+					ExpectedRevision:     input.ExpectedRevision,
+				},
+			)
 		} else {
-			_, err = q.UpdateHuddleAIBudget(ctx, generated.UpdateHuddleAIBudgetParams{CompanyID: principal.CompanyID, MonthlyLimitUsdTicks: input.MonthlyLimitUSDTicks, ExpectedRevision: input.ExpectedRevision})
+			_, err = q.UpdateHuddleAIBudget(
+				ctx,
+				generated.UpdateHuddleAIBudgetParams{
+					CompanyID:            principal.CompanyID,
+					MonthlyLimitUsdTicks: input.MonthlyLimitUSDTicks,
+					ExpectedRevision:     input.ExpectedRevision,
+				},
+			)
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrHuddleBudgetConflict
@@ -112,14 +139,22 @@ func (s *DefaultHuddleBudgetService) Configure(ctx context.Context, principal au
 	return result, err
 }
 
-func lockHuddleBudgetActor(ctx context.Context, q *generated.Queries, principal auth.UserPrincipal, permission auth.Permission) error {
+func lockHuddleBudgetActor(
+	ctx context.Context,
+	q *generated.Queries,
+	principal auth.UserPrincipal,
+	permission auth.Permission,
+) error {
 	if _, err := q.LockCompanyForMembershipRead(ctx, principal.CompanyID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrHuddleBudgetForbidden
 		}
 		return err
 	}
-	membership, err := q.GetCompanyMemberForShare(ctx, generated.GetCompanyMemberForShareParams{CompanyID: principal.CompanyID, UserID: principal.UserID})
+	membership, err := q.GetCompanyMemberForShare(
+		ctx,
+		generated.GetCompanyMemberForShareParams{CompanyID: principal.CompanyID, UserID: principal.UserID},
+	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrHuddleBudgetForbidden
 	}
@@ -138,7 +173,13 @@ func readHuddleBudget(ctx context.Context, q *generated.Queries, companyID uuid.
 		return HuddleBudget{}, err
 	}
 	start := huddleBudgetPeriod(time.Now())
-	totals, err := q.GetHuddleAIBudgetTotals(ctx, generated.GetHuddleAIBudgetTotalsParams{CompanyID: companyID, PeriodStart: pgtype.Timestamptz{Time: start, Valid: true}})
+	totals, err := q.GetHuddleAIBudgetTotals(
+		ctx,
+		generated.GetHuddleAIBudgetTotalsParams{
+			CompanyID:   companyID,
+			PeriodStart: pgtype.Timestamptz{Time: start, Valid: true},
+		},
+	)
 	if err != nil {
 		return HuddleBudget{}, err
 	}
@@ -171,9 +212,18 @@ type ReserveHuddleBudgetInput struct {
 // All allocators lock the Company budget before its reservation; this serializes
 // different rooms competing for the same allowance. Existing reservations never
 // move to a new period or acquire a new allowance on retry.
-func ReserveHuddleBudgetInTx(ctx context.Context, q *generated.Queries, input ReserveHuddleBudgetInput) (generated.HuddleAiBudgetReservation, error) {
+func ReserveHuddleBudgetInTx(
+	ctx context.Context,
+	q *generated.Queries,
+	input ReserveHuddleBudgetInput,
+) (generated.HuddleAiBudgetReservation, error) {
 	now := time.Now().UTC()
-	if input.CompanyID == uuid.Nil || input.HuddleID == uuid.Nil || input.TicksPerSecond <= 0 || input.TicksPerSecond > 1000000000000 || input.AdditionalTicks < 0 || input.AdditionalTicks > 9007199254740991 || !input.Deadline.After(now) || input.Deadline.After(now.Add(time.Hour)) {
+	if input.CompanyID == uuid.Nil || input.HuddleID == uuid.Nil || input.TicksPerSecond <= 0 ||
+		input.TicksPerSecond > 1000000000000 ||
+		input.AdditionalTicks < 0 ||
+		input.AdditionalTicks > 9007199254740991 ||
+		!input.Deadline.After(now) ||
+		input.Deadline.After(now.Add(time.Hour)) {
 		return generated.HuddleAiBudgetReservation{}, ErrHuddleBudgetInvalid
 	}
 	budget, err := q.LockHuddleAIBudget(ctx, input.CompanyID)
@@ -188,9 +238,13 @@ func ReserveHuddleBudgetInTx(ctx context.Context, q *generated.Queries, input Re
 	}
 	// Lock contention can outlive a short budget deadline.
 	now = time.Now().UTC()
-	existing, err := q.GetHuddleAIBudgetReservation(ctx, generated.GetHuddleAIBudgetReservationParams{CompanyID: input.CompanyID, HuddleID: input.HuddleID})
+	existing, err := q.GetHuddleAIBudgetReservation(
+		ctx,
+		generated.GetHuddleAIBudgetReservationParams{CompanyID: input.CompanyID, HuddleID: input.HuddleID},
+	)
 	if err == nil {
-		if existing.SettledAt.Valid || existing.SpentUsdTicks >= existing.ReservedUsdTicks || !existing.DeadlineAt.Time.After(now) {
+		if existing.SettledAt.Valid || existing.SpentUsdTicks >= existing.ReservedUsdTicks ||
+			!existing.DeadlineAt.Time.After(now) {
 			return generated.HuddleAiBudgetReservation{}, ErrHuddleBudgetExhausted
 		}
 		return existing, nil
@@ -199,7 +253,10 @@ func ReserveHuddleBudgetInTx(ctx context.Context, q *generated.Queries, input Re
 		return generated.HuddleAiBudgetReservation{}, err
 	}
 	period := pgtype.Timestamptz{Time: huddleBudgetPeriod(now), Valid: true}
-	committed, err := q.GetHuddleAIBudgetCommitted(ctx, generated.GetHuddleAIBudgetCommittedParams{CompanyID: input.CompanyID, PeriodStart: period})
+	committed, err := q.GetHuddleAIBudgetCommitted(
+		ctx,
+		generated.GetHuddleAIBudgetCommittedParams{CompanyID: input.CompanyID, PeriodStart: period},
+	)
 	if err != nil {
 		return generated.HuddleAiBudgetReservation{}, err
 	}
@@ -228,13 +285,17 @@ type RecordHuddleSpendInput struct {
 // An uncertain crash retains its hold. Provider overages remain real costs and
 // are retained even if they exceed the original reservation.
 func RecordHuddleSpendInTx(ctx context.Context, q *generated.Queries, input RecordHuddleSpendInput) error {
-	if input.CompanyID == uuid.Nil || input.HuddleID == uuid.Nil || input.SpentUSDTicks < 0 || input.SpentUSDTicks > 9007199254740991 {
+	if input.CompanyID == uuid.Nil || input.HuddleID == uuid.Nil || input.SpentUSDTicks < 0 ||
+		input.SpentUSDTicks > 9007199254740991 {
 		return ErrHuddleBudgetInvalid
 	}
 	if _, err := q.LockHuddleAIBudget(ctx, input.CompanyID); err != nil {
 		return err
 	}
-	reservation, err := q.GetHuddleAIBudgetReservation(ctx, generated.GetHuddleAIBudgetReservationParams{CompanyID: input.CompanyID, HuddleID: input.HuddleID})
+	reservation, err := q.GetHuddleAIBudgetReservation(
+		ctx,
+		generated.GetHuddleAIBudgetReservationParams{CompanyID: input.CompanyID, HuddleID: input.HuddleID},
+	)
 	if err != nil {
 		return err
 	}
@@ -247,6 +308,14 @@ func RecordHuddleSpendInTx(ctx context.Context, q *generated.Queries, input Reco
 	if input.SpentUSDTicks < reservation.SpentUsdTicks {
 		return ErrHuddleBudgetConflict
 	}
-	_, err = q.RecordHuddleAIBudgetSpend(ctx, generated.RecordHuddleAIBudgetSpendParams{CompanyID: input.CompanyID, HuddleID: input.HuddleID, SpentUsdTicks: input.SpentUSDTicks, Final: input.Final})
+	_, err = q.RecordHuddleAIBudgetSpend(
+		ctx,
+		generated.RecordHuddleAIBudgetSpendParams{
+			CompanyID:     input.CompanyID,
+			HuddleID:      input.HuddleID,
+			SpentUsdTicks: input.SpentUSDTicks,
+			Final:         input.Final,
+		},
+	)
 	return err
 }

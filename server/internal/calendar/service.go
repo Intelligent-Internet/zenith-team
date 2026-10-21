@@ -9,14 +9,15 @@ import (
 	"sort"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 var (
@@ -176,35 +177,72 @@ func ensureCalendars(ctx context.Context, q *generated.Queries, p auth.UserPrinc
 }
 
 func catalog(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) (Catalog, error) {
-	result := Catalog{Calendars: []Calendar{}, Members: []Member{}, UserID: p.UserID.String(), Now: time.Now().UTC()}
-	rows, err := q.ListCalendarCatalog(ctx, generated.ListCalendarCatalogParams{ActorUserID: uuid.NullUUID{UUID: p.UserID, Valid: true}, ActorCompanyID: p.CompanyID})
+	result := Catalog{
+		Calendars: []Calendar{},
+		Members:   []Member{},
+		UserID:    p.UserID.String(),
+		Now:       time.Now().UTC(),
+	}
+	rows, err := q.ListCalendarCatalog(
+		ctx,
+		generated.ListCalendarCatalogParams{
+			ActorUserID:    uuid.NullUUID{UUID: p.UserID, Valid: true},
+			ActorCompanyID: p.CompanyID,
+		},
+	)
 	if err != nil {
 		return result, fmt.Errorf("list calendars: %w", err)
 	}
 	for _, row := range rows {
-		result.Calendars = append(result.Calendars, Calendar{ID: row.ID.String(), Type: row.Type, Name: row.Name, CompanyID: optionalID(row.CompanyID)})
+		result.Calendars = append(
+			result.Calendars,
+			Calendar{
+				ID:        row.ID.String(),
+				Type:      row.Type,
+				Name:      row.Name,
+				CompanyID: optionalID(row.CompanyID),
+			},
+		)
 	}
 	if p.CompanyID != uuid.Nil {
-		members, err := q.ListActiveCompanyMembers(ctx, generated.ListActiveCompanyMembersParams{CompanyID: p.CompanyID, ActorUserID: p.UserID})
+		members, err := q.ListActiveCompanyMembers(
+			ctx,
+			generated.ListActiveCompanyMembersParams{CompanyID: p.CompanyID, ActorUserID: p.UserID},
+		)
 		if err != nil {
 			return result, fmt.Errorf("list calendar members: %w", err)
 		}
 		for _, m := range members {
 			if !m.AccountDisabled {
-				result.Members = append(result.Members, Member{UserID: m.CompanyMember.UserID.String(), DisplayName: m.MemberDisplayName, Email: m.MemberEmail})
+				result.Members = append(
+					result.Members,
+					Member{
+						UserID:      m.CompanyMember.UserID.String(),
+						DisplayName: m.MemberDisplayName,
+						Email:       m.MemberEmail,
+					},
+				)
 			}
 		}
 	}
 	return result, nil
 }
 
-func (s *DefaultCalendarService) List(ctx context.Context, p auth.UserPrincipal, from, to time.Time) ([]Occurrence, error) {
+func (s *DefaultCalendarService) List(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	from, to time.Time,
+) ([]Occurrence, error) {
 	var result []Occurrence
-	err := s.store.WithinTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly}, func(q *generated.Queries) error {
-		var err error
-		result, err = list(ctx, q, p, from, to)
-		return err
-	})
+	err := s.store.WithinTx(
+		ctx,
+		pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly},
+		func(q *generated.Queries) error {
+			var err error
+			result, err = list(ctx, q, p, from, to)
+			return err
+		},
+	)
 	return result, err
 }
 
@@ -212,7 +250,16 @@ func list(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, from,
 	if !to.After(from) || to.Sub(from) > 93*24*time.Hour || from.Year() < 1900 || to.Year() > 2200 {
 		return nil, ErrRange
 	}
-	rows, err := q.ListCalendarEvents(ctx, generated.ListCalendarEventsParams{ActorUserID: uuid.NullUUID{UUID: p.UserID, Valid: true}, ActorCompanyID: p.CompanyID, ActorRoles: auth.RolesWith(auth.PermissionCalendarManage), BeforeLocal: pgtype.Timestamp{Time: to.Add(48 * time.Hour), Valid: true}, AfterLocal: pgtype.Timestamp{Time: from.Add(-48 * time.Hour), Valid: true}})
+	rows, err := q.ListCalendarEvents(
+		ctx,
+		generated.ListCalendarEventsParams{
+			ActorUserID:    uuid.NullUUID{UUID: p.UserID, Valid: true},
+			ActorCompanyID: p.CompanyID,
+			ActorRoles:     auth.RolesWith(auth.PermissionCalendarManage),
+			BeforeLocal:    pgtype.Timestamp{Time: to.Add(48 * time.Hour), Valid: true},
+			AfterLocal:     pgtype.Timestamp{Time: from.Add(-48 * time.Hour), Valid: true},
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("list calendar events: %w", err)
 	}
@@ -230,11 +277,26 @@ func list(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, from,
 	if err != nil {
 		return nil, fmt.Errorf("list calendar attendees: %w", err)
 	}
-	states, err := q.ListCalendarOccurrenceStates(ctx, generated.ListCalendarOccurrenceStatesParams{EventIds: ids, FromDate: pgtype.Date{Time: from.Add(-368 * 24 * time.Hour), Valid: true}, ToDate: pgtype.Date{Time: to.Add(48 * time.Hour), Valid: true}})
+	states, err := q.ListCalendarOccurrenceStates(
+		ctx,
+		generated.ListCalendarOccurrenceStatesParams{
+			EventIds: ids,
+			FromDate: pgtype.Date{Time: from.Add(-368 * 24 * time.Hour), Valid: true},
+			ToDate:   pgtype.Date{Time: to.Add(48 * time.Hour), Valid: true},
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
-	receipts, err := q.ListCalendarReminderStates(ctx, generated.ListCalendarReminderStatesParams{EventIds: ids, UserID: p.UserID, FromDate: pgtype.Date{Time: from.Add(-368 * 24 * time.Hour), Valid: true}, ToDate: pgtype.Date{Time: to.Add(48 * time.Hour), Valid: true}})
+	receipts, err := q.ListCalendarReminderStates(
+		ctx,
+		generated.ListCalendarReminderStatesParams{
+			EventIds: ids,
+			UserID:   p.UserID,
+			FromDate: pgtype.Date{Time: from.Add(-368 * 24 * time.Hour), Valid: true},
+			ToDate:   pgtype.Date{Time: to.Add(48 * time.Hour), Valid: true},
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +314,11 @@ func list(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, from,
 	}
 	result := []Occurrence{}
 	for _, row := range rows {
-		event := visibleResponse(generated.GetVisibleCalendarEventRow(row), p.UserID, guests[row.CalendarEvent.ID])
+		event := visibleResponse(
+			generated.GetVisibleCalendarEventRow(row),
+			p.UserID,
+			guests[row.CalendarEvent.ID],
+		)
 		occurrences, err := expand(event, from, to)
 		if err != nil {
 			return nil, err
@@ -280,7 +346,15 @@ func list(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, from,
 }
 
 func visibleEvent(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, id uuid.UUID) (Event, error) {
-	row, err := q.GetVisibleCalendarEvent(ctx, generated.GetVisibleCalendarEventParams{ID: id, ActorUserID: uuid.NullUUID{UUID: p.UserID, Valid: true}, ActorCompanyID: p.CompanyID, ActorRoles: auth.RolesWith(auth.PermissionCalendarManage)})
+	row, err := q.GetVisibleCalendarEvent(
+		ctx,
+		generated.GetVisibleCalendarEventParams{
+			ID:             id,
+			ActorUserID:    uuid.NullUUID{UUID: p.UserID, Valid: true},
+			ActorCompanyID: p.CompanyID,
+			ActorRoles:     auth.RolesWith(auth.PermissionCalendarManage),
+		},
+	)
 	if err != nil {
 		return Event{}, calendarError(err)
 	}
@@ -320,7 +394,12 @@ func visibleResponse(row generated.GetVisibleCalendarEventRow, viewer uuid.UUID,
 }
 
 func attendeeResponse(row generated.ListCalendarAttendeesRow) Attendee {
-	return Attendee{UserID: row.UserID.String(), DisplayName: row.DisplayName, Email: row.Email, ResponseStatus: row.ResponseStatus}
+	return Attendee{
+		UserID:         row.UserID.String(),
+		DisplayName:    row.DisplayName,
+		Email:          row.Email,
+		ResponseStatus: row.ResponseStatus,
+	}
 }
 
 func optionalID(id uuid.NullUUID) *string {
@@ -343,7 +422,23 @@ func eventResponse(row generated.CalendarEvent) Event {
 	if row.AllDay {
 		layout = time.DateOnly
 	}
-	result := Event{ID: row.ID.String(), Type: row.Type, Title: row.Title, Description: row.Description, Location: row.Location, Color: row.Color, AllDay: row.AllDay, StartLocal: row.StartLocal.Time.Format(layout), EndLocal: row.EndLocal.Time.Format(layout), TimeZone: row.TimeZone, Recurrence: row.Recurrence, Revision: row.Version, RecurrenceInterval: row.RecurrenceInterval, RecurrenceWeekdays: append([]int32{}, row.RecurrenceWeekdays...), RecurrenceMonthlyMode: row.RecurrenceMonthlyMode}
+	result := Event{
+		ID:                    row.ID.String(),
+		Type:                  row.Type,
+		Title:                 row.Title,
+		Description:           row.Description,
+		Location:              row.Location,
+		Color:                 row.Color,
+		AllDay:                row.AllDay,
+		StartLocal:            row.StartLocal.Time.Format(layout),
+		EndLocal:              row.EndLocal.Time.Format(layout),
+		TimeZone:              row.TimeZone,
+		Recurrence:            row.Recurrence,
+		Revision:              row.Version,
+		RecurrenceInterval:    row.RecurrenceInterval,
+		RecurrenceWeekdays:    append([]int32{}, row.RecurrenceWeekdays...),
+		RecurrenceMonthlyMode: row.RecurrenceMonthlyMode,
+	}
 	if row.RecurrenceCount.Valid {
 		result.RecurrenceCount = &row.RecurrenceCount.Int32
 	}

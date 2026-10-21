@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 func TestBoardVisualsPageAcknowledgedInkWithoutPersistingImages(t *testing.T) {
@@ -177,7 +177,12 @@ func TestBoardVisualsOverviewAndRegionPlan(t *testing.T) {
 		command.Geometry = &BoardGeometry{X: float64(i) * 3000, Y: 0, Width: 220, Height: 150}
 		commands = append(commands, command)
 	}
-	created, err := boards.Mutate(ctx, owner, BoardScope{BoardID: board.ID}, BoardBatch{RequestKey: uuid.New(), Commands: commands})
+	created, err := boards.Mutate(
+		ctx,
+		owner,
+		BoardScope{BoardID: board.ID},
+		BoardBatch{RequestKey: uuid.New(), Commands: commands},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,15 +198,24 @@ func TestBoardVisualsOverviewAndRegionPlan(t *testing.T) {
 		t.Fatalf("first page = overview %v, plan %q, %d regions, shifted %t",
 			first.Overview != nil, first.PlanHash, first.TotalRegions, first.RegionsShifted)
 	}
-	next := BoardContextInput{VisualOffset: *first.NextOffset, ExpectedSequence: &first.Sequence, ExpectedPlan: first.PlanHash}
+	next := BoardContextInput{
+		VisualOffset:     *first.NextOffset,
+		ExpectedSequence: &first.Sequence,
+		ExpectedPlan:     first.PlanHash,
+	}
 	same, err := service.Visuals(ctx, owner, scope, next)
 	if err != nil || same.Overview != nil || same.RegionsShifted || same.PlanHash != first.PlanHash {
 		t.Fatalf("unchanged continuation = %+v, %v", same, err)
 	}
 	moved := created.IDs["note-0"]
-	if _, err = boards.Mutate(ctx, owner, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{{
-		Type: "geometry", ID: &moved, ExpectedRevision: 1, Geometry: &BoardGeometry{X: 3100, Y: 0, Width: 220, Height: 150},
-	}}}); err != nil {
+	if _, err = boards.Mutate(ctx, owner, scope, BoardBatch{RequestKey: uuid.New(), Commands: []BoardCommand{
+		{
+			Type:             "geometry",
+			ID:               &moved,
+			ExpectedRevision: 1,
+			Geometry:         &BoardGeometry{X: 3100, Y: 0, Width: 220, Height: 150},
+		},
+	}}); err != nil {
 		t.Fatal(err)
 	}
 	shifted, err := service.Visuals(ctx, owner, scope, next)

@@ -10,10 +10,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestCreateCompanyUsesDatabaseIDAndNaturalSlugUniqueness(t *testing.T) {
@@ -39,7 +39,7 @@ func TestCreateCompanyUsesDatabaseIDAndNaturalSlugUniqueness(t *testing.T) {
 	firstUserID := dbtest.NewUUID(t)
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO users (id, email, display_name)
-		VALUES ($1, 'company-create-a@boardly.test', 'Creator A')`,
+		VALUES ($1, 'company-create-a@zenith-team.test', 'Creator A')`,
 		firstUserID)
 	input := CreateCompanyInput{
 		Name:            " Northwind Robotics ",
@@ -72,8 +72,15 @@ func TestCreateCompanyUsesDatabaseIDAndNaturalSlugUniqueness(t *testing.T) {
 
 	var budgetTicks, budgetRevision int64
 	if err := pool.QueryRow(ctx, `SELECT monthly_limit_usd_ticks, revision FROM huddle_ai_budgets WHERE company_id=$1`, created.ID).
-		Scan(&budgetTicks, &budgetRevision); err != nil || budgetTicks != 20_000_000_000 || budgetRevision != 1 {
-		t.Fatalf("Huddle AI budget = %d ticks, revision %d, error %v; want the $2 default", budgetTicks, budgetRevision, err)
+		Scan(&budgetTicks, &budgetRevision); err != nil ||
+		budgetTicks != 20_000_000_000 ||
+		budgetRevision != 1 {
+		t.Fatalf(
+			"Huddle AI budget = %d ticks, revision %d, error %v; want the $2 default",
+			budgetTicks,
+			budgetRevision,
+			err,
+		)
 	}
 
 	if _, err := service.Create(ctx, auth.UserPrincipal{UserID: firstUserID}, input); !errors.Is(err, ErrConflict) {

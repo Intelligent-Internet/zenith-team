@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/execution"
-	db "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (

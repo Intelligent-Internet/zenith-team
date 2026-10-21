@@ -9,10 +9,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 const (
@@ -89,7 +89,7 @@ func CancelPendingTaskScheduleRunsInTx(
 	if err != nil {
 		return nil, fmt.Errorf("lock pending scheduled Task Runs: %w", err)
 	}
-	return cancelRunCandidatesInTx(ctx, q, pending, input.CompanyID, candidates, input.Reason)
+	return cancelRunCandidatesInTx(ctx, q, pending, candidates, input.Reason)
 }
 
 // SupersedeScheduleRunInTx terminalizes one queued Schedule Run in the

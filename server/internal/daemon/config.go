@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattn/go-shellwords"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 	DefaultCodexHandshakeTimeout          = 30 * time.Second
 	// DefaultAgentIdleWatchdog force-stops a run when the backend has emitted
 	// no message for this long AND its queue is empty.
-	// Set BOARDLY_AGENT_IDLE_WATCHDOG=0 to disable.
+	// Set ZENITH_TEAM_AGENT_IDLE_WATCHDOG=0 to disable.
 	DefaultAgentIdleWatchdog = 30 * time.Minute
 	// DefaultAgentToolWatchdog bounds how long a single tool call may stay in
 	// flight before the idle watchdog force-stops the run. 0 disables.
@@ -66,7 +66,7 @@ type Config struct {
 	// codex). The live set is d.agentsAvailable.
 	Agents map[string]AgentEntry
 	// WorkspacesRoot is the base path for execution environments
-	// (default: ~/boardly_workspaces).
+	// (default: ~/zenith_team_workspaces).
 	WorkspacesRoot                 string
 	HealthPort                     int
 	MaxConcurrentRuns              int
@@ -79,23 +79,23 @@ type Config struct {
 	AgentToolWatchdog              time.Duration
 	ClaudeArgs                     []string
 	CodexArgs                      []string
-	// MCPExecutable is the boardly-mcp binary the daemon wires into the agent
-	// process MCP config. Empty disables the boardly MCP server.
+	// MCPExecutable is the zenith-team-mcp binary the daemon wires into the agent
+	// process MCP config. Empty disables the zenith-team MCP server.
 	MCPExecutable string
 	// GCEnabled gates the periodic workspace garbage collector
-	// (BOARDLY_GC_ENABLED=false disables it).
+	// (ZENITH_TEAM_GC_ENABLED=false disables it).
 	GCEnabled bool
-	// GCInterval is the workspace GC cadence (BOARDLY_GC_INTERVAL).
+	// GCInterval is the workspace GC cadence (ZENITH_TEAM_GC_INTERVAL).
 	GCInterval time.Duration
 	// AutoReloadEnabled lets a CLI-launched daemon restart into a replaced
-	// boardly binary once it is idle (BOARDLY_AUTO_RELOAD=false disables it).
+	// zenith-team binary once it is idle (ZENITH_TEAM_AUTO_RELOAD=false disables it).
 	// Desktop-managed daemons ignore it; the app owns its bundled CLI.
 	AutoReloadEnabled bool
 	// ConnectorDiscoveryInterval is the Connector discovery keepalive cadence
-	// (BOARDLY_CONNECTOR_DISCOVERY_INTERVAL), clamped to [1m, 3m30s].
+	// (ZENITH_TEAM_CONNECTOR_DISCOVERY_INTERVAL), clamped to [1m, 3m30s].
 	ConnectorDiscoveryInterval time.Duration
 	// CredentialIsolationOff is the test switch
-	// BOARDLY_DAEMON_CREDENTIAL_ISOLATION=not_enforced: every runtime reports
+	// ZENITH_TEAM_DAEMON_CREDENTIAL_ISOLATION=not_enforced: every runtime reports
 	// not_enforced and providers start without the sandbox, so an end-to-end
 	// run can play a Windows computer on a Mac. It only lowers; no value
 	// raises the report.
@@ -123,14 +123,14 @@ type Overrides struct {
 	// startup keeps the default false and refuses to run with no agent CLI.
 	AllowNoAgents bool
 	// DisableAutoReload is single-direction: it can only turn the on-disk
-	// binary watch off, never force it on over BOARDLY_AUTO_RELOAD=false.
+	// binary watch off, never force it on over ZENITH_TEAM_AUTO_RELOAD=false.
 	DisableAutoReload bool
 }
 
 // LoadConfig builds the daemon configuration from environment variables and
 // optional CLI flag overrides.
 func LoadConfig(overrides Overrides) (Config, error) {
-	rawServerURL := envOrDefault("BOARDLY_SERVER_URL", DefaultServerURL)
+	rawServerURL := envOrDefault("ZENITH_TEAM_SERVER_URL", DefaultServerURL)
 	if overrides.ServerURL != "" {
 		rawServerURL = overrides.ServerURL
 	}
@@ -144,18 +144,18 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		return Config{}, fmt.Errorf("no agent CLI found: install claude or codex and ensure it is on PATH")
 	}
 
-	claudeArgs, err := shellArgsFromEnv("BOARDLY_CLAUDE_ARGS")
+	claudeArgs, err := shellArgsFromEnv("ZENITH_TEAM_CLAUDE_ARGS")
 	if err != nil {
 		return Config{}, err
 	}
-	codexArgs, err := shellArgsFromEnv("BOARDLY_CODEX_ARGS")
+	codexArgs, err := shellArgsFromEnv("ZENITH_TEAM_CODEX_ARGS")
 	if err != nil {
 		return Config{}, err
 	}
 
 	host := defaultDeviceName()
 
-	pollInterval, err := durationFromEnv("BOARDLY_POLL_INTERVAL", DefaultPollInterval)
+	pollInterval, err := durationFromEnv("ZENITH_TEAM_POLL_INTERVAL", DefaultPollInterval)
 	if err != nil {
 		return Config{}, err
 	}
@@ -163,7 +163,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		pollInterval = overrides.PollInterval
 	}
 
-	heartbeatInterval, err := durationFromEnv("BOARDLY_HEARTBEAT_INTERVAL", DefaultHeartbeatInterval)
+	heartbeatInterval, err := durationFromEnv("ZENITH_TEAM_HEARTBEAT_INTERVAL", DefaultHeartbeatInterval)
 	if err != nil {
 		return Config{}, err
 	}
@@ -171,7 +171,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		heartbeatInterval = overrides.HeartbeatInterval
 	}
 
-	agentTimeout, err := durationFromEnv("BOARDLY_AGENT_TIMEOUT", DefaultAgentTimeout)
+	agentTimeout, err := durationFromEnv("ZENITH_TEAM_AGENT_TIMEOUT", DefaultAgentTimeout)
 	if err != nil {
 		return Config{}, err
 	}
@@ -180,7 +180,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	}
 
 	codexSemanticInactivityTimeout, err := durationFromEnv(
-		"BOARDLY_CODEX_SEMANTIC_INACTIVITY",
+		"ZENITH_TEAM_CODEX_SEMANTIC_INACTIVITY",
 		DefaultCodexSemanticInactivityTimeout,
 	)
 	if err != nil {
@@ -190,7 +190,10 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		codexSemanticInactivityTimeout = overrides.CodexSemanticInactivityTimeout
 	}
 
-	codexHandshakeTimeout, err := durationFromEnv("BOARDLY_CODEX_HANDSHAKE_TIMEOUT", DefaultCodexHandshakeTimeout)
+	codexHandshakeTimeout, err := durationFromEnv(
+		"ZENITH_TEAM_CODEX_HANDSHAKE_TIMEOUT",
+		DefaultCodexHandshakeTimeout,
+	)
 	if err != nil {
 		return Config{}, err
 	}
@@ -201,18 +204,18 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		codexHandshakeTimeout = DefaultCodexHandshakeTimeout
 	}
 
-	// BOARDLY_AGENT_IDLE_WATCHDOG=0 disables the per-run idle watchdog.
-	agentIdleWatchdog, err := durationFromEnv("BOARDLY_AGENT_IDLE_WATCHDOG", DefaultAgentIdleWatchdog)
+	// ZENITH_TEAM_AGENT_IDLE_WATCHDOG=0 disables the per-run idle watchdog.
+	agentIdleWatchdog, err := durationFromEnv("ZENITH_TEAM_AGENT_IDLE_WATCHDOG", DefaultAgentIdleWatchdog)
 	if err != nil {
 		return Config{}, err
 	}
-	// BOARDLY_AGENT_TOOL_WATCHDOG=0 disables the in-flight-tool backstop.
-	agentToolWatchdog, err := durationFromEnv("BOARDLY_AGENT_TOOL_WATCHDOG", DefaultAgentToolWatchdog)
+	// ZENITH_TEAM_AGENT_TOOL_WATCHDOG=0 disables the in-flight-tool backstop.
+	agentToolWatchdog, err := durationFromEnv("ZENITH_TEAM_AGENT_TOOL_WATCHDOG", DefaultAgentToolWatchdog)
 	if err != nil {
 		return Config{}, err
 	}
 
-	maxConcurrentRuns, err := intFromEnv("BOARDLY_MAX_CONCURRENT_RUNS", DefaultMaxConcurrentRuns)
+	maxConcurrentRuns, err := intFromEnv("ZENITH_TEAM_MAX_CONCURRENT_RUNS", DefaultMaxConcurrentRuns)
 	if err != nil {
 		return Config{}, err
 	}
@@ -221,9 +224,9 @@ func LoadConfig(overrides Overrides) (Config, error) {
 	}
 
 	// daemon_id resolution: override > env > persistent UUID on disk. The
-	// persistent UUIDv7 is written once to ~/.boardly/daemon.id and reused
+	// persistent UUIDv7 is written once to ~/.zenith-team/daemon.id and reused
 	// forever so hostname drift never mints a new runtime identity.
-	daemonID := strings.TrimSpace(os.Getenv("BOARDLY_DAEMON_ID"))
+	daemonID := strings.TrimSpace(os.Getenv("ZENITH_TEAM_DAEMON_ID"))
 	if overrides.DaemonID != "" {
 		daemonID = overrides.DaemonID
 	}
@@ -235,7 +238,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		daemonID = persisted
 	}
 
-	deviceName := envOrDefault("BOARDLY_DEVICE_NAME", host)
+	deviceName := envOrDefault("ZENITH_TEAM_DEVICE_NAME", host)
 	if overrides.DeviceName != "" {
 		deviceName = overrides.DeviceName
 	}
@@ -245,38 +248,38 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		return Config{}, err
 	}
 
-	gcInterval, err := durationFromEnv("BOARDLY_GC_INTERVAL", DefaultGCInterval)
+	gcInterval, err := durationFromEnv("ZENITH_TEAM_GC_INTERVAL", DefaultGCInterval)
 	if err != nil {
 		return Config{}, err
 	}
 	if gcInterval <= 0 {
 		gcInterval = DefaultGCInterval
 	}
-	gcEnabled := envOrDefault("BOARDLY_GC_ENABLED", "true") != "false"
+	gcEnabled := envOrDefault("ZENITH_TEAM_GC_ENABLED", "true") != "false"
 
 	connectorDiscoveryEvery, err := durationFromEnv(
-		"BOARDLY_CONNECTOR_DISCOVERY_INTERVAL",
+		"ZENITH_TEAM_CONNECTOR_DISCOVERY_INTERVAL",
 		DefaultConnectorDiscoveryInterval,
 	)
 	if err != nil {
 		return Config{}, err
 	}
 
-	healthPort, err := intFromEnv("BOARDLY_HEALTH_PORT", DefaultHealthPort)
+	healthPort, err := intFromEnv("ZENITH_TEAM_HEALTH_PORT", DefaultHealthPort)
 	if err != nil {
 		return Config{}, err
 	}
 	if overrides.HealthPort > 0 {
 		healthPort = overrides.HealthPort
 	}
-	launchedBy := strings.TrimSpace(os.Getenv("BOARDLY_LAUNCHED_BY"))
+	launchedBy := strings.TrimSpace(os.Getenv("ZENITH_TEAM_LAUNCHED_BY"))
 	if overrides.LaunchedBy != "" {
 		launchedBy = strings.TrimSpace(overrides.LaunchedBy)
 	}
 	if launchedBy != "" && launchedBy != "desktop" {
-		return Config{}, fmt.Errorf("invalid BOARDLY_LAUNCHED_BY %q", launchedBy)
+		return Config{}, fmt.Errorf("invalid ZENITH_TEAM_LAUNCHED_BY %q", launchedBy)
 	}
-	autoReload := envOrDefault("BOARDLY_AUTO_RELOAD", "true") != "false"
+	autoReload := envOrDefault("ZENITH_TEAM_AUTO_RELOAD", "true") != "false"
 	if overrides.DisableAutoReload {
 		autoReload = false
 	}
@@ -306,7 +309,7 @@ func LoadConfig(overrides Overrides) (Config, error) {
 		AgentToolWatchdog:              agentToolWatchdog,
 		ClaudeArgs:                     claudeArgs,
 		CodexArgs:                      codexArgs,
-		MCPExecutable:                  strings.TrimSpace(os.Getenv("BOARDLY_MCP_EXECUTABLE")),
+		MCPExecutable:                  strings.TrimSpace(os.Getenv("ZENITH_TEAM_MCP_EXECUTABLE")),
 		GCEnabled:                      gcEnabled,
 		GCInterval:                     gcInterval,
 		AutoReloadEnabled:              autoReload,
@@ -328,7 +331,7 @@ func connectorDiscoveryInterval(configured time.Duration) time.Duration {
 func NormalizeServerBaseURL(raw string) (string, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
-		return "", fmt.Errorf("invalid BOARDLY_SERVER_URL: %w", err)
+		return "", fmt.Errorf("invalid ZENITH_TEAM_SERVER_URL: %w", err)
 	}
 	switch u.Scheme {
 	case "ws":
@@ -337,7 +340,7 @@ func NormalizeServerBaseURL(raw string) (string, error) {
 		u.Scheme = "https"
 	case "http", "https":
 	default:
-		return "", fmt.Errorf("BOARDLY_SERVER_URL must use ws, wss, http, or https")
+		return "", fmt.Errorf("ZENITH_TEAM_SERVER_URL must use ws, wss, http, or https")
 	}
 	if u.Path == "/ws" {
 		u.Path = ""
@@ -349,10 +352,10 @@ func NormalizeServerBaseURL(raw string) (string, error) {
 }
 
 // ResolveWorkspacesRoot returns the absolute path the daemon treats as the
-// workspaces root. Resolution order: explicit override > BOARDLY_WORKSPACES_ROOT
-// env > $HOME/boardly_workspaces.
+// workspaces root. Resolution order: explicit override > ZENITH_TEAM_WORKSPACES_ROOT
+// env > $HOME/zenith_team_workspaces.
 func ResolveWorkspacesRoot(override string) (string, error) {
-	root := strings.TrimSpace(os.Getenv("BOARDLY_WORKSPACES_ROOT"))
+	root := strings.TrimSpace(os.Getenv("ZENITH_TEAM_WORKSPACES_ROOT"))
 	if override != "" {
 		root = override
 	}
@@ -360,11 +363,11 @@ func ResolveWorkspacesRoot(override string) (string, error) {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", fmt.Errorf(
-				"resolve home directory: %w (set BOARDLY_WORKSPACES_ROOT to override)",
+				"resolve home directory: %w (set ZENITH_TEAM_WORKSPACES_ROOT to override)",
 				err,
 			)
 		}
-		root = filepath.Join(home, "boardly_workspaces")
+		root = filepath.Join(home, "zenith_team_workspaces")
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -411,7 +414,7 @@ func resolveToolExecutablePath(cmd string) (string, error) {
 // retarget a current or versions/<v> link), and a version manager's shim
 // picks the real program from the name it is called by. The kept path
 // follows each upgrade instead of pinning, or losing, the old version. A
-// pinned BOARDLY_*_PATH (cmd with a separator) is kept exactly as written.
+// pinned ZENITH_TEAM_*_PATH (cmd with a separator) is kept exactly as written.
 func findProviderExecutable(cmd string) (string, error) {
 	found, err := exec.LookPath(cmd)
 	if err != nil {

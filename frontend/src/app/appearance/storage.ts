@@ -5,7 +5,7 @@ import {
 } from "./preferences";
 
 // Only visual preferences are retained for entry pages after logout.
-export const lastAppearanceStorageKey = "boardly:appearance:last-used:v1";
+export const lastAppearanceStorageKey = "zenith-team:appearance:last-used:v1";
 
 // Failed writes remain usable when revisiting a company during this app session.
 const unsavedPreferences = new Map<string, AppearancePreferences>();
@@ -15,7 +15,7 @@ export function appearanceStorageKey(
   companyId?: string | null,
 ): string | null {
   if (!userId || !companyId) return null;
-  return `boardly:appearance:v1:${encodeURIComponent(userId)}:${encodeURIComponent(companyId)}`;
+  return `zenith-team:appearance:v1:${encodeURIComponent(userId)}:${encodeURIComponent(companyId)}`;
 }
 
 export function parseAppearancePreferences(

@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 // agentReadHarness adds to the Wiki harness a second member of Company A, a
@@ -140,7 +140,8 @@ func (h agentReadHarness) publish(t *testing.T, principal auth.UserPrincipal, ti
 func (h agentReadHarness) evidenceCount(t *testing.T, where string, args ...any) int {
 	t.Helper()
 	var count int
-	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM run_wiki_reads WHERE `+where, args...).Scan(&count); err != nil {
+	if err := h.pool.QueryRow(t.Context(), `SELECT count(*) FROM run_wiki_reads WHERE `+where, args...).
+		Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	return count
@@ -155,8 +156,10 @@ func TestAgentSearchRanksActivePagesOfTheCompanyAndRecordsEvidence(t *testing.T)
 		t.Fatal(err)
 	}
 	strong, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{
-		Title: "Refund policy", Body: "Refund requests: a refund is issued within 14 days. Every refund needs approval.",
-		Summary: "Refund policy summary", CollectionID: &collection.ID,
+		Title:        "Refund policy",
+		Body:         "Refund requests: a refund is issued within 14 days. Every refund needs approval.",
+		Summary:      "Refund policy summary",
+		CollectionID: &collection.ID,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -221,7 +224,8 @@ func TestAgentSearchRanksActivePagesOfTheCompanyAndRecordsEvidence(t *testing.T)
 	}
 	var query string
 	var count int32
-	if err := h.pool.QueryRow(ctx, `SELECT query, result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'search' ORDER BY created_at, id LIMIT 1`, h.taskRun).Scan(&query, &count); err != nil {
+	if err := h.pool.QueryRow(ctx, `SELECT query, result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'search' ORDER BY created_at, id LIMIT 1`, h.taskRun).
+		Scan(&query, &count); err != nil {
 		t.Fatal(err)
 	}
 	if query != "refund" || count != 2 {
@@ -267,7 +271,8 @@ func TestAgentReadNamesTheAgentThatWroteTheRevision(t *testing.T) {
 	h := startAgentWrite(t)
 	ctx := t.Context()
 	var agentName string
-	if err := h.pool.QueryRow(ctx, `SELECT name FROM agents WHERE id = $1`, h.fixture.AgentA).Scan(&agentName); err != nil {
+	if err := h.pool.QueryRow(ctx, `SELECT name FROM agents WHERE id = $1`, h.fixture.AgentA).
+		Scan(&agentName); err != nil {
 		t.Fatal(err)
 	}
 
@@ -283,7 +288,11 @@ func TestAgentReadNamesTheAgentThatWroteTheRevision(t *testing.T) {
 		t.Fatalf("updatedByName = %v, want the founder the Agent wrote for", researched.UpdatedByName)
 	}
 
-	human, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: "Human page", Body: "Written by a person."})
+	human, err := h.service.CreatePage(
+		ctx,
+		h.owner,
+		wiki.CreatePageInput{Title: "Human page", Body: "Written by a person."},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,7 +355,8 @@ func TestAgentReadPinsTheRevisionItReturnedAndPagesLongBodies(t *testing.T) {
 		t.Fatal(err)
 	}
 	latest, err := h.reads.Read(ctx, h.owner, h.taskRun, page.ID, 0)
-	if err != nil || latest.Revision != 2 || latest.RevisionID != *updated.CurrentRevisionID || latest.Content != "Short new text." {
+	if err != nil || latest.Revision != 2 || latest.RevisionID != *updated.CurrentRevisionID ||
+		latest.Content != "Short new text." {
 		t.Fatalf("read after update = %+v, %v", latest, err)
 	}
 	trail, err := h.reads.ListRunReads(ctx, h.owner, h.taskRun)
@@ -359,8 +369,12 @@ func TestAgentReadPinsTheRevisionItReturnedAndPagesLongBodies(t *testing.T) {
 		truncated bool
 	}{{"Long handbook", 1, true}, {"Long handbook", 1, false}, {"Long handbook", 1, false}, {"Handbook v2", 2, false}} {
 		item := trail.Items[i]
-		if item.Kind != "read" || item.Title != want.title || item.RevisionNumber == nil || *item.RevisionNumber != want.revision ||
-			item.Truncated != want.truncated || item.PageID == nil || *item.PageID != page.ID || item.ResultCount != nil {
+		if item.Kind != "read" || item.Title != want.title || item.RevisionNumber == nil ||
+			*item.RevisionNumber != want.revision ||
+			item.Truncated != want.truncated ||
+			item.PageID == nil ||
+			*item.PageID != page.ID ||
+			item.ResultCount != nil {
 			t.Fatalf("trail[%d] = %+v, want %+v", i, item, want)
 		}
 		if item.Page == nil || item.Page.Status != "active" || item.Page.CurrentRevision != 2 {
@@ -492,8 +506,12 @@ func TestRunWikiReadsFollowTheTranscriptVisibilityRule(t *testing.T) {
 		t.Fatalf("member's view of the Task Run = %+v, %v", trail, err)
 	}
 	search := trail.Items[0]
-	if search.Kind != "search" || search.Query != "handbook" || search.ResultCount == nil || *search.ResultCount != 1 ||
-		search.PageID != nil || search.RevisionID != nil || search.RevisionNumber != nil || search.Page != nil {
+	if search.Kind != "search" || search.Query != "handbook" || search.ResultCount == nil ||
+		*search.ResultCount != 1 ||
+		search.PageID != nil ||
+		search.RevisionID != nil ||
+		search.RevisionNumber != nil ||
+		search.Page != nil {
 		t.Fatalf("search row = %+v", search)
 	}
 	// A direct or Schedule Conversation's Run is its opener's alone.
@@ -553,7 +571,8 @@ func TestPageAgentReadsGroupRunsAndHideInvisibleOnes(t *testing.T) {
 		t.Fatalf("owner's view = %+v, %v", owner, err)
 	}
 	taskEntry, directEntry := owner.Items[0], owner.Items[1]
-	if taskEntry.RunID != h.taskRun || taskEntry.RevisionNumber != 2 || taskEntry.TaskID == nil || *taskEntry.TaskID != h.fixture.TaskA ||
+	if taskEntry.RunID != h.taskRun || taskEntry.RevisionNumber != 2 || taskEntry.TaskID == nil ||
+		*taskEntry.TaskID != h.fixture.TaskA ||
 		!taskEntry.LastReadAt.After(directEntry.LastReadAt) {
 		t.Fatalf("newest entry = %+v, want the Task Run at its latest read, revision 2", taskEntry)
 	}
@@ -586,9 +605,22 @@ func TestPageAgentReadsGroupRunsAndHideInvisibleOnes(t *testing.T) {
 	// A direct Run that came from a Task names it only to a reader of the
 	// Task's Project; the owner who loses the Project keeps their own direct
 	// Run but no longer sees the Task Run or the Task's id.
-	dbtest.MustExec(t, ctx, h.pool, `UPDATE runs SET source_task_id = $2 WHERE id = $1`, h.directRun, h.fixture.TaskA)
-	if sourced, err := h.reads.ListPageAgentReads(ctx, h.owner, page.ID, 10); err != nil || len(sourced.Items) != 2 ||
-		sourced.Items[1].TaskID == nil || *sourced.Items[1].TaskID != h.fixture.TaskA {
+	dbtest.MustExec(
+		t,
+		ctx,
+		h.pool,
+		`UPDATE runs SET source_task_id = $2 WHERE id = $1`,
+		h.directRun,
+		h.fixture.TaskA,
+	)
+	if sourced, err := h.reads.ListPageAgentReads(
+		ctx,
+		h.owner,
+		page.ID,
+		10,
+	); err != nil || len(sourced.Items) != 2 ||
+		sourced.Items[1].TaskID == nil ||
+		*sourced.Items[1].TaskID != h.fixture.TaskA {
 		t.Fatalf("owner's view with a sourced direct Run = %+v, %v", sourced, err)
 	}
 	dbtest.MustExec(t, ctx, h.pool, `DELETE FROM project_grants WHERE project_id = $1 AND user_id = $2`,
@@ -645,7 +677,11 @@ func TestAgentSearchRanksTitleThenSummaryThenBody(t *testing.T) {
 	ctx := t.Context()
 	create := func(title, summary, body string) wiki.PageResponse {
 		t.Helper()
-		page, err := h.service.CreatePage(ctx, h.owner, wiki.CreatePageInput{Title: title, Summary: summary, Body: body})
+		page, err := h.service.CreatePage(
+			ctx,
+			h.owner,
+			wiki.CreatePageInput{Title: title, Summary: summary, Body: body},
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -661,7 +697,12 @@ func TestAgentSearchRanksTitleThenSummaryThenBody(t *testing.T) {
 	}
 	want := []uuid.UUID{title.ID, summary.ID, body.ID}
 	if got := searchIDs(result.Items); result.Total != 3 || !slices.Equal(got, want) {
-		t.Fatalf("search = %v (total %d), want title, summary, body hits in that order %v", got, result.Total, want)
+		t.Fatalf(
+			"search = %v (total %d), want title, summary, body hits in that order %v",
+			got,
+			result.Total,
+			want,
+		)
 	}
 }
 
@@ -683,7 +724,9 @@ func TestAgentSearchPrefersPagesHoldingEveryWordAndFallsBackToAny(t *testing.T) 
 		t.Fatalf("search = %v (total %d), want only the page with both words", got, all.Total)
 	}
 	var recorded int32
-	if err := h.pool.QueryRow(ctx, `SELECT result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'search' AND query = 'refund policy'`, h.taskRun).Scan(&recorded); err != nil || recorded != 1 {
+	if err := h.pool.QueryRow(ctx, `SELECT result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'search' AND query = 'refund policy'`, h.taskRun).
+		Scan(&recorded); err != nil ||
+		recorded != 1 {
 		t.Fatalf("recorded result_count = %d, %v; want the AND total 1", recorded, err)
 	}
 
@@ -784,9 +827,14 @@ func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
 		first.NextOffset == nil || *first.NextOffset != 3 {
 		t.Fatalf("first page = %+v, want Alpha Beta Delta of 4 and nextOffset 3", first)
 	}
-	if len(first.Collections) != 2 || first.Collections[0].Name != "Handbook" || first.Collections[0].PageCount != 2 ||
-		first.Collections[1].Name != "Policies" || first.Collections[1].PageCount != 1 {
-		t.Fatalf("collections = %+v, want Handbook 2 and Policies 1 (archived page not counted)", first.Collections)
+	if len(first.Collections) != 2 || first.Collections[0].Name != "Handbook" ||
+		first.Collections[0].PageCount != 2 ||
+		first.Collections[1].Name != "Policies" ||
+		first.Collections[1].PageCount != 1 {
+		t.Fatalf(
+			"collections = %+v, want Handbook 2 and Policies 1 (archived page not counted)",
+			first.Collections,
+		)
 	}
 	if a := first.Items[0]; a.Title != "Alpha" || a.Summary != "Alpha summary" || a.Revision != 1 ||
 		a.CollectionName == nil || *a.CollectionName != "Handbook" || a.UpdatedAt.IsZero() {
@@ -801,8 +849,11 @@ func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := itemIDs(last); last.Total != 4 || !slices.Equal(got, []uuid.UUID{gamma.ID}) || last.NextOffset != nil ||
-		last.Collections == nil || len(last.Collections) != 0 {
+	if got := itemIDs(
+		last,
+	); last.Total != 4 || !slices.Equal(got, []uuid.UUID{gamma.ID}) || last.NextOffset != nil ||
+		last.Collections == nil ||
+		len(last.Collections) != 0 {
 		t.Fatalf("last page = %+v, want Gamma alone, no collections, no next offset", last)
 	}
 	past, err := h.reads.List(ctx, h.owner, h.taskRun, nil, 40, 3)
@@ -821,7 +872,11 @@ func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
 	}
 
 	// Every call left a list row; the browse's collection and total are on it.
-	rows, err := h.pool.Query(ctx, `SELECT query, result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'list' ORDER BY created_at, id`, h.taskRun)
+	rows, err := h.pool.Query(
+		ctx,
+		`SELECT query, result_count FROM run_wiki_reads WHERE run_id = $1 AND kind = 'list' ORDER BY created_at, id`,
+		h.taskRun,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -845,8 +900,12 @@ func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
 	if err != nil || len(trail.Items) != 4 {
 		t.Fatalf("trail = %+v, %v", trail, err)
 	}
-	if item := trail.Items[3]; item.Kind != "list" || item.Query != "Handbook" || item.ResultCount == nil || *item.ResultCount != 2 ||
-		item.PageID != nil || item.RevisionID != nil || item.RevisionNumber != nil || item.Page != nil {
+	if item := trail.Items[3]; item.Kind != "list" || item.Query != "Handbook" || item.ResultCount == nil ||
+		*item.ResultCount != 2 ||
+		item.PageID != nil ||
+		item.RevisionID != nil ||
+		item.RevisionNumber != nil ||
+		item.Page != nil {
 		t.Fatalf("list trail row = %+v", item)
 	}
 
@@ -873,7 +932,17 @@ func TestAgentListBrowsesActivePagesByTitleAndRecordsEvidence(t *testing.T) {
 		"another Company's Run":   {h.otherRunB, h.owner, nil, 0, 5, wiki.ErrRunNotFound},
 		"non-member of the Run's": {h.taskRun, h.outsiderIn, nil, 0, 5, wiki.ErrRunNotFound},
 	} {
-		if _, err := h.reads.List(ctx, call.principal, call.run, call.collection, call.offset, call.limit); !errors.Is(err, call.want) {
+		if _, err := h.reads.List(
+			ctx,
+			call.principal,
+			call.run,
+			call.collection,
+			call.offset,
+			call.limit,
+		); !errors.Is(
+			err,
+			call.want,
+		) {
 			t.Fatalf("%s list = %v, want %v", name, err, call.want)
 		}
 	}

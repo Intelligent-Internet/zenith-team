@@ -1,7 +1,7 @@
 # Zenith Team Architecture
 
-Zenith Team is a cloud-first workspace for persistent AI **Agents** organized into
-**Departments**. The Go server owns PostgreSQL-backed product state and the
+Zenith Team is a cloud-first workspace where a founder runs a company of
+persistent AI **Agents**. The Go server owns PostgreSQL-backed product state and the
 HTTP/WebSocket contracts. A machine-side **daemon** runs the actual agent
 work: it registers the provider CLIs it finds, claims queued runs, prepares a
 workspace, discovers an exact runtime's models, Connectors, and Plugins,
@@ -18,7 +18,7 @@ desktop ──┘                     │              │
                                 │                        claim-empty cache,
                                 │                        scheduler beat)
                                 │
-                        daemon (boardly CLI) ─ codex | claude
+                        daemon (zenith-team CLI) ─ codex | claude
 ```
 
 ## Repository layout
@@ -40,7 +40,7 @@ All under `server/cmd/`:
 | --- | --- |
 | `server` | The HTTP/WebSocket API and the composition root |
 | `zen` | The user-facing CLI: `auth`, `daemon start/stop/status/logs`, `config`, `agent`, `runtime`, `task`, `run`, `conversation` and the Run-scoped Agent families |
-| `mcp` | `boardly-mcp`, the stdio MCP server an agent process talks to |
+| `mcp` | `zenith-team-mcp`, the stdio MCP server an agent process talks to |
 | `migrate` | Standalone migration runner |
 
 ## Request path
@@ -99,8 +99,7 @@ A run is one agent execution. The loop:
 
 Who calls whom, and over which transport. Claiming and transcript appends ride
 the daemon WebSocket; the lifecycle transitions are plain HTTP. The run's own
-states are in
-[`docs/specs/runs/runtime-and-run-sequences.TECH.md`](./docs/specs/runs/runtime-and-run-sequences.TECH.md).
+states are in [docs/api/runs.md](./docs/api/runs.md).
 
 ```mermaid
 sequenceDiagram
@@ -183,8 +182,7 @@ execution slot **before** it claims, so a claimed run never sits `dispatched`
 on a machine with no capacity to run it.
 
 A 30-second sweeper reconciles everything that can go wrong: expired leases,
-offline runtimes, stalled runs, and orphans after a daemon restart. See
-[`docs/specs/runs/runtime-and-run-sequences.TECH.md`](./docs/specs/runs/runtime-and-run-sequences.TECH.md).
+offline runtimes, stalled runs, and orphans after a daemon restart.
 
 An agent that needs a decision does not park a run. It raises a durable
 approval or question with its live Run token, then the current run ends

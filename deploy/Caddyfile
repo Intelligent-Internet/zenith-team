@@ -1,0 +1,34 @@
+# Zenith Team web app: serves the built single-page app and forwards the API
+# (HTTP and WebSocket) to the server on the same origin. TLS belongs to the
+# reverse proxy in front of this container; see the self-hosting docs.
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	encode zstd gzip
+
+	handle /api/* {
+		reverse_proxy {$ZENITH_TEAM_API_UPSTREAM:server:8788} {
+			# Stream run output and realtime frames without buffering.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		root * /srv
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Content-Security-Policy "frame-ancestors 'none'"
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

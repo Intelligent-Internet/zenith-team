@@ -2,7 +2,7 @@ package events
 
 import "testing"
 
-// IA-FR4: an Agent acting in a Run names the person it acts for and the Run;
+// An Agent acting in a Run names the person it acts for and the Run;
 // a person and the platform name neither, and no actor names a Run without
 // the person that Run works for.
 func TestActorValidKeepsTheThreeIdentitiesTogether(t *testing.T) {

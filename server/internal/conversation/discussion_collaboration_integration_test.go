@@ -11,10 +11,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestDiscussionReactionPeopleByteBound(t *testing.T) {
@@ -147,7 +147,11 @@ func TestDiscussionOwnerFollowAndArchivedCollaboration(t *testing.T) {
 	channel, err := f.conversations.CreateChannel(
 		f.ctx,
 		f.a,
-		CreateChannelInput{RequestKey: uuid.New(), Name: "Shared", MemberUserIDs: []uuid.UUID{f.b.UserID, f.owner.UserID}},
+		CreateChannelInput{
+			RequestKey:    uuid.New(),
+			Name:          "Shared",
+			MemberUserIDs: []uuid.UUID{f.b.UserID, f.owner.UserID},
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -250,7 +254,11 @@ func TestDiscussionOwnerFollowAndArchivedCollaboration(t *testing.T) {
 func TestDiscussionThreadsMutationsAndReplay(t *testing.T) {
 	t.Parallel()
 	f := newDiscussionFixture(t)
-	dm, err := f.conversations.CreateHumanDirect(f.ctx, f.a, CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}})
+	dm, err := f.conversations.CreateHumanDirect(
+		f.ctx,
+		f.a,
+		CreateHumanDirectInput{PeerUserIDs: []uuid.UUID{f.b.UserID}},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

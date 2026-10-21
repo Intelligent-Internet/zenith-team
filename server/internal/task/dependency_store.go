@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func ensureTaskExecutionEligible(
@@ -17,7 +17,10 @@ func ensureTaskExecutionEligible(
 	companyID uuid.UUID,
 	taskID uuid.UUID,
 ) error {
-	project, err := queries.GetTaskProjectForShare(ctx, generated.GetTaskProjectForShareParams{CompanyID: companyID, TaskID: taskID})
+	project, err := queries.GetTaskProjectForShare(
+		ctx,
+		generated.GetTaskProjectForShareParams{CompanyID: companyID, TaskID: taskID},
+	)
 	if err != nil {
 		return fmt.Errorf("read Task Project: %w", err)
 	}
@@ -74,7 +77,6 @@ func listDependencyGraph(
 	ctx context.Context,
 	queries *generated.Queries,
 	principal auth.UserPrincipal,
-	options DependencyGraphOptions,
 ) (DependencyGraph, error) {
 	rows, err := queries.ListCompanyTaskDependencyGraph(ctx, generated.ListCompanyTaskDependencyGraphParams{
 		CompanyID:   principal.CompanyID,

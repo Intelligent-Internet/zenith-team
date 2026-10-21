@@ -15,6 +15,7 @@ func (s *calendarAPIStub) FetchRunJSON(_ context.Context, path string, destinati
 	s.paths = append(s.paths, path)
 	return json.Unmarshal([]byte(`{"catalog":{"calendars":[],"members":[]},"items":[]}`), destination)
 }
+
 func (s *calendarAPIStub) PostRunJSON(_ context.Context, path, key string, source, destination any) error {
 	b, err := json.Marshal(source)
 	if err != nil {
@@ -25,14 +26,21 @@ func (s *calendarAPIStub) PostRunJSON(_ context.Context, path, key string, sourc
 	s.bodies = append(s.bodies, string(b))
 	return json.Unmarshal([]byte(`{"event":null}`), destination)
 }
+
 func TestCalendarToolsBindRunAndConvergeRetries(t *testing.T) {
 	t.Parallel()
 	api := new(calendarAPIStub)
-	service, err := NewCalendarToolService(api, RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"})
+	service, err := NewCalendarToolService(
+		api,
+		RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = service.ReadCalendar(context.Background(), ReadCalendarInput{From: "2026-09-22T00:00:00+07:00", To: "2026-09-23T00:00:00+07:00"}); err != nil {
+	if _, err = service.ReadCalendar(
+		context.Background(),
+		ReadCalendarInput{From: "2026-09-22T00:00:00+07:00", To: "2026-09-23T00:00:00+07:00"},
+	); err != nil {
 		t.Fatal(err)
 	}
 	input := WriteCalendarInput{Action: "delete", EventID: "event", ExpectedRevision: 2}
@@ -61,12 +69,24 @@ func TestCalendarToolsBindRunAndConvergeRetries(t *testing.T) {
 func TestCalendarToolPreservesCustomRecurrence(t *testing.T) {
 	t.Parallel()
 	api := new(calendarAPIStub)
-	service, err := NewCalendarToolService(api, RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"})
+	service, err := NewCalendarToolService(
+		api,
+		RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	count := int32(13)
-	input := WriteCalendarInput{Action: "create", Input: &CalendarEventInput{Recurrence: "weekly", RecurrenceInterval: 2, RecurrenceWeekdays: []int32{1, 3}, RecurrenceMonthlyMode: "day_of_month", RecurrenceCount: &count}}
+	input := WriteCalendarInput{
+		Action: "create",
+		Input: &CalendarEventInput{
+			Recurrence:            "weekly",
+			RecurrenceInterval:    2,
+			RecurrenceWeekdays:    []int32{1, 3},
+			RecurrenceMonthlyMode: "day_of_month",
+			RecurrenceCount:       &count,
+		},
+	}
 	if _, err = service.WriteCalendar(context.Background(), input); err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +94,9 @@ func TestCalendarToolPreservesCustomRecurrence(t *testing.T) {
 	if err = json.Unmarshal([]byte(api.bodies[0]), &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Input == nil || got.Input.RecurrenceInterval != 2 || len(got.Input.RecurrenceWeekdays) != 2 || got.Input.RecurrenceCount == nil || *got.Input.RecurrenceCount != 13 {
+	if got.Input == nil || got.Input.RecurrenceInterval != 2 || len(got.Input.RecurrenceWeekdays) != 2 ||
+		got.Input.RecurrenceCount == nil ||
+		*got.Input.RecurrenceCount != 13 {
 		t.Fatalf("custom rule lost: %+v", got.Input)
 	}
 }

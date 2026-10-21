@@ -9,12 +9,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// Access TECH D4: a Group's grant on a Project reaches every member, adds up
+// A Group's grant on a Project reaches every member, adds up
 // with their own grants, and every change follows a person grant's rules.
 
 func TestAGroupGrantReachesEveryMemberAndListsItsSources(t *testing.T) {

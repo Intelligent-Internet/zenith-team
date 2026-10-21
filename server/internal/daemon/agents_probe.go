@@ -56,7 +56,7 @@ func cachedShellResolvedAgents() map[string]string {
 }
 
 // agentCommandNames lists the command names the probe loop tries before any
-// BOARDLY_*_PATH override is applied.
+// ZENITH_TEAM_*_PATH override is applied.
 var agentCommandNames = []string{"claude", "codex"}
 
 // probeAgentCLIs discovers which agent CLIs are installed on this machine and
@@ -128,7 +128,7 @@ func discoverAgentCLIs(
 			return AgentEntry{Path: path, Command: cmd, Model: model}, true
 		}
 		// The shell fallback only rescues bare command names: an operator who
-		// pinned BOARDLY_*_PATH to a missing path should hard-miss.
+		// pinned ZENITH_TEAM_*_PATH to a missing path should hard-miss.
 		if strings.ContainsAny(cmd, "/\\") {
 			return AgentEntry{}, false
 		}
@@ -139,10 +139,10 @@ func discoverAgentCLIs(
 	}
 
 	agents := map[string]AgentEntry{}
-	if e, ok := probe("BOARDLY_CLAUDE_PATH", "claude", "BOARDLY_CLAUDE_MODEL"); ok {
+	if e, ok := probe("ZENITH_TEAM_CLAUDE_PATH", "claude", "ZENITH_TEAM_CLAUDE_MODEL"); ok {
 		agents["claude"] = e
 	}
-	if e, ok := probe("BOARDLY_CODEX_PATH", "codex", "BOARDLY_CODEX_MODEL"); ok {
+	if e, ok := probe("ZENITH_TEAM_CODEX_PATH", "codex", "ZENITH_TEAM_CODEX_MODEL"); ok {
 		agents["codex"] = e
 	}
 	return agents

@@ -1,6 +1,6 @@
 package protocol
 
-// Provider vocabulary: boardly runs exactly two providers, and this list is
+// Provider vocabulary: zenith-team runs exactly two providers, and this list is
 // the single authority the same way EntityType is for activity — server-side
 // validation checks names against it, and agent.New constructs the matching
 // runtime. Adding a provider starts here.

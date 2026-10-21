@@ -25,10 +25,30 @@ func TestNormalizeAgentWriteRejectsMalformedBatches(t *testing.T) {
 		{"too many pages", AgentWriteInput{Pages: many}, ErrPageInvalidInput},
 		{"empty key", AgentWriteInput{Pages: []AgentWritePageInput{page("")}}, ErrPageInvalidInput},
 		{"uppercase key", AgentWriteInput{Pages: []AgentWritePageInput{page("Overview")}}, ErrPageInvalidInput},
-		{"uuid key", AgentWriteInput{Pages: []AgentWritePageInput{page(uuid.NewString())}}, ErrPageInvalidInput},
-		{"duplicate key", AgentWriteInput{Pages: []AgentWritePageInput{page("a"), page("a")}}, ErrPageInvalidInput},
-		{"blank title", AgentWriteInput{Pages: []AgentWritePageInput{{Key: "a", Title: " ", Markdown: "x"}}}, ErrPageInvalidInput},
-		{"huge body", AgentWriteInput{Pages: []AgentWritePageInput{{Key: "a", Title: "T", Markdown: strings.Repeat("x", 262145)}}}, ErrPageBodyTooLarge},
+		{
+			"uuid key",
+			AgentWriteInput{Pages: []AgentWritePageInput{page(uuid.NewString())}},
+			ErrPageInvalidInput,
+		},
+		{
+			"duplicate key",
+			AgentWriteInput{Pages: []AgentWritePageInput{page("a"), page("a")}},
+			ErrPageInvalidInput,
+		},
+		{
+			"blank title",
+			AgentWriteInput{Pages: []AgentWritePageInput{{Key: "a", Title: " ", Markdown: "x"}}},
+			ErrPageInvalidInput,
+		},
+		{
+			"huge body",
+			AgentWriteInput{
+				Pages: []AgentWritePageInput{
+					{Key: "a", Title: "T", Markdown: strings.Repeat("x", 262145)},
+				},
+			},
+			ErrPageBodyTooLarge,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -41,9 +61,14 @@ func TestNormalizeAgentWriteRejectsMalformedBatches(t *testing.T) {
 
 func TestNormalizeAgentWriteTrimsAndRedacts(t *testing.T) {
 	got, err := normalizeAgentWrite(AgentWriteInput{
-		Pages: []AgentWritePageInput{{
-			Key: "company-overview", Title: "  Overview ", Summary: " sum ", Markdown: "token sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789 here",
-		}},
+		Pages: []AgentWritePageInput{
+			{
+				Key:      "company-overview",
+				Title:    "  Overview ",
+				Summary:  " sum ",
+				Markdown: "token sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789 here",
+			},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -68,11 +93,31 @@ func TestResolveWikiKeys(t *testing.T) {
 		want     string
 		missing  []string
 	}{
-		{"label defaults to title", "See [[products]].", "See [[" + products.String() + "|Products & services]].", nil},
-		{"explicit label", "Back to [[company-overview|the hub]]", "Back to [[" + hub.String() + "|the hub]]", nil},
-		{"unresolved becomes text", "Later: [[open-questions]] and [[open-questions|Questions]]", "Later: open-questions and Questions", []string{"open-questions"}},
+		{
+			"label defaults to title",
+			"See [[products]].",
+			"See [[" + products.String() + "|Products & services]].",
+			nil,
+		},
+		{
+			"explicit label",
+			"Back to [[company-overview|the hub]]",
+			"Back to [[" + hub.String() + "|the hub]]",
+			nil,
+		},
+		{
+			"unresolved becomes text",
+			"Later: [[open-questions]] and [[open-questions|Questions]]",
+			"Later: open-questions and Questions",
+			[]string{"open-questions"},
+		},
 		{"uuid link untouched", "[[" + hub.String() + "|x]]", "[[" + hub.String() + "|x]]", nil},
-		{"artifact token untouched", "[[artifact:" + hub.String() + "#1]]", "[[artifact:" + hub.String() + "#1]]", nil},
+		{
+			"artifact token untouched",
+			"[[artifact:" + hub.String() + "#1]]",
+			"[[artifact:" + hub.String() + "#1]]",
+			nil,
+		},
 		{"label cannot break the token", "[[products|a|b]]", "[[" + products.String() + "|a b]]", nil},
 		{"plain text untouched", "no links [x] [[ spaced ]]", "no links [x] [[ spaced ]]", nil},
 	}

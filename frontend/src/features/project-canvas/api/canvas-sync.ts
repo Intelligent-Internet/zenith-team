@@ -1,5 +1,5 @@
 import { subscribeToRefetchSignals } from "@/shared/realtime/refetch-signals";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import type { CanvasScope } from "./canvas-scope";
 import {
   documentScopeKey,
@@ -70,7 +70,7 @@ export function watchDocumentChanges(
       request();
   };
   documentListeners.add(changed);
-  const removeEvents = boardlyRealtimeClient.onEvent((event) => {
+  const removeEvents = zenithTeamRealtimeClient.onEvent((event) => {
     if (event.companyId !== scope.companyId) return;
     if (
       event.type === "canvas.document_changed" &&
@@ -93,7 +93,7 @@ export function watchDocumentChanges(
       request();
   });
   const removeSignals = subscribeToRefetchSignals(request);
-  const removeStatus = boardlyRealtimeClient.onStatus((status) => {
+  const removeStatus = zenithTeamRealtimeClient.onStatus((status) => {
     if (status.activeCompanyId === scope.companyId && status.status === "ready")
       request();
   });
@@ -197,7 +197,7 @@ export function watchCanvasChanges(
       request(false, sequence);
   };
   mutationListeners.add(onMutation);
-  const removeEvents = boardlyRealtimeClient.onEvent((event) => {
+  const removeEvents = zenithTeamRealtimeClient.onEvent((event) => {
     if (event.companyId !== scope.companyId) return;
     if (
       event.type === "canvas.changed" &&
@@ -225,7 +225,7 @@ export function watchCanvasChanges(
     )
       request(true);
   });
-  const removeStatus = boardlyRealtimeClient.onStatus((snapshot) => {
+  const removeStatus = zenithTeamRealtimeClient.onStatus((snapshot) => {
     if (
       snapshot.activeCompanyId === scope.companyId &&
       snapshot.status === "ready"

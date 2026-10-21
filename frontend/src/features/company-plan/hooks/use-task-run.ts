@@ -5,7 +5,7 @@ import { useSessionSnapshot } from "@/shared/session/use-session-snapshot";
 import { useListCompanyAgentsQuery } from "@/shared/api/agent-runtime-api";
 import { useBindAgentDialog } from "@/features/agents/hooks/use-bind-agent-dialog";
 import { taskStartAction } from "@/features/company-plan/model/task-execution";
-import type { BoardlyApiError } from "@/shared/api/boardly-api";
+import type { ZenithTeamApiError } from "@/shared/api/zenith-team-api";
 import type { AgentDto, TaskDto } from "@/shared/api/types";
 
 import { toast } from "@/shared/ui/sonner";
@@ -102,9 +102,9 @@ function taskRunStartedMessage(
 
 // The two refusals a Task run can meet under ADR 0014, in the words of the
 // person who pressed the button. The mutation rejects with the
-// BoardlyApiError itself, whose `code` is the API's.
+// ZenithTeamApiError itself, whose `code` is the API's.
 function runTaskErrorMessage(error: unknown, task: TaskDto): string {
-  const apiError = error as BoardlyApiError | undefined;
+  const apiError = error as ZenithTeamApiError | undefined;
   if (apiError?.code === "task_assignee_required") {
     return `Only ${task.assignee.name} can start this task; it runs on their computer.`;
   }

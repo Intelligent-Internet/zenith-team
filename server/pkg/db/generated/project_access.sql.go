@@ -32,7 +32,7 @@ type AdvanceProjectAccessVersionsRow struct {
 }
 
 // Advances the access revision of each given Project, for a change that
-// holds no expected revision (a member leaving the Company, D5). Returns each
+// holds no expected revision (a member leaving the Company). Returns each
 // Project with its new revision.
 func (q *Queries) AdvanceProjectAccessVersions(ctx context.Context, arg AdvanceProjectAccessVersionsParams) ([]AdvanceProjectAccessVersionsRow, error) {
 	rows, err := q.db.Query(ctx, advanceProjectAccessVersions, arg.CompanyID, arg.ProjectIds)
@@ -89,7 +89,7 @@ type CountProjectGroupGrantsParams struct {
 	ProjectID uuid.UUID `json:"project_id"`
 }
 
-// How many Groups hold grants on the Project (the cap of D4).
+// How many Groups hold grants on the Project (for the cap on Groups per Project).
 func (q *Queries) CountProjectGroupGrants(ctx context.Context, arg CountProjectGroupGrantsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countProjectGroupGrants, arg.CompanyID, arg.ProjectID)
 	var groups int64
@@ -478,7 +478,7 @@ type ListProjectAccessPathsRow struct {
 	Management      bool               `json:"management"`
 }
 
-// Every stored source of every person on the Project (D4): one row per person
+// Every stored source of every person on the Project: one row per person
 // and source, their own grant rows (via 'grant', group_id the zero uuid) and
 // each Group they are in that holds rows there (via 'group'). Only active
 // members with enabled accounts, only own rows written since their latest
@@ -714,7 +714,7 @@ type ListProjectGroupGrantsRow struct {
 	MemberCount     int64              `json:"member_count"`
 }
 
-// The Groups holding grants on the Project (D4): what each holds, who wrote
+// The Groups holding grants on the Project: what each holds, who wrote
 // its most recent row, when it last changed and how many members it has
 // (counted as ListCompanyGroupMembers lists them). A null group_id lists
 // every Group there.
@@ -803,7 +803,7 @@ type ListRunReadableProjectsParams struct {
 }
 
 // The Projects among project_ids where a Run may use the permission: the
-// delegate rule for that Run (run_permission_held, D31). Its Authorizer
+// delegate rule for that Run (run_permission_held). Its Authorizer
 // holds the permission and read there, and a Task Run stays in its Task
 // chat's Project. A read asks project.read, a Task create
 // project.tasks.write. One call per candidate Project; the caller passes the
@@ -876,8 +876,8 @@ type ListUserProjectPathsRow struct {
 	ThroughGroup bool      `json:"through_group"`
 }
 
-// One person's stored access across the Company, per Project, for leaving it
-// (D5): the permissions from every source (their own rows and their Groups'
+// One person's stored access across the Company, per Project, for leaving it:
+// the permissions from every source (their own rows and their Groups'
 // rows), and whether a Group reached the Project. Only rows and memberships
 // written since their latest (re)join count. It does not ask whether the
 // membership is active: the revocation reads it after revoking it.
@@ -1228,7 +1228,7 @@ type ResolvePeopleProjectAccessRow struct {
 }
 
 // ResolveProjectAccess for many people on many Projects in one read, for a
-// Group change (Access TECH D3, D4): one row per Project of the Company and
+// Group change: one row per Project of the Company and
 // person named, with the same facts. The people's fenced own rows and Group
 // rows on the Projects are read once, as sets; the project_access via is a
 // correlated lookup that names the Project and the person, so each arm keeps

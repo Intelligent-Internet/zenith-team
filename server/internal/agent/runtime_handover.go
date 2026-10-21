@@ -1,6 +1,6 @@
 package agent
 
-// One computer, one person at a time (D33). A runtime is one person's use of
+// One computer, one person at a time. A runtime is one person's use of
 // one machine, so a second person signing in on a computer registers rows of
 // their own, and nothing of anyone else's moves: their bindings, queued Runs,
 // machine name and discovery stay on their rows. What changes hands is the
@@ -22,11 +22,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // RuntimeHandover is the runtime.handed_over Activity payload: the previous

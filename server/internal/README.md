@@ -1,7 +1,7 @@
 # `server/internal`
 
 Private application code. The Go compiler enforces that nothing outside
-`boardly.dev/boardly/server` can import any of it, which is why the default
+`github.com/Intelligent-Internet/zenith-team/server` can import any of it, which is why the default
 answer to "where does this go?" is here — see
 [`internal/README.md`] in golang-standards/project-layout. The shared
 contract layer the daemon-side binaries also need lives in
@@ -21,7 +21,7 @@ no `models/`, no `repositories/`. Beyond the product domains sit:
 - `handler/` and `middleware/` — the only packages that import Gin
 - `db/` — pgxpool, migration runner, readiness, `Store`/`WithinTx`
 - `daemon/` (+ `execenv/`, `workspace/`, `repocache/`), `authfile/`, `mcp/` —
-  the machine-side runtime, the shared auth.json store, and the boardly-mcp
+  the machine-side runtime, the shared auth.json store, and the zenith-team-mcp
   server; `mcp/` imports only `authfile` and its own subtree
 - `infra/` (email, storage, validate), `config/`, `util/`,
   `testutil/dbtest/` — adapters, configuration, boundary helpers, test

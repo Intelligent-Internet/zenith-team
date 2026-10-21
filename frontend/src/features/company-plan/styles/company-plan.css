@@ -516,11 +516,11 @@
   }
 }
 
-.boardly-workspace-theme .work-search input:focus-visible {
+.zenith-team-workspace-theme .work-search input:focus-visible {
   outline: none;
 }
 
-.boardly-workspace-theme .company-work-page.workspace-page-frame > header {
+.zenith-team-workspace-theme .company-work-page.workspace-page-frame > header {
   flex-flow: row wrap;
   align-items: flex-start;
   gap: 8px 24px;

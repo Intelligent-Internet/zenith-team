@@ -13,8 +13,7 @@ import (
 // mirrored by the project_grants_permission_check and
 // project_group_grants_permission_check CHECKs and pinned by a test.
 // "Review task results" (project.results.review) was removed by migration
-// 000102 (D31 revision, ruled 2026-10-07, built 2026-10-08): nothing
-// checked it.
+// 000102: nothing checked it.
 type ProjectPermission string
 
 const (

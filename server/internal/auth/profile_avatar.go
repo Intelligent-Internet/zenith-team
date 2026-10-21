@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image"
-	_ "image/jpeg"
+	_ "image/jpeg" // Register the JPEG and PNG decoders for image.Decode.
 	_ "image/png"
 	"strings"
 )

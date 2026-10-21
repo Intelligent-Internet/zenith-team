@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 func TestStudioProjectRequiresDaemonIdentity(t *testing.T) {

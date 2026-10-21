@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func discussionWritable(row generated.ListDiscussionAccessRow) error {
@@ -91,7 +91,15 @@ func hydrateDiscussionMessages(
 		summary.ReplyCount = row.ReplyCount
 		summary.LastReplyAt = util.TimestampToTime(row.LastReplyAt)
 	}
-	states, err := q.ListDiscussionThreadReadStates(ctx, generated.ListDiscussionThreadReadStatesParams{CompanyID: p.CompanyID, ConversationID: id, UserID: p.UserID, RootIds: ids})
+	states, err := q.ListDiscussionThreadReadStates(
+		ctx,
+		generated.ListDiscussionThreadReadStatesParams{
+			CompanyID:      p.CompanyID,
+			ConversationID: id,
+			UserID:         p.UserID,
+			RootIds:        ids,
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -251,7 +259,18 @@ func (s *DefaultDiscussionService) mutateMessage(
 					if item.ThreadRootID.Valid {
 						rootID = &item.ThreadRootID.UUID
 					}
-					if err := createDiscussionMentionInboxItems(ctx, q, p, target.ConversationID, target.MessageID, access.Kind, rootID, added, &pending, true); err != nil {
+					if err := createDiscussionMentionInboxItems(
+						ctx,
+						q,
+						p,
+						target.ConversationID,
+						target.MessageID,
+						access.Kind,
+						rootID,
+						added,
+						&pending,
+						true,
+					); err != nil {
 						return err
 					}
 				}
@@ -320,7 +339,15 @@ func (s *DefaultDiscussionService) EditMessage(
 			if err := json.Unmarshal(item.Body, &previous); err != nil {
 				return false, err
 			}
-			if _, err := validateDiscussionReferences(ctx, q, p, target.ConversationID, normalized.Input.Body, nil, &previous); err != nil {
+			if _, err := validateDiscussionReferences(
+				ctx,
+				q,
+				p,
+				target.ConversationID,
+				normalized.Input.Body,
+				nil,
+				&previous,
+			); err != nil {
 				return false, err
 			}
 			err := q.EditDiscussionMessage(
@@ -395,7 +422,17 @@ func (s *DefaultDiscussionService) DeleteMessage(
 				},
 			)
 			if err == nil {
-				err = applyDiscussionUnreadDelta(ctx, q, discussionUnreadDelta{ConversationID: target.ConversationID, RootID: item.ThreadRootID, AuthorID: item.AuthorID.UUID, Seq: item.Seq, Delta: -1})
+				err = applyDiscussionUnreadDelta(
+					ctx,
+					q,
+					discussionUnreadDelta{
+						ConversationID: target.ConversationID,
+						RootID:         item.ThreadRootID,
+						AuthorID:       item.AuthorID.UUID,
+						Seq:            item.Seq,
+						Delta:          -1,
+					},
+				)
 			}
 			return true, err
 		},
@@ -523,7 +560,10 @@ func threadStateInTx(
 ) (DiscussionThreadState, error) {
 	count := int64(0)
 	state := DiscussionThreadState{RootID: target.MessageID, Follow: "", UnreadCount: &count}
-	member, err := q.GetDiscussionMember(ctx, generated.GetDiscussionMemberParams{ConversationID: target.ConversationID, UserID: p.UserID})
+	member, err := q.GetDiscussionMember(
+		ctx,
+		generated.GetDiscussionMemberParams{ConversationID: target.ConversationID, UserID: p.UserID},
+	)
 	if err != nil {
 		return state, discussionLookupError(err)
 	}
@@ -563,7 +603,17 @@ func (s *DefaultDiscussionService) UpdateThreadState(
 		if input.Follow != "" {
 			return DiscussionThreadState{}, ErrDiscussionInvalid
 		}
-		return s.updateThreadReadState(ctx, p, target, DiscussionReadInput{ReadThroughSeq: input.ReadThroughSeq, ManualUnreadSeq: input.ManualUnreadSeq, ExpectedRevision: &input.ExpectedRevision, GrantGeneration: input.GrantGeneration})
+		return s.updateThreadReadState(
+			ctx,
+			p,
+			target,
+			DiscussionReadInput{
+				ReadThroughSeq:   input.ReadThroughSeq,
+				ManualUnreadSeq:  input.ManualUnreadSeq,
+				ExpectedRevision: &input.ExpectedRevision,
+				GrantGeneration:  input.GrantGeneration,
+			},
+		)
 	}
 	if input.ExpectedRevision < 0 || input.ExpectedRevision > maxDiscussionInteger ||
 		(input.Follow != "following" && input.Follow != "unfollowed") {
@@ -600,7 +650,7 @@ func (s *DefaultDiscussionService) UpdateThreadState(
 			if !access.IsGeneral && access.MemberCount >= 50 {
 				return ErrDiscussionLimit
 			}
-			if _, err = grantDiscussionHuman(
+			if err = grantDiscussionHuman(
 				ctx,
 				q,
 				discussionGrant{

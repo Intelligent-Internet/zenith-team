@@ -10,13 +10,13 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // frozenChat is the part of runs.context these tests read back: the chat the
@@ -82,8 +82,21 @@ func TestSendFreezesPriorChatAndSenderIntoRunContext(t *testing.T) {
 	}
 	service := newTestConversationService(t, store, bus)
 	userC := dbtest.NewUUID(t)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, 'user-c@example.com', 'User C')`, userC)
-	dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`, fixture.CompanyA, userC)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO users (id, email, display_name) VALUES ($1, 'user-c@example.com', 'User C')`,
+		userC,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
+		fixture.CompanyA,
+		userC,
+	)
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, userC)
 	target := MessageTarget{Kind: TargetTask, ID: fixture.TaskA}
 
@@ -136,13 +149,18 @@ func TestSendFreezesPriorChatAndSenderIntoRunContext(t *testing.T) {
 		got[1] != "Please migrate the auth module." || got[2] != "Done; see PR #12." {
 		t.Fatalf("frozen chat = %q, want the seeded message, A's message and the Agent's answer in order", got)
 	}
-	if chat.Snapshot.Kind != "task" || chat.Snapshot.ConversationID != fixture.ConversationA.String() || chat.Snapshot.ThroughSeq != 3 {
+	if chat.Snapshot.Kind != "task" || chat.Snapshot.ConversationID != fixture.ConversationA.String() ||
+		chat.Snapshot.ThroughSeq != 3 {
 		t.Fatalf("snapshot envelope = %+v, want the Task Conversation through seq 3", chat.Snapshot)
 	}
 	items := chat.Snapshot.Items
 	if items[1].Author.Name != "Schema A" || items[1].Author.Kind != "user" ||
 		items[2].Author.Name != "Agent A" || items[2].Author.Kind != "agent" {
-		t.Fatalf("authors = %+v / %+v, want Schema A (user) and Agent A (agent)", items[1].Author, items[2].Author)
+		t.Fatalf(
+			"authors = %+v / %+v, want Schema A (user) and Agent A (agent)",
+			items[1].Author,
+			items[2].Author,
+		)
 	}
 	if chat.Trigger == nil || chat.Trigger.Author.ID != userC.String() ||
 		chat.Trigger.Author.Kind != "user" || chat.Trigger.Author.Name != "User C" {
@@ -204,11 +222,16 @@ func TestRunQueuePromotionFreezesTheSnapshotAtPromotionTime(t *testing.T) {
 		t.Fatalf("insert second queue item: %v", err)
 	}
 
-	receipt, err := runService.AppendTranscriptItem(ctx, fixture.RuntimeA, currentRunID, execution.TranscriptItemInput{
-		ItemKey: "completed-answer",
-		Role:    protocol.RunItemRoleAgent,
-		Parts:   []protocol.RunItemPart{{Type: protocol.RunItemPartTypeText, Text: "completed answer"}},
-	})
+	receipt, err := runService.AppendTranscriptItem(
+		ctx,
+		fixture.RuntimeA,
+		currentRunID,
+		execution.TranscriptItemInput{
+			ItemKey: "completed-answer",
+			Role:    protocol.RunItemRoleAgent,
+			Parts:   []protocol.RunItemPart{{Type: protocol.RunItemPartTypeText, Text: "completed answer"}},
+		},
+	)
 	if err != nil {
 		t.Fatalf("append current run transcript: %v", err)
 	}
@@ -219,7 +242,8 @@ func TestRunQueuePromotionFreezesTheSnapshotAtPromotionTime(t *testing.T) {
 	}
 
 	var promotedRunID uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT run_id FROM conversation_items WHERE id = $1`, first.MessageID).Scan(&promotedRunID); err != nil {
+	if err := pool.QueryRow(ctx, `SELECT run_id FROM conversation_items WHERE id = $1`, first.MessageID).
+		Scan(&promotedRunID); err != nil {
 		t.Fatalf("read promoted user item run_id: %v", err)
 	}
 	promoted, err := store.Queries().GetRun(ctx, promotedRunID)
@@ -227,13 +251,20 @@ func TestRunQueuePromotionFreezesTheSnapshotAtPromotionTime(t *testing.T) {
 		t.Fatalf("read promoted Run: %v", err)
 	}
 	chat := decodeFrozenChat(t, promoted.Context)
-	if got := frozenContents(chat); len(got) != 2 || got[0] != "the running question" || got[1] != "completed answer" {
-		t.Fatalf("promoted snapshot = %q, want the running Run's question and its answer, taken at promotion", got)
+	if got := frozenContents(
+		chat,
+	); len(got) != 2 || got[0] != "the running question" ||
+		got[1] != "completed answer" {
+		t.Fatalf(
+			"promoted snapshot = %q, want the running Run's question and its answer, taken at promotion",
+			got,
+		)
 	}
 	if chat.Snapshot.ThroughSeq != 2 {
 		t.Fatalf("throughSeq = %d, want 2, the watermark before the promoted words", chat.Snapshot.ThroughSeq)
 	}
-	if chat.Trigger == nil || chat.Trigger.Author.Name != "Schema A" || chat.Trigger.Author.ID != fixture.UserA.String() {
+	if chat.Trigger == nil || chat.Trigger.Author.Name != "Schema A" ||
+		chat.Trigger.Author.ID != fixture.UserA.String() {
 		t.Fatalf("promoted trigger = %+v, want the member who queued the prompt", chat.Trigger)
 	}
 }

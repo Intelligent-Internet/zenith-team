@@ -14,19 +14,19 @@ paths:
         (`403 company_permission_required` otherwise) and is refused with a
         Run proof (`403 human_actor_required`).
 
-        Sent with a Run's `X-Boardly-Run-Token` (`zen project list`, offered
+        Sent with a Run's `X-Zenith-Team-Run-Token` (`zen project list`, offered
         only to Runs outside a task), the token must prove a running Run in
         this Company carried by its member's own session
         (`401 run_token_invalid` otherwise). The list is the Projects that
         member reads, for a Run started by a mention in a channel or a
         direct message between people too: such a Run uses the access of the
-        person who mentioned the Agent (D31). A task Run's channel refuses
+        person who mentioned the Agent. A task Run's channel refuses
         `zen project list` with `run_scope_denied` before it reaches the
         server; a list carrying a task Run's token anyway holds only its
         task's Project, as a second guard.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: false
           description: Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller.
@@ -141,7 +141,7 @@ paths:
         the three management permissions. Anyone else gets
         `404 project_not_found`, the answer a missing Project gets.
 
-        Sent with a Run's `X-Boardly-Run-Token` (`zen project get`, offered
+        Sent with a Run's `X-Zenith-Team-Run-Token` (`zen project get`, offered
         to Runs outside a task, and the own-Project lookup of a task Run
         below), the token must prove a running Run in this Company carried by
         its member's own session
@@ -150,7 +150,7 @@ paths:
         only as the member's reader: a Project the member only manages is
         `404 project_not_found`. A Run started by a mention in a channel or a
         direct message between people reads the Projects the person who
-        mentioned the Agent reads, whoever else is in the chat (D31). A task
+        mentioned the Agent reads, whoever else is in the chat. A task
         Run's channel sends only the read of its own task's Project (the lookup
         `zen task create` makes, which `zen project get` with that key or id
         also passes while Work coordination is on) and refuses any other with
@@ -160,7 +160,7 @@ paths:
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - $ref: '#/parameters/projectId'
-        - name: X-Boardly-Run-Token
+        - name: X-Zenith-Team-Run-Token
           in: header
           required: false
           description: Sent by a Run's channel; when present it must prove a live Run in this Company whose member is the caller.
@@ -326,7 +326,7 @@ paths:
       summary: List the people granted access to a Project
       description: |
         Lists every person with a stored source on the Project: their own
-        grant, a Group they are in, or both (Access TECH D4). A person who
+        grant, a Group they are in, or both. A person who
         reaches it only through a Group has `granted: []` and `grantedBy:
         null`. Each entry's `sources` says where its access comes from, and
         `effective` is the union. On a Company-visible Project every active
@@ -478,7 +478,7 @@ paths:
       summary: Set one Group's permissions on a Project
       description: |
         Makes the Group's stored permissions on the Project exactly
-        `permissions`, as a person grant does (Access TECH D4): the same
+        `permissions`, as a person grant does: the same
         catalog and levels, `project.read` added to a non-empty set, an empty
         set removes the Group, sending the stored set changes nothing, and an
         archived Project stays manageable. Every member of the Group holds

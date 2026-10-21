@@ -929,7 +929,7 @@
   background: var(--workspace-panel-bg, #fff);
   color: var(--workspace-native-text, #161616);
 }
-body:has(.boardly-workspace-theme[data-desktop-mac="true"])
+body:has(.zenith-team-workspace-theme[data-desktop-mac="true"])
   .file-viewer--fullscreen
   > header {
   padding-left: 100px;

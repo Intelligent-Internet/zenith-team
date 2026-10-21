@@ -6,6 +6,8 @@
     "quickstart",
     "concepts",
     "how-zenith-team-works",
+    "---Self-hosting---",
+    "self-hosting",
     "---Company---",
     "companies",
     "project-access",
@@ -22,6 +24,7 @@
     "---Runtime and execution---",
     "runs",
     "daemon-and-runtimes",
+    "desktop-app",
     "providers",
     "workspaces",
     "memory",
@@ -33,6 +36,9 @@
     "notifications",
     "---Reference---",
     "cli",
+    "troubleshooting",
+    "---Project---",
+    "community",
     "---Development---",
     "developers"
   ]

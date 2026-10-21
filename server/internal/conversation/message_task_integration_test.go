@@ -11,14 +11,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestTaskMessageRunFromTargetScopedRouteReopensFailedTaskAndKeepsReplayExact(t *testing.T) {
@@ -232,8 +232,9 @@ func TestBlockedTaskMessageRunWaitsForResolvedDependencies(t *testing.T) {
 	principal := auth.UserPrincipal{
 		UserID: fixture.UserA, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleOwner,
 	}
-	prerequisite, err := taskService.Create(ctx, principal, task.CreateInput{ProjectID: fixture.ProjectA,
-		Key: "message_prerequisite",
+	prerequisite, err := taskService.Create(ctx, principal, task.CreateInput{
+		ProjectID: fixture.ProjectA,
+		Key:       "message_prerequisite",
 
 		MilestoneType: task.MilestoneTypeProduct,
 		Title:         "Message prerequisite",
@@ -422,27 +423,60 @@ func TestTaskChatReadsFollowTheProjectAndPostingNeedsWrite(t *testing.T) {
 	member := func(email string) auth.UserPrincipal {
 		t.Helper()
 		id := dbtest.NewUUID(t)
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`, id, email)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, $2)`,
+			id,
+			email,
+		)
 		dbtest.MustExec(t, ctx, pool,
 			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, 'member')`,
 			fixture.CompanyA, id)
 		return auth.UserPrincipal{UserID: id, CompanyID: fixture.CompanyA, Role: auth.CompanyRoleMember}
 	}
-	outsider, reader, writer := member("outsider@example.com"), member("reader@example.com"), member("writer@example.com")
+	outsider, reader, writer := member(
+		"outsider@example.com",
+	), member(
+		"reader@example.com",
+	), member(
+		"writer@example.com",
+	)
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, reader.UserID, "project.read")
 	dbtest.GrantProject(t, ctx, pool, fixture.CompanyA, fixture.ProjectA, writer.UserID, "project.tasks.write")
 
 	chat := conversation.MessageTarget{Kind: conversation.TargetConversation, ID: fixture.ConversationA}
 	byTask := conversation.MessageTarget{Kind: conversation.TargetTask, ID: fixture.TaskA}
 	for _, target := range []conversation.MessageTarget{chat, byTask} {
-		if _, err := service.ListMessages(ctx, outsider, target, conversation.MessageListOptions{Limit: 10}); !errors.Is(err, conversation.ErrNotFound) {
+		if _, err := service.ListMessages(
+			ctx,
+			outsider,
+			target,
+			conversation.MessageListOptions{Limit: 10},
+		); !errors.Is(
+			err,
+			conversation.ErrNotFound,
+		) {
 			t.Errorf("ListMessages(outsider, %s) error = %v, want ErrNotFound", target.Kind, err)
 		}
-		if _, err := service.ListMessages(ctx, reader, target, conversation.MessageListOptions{Limit: 10}); err != nil {
+		if _, err := service.ListMessages(
+			ctx,
+			reader,
+			target,
+			conversation.MessageListOptions{Limit: 10},
+		); err != nil {
 			t.Errorf("ListMessages(reader, %s) error = %v", target.Kind, err)
 		}
 	}
-	if _, err := service.FetchState(ctx, outsider, fixture.ConversationA); !errors.Is(err, conversation.ErrNotFound) {
+	if _, err := service.FetchState(
+		ctx,
+		outsider,
+		fixture.ConversationA,
+	); !errors.Is(
+		err,
+		conversation.ErrNotFound,
+	) {
 		t.Errorf("FetchState(outsider) error = %v, want ErrNotFound", err)
 	}
 
@@ -469,7 +503,11 @@ func TestTaskChatReadsFollowTheProjectAndPostingNeedsWrite(t *testing.T) {
 		t.Errorf("Send(reader without project.tasks.write) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	if items, queued := count(); items != itemsBefore || queued != queuedBefore {
-		t.Fatalf("refused sends wrote %d item(s) and %d queued message(s)", items-itemsBefore, queued-queuedBefore)
+		t.Fatalf(
+			"refused sends wrote %d item(s) and %d queued message(s)",
+			items-itemsBefore,
+			queued-queuedBefore,
+		)
 	}
 	if err := send(writer); err != nil {
 		t.Fatalf("Send(writer) error = %v", err)
@@ -488,8 +526,15 @@ func TestTaskChatReadsFollowTheProjectAndPostingNeedsWrite(t *testing.T) {
 		fixture.ConversationA, writer.UserID).Scan(&queuedID, &queuedVersion); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.DeleteRunQueueItem(ctx, reader, fixture.ConversationA, queuedID,
-		conversation.DeleteRunQueueItemInput{ExpectedRevision: queuedVersion}); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := service.DeleteRunQueueItem(
+		ctx,
+		reader,
+		fixture.ConversationA,
+		queuedID,
+		conversation.DeleteRunQueueItemInput{
+			ExpectedRevision: queuedVersion,
+		},
+	); !errors.Is(err, auth.ErrProjectPermissionRequired) {
 		t.Errorf("DeleteRunQueueItem(reader) error = %v, want ErrProjectPermissionRequired", err)
 	}
 	if _, err := service.ReorderRunQueue(ctx, reader, fixture.ConversationA, conversation.RunQueueOrderInput{
@@ -497,8 +542,15 @@ func TestTaskChatReadsFollowTheProjectAndPostingNeedsWrite(t *testing.T) {
 	}); !errors.Is(err, auth.ErrProjectPermissionRequired) {
 		t.Errorf("ReorderRunQueue(reader) error = %v, want ErrProjectPermissionRequired", err)
 	}
-	if _, err := service.DeleteRunQueueItem(ctx, outsider, fixture.ConversationA, queuedID,
-		conversation.DeleteRunQueueItemInput{ExpectedRevision: queuedVersion}); !errors.Is(err, conversation.ErrNotFound) {
+	if _, err := service.DeleteRunQueueItem(
+		ctx,
+		outsider,
+		fixture.ConversationA,
+		queuedID,
+		conversation.DeleteRunQueueItemInput{
+			ExpectedRevision: queuedVersion,
+		},
+	); !errors.Is(err, conversation.ErrNotFound) {
 		t.Errorf("DeleteRunQueueItem(outsider) error = %v, want ErrNotFound", err)
 	}
 

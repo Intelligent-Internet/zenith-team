@@ -43,9 +43,9 @@ func TestProviderSendsPublishedTemplateWithoutOwningAuthLogic(t *testing.T) {
 		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode payload: %v", err)
 		}
-		if payload.To != "founder@boardly.test" ||
-			payload.Template.ID != "00000000-0000-4000-8000-000000000001" ||
-			payload.Template.Variables["DISPLAY_NAME"] != "Boardly Founder" ||
+		if payload.To != "founder@zenith-team.test" ||
+			payload.Template.ID != "2f1d6c8e-4b7a-4c51-9a3e-5d0e7c9b1a01" ||
+			payload.Template.Variables["DISPLAY_NAME"] != "Zenith Team Founder" ||
 			payload.Template.Variables["OTP_CODE"] != "123456" {
 			t.Errorf("payload = %#v", payload)
 		}
@@ -62,8 +62,8 @@ func TestProviderSendsPublishedTemplateWithoutOwningAuthLogic(t *testing.T) {
 		t.Fatalf("NewResendProvider() error = %v", err)
 	}
 	delivery, err := provider.SendTemplate(context.Background(), TemplateMessage{
-		To: "founder@boardly.test", TemplateID: "00000000-0000-4000-8000-000000000001",
-		Variables:      map[string]string{"DISPLAY_NAME": "Boardly Founder", "OTP_CODE": "123456"},
+		To: "founder@zenith-team.test", TemplateID: "2f1d6c8e-4b7a-4c51-9a3e-5d0e7c9b1a01",
+		Variables:      map[string]string{"DISPLAY_NAME": "Zenith Team Founder", "OTP_CODE": "123456"},
 		IdempotencyKey: "email-verification/flow-1/1",
 	})
 	if err != nil {
@@ -119,7 +119,7 @@ func TestProviderSendsPlainTextEmailAndPrivateBatchWithOneIdempotencyFence(t *te
 		t.Fatal(err)
 	}
 	message := OutboundMessage{
-		From: "Boardly <hello@mail.boardly.test>", To: []string{"a@example.com"},
+		From: "Zenith Team <hello@mail.zenith-team.test>", To: []string{"a@example.com"},
 		CC: []string{}, Subject: "Hello", Text: "Plain text",
 	}
 	delivery, err := provider.Send(context.Background(), message, "agent-mail/draft/1")
@@ -195,7 +195,7 @@ func TestProviderMapsOutboundRateLimitAndUnavailableFailures(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = provider.Send(context.Background(), OutboundMessage{
-				From: "Boardly <hello@mail.boardly.test>", To: []string{"a@example.com"},
+				From: "Zenith Team <hello@mail.zenith-team.test>", To: []string{"a@example.com"},
 				Subject: "Hello", Text: "Body",
 			}, "agent-mail/draft/1")
 			if !errors.Is(err, test.want) {
@@ -227,7 +227,7 @@ func TestProviderReturnsOpaqueErrorForResendFailure(t *testing.T) {
 	}
 
 	_, err = provider.SendTemplate(context.Background(), TemplateMessage{
-		To: "founder@boardly.test", TemplateID: "template-id",
+		To: "founder@zenith-team.test", TemplateID: "template-id",
 		Variables: map[string]string{"OTP_CODE": "123456"}, IdempotencyKey: "verification/1",
 	})
 	if err == nil || err.Error() != "Resend email delivery failed with status 502" {

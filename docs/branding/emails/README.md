@@ -1,18 +1,25 @@
 # Zenith Team transactional emails
 
-These HTML sources match the Resend templates updated on 2026-09-17. Edit through
-Resend's code editor and publish a new version after previewing. Template IDs and
-aliases are intentionally unchanged; server configuration continues to work.
+Zenith Team sends sign-up codes, password resets, and member invitations
+through [Resend](https://resend.com) templates. The templates live in your own
+Resend account; these files are their HTML sources.
 
-| Source | Resend template ID | Alias | Required variables |
-| --- | --- | --- | --- |
-| `member-invitation.html` | `b3f71b65-f85b-4fdb-9752-451bce2156c7` | `zenith-team-member-invitation` | `COMPANY_NAME`, `INVITER_NAME`, `INVITATION_URL`, `EXPIRES_AT` |
-| `email-verification.html` | `00000000-0000-4000-8000-000000000001` | `boardly-verification` | `DISPLAY_NAME`, `OTP_CODE` |
-| `password-reset.html` | `00000000-0000-4000-8000-000000000002` | `password-reset` | `DISPLAY_NAME`, `RESET_URL` |
+To turn email on:
 
-Sender display name: **Zenith Team**. Existing verified sender address:
-`noreply@mail.example.com`. Keep security codes and URLs required, without fake
-fallback values. Invitation acceptance finishes in the desktop app.
+1. In Resend, verify a sending domain.
+2. Create one template per file below: paste the HTML, add the listed
+   variables, and publish it.
+3. Put each template's ID in the matching server setting.
+
+| Source | Server setting | Required variables |
+| --- | --- | --- |
+| `email-verification.html` | `AUTH_EMAIL_VERIFICATION_TEMPLATE_ID` (required) | `DISPLAY_NAME`, `OTP_CODE` |
+| `password-reset.html` | `AUTH_PASSWORD_RESET_TEMPLATE_ID` (required) | `DISPLAY_NAME`, `RESET_URL` |
+| `member-invitation.html` | `AUTH_INVITATION_TEMPLATE_ID` (optional; turns invitation emails on) | `COMPANY_NAME`, `INVITER_NAME`, `INVITATION_URL`, `EXPIRES_AT` |
+
+Use **Zenith Team** as the sender display name. Keep security codes and URLs
+required, without fake fallback values. Invitation acceptance finishes in the
+desktop app.
 
 The visual foundation comes from `frontend/src/features/public-site/styles/studio-page.css`:
 sky `#BCE8FA`, cream `#FFFDF7`, navy `#173E5C`, butter `#FFF0B9`. Desktop's

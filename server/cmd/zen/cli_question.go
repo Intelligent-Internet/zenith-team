@@ -55,7 +55,8 @@ func newQuestionCmd() *cobra.Command {
 		RunE:  runQuestionAnswer,
 	}
 	answer.Flags().StringArray("text", nil, "free-text answer per prompt, in prompt order (repeatable)")
-	answer.Flags().StringArray("select", nil, "selected option ids per prompt, comma-separated, in prompt order (repeatable)")
+	answer.Flags().
+		StringArray("select", nil, "selected option ids per prompt, comma-separated, in prompt order (repeatable)")
 	answer.Flags().String("answers-file", "", "JSON file holding the exact answers array")
 	addRevisionFlag(answer)
 
@@ -148,7 +149,17 @@ func runQuestionList(cmd *cobra.Command, _ []string) error {
 	}
 	rows := make([][]string, 0, len(page.Items))
 	for _, item := range page.Items {
-		rows = append(rows, []string{item.ID, item.Status, truncate(item.Title, 48), dashIfEmpty(item.AskedByAgent.Name), stringOrDash(item.TaskID), item.CreatedAt})
+		rows = append(
+			rows,
+			[]string{
+				item.ID,
+				item.Status,
+				truncate(item.Title, 48),
+				dashIfEmpty(item.AskedByAgent.Name),
+				stringOrDash(item.TaskID),
+				item.CreatedAt,
+			},
+		)
 	}
 	printTable(cmd.OutOrStdout(), []string{"ID", "STATUS", "TITLE", "AGENT", "TASK", "CREATED"}, rows)
 	noteCursor(cmd, page.NextCursor)
@@ -280,10 +291,18 @@ func runQuestionAsk(cmd *cobra.Command, _ []string) error {
 	ctx, cancel := apiContext()
 	defer cancel()
 	var raw json.RawMessage
-	if err := client.post(ctx, client.companyPath("questions"), map[string]any{"title": strings.TrimSpace(title), "prompts": prompts}, &raw); err != nil {
+	if err := client.post(
+		ctx,
+		client.companyPath("questions"),
+		map[string]any{"title": strings.TrimSpace(title), "prompts": prompts},
+		&raw,
+	); err != nil {
 		return err
 	}
-	fmt.Fprintln(cmd.ErrOrStderr(), "question raised; end the Run now — the founder's answer starts a continuation Run")
+	fmt.Fprintln(
+		cmd.ErrOrStderr(),
+		"question raised; end the Run now — the founder's answer starts a continuation Run",
+	)
 	return printResult(cmd, raw, nil)
 }
 
@@ -309,7 +328,7 @@ func runQuestionAnswer(cmd *cobra.Command, args []string) error {
 		if err := json.Unmarshal(data, &answers); err != nil {
 			return usagef("--answers-file must hold a JSON array of answers: %v", err)
 		}
-		if revision, err = resolveRevision(cmd, ctx, client, path, ""); err != nil {
+		if revision, err = resolveRevision(ctx, cmd, client, path); err != nil {
 			return err
 		}
 	} else {
@@ -340,7 +359,12 @@ func runQuestionAnswer(cmd *cobra.Command, args []string) error {
 		}
 	}
 	var raw json.RawMessage
-	if err := client.post(ctx, path+"/answer", map[string]any{"expectedRevision": revision, "answers": answers}, &raw); err != nil {
+	if err := client.post(
+		ctx,
+		path+"/answer",
+		map[string]any{"expectedRevision": revision, "answers": answers},
+		&raw,
+	); err != nil {
 		return err
 	}
 	return printResult(cmd, raw, nil)
@@ -358,7 +382,7 @@ func runQuestionWithdraw(cmd *cobra.Command, args []string) error {
 	ctx, cancel := apiContext()
 	defer cancel()
 	path := client.companyPath("questions", questionID)
-	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	revision, err := resolveRevision(ctx, cmd, client, path)
 	if err != nil {
 		return err
 	}

@@ -289,7 +289,11 @@ func BlocksFromMarkdown(markdown string) BlockNode {
 			}
 		case *ast.CodeSpan:
 			return []BlockNode{
-				{Type: "text", Text: restoreWikiPipes(markdownNodeText(n, source)), Marks: []BlockMark{{Type: "code"}}},
+				{
+					Type:  "text",
+					Text:  restoreWikiPipes(markdownNodeText(n, source)),
+					Marks: []BlockMark{{Type: "code"}},
+				},
 			}
 		case *ast.FencedCodeBlock:
 			b.Type = "codeBlock"
@@ -430,7 +434,9 @@ func BlocksFromMarkdown(markdown string) BlockNode {
 	return result
 }
 
-var wikiInlineReference = regexp.MustCompile(`\[\[(artifact:)?([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:#(\d{1,2})|(?:\\?\||&#124;)([^\]]*))?\]\]`)
+var wikiInlineReference = regexp.MustCompile(
+	`\[\[(artifact:)?([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:#(\d{1,2})|(?:\\?\||&#124;)([^\]]*))?\]\]`,
+)
 
 // paragraphBlocks lifts block images out of inline paragraph content.
 func paragraphBlocks(children []BlockNode) []BlockNode {
@@ -478,7 +484,10 @@ func importWikiReferences(node *BlockNode) {
 	var children []BlockNode
 	for i := 0; i < len(node.Content); i++ {
 		child := node.Content[i]
-		literal := slices.ContainsFunc(child.Marks, func(mark BlockMark) bool { return mark.Type == "code" || mark.Type == "link" })
+		literal := slices.ContainsFunc(
+			child.Marks,
+			func(mark BlockMark) bool { return mark.Type == "code" || mark.Type == "link" },
+		)
 		if child.Type != "text" || literal {
 			importWikiReferences(&child)
 			children = append(children, child)
@@ -497,9 +506,15 @@ func importWikiReferences(node *BlockNode) {
 				continue
 			}
 			if match[0] > start {
-				children = append(children, BlockNode{Type: "text", Text: child.Text[start:match[0]], Marks: child.Marks})
+				children = append(
+					children,
+					BlockNode{Type: "text", Text: child.Text[start:match[0]], Marks: child.Marks},
+				)
 			}
-			ref := BlockNode{Type: "wikiPageLink", Attrs: map[string]any{"id": child.Text[match[4]:match[5]], "label": ""}}
+			ref := BlockNode{
+				Type:  "wikiPageLink",
+				Attrs: map[string]any{"id": child.Text[match[4]:match[5]], "label": ""},
+			}
 			if label {
 				ref.Attrs["label"] = child.Text[match[8]:match[9]]
 			}
@@ -518,7 +533,10 @@ func importWikiReferences(node *BlockNode) {
 			start = match[1]
 		}
 		if start < len(child.Text) {
-			children = append(children, BlockNode{Type: "text", Text: child.Text[start:], Marks: child.Marks})
+			children = append(
+				children,
+				BlockNode{Type: "text", Text: child.Text[start:], Marks: child.Marks},
+			)
 		}
 	}
 	node.Content = children
@@ -556,7 +574,8 @@ func safeBlockURL(value string, image bool) bool {
 	if u.Scheme == "https" || u.Scheme == "http" {
 		return u.Host != ""
 	}
-	return !image && (u.Scheme == "mailto" || (u.Scheme == "" && u.Host == "" && !strings.Contains(value, "\\") && (strings.HasPrefix(value, "#") || strings.HasPrefix(value, "/"))))
+	return !image &&
+		(u.Scheme == "mailto" || (u.Scheme == "" && u.Host == "" && !strings.Contains(value, "\\") && (strings.HasPrefix(value, "#") || strings.HasPrefix(value, "/"))))
 }
 
 // EncodeBlocks is used for migration and independent branches, never to replace
@@ -871,7 +890,8 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			if !textParent {
 				return ErrPageInvalidInput
 			}
-			if (n.Type == "wikiPageLink" || n.Type == "wikiArtifactRef") && (parent == "codeBlock" || parent == "mermaid") {
+			if (n.Type == "wikiPageLink" || n.Type == "wikiArtifactRef") &&
+				(parent == "codeBlock" || parent == "mermaid") {
 				return ErrPageInvalidInput
 			}
 		} else if n.Type != "doc" {
@@ -1039,7 +1059,8 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			if err != nil || parsed == uuid.Nil {
 				return ErrPageInvalidInput
 			}
-			if n.Type == "wikiArtifactRef" && n.Attrs["ordinal"] != nil && !boundedBlockNumber(n.Attrs["ordinal"], 0, 99) {
+			if n.Type == "wikiArtifactRef" && n.Attrs["ordinal"] != nil &&
+				!boundedBlockNumber(n.Attrs["ordinal"], 0, 99) {
 				return ErrPageInvalidInput
 			}
 			if label, ok := n.Attrs["label"]; ok && label != nil {
@@ -1081,7 +1102,8 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			) {
 			return ErrPageInvalidInput
 		}
-		if n.Type == "artifactReference" && n.Attrs["format"] != nil && !slices.Contains([]string{"pinned", "accepted", "live"}, fmt.Sprint(n.Attrs["format"])) {
+		if n.Type == "artifactReference" && n.Attrs["format"] != nil &&
+			!slices.Contains([]string{"pinned", "accepted", "live"}, fmt.Sprint(n.Attrs["format"])) {
 			return ErrPageInvalidInput
 		}
 		if value := n.Attrs["filter"]; value != nil &&

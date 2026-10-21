@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 // TestChangedTaskFieldsReportsStatusOnly pins that a status change reports

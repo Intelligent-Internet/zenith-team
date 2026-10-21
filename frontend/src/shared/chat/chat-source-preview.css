@@ -28,7 +28,7 @@
 .chat-source-code [style] {
   color: var(--shiki-light);
 }
-[data-boardly-color-mode="dark"] .chat-source-code [style] {
+[data-zenith-team-color-mode="dark"] .chat-source-code [style] {
   color: var(--shiki-dark);
 }
 .chat-source-preview__expand {

@@ -1,4 +1,4 @@
-// The Boardly cloud API composition root. run builds every service, hub,
+// The Zenith Team cloud API composition root. run builds every service, hub,
 // relay and background worker in dependency order, serves HTTP until ctx is
 // done, and joins the workers on shutdown.
 package main
@@ -17,38 +17,38 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/account"
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/calendar"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/config"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/daemonws"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/handler"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/infra/cloudrun"
-	"boardly.dev/boardly/server/internal/infra/livekit"
-	"boardly.dev/boardly/server/internal/infra/redis"
-	"boardly.dev/boardly/server/internal/infra/storage"
-	"boardly.dev/boardly/server/internal/platformbundle"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/schedule"
-	"boardly.dev/boardly/server/internal/social"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/telemetry"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
-	"boardly.dev/boardly/server/internal/workflow"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/account"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/calendar"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/config"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/daemonws"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/handler"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/cloudrun"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/livekit"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/redis"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/infra/storage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/social"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/workflow"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type liveKitRoomProviderAdapter struct{ provider *livekit.HTTPRoomProvider }
@@ -95,7 +95,7 @@ func newLiveKitRoomProvider(cfg config.LiveKitConfig) conversation.HuddleRoomPro
 	return liveKitRoomProviderAdapter{provider: provider}
 }
 
-// run composes and operates the Boardly cloud API: it loads configuration
+// run composes and operates the Zenith Team cloud API: it loads configuration
 // through lookup, installs the process logger on logDestination, applies
 // migrations, serves HTTP until ctx is done, and returns once every
 // background worker has been joined.
@@ -677,7 +677,11 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		return fmt.Errorf("register Task readiness listeners: %w", err)
 	}
 	canvasPresence := realtime.NewCanvasPresence(redisClient)
-	if err := registerRealtimeRouting(bus, broadcaster, whiteboardHintRouting{viewers: canvasPresence, runs: canvasPresence}); err != nil {
+	if err := registerRealtimeRouting(
+		bus,
+		broadcaster,
+		whiteboardHintRouting{viewers: canvasPresence, runs: canvasPresence},
+	); err != nil {
 		return fmt.Errorf("register realtime routing: %w", err)
 	}
 	if err := activity.RegisterListeners(bus, queries); err != nil {
@@ -1012,7 +1016,7 @@ func newClientWebSocket(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := ""
 		kind := auth.TokenKindBearer
-		if cookie, err := r.Cookie("boardly_access"); err == nil {
+		if cookie, err := r.Cookie("zenith_team_access"); err == nil {
 			token = cookie.Value
 			kind = auth.TokenKindSession
 		} else if header := r.Header.Get("Authorization"); len(header) > 7 && header[:7] == "Bearer " {
@@ -1028,7 +1032,7 @@ func newClientWebSocket(
 			return
 		}
 		// The client socket is a person's: a daemon's own session never
-		// opens it (D31).
+		// opens it.
 		if principal.DaemonSession() {
 			http.Error(w, "a daemon session cannot open the client socket", http.StatusForbidden)
 			return

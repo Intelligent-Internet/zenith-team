@@ -77,10 +77,10 @@ export function ChatSessionMemoryProvider({
   storageScope,
 }: PropsWithChildren<{ storageScope?: string }>) {
   const storageKey = storageScope
-    ? `boardly.chat-attachment-drafts.v1:${encodeURIComponent(storageScope)}`
+    ? `zenith-team.chat-attachment-drafts.v1:${encodeURIComponent(storageScope)}`
     : undefined;
   const pendingDraftStorageKey = storageScope
-    ? `boardly.chat-pending-drafts.v1:${encodeURIComponent(storageScope)}`
+    ? `zenith-team.chat-pending-drafts.v1:${encodeURIComponent(storageScope)}`
     : undefined;
   const [entries, setEntries] = useState<Record<string, ChatSessionEntry>>(
     () => {

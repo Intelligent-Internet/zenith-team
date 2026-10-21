@@ -33,7 +33,7 @@ func TestLocalToolOperationsRequireExactRuntimeAndLiveCloudAccess(t *testing.T) 
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			// The daemon's own session reads its runtime and bindings on the
-			// daemon plane only (D31); a member route would refuse it.
+			// daemon plane only; a member route would refuse it.
 			cloud := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/api/v1/daemon/runtimes/"+runtime.ID+"/agent-bindings" {
 					t.Errorf("unexpected cloud path: %s", r.URL.Path)

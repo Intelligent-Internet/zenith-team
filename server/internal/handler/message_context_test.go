@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 func TestMessageContextRouteValidatesIdentityAndLimit(t *testing.T) {
@@ -94,9 +94,15 @@ func TestMessageReadCarriesAttachmentsWithheld(t *testing.T) {
 		return conversation.MessageContextPage{
 			Items: []conversation.MessageView{{
 				Message: conversation.MessageResponse{
-					ID: messageID, ConversationID: conversationID, Seq: 7,
-					Type:   conversation.ItemTypeUserMessage,
-					Author: conversation.ActorRef{Kind: conversation.ActorUser, ID: userID, DisplayName: "Dana"},
+					ID:             messageID,
+					ConversationID: conversationID,
+					Seq:            7,
+					Type:           conversation.ItemTypeUserMessage,
+					Author: conversation.ActorRef{
+						Kind:        conversation.ActorUser,
+						ID:          userID,
+						DisplayName: "Dana",
+					},
 				},
 				AttachmentsWithheld: true,
 			}},

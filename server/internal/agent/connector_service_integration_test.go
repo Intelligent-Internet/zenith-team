@@ -14,11 +14,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	provideragent "boardly.dev/boardly/server/pkg/agent"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	provideragent "github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestConnectorDiscoveryPersistsDatabaseIDsAndInvalidatesAfterCommit(t *testing.T) {
@@ -453,7 +453,7 @@ func TestConnectorCatalogRejectsRuntimeWithIneligibleOwner(t *testing.T) {
 				t, ctx, pool,
 				`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Runtime Owner')`,
 				runtimeOwnerID,
-				runtimeOwnerID.String()+"@boardly.test",
+				runtimeOwnerID.String()+"@zenith-team.test",
 			)
 			mustAgentExec(t, ctx, pool, `
 				INSERT INTO company_members (company_id, user_id, role)
@@ -492,7 +492,7 @@ func TestConnectorCatalogSelectsAnotherMembersRuntimeOnlyWhenShared(t *testing.T
 		t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Registrant')`,
 		registrantID,
-		registrantID.String()+"@boardly.test",
+		registrantID.String()+"@zenith-team.test",
 	)
 	mustAgentExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)
@@ -590,7 +590,7 @@ func TestConnectorCatalogRefreshIgnoresObservationFromIneligibleRuntimeOwner(t *
 		t, ctx, pool,
 		`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Revoked Runtime Owner')`,
 		runtimeOwnerID,
-		runtimeOwnerID.String()+"@boardly.test",
+		runtimeOwnerID.String()+"@zenith-team.test",
 	)
 	mustAgentExec(t, ctx, pool, `
 		INSERT INTO company_members (company_id, user_id, role)

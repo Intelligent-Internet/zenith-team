@@ -2,18 +2,19 @@ package handler
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"net/http"
 	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
+
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
 )
 
 type CompanySearchService interface {
@@ -21,8 +22,8 @@ type CompanySearchService interface {
 }
 
 type companySearchRequest struct {
-	ConversationID  *string    `json:"conversationId" binding:"omitempty,uuid"`
-	AuthorID        *string    `json:"authorId" binding:"omitempty,uuid"`
+	ConversationID  *string    `json:"conversationId"  binding:"omitempty,uuid"`
+	AuthorID        *string    `json:"authorId"        binding:"omitempty,uuid"`
 	After           *time.Time `json:"after"`
 	Before          *time.Time `json:"before"`
 	HasFile         bool       `json:"hasFile"`
@@ -129,8 +130,15 @@ func companySearchInput(request companySearchRequest) (company.SearchInput, bool
 		authorID = &id
 	}
 	return company.SearchInput{
-		ConversationID: conversationID, AuthorID: authorID, After: request.After, Before: request.Before, HasFile: request.HasFile,
-		Query: request.Query, Types: kinds, IncludeArchived: request.IncludeArchived, Limit: limit,
+		ConversationID:  conversationID,
+		AuthorID:        authorID,
+		After:           request.After,
+		Before:          request.Before,
+		HasFile:         request.HasFile,
+		Query:           request.Query,
+		Types:           kinds,
+		IncludeArchived: request.IncludeArchived,
+		Limit:           limit,
 	}, true
 }
 

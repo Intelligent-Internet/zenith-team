@@ -2,12 +2,12 @@ import type { ProjectPermission } from "@/shared/permissions";
 
 import type { GroupChangePreview } from "../api/groups-api";
 
-// The counts and rows of a Group change (Access DESIGN 6.3, 6.4, 7.0),
-// kept apart from the markup. Every count comes from the server's
-// preview; nothing here guesses what a change does.
+// The counts and rows of a Group change, kept apart from the markup. Every
+// count comes from the server's preview; nothing here guesses what a change
+// does.
 
 /**
- * Whether a Group change asks before it saves (owner rule, 2026-10-07):
+ * Whether a Group change asks before it saves:
  * someone's runs stop, someone loses a Project, or it moves access on a
  * Project the viewer can't see, so nobody can say. Anything else saves
  * straight away.

@@ -7,7 +7,7 @@ SHELL := /bin/bash
 GOFLAGS ?= -p=2
 export GOFLAGS
 
-.PHONY: help api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend boardly-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc-check go-shape lint typecheck build infra-up infra-down infra-reset go-tools go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff
+.PHONY: help doctor dev api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
 
 .DEFAULT_GOAL := help
 
@@ -28,12 +28,25 @@ DEV_BIN_DIR := $(CURDIR)/.dev/bin
 GOLANGCI_LINT_VERSION := v2.12.2
 TOOLS_BIN := $(CURDIR)/.tools/bin
 GOLANGCI_LINT := $(TOOLS_BIN)/golangci-lint
+# The generator for server/pkg/db/generated, pinned and installed the same way.
+SQLC_VERSION := v1.31.1
+SQLC := $(TOOLS_BIN)/sqlc
+GOVULNCHECK_VERSION := v1.9.0
 
 # API origin the web and desktop clients target in local development.
-BOARDLY_WEB_API_URL ?= http://127.0.0.1:8788
+ZENITH_TEAM_WEB_API_URL ?= http://127.0.0.1:8788
 
 help:
-	@echo "Local development (run each in its own terminal):"
+	@echo "Self-hosting (Docker; guide: SELF_HOSTING.md):"
+	@echo "  make selfhost-env   Write deploy/.env with generated secrets (never overwrites)"
+	@echo "  make selfhost-up    Build and start the stack; open http://localhost:8080"
+	@echo "  make selfhost-status | selfhost-logs  Show the containers or follow their logs"
+	@echo "  make selfhost-down  Stop the stack, keep its data volumes"
+	@echo ""
+	@echo "Local development:"
+	@echo "  make doctor      Check the tools local development needs"
+	@echo "  make dev         Start infra, then the API and the web app in this terminal"
+	@echo "  Or run each in its own terminal:"
 	@echo "  make server-local Run the Go API with services configured in server/.env (:8788)"
 	@echo "  make infra-up    Start PostgreSQL 17 + Redis + Silo (+ LiveKit when HUDDLES_ENABLED='true')"
 	@echo "  make server      Run the Go API with docker/dev.env, then your docker/dev.local.env overrides"
@@ -42,12 +55,12 @@ help:
 	@echo "  make voice-setup Create voice-agent/.env for the local stack    make voice-doctor  Check it before a call"
 	@echo "  make voice-start Run the local voice worker in this terminal (no background process)"
 	@echo "  make voice-status | voice-stop  Inspect or gracefully stop this checkout's voice worker"
-	@echo "  make boardly-mcp-dev  Build boardly-mcp into .dev/bin for daemon injection"
+	@echo "  make zenith-team-mcp-dev  Build zenith-team-mcp into .dev/bin for daemon injection"
 	@echo "  make infra-down  Stop infra, keep volumes    make infra-reset  Stop and wipe volumes"
 	@echo ""
 	@echo "Agent debugging (local only):"
 	@echo "  make debug-app       Launch the Desktop app in debug mode"
-	@echo "  zen daemon logs -f  Follow logs for a daemon in the selected BOARDLY_HOME"
+	@echo "  zen daemon logs -f  Follow logs for a daemon in the selected ZENITH_TEAM_HOME"
 	@echo ""
 	@echo "Verification:"
 	@echo "  make gate        Full release-quality gate    make go-gate  Go arch/build/vet/test -race"
@@ -55,20 +68,58 @@ help:
 	@echo "  make go-integration  Only the -tags=integration suites, on a shared PostgreSQL container"
 	@echo "  make go-test     Go tests with one shared PostgreSQL container (GO_TEST_ARGS='./path -run TestName')"
 	@echo "  make go-fmt      Format all Go code (gofumpt + goimports via golangci-lint)"
+	@echo "  make go-fmt-check  Fail on unformatted Go code (what CI runs)"
 	@echo "  make go-lint     Lint Go code    make go-lint-fix  Lint with autofix"
+	@echo "  make go-sqlc     Regenerate server/pkg/db/generated    make go-sqlc-check  Check drift"
+	@echo "  make go-vuln     Scan Go dependencies for known vulnerabilities"
+	@echo "  make voice-gate  Lint, format check and tests for voice-agent/ (needs uv)"
 	@echo "  make lint | typecheck | build   (all run in frontend/)"
 	@echo "  make api-lint    Validate docs/api/spec/openapi.yaml   make api-docs  Browse it locally"
 	@echo "  make api-generate  Regenerate TypeScript API types    make api-types-check  Check drift"
 	@echo ""
 	@echo "Platform bundles (ADR 0016; your own git credentials, PLUGINS_REPO=<url-or-path> to override):"
-	@echo "  make bundle-bump TAG=<plugin>--vX.Y.Z  Pin a boardly-plugins release; summary in .dev/bundle-bump.md"
+	@echo "  make bundle-bump TAG=<plugin>--vX.Y.Z  Pin a plugins-repo release; summary in .dev/bundle-bump.md"
 	@echo "  make tools-prepare  Download verified npm skills into ignored build assets"
 	@echo "  make bundle-verify  Re-import every pinned tag and require identical bytes"
-	@echo "  make bundle-local   Pin a local checkout for development (PLUGINS=../boardly-plugins PLUGIN=zenith-workflows)"
+	@echo "  make bundle-local   Pin a local checkout for development (PLUGINS=<plugins checkout> PLUGIN=zenith-workflows)"
 	@echo "  make bundle-check   Validate a local plugin folder with the server's rules (PLUGINS, PLUGIN as above)"
 	@echo "  make bundle-diff    Show what the pin changes against BASE (default origin/main)"
 	@echo ""
 	@echo "Full walkthrough: docs/quickstart.md"
+
+# Checks the tools local development needs. Required tools fail the check;
+# optional ones only print a hint.
+doctor:
+	@fail=0; \
+	need() { if command -v "$$1" >/dev/null 2>&1; then echo "  ok       $$1"; else echo "  missing  $$1 - $$2"; fail=1; fi; }; \
+	want() { if command -v "$$1" >/dev/null 2>&1; then echo "  ok       $$1"; else echo "  optional $$1 - $$2"; fi; }; \
+	echo "Required:"; \
+	need go "install Go $$(sed -n 's/^go //p' server/go.mod) or newer: https://go.dev/dl/"; \
+	need node "install Node.js $$(cat .nvmrc) (see .nvmrc)"; \
+	need pnpm "run: corepack enable"; \
+	need docker "install Docker with Compose v2"; \
+	need openssl "needed by make selfhost-env"; \
+	if command -v go >/dev/null 2>&1; then \
+		have="$$(go env GOVERSION | sed 's/^go//')"; want_go="$$(sed -n 's/^go //p' server/go.mod)"; \
+		if [ "$$(printf '%s\n%s\n' "$$want_go" "$$have" | sort -V | head -1)" != "$$want_go" ]; then \
+			echo "  old      go $$have - server/go.mod needs $$want_go"; fail=1; fi; fi; \
+	if command -v node >/dev/null 2>&1 && [ "$$(node -p 'process.versions.node.split(".")[0]')" != "$$(cat .nvmrc)" ]; then \
+		echo "  other    node $$(node -v) - .nvmrc pins $$(cat .nvmrc)"; fi; \
+	if command -v docker >/dev/null 2>&1 && ! docker compose version >/dev/null 2>&1; then \
+		echo "  missing  docker compose v2 plugin"; fail=1; fi; \
+	echo "Optional:"; \
+	want uv "voice-agent/ and make voice-gate: https://docs.astral.sh/uv/"; \
+	if command -v codex >/dev/null 2>&1 || command -v claude >/dev/null 2>&1; then \
+		echo "  ok       agent CLI ($$(command -v codex >/dev/null 2>&1 && echo codex) $$(command -v claude >/dev/null 2>&1 && echo claude))"; \
+	else echo "  optional codex or claude - the daemon needs one to run agents"; fi; \
+	[ -d frontend/node_modules ] || echo "  todo     run: pnpm --dir frontend install"; \
+	[ -f server/.env ] || [ -f docker/dev.env ] || echo "  todo     no server env file found"; \
+	exit $$fail
+
+# Infra, the API and the web app in one terminal. Ctrl-C stops the API and
+# the web app; infra keeps running until `make infra-down`.
+dev: infra-up
+	@$(MAKE) --no-print-directory -j2 server frontend
 
 # Go API from source against `make infra-up`, including Redis and Silo.
 server:
@@ -81,21 +132,21 @@ server:
 server-local:
 	@cd server && set -a && source .env && set +a && exec go run ./cmd/server
 
-# The client app under frontend/ — a separate pnpm workspace (ii-company), so
+# The client app under frontend/ — a separate pnpm workspace (zenith-team), so
 # run `cd frontend && pnpm install` once before the first start.
 frontend:
 	cd frontend && pnpm dev
 
-# Desktop development stages boardly-mcp automatically. This target builds a
+# Desktop development stages zenith-team-mcp automatically. This target builds a
 # standalone copy at a stable, git-ignored path for a manually launched daemon
-# processes; point BOARDLY_MCP_EXECUTABLE at this exact binary.
-boardly-mcp-dev:
+# processes; point ZENITH_TEAM_MCP_EXECUTABLE at this exact binary.
+zenith-team-mcp-dev:
 	mkdir -p $(DEV_BIN_DIR)
-	cd server && go build -o $(DEV_BIN_DIR)/boardly-mcp ./cmd/mcp
+	cd server && go build -o $(DEV_BIN_DIR)/zenith-team-mcp ./cmd/mcp
 
 # Launch the Desktop app with its debug configuration. The daemon is detached;
 # inspect it separately with `zen daemon logs -f` under the Desktop-owned
-# BOARDLY_HOME.
+# ZENITH_TEAM_HOME.
 debug-app:
 	cd frontend && pnpm electron:dev:debug
 
@@ -117,34 +168,44 @@ go-shape: tools-prepare
 		find server -type f -name '*.go' ! -path 'server/tests/testpostgres/*' -exec grep -nH -E 'testcontainers-go/modules/postgres|postgres:[0-9]' {} + | sed 's/^/  /'; fail=1; fi; \
 	if ! zen_deps="$$(cd server && go list -deps ./cmd/zen)"; then \
 		echo "go list -deps ./cmd/zen failed; the zen CLI link set cannot be checked"; fail=1; \
-	elif printf '%s\n' "$$zen_deps" | grep -qx 'boardly.dev/boardly/server/internal/platformbundle'; then \
+	elif printf '%s\n' "$$zen_deps" | grep -qx 'github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle'; then \
 		echo "cmd/zen links internal/platformbundle; the zen CLI must never link Workflow bundle bytes (ADR 0016):"; \
-		(cd server && go list -deps -f '{{$$p := .ImportPath}}{{range .Imports}}{{if eq . "boardly.dev/boardly/server/internal/platformbundle"}}{{$$p}} imports it{{"\n"}}{{end}}{{end}}' ./cmd/zen) | sed 's/^/  /'; fail=1; fi; \
+		(cd server && go list -deps -f '{{$$p := .ImportPath}}{{range .Imports}}{{if eq . "github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"}}{{$$p}} imports it{{"\n"}}{{end}}{{end}}' ./cmd/zen) | sed 's/^/  /'; fail=1; fi; \
 	if find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name .DS_Store | grep -q .; then \
 		echo "server/internal/mcp/tools/builtin holds only zenith-platform; pinned platform content lives in internal/platformbundle (ADR 0016):"; \
 		find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name .DS_Store | sed 's/^/  /'; fail=1; fi; \
 	exit $$fail
 
-# sqlc.yaml names its input and output directories in two separate keys, and a
-# stale one regenerates an empty package rather than failing. Nothing else in
-# the gate reads sqlc.yaml, so without this a bad path lands green and the
-# breakage surfaces as missing query methods much later. Skipped when sqlc is
-# not installed, since it is not needed to build or test the committed output.
-go-sqlc-check:
-	@if command -v sqlc >/dev/null 2>&1; then \
-		check_dir="$$(mktemp -d)"; \
-		trap 'rm -rf "$$check_dir"' EXIT; \
-		mkdir -p "$$check_dir/server/pkg/db"; \
-		cp server/sqlc.yaml "$$check_dir/server/sqlc.yaml"; \
-		cp -R server/migrations "$$check_dir/server/migrations"; \
-		cp -R server/pkg/db/queries "$$check_dir/server/pkg/db/queries"; \
-		cd "$$check_dir/server" && sqlc generate; \
-		cd "$(CURDIR)"; \
-		diff -ru server/pkg/db/generated "$$check_dir/server/pkg/db/generated" \
-			|| { echo "sqlc output is stale: run 'cd server && sqlc generate'"; exit 1; }; \
-	else \
-		echo "sqlc not installed; skipping generated-code drift check"; \
+# Install the pinned sqlc into .tools/bin when missing or outdated.
+sqlc-tool:
+	@installed="$$($(SQLC) version 2>/dev/null || true)"; \
+	if [ "$$installed" != "$(SQLC_VERSION)" ]; then \
+		echo "Installing sqlc $(SQLC_VERSION) -> $(TOOLS_BIN)"; \
+		GOBIN=$(TOOLS_BIN) GOFLAGS= go install github.com/sqlc-dev/sqlc/cmd/sqlc@$(SQLC_VERSION); \
 	fi
+
+# Regenerate server/pkg/db/generated after a migration or query change.
+go-sqlc: sqlc-tool
+	cd server && $(SQLC) generate
+
+# Regenerates into a temporary copy and fails when the committed output
+# differs: a query or migration changed without `make go-sqlc`, or sqlc.yaml
+# points at a stale directory (which regenerates an empty package instead of
+# failing). Uses the pinned sqlc, so it never skips.
+go-sqlc-check: sqlc-tool
+	@check_dir="$$(mktemp -d)"; \
+	trap 'rm -rf "$$check_dir"' EXIT; \
+	mkdir -p "$$check_dir/server/pkg/db"; \
+	cp server/sqlc.yaml "$$check_dir/server/sqlc.yaml"; \
+	cp -R server/migrations "$$check_dir/server/migrations"; \
+	cp -R server/pkg/db/queries "$$check_dir/server/pkg/db/queries"; \
+	(cd "$$check_dir/server" && $(SQLC) generate) || exit 1; \
+	diff -ru server/pkg/db/generated "$$check_dir/server/pkg/db/generated" \
+		|| { echo "sqlc output is stale: run 'make go-sqlc'"; exit 1; }
+
+# Known-vulnerability scan of the Go module, reachable code only.
+go-vuln: tools-prepare
+	cd server && GOFLAGS= go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 # Files named *_integration_test.go carry a `//go:build integration` tag, so they
 # compile only when the tag is passed. Untagged runs are the unit lane; adding
@@ -170,8 +231,10 @@ go-unit: go-shape go-sqlc-check
 # rather than subtracting them, so this necessarily re-runs the unit tests too --
 # there is no tag expression that selects the tagged files alone. That overlap is
 # the price of the tag split, and it is why this is not on the merge path.
+# A package can need more than go test's default 10 minutes on a loaded
+# machine: the suites share one PostgreSQL container.
 go-integration: tools-prepare
-	cd server && go run ./tests/testpostgres go test -count=1 -race -tags=integration ./...
+	cd server && go run ./tests/testpostgres go test -count=1 -race -timeout 30m -tags=integration ./...
 
 GO_TEST_ARGS ?= ./...
 
@@ -194,14 +257,18 @@ go-fmt: go-tools
 go-fmt-check: go-tools
 	cd server && $(GOLANGCI_LINT) fmt --diff ./...
 
+# GO_LINT_ARGS adds flags, e.g. --new-from-merge-base=origin/main to report
+# only findings a branch introduces.
+GO_LINT_ARGS ?=
+
 go-lint: go-tools tools-prepare
-	cd server && $(GOLANGCI_LINT) run ./...
+	cd server && $(GOLANGCI_LINT) run $(GO_LINT_ARGS) ./...
 
 go-lint-fix: go-tools tools-prepare
 	cd server && $(GOLANGCI_LINT) run --fix ./...
 
 # --- Platform bundles (ADR 0016) ---------------------------------------------
-# boardly pins each boardly-plugins release it ships: Workflows use a tar and
+# zenith-team pins each boardly-plugins release it ships: Workflows use a tar and
 # lock in internal/platformbundle; managed Tools use a single metadata lock in
 # internal/daemon/tool_releases. bundlectl (server/cmd/bundlectl)
 # imports, verifies and diffs them with your own git credentials (for GitHub,
@@ -323,6 +390,39 @@ typecheck:
 
 build:
 	cd frontend && pnpm build
+
+SELFHOST_COMPOSE := docker compose -f deploy/docker-compose.production.yml
+SELFHOST_ENV := deploy/.env
+SELFHOST_SECRETS := APP_POSTGRES_PASSWORD AUTH_CSRF_SECRET STORAGE_S3_SECRET_ACCESS_KEY
+
+# Copy the template and fill each generated secret; an existing file is never
+# touched, so rotating a secret is always a deliberate edit.
+selfhost-env:
+	@if [ -e $(SELFHOST_ENV) ]; then echo "$(SELFHOST_ENV) already exists; edit it or move it away first"; exit 1; fi
+	@command -v openssl >/dev/null || { echo "openssl is required to generate secrets"; exit 1; }
+	@cp deploy/production.env.example $(SELFHOST_ENV)
+	@for key in $(SELFHOST_SECRETS); do \
+		value="$$(openssl rand -hex 32)"; \
+		sed -i.bak "s|^$$key=$$|$$key=$$value|" $(SELFHOST_ENV); \
+	done
+	@rm -f $(SELFHOST_ENV).bak
+	@chmod 600 $(SELFHOST_ENV)
+	@echo "Wrote $(SELFHOST_ENV) with generated secrets. Review it, then run: make selfhost-up"
+
+selfhost-up:
+	@test -f $(SELFHOST_ENV) || { echo "$(SELFHOST_ENV) is missing; run: make selfhost-env"; exit 1; }
+	@docker compose version >/dev/null 2>&1 || { echo "Docker Compose v2 is required (the 'docker compose' command)"; exit 1; }
+	$(SELFHOST_COMPOSE) up -d --build --wait
+	@echo "Zenith Team is running at http://localhost:$${APP_WEB_PORT:-8080}"
+
+selfhost-status:
+	$(SELFHOST_COMPOSE) ps
+
+selfhost-logs:
+	$(SELFHOST_COMPOSE) logs -f --tail=200
+
+selfhost-down:
+	$(SELFHOST_COMPOSE) down
 
 infra-up:
 	$(COMPOSE) up -d --wait --remove-orphans postgres redis silo $(if $(filter true,$(HUDDLES_ENABLED)),livekit,)

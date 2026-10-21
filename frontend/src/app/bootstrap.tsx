@@ -13,23 +13,9 @@ import {
   removeStorageItem,
 } from "@/shared/lib/browser-storage";
 
-export async function renderApp() {
-  for (const origin of [
-    "https://fonts.googleapis.com",
-    "https://fonts.gstatic.com",
-  ]) {
-    const link = document.createElement("link");
-    link.rel = "preconnect";
-    link.href = origin;
-    link.crossOrigin = "anonymous";
-    document.head.append(link);
-  }
-  const fonts = document.createElement("link");
-  fonts.rel = "stylesheet";
-  fonts.href =
-    "https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&family=Geist+Pixel&display=swap";
-  document.head.append(fonts);
+import "./fonts/geist-fonts.css";
 
+export async function renderApp() {
   const errorReporting = await initializeDesktopErrorReporting();
   await hydrateStoredAccessToken();
 

@@ -11,18 +11,18 @@
   );
 }
 
-.boardly-workspace-theme[data-boardly-theme] .collection-page {
+.zenith-team-workspace-theme[data-zenith-team-theme] .collection-page {
   padding: 0;
   background: var(--collection-surface);
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .collection-page
   > .workspace-page-frame__header {
   background: var(--collection-surface);
 }
 
-.boardly-workspace-theme[data-boardly-theme]
+.zenith-team-workspace-theme[data-zenith-team-theme]
   .collection-page
   > .workspace-page-frame__content {
   container: collection-content / inline-size;

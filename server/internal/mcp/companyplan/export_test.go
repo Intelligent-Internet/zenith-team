@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/mcp/apiclient"
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/apiclient"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 // exportAgentID is the Agent that does the fixture Tasks' work, and
@@ -43,7 +43,7 @@ func agentTask(task taskResponse, agentID string) servedTask {
 func TestExportBuildsTaskOnlyStableYAML(t *testing.T) {
 	t.Parallel()
 	api := fakeAPI{responses: map[string]any{
-		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "boardly"}}},
+		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}}},
 		"/companies/company-id/tasks": servedTaskPage{Items: []servedTask{
 			agentTask(taskResponse{
 				ProjectID:     "0198aa00-0000-7000-8000-00000000c001",
@@ -85,12 +85,12 @@ func TestExportBuildsTaskOnlyStableYAML(t *testing.T) {
 		},
 	}}
 
-	result, err := Export(context.Background(), api, "boardly")
+	result, err := Export(context.Background(), api, "zenith-team")
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
 	want := `format_version: 5
-company: boardly
+company: zenith-team
 projects:
   - key: work
     title: Work
@@ -126,7 +126,7 @@ func TestExportReadsCompleteTaskCollection(t *testing.T) {
 	t.Parallel()
 	api := fakeAPI{responses: map[string]any{
 		"/companies": companyCollection{
-			Items: []companyResponse{{ID: "company-id", Slug: "boardly"}},
+			Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}},
 		},
 		"/companies/company-id/tasks": servedTaskPage{
 			Items: []servedTask{
@@ -160,7 +160,7 @@ func TestExportReadsCompleteTaskCollection(t *testing.T) {
 		},
 	}}
 
-	result, err := Export(context.Background(), api, "boardly")
+	result, err := Export(context.Background(), api, "zenith-team")
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
@@ -176,7 +176,7 @@ func TestExportLeavesATaskItsAssigneeDoesWithoutAnAgent(t *testing.T) {
 	member := actorRef{Kind: "user", ID: exportMemberID}
 	api := fakeAPI{responses: map[string]any{
 		"/companies": companyCollection{
-			Items: []companyResponse{{ID: "company-id", Slug: "boardly"}},
+			Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}},
 		},
 		"/companies/company-id/tasks": servedTaskPage{
 			Items: []servedTask{{
@@ -198,7 +198,7 @@ func TestExportLeavesATaskItsAssigneeDoesWithoutAnAgent(t *testing.T) {
 		},
 	}}
 
-	result, err := Export(context.Background(), api, "boardly")
+	result, err := Export(context.Background(), api, "zenith-team")
 	if err != nil || !strings.Contains(string(result), `agent_id: ""`) {
 		t.Fatalf("Export() result = %s, error = %v", result, err)
 	}
@@ -208,12 +208,15 @@ func TestExportAcceptsEmptyTaskCollection(t *testing.T) {
 	t.Parallel()
 	api := fakeAPI{responses: map[string]any{
 		"/companies": companyCollection{
-			Items: []companyResponse{{ID: "company-id", Slug: "boardly"}},
+			Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}},
 		},
 		"/companies/company-id/tasks": taskPage{Items: []taskResponse{}},
 	}}
-	result, err := Export(context.Background(), api, "boardly")
-	if err != nil || string(result) != "format_version: 5\ncompany: boardly\nprojects:\n  - key: work\n    title: Work\n    description: \"\"\n    archived: false\ntasks: []\n" {
+	result, err := Export(context.Background(), api, "zenith-team")
+	if err != nil ||
+		string(
+			result,
+		) != "format_version: 5\ncompany: zenith-team\nprojects:\n  - key: work\n    title: Work\n    description: \"\"\n    archived: false\ntasks: []\n" {
 		t.Fatalf("Export() result = %s, error = %v", result, err)
 	}
 }
@@ -226,7 +229,7 @@ func TestExportMarksReadOnlyProjectsAndPlansLeaveThemAlone(t *testing.T) {
 	t.Parallel()
 	const sharedID = "0198aa00-0000-7000-8000-00000000c002"
 	api := fakeAPI{responses: map[string]any{
-		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "boardly"}}},
+		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}}},
 		"/companies/company-id/projects?include_archived=true": map[string]any{"items": []any{
 			map[string]any{
 				"id": "0198aa00-0000-7000-8000-00000000c001", "key": "work", "title": "Work",
@@ -241,20 +244,33 @@ func TestExportMarksReadOnlyProjectsAndPlansLeaveThemAlone(t *testing.T) {
 		}},
 		"/companies/company-id/tasks": servedTaskPage{Items: []servedTask{
 			agentTask(taskResponse{
-				ProjectID: sharedID, ID: "task-shared-id", Key: "shared_notes", MilestoneType: "product",
-				Title: "Shared notes", Description: "", Status: "todo", Priority: "medium", Revision: 1,
+				ProjectID:     sharedID,
+				ID:            "task-shared-id",
+				Key:           "shared_notes",
+				MilestoneType: "product",
+				Title:         "Shared notes",
+				Description:   "",
+				Status:        "todo",
+				Priority:      "medium",
+				Revision:      1,
 			}, exportAgentID),
 		}},
 		"/companies/company-id/tasks/task-shared-id/dependencies": dependencySetResponse{
 			BlockedBy: []dependencyResponse{},
 		},
 	}}
-	exported, err := Export(context.Background(), api, "boardly")
+	exported, err := Export(context.Background(), api, "zenith-team")
 	if err != nil {
 		t.Fatalf("Export() error = %v", err)
 	}
-	if !strings.Contains(string(exported), "  - key: shared\n    title: Shared\n    description: \"\"\n    archived: false\n    read_only: true\n") ||
-		strings.Contains(string(exported), "key: work\n    title: Work\n    description: \"\"\n    archived: false\n    read_only") {
+	if !strings.Contains(
+		string(exported),
+		"  - key: shared\n    title: Shared\n    description: \"\"\n    archived: false\n    read_only: true\n",
+	) ||
+		strings.Contains(
+			string(exported),
+			"key: work\n    title: Work\n    description: \"\"\n    archived: false\n    read_only",
+		) {
 		t.Fatalf("Export() did not mark only the shared Project read-only:\n%s", exported)
 	}
 
@@ -266,14 +282,14 @@ func TestExportMarksReadOnlyProjectsAndPlansLeaveThemAlone(t *testing.T) {
 		return document
 	}
 	_, err = PlanActions(context.Background(), api, transaction(`{
-		"kind": "company_plan_transaction", "formatVersion": 5, "company": "boardly",
+		"kind": "company_plan_transaction", "formatVersion": 5, "company": "zenith-team",
 		"actions": [{"id": "rename", "operation": "update", "entity": "task", "key": "shared_notes",
 			"set": {"title": "Renamed notes"}}]}`), time.Now())
 	if err == nil || !strings.Contains(err.Error(), `you may read Project "shared" but not change its Tasks`) {
 		t.Fatalf("PlanActions(update in a read-only Project) error = %v", err)
 	}
 	artifact, err := PlanActions(context.Background(), api, transaction(`{
-		"kind": "company_plan_transaction", "formatVersion": 5, "company": "boardly",
+		"kind": "company_plan_transaction", "formatVersion": 5, "company": "zenith-team",
 		"actions": [{"id": "add", "operation": "create", "entity": "task", "key": "work_item",
 			"values": {"projectKey": "work", "title": "Work item", "description": "Do it.", "priority": "medium",
 				"agentId": "`+exportAgentID+`", "milestoneType": "product", "dependsOn": []}}]}`), time.Now())
@@ -298,7 +314,12 @@ type fakeAPI struct {
 func (a fakeAPI) FetchRunJSON(_ context.Context, path string, destination any) error {
 	_, served := a.responses[path]
 	if strings.HasSuffix(path, "/projects?include_archived=true") && !served {
-		return json.Unmarshal([]byte(`{"items":[{"id":"0198aa00-0000-7000-8000-00000000c001","key":"work","title":"Work","description":"","revision":1,"archivedAt":null,"access":{"permissions":["project.read","project.tasks.write"]}}]}`), destination)
+		return json.Unmarshal(
+			[]byte(
+				`{"items":[{"id":"0198aa00-0000-7000-8000-00000000c001","key":"work","title":"Work","description":"","revision":1,"archivedAt":null,"access":{"permissions":["project.read","project.tasks.write"]}}]}`,
+			),
+			destination,
+		)
 	}
 
 	response, ok := a.responses[path]
@@ -312,18 +333,16 @@ func (a fakeAPI) FetchRunJSON(_ context.Context, path string, destination any) e
 	return json.Unmarshal(encoded, destination)
 }
 
-func stringPointer(value string) *string { return &value }
-
-// The export reads as the Run, over the daemon's Run channel: boardly-mcp
+// The export reads as the Run, over the daemon's Run channel: zenith-team-mcp
 // sends the channel capability and never a bearer or the Run token, and the
-// daemon adds the proof the server bounds the export by (Access TECH B3b,
-// B6). The fake channel stands in for the daemon and answers each read the
-// way the daemon relays the server's.
+// daemon adds the proof the server bounds the export by. The fake channel
+// stands in for the daemon and answers each read the way the daemon relays
+// the server's.
 func TestExportReadsEveryPlanInputThroughTheRunChannel(t *testing.T) {
 	t.Parallel()
 	const capability = "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"
 	responses := map[string]any{
-		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "boardly"}}},
+		"/companies": companyCollection{Items: []companyResponse{{ID: "company-id", Slug: "zenith-team"}}},
 		"/companies/company-id/projects?include_archived=true": map[string]any{"items": []any{map[string]any{
 			"id": "0198aa00-0000-7000-8000-00000000c001", "key": "work", "title": "Work", "description": "",
 			"revision": 1,
@@ -343,8 +362,8 @@ func TestExportReadsEveryPlanInputThroughTheRunChannel(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != runchannel.AuthorizationScheme+" "+capability {
 			t.Errorf("Authorization = %q, want the Run capability and never a bearer", got)
 		}
-		if r.Header.Get("X-Boardly-Run-Token") != "" {
-			t.Error("boardly-mcp sent the Run token")
+		if r.Header.Get("X-Zenith-Team-Run-Token") != "" {
+			t.Error("zenith-team-mcp sent the Run token")
 		}
 		var request runchannel.Request
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {

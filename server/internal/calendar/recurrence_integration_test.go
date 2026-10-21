@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
 func TestCustomRecurrencePersistsAndRemindsOnlyScheduledOccurrences(t *testing.T) {
@@ -21,7 +21,12 @@ func TestCustomRecurrencePersistsAndRemindsOnlyScheduledOccurrences(t *testing.T
 		t.Fatal(err)
 	}
 	f := dbtest.SeedFixture(t, ctx, pool)
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`, f.CompanyA, f.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'member','active')`,
+		f.CompanyA,
+		f.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	store, err := db.NewStore(pool)
@@ -31,12 +36,26 @@ func TestCustomRecurrencePersistsAndRemindsOnlyScheduledOccurrences(t *testing.T
 	s := newCalendarTestService(t, store)
 	actor := auth.UserPrincipal{UserID: f.UserA}
 	count, lead := int32(3), int32(10)
-	input := Input{Type: "event", Title: "Alternating team review", Color: "sage", StartLocal: "2026-09-23T09:00", EndLocal: "2026-09-23T10:00", TimeZone: "UTC", Recurrence: "weekly", RecurrenceInterval: 2, RecurrenceWeekdays: []int32{5, 1}, RecurrenceCount: &count, ReminderMinutes: &lead}
+	input := Input{
+		Type:               "event",
+		Title:              "Alternating team review",
+		Color:              "sage",
+		StartLocal:         "2026-09-23T09:00",
+		EndLocal:           "2026-09-23T10:00",
+		TimeZone:           "UTC",
+		Recurrence:         "weekly",
+		RecurrenceInterval: 2,
+		RecurrenceWeekdays: []int32{5, 1},
+		RecurrenceCount:    &count,
+		ReminderMinutes:    &lead,
+	}
 	event, err := s.Create(ctx, actor, input)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if event.RecurrenceInterval != 2 || !slices.Equal(event.RecurrenceWeekdays, []int32{1, 5}) || event.RecurrenceCount == nil || *event.RecurrenceCount != 3 {
+	if event.RecurrenceInterval != 2 || !slices.Equal(event.RecurrenceWeekdays, []int32{1, 5}) ||
+		event.RecurrenceCount == nil ||
+		*event.RecurrenceCount != 3 {
 		t.Fatalf("custom rule not preserved: %+v", event)
 	}
 	from := time.Date(2026, 9, 23, 0, 0, 0, 0, time.UTC)
@@ -64,10 +83,14 @@ func TestCustomRecurrencePersistsAndRemindsOnlyScheduledOccurrences(t *testing.T
 	}
 	var notices int
 	var finished bool
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE entity_id=$1 AND kind='calendar_reminder'`, event.ID).Scan(&notices); err != nil || notices != 3 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM inbox_items WHERE entity_id=$1 AND kind='calendar_reminder'`, event.ID).
+		Scan(&notices); err != nil ||
+		notices != 3 {
 		t.Fatalf("reminders = %d, %v; want 3", notices, err)
 	}
-	if err := pool.QueryRow(ctx, `SELECT reminder_next_at IS NULL FROM calendar_events WHERE id=$1`, event.ID).Scan(&finished); err != nil || !finished {
+	if err := pool.QueryRow(ctx, `SELECT reminder_next_at IS NULL FROM calendar_events WHERE id=$1`, event.ID).
+		Scan(&finished); err != nil ||
+		!finished {
 		t.Fatalf("counted reminder exhausted = %v, %v", finished, err)
 	}
 	input.ExpectedRevision = event.Revision

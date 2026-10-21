@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/mcp/companyplan"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/companyplan"
 )
 
 const testCompanyID = "019f8458-e642-73a3-8702-adbfa0beedb2"
@@ -56,7 +56,7 @@ func TestExportRequiresExactlyOneCompanyAndWritesYAML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadFile() error = %v", err)
 	}
-	if string(contents) != "format_version: 5\ncompany: boardly-local\nprojects: []\ntasks: []\n" {
+	if string(contents) != "format_version: 5\ncompany: zenith-team-local\nprojects: []\ntasks: []\n" {
 		t.Fatalf("exported YAML = %q", contents)
 	}
 	if _, err := service.Export(
@@ -106,7 +106,7 @@ func TestExportRejectsMultipleCompanies(t *testing.T) {
 func TestListAgentsReturnsActiveAgentsRootFirst(t *testing.T) {
 	t.Parallel()
 	service := NewCompanyPlanService(&apiStub{responses: map[string]string{
-		"/companies": `{"items":[{"id":"` + testCompanyID + `","slug":"boardly-local"}]}`,
+		"/companies": `{"items":[{"id":"` + testCompanyID + `","slug":"zenith-team-local"}]}`,
 		"/companies/" + testCompanyID + "/agents": `{"items":[
 			{"id":"0198aa00-0000-7000-8000-00000000a002","name":"Eli","title":"Engineering Agent","instructions":"Ship the product.","reportsTo":{"id":"0198aa00-0000-7000-8000-00000000a001","name":"Andrew"},"runtimeAvailable":true,"archivedAt":null},
 			{"id":"0198aa00-0000-7000-8000-00000000a003","name":"Lily","title":"Finance Agent","instructions":"","reportsTo":{"id":"0198aa00-0000-7000-8000-00000000a001","name":"Andrew"},"runtimeAvailable":true,"archivedAt":"2026-09-01T00:00:00Z"},
@@ -118,7 +118,7 @@ func TestListAgentsReturnsActiveAgentsRootFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListAgents() error = %v", err)
 	}
-	if result.CompanyID != testCompanyID || result.CompanySlug != "boardly-local" ||
+	if result.CompanyID != testCompanyID || result.CompanySlug != "zenith-team-local" ||
 		result.TotalCount != 2 || len(result.Agents) != 2 ||
 		result.Agents[0].AgentID != "0198aa00-0000-7000-8000-00000000a001" || !result.Agents[0].IsRoot ||
 		result.Agents[0].RuntimeAvailable ||
@@ -127,13 +127,14 @@ func TestListAgentsReturnsActiveAgentsRootFirst(t *testing.T) {
 		t.Fatalf("ListAgents() result = %+v", result)
 	}
 }
+
 func TestPreviewRejectsNonCanonicalActionsFilename(t *testing.T) {
 	t.Parallel()
 	directory := t.TempDir()
 	actionsPath := filepath.Join(directory, "alternate-actions.yaml")
 	if err := os.WriteFile(
 		actionsPath,
-		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\nactions: []\n"),
+		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\nactions: []\n"),
 		0o644,
 	); err != nil {
 		t.Fatal(err)
@@ -151,7 +152,7 @@ func TestPreviewRequiresDraftInsideConfiguredWorkspace(t *testing.T) {
 	outsideRoot := t.TempDir()
 	outsidePath := filepath.Join(outsideRoot, companyPlanActionsFilename)
 	contents := []byte(
-		"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\nactions: []\n",
+		"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\nactions: []\n",
 	)
 	if err := os.WriteFile(outsidePath, contents, 0o644); err != nil {
 		t.Fatal(err)
@@ -253,7 +254,7 @@ func TestPreviewAndApplyUseSameActionYAML(t *testing.T) {
 	actionsPath := filepath.Join(directory, companyPlanActionsFilename)
 	if err := os.WriteFile(
 		actionsPath,
-		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\nactions: []\n"),
+		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\nactions: []\n"),
 		0o644,
 	); err != nil {
 		t.Fatal(err)
@@ -311,7 +312,7 @@ func TestApplyInstructionReflectsApprovalStatus(t *testing.T) {
 			if err := os.WriteFile(
 				actionsPath,
 				[]byte(
-					"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\nactions: []\n",
+					"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\nactions: []\n",
 				),
 				0o644,
 			); err != nil {
@@ -340,7 +341,7 @@ func TestPresentChangesExposesCancelInsteadOfStatusUpdate(t *testing.T) {
 	t.Parallel()
 	transaction, _, err := companyplan.ParseActions([]byte(`kind: company_plan_transaction
 format_version: 5
-company: boardly-local
+company: zenith-team-local
 actions:
   - {id: cancel_task, operation: cancel, entity: task, key: task}
 `))
@@ -372,7 +373,7 @@ func TestApplyRequiresUnchangedPreview(t *testing.T) {
 	actionsPath := filepath.Join(directory, companyPlanActionsFilename)
 	if err := os.WriteFile(
 		actionsPath,
-		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\nactions: []\n"),
+		[]byte("kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\nactions: []\n"),
 		0o644,
 	); err != nil {
 		t.Fatal(err)
@@ -392,7 +393,7 @@ func TestApplyRequiresUnchangedPreview(t *testing.T) {
 	if err := os.WriteFile(
 		actionsPath,
 		[]byte(
-			"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\ndescription: changed\nactions: []\n",
+			"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\ndescription: changed\nactions: []\n",
 		),
 		0o644,
 	); err != nil {
@@ -412,10 +413,10 @@ func TestNewPreviewSupersedesOlderPreviewOnSamePath(t *testing.T) {
 	directory := t.TempDir()
 	actionsPath := filepath.Join(directory, companyPlanActionsFilename)
 	first := []byte(
-		"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\ndescription: first\nactions: []\n",
+		"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\ndescription: first\nactions: []\n",
 	)
 	second := []byte(
-		"kind: company_plan_transaction\nformat_version: 5\ncompany: boardly-local\ndescription: second\nactions: []\n",
+		"kind: company_plan_transaction\nformat_version: 5\ncompany: zenith-team-local\ndescription: second\nactions: []\n",
 	)
 	if err := os.WriteFile(actionsPath, first, 0o644); err != nil {
 		t.Fatal(err)
@@ -444,7 +445,7 @@ func TestNewPreviewSupersedesOlderPreviewOnSamePath(t *testing.T) {
 
 func emptyCompanyPlanResponses() map[string]string {
 	return map[string]string{
-		"/companies": `{"items":[{"id":"` + testCompanyID + `","slug":"boardly-local"}]}`,
+		"/companies": `{"items":[{"id":"` + testCompanyID + `","slug":"zenith-team-local"}]}`,
 		"/companies/" + testCompanyID + "/projects?include_archived=true": `{"items":[]}`,
 		"/companies/" + testCompanyID + "/tasks":                          `{"items":[]}`,
 	}

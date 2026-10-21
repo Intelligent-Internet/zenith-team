@@ -9,13 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/middleware"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/middleware"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 func (h *Handler) registerCanvasRoutes(api *gin.RouterGroup) {
@@ -348,7 +348,12 @@ var canvasErrorMappings = []errorMapping{
 		"canvas_forbidden",
 	},
 	{canvas.ErrInvalid, http.StatusUnprocessableEntity, "Invalid canvas operation", "canvas_invalid"},
-	{canvas.ErrPageInvalidInsert, http.StatusUnprocessableEntity, "Invalid inserted block or destination. Use the native block shape from page_read. Headings and paragraphs cannot contain blocks: omit parentId for document-level siblings, and use afterId or beforeId to position them.", "page_invalid_insert"},
+	{
+		canvas.ErrPageInvalidInsert,
+		http.StatusUnprocessableEntity,
+		"Invalid inserted block or destination. Use the native block shape from page_read. Headings and paragraphs cannot contain blocks: omit parentId for document-level siblings, and use afterId or beforeId to position them.",
+		"page_invalid_insert",
+	},
 	{canvas.ErrConflict, http.StatusConflict, "The work changed. Refresh and try again.", "canvas_conflict"},
 	{
 		canvas.ErrLimit,

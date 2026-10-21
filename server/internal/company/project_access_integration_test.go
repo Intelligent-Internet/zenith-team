@@ -14,13 +14,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // projectAccessWorld is one Company with an owner (the fixture's UserA), a
@@ -77,8 +77,23 @@ func newProjectAccessWorld(t *testing.T) (context.Context, projectAccessWorld) {
 	w.member = auth.UserPrincipal{UserID: dbtest.NewUUID(t), CompanyID: w.f.CompanyA, Role: auth.CompanyRoleMember}
 	w.admin = auth.UserPrincipal{UserID: dbtest.NewUUID(t), CompanyID: w.f.CompanyA, Role: auth.CompanyRoleAdmin}
 	for _, person := range []auth.UserPrincipal{w.member, w.admin} {
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Person')`, person.UserID, person.UserID.String()+"@project-access.test")
-		dbtest.MustExec(t, ctx, pool, `INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`, w.f.CompanyA, person.UserID, string(person.Role))
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO users (id, email, display_name) VALUES ($1, $2, 'Person')`,
+			person.UserID,
+			person.UserID.String()+"@project-access.test",
+		)
+		dbtest.MustExec(
+			t,
+			ctx,
+			pool,
+			`INSERT INTO company_members (company_id, user_id, role) VALUES ($1, $2, $3)`,
+			w.f.CompanyA,
+			person.UserID,
+			string(person.Role),
+		)
 	}
 	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO runtimes (id, company_id, daemon_id, name, provider, status, owner_user_id, last_seen_at)
@@ -127,7 +142,11 @@ func (w projectAccessWorld) taskStatus(t *testing.T, ctx context.Context) string
 	return status
 }
 
-func (w projectAccessWorld) runOutcome(t *testing.T, ctx context.Context, runID uuid.UUID) (status, reason string, tokens int) {
+func (w projectAccessWorld) runOutcome(
+	t *testing.T,
+	ctx context.Context,
+	runID uuid.UUID,
+) (status, reason string, tokens int) {
 	t.Helper()
 	if err := w.pool.QueryRow(ctx, `
 		SELECT status, COALESCE(error, ''), (SELECT count(*) FROM run_tokens WHERE run_id = runs.id)
@@ -137,7 +156,13 @@ func (w projectAccessWorld) runOutcome(t *testing.T, ctx context.Context, runID 
 	return status, reason, tokens
 }
 
-func (w projectAccessWorld) grantActivity(t *testing.T, ctx context.Context, projectID uuid.UUID, action string, actor uuid.UUID) int {
+func (w projectAccessWorld) grantActivity(
+	t *testing.T,
+	ctx context.Context,
+	projectID uuid.UUID,
+	action string,
+	actor uuid.UUID,
+) int {
 	t.Helper()
 	var count int
 	if err := w.pool.QueryRow(ctx, `
@@ -152,7 +177,12 @@ func (w projectAccessWorld) grantActivity(t *testing.T, ctx context.Context, pro
 
 // lifecycleActivity counts the Project lifecycle rows of one action that name
 // the Project in project_id and keep its files and access out of the payload.
-func (w projectAccessWorld) lifecycleActivity(t *testing.T, ctx context.Context, projectID uuid.UUID, action string) int {
+func (w projectAccessWorld) lifecycleActivity(
+	t *testing.T,
+	ctx context.Context,
+	projectID uuid.UUID,
+	action string,
+) int {
 	t.Helper()
 	var count int
 	if err := w.pool.QueryRow(ctx, `
@@ -168,7 +198,12 @@ func (w projectAccessWorld) lifecycleActivity(t *testing.T, ctx context.Context,
 
 // feedShows reports whether the person's Activity feed lists the Project's
 // row of one action.
-func (w projectAccessWorld) feedShows(t *testing.T, ctx context.Context, userID, projectID uuid.UUID, action string) bool {
+func (w projectAccessWorld) feedShows(
+	t *testing.T,
+	ctx context.Context,
+	userID, projectID uuid.UUID,
+	action string,
+) bool {
 	t.Helper()
 	entries, _, err := activity.NewFeed(generated.New(w.pool)).List(ctx, w.f.CompanyA, activity.ListOptions{
 		UserID: userID, EntityType: "project", EntityID: projectID.String(), Action: action, Limit: 50,
@@ -182,7 +217,8 @@ func (w projectAccessWorld) feedShows(t *testing.T, ctx context.Context, userID,
 func (w projectAccessWorld) accessRevision(t *testing.T, ctx context.Context, projectID uuid.UUID) int64 {
 	t.Helper()
 	var revision int64
-	if err := w.pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, projectID).Scan(&revision); err != nil {
+	if err := w.pool.QueryRow(ctx, `SELECT access_version FROM projects WHERE id = $1`, projectID).
+		Scan(&revision); err != nil {
 		t.Fatal(err)
 	}
 	return revision
@@ -196,7 +232,8 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if created.Visibility != auth.ProjectVisibilityRestricted || !slices.Equal(created.Access.Permissions, auth.ProjectPermissions()) ||
+	if created.Visibility != auth.ProjectVisibilityRestricted ||
+		!slices.Equal(created.Access.Permissions, auth.ProjectPermissions()) ||
 		created.Files == nil {
 		t.Fatalf("created = %+v", created)
 	}
@@ -211,7 +248,12 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	if _, err := p.Authorize(ctx, w.member, created.ID); !errors.Is(err, auth.ErrProjectNotVisible) {
 		t.Fatalf("member Authorize = %v", err)
 	}
-	if items, err := p.List(ctx, w.member, true); err != nil || slices.ContainsFunc(items, func(v ProjectResponse) bool { return v.ID == created.ID }) {
+	if items, err := p.List(
+		ctx,
+		w.member,
+		true,
+	); err != nil ||
+		slices.ContainsFunc(items, func(v ProjectResponse) bool { return v.ID == created.ID }) {
 		t.Fatalf("member List = %+v, %v", items, err)
 	}
 	if items, err := p.ListForManageView(ctx, w.member, true); !errors.Is(err, ErrProjectForbidden) {
@@ -222,7 +264,8 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	if n := w.lifecycleActivity(t, ctx, created.ID, EventProjectCreated); n != 1 {
 		t.Fatalf("project.created Activity rows = %d, want 1", n)
 	}
-	if !w.feedShows(t, ctx, w.owner.UserID, created.ID, EventProjectCreated) || w.feedShows(t, ctx, w.member.UserID, created.ID, EventProjectCreated) {
+	if !w.feedShows(t, ctx, w.owner.UserID, created.ID, EventProjectCreated) ||
+		w.feedShows(t, ctx, w.member.UserID, created.ID, EventProjectCreated) {
 		t.Fatal("project.created must reach the reader and not the non-reader")
 	}
 	// Its frame carries the Project's settings only (no files, no access)
@@ -240,7 +283,12 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	slices.SortFunc(wantAudience, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
 	if lifecycle.ID != created.ID || lifecycle.Audience == nil || lifecycle.Audience.CompanyWide ||
 		!slices.Equal(lifecycle.Audience.UserIDs, wantAudience) {
-		t.Fatalf("project.created frame = %+v, audience %+v, want %v", lifecycle, lifecycle.Audience, wantAudience)
+		t.Fatalf(
+			"project.created frame = %+v, audience %+v, want %v",
+			lifecycle,
+			lifecycle.Audience,
+			wantAudience,
+		)
 	}
 
 	// An admin manages it through the bridge and sees metadata only.
@@ -253,18 +301,48 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 		t.Fatalf("bridge Get = %+v", bridged)
 	}
 	managed, err := p.ListForManageView(ctx, w.admin, false)
-	if err != nil || !slices.ContainsFunc(managed, func(v ProjectResponse) bool { return v.ID == created.ID && v.Files == nil }) {
+	if err != nil ||
+		!slices.ContainsFunc(
+			managed,
+			func(v ProjectResponse) bool { return v.ID == created.ID && v.Files == nil },
+		) {
 		t.Fatalf("admin manage view = %+v, %v", managed, err)
 	}
-	if _, err := p.ReplaceFiles(ctx, w.admin, created.ID, ProjectFilesInput{DocumentIDs: []uuid.UUID{}}, created.Revision); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := p.ReplaceFiles(
+		ctx,
+		w.admin,
+		created.ID,
+		ProjectFilesInput{DocumentIDs: []uuid.UUID{}},
+		created.Revision,
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("bridge files = %v", err)
 	}
 	company := auth.ProjectVisibilityCompany
-	if _, err := p.Update(ctx, w.admin, created.ID, ProjectUpdateInput{ExpectedRevision: created.Revision, ExpectedAccessRevision: &created.Access.Revision, Visibility: &company}); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := p.Update(
+		ctx,
+		w.admin,
+		created.ID,
+		ProjectUpdateInput{
+			ExpectedRevision:       created.Revision,
+			ExpectedAccessRevision: &created.Access.Revision,
+			Visibility:             &company,
+		},
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("bridge visibility = %v", err)
 	}
 	title := "Renamed by admin"
-	renamed, err := p.Update(ctx, w.admin, created.ID, ProjectUpdateInput{ExpectedRevision: created.Revision, Title: &title})
+	renamed, err := p.Update(
+		ctx,
+		w.admin,
+		created.ID,
+		ProjectUpdateInput{ExpectedRevision: created.Revision, Title: &title},
+	)
 	if err != nil || renamed.Title != title || renamed.Files != nil {
 		t.Fatalf("bridge rename = %+v, %v", renamed, err)
 	}
@@ -284,10 +362,34 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 			t.Fatalf("SetGrants(%s) = %v, want ProjectPermissionUnknownError naming it", unknown, err)
 		}
 	}
-	if _, err := p.SetGrants(ctx, w.owner, created.ID, ProjectGrantInput{UserID: dbtest.NewUUID(t), Permissions: []string{"project.read"}, ExpectedRevision: revision}); !errors.Is(err, ErrProjectMemberRequired) {
+	if _, err := p.SetGrants(
+		ctx,
+		w.owner,
+		created.ID,
+		ProjectGrantInput{
+			UserID:           dbtest.NewUUID(t),
+			Permissions:      []string{"project.read"},
+			ExpectedRevision: revision,
+		},
+	); !errors.Is(
+		err,
+		ErrProjectMemberRequired,
+	) {
 		t.Fatalf("non-member grant = %v", err)
 	}
-	if _, err := p.SetGrants(ctx, w.member, created.ID, ProjectGrantInput{UserID: w.member.UserID, Permissions: []string{"project.read"}, ExpectedRevision: revision}); !errors.Is(err, auth.ErrProjectNotVisible) {
+	if _, err := p.SetGrants(
+		ctx,
+		w.member,
+		created.ID,
+		ProjectGrantInput{
+			UserID:           w.member.UserID,
+			Permissions:      []string{"project.read"},
+			ExpectedRevision: revision,
+		},
+	); !errors.Is(
+		err,
+		auth.ErrProjectNotVisible,
+	) {
 		t.Fatalf("self-grant by a non-reader = %v", err)
 	}
 	before := len(w.log.named(EventProjectAccessChanged))
@@ -319,16 +421,33 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	if n := w.grantActivity(t, ctx, created.ID, projectGrantChanged, w.owner.UserID); n != 2 {
 		t.Fatalf("grant Activity rows = %d, want 2", n)
 	}
-	if _, err := p.SetGrants(ctx, w.owner, created.ID, ProjectGrantInput{UserID: w.member.UserID, Permissions: []string{"project.read"}, ExpectedRevision: revision}); !errors.Is(err, ErrProjectGrantRevisionConflict) {
+	if _, err := p.SetGrants(
+		ctx,
+		w.owner,
+		created.ID,
+		ProjectGrantInput{
+			UserID:           w.member.UserID,
+			Permissions:      []string{"project.read"},
+			ExpectedRevision: revision,
+		},
+	); !errors.Is(
+		err,
+		ErrProjectGrantRevisionConflict,
+	) {
 		t.Fatalf("stale revision = %v", err)
 	}
 	// The same set again, even from another manager, changes nothing: no
 	// revision, no Activity, no frame, and the rows keep their author.
 	again, err := p.SetGrants(ctx, w.admin, created.ID, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{"project.read", "project.tasks.write"}, ExpectedRevision: granted.Revision,
+		UserID:           w.member.UserID,
+		Permissions:      []string{"project.read", "project.tasks.write"},
+		ExpectedRevision: granted.Revision,
 	})
-	if err != nil || again.Revision != granted.Revision || len(w.log.named(EventProjectAccessChanged)) != before+1 ||
-		again.Grant == nil || again.Grant.GrantedBy == nil || *again.Grant.GrantedBy != w.owner.UserID ||
+	if err != nil || again.Revision != granted.Revision ||
+		len(w.log.named(EventProjectAccessChanged)) != before+1 ||
+		again.Grant == nil ||
+		again.Grant.GrantedBy == nil ||
+		*again.Grant.GrantedBy != w.owner.UserID ||
 		!again.Grant.UpdatedAt.Equal(granted.Grant.UpdatedAt) {
 		t.Fatalf("unchanged grant = %+v, %v", again, err)
 	}
@@ -345,7 +464,15 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	if err != nil || len(grants.Items) != 2 || len(grants.Groups) != 0 {
 		t.Fatalf("grants = %+v, %v", grants, err)
 	}
-	if _, err := p.Update(ctx, w.member, created.ID, ProjectUpdateInput{ExpectedRevision: renamed.Revision, Title: &title}); !errors.Is(err, auth.ErrProjectPermissionRequired) {
+	if _, err := p.Update(
+		ctx,
+		w.member,
+		created.ID,
+		ProjectUpdateInput{ExpectedRevision: renamed.Revision, Title: &title},
+	); !errors.Is(
+		err,
+		auth.ErrProjectPermissionRequired,
+	) {
 		t.Fatalf("member rename = %v", err)
 	}
 
@@ -365,7 +492,13 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 		slices.ContainsFunc(managed, func(v ProjectResponse) bool { return v.ID == created.ID }) {
 		t.Fatalf("manage view after Join = %+v, %v", managed, err)
 	}
-	if again, err := p.Join(ctx, w.admin, created.ID, 1); err != nil || again.Access.Revision != joined.Access.Revision {
+	if again, err := p.Join(
+		ctx,
+		w.admin,
+		created.ID,
+		1,
+	); err != nil ||
+		again.Access.Revision != joined.Access.Revision {
 		t.Fatalf("second Join = %+v, %v", again, err)
 	}
 	if _, err := p.Join(ctx, w.member, created.ID, joined.Access.Revision); !errors.Is(err, ErrProjectForbidden) {
@@ -374,7 +507,15 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 
 	// A visibility change is an access change: it names the access revision
 	// it was decided on, and a stale one is refused.
-	if _, err := p.Update(ctx, w.owner, created.ID, ProjectUpdateInput{ExpectedRevision: renamed.Revision, Visibility: &company}); !errors.Is(err, ErrProjectInvalidInput) {
+	if _, err := p.Update(
+		ctx,
+		w.owner,
+		created.ID,
+		ProjectUpdateInput{ExpectedRevision: renamed.Revision, Visibility: &company},
+	); !errors.Is(
+		err,
+		ErrProjectInvalidInput,
+	) {
 		t.Fatalf("visibility without an access revision = %v", err)
 	}
 	if _, err := p.Update(ctx, w.owner, created.ID, ProjectUpdateInput{
@@ -385,9 +526,12 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 
 	// Opened to the Company, every member holds the floor.
 	opened, err := p.Update(ctx, w.owner, created.ID, ProjectUpdateInput{
-		ExpectedRevision: renamed.Revision, ExpectedAccessRevision: &joined.Access.Revision, Visibility: &company,
+		ExpectedRevision:       renamed.Revision,
+		ExpectedAccessRevision: &joined.Access.Revision,
+		Visibility:             &company,
 	})
-	if err != nil || opened.Visibility != auth.ProjectVisibilityCompany || opened.Access.Revision != joined.Access.Revision+1 {
+	if err != nil || opened.Visibility != auth.ProjectVisibilityCompany ||
+		opened.Access.Revision != joined.Access.Revision+1 {
 		t.Fatalf("open = %+v, %v", opened, err)
 	}
 	if n := w.grantActivity(t, ctx, created.ID, projectGrantVisibilityChanged, w.owner.UserID); n != 1 {
@@ -405,14 +549,25 @@ func TestProjectGrantsVisibilityAndJoin(t *testing.T) {
 	// floor whatever is stored, removing them is refused, and making the
 	// Project restricted again leaves them exactly what was stored.
 	extra, err := p.SetGrants(ctx, w.owner, created.ID, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{"project.approvals.resolve"}, ExpectedRevision: opened.Access.Revision,
+		UserID:           w.member.UserID,
+		Permissions:      []string{"project.approvals.resolve"},
+		ExpectedRevision: opened.Access.Revision,
 	})
 	stored := []auth.ProjectPermission{auth.ProjectPermissionApprovalsResolve, auth.ProjectPermissionRead}
 	if err != nil || extra.Grant == nil || !slices.Equal(extra.Grant.Granted, stored) ||
 		!slices.Contains(extra.Grant.Effective, auth.ProjectPermissionTasksExecute) {
 		t.Fatalf("extra permission on a Company Project = %+v, %v", extra, err)
 	}
-	if _, err := p.RemoveGrants(ctx, w.owner, created.ID, w.member.UserID, extra.Revision); !errors.Is(err, ErrProjectVisibilityFloor) {
+	if _, err := p.RemoveGrants(
+		ctx,
+		w.owner,
+		created.ID,
+		w.member.UserID,
+		extra.Revision,
+	); !errors.Is(
+		err,
+		ErrProjectVisibilityFloor,
+	) {
 		t.Fatalf("removal on a Company Project = %v", err)
 	}
 	restricted := auth.ProjectVisibilityRestricted
@@ -446,7 +601,9 @@ func TestArchivedProjectKeepsItsAccessManageable(t *testing.T) {
 		t.Fatalf("Archive = %+v, %v", archived, err)
 	}
 	granted, err := p.SetGrants(ctx, w.owner, created.ID, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{"project.read"}, ExpectedRevision: archived.Access.Revision,
+		UserID:           w.member.UserID,
+		Permissions:      []string{"project.read"},
+		ExpectedRevision: archived.Access.Revision,
 	})
 	if err != nil {
 		t.Fatalf("grant on an archive = %v, want it allowed", err)
@@ -467,16 +624,27 @@ func TestArchivedProjectKeepsItsAccessManageable(t *testing.T) {
 	}
 	company := auth.ProjectVisibilityCompany
 	if _, err := p.Update(ctx, w.owner, created.ID, ProjectUpdateInput{
-		ExpectedRevision: joined.Revision, ExpectedAccessRevision: &joined.Access.Revision, Visibility: &company,
+		ExpectedRevision:       joined.Revision,
+		ExpectedAccessRevision: &joined.Access.Revision,
+		Visibility:             &company,
 	}); !errors.Is(err, ErrProjectArchived) {
 		t.Fatalf("visibility change on an archive = %v, want ErrProjectArchived", err)
 	}
-	if _, err := p.ReplaceFiles(ctx, w.owner, created.ID, ProjectFilesInput{DocumentIDs: []uuid.UUID{}}, joined.Revision); !errors.Is(err, ErrProjectArchived) {
+	if _, err := p.ReplaceFiles(
+		ctx,
+		w.owner,
+		created.ID,
+		ProjectFilesInput{DocumentIDs: []uuid.UUID{}},
+		joined.Revision,
+	); !errors.Is(
+		err,
+		ErrProjectArchived,
+	) {
 		t.Fatalf("files on an archive = %v, want ErrProjectArchived", err)
 	}
 }
 
-// The self-grant cap (TECH B8): Leo manages Payroll's access through a grant
+// The self-grant cap: Leo manages Payroll's access through a grant
 // of {read, grants.manage}. He can give only what he holds and cannot change
 // someone whose own grant holds more; an admin, through projects.manage, can
 // do all of it, and Join still works.
@@ -609,7 +777,7 @@ func TestSelfGrantCapLimitsAGrantManagerToTheirOwnAccess(t *testing.T) {
 	}
 }
 
-// Access is a union (Access TECH D2): a member of Finance, which holds read
+// Access is a union: a member of Finance, which holds read
 // and execute on the Project, reads it in the Project list and read with the
 // Group's permissions on top of their own grant, and removing their own
 // grant leaves them a reader whose Runs go on, because Finance still gives
@@ -701,7 +869,9 @@ func TestProjectAccessLossCancelsTheMembersRuns(t *testing.T) {
 	grant := func(permissions ...string) ProjectGrantResult {
 		t.Helper()
 		result, err := p.SetGrants(ctx, w.owner, project, ProjectGrantInput{
-			UserID: w.member.UserID, Permissions: permissions, ExpectedRevision: w.accessRevision(t, ctx, project),
+			UserID:           w.member.UserID,
+			Permissions:      permissions,
+			ExpectedRevision: w.accessRevision(t, ctx, project),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -729,7 +899,13 @@ func TestProjectAccessLossCancelsTheMembersRuns(t *testing.T) {
 
 	// A Company-visible Project made restricted ends the Runs of members who
 	// held it only through the floor.
-	if _, err := p.RemoveGrants(ctx, w.owner, project, w.member.UserID, w.accessRevision(t, ctx, project)); err != nil {
+	if _, err := p.RemoveGrants(
+		ctx,
+		w.owner,
+		project,
+		w.member.UserID,
+		w.accessRevision(t, ctx, project),
+	); err != nil {
 		t.Fatal(err)
 	}
 	current, err := p.Get(ctx, w.owner, project)
@@ -746,7 +922,9 @@ func TestProjectAccessLossCancelsTheMembersRuns(t *testing.T) {
 	}
 	floorRun := w.queueMemberRun(t, ctx)
 	if _, err := p.Update(ctx, w.owner, project, ProjectUpdateInput{
-		ExpectedRevision: opened.Revision, ExpectedAccessRevision: &opened.Access.Revision, Visibility: &restricted,
+		ExpectedRevision:       opened.Revision,
+		ExpectedAccessRevision: &opened.Access.Revision,
+		Visibility:             &restricted,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -793,7 +971,9 @@ func TestProjectAccessLossRemovesTheMembersQueuedMessages(t *testing.T) {
 	grant := func(permissions ...string) {
 		t.Helper()
 		if _, err := p.SetGrants(ctx, w.owner, project, ProjectGrantInput{
-			UserID: w.member.UserID, Permissions: permissions, ExpectedRevision: w.accessRevision(t, ctx, project),
+			UserID:           w.member.UserID,
+			Permissions:      permissions,
+			ExpectedRevision: w.accessRevision(t, ctx, project),
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -810,7 +990,13 @@ func TestProjectAccessLossRemovesTheMembersQueuedMessages(t *testing.T) {
 		t.Fatalf("queued message after losing project.tasks.write = %s (%q)", state, reason)
 	}
 
-	if _, err := p.RemoveGrants(ctx, w.owner, project, w.member.UserID, w.accessRevision(t, ctx, project)); err != nil {
+	if _, err := p.RemoveGrants(
+		ctx,
+		w.owner,
+		project,
+		w.member.UserID,
+		w.accessRevision(t, ctx, project),
+	); err != nil {
 		t.Fatal(err)
 	}
 	current, err := p.Get(ctx, w.owner, project)
@@ -827,7 +1013,9 @@ func TestProjectAccessLossRemovesTheMembersQueuedMessages(t *testing.T) {
 	}
 	floorQueued := queue()
 	if _, err := p.Update(ctx, w.owner, project, ProjectUpdateInput{
-		ExpectedRevision: opened.Revision, ExpectedAccessRevision: &opened.Access.Revision, Visibility: &restricted,
+		ExpectedRevision:       opened.Revision,
+		ExpectedAccessRevision: &opened.Access.Revision,
+		Visibility:             &restricted,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -847,7 +1035,13 @@ func TestProjectAccessLossTellsTheMemberWhoseRunStopped(t *testing.T) {
 	p := w.projects
 	project := w.f.ProjectA
 	// A name no notice sentence could contain by chance.
-	dbtest.MustExec(t, ctx, w.pool, `UPDATE projects SET key = 'payroll', title = 'Payroll Ledger' WHERE id = $1`, project)
+	dbtest.MustExec(
+		t,
+		ctx,
+		w.pool,
+		`UPDATE projects SET key = 'payroll', title = 'Payroll Ledger' WHERE id = $1`,
+		project,
+	)
 	var projectKey, projectTitle, taskTitle, agentName string
 	if err := w.pool.QueryRow(ctx, `
 		SELECT project.key, project.title, task.title, agent.name
@@ -859,7 +1053,9 @@ func TestProjectAccessLossTellsTheMemberWhoseRunStopped(t *testing.T) {
 	grant := func(permissions ...string) {
 		t.Helper()
 		if _, err := p.SetGrants(ctx, w.owner, project, ProjectGrantInput{
-			UserID: w.member.UserID, Permissions: permissions, ExpectedRevision: w.accessRevision(t, ctx, project),
+			UserID:           w.member.UserID,
+			Permissions:      permissions,
+			ExpectedRevision: w.accessRevision(t, ctx, project),
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -939,7 +1135,13 @@ func TestProjectAccessLossTellsTheMemberWhoseRunStopped(t *testing.T) {
 	// Lost read: nothing.
 	grant("project.tasks.execute")
 	hidden := w.queueMemberRun(t, ctx)
-	if _, err := p.RemoveGrants(ctx, w.owner, project, w.member.UserID, w.accessRevision(t, ctx, project)); err != nil {
+	if _, err := p.RemoveGrants(
+		ctx,
+		w.owner,
+		project,
+		w.member.UserID,
+		w.accessRevision(t, ctx, project),
+	); err != nil {
 		t.Fatal(err)
 	}
 	assertNotTold("every permission removed", hidden)
@@ -976,7 +1178,9 @@ func TestCompanyRevocationDeletesProjectGrants(t *testing.T) {
 	ctx, w := newProjectAccessWorld(t)
 	project := w.f.ProjectA
 	if _, err := w.projects.SetGrants(ctx, w.owner, project, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{"project.tasks.execute"}, ExpectedRevision: w.accessRevision(t, ctx, project),
+		UserID:           w.member.UserID,
+		Permissions:      []string{"project.tasks.execute"},
+		ExpectedRevision: w.accessRevision(t, ctx, project),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -989,7 +1193,11 @@ func TestCompanyRevocationDeletesProjectGrants(t *testing.T) {
 	}
 	framesBefore := len(w.log.named(EventProjectAccessChanged))
 
-	if err := w.companies.RemoveMember(ctx, w.owner, MembershipMutation{UserID: w.member.UserID, ExpectedRevision: memberVersion}); err != nil {
+	if err := w.companies.RemoveMember(
+		ctx,
+		w.owner,
+		MembershipMutation{UserID: w.member.UserID, ExpectedRevision: memberVersion},
+	); err != nil {
 		t.Fatal(err)
 	}
 	var rows int
@@ -1006,7 +1214,10 @@ func TestCompanyRevocationDeletesProjectGrants(t *testing.T) {
 	}
 	change := payloadOf[ProjectAccessChanged](t, frames[len(frames)-1])
 	if change.ProjectID != project || change.Revision != revisionBefore+1 ||
-		!slices.Contains(change.RecipientUserIDs, w.member.UserID) || !slices.Contains(change.RecipientUserIDs, w.owner.UserID) {
+		!slices.Contains(
+			change.RecipientUserIDs,
+			w.member.UserID,
+		) || !slices.Contains(change.RecipientUserIDs, w.owner.UserID) {
 		t.Fatalf("revocation frame = %+v", change)
 	}
 	// The runtime-owner sweep ends the member's Run; the Project sweep is
@@ -1045,9 +1256,12 @@ func TestCompanyRevocationDeletesProjectGrants(t *testing.T) {
 		w.f.CompanyA, project, w.member.UserID)
 	changedBefore := w.grantActivity(t, ctx, project, projectGrantChanged, w.owner.UserID)
 	regranted, err := w.projects.SetGrants(ctx, w.owner, project, ProjectGrantInput{
-		UserID: w.member.UserID, Permissions: []string{"project.read"}, ExpectedRevision: w.accessRevision(t, ctx, project),
+		UserID:           w.member.UserID,
+		Permissions:      []string{"project.read"},
+		ExpectedRevision: w.accessRevision(t, ctx, project),
 	})
-	if err != nil || regranted.Grant == nil || !slices.Equal(regranted.Grant.Granted, []auth.ProjectPermission{auth.ProjectPermissionRead}) {
+	if err != nil || regranted.Grant == nil ||
+		!slices.Equal(regranted.Grant.Granted, []auth.ProjectPermission{auth.ProjectPermissionRead}) {
 		t.Fatalf("re-grant after rejoin = %+v, %v", regranted, err)
 	}
 	var fenced bool

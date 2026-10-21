@@ -351,7 +351,14 @@ func TestCodexPluginFromSummaryCarriesSanitizedPresentation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	plugin, _, ok := codexPluginFromSummary(summary, "openai-curated-remote", nil, 0, nil, codexMarketplaceListing{})
+	plugin, _, ok := codexPluginFromSummary(
+		summary,
+		"openai-curated-remote",
+		nil,
+		0,
+		nil,
+		codexMarketplaceListing{},
+	)
 	if !ok {
 		t.Fatal("codexPluginFromSummary() rejected a valid plugin")
 	}
@@ -370,7 +377,14 @@ func TestCodexPluginFromSummaryCarriesSanitizedPresentation(t *testing.T) {
 	}
 
 	summary.Installed, summary.Enabled = false, false
-	available, _, _ := codexPluginFromSummary(summary, "openai-curated-remote", nil, 0, nil, codexMarketplaceListing{})
+	available, _, _ := codexPluginFromSummary(
+		summary,
+		"openai-curated-remote",
+		nil,
+		0,
+		nil,
+		codexMarketplaceListing{},
+	)
 	if available.LongDescription != "" || available.BrandColor != want.BrandColor {
 		t.Fatalf("available plugin presentation = %#v, want no long description only",
 			available.CodexPluginPresentation)

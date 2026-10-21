@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func TestOverviewProtectsHeadingSection(t *testing.T) {

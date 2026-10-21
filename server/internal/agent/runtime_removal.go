@@ -18,11 +18,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // ErrRuntimeRemoveBlockedOnline refuses to remove a runtime whose daemon is
@@ -86,7 +86,16 @@ func (s *DefaultRuntimeService) Remove(
 		pending = pending[:0]
 		retargeted = nil
 		promoted = nil
-		if _, err := lockMemberRole(ctx, tx, principal.CompanyID, principal.UserID, "runtime removal"); errors.Is(err, ErrNotFound) {
+		if _, err := lockMemberRole(
+			ctx,
+			tx,
+			principal.CompanyID,
+			principal.UserID,
+			"runtime removal",
+		); errors.Is(
+			err,
+			ErrNotFound,
+		) {
 			return ErrRuntimeNotFound
 		} else if err != nil {
 			return err
@@ -123,10 +132,13 @@ func (s *DefaultRuntimeService) Remove(
 		}
 		daemonID = source.DaemonID
 
-		bindings, err := tx.ListAgentRuntimeBindingsForRuntimeForUpdate(ctx, generated.ListAgentRuntimeBindingsForRuntimeForUpdateParams{
-			CompanyID: principal.CompanyID,
-			RuntimeID: runtimeID,
-		})
+		bindings, err := tx.ListAgentRuntimeBindingsForRuntimeForUpdate(
+			ctx,
+			generated.ListAgentRuntimeBindingsForRuntimeForUpdateParams{
+				CompanyID: principal.CompanyID,
+				RuntimeID: runtimeID,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("lock bindings for runtime removal: %w", err)
 		}
@@ -153,7 +165,10 @@ func (s *DefaultRuntimeService) Remove(
 			targetRef := runtimeRefFromRow(target)
 			for _, binding := range moved {
 				pending = append(pending, bindingChangeEvent(
-					principal.CompanyID, principal.UserID, binding.AgentID, bindingRefFromRow(binding, targetRef),
+					principal.CompanyID,
+					principal.UserID,
+					binding.AgentID,
+					bindingRefFromRow(binding, targetRef),
 				))
 			}
 			retargeted, err = execution.RetargetPendingRunsForBindingsInTx(
@@ -168,10 +183,13 @@ func (s *DefaultRuntimeService) Remove(
 			// releasePreviousRegistrantInTx: promoting the caller's next tag
 			// of an Agent must find no binding and close it (agent_unbound),
 			// not queue a Run on this machine that no claim can admit.
-			if _, err := tx.DeleteAgentRuntimeBindingsForRuntime(ctx, generated.DeleteAgentRuntimeBindingsForRuntimeParams{
-				CompanyID: principal.CompanyID,
-				RuntimeID: runtimeID,
-			}); err != nil {
+			if _, err := tx.DeleteAgentRuntimeBindingsForRuntime(
+				ctx,
+				generated.DeleteAgentRuntimeBindingsForRuntimeParams{
+					CompanyID: principal.CompanyID,
+					RuntimeID: runtimeID,
+				},
+			); err != nil {
 				return fmt.Errorf("drop bindings for runtime removal: %w", err)
 			}
 			var cancelled []generated.Run
@@ -182,7 +200,10 @@ func (s *DefaultRuntimeService) Remove(
 				return err
 			}
 			for _, binding := range bindings {
-				pending = append(pending, bindingChangeEvent(principal.CompanyID, principal.UserID, binding.AgentID, nil))
+				pending = append(
+					pending,
+					bindingChangeEvent(principal.CompanyID, principal.UserID, binding.AgentID, nil),
+				)
 			}
 			receipt.CancelledRunCount = int64(len(cancelled))
 		}

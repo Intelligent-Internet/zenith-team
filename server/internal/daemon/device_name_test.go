@@ -10,9 +10,9 @@ func TestDefaultDeviceNamePrefersTheComputerNameOnMac(t *testing.T) {
 	previous := macComputerName
 	t.Cleanup(func() { macComputerName = previous })
 
-	macComputerName = func() string { return "Duong's MacBook" }
+	macComputerName = func() string { return "Alex's MacBook" }
 	got := defaultDeviceName()
-	if runtime.GOOS == "darwin" && got != "Duong's MacBook" {
+	if runtime.GOOS == "darwin" && got != "Alex's MacBook" {
 		t.Fatalf("defaultDeviceName = %q, want the computer name", got)
 	}
 

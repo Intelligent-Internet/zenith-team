@@ -9,22 +9,22 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // Every subject an Inbox item can name resolves to the Task chat's Project
 // (ADR 0017): the chat it links to, a Task, a Run, an Approval, a Question
 // and a Deliverable, and the Project itself (project_access_granted, which
-// also reads for a member whose Company role holds projects.manage, Access
-// TECH, the trail). A wrong join in any arm would store no Project, and an
-// item with no Project reads for its recipient whatever they can read, so
-// each arm is proven here. The counts that ride item frames and the Run
-// notice's wait check then follow the recipient losing the Project, and a
+// also reads for a member whose Company role holds projects.manage). A wrong
+// join in any arm would store no Project, and an item with no Project reads
+// for its recipient whatever they can read, so each arm is proven here. The
+// counts that ride item frames and the Run notice's wait check then follow
+// the recipient losing the Project, and a
 // replayed create of an item they no longer read is a skip.
 func TestInboxItemsNameTheProjectOfEverySubject(t *testing.T) {
 	pool := startInboxPostgres(t)

@@ -1,4 +1,4 @@
--- Groups (Access TECH Part D, migration 000101): a named, flat set of Team
+-- Groups (migration 000101): a named, flat set of Team
 -- members in one Company that can hold Project grants. Every statement
 -- repeats the Company scope. A membership counts only for an active member
 -- and only when it was written since their latest (re)join (the rejoin fence
@@ -231,7 +231,7 @@ GROUP BY group_grant.group_id, group_grant.project_id
 ORDER BY group_grant.group_id, group_grant.project_id;
 
 -- name: DeleteCompanyGroupMembershipsForUser :many
--- Leaving the Company ends every Group membership (D5); a rejoin restores
+-- Leaving the Company ends every Group membership; a rejoin restores
 -- none. Returns the Groups the person was in.
 DELETE FROM company_group_members
 WHERE company_group_members.company_id = sqlc.arg(company_id)::uuid

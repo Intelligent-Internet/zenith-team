@@ -5,12 +5,13 @@ import (
 	"slices"
 	"time"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/inbox"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type Command struct {
@@ -34,8 +35,17 @@ func (s *DefaultCalendarService) Create(ctx context.Context, p auth.UserPrincipa
 	return *result.Event, nil
 }
 
-func (s *DefaultCalendarService) Update(ctx context.Context, p auth.UserPrincipal, id string, input Input) (Event, error) {
-	result, err := s.write(ctx, p, Command{Action: "update", EventID: id, ExpectedRevision: input.ExpectedRevision, Input: &input})
+func (s *DefaultCalendarService) Update(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id string,
+	input Input,
+) (Event, error) {
+	result, err := s.write(
+		ctx,
+		p,
+		Command{Action: "update", EventID: id, ExpectedRevision: input.ExpectedRevision, Input: &input},
+	)
 	if err != nil {
 		return Event{}, err
 	}
@@ -47,17 +57,45 @@ func (s *DefaultCalendarService) Delete(ctx context.Context, p auth.UserPrincipa
 	return err
 }
 
-func (s *DefaultCalendarService) Respond(ctx context.Context, p auth.UserPrincipal, id string, revision int64, status string) error {
-	_, err := s.write(ctx, p, Command{Action: "respond", EventID: id, ExpectedRevision: revision, ResponseStatus: status})
+func (s *DefaultCalendarService) Respond(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id string,
+	revision int64,
+	status string,
+) error {
+	_, err := s.write(
+		ctx,
+		p,
+		Command{Action: "respond", EventID: id, ExpectedRevision: revision, ResponseStatus: status},
+	)
 	return err
 }
 
-func (s *DefaultCalendarService) Occurrence(ctx context.Context, p auth.UserPrincipal, id string, input OccurrenceInput) error {
-	_, err := s.write(ctx, p, Command{Action: input.Action, EventID: id, ExpectedRevision: input.ExpectedRevision, OccurrenceDate: input.OccurrenceDate})
+func (s *DefaultCalendarService) Occurrence(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	id string,
+	input OccurrenceInput,
+) error {
+	_, err := s.write(
+		ctx,
+		p,
+		Command{
+			Action:           input.Action,
+			EventID:          id,
+			ExpectedRevision: input.ExpectedRevision,
+			OccurrenceDate:   input.OccurrenceDate,
+		},
+	)
 	return err
 }
 
-func (s *DefaultCalendarService) write(ctx context.Context, p auth.UserPrincipal, command Command) (CommandResult, error) {
+func (s *DefaultCalendarService) write(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	command Command,
+) (CommandResult, error) {
 	var result CommandResult
 	m := mutation{principal: p, actor: inbox.Actor{Kind: "user", ID: &p.UserID}}
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
@@ -85,7 +123,10 @@ func lockActor(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) 
 		if company.DeletingAt.Valid {
 			return ErrNotFound
 		}
-		member, err := q.GetCompanyMemberForShare(ctx, generated.GetCompanyMemberForShareParams{CompanyID: p.CompanyID, UserID: p.UserID})
+		member, err := q.GetCompanyMemberForShare(
+			ctx,
+			generated.GetCompanyMemberForShareParams{CompanyID: p.CompanyID, UserID: p.UserID},
+		)
 		if err != nil {
 			return calendarError(err)
 		}
@@ -106,14 +147,21 @@ func lockActor(ctx context.Context, q *generated.Queries, p auth.UserPrincipal) 
 func (m *mutation) writeInTx(ctx context.Context, q *generated.Queries, command Command) (CommandResult, error) {
 	p := m.principal
 	if command.Action == "create" {
-		if command.Input == nil || command.ExpectedRevision != 0 || command.Input.ExpectedRevision != 0 || command.EventID != "" {
+		if command.Input == nil || command.ExpectedRevision != 0 || command.Input.ExpectedRevision != 0 ||
+			command.EventID != "" {
 			return CommandResult{}, ErrInvalid
 		}
 		event, err := createInTx(ctx, q, p, *command.Input)
 		if err != nil {
 			return CommandResult{}, err
 		}
-		return CommandResult{Event: &event}, m.notifyInTx(ctx, q, notificationChange{action: "create", after: event})
+		return CommandResult{
+				Event: &event,
+			}, m.notifyInTx(
+				ctx,
+				q,
+				notificationChange{action: "create", after: event},
+			)
 	}
 	id, err := uuid.Parse(command.EventID)
 	if err != nil || id == uuid.Nil || command.ExpectedRevision < 1 {
@@ -157,10 +205,19 @@ func (m *mutation) writeInTx(ctx context.Context, q *generated.Queries, command 
 			return CommandResult{}, err
 		}
 		sharingCompany := row.SharingCompanyID
-		if visible.CalendarType == "personal" && (visible.CompanyID == nil || len(command.Input.AttendeeUserIDs) == 0) {
+		if visible.CalendarType == "personal" &&
+			(visible.CompanyID == nil || len(command.Input.AttendeeUserIDs) == 0) {
 			sharingCompany = uuid.NullUUID{}
 		}
-		sharing, err := replaceAttendees(ctx, q, p, row.ID, row.UserID, sharingCompany, command.Input.AttendeeUserIDs)
+		sharing, err := replaceAttendees(
+			ctx,
+			q,
+			p,
+			row.ID,
+			row.UserID,
+			sharingCompany,
+			command.Input.AttendeeUserIDs,
+		)
 		if err != nil {
 			return CommandResult{}, err
 		}
@@ -208,13 +265,21 @@ func (m *mutation) writeInTx(ctx context.Context, q *generated.Queries, command 
 		}
 		return CommandResult{}, q.DeleteCalendarEvent(ctx, id)
 	case "respond":
-		if command.ResponseStatus != "accepted" && command.ResponseStatus != "tentative" && command.ResponseStatus != "declined" {
+		if command.ResponseStatus != "accepted" && command.ResponseStatus != "tentative" &&
+			command.ResponseStatus != "declined" {
 			return CommandResult{}, ErrInvalid
 		}
 		if visible.ResponseStatus == command.ResponseStatus {
 			return CommandResult{Event: &visible}, nil
 		}
-		updatedAt, err := q.RespondCalendarInvitation(ctx, generated.RespondCalendarInvitationParams{EventID: id, UserID: p.UserID, ResponseStatus: command.ResponseStatus})
+		updatedAt, err := q.RespondCalendarInvitation(
+			ctx,
+			generated.RespondCalendarInvitationParams{
+				EventID:        id,
+				UserID:         p.UserID,
+				ResponseStatus: command.ResponseStatus,
+			},
+		)
 		if err != nil {
 			return CommandResult{}, calendarError(err)
 		}
@@ -242,7 +307,13 @@ func createInTx(ctx context.Context, q *generated.Queries, p auth.UserPrincipal,
 	if err = ensureCalendars(ctx, q, p); err != nil {
 		return Event{}, err
 	}
-	calendars, err := q.ListCalendarCatalog(ctx, generated.ListCalendarCatalogParams{ActorUserID: uuid.NullUUID{UUID: p.UserID, Valid: true}, ActorCompanyID: p.CompanyID})
+	calendars, err := q.ListCalendarCatalog(
+		ctx,
+		generated.ListCalendarCatalogParams{
+			ActorUserID:    uuid.NullUUID{UUID: p.UserID, Valid: true},
+			ActorCompanyID: p.CompanyID,
+		},
+	)
 	if err != nil {
 		return Event{}, err
 	}
@@ -271,14 +342,24 @@ func createInTx(ctx context.Context, q *generated.Queries, p auth.UserPrincipal,
 		return Event{}, err
 	}
 	if sharing != row.SharingCompanyID {
-		if err = q.SetCalendarSharingCompany(ctx, generated.SetCalendarSharingCompanyParams{ID: row.ID, SharingCompanyID: sharing}); err != nil {
+		if err = q.SetCalendarSharingCompany(
+			ctx,
+			generated.SetCalendarSharingCompanyParams{ID: row.ID, SharingCompanyID: sharing},
+		); err != nil {
 			return Event{}, err
 		}
 	}
 	return visibleEvent(ctx, q, p, row.ID)
 }
 
-func replaceAttendees(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, eventID, organizer uuid.UUID, company uuid.NullUUID, ids []string) (uuid.NullUUID, error) {
+func replaceAttendees(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	eventID, organizer uuid.UUID,
+	company uuid.NullUUID,
+	ids []string,
+) (uuid.NullUUID, error) {
 	if len(ids) > 100 {
 		return company, ErrInvalid
 	}
@@ -299,7 +380,10 @@ func replaceAttendees(ctx context.Context, q *generated.Queries, p auth.UserPrin
 			return company, ErrInvalid
 		}
 		seen[id] = true
-		member, err := q.GetCompanyMemberForShare(ctx, generated.GetCompanyMemberForShareParams{CompanyID: company.UUID, UserID: id})
+		member, err := q.GetCompanyMemberForShare(
+			ctx,
+			generated.GetCompanyMemberForShareParams{CompanyID: company.UUID, UserID: id},
+		)
 		if err != nil {
 			return company, calendarError(err)
 		}
@@ -308,18 +392,30 @@ func replaceAttendees(ctx context.Context, q *generated.Queries, p auth.UserPrin
 		}
 		users = append(users, id)
 	}
-	if err := q.ReplaceCalendarAttendees(ctx, generated.ReplaceCalendarAttendeesParams{EventID: eventID, UserIds: users}); err != nil {
+	if err := q.ReplaceCalendarAttendees(
+		ctx,
+		generated.ReplaceCalendarAttendeesParams{EventID: eventID, UserIds: users},
+	); err != nil {
 		return company, err
 	}
 	for _, id := range users {
-		if err := q.AddCalendarAttendee(ctx, generated.AddCalendarAttendeeParams{EventID: eventID, CompanyID: company.UUID, UserID: id}); err != nil {
+		if err := q.AddCalendarAttendee(
+			ctx,
+			generated.AddCalendarAttendeeParams{EventID: eventID, CompanyID: company.UUID, UserID: id},
+		); err != nil {
 			return company, err
 		}
 	}
 	return company, nil
 }
 
-func changeOccurrence(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, row generated.CalendarEvent, command Command) error {
+func changeOccurrence(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	row generated.CalendarEvent,
+	command Command,
+) error {
 	date, err := time.Parse(time.DateOnly, command.OccurrenceDate)
 	if err != nil {
 		return ErrInvalid
@@ -336,9 +432,19 @@ func changeOccurrence(ctx context.Context, q *generated.Queries, p auth.UserPrin
 		return ErrNotFound
 	}
 	if command.Action == "cancel" {
-		return q.CancelCalendarOccurrence(ctx, generated.CancelCalendarOccurrenceParams{EventID: row.ID, OccurrenceDate: pgtype.Date{Time: date, Valid: true}})
+		return q.CancelCalendarOccurrence(
+			ctx,
+			generated.CancelCalendarOccurrenceParams{
+				EventID:        row.ID,
+				OccurrenceDate: pgtype.Date{Time: date, Valid: true},
+			},
+		)
 	}
-	params := generated.SetCalendarReminderStateParams{EventID: row.ID, UserID: p.UserID, OccurrenceDate: pgtype.Date{Time: date, Valid: true}}
+	params := generated.SetCalendarReminderStateParams{
+		EventID:        row.ID,
+		UserID:         p.UserID,
+		OccurrenceDate: pgtype.Date{Time: date, Valid: true},
+	}
 	if row.Type != "reminder" {
 		return ErrInvalid
 	}

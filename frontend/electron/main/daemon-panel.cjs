@@ -10,7 +10,7 @@ const { isTrustedMainFrame } = require("./trusted-frame.cjs");
 const DAEMON_STATUS_UPDATED_CHANNEL = "desktop:daemon-status-updated";
 const DAEMON_LOG_LINES_CHANNEL = "desktop:daemon-log-lines";
 // The daemon writes its structured slog to stdout, which `zen daemon start`
-// maps to this file under BOARDLY_HOME (cmd/zen/cli_daemon.go
+// maps to this file under ZENITH_TEAM_HOME (cmd/zen/cli_daemon.go
 // daemonLogDestination); daemon.err.log only carries a crash's stderr. Both
 // rotate to `.old` at 10 MiB on start.
 const DAEMON_LOG_FILE_NAME = "daemon.log";
@@ -24,7 +24,7 @@ const DAEMON_LOG_LINE_PATTERN =
   /^time=(\S+)\s+level=(DEBUG|INFO|WARN|ERROR)\b/u;
 
 function registerDesktopDaemonPanel({
-  boardlyHomeDirectory,
+  zenithTeamHomeDirectory,
   fs = require("node:fs"),
   getDaemonRuntime,
   getMainWindow,
@@ -32,7 +32,7 @@ function registerDesktopDaemonPanel({
   pollIntervalMs = DAEMON_LOG_POLL_MS,
   shell = require("electron").shell,
 }) {
-  const logPath = path.join(boardlyHomeDirectory, DAEMON_LOG_FILE_NAME);
+  const logPath = path.join(zenithTeamHomeDirectory, DAEMON_LOG_FILE_NAME);
   let follower = null;
 
   function liveWindow() {

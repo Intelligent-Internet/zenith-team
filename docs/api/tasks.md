@@ -69,7 +69,7 @@ caller could not read when they read it but can change now.
 An agent uses the same path with both headers:
 
 ```
-X-Boardly-Run-Token: brt_<64 lowercase hex characters>
+X-Zenith-Team-Run-Token: brt_<64 lowercase hex characters>
 Idempotency-Key: <uuid>
 ```
 
@@ -161,7 +161,7 @@ instead of reading the same list twice.
 
 **Inside a Run the list is the Run's own tasks.** `zen task list` in Agent
 mode reaches this route through the Run's channel, with the member's session
-plus the Run's `X-Boardly-Run-Token`. A Run reads only the tasks its agent
+plus the Run's `X-Zenith-Team-Run-Token`. A Run reads only the tasks its agent
 does for the member it works for — its authorizer, on whose computer it runs
 (ADR 0014) — so the server replaces `assignee_id` and `executed_by_agent_id`
 with those two and keeps every other filter. A token that does not prove a
@@ -186,7 +186,7 @@ member's, is `401 run_token_invalid`. See
       "assignee": {
         "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
         "kind": "user",
-        "name": "Duong",
+        "name": "Alex",
         "avatarUrl": null
       },
       "executedBy": {
@@ -199,7 +199,7 @@ member's, is `401 run_token_invalid`. See
       "creator": {
         "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
         "kind": "user",
-        "name": "Duong",
+        "name": "Alex",
         "avatarUrl": null
       },
       "blockedByCount": 1,
@@ -309,7 +309,7 @@ or merged, and the new assignee starts it on their own computer. A handoff to
 yourself with an agent starts that run at once and lands `in_progress`.
 
 `zen task create` inside a Run reaches this route through the Run's channel,
-which sends the member's session plus the Run's `X-Boardly-Run-Token`. When
+which sends the member's session plus the Run's `X-Zenith-Team-Run-Token`. When
 that header is present the server resolves it first: a token that is
 malformed, belongs to another company, names a Run that is no longer
 running (cancelled by a handoff or by a person), or a Run with no
@@ -337,20 +337,19 @@ one task. Sent with a Run's token it reads only the Run's own tasks — see
 
 ### Reads from inside a Run
 
-A Run reads only its own tasks (owner decision, 2026-09-26): the ones its
+A Run reads only its own tasks: the ones its
 agent does for the member the Run works for. Tagged in a channel and asked to
 "run BSC-8", an agent read a colleague's task and acted out its description
 on the wrong computer while the task itself never started; the read is now
 refused instead. The rule applies to every task read that carries
-`X-Boardly-Run-Token` — `zen task get` and `dependencies` in Agent mode,
+`X-Zenith-Team-Run-Token` — `zen task get` and `dependencies` in Agent mode,
 `zen task list` from a Run outside a task, and the task's workspace and
 results, which no Run command reaches — and to nothing a member reads for
 themself.
 
 - The list is the Run's own tasks (above). Only a Run outside a task is
   offered `zen task list`; a task Run's channel refuses it with
-  `run_scope_denied` (exit code `3`) before it reaches the server
-  ([CLI TECH](../specs/cli/TECH.md)).
+  `run_scope_denied` (exit code `3`) before it reaches the server.
 - `GET .../tasks/{taskId}` and `GET .../tasks/{taskId}/dependencies` of any
   other task are `403 task_outside_run_scope`, even when the member could
   read it. The body carries nothing of the task — no content, label, member
@@ -374,7 +373,7 @@ themself.
   follow the rule above.
 - A create sent with the token files work only for the Run's member, and
   from a task Run only in its task's Project (see create, above).
-- One Run reads more (IA-FR12). The company's root agent plans the
+- One Run reads more. The company's root agent plans the
   company, so its Run in its member's direct chat, with its Company planning
   on, reads every task its member reads: the list keeps the caller's own
   filters, any task the member reads answers `200`, and its dependencies
@@ -429,10 +428,10 @@ reads back:
   "description": "Replace the hard-wired limit with a cursor.",
   "status": "in_review",
   "priority": "high",
-  "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+  "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
   "executedBy": { "id": "0197f4a2-1b77-7d09-8e31-6c0f2a44b7d3", "kind": "agent", "name": "Ada", "avatarUrl": null },
   "execution": { "assigneeReady": true, "unreadyReason": null },
-  "creator": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+  "creator": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
   "blockedByCount": 1,
   "dependenciesResolved": true,
   "createdAt": "2026-08-12T08:14:00.113000Z",
@@ -456,7 +455,7 @@ reads back:
 | Status | Code | When |
 |---|---|---|
 | 400 | `invalid_request` | Body is not JSON, is not an object, or carries an unknown field |
-| 401 | `run_token_invalid` | (create, read) `X-Boardly-Run-Token` is present and is malformed, cross-company, its Run is no longer running, the Run has no authorizing member, or the session is not that member's |
+| 401 | `run_token_invalid` | (create, read) `X-Zenith-Team-Run-Token` is present and is malformed, cross-company, its Run is no longer running, the Run has no authorizing member, or the session is not that member's |
 | 403 | `company_permission_required` | (create) The task is for another member and the caller lacks `tasks.assign`; (PATCH) a handoff, or a move of an `in_review` task to any other status — marking it done without review among them — by someone who is neither the assignee nor a `tasks.assign` holder. The review decides the work the assignee's computer did |
 | 403 | `project_permission_required` | The caller reads the task's Project but lacks `project.tasks.write` (create, update), or `project.tasks.execute` for the Run a create or update would start; that second refusal names the agent, never the Project ([Project access](#project-access)) |
 | 403 | `task_outside_run_scope` | (read) Sent with a Run's token, the task is not one of the Run's own, or a task Run reads a task outside its task chat's Project; (create) the task would be another member's, a task Run's in another Project, or in a Project the member cannot read. The `detail` is always "Permission denied. You can only access your own Tasks." |
@@ -541,10 +540,10 @@ a create for yourself or a handoff to yourself — posts the same message.
   "description": "Replace the hard-wired limit with a cursor.",
   "status": "in_progress",
   "priority": "high",
-  "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+  "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
   "executedBy": { "id": "0197f4a2-1b77-7d09-8e31-6c0f2a44b7d3", "kind": "agent", "name": "Ada", "avatarUrl": null },
   "execution": { "assigneeReady": true, "unreadyReason": null },
-  "creator": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+  "creator": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
   "blockedByCount": 1,
   "dependenciesResolved": true,
   "createdAt": "2026-08-12T08:14:00.113000Z",
@@ -576,7 +575,7 @@ the other guarded resources.
 
 ```
 POST /api/v1/companies/{companyId}/task-failures
-X-Boardly-Run-Token: brt_<64 lowercase hex characters>
+X-Zenith-Team-Run-Token: brt_<64 lowercase hex characters>
 Idempotency-Key: <uuid>
 
 { "reason": "The supplier rejected the requested order." }
@@ -609,7 +608,7 @@ returns the same `200` response; reusing it with another reason returns
     "assignee": {
       "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
       "kind": "user",
-      "name": "Duong",
+      "name": "Alex",
       "avatarUrl": null
     },
     "executedBy": {
@@ -622,7 +621,7 @@ returns the same `200` response; reusing it with another reason returns
     "creator": {
       "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
       "kind": "user",
-      "name": "Duong",
+      "name": "Alex",
       "avatarUrl": null
     },
     "blockedByCount": 0,
@@ -675,7 +674,7 @@ one request, with each prerequisite’s identity, status, and assignee included.
         "number": 9,
         "title": "Add the cursor codec",
         "status": "done",
-        "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Duong", "avatarUrl": null },
+        "assignee": { "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41", "kind": "user", "name": "Alex", "avatarUrl": null },
         "executedBy": { "id": "0197f4a2-1b77-7d09-8e31-6c0f2a44b7d3", "kind": "agent", "name": "Ada", "avatarUrl": null },
         "revision": 11
       },
@@ -696,7 +695,7 @@ one request, with each prerequisite’s identity, status, and assignee included.
 
 > **Added.** `assignee` and `executedBy` on the embedded task, and an
 > unambiguous `revision` split. "Blocked by ENG-9" is not actionable;
-> "blocked by ENG-9, which Ada does for Duong" is. The edge's `revision`
+> "blocked by ENG-9, which Ada does for Alex" is. The edge's `revision`
 > sits on the edge — that is the one the plan artifact's
 > `base.dependencies` needs — and the task's sits inside `task`,
 > where a single flattened `revision` could not say which it meant.
@@ -705,7 +704,7 @@ one request, with each prerequisite’s identity, status, and assignee included.
 data.
 
 The path takes the task's id, key or label, as `GET .../tasks/{taskId}`
-does. Sent with a Run's `X-Boardly-Run-Token`, the task itself must be one of
+does. Sent with a Run's `X-Zenith-Team-Run-Token`, the task itself must be one of
 the Run's own, else `403 task_outside_run_scope`. `blockedBy` is then whole,
 but `blocks` holds only the Run's own tasks, so there `[]` means none of
 them is waiting on it; see [Reads from inside a Run](#reads-from-inside-a-run).
@@ -760,7 +759,7 @@ one read-only `REPEATABLE READ` snapshot.
 “Workspace” here is the Task detail composite, not the company's local working
 directory. It returns no cwd, filesystem listing or file contents. Local
 placement, exact-run preview and retention are documented in
-[workspaces.md](workspaces.md) and the [Workspace spec](../specs/workspaces/PRD.md).
+[workspaces.md](workspaces.md).
 
 ### Use Cases
 
@@ -794,7 +793,7 @@ N+1. After: one.
     "assignee": {
       "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
       "kind": "user",
-      "name": "Duong",
+      "name": "Alex",
       "avatarUrl": null
     },
     "executedBy": {
@@ -807,7 +806,7 @@ N+1. After: one.
     "creator": {
       "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
       "kind": "user",
-      "name": "Duong",
+      "name": "Alex",
       "avatarUrl": null
     },
     "blockedByCount": 1,
@@ -913,7 +912,7 @@ N+1. After: one.
           "assignee": {
             "id": "0197f58e-9a04-7b12-8c77-2d5e6f108b41",
             "kind": "user",
-            "name": "Duong",
+            "name": "Alex",
             "avatarUrl": null
           },
           "executedBy": {
@@ -969,7 +968,7 @@ events that follow update those slots directly.
 
 | Status | Code | When |
 |---|---|---|
-| 401 | `run_token_invalid` | `X-Boardly-Run-Token` is present and does not prove a running Run in this company |
+| 401 | `run_token_invalid` | `X-Zenith-Team-Run-Token` is present and does not prove a running Run in this company |
 | 403 | `task_outside_run_scope` | Sent with a Run's token, the task is not one of the Run's own ([Reads from inside a Run](#reads-from-inside-a-run)) |
 | 404 | `company_not_found` | Unknown company or not a member |
 | 404 | `task_not_found` | Unknown task, or one in another company |

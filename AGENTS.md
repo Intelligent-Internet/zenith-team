@@ -27,8 +27,8 @@ the search to assets already bundled in the repository. Follow the
 
 Read [frontend/AGENTS.md](frontend/AGENTS.md) before UI work for the required
 asset workflow, authored-symbol guidelines and verification. Older specs,
-Figma examples and copied components do not override this owner requirement
-(2026-09-15). Genuine brand logos, Agent avatars and illustrations retain
+Figma examples and copied components do not override this requirement.
+Genuine brand logos, Agent avatars and illustrations retain
 their authored assets; they are not substitutes for action or navigation icons.
 
 ## Repository map
@@ -58,8 +58,8 @@ lives in `server/pkg/db/generated`, queries in `server/pkg/db/queries`).
 Events use a plain envelope published post-commit on the in-process Bus. Each
 domain declares its topic and event names in `internal/<domain>/events.go`;
 `server/pkg/protocol` keeps only the daemon control-frame names. See
-[ADR 0008](./docs/adr/0008-run-and-activity-history.md), which supersedes the
-retired ADR 0006's Activity writer; the typed-topic rules live in the
+[ADR 0008](./docs/adr/0008-run-and-activity-history.md) for how Run and
+Activity history is written; the typed-topic rules live in the
 `server/internal/events` package doc.
 
 ```text
@@ -128,7 +128,7 @@ server/internal/
 │                     templates parsed from the zenith-workflows skill
 │                     (one workflow.yaml card/form/brief plus one
 │                     playbook.md per Workflow) and served read-only to
-│                     members. The content is authored in boardly-plugins
+│                     members. The content is authored in the plugins repository
 │                     and pinned in internal/platformbundle (ADR 0016);
 │                     CheckCatalog is the same parser reporting every
 │                     problem, for bundlectl. Launching is an ordinary
@@ -153,7 +153,7 @@ server/internal/
 │                     row also for projects.manage holders. Subject revisions
 │                     belong only to Task/Conversation. An Agent's row in a
 │                     Run also names the person it acted for and the Run
-│                     (on_behalf_of_user_id, run_id, D31): producers pass
+│                     (on_behalf_of_user_id, run_id): producers pass
 │                     events.RunActor, never a bare AgentActor, for a write
 │                     a Run proves. Handlers never write Activity inline.
 ├── execution/        The run lifecycle kernel: enqueue/trigger, claim,
@@ -167,7 +167,7 @@ server/internal/
 │                     literal inside the transaction and publish after commit
 │                     with bus.Publish(ctx, topic, ...); consumers register
 │                     with bus.Subscribe(topic, ...) — or SubscribeAll for a
-│                     sink that takes the whole stream. See ADR 0006.
+│                     sink that takes the whole stream.
 ├── realtime/         Receive-only client WS plane: identity-indexed hub, the
 │                     Broadcaster's delivery methods, sharded Redis
 │                     durable relay, the ephemeral relay for replaceable
@@ -207,13 +207,13 @@ server/internal/
 ├── authfile/         The versioned credential store (atomic 0600 writes,
 │                     one cross-process lock per file, Ensure refresh): the
 │                     CLI's auth.json and the daemon's own daemon-auth.json
-│                     (its session and its output presenter, D31). The
+│                     (its session and its output presenter). The
 │                     daemon never reads auth.json, and no Agent process
-│                     reads either: boardly-mcp goes through the Run channel.
+│                     reads either: zenith-team-mcp goes through the Run channel.
 ├── runchannel/       The Run channel wire (ADR 0009): run.json, the request
 │                     and answer documents and the client that posts them to
 │                     the daemon. A leaf (standard library and uuid) so zen,
-│                     the daemon and the mcp-sealed boardly-mcp share it.
+│                     the daemon and the mcp-sealed zenith-team-mcp share it.
 ├── daemon/           The machine-side daemon runtime (config, health, wakeup
 │                     WS, heartbeat, claim, prepare, transcript stream),
 │                     provider-native Connector/Plugin discovery and
@@ -225,13 +225,13 @@ server/internal/
 │                     resolves a claimed Run's frozen Connector contract
 │                     back to local provider settings.
 │                     run_cli_channel.go is the Run channel: run.json in a
-│                     Run's isolated BOARDLY_HOME plus the loopback proxy
-│                     that lets `zen` in Agent mode and boardly-mcp call the
+│                     Run's isolated ZENITH_TEAM_HOME plus the loopback proxy
+│                     that lets `zen` in Agent mode and zenith-team-mcp call the
 │                     API with the daemon's session and the Run proof (ADR
 │                     0009). Its policy has one row per zen command and per
-│                     route a boardly-mcp tool the Run is offered calls; no
-│                     channel means no boardly-mcp for the Run.
-│   ├── workspace/    Managed workspace/worktree preparation (boardly design)
+│                     route a zenith-team-mcp tool the Run is offered calls; no
+│                     channel means no zenith-team-mcp for the Run.
+│   ├── workspace/    Managed workspace/worktree preparation (zenith-team design)
 │   ├── repocache/    Shared clone cache
 │   └── execenv/      Provider execution env: codex home + managed TOML
 │                     blocks, claude settings, CLI mapping, skill bundles,
@@ -241,19 +241,19 @@ server/internal/
 │                     write only its own folders under the workspaces
 │                     root; a Run tagged in a chat also cannot open the
 │                     rest of that root, the repository cache or a
-│                     bound folder (D31)
+│                     bound folder
 ├── infra/            Technology adapters: cloudrun/ (application publication),
 │                     email/, storage/ (S3 objects and Cloudflare KV publication
 │                     route projections), and validate/.
 ├── config/           Env config. There is no internal/app: the composition
 │                     root is cmd/server (app.go, listeners.go, workers.go,
 │                     runtime_sweeper.go, redis.go, auth.go, lifecycle.go).
-├── platformbundle/   Pinned platform content from boardly-plugins
+├── platformbundle/   Pinned platform content from the plugins repository
 │                     (ADR 0016): one canonical tar and one lock per
-│                     plugin component, plus the harness SKILL.md boardly
+│                     plugin component, plus the harness SKILL.md zenith-team
 │                     keeps for zenith-workflows. Every tar is verified
 │                     against its lock at load; the server refuses to
-│                     start on a failure and boardly-mcp drops only that
+│                     start on a failure and zenith-team-mcp drops only that
 │                     bundle. bundlectl is the only writer; never edit the
 │                     tar or the lock by hand. Its own package for the
 │                     cmd/zen link set: the CLI links internal/mcp/tools
@@ -264,11 +264,11 @@ server/internal/
 │                     and the daemon. Its own package for the cmd/zen link
 │                     set: Studio must not pull Workflow bundle bytes into
 │                     the CLI. Studio's source is plugins/zenith-studio in
-│                     boardly-plugins; its single JSON lock in daemon/tool_releases
+│                     the plugins repository; its single JSON lock in daemon/tool_releases
 │                     carries metadata and provenance without an archive.
 │                     bundlectl prepare resolves verified npm skills into the
 │                     ignored generated/ folder before compiling the daemon/CLI.
-└── mcp/              The boardly-mcp stdio server (mcp-sealed: beyond its
+└── mcp/              The zenith-team-mcp stdio server (mcp-sealed: beyond its
                       own tree it imports only internal/runchannel,
                       internal/authfile, internal/platformbundle,
                       internal/contentbundle, internal/task/milestone and
@@ -370,12 +370,12 @@ isolated database + fixture per caller.
   credentials are not. Other daemon-local state is deliberately *not* product
   state and is never copied into PostgreSQL: execution scratch, the shared
   repo cache, the per-run codex home and its managed config blocks, the
-  skill-bundle cache, and `~/.boardly` (daemon id, config, credentials).
+  skill-bundle cache, and `~/.zenith-team` (daemon id, config, credentials).
   Execution machinery can be prepared again, with reauthentication where
   necessary. Authored `main`, Company Memory, and unmerged Task working files
   currently have no automatic cloud copy: preserve them until disposition is
   proven. Saved Outputs pin uploaded Asset Versions; they do not back up the
-  whole Workspace. See `docs/specs/workspaces/TECH.md` for retention rules.
+  whole Workspace.
 - Do not add SQLite, a local ledger, entity synchronization, jrpc2, or legacy
   protocol compatibility.
   Browser document snapshots and pending CRDT edits may use IndexedDB for
@@ -384,10 +384,10 @@ isolated database + fixture per caller.
 - Gin and gorilla/websocket are transport boundaries; domain packages remain
   transport-independent. `internal/realtime` and `internal/daemonws` own the
   WS planes; handlers do the HTTP upgrade.
-- Schema style (owner decision, 2026-08-14): DB-generated UUID entity ids
-  (`gen_random_uuid()`), including Runs (owner amendment, 2026-09-13);
-  real FOREIGN KEY edges — CASCADE for owned children, SET NULL for optional
-  pointers, none on attribution columns or usage fact tables; the circular
+- Schema style: DB-generated UUID entity ids (`gen_random_uuid()`),
+  including Runs; real FOREIGN KEY edges — CASCADE for owned children, SET
+  NULL for optional pointers, none on attribution columns or usage fact
+  tables; the circular
   task<->conversation and schedule<->conversation edges are DEFERRABLE. sqlc
   maps UUID columns directly to google/uuid while nullable scalar/timestamp
   columns use pgtype; id validation is version-agnostic (`util.ParseGoUUID`).
@@ -410,16 +410,16 @@ isolated database + fixture per caller.
   Schedule-Conversation Runs neither wait for nor occupy Task capacity;
   Schedule policy independently controls occurrence supersession and
   invalidation.
-- Every JSON field Zenith Team itself serializes is camelCase (owner decision,
-  2026-08-15). That covers `json:"..."` struct tags, the keys of
-  `map[string]any` event and WS-frame payloads, and any JSON object written by
-  hand. Exactly two exceptions: `pkg/db/generated/**`, the sqlc DB models, which
-  mirror snake_case columns; and `pkg/agent/**`, which decodes other vendors'
+- Every JSON field Zenith Team itself serializes is camelCase. That covers
+  `json:"..."` struct tags, the keys of `map[string]any` event and WS-frame
+  payloads, and any JSON object written by hand. Exactly two exceptions:
+  `pkg/db/generated/**`, the sqlc DB models, which mirror snake_case columns;
+  and `pkg/agent/**`, which decodes other vendors'
   formats (the Claude CLI's stream-json, the Codex app-server's JSON-RPC and
   rollout files) where the field names belong to those vendors, not to us —
   renaming them zeroes out token usage at runtime with no compile error. Not
   JSON and therefore untouched: SQL and migrations, database column names, Go
-  field names, `BOARDLY_`-prefixed env vars, CLI flags, the
+  field names, `ZENITH_TEAM_`-prefixed env vars, CLI flags, the
   `zen config set <key>`
   vocabulary, URL query parameters, YAML authoring formats such as the Company
   Plan transaction, slog field keys, and string *values* drawn from database
@@ -495,7 +495,7 @@ isolated database + fixture per caller.
   Group arm keeps the rejoin fence, and `ProjectAccess.Granted` stays the
   person's own rows (`GroupGranted` is their Groups'). What a
   delegate (a Run, or the Huddle voice assistant) may do on a Project is one
-  rule on top of them (D31): `delegate_permission_held` (its Authorizer
+  rule on top of them: `delegate_permission_held` (its Authorizer
   holds the permission and read, never through the management bridge, and
   a Task chat's answer stays in its Project; no chat audience narrows it)
   and `run_permission_held`, the same for one Run from its own row. Enqueue,
@@ -524,8 +524,13 @@ isolated database + fixture per caller.
   directions, so a code cannot reach the API undocumented and cannot be
   documented without existing. Handlers never invent an
   error body. `server/internal/handler/error_mapping_test.go` pins every row.
-- **Never name the sibling reference repository** in tracked files, commit
-  messages, or code comments. Write "the reference architecture".
+- **State design choices as Zenith Team's own.** Explain the reason in the
+  code, comment, ADR, or commit message; never cite another product as the
+  source.
+- **Every identity is Zenith Team.** New code, docs, env vars, paths, and
+  identifiers use `ZENITH_TEAM_` / `zenith-team` / `zenith_team` (table in
+  `docs/branding.md`); the legacy product name appears only in the external
+  contracts that page lists, and nothing reads it for compatibility.
 - Tests precede behavioral implementation.
 - Tests are co-located with their package, flat: unit tests and
   `*_integration_test.go` infrastructure suites sit beside the code. There is no
@@ -534,24 +539,34 @@ isolated database + fixture per caller.
   `go test -tags=integration`, which is what `go run ./tests/testpostgres` runs.
 - A helper used by both lanes must live in an untagged `*_test.go` file. Putting
   it in a tagged file breaks the unit build of every package that uses it.
-- CI gates on the unit lane alone (`make go-unit`). The integration job is
-  dispatch-only, so **nothing on the merge path executes the DB, object-storage,
-  or Redis suites** -- run `make go-integration` yourself before merging changes
-  to migrations, sqlc queries, or fixtures. Local `make gate` includes the full
+- CI gates pull requests on the unit lane (`make go-unit`), not the integration
+  suites. The integration job runs nightly and on manual dispatch, so
+  **nothing on the merge path executes the DB, object-storage, or Redis
+  suites** -- run `make go-integration` yourself before merging changes to
+  migrations, sqlc queries, or fixtures. Local `make gate` includes the full
   PostgreSQL integration suite with the race detector as part of `go-gate`.
-- CI lanes are folder-gated (`.github/workflows/ci.yml`): `server/**` runs
-  the server lane, `frontend/**` runs the frontend lane, anything else runs
-  no lane. The one addition is `server-windows`, a Windows smoke job for the
-  pinned platform content (`internal/platformbundle`, `tools/builtin/`,
-  `platform_skills.go`) that also runs when `.gitattributes` changes. A
-  change that only touches shared inputs (`docs/api/spec/**`, the
-  `Makefile`, the workflows) is not verified by CI on its own -- run
-  `make go-unit` and `make api-lint api-types-check` locally before merging
-  it. Merges to `main` build no image. Pushing a `release-<semver>` tag
-  (for example `release-0.0.1`) at a commit on `main` builds
-  `server/Dockerfile` and pushes `ii-boardly/server:<semver>` and `:latest`
-  to ECR (`.github/workflows/release.yml`). It does not deploy; promotion
-  to dev stays in `deploy.yaml`.
+- CI lanes are path-gated (`.github/workflows/ci.yml`). Each lane lists every
+  file its checks read, shared inputs included (`docs/api/**` and the deploy
+  env template for the server lane, `docs/api/spec/**` for the frontend lane);
+  the `Makefile` and `ci.yml` run every lane. The server lane runs
+  `go-fmt-check`, `go-lint` (on pull requests, only findings the branch adds)
+  and `go-unit`, which includes the pinned sqlc drift check. `server-windows`
+  proves the pinned platform content (`internal/platformbundle`,
+  `tools/builtin/`, `platform_skills.go`, `.gitattributes`) survives a CRLF
+  checkout; `server-macos` runs the daemon's macOS sandbox tests. The frontend
+  lane runs lint, typecheck, the API contract checks, a production build and
+  the Electron security scan; `selfhost` builds both images and boots the
+  Compose stack. A nightly run covers every lane plus the integration suites
+  and opens an issue when it fails. `ci-gate` is the one required check and
+  is fail-closed: a selected lane must succeed and an unselected one must be
+  skipped. `security.yml` scans secrets (gitleaks), workflows (actionlint,
+  zizmor), and dependencies; `pr-title.yml` checks Conventional Commit
+  titles. Merges to `main` build no image. Pushing a
+  `v<major>.<minor>.<patch>` tag (or an `-alpha.N`, `-beta.N` or `-rc.N`
+  pre-release) at a commit on `main` verifies again, scans Go dependencies
+  fail-closed, and publishes the server and web images to GHCR and the `zen`
+  CLI to a GitHub Release (`.github/workflows/release.yml`). Nothing here
+  deploys.
 - Preserve unrelated user changes and never commit credentials or generated
   build output.
 

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestProjectPlanAtomicCreationAndImmutableMembership(t *testing.T) {
@@ -37,12 +37,41 @@ func TestProjectPlanAtomicCreationAndImmutableMembership(t *testing.T) {
 	}
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM tasks WHERE company_id=$1`, f.CompanyA)
 	principal := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
-	artifact := PlanArtifact{ArtifactVersion: 1, CompanyID: f.CompanyA.String(), CompanySlug: "schema-a", CreatedAt: time.Now(), Base: PlanBase{Projects: []PlanBaseEntity{{ID: f.ProjectA.String(), Key: "work", Revision: 1}}, Tasks: []PlanBaseEntity{}, Dependencies: []PlanBaseDependency{}}, Desired: PlanDocument{FormatVersion: 5, Company: "schema-a", Projects: []PlanProject{{Key: "work", Title: "Work"}, {Key: "website", Title: "Website"}}, Tasks: []PlanTask{{Key: "page", ProjectKey: "website", Title: "Build page", Description: "Build it", MilestoneType: "product", Status: "todo", Priority: "high", DependsOn: []PlanTaskDependency{{TaskKey: "missing"}}}}}}
+	artifact := PlanArtifact{
+		ArtifactVersion: 1,
+		CompanyID:       f.CompanyA.String(),
+		CompanySlug:     "schema-a",
+		CreatedAt:       time.Now(),
+		Base: PlanBase{
+			Projects:     []PlanBaseEntity{{ID: f.ProjectA.String(), Key: "work", Revision: 1}},
+			Tasks:        []PlanBaseEntity{},
+			Dependencies: []PlanBaseDependency{},
+		},
+		Desired: PlanDocument{
+			FormatVersion: 5,
+			Company:       "schema-a",
+			Projects:      []PlanProject{{Key: "work", Title: "Work"}, {Key: "website", Title: "Website"}},
+			Tasks: []PlanTask{
+				{
+					Key:           "page",
+					ProjectKey:    "website",
+					Title:         "Build page",
+					Description:   "Build it",
+					MilestoneType: "product",
+					Status:        "todo",
+					Priority:      "high",
+					DependsOn:     []PlanTaskDependency{{TaskKey: "missing"}},
+				},
+			},
+		},
+	}
 	if _, err := service.ApplyCompanyPlan(ctx, principal, artifact); !errors.Is(err, ErrPlanInvalidInput) {
 		t.Fatalf("invalid dependency error=%v", err)
 	}
 	var count int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM projects WHERE company_id=$1 AND key='website'`, f.CompanyA).Scan(&count); err != nil || count != 0 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM projects WHERE company_id=$1 AND key='website'`, f.CompanyA).
+		Scan(&count); err != nil ||
+		count != 0 {
 		t.Fatalf("partial Project write: %d, %v", count, err)
 	}
 	artifact.Desired.Tasks[0].DependsOn = []PlanTaskDependency{}

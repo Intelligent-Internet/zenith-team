@@ -709,7 +709,7 @@ func (q *Queries) HasActiveScheduleRun(ctx context.Context, arg HasActiveSchedul
 const insertSchedule = `-- name: InsertSchedule :one
 WITH request_lock AS MATERIALIZED (
     SELECT pg_advisory_xact_lock(hashtextextended(
-        'boardly/schedule-create/v1/' ||
+        'zenith-team/schedule-create/v1/' ||
         $1::uuid::text || '/' ||
         $2::uuid::text || '/' ||
         $3::uuid::text,

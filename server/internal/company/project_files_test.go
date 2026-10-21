@@ -21,7 +21,12 @@ func TestProjectFileLimits(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := validProjectFile(test.filename, test.contentType, test.size, test.logo); got != test.want {
+			if got := validProjectFile(
+				test.filename,
+				test.contentType,
+				test.size,
+				test.logo,
+			); got != test.want {
 				t.Fatalf("validProjectFile() = %v, want %v", got, test.want)
 			}
 		})

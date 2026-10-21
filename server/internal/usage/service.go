@@ -14,11 +14,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/telemetry"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 var ErrRunUsageConflict = errors.New("run usage fact conflicts with the stored fact")
@@ -60,7 +60,7 @@ type RunUsageInput struct {
 
 // UsageService owns immutable run-usage ingestion and the Agent and Company
 // reports derived directly from retained runs and their usage facts.
-type UsageService interface { //nolint:revive // AGENTS.md mandates <Domain>Service; bare Service is forbidden.
+type UsageService interface {
 	ReportRunUsage(context.Context, uuid.UUID, []RunUsageInput) error
 	Get(context.Context, auth.UserPrincipal, uuid.UUID, Period) (AgentUsageReport, error)
 	GetCompany(context.Context, auth.UserPrincipal, CompanyPeriod) (CompanyUsageReport, error)

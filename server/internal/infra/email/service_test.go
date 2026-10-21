@@ -15,9 +15,9 @@ func TestServiceSendsTemplateThroughAbstractProvider(t *testing.T) {
 		t.Fatalf("NewService() error = %v", err)
 	}
 	message := TemplateMessage{
-		To:             "founder@boardly.test",
-		TemplateID:     "00000000-0000-4000-8000-000000000001",
-		Variables:      map[string]string{"DISPLAY_NAME": "Boardly Founder", "OTP_CODE": "123456"},
+		To:             "founder@zenith-team.test",
+		TemplateID:     "2f1d6c8e-4b7a-4c51-9a3e-5d0e7c9b1a01",
+		Variables:      map[string]string{"DISPLAY_NAME": "Zenith Team Founder", "OTP_CODE": "123456"},
 		IdempotencyKey: "email-verification/flow-1/1",
 	}
 
@@ -47,7 +47,7 @@ func TestServiceRejectsInvalidTemplateMessagesBeforeProvider(t *testing.T) {
 		t.Fatalf("NewService() error = %v", err)
 	}
 	valid := TemplateMessage{
-		To: "founder@boardly.test", TemplateID: "template-id",
+		To: "founder@zenith-team.test", TemplateID: "template-id",
 		Variables: map[string]string{"OTP_CODE": "123456"}, IdempotencyKey: "verification/1",
 	}
 	for name, mutate := range map[string]func(*TemplateMessage){
@@ -77,7 +77,7 @@ func TestServiceRejectsInvalidTemplateMessagesBeforeProvider(t *testing.T) {
 	}
 }
 
-func TestVerificationServiceMapsBoardlyTemplateVariables(t *testing.T) {
+func TestVerificationServiceMapsZenithTeamTemplateVariables(t *testing.T) {
 	t.Parallel()
 
 	provider := &providerStub{}
@@ -85,21 +85,22 @@ func TestVerificationServiceMapsBoardlyTemplateVariables(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewService() error = %v", err)
 	}
-	verification, err := NewVerificationService(service, "00000000-0000-4000-8000-000000000001")
+	verification, err := NewVerificationService(service, "2f1d6c8e-4b7a-4c51-9a3e-5d0e7c9b1a01")
 	if err != nil {
 		t.Fatalf("NewVerificationService() error = %v", err)
 	}
 
 	if err := verification.SendVerification(
 		context.Background(),
-		"founder@boardly.test",
-		"Boardly Founder",
+		"founder@zenith-team.test",
+		"Zenith Team Founder",
 		"654321",
 		"email-verification/flow-1/2",
 	); err != nil {
 		t.Fatalf("SendVerification() error = %v", err)
 	}
-	if got := provider.message.Variables; got["DISPLAY_NAME"] != "Boardly Founder" || got["OTP_CODE"] != "654321" {
+	if got := provider.message.Variables; got["DISPLAY_NAME"] != "Zenith Team Founder" ||
+		got["OTP_CODE"] != "654321" {
 		t.Fatalf("template variables = %#v", got)
 	}
 }

@@ -23,8 +23,8 @@ import (
 //   - Say what happened, then who can act. A person reading it should know
 //     whether to wait, to fix something, or to do nothing.
 //   - Name the provider when the caller knows it ("Codex", "Claude"); fall
-//     back to "the agent provider" otherwise. Owner decision 2026-09-16: a
-//     founder must learn which account or CLI to fix without opening logs.
+//     back to "the agent provider" otherwise. A founder must learn which
+//     account or CLI to fix without opening logs.
 //   - No blame, no links, no ids. Surfaces add context; this is the sentence.
 //   - Never embed provider text. Detail carries it separately, so a surface
 //     can choose to show the sentence alone.

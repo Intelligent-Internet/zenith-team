@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 const nilUUID = "00000000-0000-0000-0000-000000000000"
@@ -127,7 +127,11 @@ func TestFrameCarriesTheEventsNameCompanyActorAndPayload(t *testing.T) {
 		CompanyID: companyID,
 		CreatedAt: stamp,
 		Actor:     events.UserActor("user-1"),
-		Payload:   runSnapshot{RunID: uuid.MustParse("00000000-0000-4000-8000-000000000007"), CompanyID: "company-1", ConversationCreatedBy: "user-9"},
+		Payload: runSnapshot{
+			RunID:                 uuid.MustParse("00000000-0000-4000-8000-000000000007"),
+			CompanyID:             "company-1",
+			ConversationCreatedBy: "user-9",
+		},
 	})
 
 	if frame.Type != "run.completed" {

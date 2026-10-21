@@ -10,7 +10,7 @@ import {
   useListAgentRuntimesQuery,
 } from "@/shared/api/agent-runtime-api";
 import { useRuntimeModelDiscovery } from "@/features/agent-setup/hooks/use-runtime-model-discovery";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { ConversationModelSettingsUpdate } from "@/shared/api/types";
 import { chatModelLabel } from "@/features/chat-panel/model/chat-model-label";
 import { ChatThinkingSlider } from "./chat-thinking-slider";
@@ -120,7 +120,7 @@ export function ChatModelSettings({
       }).unwrap();
     } catch (cause) {
       setError(
-        getBoardlyQueryErrorMessage(cause, "Could not save. Try again."),
+        getZenithTeamQueryErrorMessage(cause, "Could not save. Try again."),
       );
     } finally {
       saving.current = false;

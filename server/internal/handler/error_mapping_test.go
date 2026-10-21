@@ -12,20 +12,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/agent"
-	"boardly.dev/boardly/server/internal/approval"
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/canvas"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/conversation"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/realtime"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/usage"
-	"boardly.dev/boardly/server/internal/util"
-	"boardly.dev/boardly/server/internal/wiki"
-	"boardly.dev/boardly/server/internal/workflow"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/approval"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/realtime"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/usage"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/workflow"
 )
 
 // mappedErrorCase pins one sentinel-to-response mapping. The golden suite locks
@@ -305,7 +305,13 @@ func TestErrorMappersGolden(t *testing.T) {
 				"canvas_forbidden",
 			},
 			{"invalid", canvas.ErrInvalid, 422, "Invalid canvas operation", "canvas_invalid"},
-			{"invalid page insert", canvas.ErrPageInvalidInsert, 422, "Invalid inserted block or destination. Use the native block shape from page_read. Headings and paragraphs cannot contain blocks: omit parentId for document-level siblings, and use afterId or beforeId to position them.", "page_invalid_insert"},
+			{
+				"invalid page insert",
+				canvas.ErrPageInvalidInsert,
+				422,
+				"Invalid inserted block or destination. Use the native block shape from page_read. Headings and paragraphs cannot contain blocks: omit parentId for document-level siblings, and use afterId or beforeId to position them.",
+				"page_invalid_insert",
+			},
 			{
 				"conflict",
 				canvas.ErrConflict,
@@ -1249,7 +1255,7 @@ func TestErrorMappersGolden(t *testing.T) {
 				},
 			},
 		},
-		// Groups (Access TECH D3) reuse the Company's own not-found and
+		// Groups reuse the Company's own not-found and
 		// permission sentinels, answered as the Team routes answer them.
 		{
 			name:  "group",

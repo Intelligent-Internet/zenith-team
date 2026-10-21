@@ -48,8 +48,8 @@ import "./huddles.css";
 import { huddleAgentStateLabels, useHeliaStatus } from "./huddle-ai-status";
 import { HuddleInviteAgents } from "./huddle-invite-agents";
 import { useSetHuddleAIMutation, useVoiceAgentsEnabled } from "./huddle-ai-api";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
-import { boardlyRealtimeClient } from "@/shared/realtime/realtime-client.service";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
+import { zenithTeamRealtimeClient } from "@/shared/realtime/realtime-client.service";
 import { HuddleAgentAvatar } from "./huddle-agent-avatar";
 import { HuddleScreenPicker } from "./huddle-screen-picker";
 import {
@@ -75,7 +75,7 @@ type HuddleCallPanelProps = {
 type Toast = { id: number; text: string; tone: "join" | "leave" | "warning" };
 
 // The server ends every Huddle at its deadline; members are warned this long
-// before it (PRD: pilot duration).
+// before it.
 const DEADLINE_WARNING_SECONDS = 5 * 60;
 
 const isMac =
@@ -235,7 +235,7 @@ export function HuddleCallPanel({
         },
       }).unwrap();
     } catch (cause) {
-      setVoiceError(getBoardlyQueryErrorMessage(cause));
+      setVoiceError(getZenithTeamQueryErrorMessage(cause));
     }
     void helia.query.refetch();
   }
@@ -288,7 +288,7 @@ export function HuddleCallPanel({
     };
     // The server signals every reservation, confirmation and departure; the
     // slow poll only covers frames lost while the realtime link was down.
-    const removeRealtime = boardlyRealtimeClient.onEvent((event) => {
+    const removeRealtime = zenithTeamRealtimeClient.onEvent((event) => {
       if (
         event.companyId === companyId &&
         event.type === "huddle.roster_changed" &&
@@ -296,7 +296,7 @@ export function HuddleCallPanel({
       )
         void refresh();
     });
-    const removeRecovery = boardlyRealtimeClient.onRecovery(
+    const removeRecovery = zenithTeamRealtimeClient.onRecovery(
       () => void refresh(),
     );
     void refresh();

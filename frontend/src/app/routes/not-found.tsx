@@ -16,7 +16,7 @@ export function NotFoundPage() {
     >
       <div className="flex w-full max-w-md flex-col items-center">
         <img
-          src={`${import.meta.env.BASE_URL}images/boardly-404.png`}
+          src={`${import.meta.env.BASE_URL}images/zenith-team-404.png`}
           alt=""
           className="mb-6 w-full max-w-[280px] object-contain"
           draggable={false}

@@ -8,7 +8,7 @@ import { personInitials } from "@/shared/ui/person-initials";
 import { attachmentUrl } from "@/shared/chat/attachment-preview";
 import { PersonalToolsDialog } from "@/features/common/components/personal-tools-dialog";
 import { SocialPlatformMark } from "./social-platform-mark";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import {
   useDisconnectSocialMutation,
   useSocialConnectionsQuery,
@@ -57,7 +57,7 @@ export function SocialAccountsSection({
     setIsConnecting(true);
     setError("");
     try {
-      const bridge = window.boardlyDesktop;
+      const bridge = window.zenithTeamDesktop;
       const loopback = isDesktop
         ? await bridge?.startSocialOAuthLoopback?.()
         : undefined;
@@ -79,11 +79,11 @@ export function SocialAccountsSection({
       } else window.location.assign(result.authorizationUrl);
     } catch (error) {
       if (isDesktop) {
-        await window.boardlyDesktop
+        await window.zenithTeamDesktop
           ?.cancelSocialOAuthLoopback?.()
           .catch(() => {});
       }
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     } finally {
       connecting.current = false;
       setIsConnecting(false);
@@ -100,7 +100,7 @@ export function SocialAccountsSection({
       setSelected(null);
       toast.success("Account disconnected");
     } catch (error) {
-      setError(getBoardlyQueryErrorMessage(error));
+      setError(getZenithTeamQueryErrorMessage(error));
     }
   }
   const accounts = connections.currentData?.items ?? [];
@@ -141,7 +141,7 @@ export function SocialAccountsSection({
           className="social-load-state flex items-center gap-[12px] m-[16px_0_0] text-workspace-muted text-workspace-label"
           role="alert"
         >
-          <p>{getBoardlyQueryErrorMessage(queryError)}</p>
+          <p>{getZenithTeamQueryErrorMessage(queryError)}</p>
           <button
             className="plugins-text-button"
             type="button"

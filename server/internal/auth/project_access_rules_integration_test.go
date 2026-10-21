@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // project_grants_read_fkey: no permission is stored without the person's
@@ -130,7 +130,7 @@ func TestResolveMemberProjectAccessReadsAnotherPerson(t *testing.T) {
 }
 
 // A person's access is the union of their own grant and each of their
-// Groups (000101, Access TECH D2). project_permission_held,
+// Groups (000101). project_permission_held,
 // project_access, output_access, project_access_paths and
 // ResolveMemberProjectAccess must agree on every source: an own grant only,
 // a Group grant only, both, a Group membership older than the person's
@@ -174,7 +174,7 @@ func TestGroupAccessAgreesAcrossTheRule(t *testing.T) {
 		string(ProjectPermissionTasksExecute),
 	)
 	// w.revoked left the Company: their membership row stays, and so does
-	// their Group row until the Company sweep (D5) removes it.
+	// their Group row until the Company sweep removes it.
 	dbtest.AddGroupMembers(t, ctx, w.pool, w.f.CompanyA, finance, groupOnly, both, rejoined, disabled, w.revoked)
 	design := dbtest.SeedGroup(t, ctx, w.pool, w.f.CompanyA, "Design")
 	dbtest.GrantGroupProject(

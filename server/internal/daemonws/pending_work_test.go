@@ -10,7 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // TestNotifyPendingWork pins the hint that removes the up-to-one-heartbeat

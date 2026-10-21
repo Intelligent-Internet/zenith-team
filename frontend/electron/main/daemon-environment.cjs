@@ -21,7 +21,7 @@ function safeHostEnvironmentKey(key) {
       key,
     ) ||
     /^LC_[A-Z_]+$/iu.test(key) ||
-    /^BOARDLY_(?:CLAUDE|CODEX)_(?:PATH|MODEL)$/iu.test(key)
+    /^ZENITH_TEAM_(?:CLAUDE|CODEX)_(?:PATH|MODEL)$/iu.test(key)
   );
 }
 

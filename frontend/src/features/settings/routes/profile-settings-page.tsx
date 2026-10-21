@@ -8,8 +8,8 @@ import {
   type SessionSnapshot,
 } from "@/shared/session/session";
 import {
-  deleteBoardlyAccount,
-  logoutBoardlySession,
+  deleteZenithTeamAccount,
+  logoutZenithTeamSession,
 } from "@/features/auth/model/logout";
 import { WorkspaceCompanySwitcher } from "@/app/shell/workspace-company-switcher";
 import { SettingsButton } from "@/features/settings/components/settings-primitives";
@@ -222,7 +222,7 @@ export function ProfileSettingsPage() {
     : 0;
   const avatarUrl =
     session.avatarUrl?.trim() ||
-    publicAssetPath("images/settings/profile-avatar.png");
+    publicAssetPath("images/settings/profile-avatar.svg");
 
   const updateField = <Field extends keyof ProfileFormValues>(
     field: Field,
@@ -365,7 +365,7 @@ export function ProfileSettingsPage() {
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
-      await logoutBoardlySession();
+      await logoutZenithTeamSession();
       navigate("/login", { replace: true });
     } finally {
       setIsSigningOut(false);
@@ -391,7 +391,7 @@ export function ProfileSettingsPage() {
     setIsDeleting(true);
     setDeleteError(null);
     try {
-      await deleteBoardlyAccount();
+      await deleteZenithTeamAccount();
       setDeleteDialogOpen(false);
       navigate("/login", { replace: true });
     } catch (error) {

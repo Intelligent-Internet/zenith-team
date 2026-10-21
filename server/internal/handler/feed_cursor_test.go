@@ -74,7 +74,8 @@ func TestRunCursorRoundTripsAndRejectsForeignRecords(t *testing.T) {
 	encoded := encodeRunCursor(wantCreatedAt, uuid.MustParse("00000000-0000-4000-8000-000000004711"))
 
 	gotCreatedAt, gotID, ok := decodeRunCursor(encoded)
-	if !ok || gotID != uuid.MustParse("00000000-0000-4000-8000-000000004711") || !gotCreatedAt.Equal(wantCreatedAt) {
+	if !ok || gotID != uuid.MustParse("00000000-0000-4000-8000-000000004711") ||
+		!gotCreatedAt.Equal(wantCreatedAt) {
 		t.Fatalf(
 			"decodeRunCursor(encode) = (%v, %d, %t), want (%v, 4711, true)",
 			gotCreatedAt, gotID, ok, wantCreatedAt,

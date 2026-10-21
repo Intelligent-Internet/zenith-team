@@ -1,7 +1,7 @@
-import { getBoardlyDesktopBridge } from "@/shared/desktop/desktop-environment.service";
+import { getZenithTeamDesktopBridge } from "@/shared/desktop/desktop-environment.service";
 
 export function prepareHuddleWindow(): Window | null {
-  if (getBoardlyDesktopBridge()?.openHuddleWindow) return null;
+  if (getZenithTeamDesktopBridge()?.openHuddleWindow) return null;
   const popup = window.open(
     "",
     "zenith-huddle",
@@ -15,7 +15,7 @@ export function openHuddleWindow(
   huddleId: string,
   popup?: Window | null,
 ): Promise<boolean> {
-  const desktop = getBoardlyDesktopBridge();
+  const desktop = getZenithTeamDesktopBridge();
   if (desktop?.openHuddleWindow) {
     return desktop.openHuddleWindow(huddleId).then((result) => result.ok);
   }
@@ -33,7 +33,7 @@ export function openHuddleStartWindow(
   conversationId: string,
   popup?: Window | null,
 ): Promise<boolean> {
-  const desktop = getBoardlyDesktopBridge();
+  const desktop = getZenithTeamDesktopBridge();
   if (desktop?.openHuddleStartWindow) {
     return desktop
       .openHuddleStartWindow(conversationId)

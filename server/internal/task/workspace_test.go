@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/conversation"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 // The workspace embeds one Run timeline per Run the returned message window
@@ -30,7 +30,14 @@ func TestWorkspaceRunIDsAreTheWindowsDistinctRunsInOrder(t *testing.T) {
 		// The turn in flight: its words are committed, its answer is not.
 		view(uuid.MustParse("00000000-0000-4000-8000-000000000013"), conversation.ItemTypeUserMessage),
 	})
-	if want := []uuid.UUID{uuid.MustParse("00000000-0000-4000-8000-000000000011"), uuid.MustParse("00000000-0000-4000-8000-000000000012"), uuid.MustParse("00000000-0000-4000-8000-000000000013")}; !reflect.DeepEqual(got, want) {
+	if want := []uuid.UUID{
+		uuid.MustParse("00000000-0000-4000-8000-000000000011"),
+		uuid.MustParse("00000000-0000-4000-8000-000000000012"),
+		uuid.MustParse("00000000-0000-4000-8000-000000000013"),
+	}; !reflect.DeepEqual(
+		got,
+		want,
+	) {
 		t.Fatalf("workspaceRunIDs() = %v, want %v", got, want)
 	}
 	if empty := workspaceRunIDs(nil); len(empty) != 0 {

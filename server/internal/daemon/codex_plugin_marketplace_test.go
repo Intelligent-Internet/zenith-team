@@ -43,7 +43,11 @@ func TestHumanizedCodexPluginName(t *testing.T) {
 		{slug: "sql-api", description: "Api access. Run sql against a warehouse.", want: "SQL API"},
 		{slug: "ios-macos-e2e_3d", want: "iOS macOS E2E 3D"},
 		{slug: "the-state-of-the-art", want: "The State of the Art"},
-		{slug: "42crunch-api-security-testing", description: "42Crunch API audit.", want: "42Crunch API Security Testing"},
+		{
+			slug:        "42crunch-api-security-testing",
+			description: "42Crunch API audit.",
+			want:        "42Crunch API Security Testing",
+		},
 		// Capitals the description also writes with only a capital initial
 		// are emphasis or an identifier, not the name's spelling.
 		{
@@ -265,11 +269,17 @@ func TestReadCodexPluginCatalogCompletesFromTheMarketplaceListing(t *testing.T) 
 			Name: "claude-plugins-official",
 			Path: &manifestPath,
 			Plugins: []codexPluginSummary{
-				claudeMarketplaceSummary(t, "canva",
-					`{"displayName":null,"shortDescription":null,"developerName":null,"websiteUrl":null,"category":"Design"}`),
+				claudeMarketplaceSummary(
+					t,
+					"canva",
+					`{"displayName":null,"shortDescription":null,"developerName":null,"websiteUrl":null,"category":"Design"}`,
+				),
 				claudeMarketplaceSummary(t, "hyperframes", `null`),
-				claudeMarketplaceSummary(t, "terraform",
-					`{"developerName":"HashiCorp (Codex)","websiteUrl":"https://developer.hashicorp.com"}`),
+				claudeMarketplaceSummary(
+					t,
+					"terraform",
+					`{"developerName":"HashiCorp (Codex)","websiteUrl":"https://developer.hashicorp.com"}`,
+				),
 				claudeMarketplaceSummary(t, "newrelic",
 					`{"displayName":"New Relic","shortDescription":"Codex text."}`),
 				claudeMarketplaceSummary(t, "unlisted-mcp-server", `{}`),
@@ -493,7 +503,14 @@ func TestCodexPluginFromSummaryNamesOnlyThirdPartySlugs(t *testing.T) {
 		t.Fatalf("OpenAI marketplace plugin name = %q (ok %v), want the slug", internal.Name, ok)
 	}
 	summary.ID = "codex-app-tools@claude-plugins-official"
-	thirdParty, _, ok := codexPluginFromSummary(summary, "claude-plugins-official", nil, 0, nil, codexMarketplaceListing{})
+	thirdParty, _, ok := codexPluginFromSummary(
+		summary,
+		"claude-plugins-official",
+		nil,
+		0,
+		nil,
+		codexMarketplaceListing{},
+	)
 	if !ok || thirdParty.Name != "Codex App Tools" {
 		t.Fatalf("third-party plugin name = %q (ok %v), want %q", thirdParty.Name, ok, "Codex App Tools")
 	}

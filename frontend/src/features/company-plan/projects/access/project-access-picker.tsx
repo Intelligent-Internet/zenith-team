@@ -169,10 +169,10 @@ export type PickerDraftMode = {
 };
 
 // What a person or Group can do on one Project, as one short label
-// ("View +1") that opens a popover (Access DESIGN 7.0.1; a bottom sheet
-// when narrow): four presets on top, then every permission as a compact
-// row with its icon, name and a check, in three unlabelled groups split
-// by a hairline. The picker is the only place that lists the permissions.
+// ("View +1") that opens a popover (a bottom sheet when narrow): four
+// presets on top, then every permission as a compact row with its icon,
+// name and a check, in three unlabelled groups split by a hairline. The
+// picker is the only place that lists the permissions.
 // View is needed for everything else, so it stays checked (greyed) while
 // anything else is. What a Group or the Company floor gives shows checked
 // and locked with where it comes from; what the viewer may not give (the

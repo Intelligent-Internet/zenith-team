@@ -90,7 +90,7 @@
   cursor: not-allowed;
 }
 
-.auth-page .boardly-auth-input:-webkit-autofill {
+.auth-page .zenith-team-auth-input:-webkit-autofill {
   -webkit-text-fill-color: var(--workspace-native-text);
   caret-color: var(--workspace-native-text);
 }

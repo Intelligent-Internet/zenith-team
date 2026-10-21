@@ -9,9 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 )
 
 func TestNewCompanyServiceNeedsNoAccessVersionAccelerator(t *testing.T) {
@@ -312,7 +312,7 @@ func TestStageOnboardingEventsCarriesTheCanonicalCompanyProjection(t *testing.T)
 	active := activeMemberResponse(member, "owner@example.com", "Owner", nil, false)
 	company := Response{
 		ID:        companyID,
-		Name:      "Boardly",
+		Name:      "Zenith Team",
 		Role:      auth.CompanyRoleOwner,
 		Revision:  1,
 		CreatedAt: now,

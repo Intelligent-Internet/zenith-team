@@ -5,7 +5,7 @@ import {
   readSessionSnapshot,
 } from "@/shared/session/session";
 import { companyService } from "@/shared/api/company.service";
-import { boardlyApi } from "@/shared/api/boardly-api";
+import { zenithTeamApi } from "@/shared/api/zenith-team-api";
 import { notificationService } from "@/features/notifications/api/notification.service";
 import { activateNotification } from "./notification-navigation";
 import { toast } from "@/shared/ui/sonner";
@@ -56,7 +56,7 @@ export async function activateAccountNotification({
       notificationId,
       item,
       onChanged: () => {
-        store.dispatch(boardlyApi.util.invalidateTags(["Inbox"]));
+        store.dispatch(zenithTeamApi.util.invalidateTags(["Inbox"]));
       },
     });
     if (!stillCurrent()) return null;
@@ -66,7 +66,7 @@ export async function activateAccountNotification({
     return session.nextStep === "complete" ? path : getNextRoute(session);
   } catch {
     if (stillCurrent()) {
-      store.dispatch(boardlyApi.util.invalidateTags(["Company", "Inbox"]));
+      store.dispatch(zenithTeamApi.util.invalidateTags(["Company", "Inbox"]));
       toast.error(
         "This notification is no longer available, or you no longer have access to its company.",
       );

@@ -8,14 +8,15 @@ import (
 	"testing"
 	"unicode/utf16"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
@@ -56,7 +57,13 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	seed := dbtest.RunSeed{CompanyID: f.CompanyA, AgentID: f.AgentA, RuntimeID: f.RuntimeA, ConversationID: conv.ID, AuthorizerID: f.UserA}
+	seed := dbtest.RunSeed{
+		CompanyID:      f.CompanyA,
+		AgentID:        f.AgentA,
+		RuntimeID:      f.RuntimeA,
+		ConversationID: conv.ID,
+		AuthorizerID:   f.UserA,
+	}
 	originalRun := dbtest.SeedRun(t, ctx, pool, seed)
 	requestKey := uuid.New()
 	var before wiki.BlockNode
@@ -70,12 +77,24 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 		}
 		block := before.Content[0]
 		text, _ := writingBlockText(block)
-		target := DocumentWritingTarget{BlockID: block.Attrs["blockId"].(string), Text: text, To: len(utf16.Encode([]rune(text)))}
-		document, err := q.GetDocumentAgentContext(ctx, generated.GetDocumentAgentContextParams{CompanyID: f.CompanyA, ConversationID: conv.ID})
+		target := DocumentWritingTarget{
+			BlockID: block.Attrs["blockId"].(string),
+			Text:    text,
+			To:      len(utf16.Encode([]rune(text))),
+		}
+		document, err := q.GetDocumentAgentContext(
+			ctx,
+			generated.GetDocumentAgentContextParams{CompanyID: f.CompanyA, ConversationID: conv.ID},
+		)
 		if err != nil {
 			return err
 		}
-		_, snapshot, err := DocumentAgentPromptInTx(ctx, q, DocumentAgentInput{Principal: p, WritingTarget: &target, Body: "Write a heading"}, document)
+		_, snapshot, err := DocumentAgentPromptInTx(
+			ctx,
+			q,
+			DocumentAgentInput{Principal: p, WritingTarget: &target, Body: "Write a heading"},
+			document,
+		)
 		if err != nil {
 			return err
 		}
@@ -93,7 +112,14 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 	}
 	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='failed' WHERE id=$1`, originalRun)
 	retryID := dbtest.SeedRun(t, ctx, pool, seed)
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET parent_run_id=$2,status='completed' WHERE id=$1`, retryID, originalRun)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET parent_run_id=$2,status='completed' WHERE id=$1`,
+		retryID,
+		originalRun,
+	)
 	retry, err := q.GetRun(ctx, retryID)
 	if err != nil {
 		t.Fatal(err)
@@ -101,14 +127,21 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 	for range 2 {
 		err = store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 			var pending []events.Event
-			return CompleteDocumentAgentInTx(ctx, q, &pending, DocumentAgentCompletion{Run: retry, Body: "# Generated heading\n\nGenerated body"})
+			return CompleteDocumentAgentInTx(
+				ctx,
+				q,
+				&pending,
+				DocumentAgentCompletion{Run: retry, Body: "# Generated heading\n\nGenerated body"},
+			)
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 	var count int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM project_page_changes WHERE page_id=$1`, page.PageID).Scan(&count); err != nil || count != 1 {
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM project_page_changes WHERE page_id=$1`, page.PageID).
+		Scan(&count); err != nil ||
+		count != 1 {
 		t.Fatalf("proposal count = %d, %v; want 1", count, err)
 	}
 	receipt, err := q.GetProjectPageChangeReceipt(ctx, generated.GetProjectPageChangeReceiptParams{
@@ -171,7 +204,15 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 	if _, err = q.GetDocumentAgentRun(ctx, lookup); err != nil {
 		t.Fatalf("read document Run with Project access: %v", err)
 	}
-	dbtest.MustExec(t, ctx, pool, `DELETE FROM project_grants WHERE company_id=$1 AND project_id=$2 AND user_id=$3`, f.CompanyA, f.ProjectA, f.UserA)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`DELETE FROM project_grants WHERE company_id=$1 AND project_id=$2 AND user_id=$3`,
+		f.CompanyA,
+		f.ProjectA,
+		f.UserA,
+	)
 	if _, err = q.GetDocumentAgentRun(ctx, lookup); !errors.Is(err, pgx.ErrNoRows) {
 		t.Fatalf("read document Run after revocation = %v, want no rows", err)
 	}

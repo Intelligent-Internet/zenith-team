@@ -13,15 +13,15 @@ const DISCOVERY_ERROR_REASON =
   "Zenith Team could not inspect local agent providers.";
 const SUPPORTED_PROVIDERS = ["claude", "codex"];
 
-function boardlyFilename(platform) {
+function zenithTeamFilename(platform) {
   return platform === "win32" ? "zen.exe" : "zen";
 }
 
-function boardlyMCPFilename(platform) {
-  return platform === "win32" ? "boardly-mcp.exe" : "boardly-mcp";
+function zenithTeamMCPFilename(platform) {
+  return platform === "win32" ? "zenith-team-mcp.exe" : "zenith-team-mcp";
 }
 
-function resolveBoardlyExecutable({
+function resolveZenithTeamExecutable({
   app,
   env = process.env,
   existsSync = fs.existsSync,
@@ -32,14 +32,14 @@ function resolveBoardlyExecutable({
   return resolveBundledExecutable({
     app,
     existsSync,
-    filename: boardlyFilename(platform),
-    override: env.BOARDLY_CLI_PATH,
+    filename: zenithTeamFilename(platform),
+    override: env.ZENITH_TEAM_CLI_PATH,
     resourcesPath,
     rootDirectory,
   });
 }
 
-function resolveBoardlyMCPExecutable({
+function resolveZenithTeamMCPExecutable({
   app,
   env = process.env,
   existsSync = fs.existsSync,
@@ -50,8 +50,8 @@ function resolveBoardlyMCPExecutable({
   return resolveBundledExecutable({
     app,
     existsSync,
-    filename: boardlyMCPFilename(platform),
-    override: env.BOARDLY_MCP_EXECUTABLE,
+    filename: zenithTeamMCPFilename(platform),
+    override: env.ZENITH_TEAM_MCP_EXECUTABLE,
     resourcesPath,
     rootDirectory,
   });
@@ -76,19 +76,19 @@ function resolveBundledExecutable({
 
 function createDesktopAgentDiscoverer({
   app,
-  boardlyHomeDirectory,
+  zenithTeamHomeDirectory,
   environment = process.env,
   execFile: runFile = execFile,
   executablePath,
   healthPort,
-  resolveExecutable = resolveBoardlyExecutable,
+  resolveExecutable = resolveZenithTeamExecutable,
   serverUrl,
 } = {}) {
   const childEnvironment = daemonEnvironment(environment, {
-    BOARDLY_HEALTH_PORT: String(healthPort),
-    BOARDLY_HOME: boardlyHomeDirectory,
-    BOARDLY_LAUNCHED_BY: "desktop",
-    BOARDLY_SERVER_URL: normalizeServerUrl(serverUrl),
+    ZENITH_TEAM_HEALTH_PORT: String(healthPort),
+    ZENITH_TEAM_HOME: zenithTeamHomeDirectory,
+    ZENITH_TEAM_LAUNCHED_BY: "desktop",
+    ZENITH_TEAM_SERVER_URL: normalizeServerUrl(serverUrl),
   });
   let inFlight = null;
 
@@ -195,6 +195,6 @@ module.exports = {
   createDesktopAgentDiscoverer,
   parseDiscoverySnapshot,
   registerDesktopAgentDiscovery,
-  resolveBoardlyExecutable,
-  resolveBoardlyMCPExecutable,
+  resolveZenithTeamExecutable,
+  resolveZenithTeamMCPExecutable,
 };

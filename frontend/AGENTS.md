@@ -34,8 +34,7 @@ instructions apply to the web UI, Electron UI, previews and vendored components.
   symbols matching Iconsax are allowed when the catalog lacks a suitable glyph,
   following the workflow below. Use the existing official Bold artwork only
   where a selected/saved state calls for it. Horizontal and vertical ellipsis
-  menus use solid dots derived from Iconsax's Outline contours, as requested
-  by the owner on 2026-09-24.
+  menus use solid dots derived from Iconsax's Outline contours.
 - Import named components and `IconProps` / `IconComponent` from
   `@/shared/ui/icons`. For product icon names, use `Icon` from `@/shared/ui/icon`.
   Semantic export names such as `CircleAlert` and `SignalHigh` still resolve to
@@ -99,9 +98,8 @@ allowed when a suitable catalog glyph is unavailable.
    Do not copy from another icon library to fill a catalog gap.
 
 The existing `AtSign`, `Pin`, `PinOff` and `Puzzle` exports follow this authored
-symbol approach and may be reused in new UI. The owner confirmed this approach
-on 2026-09-15; additional symbols following these rules do not need separate
-approval.
+symbol approach and may be reused in new UI. Additional symbols following these
+rules do not need separate approval.
 
 ## Verification
 

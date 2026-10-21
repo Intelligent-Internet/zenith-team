@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const testQuestionID = "0198aa00-0000-7000-8000-00000000d001"
@@ -49,8 +49,8 @@ func TestQuestionGetAnswerAndWithdrawReadTheQuestionByID(t *testing.T) {
 	}))
 	defer srv.Close()
 	seedSession(t, srv.URL)
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 
 	out, err := executeCLI(t, newRootCmd, "question", "get", testQuestionID)
 	if err != nil || !strings.Contains(out, `"title": "Which plan?"`) {
@@ -160,8 +160,8 @@ func TestQuestionAskBuildsPromptsAndTellsTheAgentToEndTheRun(t *testing.T) {
 	}
 	// Asking is a Run's act.
 	seedSession(t, "http://127.0.0.1:1")
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 	if _, err := executeCLI(t, newRootCmd, "question", "ask", "--title", "x", "--prompt", "y"); err == nil ||
 		!strings.Contains(err.Error(), "only works in Agent mode") {
 		t.Fatalf("question ask as operator = %v", err)

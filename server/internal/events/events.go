@@ -9,7 +9,7 @@
 //
 // An event carries what happened and who did it. It carries no audience:
 // deciding who may see a fact belongs to the consumer that delivers it, so
-// the browser bridge subscribes like any other consumer. See ADR 0006.
+// the browser bridge subscribes like any other consumer.
 package events
 
 import (

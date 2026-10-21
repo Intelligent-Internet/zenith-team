@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	"boardly.dev/boardly/server/internal/wiki"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
@@ -41,11 +41,21 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page, err = w.PublishPage(ctx, p, page.ID, wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: draft.Sequence})
+	page, err = w.PublishPage(
+		ctx,
+		p,
+		page.ID,
+		wiki.PublishPageInput{ExpectedRevision: page.Revision, ExpectedSequence: draft.Sequence},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	linked, err := s.Mutate(ctx, p, f.ProjectA, Command{RequestKey: uuid.New(), Type: "add_artifact", WikiPageID: &page.ID, Title: page.Title})
+	linked, err := s.Mutate(
+		ctx,
+		p,
+		f.ProjectA,
+		Command{RequestKey: uuid.New(), Type: "add_artifact", WikiPageID: &page.ID, Title: page.Title},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +67,12 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 	text := client.GetXmlFragment("content").Children()[0].(*crdt.YXmlElement).Children()[0].(*crdt.YXmlText)
 	client.Transact(func(tx *crdt.Transaction) { text.Insert(tx, 0, "Unpublished secret. ", nil) })
 	update := client.EncodeStateAsUpdate()
-	if _, err = w.SyncDocument(ctx, p, page.ID, wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence}); err != nil {
+	if _, err = w.SyncDocument(
+		ctx,
+		p,
+		page.ID,
+		wiki.SyncDocumentInput{Update: update, BaseSequence: draft.Sequence},
+	); err != nil {
 		t.Fatal(err)
 	}
 	ref := DocumentHistoryRef{ProjectID: f.ProjectA, VersionID: linked.ID}
@@ -87,10 +102,22 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 		}
 	}
 	document, err := s.Document(ctx, p, f.ProjectA, linked.ID, -1)
-	if err != nil || document.CanEdit || len(document.State) != 0 || strings.Contains(document.Markdown, "secret") || !strings.Contains(document.Markdown, "Published guidance") {
+	if err != nil || document.CanEdit || len(document.State) != 0 ||
+		strings.Contains(document.Markdown, "secret") ||
+		!strings.Contains(document.Markdown, "Published guidance") {
 		t.Fatalf("Canvas Wiki read = %+v, %v", document, err)
 	}
-	if _, err = s.SyncDocument(ctx, p, f.ProjectA, linked.ID, update, draft.Sequence); !errors.Is(err, ErrForbidden) {
+	if _, err = s.SyncDocument(
+		ctx,
+		p,
+		f.ProjectA,
+		linked.ID,
+		update,
+		draft.Sequence,
+	); !errors.Is(
+		err,
+		ErrForbidden,
+	) {
 		t.Fatalf("Canvas Wiki edit = %v, want forbidden", err)
 	}
 	if _, err = s.ReserveBlockIDs(ctx, p, f.ProjectA, linked.ID, 1); !errors.Is(err, ErrForbidden) {
@@ -102,13 +129,43 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 	}
 	artifact := snapshot.Artifacts[0]
 	for _, command := range []string{"checkpoint", "restore_version"} {
-		_, err = s.Mutate(ctx, p, f.ProjectA, Command{RequestKey: uuid.New(), Type: command, WikiPageID: &page.ID, ArtifactID: &artifact.ID, VersionID: &linked.ID, ExpectedRevision: artifact.Revision})
+		_, err = s.Mutate(
+			ctx,
+			p,
+			f.ProjectA,
+			Command{
+				RequestKey:       uuid.New(),
+				Type:             command,
+				WikiPageID:       &page.ID,
+				ArtifactID:       &artifact.ID,
+				VersionID:        &linked.ID,
+				ExpectedRevision: artifact.Revision,
+			},
+		)
 		if !errors.Is(err, ErrForbidden) {
 			t.Fatalf("Canvas Wiki %s = %v, want forbidden", command, err)
 		}
 	}
-	root := wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{{Type: "artifactReference", Attrs: map[string]any{"versionId": linked.ID.String(), "artifactId": artifact.ID.String(), "format": "live", "display": "expanded"}}}}
-	projectPage, err := s.CreatePage(ctx, p, f.ProjectA, PageCreateInput{RequestKey: uuid.New(), Title: "Project plan", Content: root})
+	root := wiki.BlockNode{
+		Type: "doc",
+		Content: []wiki.BlockNode{
+			{
+				Type: "artifactReference",
+				Attrs: map[string]any{
+					"versionId":  linked.ID.String(),
+					"artifactId": artifact.ID.String(),
+					"format":     "live",
+					"display":    "expanded",
+				},
+			},
+		},
+	}
+	projectPage, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{RequestKey: uuid.New(), Title: "Project plan", Content: root},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,11 +177,35 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 	if strings.Contains(string(read), "secret") || !strings.Contains(string(read), "Published guidance") {
 		t.Fatalf("Project capture exposed Wiki draft: %s", read)
 	}
-	if _, err = s.CapturePresentation(ctx, p, f.ProjectA, PresentationInput{PageID: projectPage.PageID, RequestKey: uuid.New(), Sequence: preview.Sequence, Fingerprint: preview.Fingerprint}); err != nil {
+	if _, err = s.CapturePresentation(
+		ctx,
+		p,
+		f.ProjectA,
+		PresentationInput{
+			PageID:      projectPage.PageID,
+			RequestKey:  uuid.New(),
+			Sequence:    preview.Sequence,
+			Fingerprint: preview.Fingerprint,
+		},
+	); err != nil {
 		t.Fatal(err)
 	}
-	dbtest.MustExec(t, ctx, pool, `UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`, f.RunA, f.UserA, f.TaskA)
-	if agentPreview, err := s.PreviewPresentationForRun(ctx, p, f.RunA, projectPage.PageID); err != nil || len(agentPreview.Documents) != 0 || agentPreview.Fingerprint != preview.Fingerprint {
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+		f.TaskA,
+	)
+	if agentPreview, err := s.PreviewPresentationForRun(
+		ctx,
+		p,
+		f.RunA,
+		projectPage.PageID,
+	); err != nil || len(agentPreview.Documents) != 0 ||
+		agentPreview.Fingerprint != preview.Fingerprint {
 		t.Fatalf("Agent preview bypassed Wiki read policy = %+v, %v", agentPreview, err)
 	}
 	if _, err = s.ReadPageSource(ctx, p, f.RunA, linked.ID, ""); !errors.Is(err, ErrForbidden) {
@@ -140,10 +221,22 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 		}
 	}
 	var privateRevision uuid.UUID
-	if err = pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,summary,author_user_id) VALUES($1,$2,99,'Private checkpoint','Never published','',$3) RETURNING id`, f.CompanyA, page.ID, f.UserA).Scan(&privateRevision); err != nil {
+	if err = pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,summary,author_user_id) VALUES($1,$2,99,'Private checkpoint','Never published','',$3) RETURNING id`, f.CompanyA, page.ID, f.UserA).
+		Scan(&privateRevision); err != nil {
 		t.Fatal(err)
 	}
-	_, err = s.Mutate(ctx, p, f.ProjectA, Command{RequestKey: uuid.New(), Type: "add_artifact", WikiPageID: &page.ID, WikiRevisionID: &privateRevision, Title: "Private checkpoint"})
+	_, err = s.Mutate(
+		ctx,
+		p,
+		f.ProjectA,
+		Command{
+			RequestKey:     uuid.New(),
+			Type:           "add_artifact",
+			WikiPageID:     &page.ID,
+			WikiRevisionID: &privateRevision,
+			Title:          "Private checkpoint",
+		},
+	)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("unpublished Wiki checkpoint reference = %v", err)
 	}

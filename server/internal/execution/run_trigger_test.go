@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 )
 
 // The execute refusal is the plain Project permission refusal for every
@@ -25,8 +25,8 @@ func TestExecutePermissionErrorIsTheProjectPermissionRefusal(t *testing.T) {
 	}
 }
 
-// The claim's Project access arm asks the delegate rule (run_permission_held,
-// D31) for the execute permission, binding it, read and the Company default
+// The claim's Project access arm asks the delegate rule (run_permission_held)
+// for the execute permission, binding it, read and the Company default
 // set from the catalog, so SQL names no permission (ADR 0017). A delegate
 // never manages, so no management set or role is bound.
 func TestClaimCandidatesBindTheExecutePermissionFromTheCatalog(t *testing.T) {

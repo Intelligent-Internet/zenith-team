@@ -7,16 +7,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
 // HeaderRunToken carries a Run's proof on requests the daemon's Run channel
-// (or boardly-mcp) makes on behalf of an Agent. Its presence is what makes a
+// (or zenith-team-mcp) makes on behalf of an Agent. Its presence is what makes a
 // request a machine actor's; RequireHumanActor refuses it.
-const HeaderRunToken = "X-Boardly-Run-Token"
+const HeaderRunToken = "X-Zenith-Team-Run-Token"
 
 // RequireCompanyMember admits any active member of the :companyId company
 // and stamps the company scope onto the request principal.
@@ -85,7 +85,7 @@ const (
 //
 // It also leaves the route's actor type and resolve on the request for the
 // credential guards, which admit a daemon's own session off the daemon
-// plane only as a Run (D31, admitDaemonSession). A nil resolve admits no
+// plane only as a Run (admitDaemonSession). A nil resolve admits no
 // daemon session there.
 func RunProofPolicy(types map[string]RouteActorType, resolve RunOriginResolver) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -107,7 +107,7 @@ func RunProofPolicy(types map[string]RouteActorType, resolve RunOriginResolver) 
 }
 
 // admitDaemonSession lets a daemon's own session past a route outside the
-// daemon plane only as a Run (D31, IA-FR7). The route must accept a Run
+// daemon plane only as a Run. The route must accept a Run
 // (run or any in RunProofPolicy's table), and the request must carry exactly
 // one non-empty proof that resolves to a live Run whose Authorizer is the
 // session's person. A blank or repeated header is refused here: a handler

@@ -9,7 +9,7 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
-html[data-boardly-workspace-theme] .discussion-rich-input:focus-visible,
+html[data-zenith-team-workspace-theme] .discussion-rich-input:focus-visible,
 .discussion-rich-input:focus {
   outline: none;
   box-shadow: none;

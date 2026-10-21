@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // scriptedDBTX is a generated.DBTX that records each statement by its sqlc
@@ -84,7 +84,7 @@ func (r *scriptedRows) Scan(dest ...any) error {
 }
 
 // assignColumns stores each non-nil value into the destination at its index.
-func assignColumns(dest []any, values []any) {
+func assignColumns(dest, values []any) {
 	for index, value := range values {
 		if value != nil {
 			reflect.ValueOf(dest[index]).Elem().Set(reflect.ValueOf(value))
@@ -201,7 +201,7 @@ func TestCloseEntityInTxStagesNoFrameForAnUnreadableProject(t *testing.T) {
 	if len(pending) != 1 {
 		t.Fatalf("staged %d frames, want only the item about no Project", len(pending))
 	}
-	if payload, ok := pending[0].Payload.(ItemWithCounts); !ok || payload.Item.ID != shown {
+	if payload, ok := pending[0].Payload.(ItemWithCounts); !ok || payload.ID != shown {
 		t.Fatalf("staged frame %+v, want the item %s", pending[0].Payload, shown)
 	}
 	if got := countOf(database.statements, "InboxRecipientReadsProject"); got != 1 {

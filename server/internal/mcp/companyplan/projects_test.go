@@ -28,7 +28,10 @@ actions:
 	if err != nil {
 		t.Fatal(err)
 	}
-	desired, err := ApplyActions(Document{FormatVersion: FormatVersion, Company: "acme", Projects: []Project{}, Tasks: []Task{}}, transaction)
+	desired, err := ApplyActions(
+		Document{FormatVersion: FormatVersion, Company: "acme", Projects: []Project{}, Tasks: []Task{}},
+		transaction,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,25 @@
+# Secret scanning for Zenith Team (security.yml runs `gitleaks dir`).
+# The default rules apply everywhere; the allowlists below cover only values
+# that are synthetic by design. Never allowlist a real credential: rotate it.
+
+title = "Zenith Team"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic secrets in tests, fixtures, and API documentation examples"
+paths = [
+  '''_test\.go$''',
+  '''\.test\.tsx?$''',
+  '''(^|/)testdata/''',
+  '''^docs/api/''',
+]
+
+[[allowlists]]
+description = "App constants that only look like keys"
+regexTarget = "match"
+regexes = [
+  '''zenith\.pending-invitation\.v1''',
+  '''daily_brief_v1''',
+]

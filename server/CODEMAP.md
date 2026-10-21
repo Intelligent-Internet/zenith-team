@@ -12,8 +12,6 @@ stating the rule that governs it — [`cmd/`](./cmd/README.md),
 Vocabulary: company, task, run (one agent execution, one queued execution),
 agent, conversation, daemon (the machine-side background process), runtime (a
 provider instance a daemon registered in a company), provider = claude | codex.
-The execution layer follows the reference architecture; where this map names a
-convention without a local rationale, that is the provenance.
 
 ## Whiteboards
 
@@ -51,7 +49,7 @@ reading behind `artifact_inspect` (`POST …/agent-artifacts/:artifactId/whitebo
 by default the area the Run's authorizer is looking at (`BoardFocus`, which the
 handler reads from presence), one line per object with a short ref (the shortest
 unique ID prefix of eight or more hex digits), nearby strokes grouped as one
-drawing, within 16 KiB. boardly-mcp keeps each Run's read set of refs and
+drawing, within 16 KiB. zenith-team-mcp keeps each Run's read set of refs and
 revisions, so `artifact_edit` commands take refs and fill revisions themselves
 and refuse to overwrite what the turn has not read. `artifact_edit` ops
 (`POST …/compose`) add content by intent: `board_compose.go` validates and
@@ -113,7 +111,7 @@ graph. `handler/wiki.go` exposes the Company-scoped HTTP API; `wiki.sql`
 supplies active-member reads and transactional writes. The owner/admin
 `wiki.publish` permission is checked at the route and again under the shared
 Company and acting-membership locks before a write (the exclusive Company lock
-is never taken; lock order and invariants are in company-wiki TECH §4.1). Members read; Run actors have no
+is never taken; the lock order and invariants are in `internal/wiki`). Members read; Run actors have no
 route under `/wiki/`. `wiki/document.go` owns the shared Wiki block draft and its
 metadata. Editing saves the draft only; `PublishPage` compares both
 `expectedRevision` and `expectedSequence`, freezes the block snapshot, updates
@@ -176,7 +174,7 @@ are refused. Message pins retain versions until the Conversation is deleted.
 The daemon cache and Run snapshot feed both native provider skills and MCP.
 Claude uses a Run-owned additional directory, including for local workspaces.
 `skillSetHash` fences provider resume when a future Run's selection changes.
-See [Skills technical design](../docs/specs/skills/TECH.md).
+See Skills technical design.
 
 ## Independent Huddle notes
 
@@ -329,7 +327,7 @@ resolved member identity. Content writes remain in PostgreSQL, not Redis or a
 browser ledger. The browser uses IndexedDB only for disposable accepted snapshots
 and best-effort pending-draft recovery; cached permissions grant no authority.
 These ordinary document/canvas endpoints have no Agent execution admission.
-See [the Pages and Canvas contract](../docs/design/pages-and-canvas.md)
+See the Pages and Canvas contract
 for limits, transport semantics and verification.
 
 ### Project Overview and Presentations
@@ -447,7 +445,7 @@ Source pins retain exact versions/revisions/assets and canonical export files.
 Native submitted-result access is the intersection with included source access
 in `output_access`; attachment reads and exports obey the same current authority.
 Denied previews redact evidence without changing historical capture bytes.
-Private artifact file routes optionally accept `X-Boardly-Artifact-Cache:
+Private artifact file routes optionally accept `X-Zenith-Team-Artifact-Cache:
 revalidate` and an attachment ETag in `If-None-Match`. They resolve current
 artifact access first; `attachment.DownloadResolved` then returns `NotModified`
 only for a matching ready attachment revision, without opening object storage.
@@ -464,7 +462,7 @@ The daemon allows Project Page tools only for Task Runs and instructs Agents to 
 human content, inspect exact sources, create readable result Pages and link them
 from the Overview. Submission still uses normal result review.
 
-See [the Pages and Canvas contract](../docs/design/pages-and-canvas.md) for navigation,
+See the Pages and Canvas contract for navigation,
 vocabulary, capture limits and owner UX acceptance.
 
 ## Calendar and Social connections
@@ -499,7 +497,7 @@ keys the existing receipt across Runs; neither a retry nor new caption parameter
 can bypass review. Settings → Plugins hosts the personal account connections.
 Credential maintenance uses the existing server lifecycle and DB leases.
 No new queue, Temporal deployment or scheduled publishing path is added.
-See [scope and setup](../docs/specs/calendar/TECH.md).
+See scope and setup.
 Calendar mutations emit opaque `calendar.changed` hints through their existing
 post-commit event list. Schedule definitions and worker outcomes emit creator-
 scoped `schedule.changed`; Wiki evidence emits `wiki.run_reads_changed` with
@@ -555,8 +553,8 @@ schema and payload cleanup.
   current membership, role permissions and conversation grants govern access.
 - `internal/conversation/channel_invocation*.go` owns channel and group DM structured Agent-mention
   admission, FIFO invocations per discussion/Agent, final-answer publication and
-  the activity surface, where each member reads only the Runs they started
-  (Access TECH B11). Each pair uses one private `channel_agent`
+  the activity surface, where each member reads only the Runs they started.
+  Each pair uses one private `channel_agent`
   execution Conversation. `internal/execution/channel_invocation.go` enforces
   frozen membership/grant generations and builds bounded discussion context plus
   authorized attachments. Human-input continuations retain invocation identity
@@ -569,15 +567,15 @@ schema and payload cleanup.
   lost access and the access report (`GET /projects/access-report`);
   `project_files.go` owns atomic logo/document registration (`PUT
   /projects/{id}/files`) and retained attachment associations.
-  `groups.go` owns Groups (Access TECH D3, `GroupService`): a named, flat set
+  `groups.go` owns Groups (`GroupService`): a named, flat set
   of Team members that holds Project grants; create, rename, delete, the
   batch members change and its preview, each moving access like a person
   grant change (Group then Projects locked, everyone resolved before and
   after in one read each through `auth.ResolvePeopleProjectAccess`,
   revision, one `project_grant.group_*` row and one `project_access_granted`
   Inbox item per manager per Project, the Run sweep), and a departing
-  member's Group memberships (D5).
-  `project_group_grants.go` owns a Group's grant on a Project (D4).
+  member's Group memberships.
+  `project_group_grants.go` owns a Group's grant on a Project.
   `projects.sql` supplies the access-scoped reads and the writes;
   `project_access.sql` the grant rows, the Group grant rows, every person's
   stored paths and the access report; `groups.sql` the Groups and their
@@ -687,7 +685,7 @@ schema and payload cleanup.
   keeps the two in lockstep.
   `connector_logo.go` chooses the logos the Connector, Plugin and readiness
   reads return: a `chatgpt.com` logo loads only in a ChatGPT session, so a
-  loadable stand-in wins when there is one (D26).
+  loadable stand-in wins when there is one.
 - `internal/schedule` owns creator-private one-shot/cron definitions, exact
   reviewed Connector sources, replay-safe firing receipts, creator-private
   attention, the Asynq scan/fire handlers, and the independent repair sweep.
@@ -707,20 +705,20 @@ schema and payload cleanup.
   another role access needs no Mailbox-specific role checks. Reads, mutation
   fences, realtime audiences and Activity history enforce the permission alongside
   chat/Project access. It stays separate from `internal/inbox`: email is user content,
-  while Inbox items are Boardly notifications.
+  while Inbox items are Zenith Team notifications.
 - `internal/task` owns the closed milestone and execution classifications,
   Task execution generations, Agent-reported business failure, and durable
   upward done/failed outcome reports. `run_scope.go` owns what a Run may read
   (`RunScope`): only the Tasks its Agent does for the member it works for,
   its authorizer, read with that member's session and Project access, and
   only in Projects the delegate rule admits (`run_permission_held` through
-  `ListRunReadableProjects`, D31): its authorizer reads there, and a Task
+  `ListRunReadableProjects`): its authorizer reads there, and a Task
   Run only in its Task chat's Project (ADR 0017). No chat audience narrows a
   tagged Run: the person who tagged the Agent answers for it. The one
   exception is `RunScope.Planner`: the root Agent's Run in its person's
   direct chat, with its Company Plan tools on, reads every Task that person
   reads, still within the delegate rule; the handler
-  decides it from the proof (`handler.runIsPlanner`, IA-FR12). Any other
+  decides it from the proof (`handler.runIsPlanner`). Any other
   Task read carrying a Run proof is the plain `ErrOutsideRunScope`, which carries
   nothing of the Task. The handler admits a proof only on its authorizer's
   session (`handler.runProofBearer`). A person-confirmed or exact Proactive
@@ -775,7 +773,7 @@ schema and payload cleanup.
   `artifact_run.go` resolves immutable Output items for live consuming Runs,
   requiring current access for the Run's Authorizer alone: every Run, a Task
   Run's included, reads exactly what its Authorizer reads, and no chat
-  audience narrows it (D31). It logs each refusal's reason with the Run and
+  audience narrows it. It logs each refusal's reason with the Run and
   Artifact ids.
   The MCP `artifact_inspect` and `artifact_fetch` tools use the daemon Run
   channel; `daemon/run_artifacts.go` downloads only requested items into
@@ -793,9 +791,9 @@ schema and payload cleanup.
 | --- | --- |
 | `server` (`cmd/server`) | the API container — the only binary `server/Dockerfile` builds. `main.go` is a thin shell; the composition root is `run()` in `cmd/server/app.go`, which applies migrations, builds every service, hub, relay and worker, and serves HTTP. |
 | `zen` (`cmd/zen`) | the Zenith Team CLI: auth, daemon lifecycle, config, doctor and the task/run/conversation/question/approval/inbox/schedule/agent/runtime families; Agent mode over the daemon's Run channel (ADR 0009). Links `internal/daemon`, never a server service. |
-| `boardly-mcp` (`cmd/mcp`) | the MCP stdio server shipped in the desktop bundle. The daemon starts it for a Run with the Run's isolated `BOARDLY_HOME`; it reaches the server only over the Run channel that home's `run.json` names, and refuses to start without one. The binary name is pinned by every build site's `-o` flag. |
+| `zenith-team-mcp` (`cmd/mcp`) | the MCP stdio server shipped in the desktop bundle. The daemon starts it for a Run with the Run's isolated `ZENITH_TEAM_HOME`; it reaches the server only over the Run channel that home's `run.json` names, and refuses to start without one. The binary name is pinned by every build site's `-o` flag. |
 | `migrate` (`cmd/migrate`) | operator tool, not deployed: applies or rolls back the embedded migration sequence without booting the API, subject to each migration's retention guards. |
-| `bundlectl` (`cmd/bundlectl`) | maintainer and CI tool, never shipped: pins a boardly-plugins release tag into `internal/platformbundle` for Workflows or `internal/daemon/tool_releases` for managed Tools (`import`), re-imports every locked tag to prove the pin (`import --verify`), pins a local checkout for development (`import --dev`), checks plugin folders with the server's own parser and loader (`check`) and compares the pin with a git revision, holding each change to the release rules (`diff`), and resolves public npm skills into ignored build assets (`prepare`). ADR 0016. |
+| `bundlectl` (`cmd/bundlectl`) | maintainer and CI tool, never shipped: pins a plugins-repo release tag into `internal/platformbundle` for Workflows or `internal/daemon/tool_releases` for managed Tools (`import`), re-imports every locked tag to prove the pin (`import --verify`), pins a local checkout for development (`import --dev`), checks plugin folders with the server's own parser and loader (`check`) and compares the pin with a git revision, holding each change to the release rules (`diff`), and resolves public npm skills into ignored build assets (`prepare`). ADR 0016. |
 
 ## Layout
 
@@ -862,7 +860,7 @@ server/
 │   │                    delegate (a Run, the voice assistant) may do is
 │   │                    delegate_permission_held and run_permission_held:
 │   │                    its Authorizer's access, no chat audience
-│   │                    (migrations 000099 and 000100, D31).
+│   │                    (migrations 000099 and 000100).
 │   │                    auth/project_audience.go decides a realtime
 │   │                    frame's Project audience in the producing
 │   │                    transaction (ProjectFrame, ProjectAudienceCarrier,
@@ -909,7 +907,7 @@ server/
 │   ├── workflow/        the release-owned Workflow catalog: parses and
 │   │                    validates the zenith-workflows skill
 │   │                    (workflow.yaml + playbook.md per Workflow,
-│   │                    authored in boardly-plugins and read through
+│   │                    authored in the plugins repository and read through
 │   │                    platformbundle.WorkflowCatalog; CheckCatalog
 │   │                    reports every problem for bundlectl) and serves
 │   │                    List/Get to handler/workflow.go, which also
@@ -930,7 +928,7 @@ server/
 │   │                    announcements share frozen visibility; feed and
 │   │                    calendar also follow Project access (ADR 0017).
 │   │                    An Agent's row in a Run also names the person it
-│   │                    acted for and the Run (events.RunActor, D31).
+│   │                    acted for and the Run (events.RunActor).
 │   ├── execution/       the run lifecycle kernel: enqueue/trigger + fresh
 │   │                    Task generation advance, fenced retry, claim +
 │   │                    reviewed Connector snapshot freeze, terminal
@@ -948,7 +946,7 @@ server/
 │   ├── events/          the in-process Bus: producers build an events.Event
 │   │                    literal in the transaction and bus.Publish(ctx,
 │   │                    topic, …) after commit; bus.Subscribe(topic, …) or
-│   │                    SubscribeAll registers a consumer. See ADR 0006
+│   │                    SubscribeAll registers a consumer.
 │   ├── realtime/        receive-only client WS plane: identity-indexed hub,
 │   │                    the Broadcaster's delivery methods, sharded
 │   │                    Redis durable relay, metrics. Knows rooms, no
@@ -994,13 +992,13 @@ server/
 │   │                    receipts can supply scoped collection IDs without parsing
 │   │                    scripts; explicit IDs still collect previously submitted nodes;
 │   │                    tool_releases holds one zenith-studio.lock.json from
-│   │                    boardly-plugins (metadata and provenance, no archive); its ignored
+│   │                    the plugins repository (metadata and provenance, no archive); its ignored
 │   │                    generated/ skills are downloaded and verified at build time,
 │   │                    publishes sanitized replacement snapshots,
 │   │                    coalesces provider-change refreshes (changed <
 │   │                    reobserve < forced), keeps Connector discovery
 │   │                    fresh with a keepalive that re-observes every
-│   │                    BOARDLY_CONNECTOR_DISCOVERY_INTERVAL (3m) and
+│   │                    ZENITH_TEAM_CONNECTOR_DISCOVERY_INTERVAL (3m) and
 │   │                    reaffirms an unchanged generation instead of
 │   │                    republishing it (connector_service.go), registers
 │   │                    runtimes with their credentialIsolation report,
@@ -1020,8 +1018,7 @@ server/
 │   │                    and reads a file for a Run (a presented output, a
 │   │                    generated image) only when that profile would let
 │   │                    the Run read it (runFileGuard,
-│   │                    credential_isolation.go, Access TECH B3d, B3e,
-│   │                    B3f, B7b),
+│   │                    credential_isolation.go),
 │   │                    claims and executes Runs, renews exact
 │   │                    Task-merge attempts, and serializes managed-main Git
 │   │                    mutation across daemon processes,
@@ -1041,16 +1038,16 @@ server/
 │   │                    lock per file, atomic writes, MintDaemonSession,
 │   │                    Logout): the zen CLI's auth.json and the daemon's
 │   │                    own daemon-auth.json (its session and its output
-│   │                    presenter, D31); the daemon never reads auth.json
-│   │                    and boardly-mcp reads neither
-│   ├── runchannel/      the Run channel wire (ADR 0009, Access TECH B3b):
+│   │                    presenter); the daemon never reads auth.json
+│   │                    and zenith-team-mcp reads neither
+│   ├── runchannel/      the Run channel wire (ADR 0009):
 │   │                    run.json (RunControlConfig, LoadRunControlConfig),
 │   │                    the Request/Response documents and the Client that
 │   │                    posts them to the daemon. A leaf (standard library
 │   │                    and uuid) so zen, the daemon and the mcp-sealed
-│   │                    boardly-mcp all link it
-│   ├── mcp/             boardly-mcp composition: apiclient/ (RunChannel,
-│   │                    the only transport boardly-mcp uses, plus the
+│   │                    zenith-team-mcp all link it
+│   ├── mcp/             zenith-team-mcp composition: apiclient/ (RunChannel,
+│   │                    the only transport zenith-team-mcp uses, plus the
 │   │                    daemon presenter's credential Client), companyplan/,
 │   │                    tools/ (Company Plan, Agent Mail, Task failure,
 │   │                    Questions, Agent roster, execution skills, the
@@ -1071,16 +1068,16 @@ server/
 │   │                    contract, with no embedded assets or service imports.
 │   │                    Separate for the cmd/zen link set: daemon verifies
 │   │                    Studio without linking the Workflow bytes.
-│   ├── platformbundle/  pinned Workflow content from boardly-plugins
+│   ├── platformbundle/  pinned Workflow content from the plugins repository
 │   │                    (ADR 0016): <plugin>.bundle.tar + <plugin>.lock.json
 │   │                    per plugin component and harness/zenith-workflows/
 │   │                    SKILL.md, all embedded and verified against the
 │   │                    lock at load (see its README). The server refuses
-│   │                    to start on a bad pin; boardly-mcp drops only that
+│   │                    to start on a bad pin; zenith-team-mcp drops only that
 │   │                    bundle. Its own package for the cmd/zen link set:
 │   │                    the CLI links internal/mcp/tools and must never
 │   │                    link the Workflow bytes. Imports internal/mcp/tools
-│   │                    and contentbundle, so boardly-mcp stays sealed
+│   │                    and contentbundle, so zenith-team-mcp stays sealed
 │   ├── infra/           technology adapters: cloudrun/ (public application
 │   │                    build/deploy), email/, redis/ (required shared client),
 │   │                    storage/ (S3-compatible
@@ -1150,10 +1147,10 @@ are load-bearing.
   `attachment_access`, `output_access`) or, for a write, calls
   `project_permission_held` (ADR 0017), or for a Run or the voice
   assistant the delegate rule, `delegate_permission_held` or
-  `run_permission_held` (D31). `internal/db/query_shape_test.go` fails on one
+  `run_permission_held`. `internal/db/query_shape_test.go` fails on one
   that does not and on hand-written Go SQL over `projects`, `tasks`,
-  `task_dependencies` or `conversations`; its allowlists name the step that
-  sweeps each remaining statement, or why it is not swept.
+  `task_dependencies` or `conversations`; its allowlists say why each
+  remaining statement is not swept.
 - Product-domain services hold `*db.Store` (`internal/db`): reads through
   `store.Queries()`, writes through `store.WithinTx` or `store.WithinRawTx`.
   The daemon-driven run kernel depends on the narrower
@@ -1220,7 +1217,7 @@ is the whole lint story — there are **no** depguard or importas rules; import
 direction is held by the compiler (`internal/`), by convention, and by review.
 
 - Formatters: gofumpt (extra rules), goimports (local prefix
-  `boardly.dev/boardly/server`), golines (120 cols). `make go-fmt` rewrites,
+  `github.com/Intelligent-Internet/zenith-team/server`), golines (120 cols). `make go-fmt` rewrites,
   `make go-fmt-check` diffs.
 - Linters: the standard set plus a curated list (bodyclose, errorlint,
   gocritic, revive with the golint/Google rule set, testifylint, …);
@@ -1311,5 +1308,3 @@ jobs; PostgreSQL receipts and Company transaction fences make duplicate deliveri
 safe. `handler/task_calendar.go` is the HTTP boundary. Connector Schedules remain
 creator-private and use the non-task lane; Task schedules use Project access and
 Task capacity. Migration 000097 is additive and preserves legacy Task acceptance.
-The detailed behavior and operating limits live in
-[`docs/specs/scheduler/TASK-CALENDAR.md`](../docs/specs/scheduler/TASK-CALENDAR.md).

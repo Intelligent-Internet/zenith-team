@@ -144,7 +144,7 @@ func runInboxMutation(cmd *cobra.Command, args []string, mutation string) error 
 	ctx, cancel := apiContext()
 	defer cancel()
 	path := client.companyPath("inbox", itemID)
-	revision, err := resolveRevision(cmd, ctx, client, path, "")
+	revision, err := resolveRevision(ctx, cmd, client, path)
 	if err != nil {
 		return err
 	}

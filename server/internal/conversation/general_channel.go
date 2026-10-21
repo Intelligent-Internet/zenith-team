@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/events"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 type GeneralChannelMembership struct{ CompanyID, UserID uuid.UUID }
@@ -60,7 +60,7 @@ func JoinGeneralChannelInTx(
 		if err == nil && previous.Status == "active" {
 			continue
 		}
-		if _, err = grantDiscussionHuman(
+		if err = grantDiscussionHuman(
 			ctx,
 			q,
 			discussionGrant{

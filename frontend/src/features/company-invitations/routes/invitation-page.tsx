@@ -6,7 +6,7 @@ import {
   type SessionSnapshot,
 } from "@/shared/session/session";
 import { AuthLayout } from "@/features/auth/components/auth-layout";
-import { logoutBoardlySession } from "@/features/auth/model/logout";
+import { logoutZenithTeamSession } from "@/features/auth/model/logout";
 import { Button } from "@/shared/ui/button";
 import { roleLabel } from "@/shared/permissions";
 import {
@@ -93,7 +93,7 @@ export function InvitationPage({ session }: { session: SessionSnapshot }) {
     if (!data) return;
     rememberInvitation(token, data.companyName, data.maskedEmail);
     try {
-      if (switchAccount) await logoutBoardlySession();
+      if (switchAccount) await logoutZenithTeamSession();
       navigate("/login");
     } catch {
       setError("Could not switch accounts. Please try again.");

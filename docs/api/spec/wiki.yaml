@@ -326,7 +326,7 @@ paths:
       operationId: searchWikiForRun
       summary: Search the Company Wiki as an Agent's Run
       description: |
-        Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+        Read-only. Requires `X-Zenith-Team-Run-Token` proving a live, non-Schedule
         Run of this Company, sent by the Run's authorizer. Searches
         active pages only; the words of `q` are matched as word prefixes
         (exact below three characters) against the page's title, summary and
@@ -356,7 +356,7 @@ paths:
       operationId: listWikiForRun
       summary: Browse the Company Wiki as an Agent's Run
       description: |
-        Read-only. Requires `X-Boardly-Run-Token` proving a live, non-Schedule
+        Read-only. Requires `X-Zenith-Team-Run-Token` proving a live, non-Schedule
         Run of this Company, sent by the Run's authorizer. Lists the active
         published pages ordered by title, optionally within one collection.
         The first page (`offset` 0) also returns every collection with its
@@ -389,7 +389,7 @@ paths:
       operationId: writeWikiPagesForRun
       summary: Save Wiki pages as the founder's company-research Run
       description: |
-        The only Wiki write an Agent has. Requires `X-Boardly-Run-Token`
+        The only Wiki write an Agent has. Requires `X-Zenith-Team-Run-Token`
         proving a live, non-Schedule Run of this Company, sent by the Run's
         authorizer, and an `Idempotency-Key` UUID. The server then re-proves in
         the write transaction that the Run is `running`, that its frozen
@@ -451,7 +451,7 @@ paths:
 parameters:
   pageId: { name: pageId, in: path, required: true, schema: { type: string, format: uuid } }
   collectionId: { name: collectionId, in: path, required: true, schema: { type: string, format: uuid } }
-  runToken: { name: X-Boardly-Run-Token, in: header, required: true, schema: { type: string, minLength: 1 } }
+  runToken: { name: X-Zenith-Team-Run-Token, in: header, required: true, schema: { type: string, minLength: 1 } }
 
 schemas:
   WikiCollection:

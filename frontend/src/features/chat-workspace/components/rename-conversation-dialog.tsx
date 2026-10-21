@@ -5,7 +5,7 @@ import {
 import { type FormEvent, useId, useRef, useState } from "react";
 
 import { directConversationTitle } from "@/features/chat-workspace/model/chat-navigator-browse";
-import { getBoardlyQueryErrorMessage } from "@/shared/api/boardly-api";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import type { DirectConversationListItem } from "@/shared/api/types";
 
 import {
@@ -73,7 +73,7 @@ export function RenameConversationDialog({
       setNeedsRefresh(false);
     } catch (cause) {
       setError(
-        getBoardlyQueryErrorMessage(
+        getZenithTeamQueryErrorMessage(
           cause,
           "The latest title could not be loaded.",
         ),
@@ -128,7 +128,7 @@ export function RenameConversationDialog({
         await reloadLatestTitle();
       } else {
         setError(
-          getBoardlyQueryErrorMessage(
+          getZenithTeamQueryErrorMessage(
             cause,
             "The conversation could not be renamed. Your draft is kept.",
           ),

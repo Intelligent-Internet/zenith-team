@@ -1,5 +1,5 @@
 import { cacheStoredAccessToken } from "@/lib/auth-token";
-import { BOARDLY_API_BASE_URL } from "@/lib/api-client";
+import { ZENITH_TEAM_API_BASE_URL } from "@/lib/api-client";
 import { DesktopAuthBridgeError } from "@/shared/api/desktop-auth-error";
 import type { DesktopLoginResponse } from "@/shared/api/types";
 import {
@@ -8,7 +8,7 @@ import {
   writeStorageJson,
 } from "@/shared/lib/browser-storage";
 
-const GOOGLE_OAUTH_REQUEST_STORAGE_KEY = "boardly.google-oauth-request.v2";
+const GOOGLE_OAUTH_REQUEST_STORAGE_KEY = "zenith-team.google-oauth-request.v2";
 
 type DesktopGoogleOAuthRequest = {
   expiresAt: string;
@@ -51,7 +51,7 @@ export async function beginDesktopGoogleOAuthRedirect(): Promise<void> {
     const verifier = createRandomToken(64);
     const codeChallenge = await createCodeChallenge(verifier);
     const startResult = await bridge.startGoogleOAuth({
-      apiBaseUrl: BOARDLY_API_BASE_URL,
+      apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
       redirectUri: loopback.redirectUri,
       codeChallenge,
       clientMetadata: {
@@ -118,7 +118,7 @@ export async function completeDesktopGoogleOAuth(
   }
 
   const result = await bridge.completeGoogleOAuth({
-    apiBaseUrl: BOARDLY_API_BASE_URL,
+    apiBaseUrl: ZENITH_TEAM_API_BASE_URL,
     code: completion.code,
     error: completion.error,
     flowId: request.flowId,
@@ -136,10 +136,10 @@ export async function completeDesktopGoogleOAuth(
 }
 
 function desktopBridge() {
-  if (typeof window === "undefined" || !window.boardlyDesktop) {
+  if (typeof window === "undefined" || !window.zenithTeamDesktop) {
     throw new GoogleOAuthError("Desktop Google sign-in is unavailable.");
   }
-  return window.boardlyDesktop;
+  return window.zenithTeamDesktop;
 }
 
 function callbackCompletion(search: string) {
@@ -265,7 +265,7 @@ function clearStoredRequest() {
 }
 
 function report(kind: string, message: string) {
-  window.boardlyDesktop?.reportDiagnostic?.({
+  window.zenithTeamDesktop?.reportDiagnostic?.({
     kind,
     message,
     source: "google-oauth",

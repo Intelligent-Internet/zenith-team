@@ -352,7 +352,7 @@ func existingTaskMergeCommit(ctx context.Context, mainDir string, runID uuid.UUI
 }
 
 func taskMergeReceiptRef(runID uuid.UUID) string {
-	return "refs/boardly/run-merges/" + runID.String()
+	return "refs/zenith-team/run-merges/" + runID.String()
 }
 
 func taskMergeCommitSubject(runID uuid.UUID) string {
@@ -364,7 +364,7 @@ func taskMergeDiff(ctx context.Context, workDir string) (diff []byte, returnErr 
 	if err != nil || !validCommitID(strings.TrimSpace(base)) {
 		return nil, errors.New("task worktree merge base is unavailable")
 	}
-	temporary, err := os.MkdirTemp("", "boardly-task-merge-index-*")
+	temporary, err := os.MkdirTemp("", "zenith-team-task-merge-index-*")
 	if err != nil {
 		return nil, fmt.Errorf("create task merge index: %w", err)
 	}
@@ -396,7 +396,7 @@ func taskMergeDiff(ctx context.Context, workDir string) (diff []byte, returnErr 
 }
 
 func taskMergePatchApplies(ctx context.Context, mainDir string, diff []byte) (bool, error) {
-	temporary, err := os.MkdirTemp("", "boardly-task-merge-check-*")
+	temporary, err := os.MkdirTemp("", "zenith-team-task-merge-check-*")
 	if err != nil {
 		return false, fmt.Errorf("create task merge check workspace: %w", err)
 	}
@@ -539,9 +539,9 @@ func managedGitEnvironment(overrides []string) []string {
 func managedGitCommitEnvironment() []string {
 	return []string{
 		"GIT_AUTHOR_NAME=Zenith Team Daemon",
-		"GIT_AUTHOR_EMAIL=daemon@boardly.local",
+		"GIT_AUTHOR_EMAIL=daemon@zenith-team.local",
 		"GIT_COMMITTER_NAME=Zenith Team Daemon",
-		"GIT_COMMITTER_EMAIL=daemon@boardly.local",
+		"GIT_COMMITTER_EMAIL=daemon@zenith-team.local",
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 // unusedObjects is object storage a test proves is never reached.
@@ -18,15 +18,19 @@ type unusedObjects struct{}
 func (unusedObjects) Upload(context.Context, string, io.Reader, int64, string, string) error {
 	return errors.New("unexpected upload")
 }
+
 func (unusedObjects) DeleteObject(context.Context, string) error {
 	return errors.New("unexpected delete")
 }
+
 func (unusedObjects) DeleteKeys(context.Context, []string) error {
 	return errors.New("unexpected delete")
 }
+
 func (unusedObjects) GetReader(context.Context, string) (io.ReadCloser, error) {
 	return nil, errors.New("unexpected read")
 }
+
 func (unusedObjects) PresignGet(context.Context, string, time.Duration) (string, error) {
 	return "", errors.New("unexpected presign")
 }

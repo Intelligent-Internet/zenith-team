@@ -9,13 +9,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/execution"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/task"
-	"boardly.dev/boardly/server/internal/util"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // lockActiveHumanInputMember takes the canonical Company then membership
@@ -101,7 +101,13 @@ func lockHumanInputOriginChat(
 	origin execution.RunOrigin,
 ) error {
 	if origin.ConversationKind == "channel_agent" {
-		if _, err := q.LockConversationForSystemRunQueueMutation(ctx, generated.LockConversationForSystemRunQueueMutationParams{CompanyID: origin.CompanyID, ConversationID: origin.ConversationID}); err != nil {
+		if _, err := q.LockConversationForSystemRunQueueMutation(
+			ctx,
+			generated.LockConversationForSystemRunQueueMutationParams{
+				CompanyID:      origin.CompanyID,
+				ConversationID: origin.ConversationID,
+			},
+		); err != nil {
 			return err
 		}
 	}
@@ -139,8 +145,18 @@ func lockHumanInputOriginChat(
 		if err != nil {
 			return err
 		}
-		err = execution.AuthorizeChannelInvocationInTx(ctx, q, execution.RunTrigger{CompanyID: origin.CompanyID, ConversationID: origin.ConversationID, AgentID: origin.AgentID, InvocationID: run.InvocationID})
-		if errors.Is(err, execution.ErrChannelInvocationDenied) || errors.Is(err, execution.ErrRunAgentNotBound) {
+		err = execution.AuthorizeChannelInvocationInTx(
+			ctx,
+			q,
+			execution.RunTrigger{
+				CompanyID:      origin.CompanyID,
+				ConversationID: origin.ConversationID,
+				AgentID:        origin.AgentID,
+				InvocationID:   run.InvocationID,
+			},
+		)
+		if errors.Is(err, execution.ErrChannelInvocationDenied) ||
+			errors.Is(err, execution.ErrRunAgentNotBound) {
 			return execution.ErrRunProofInvalid
 		}
 		if err != nil {

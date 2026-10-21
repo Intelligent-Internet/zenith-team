@@ -1,7 +1,7 @@
 # `server/cmd`
 
 One directory per executable, named for the binary it produces — with one
-pinned exception: `cmd/mcp` builds the `boardly-mcp` binary, because desktop
+pinned exception: `cmd/mcp` builds the `zenith-team-mcp` binary, because desktop
 packaging and agent discovery key on that name (the `-o` flag in every build
 script sets it).
 
@@ -9,13 +9,13 @@ script sets it).
 | --- | --- |
 | `server` | the API container (the only binary `server/Dockerfile` builds) |
 | `zen` | the local CLI installed on a user's machine |
-| `boardly-mcp` (from `cmd/mcp`) | inside the desktop bundle |
+| `zenith-team-mcp` (from `cmd/mcp`) | inside the desktop bundle |
 | `migrate` | operator tool, not deployed |
 | `bundlectl` | maintainer and CI tool, never shipped |
 
 ## The binaries
 
-- **`cmd/server`** — the Boardly cloud API process. `main.go` installs signal
+- **`cmd/server`** — the Zenith Team cloud API process. `main.go` installs signal
   handling and translates the result of `run` into an exit code; the
   composition root itself is `run()` in `app.go`, split across sibling wiring
   files in the same package (`listeners.go` — the bus → realtime forwarder,
@@ -33,7 +33,7 @@ script sets it).
   API. Inside a Run the same binary runs in Agent mode over the daemon's Run
   channel (ADR 0009). Credentials live in the shared `internal/authfile`
   store; the Run channel holds none.
-- **`cmd/mcp`** — a thin shell over `internal/mcp.Run`; serves the Boardly
+- **`cmd/mcp`** — a thin shell over `internal/mcp.Run`; serves the Zenith Team
   MCP tools over stdio using the same auth file.
 - **`cmd/migrate`** — applies (`-direction=up`, the default) or rolls back
   (`-direction=down`, which additionally requires `-confirm-down` because it
@@ -57,8 +57,9 @@ script sets it).
   inside a git work tree it reads only what a commit would carry. `diff`
   compares the pin at a git revision with the working tree and fails on a
   change that breaks the release rules. It never reads or stores a token.
-  The root Makefile's `bundle-*` targets wrap it. It is never shipped: no
-  image, desktop bundle or release builds it.
+  The root Makefile's `bundle-*` targets wrap it; `bundle-bump`,
+  `bundle-diff` and `bundle-verify` are for maintainers. It is never
+  shipped: no image, desktop bundle or release builds it.
 
 ## Keep `main` small
 

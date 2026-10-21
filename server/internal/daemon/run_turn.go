@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"boardly.dev/boardly/server/pkg/agent"
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // newAgentProvider is agent.New behind a test seam, so a test can intercept
@@ -79,15 +79,21 @@ func decodeConversationSnapshot(run Run, doc RunContext) (*RunConversationSnapsh
 	}
 	if len(doc.ConversationSnapshot) > 64<<10 {
 		return nil, fmt.Errorf(
-			"%w: %d bytes exceed the 64 KiB budget", errConversationSnapshotInvalid, len(doc.ConversationSnapshot),
+			"%w: %d bytes exceed the 64 KiB budget",
+			errConversationSnapshotInvalid,
+			len(doc.ConversationSnapshot),
 		)
 	}
 	var snapshot RunConversationSnapshot
 	if err := json.Unmarshal(doc.ConversationSnapshot, &snapshot); err != nil {
-		return nil, fmt.Errorf("%w: %v", errConversationSnapshotInvalid, err)
+		return nil, fmt.Errorf("%w: %w", errConversationSnapshotInvalid, err)
 	}
 	if snapshot.SchemaVersion != 1 {
-		return nil, fmt.Errorf("%w: schema version %d, want 1", errConversationSnapshotInvalid, snapshot.SchemaVersion)
+		return nil, fmt.Errorf(
+			"%w: schema version %d, want 1",
+			errConversationSnapshotInvalid,
+			snapshot.SchemaVersion,
+		)
 	}
 	kind := "direct"
 	if doc.ChannelInvocation != nil {
@@ -101,11 +107,17 @@ func decodeConversationSnapshot(run Run, doc RunContext) (*RunConversationSnapsh
 	}
 	if snapshot.ConversationID != run.ConversationID {
 		return nil, fmt.Errorf(
-			"%w: conversation %q is not this Run's", errConversationSnapshotInvalid, snapshot.ConversationID,
+			"%w: conversation %q is not this Run's",
+			errConversationSnapshotInvalid,
+			snapshot.ConversationID,
 		)
 	}
 	if snapshot.ThroughSeq < 0 || snapshot.ThroughSeq > protocol.MaxJSONSafeInteger {
-		return nil, fmt.Errorf("%w: watermark %d out of range", errConversationSnapshotInvalid, snapshot.ThroughSeq)
+		return nil, fmt.Errorf(
+			"%w: watermark %d out of range",
+			errConversationSnapshotInvalid,
+			snapshot.ThroughSeq,
+		)
 	}
 	if len(snapshot.Items) > 64 {
 		return nil, fmt.Errorf(
@@ -116,20 +128,34 @@ func decodeConversationSnapshot(run Run, doc RunContext) (*RunConversationSnapsh
 	for _, item := range snapshot.Items {
 		if item.Seq < 1 || item.Seq > snapshot.ThroughSeq {
 			return nil, fmt.Errorf(
-				"%w: item seq %d outside 1..%d", errConversationSnapshotInvalid, item.Seq, snapshot.ThroughSeq,
+				"%w: item seq %d outside 1..%d",
+				errConversationSnapshotInvalid,
+				item.Seq,
+				snapshot.ThroughSeq,
 			)
 		}
 		if item.Seq <= previous {
-			return nil, fmt.Errorf("%w: item seq %d is not ascending", errConversationSnapshotInvalid, item.Seq)
+			return nil, fmt.Errorf(
+				"%w: item seq %d is not ascending",
+				errConversationSnapshotInvalid,
+				item.Seq,
+			)
 		}
 		previous = item.Seq
 		if item.Author.Kind != protocol.ActorKindUser && item.Author.Kind != protocol.ActorKindAgent {
 			return nil, fmt.Errorf(
-				"%w: item %d author kind %q", errConversationSnapshotInvalid, item.Seq, item.Author.Kind,
+				"%w: item %d author kind %q",
+				errConversationSnapshotInvalid,
+				item.Seq,
+				item.Author.Kind,
 			)
 		}
 		if item.ID == "" || strings.TrimSpace(item.Author.Name) == "" {
-			return nil, fmt.Errorf("%w: item %d has no id or author name", errConversationSnapshotInvalid, item.Seq)
+			return nil, fmt.Errorf(
+				"%w: item %d has no id or author name",
+				errConversationSnapshotInvalid,
+				item.Seq,
+			)
 		}
 	}
 	return &snapshot, nil
@@ -165,8 +191,9 @@ type turnContinuity struct {
 // present is a loss, unless the Run asked for a fresh session on purpose.
 func turnContinuityFor(run Run) turnContinuity {
 	return turnContinuity{
-		resumeExpected:         run.PriorSessionID != "",
-		continuityLost:         run.PriorSessionID == "" && run.PriorSessionThroughSeq > 0 && !run.ForceFreshSession,
+		resumeExpected: run.PriorSessionID != "",
+		continuityLost: run.PriorSessionID == "" && run.PriorSessionThroughSeq > 0 &&
+			!run.ForceFreshSession,
 		priorSessionThroughSeq: run.PriorSessionThroughSeq,
 	}
 }
@@ -262,12 +289,18 @@ func suppliedFilesBlock(doc RunContext) string {
 		if files.Len() > 0 {
 			files.WriteString("\n")
 		}
-		files.WriteString(heading + "\n" + lead + " The paths below are authorized read-only inputs for this Run.\n")
+		files.WriteString(
+			heading + "\n" + lead + " The paths below are authorized read-only inputs for this Run.\n",
+		)
 		for _, file := range placed {
 			fmt.Fprintf(&files, "- %q\n", filepath.Join(root, file.Filename))
 		}
 		for _, name := range unavailable {
-			fmt.Fprintf(&files, "- Unavailable: %q. Tell the user if needed; do not guess its contents.\n", name)
+			fmt.Fprintf(
+				&files,
+				"- Unavailable: %q. Tell the user if needed; do not guess its contents.\n",
+				name,
+			)
 		}
 	}
 	writeFiles("## Files attached to this Task",
@@ -290,7 +323,9 @@ func isChatTurn(doc RunContext, snapshot *RunConversationSnapshot) bool {
 func renderNewMessage(author RunConversationAuthor, prompt string) string {
 	return fmt.Sprintf(
 		"## New message from %s (member)\nThis is the message you are answering; address %s in your reply.\n\n%s",
-		author.Name, author.Name, prompt,
+		author.Name,
+		author.Name,
+		prompt,
 	)
 }
 

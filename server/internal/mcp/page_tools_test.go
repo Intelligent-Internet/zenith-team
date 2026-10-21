@@ -10,7 +10,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"boardly.dev/boardly/server/internal/mcp/tools"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 )
 
 type projectPageAPIStub struct {
@@ -114,18 +114,37 @@ func TestProjectPageToolsRequireAllowlistAndAcceptNativeEdits(t *testing.T) {
 				}},
 			} {
 				api.request = nil
-				result, err := session.CallTool(ctx, &mcpsdk.CallToolParams{Name: "page_edit", Arguments: map[string]any{
-					"pageId": "page", "sequence": 26, "summary": "Translate the highlighted stanza",
-					"operations": []any{map[string]any{"type": "update", "blockId": "stanza", "expectedHash": strings.Repeat("a", 64), "content": edit.content}},
-				}})
+				result, err := session.CallTool(
+					ctx,
+					&mcpsdk.CallToolParams{Name: "page_edit", Arguments: map[string]any{
+						"pageId":   "page",
+						"sequence": 26,
+						"summary":  "Translate the highlighted stanza",
+						"operations": []any{
+							map[string]any{
+								"type":         "update",
+								"blockId":      "stanza",
+								"expectedHash": strings.Repeat("a", 64),
+								"content":      edit.content,
+							},
+						},
+					}},
+				)
 				if edit.wantError != "" {
 					raw, _ := json.Marshal(result)
 					message := string(raw)
 					if err != nil {
 						message += err.Error()
 					}
-					if (err == nil && !result.IsError) || !strings.Contains(message, edit.wantError) || api.request != nil {
-						t.Fatalf("%s = %s, request = %v; want actionable error before API call", edit.name, message, api.request)
+					if (err == nil && !result.IsError) ||
+						!strings.Contains(message, edit.wantError) ||
+						api.request != nil {
+						t.Fatalf(
+							"%s = %s, request = %v; want actionable error before API call",
+							edit.name,
+							message,
+							api.request,
+						)
 					}
 					continue
 				}

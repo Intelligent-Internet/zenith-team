@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"boardly.dev/boardly/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 type CloudflareConfig struct {

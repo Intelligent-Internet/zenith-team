@@ -15,15 +15,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"boardly.dev/boardly/server/internal/attachment"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/wiki"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/attachment"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
-type CanvasService interface { //nolint:revive // AGENTS.md requires <Domain>Service; bare Service is forbidden.
+type CanvasService interface {
 	OpenOutputDocument(context.Context, auth.UserPrincipal, OutputDocumentRef) (uuid.UUID, error)
 	OutputReview(context.Context, auth.UserPrincipal, uuid.UUID) (OutputReview, error)
 	MutateOutputReview(context.Context, auth.UserPrincipal, uuid.UUID, Command) (Result, error)
@@ -51,7 +51,7 @@ func NewCanvasService(
 	store *db.Store,
 	bus *events.Bus,
 	attachments attachment.AttachmentService,
-	options ...CanvasOption,
+	options ...Option,
 ) *DefaultCanvasService {
 	s := &DefaultCanvasService{store: store, bus: bus, attachments: attachments}
 	for _, option := range options {
@@ -343,7 +343,15 @@ func (s *DefaultCanvasService) Mutate(
 		// Existing execution conversations precede canvas and thread locks, as
 		// they do when a completed Run posts its reply.
 		if input.ThreadID != nil && len(input.AgentIDs) > 0 {
-			if _, err = q.LockDocumentAgentConversations(ctx, generated.LockDocumentAgentConversationsParams{CompanyID: p.CompanyID, DocumentThreadID: nullable(input.ThreadID), CreatedByUserID: nullable(&p.UserID), AgentIds: input.AgentIDs}); err != nil {
+			if _, err = q.LockDocumentAgentConversations(
+				ctx,
+				generated.LockDocumentAgentConversationsParams{
+					CompanyID:        p.CompanyID,
+					DocumentThreadID: nullable(input.ThreadID),
+					CreatedByUserID:  nullable(&p.UserID),
+					AgentIds:         input.AgentIDs,
+				},
+			); err != nil {
 				return err
 			}
 		}
@@ -393,7 +401,12 @@ func (s *DefaultCanvasService) Mutate(
 		if err != nil {
 			return err
 		}
-		if err = s.invokeCommentAgents(ctx, q, &agentEvents, commentAgentRequest{Principal: p, ThreadID: result.ID, Command: input}); err != nil {
+		if err = s.invokeCommentAgents(
+			ctx,
+			q,
+			&agentEvents,
+			commentAgentRequest{Principal: p, ThreadID: result.ID, Command: input},
+		); err != nil {
 			return err
 		}
 		result.Sequence, err = q.AdvanceCanvasHead(
@@ -505,12 +518,12 @@ func redactVersionExcerpt(
 	if version.WikiRevisionID == nil {
 		return nil
 	}
-	if err := canVersion(ctx, q, p, project, version.ID); errors.Is(err, ErrNotFound) {
+	err := canVersion(ctx, q, p, project, version.ID)
+	if errors.Is(err, ErrNotFound) {
 		version.Excerpt = ""
 		return nil
-	} else {
-		return err
 	}
+	return err
 }
 
 // Live embeds authorize the working Page; pinned embeds authorize the retained tree.

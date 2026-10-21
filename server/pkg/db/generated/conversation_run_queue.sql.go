@@ -383,7 +383,7 @@ WHERE conversation_run_queue_items.conversation_id = $1::uuid
   AND conversation_run_queue_items.company_id = $2::uuid
   AND conversation_run_queue_items.state = 'queued'
   AND conversation_run_queue_items.initiated_by_user_id <> $3::uuid
-  -- One scalar probe per item (TECH §10): the author differs per row.
+  -- One scalar probe per item: the author differs per row.
   AND COALESCE((
       SELECT true FROM conversation_readers AS reader
       WHERE reader.company_id = conversation_run_queue_items.company_id

@@ -9,8 +9,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/company"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/company"
 )
 
 // groupServiceStub answers each Group method from its func field; a method
@@ -159,7 +159,7 @@ func serveGroupRoute(h *Handler, route groupRoute, runProof bool) *httptest.Resp
 	return response
 }
 
-// IA-FR27: every active member reads the Groups; only members.manage
+// Every active member reads the Groups; only members.manage
 // holders change them, and a Run never does.
 func TestGroupRoutesAnswerFromTheCompanyRole(t *testing.T) {
 	t.Parallel()

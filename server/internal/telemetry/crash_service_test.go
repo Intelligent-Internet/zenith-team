@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 // newUnvalidatedStoreService builds a service over a zero-valued store whose

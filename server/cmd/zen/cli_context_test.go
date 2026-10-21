@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"boardly.dev/boardly/server/internal/runchannel"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/runchannel"
 )
 
 const (
@@ -44,7 +44,11 @@ func newFakeRunChannel(t *testing.T, respond func(runchannel.Request) (int, stri
 		}
 		if r.Header.Get("Authorization") != runchannel.AuthorizationScheme+" "+testRunCapability {
 			w.WriteHeader(http.StatusUnauthorized)
-			_, _ = w.Write([]byte(`{"schemaVersion":1,"code":"unauthorized","reason":"Run capability is invalid or the Run has ended."}`))
+			_, _ = w.Write(
+				[]byte(
+					`{"schemaVersion":1,"code":"unauthorized","reason":"Run capability is invalid or the Run has ended."}`,
+				),
+			)
 			return
 		}
 		var request runchannel.Request
@@ -65,14 +69,14 @@ func newFakeRunChannel(t *testing.T, respond func(runchannel.Request) (int, stri
 }
 
 // seedAgentShell makes the test process look like a provider shell the
-// daemon launched: an isolated BOARDLY_HOME holding run.json and nothing
+// daemon launched: an isolated ZENITH_TEAM_HOME holding run.json and nothing
 // else, plus the Run environment variables.
 func seedAgentShell(t *testing.T, channel *fakeRunChannel, taskID string, commands []string) {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("BOARDLY_HOME", home)
-	t.Setenv("BOARDLY_RUN_ID", testRunID)
-	t.Setenv("BOARDLY_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
+	t.Setenv("ZENITH_TEAM_HOME", home)
+	t.Setenv("ZENITH_TEAM_RUN_ID", testRunID)
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
 	control := runchannel.RunControlConfig{
 		SchemaVersion: 1, Endpoint: channel.server.URL, Capability: testRunCapability,
 		RunID: testRunID, CompanyID: testCompanyID, AgentID: testRunAgentID, AgentName: "Scout",
@@ -95,9 +99,9 @@ func seedAgentShell(t *testing.T, channel *fakeRunChannel, taskID string, comman
 }
 
 func TestOperatorShellIsOperatorMode(t *testing.T) {
-	t.Setenv("BOARDLY_HOME", t.TempDir())
-	t.Setenv("BOARDLY_RUN_ID", "")
-	t.Setenv("BOARDLY_RUN_TOKEN", "")
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
 	if context := resolveCommandContext(); context.mode != modeOperator {
 		t.Fatalf("mode = %v, want operator", context.mode)
 	}
@@ -111,8 +115,8 @@ func TestAgentShellNeverFallsBackToOperatorCredentials(t *testing.T) {
 	// A Run environment without run.json is a broken channel, not an
 	// invitation to read the operator's session.
 	seedSession(t, "http://127.0.0.1:1")
-	t.Setenv("BOARDLY_RUN_ID", testRunID)
-	t.Setenv("BOARDLY_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
+	t.Setenv("ZENITH_TEAM_RUN_ID", testRunID)
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "brt_"+strings.Repeat("ab", 32))
 	context := resolveCommandContext()
 	if context.mode != modeAgent || context.channelErr == nil {
 		t.Fatalf("context = %+v, want agent mode with a channel error", context)

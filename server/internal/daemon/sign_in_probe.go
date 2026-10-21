@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"boardly.dev/boardly/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
 )
 
 // signInProbeTimeout bounds one provider status command. Both CLIs answer

@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/db"
-	"boardly.dev/boardly/server/internal/testutil/dbtest"
-	generated "boardly.dev/boardly/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
@@ -33,7 +33,12 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 		t.Fatal(err)
 	}
 	principal := auth.UserPrincipal{UserID: fixture.UserA, CompanyID: fixture.CompanyA}
-	if _, err := pool.Exec(ctx, `INSERT INTO company_members(company_id,user_id,role) VALUES ($1,$2,'member')`, fixture.CompanyA, fixture.UserB); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`INSERT INTO company_members(company_id,user_id,role) VALUES ($1,$2,'member')`,
+		fixture.CompanyA,
+		fixture.UserB,
+	); err != nil {
 		t.Fatal(err)
 	}
 	seedUpload := func(companyID, userID uuid.UUID, contentType string, size int64, status string) uuid.UUID {
@@ -41,7 +46,8 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 		var id uuid.UUID
 		err := pool.QueryRow(ctx, `INSERT INTO attachments(company_id,uploaded_by_user_id,request_key,filename,content_type,size_bytes,status,version,upload_lease_expires_at)
 			VALUES ($1,$2,gen_random_uuid(),'avatar',$3,$4,$5,CASE WHEN $5='pending' THEN 1 ELSE 2 END,
-			CASE WHEN $5='pending' THEN clock_timestamp()+interval '1 hour' END) RETURNING id`, companyID, userID, contentType, size, status).Scan(&id)
+			CASE WHEN $5='pending' THEN clock_timestamp()+interval '1 hour' END) RETURNING id`, companyID, userID, contentType, size, status).
+			Scan(&id)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +62,11 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 		return id
 	}
 	avatar := seedUpload(fixture.CompanyA, fixture.UserA, "image/png", 1024, "ready")
-	input := UpdateProfileInput{ExpectedRevision: 1, Name: "Company avatar", AvatarAttachmentID: &uuid.NullUUID{UUID: avatar, Valid: true}}
+	input := UpdateProfileInput{
+		ExpectedRevision:   1,
+		Name:               "Company avatar",
+		AvatarAttachmentID: &uuid.NullUUID{UUID: avatar, Valid: true},
+	}
 	updated, err := service.UpdateProfile(ctx, principal, input)
 	if err != nil {
 		t.Fatal(err)
@@ -64,11 +74,19 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 	if updated.AvatarAttachmentID == nil || *updated.AvatarAttachmentID != avatar || updated.Revision != 2 {
 		t.Fatalf("avatar update = %+v", updated)
 	}
-	if payload := payloadOf[Response](t, eventLog.snapshot()[0]); payload.AvatarAttachmentID == nil || *payload.AvatarAttachmentID != avatar {
+	if payload := payloadOf[Response](
+		t,
+		eventLog.snapshot()[0],
+	); payload.AvatarAttachmentID == nil ||
+		*payload.AvatarAttachmentID != avatar {
 		t.Fatalf("event avatar = %v, want %v", payload.AvatarAttachmentID, avatar)
 	}
 	q := generated.New(pool)
-	read := generated.AuthorizeAttachmentDownloadParams{CompanyID: fixture.CompanyA, ActorUserID: fixture.UserB, AttachmentID: avatar}
+	read := generated.AuthorizeAttachmentDownloadParams{
+		CompanyID:    fixture.CompanyA,
+		ActorUserID:  fixture.UserB,
+		AttachmentID: avatar,
+	}
 	if _, err := q.AuthorizeAttachmentDownload(ctx, read); err != nil {
 		t.Fatalf("member cannot read avatar: %v", err)
 	}
@@ -91,7 +109,8 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 	input.ExpectedRevision = 2
 	input.AvatarAttachmentID = nil
 	unchanged, err := service.UpdateProfile(ctx, principal, input)
-	if err != nil || unchanged.Revision != 2 || unchanged.AvatarAttachmentID == nil || *unchanged.AvatarAttachmentID != avatar {
+	if err != nil || unchanged.Revision != 2 || unchanged.AvatarAttachmentID == nil ||
+		*unchanged.AvatarAttachmentID != avatar {
 		t.Fatalf("omitted avatar = %+v, %v", unchanged, err)
 	}
 	for _, test := range []struct {
@@ -118,14 +137,30 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 			}
 		})
 	}
-	if _, err := pool.Exec(ctx, `UPDATE attachments SET updated_at=clock_timestamp()-interval '2 days' WHERE id=$1`, avatar); err != nil {
+	if _, err := pool.Exec(
+		ctx,
+		`UPDATE attachments SET updated_at=clock_timestamp()-interval '2 days' WHERE id=$1`,
+		avatar,
+	); err != nil {
 		t.Fatal(err)
 	}
-	candidates, err := q.ClaimAbandonedReadyAttachmentCandidates(ctx, generated.ClaimAbandonedReadyAttachmentCandidatesParams{BatchSize: 100, AbandonedGraceMilliseconds: 1000})
+	candidates, err := q.ClaimAbandonedReadyAttachmentCandidates(
+		ctx,
+		generated.ClaimAbandonedReadyAttachmentCandidatesParams{
+			BatchSize:                  100,
+			AbandonedGraceMilliseconds: 1000,
+		},
+	)
 	if err != nil || slices.Contains(candidates, avatar) {
 		t.Fatalf("avatar cleanup candidates = %v, %v", candidates, err)
 	}
-	cleaned, err := q.TransitionClaimedAbandonedReadyAttachments(ctx, generated.TransitionClaimedAbandonedReadyAttachmentsParams{AttachmentIds: []uuid.UUID{avatar}, AbandonedGraceMilliseconds: 1000})
+	cleaned, err := q.TransitionClaimedAbandonedReadyAttachments(
+		ctx,
+		generated.TransitionClaimedAbandonedReadyAttachmentsParams{
+			AttachmentIds:              []uuid.UUID{avatar},
+			AbandonedGraceMilliseconds: 1000,
+		},
+	)
 	if err != nil || len(cleaned) != 0 {
 		t.Fatalf("avatar cleanup transition = %v, %v", cleaned, err)
 	}
@@ -133,7 +168,8 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 	input.ExpectedRevision = 1
 	_, err = service.UpdateProfile(ctx, principal, input)
 	var conflict *ProfileRevisionConflictError
-	if !errors.As(err, &conflict) || conflict.Current.AvatarAttachmentID == nil || *conflict.Current.AvatarAttachmentID != avatar {
+	if !errors.As(err, &conflict) || conflict.Current.AvatarAttachmentID == nil ||
+		*conflict.Current.AvatarAttachmentID != avatar {
 		t.Fatalf("avatar conflict = %v", err)
 	}
 	input.ExpectedRevision = 2
@@ -148,7 +184,13 @@ func TestCompanyAvatarOwnershipRevisionAccessAndRetention(t *testing.T) {
 	if _, err := q.AuthorizeAttachmentDownload(ctx, read); !errors.Is(err, pgx.ErrNoRows) {
 		t.Fatalf("removed avatar access = %v", err)
 	}
-	cleaned, err = q.TransitionClaimedAbandonedReadyAttachments(ctx, generated.TransitionClaimedAbandonedReadyAttachmentsParams{AttachmentIds: []uuid.UUID{avatar}, AbandonedGraceMilliseconds: 1000})
+	cleaned, err = q.TransitionClaimedAbandonedReadyAttachments(
+		ctx,
+		generated.TransitionClaimedAbandonedReadyAttachmentsParams{
+			AttachmentIds:              []uuid.UUID{avatar},
+			AbandonedGraceMilliseconds: 1000,
+		},
+	)
 	if err != nil || len(cleaned) != 1 {
 		t.Fatalf("removed avatar cleanup = %v, %v", cleaned, err)
 	}

@@ -19,16 +19,16 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"boardly.dev/boardly/server/internal/activity"
-	"boardly.dev/boardly/server/internal/auth"
-	"boardly.dev/boardly/server/internal/events"
-	"boardly.dev/boardly/server/internal/inbox"
-	"boardly.dev/boardly/server/internal/telemetry"
-	"boardly.dev/boardly/server/internal/util"
-	db "boardly.dev/boardly/server/pkg/db/generated"
-	"boardly.dev/boardly/server/pkg/protocol"
-	"boardly.dev/boardly/server/pkg/redact"
-	"boardly.dev/boardly/server/pkg/runfailure"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/telemetry"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/runfailure"
 )
 
 // Transactor runs fn inside one transaction, handing it a query set bound to
@@ -287,7 +287,7 @@ func (e *TranscriptHeadMismatchError) Head() protocol.RunTerminalHeadMismatch {
 	}
 }
 
-// RunOrigin is supplemental scope proved by X-Boardly-Run-Token. It never
+// RunOrigin is supplemental scope proved by X-Zenith-Team-Run-Token. It never
 // replaces the ordinary authenticated UserPrincipal.
 type RunOrigin struct {
 	RunID            uuid.UUID
@@ -304,7 +304,7 @@ type RunOrigin struct {
 	AuthorizedByUserID *uuid.UUID
 	// InvocationChannelID is the channel or group DM a tagged Run answers
 	// into. It marks a tagged Run and bounds nothing: the Run uses its
-	// Authorizer's access (D31). Nil for any other Run.
+	// Authorizer's access. Nil for any other Run.
 	InvocationChannelID *uuid.UUID
 	// ProjectID is the Project of the chat the Run answers into, set for a
 	// Task chat. A Task Run's answer reaches that Project's readers only, so
@@ -314,12 +314,12 @@ type RunOrigin struct {
 	// that plans the Company. PlanningDisabled says that Agent has its
 	// Company Plan tools switched off now. Both are read live with the
 	// proof, so the server, not the daemon, decides whether the Run reads
-	// as the Company's planner (IA-FR12).
+	// as the Company's planner.
 	RootAgent        bool
 	PlanningDisabled bool
 }
 
-// Actor is who a write this Run proves is attributed to (D31): its Agent,
+// Actor is who a write this Run proves is attributed to: its Agent,
 // acting in this Run for its authorizer. A Run with no authorizer predates
 // authorizers and is attributed to its Agent alone; no route admits its
 // proof (runProofBearer), so only a direct service call reaches that case.
@@ -2058,7 +2058,7 @@ func retryDelayForAttempt(reason string, failedAttempt int32) time.Duration {
 
 // resumeUnsafeFailureReason reports failures that poison the agent
 // CONVERSATION (not the workdir): resuming the same session would
-// immediately replay the stuck/oversized state. Trimmed to boardly's
+// immediately replay the stuck/oversized state. Trimmed to zenith-team's
 // claude/codex runfailure taxonomy.
 func resumeUnsafeFailureReason(reason string) bool {
 	switch reason {

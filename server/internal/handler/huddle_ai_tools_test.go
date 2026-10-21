@@ -7,11 +7,12 @@ import (
 	"strings"
 	"testing"
 
-	"boardly.dev/boardly/server/internal/agent/voice"
-	"boardly.dev/boardly/server/internal/conversation"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/agent/voice"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/conversation"
 )
 
 type huddleContextStub struct {
@@ -19,7 +20,12 @@ type huddleContextStub struct {
 	calls int
 }
 
-func (s *huddleContextStub) ReadContext(context.Context, uuid.UUID, string, voice.ContextRequest) (voice.ContextResult, error) {
+func (s *huddleContextStub) ReadContext(
+	context.Context,
+	uuid.UUID,
+	string,
+	voice.ContextRequest,
+) (voice.ContextResult, error) {
 	s.calls++
 	return voice.ContextResult{Items: []voice.ContextItem{}}, nil
 }
@@ -45,7 +51,11 @@ func TestHuddleToolHTTPRejectsForgedScopeAndNilID(t *testing.T) {
 			h := &Handler{HuddleAIService: stub}
 			router := gin.New()
 			h.registerHuddleAIRoutes(router.Group("/api/v1"))
-			request := httptest.NewRequest(http.MethodPost, "/api/v1/internal/huddle-ai/22222222-2222-4222-8222-222222222222/tools", strings.NewReader(tt.body))
+			request := httptest.NewRequest(
+				http.MethodPost,
+				"/api/v1/internal/huddle-ai/22222222-2222-4222-8222-222222222222/tools",
+				strings.NewReader(tt.body),
+			)
 			request.Header.Set("Content-Type", "application/json")
 			request.Header.Set("Authorization", "Bearer test")
 			response := httptest.NewRecorder()

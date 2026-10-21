@@ -96,7 +96,7 @@
   background: var(--workspace-nav-selected);
 }
 .workspace-account-trigger:focus-visible,
-html[data-boardly-workspace-theme] .workspace-account-trigger:focus-visible {
+html[data-zenith-team-workspace-theme] .workspace-account-trigger:focus-visible {
   outline: none;
   background: var(--workspace-nav-selected);
 }
