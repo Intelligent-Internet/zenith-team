@@ -40,7 +40,7 @@ require (
 	golang.org/x/term v0.46.0
 	golang.org/x/tools v0.49.0
 	google.golang.org/api v0.288.0
-	google.golang.org/grpc v1.83.1
+	google.golang.org/grpc v1.83.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
