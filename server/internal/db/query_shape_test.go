@@ -14,8 +14,8 @@ import (
 	"testing"
 )
 
-// Project access (ADR 0017) lives in four views and one function
-// (migration 000086). These two scans keep every read that acts for a person
+// Project access (ADR 0017) lives in four views and one function.
+// These two scans keep every read that acts for a person
 // on them: a statement that binds a person and reads a guarded table must
 // name one of the access views, and Go code must not reach the Project-scoped
 // tables with hand-written SQL. A statement that does neither is listed below
@@ -62,7 +62,7 @@ var storedPersonParams = map[string]bool{
 // the delegate rule: delegate_permission_held for a Run or the voice
 // assistant, and run_permission_held for one Run from its own row, and
 // project_access_paths, every stored path (own grant or Group) by which a
-// person holds a permission (000101). The Group tables themselves are not
+// person holds a permission. The Group tables themselves are not
 // guarded tables: they say who may read, not what a Project holds. The views
 // are matched on word boundaries so a column such as project_access_version
 // never passes for the view.
@@ -167,7 +167,7 @@ var rawGuardedSQL = map[string]string{
 	"internal/usage/service.go:509": usageTotals,
 	"internal/usage/service.go:781": "swept: the top Tasks list joins project_access for the caller (ADR 0017); " +
 		"its share denominator counts every Task Run's tokens and names no Task",
-	"internal/testutil/dbtest/dbtest.go:354": "not swept: the test fixture grants its owners every Project permission",
+	"internal/testutil/dbtest/dbtest.go:331": "not swept: the test fixture grants its owners every Project permission",
 	"internal/testutil/dbtest/groups.go:90": "not swept: the test fixture grants its Group colleagues' Groups every " +
 		"Project, for the EXPLAIN pins",
 }

@@ -101,8 +101,8 @@ func TestNoQueryPreallocatesARunIdentity(t *testing.T) {
 func TestContinuationPresenceChecksBindContinuationToResolution(t *testing.T) {
 	t.Parallel()
 
-	sql := normalizedBaselineSQL(t, "000005_execution.up.sql")
-	want := "check ( (status = 'pending') = (continuation_status is null) )"
+	sql := normalizedBaselineSQL(t)
+	want := "check ((status = 'pending') = (continuation_status is null))"
 	if strings.Count(sql, want) != 2 {
 		t.Errorf("continuation presence check missing on Approvals and Questions: %q", want)
 	}

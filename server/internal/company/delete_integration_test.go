@@ -48,9 +48,6 @@ func TestDeleteCompanyHardDeletesGraphAndRevokesEveryMember(t *testing.T) {
 		INSERT INTO run_usage (run_id, provider, model, raw_json)
 		VALUES ($1, 'codex', 'company-delete-test', '{}'::jsonb)`, fixture.RunA)
 	dbtest.MustExec(t, ctx, pool, `
-		INSERT INTO run_identity_mappings (legacy_id, run_id)
-		VALUES (9223372036854775000, $1)`, fixture.RunA)
-	dbtest.MustExec(t, ctx, pool, `
 		INSERT INTO activity_events (
 			company_id, actor_type, action, entity_type, entity_id, details
 		) VALUES (
@@ -115,7 +112,6 @@ func TestDeleteCompanyHardDeletesGraphAndRevokesEveryMember(t *testing.T) {
 		SELECT
 			(SELECT count(*) FROM run_tokens WHERE run_id=$1) +
 			(SELECT count(*) FROM run_usage WHERE run_id=$1) +
-			(SELECT count(*) FROM run_identity_mappings WHERE run_id=$1) +
 			(SELECT count(*) FROM activity_events WHERE company_id=$2)`,
 		fixture.RunA, fixture.CompanyA,
 	).Scan(&detachedCount); err != nil {

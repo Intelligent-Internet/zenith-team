@@ -1,4 +1,4 @@
--- Groups (migration 000101): a named, flat set of Team
+-- Groups: a named, flat set of Team
 -- members in one Company that can hold Project grants. Every statement
 -- repeats the Company scope. A membership counts only for an active member
 -- and only when it was written since their latest (re)join (the rejoin fence

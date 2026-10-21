@@ -140,7 +140,7 @@ func TestInboxItemsNameTheProjectOfEverySubject(t *testing.T) {
 		{"approval", nil, Entity{Type: protocol.EntityApproval, ID: approvalID.String()}},
 		{"question", nil, Entity{Type: protocol.EntityQuestion, ID: questionID.String()}},
 		{"deliverable", nil, Entity{Type: protocol.EntityDeliverable, ID: deliverableID.String()}},
-		// The Project itself (project_access_granted, 000101).
+		// The Project itself (project_access_granted).
 		{"project", nil, Entity{Type: protocol.EntityProject, ID: fixture.ProjectA.String()}},
 	} {
 		created := create(fixture.UserA, "owner-"+subject.key, subject.conversation, subject.entity)

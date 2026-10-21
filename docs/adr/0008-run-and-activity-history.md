@@ -44,8 +44,8 @@ and descriptive attribution without widening private Conversation access.
 Activity records Company-wide actions, not a causal Run log. Remove the
 proposed per-Run Activity endpoint and dedicated Run attribution from the
 target contract. A Run is selected through `entity_type=run` and `entity_id`;
-its actions do not include unrelated subject changes it caused. Migration 000015 preserves old Run attribution in version-0 evidence and
-drops the dedicated Activity Run column. Agent Run history remains the Run list.
+its actions do not include unrelated subject changes it caused. Activity has
+no dedicated Run column. Agent Run history remains the Run list.
 
 Use a DB-generated UUID Run PK, immutable server-derived `run_type`, and
 one immutable `runs.revision`: Task revision for a Task Run, Conversation
@@ -103,8 +103,8 @@ and safe domain snapshots, and conflict with the repository's schema doctrine.
 ## Amendment: schema version column (2026-09-25)
 
 SQL must not filter inside the `details` JSON, for example on
-`details->>'schemaVersion'`. Migration
-000048 copies the envelope version into `activity_events.schema_version`
+`details->>'schemaVersion'`. The envelope version is also stored in
+`activity_events.schema_version`
 (`integer NOT NULL DEFAULT 0`, CHECK 0 or 1), and the startup baseline filters
 on that column. The envelope keeps `schemaVersion` because clients read it as
 the details union tag; each Activity writer sets both from one constant. The

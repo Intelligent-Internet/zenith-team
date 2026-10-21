@@ -127,7 +127,7 @@ WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY(sqlc.arg(publisher_ro
     OR p.search_vector @@ (SELECT query FROM search_input)
     OR (p.current_revision_id IS NULL AND to_tsvector('simple',d.title || ' ' || d.markdown) @@ (SELECT query FROM search_input)))
 ORDER BY
-  -- A search ranks first (title A, summary B, body C; see 000118) and falls
+  -- A search ranks first (title A, summary B, body C) and falls
   -- back to recency; browsing keeps the recency order. A draft has no stored
   -- vector, so it is ranked on the same weights computed from its own text.
   -- The browse arm is a constant the planner folds away, so the ordered index

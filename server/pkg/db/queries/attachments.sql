@@ -196,7 +196,7 @@ WHERE attachments.id = sqlc.arg(attachment_id)::uuid
 -- context; frozen_project_document says it was in the frozen Project
 -- documents, which the freeze read as active files that person could open.
 -- Such a file stays open to the Run after it is retired (retired rows keep
--- their bytes for frozen Runs and their retries, 000057) while the person
+-- their bytes for frozen Runs and their retries) while the person
 -- still reads one of its Projects. Every other file follows
 -- attachment_access, the rule a person's own download uses. A Company
 -- reference document, which every Run of the Company receives, is open to

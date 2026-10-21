@@ -141,7 +141,7 @@ func TestAnalyticsGroupsProbeProjectAccessPerProject(t *testing.T) {
 		WHERE project.company_id = $1`, fixture.CompanyA, fixture.UserA)
 	// Forty Groups of forty more colleagues, each Group holding grants on
 	// every Project, so a scan of company_group_members or
-	// project_group_grants would show too (000101).
+	// project_group_grants would show too.
 	dbtest.SeedGroupColleagues(t, ctx, pool, fixture.CompanyA, "analytics-group-colleague", 40,
 		"project.tasks.write", "project.files.manage")
 	dbtest.MustExec(t, ctx, pool, `ANALYZE`)

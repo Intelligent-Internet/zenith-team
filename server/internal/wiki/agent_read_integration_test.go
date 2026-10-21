@@ -671,7 +671,7 @@ func searchIDs(items []wiki.AgentSearchItem) []uuid.UUID {
 }
 
 // A title hit outranks a summary hit, which outranks a body-only hit, however
-// often the body repeats the word and however recently it was edited (000118).
+// often the body repeats the word and however recently it was edited.
 func TestAgentSearchRanksTitleThenSummaryThenBody(t *testing.T) {
 	h := startAgentRead(t)
 	ctx := t.Context()

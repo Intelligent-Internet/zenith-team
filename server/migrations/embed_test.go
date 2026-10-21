@@ -9,6 +9,19 @@ import (
 	"testing"
 )
 
+// baselineFiles are the schema files the ladder starts from, in order. Later
+// migrations append after them.
+var baselineFiles = []string{
+	"000001_identity",
+	"000002_agents",
+	"000003_work",
+	"000004_conversations",
+	"000005_runs",
+	"000006_content",
+	"000007_mail_and_social",
+	"000008_activity",
+}
+
 func TestEmbeddedMigrationVersionsHaveOneDirectionPair(t *testing.T) {
 	entries, err := Files.ReadDir(".")
 	if err != nil {
@@ -86,8 +99,18 @@ func TestEmbeddedMigrationVersionsAreContiguous(t *testing.T) {
 	}
 }
 
+func TestBaselineFilesAreTheFirstVersions(t *testing.T) {
+	for _, name := range baselineFiles {
+		for _, direction := range []string{".up.sql", ".down.sql"} {
+			if _, err := Files.ReadFile(name + direction); err != nil {
+				t.Errorf("baseline file %s%s: %v", name, direction, err)
+			}
+		}
+	}
+}
+
 // statementSQL lowercases migration content with comment lines removed, so
-// doctrine notes ("usage facts are FK-free") never trip statement guards.
+// notes in comments never trip statement guards.
 func statementSQL(content []byte) string {
 	lines := strings.Split(string(content), "\n")
 	kept := make([]string, 0, len(lines))
@@ -100,51 +123,98 @@ func statementSQL(content []byte) string {
 	return strings.ToLower(strings.Join(kept, "\n"))
 }
 
+// withoutFunctionBodies blanks every $$-quoted function body, so a trigger's
+// own UPDATE is not mistaken for a data statement.
+func withoutFunctionBodies(sql string) string {
+	return regexp.MustCompile(`(?s)\$\$.*?\$\$`).ReplaceAllString(sql, "$$$$")
+}
+
+func readBaseline(t *testing.T, name string) string {
+	t.Helper()
+	content, err := Files.ReadFile(name)
+	if err != nil {
+		t.Fatalf("read %s: %v", name, err)
+	}
+	return statementSQL(content)
+}
+
+// baselineSeeds are the reference rows a fresh database needs, by file. They
+// are the baseline's only data statements.
+var baselineSeeds = map[string][]string{
+	"000008_activity": {"model_prices"},
+}
+
+// The baseline is the schema itself: tables, constraints, indexes, views,
+// functions and triggers, plus the seeds above. A fresh database has no rows
+// to backfill or fix.
+func TestBaselineIsSchemaOnly(t *testing.T) {
+	t.Parallel()
+	data := regexp.MustCompile(`(?m)^\s*(insert into \w+|update |delete from|truncate\b|copy |do \$\$)`)
+	for _, name := range baselineFiles {
+		sql := withoutFunctionBodies(readBaseline(t, name+".up.sql"))
+		for _, found := range data.FindAllString(sql, -1) {
+			found = strings.TrimSpace(found)
+			table, isInsert := strings.CutPrefix(found, "insert into ")
+			if isInsert && slices.Contains(baselineSeeds[name], table) {
+				continue
+			}
+			t.Errorf("%s.up.sql contains the data statement %q", name, found)
+		}
+		for _, table := range baselineSeeds[name] {
+			if !strings.Contains(sql, "insert into "+table+" ") {
+				t.Errorf("%s.up.sql lost its %s seed", name, table)
+			}
+		}
+	}
+}
+
 // Persistent procedures stay limited: plpgsql and trigger functions exist only
-// for the discussion integrity checks and channel revision fences. A
-// LANGUAGE sql STABLE predicate function stating a single access rule is
-// allowed when it is pinned here (project_permission_held, ADR 0017, which
-// 000101 gives a Group arm and its down file restores;
-// delegate_permission_held and run_permission_held, the delegate rule,
-// replaced by 000100; conversation_audience_reads, which 000100 drops and its
-// down file restores). Services still own product writes, lifecycle
-// transitions and events.
+// for the discussion integrity checks and channel revision fences, plus the
+// three LANGUAGE sql STABLE predicates that each state one access rule
+// (ADR 0017). Services still own product writes, lifecycle transitions and
+// events.
 func TestMigrationsLimitProceduralObjectsToDiscussionConstraints(t *testing.T) {
 	t.Parallel()
-	allowedFunctions := map[string]bool{
-		"advance_channel_execution_revision":   false,
-		"check_discussion_shape":               false,
-		"preserve_discussion_identity":         false,
-		"check_discussion_item_shape":          false,
-		"reject_discussion_run":                false,
-		"check_discussion_collaboration_shape": false,
-		"project_permission_held":              false,
-		"conversation_audience_reads":          false,
-		"delegate_permission_held":             false,
-		"run_permission_held":                  false,
+	functionFile := map[string]string{
+		"project_permission_held":              "000003_work.up.sql",
+		"delegate_permission_held":             "000004_conversations.up.sql",
+		"check_discussion_shape":               "000004_conversations.up.sql",
+		"check_discussion_item_shape":          "000004_conversations.up.sql",
+		"check_discussion_collaboration_shape": "000004_conversations.up.sql",
+		"preserve_discussion_identity":         "000004_conversations.up.sql",
+		"advance_channel_execution_revision":   "000004_conversations.up.sql",
+		"run_permission_held":                  "000005_runs.up.sql",
+		"reject_discussion_run":                "000005_runs.up.sql",
 	}
-	allowedTriggers := map[string]bool{
-		"channel_archive_generation/conversations":                      false,
-		"channel_context_revision/conversation_items":                   false,
-		"discussion_shape/conversations":                                false,
-		"discussion_shape/conversation_human_directs":                   false,
-		"discussion_shape/conversation_channels":                        false,
-		"discussion_shape/conversation_members":                         false,
-		"discussion_shape/conversation_agents":                          false,
-		"discussion_identity/conversations":                             false,
-		"discussion_identity/conversation_human_directs":                false,
-		"discussion_identity/conversation_channels":                     false,
-		"discussion_identity/conversation_members":                      false,
-		"discussion_identity/conversation_agents":                       false,
-		"discussion_item_shape/conversation_items":                      false,
-		"discussion_run_guard/runs":                                     false,
-		"discussion_collaboration_shape/conversation_message_pins":      false,
-		"discussion_collaboration_shape/conversation_message_reactions": false,
-		"discussion_collaboration_shape/conversation_thread_states":     false,
+	triggerFile := map[string]string{
+		"channel_archive_generation/conversations":                      "000004_conversations.up.sql",
+		"channel_context_revision/conversation_items":                   "000004_conversations.up.sql",
+		"discussion_shape/conversations":                                "000004_conversations.up.sql",
+		"discussion_shape/conversation_human_directs":                   "000004_conversations.up.sql",
+		"discussion_shape/conversation_channels":                        "000004_conversations.up.sql",
+		"discussion_shape/conversation_members":                         "000004_conversations.up.sql",
+		"discussion_shape/conversation_agents":                          "000004_conversations.up.sql",
+		"discussion_identity/conversations":                             "000004_conversations.up.sql",
+		"discussion_identity/conversation_human_directs":                "000004_conversations.up.sql",
+		"discussion_identity/conversation_channels":                     "000004_conversations.up.sql",
+		"discussion_identity/conversation_members":                      "000004_conversations.up.sql",
+		"discussion_identity/conversation_agents":                       "000004_conversations.up.sql",
+		"discussion_item_shape/conversation_items":                      "000004_conversations.up.sql",
+		"discussion_collaboration_shape/conversation_message_pins":      "000004_conversations.up.sql",
+		"discussion_collaboration_shape/conversation_message_reactions": "000004_conversations.up.sql",
+		"discussion_collaboration_shape/conversation_thread_states":     "000004_conversations.up.sql",
+		"discussion_run_guard/runs":                                     "000005_runs.up.sql",
 	}
-	declared := make(map[string]bool)
+	predicates := []string{"project_permission_held", "delegate_permission_held", "run_permission_held"}
+
 	triggers := regexp.MustCompile(`create (?:constraint )?trigger (\w+) [^;]*? on (\w+)`)
-	functions := regexp.MustCompile(`create (?:or replace )?function ([\w.]+)`)
+	functions := regexp.MustCompile(`create (?:or replace )?function ([\w.]+)\(`)
+	predicate := regexp.MustCompile(
+		`create (?:or replace )?function (\w+)\([^$]*?\) returns boolean\s+language sql stable\s+as \$\$`,
+	)
+	seenFunctions := make(map[string]bool)
+	seenTriggers := make(map[string]bool)
+	seenPredicates := make(map[string]bool)
 	entries, err := Files.ReadDir(".")
 	if err != nil {
 		t.Fatal(err)
@@ -154,199 +224,81 @@ func TestMigrationsLimitProceduralObjectsToDiscussionConstraints(t *testing.T) {
 		if !strings.HasSuffix(name, ".sql") {
 			continue
 		}
-		content, err := Files.ReadFile(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		sql := statementSQL(content)
+		sql := readBaseline(t, name)
 		for _, match := range triggers.FindAllStringSubmatch(sql, -1) {
 			key := match[1] + "/" + match[2]
-			seen, allowed := allowedTriggers[key]
-			origin := "000031_discussions.up.sql"
-			if match[1] == "discussion_collaboration_shape" {
-				origin = "000033_discussion_collaboration.up.sql"
-			}
-			if match[1] == "channel_archive_generation" || match[1] == "channel_context_revision" {
-				origin = "000042_channel_agent_invocations.up.sql"
-			}
-			if name != origin || !allowed || seen {
+			if triggerFile[key] != name || seenTriggers[key] {
 				t.Errorf("%s declares unapproved trigger %s", name, key)
 				continue
 			}
-			allowedTriggers[key] = true
+			seenTriggers[key] = true
 		}
 		for _, match := range functions.FindAllStringSubmatch(sql, -1) {
 			if strings.HasPrefix(match[1], "pg_temp.") {
 				continue
 			}
-			// Group DM invocations extend the existing item constraint and revision fence.
-			if (name == "000056_direct_agent_invocations.up.sql" || name == "000056_direct_agent_invocations.down.sql") &&
-				(match[1] == "check_discussion_item_shape" || match[1] == "advance_channel_execution_revision") {
-				continue
-			}
-			// 000053 only moves the channel answer's invocation lookup to a column.
-			if (name == "000033_discussion_collaboration.up.sql" || name == "000033_discussion_collaboration.down.sql" ||
-				name == "000047_direct_message_system_items.up.sql" || name == "000047_direct_message_system_items.down.sql" ||
-				name == "000053_channel_answer_invocation.up.sql" || name == "000053_channel_answer_invocation.down.sql") &&
-				match[1] == "check_discussion_item_shape" {
-				continue
-			}
-			// Transcript cards extend only the existing Huddle item constraint.
-			if (name == "000083_huddle_transcripts.up.sql" || name == "000083_huddle_transcripts.down.sql" ||
-				name == "000084_huddle_source_cards.up.sql" || name == "000084_huddle_source_cards.down.sql") &&
-				match[1] == "check_discussion_item_shape" {
-				continue
-			}
-			// Group DMs only revise the existing discussion shape constraint.
-			if (name == "000044_group_direct_messages.up.sql" || name == "000044_group_direct_messages.down.sql" ||
-				name == "000045_mixed_direct_messages.up.sql" || name == "000045_mixed_direct_messages.down.sql") &&
-				match[1] == "check_discussion_shape" {
-				continue
-			}
-			if (name == "000046_direct_message_invitations.up.sql" || name == "000046_direct_message_invitations.down.sql") &&
-				match[1] == "preserve_discussion_identity" {
-				continue
-			}
-			// General only revises the existing shape and identity constraints.
-			if (name == "000032_general_channel.up.sql" || name == "000032_general_channel.down.sql" ||
-				name == "000070_huddles.up.sql" || name == "000070_huddles.down.sql") &&
-				(match[1] == "check_discussion_shape" || match[1] == "preserve_discussion_identity") {
-				continue
-			}
-			// A Board's channel only revised the existing shape and identity
-			// constraints; 000113 restores the 000070 bodies.
-			if (name == "000108_whiteboard_collaboration.up.sql" || name == "000108_whiteboard_collaboration.down.sql" ||
-				name == "000113_whiteboard_artifacts.up.sql" || name == "000113_whiteboard_artifacts.down.sql") &&
-				(match[1] == "check_discussion_shape" || match[1] == "preserve_discussion_identity") {
-				continue
-			}
-			if (name == "000042_channel_agent_invocations.up.sql" || name == "000042_channel_agent_invocations.down.sql") &&
-				match[1] == "check_discussion_item_shape" {
-				continue
-			}
-			if (name == "000043_channel_answer_collaboration.up.sql" || name == "000043_channel_answer_collaboration.down.sql") &&
-				match[1] == "check_discussion_collaboration_shape" {
-				continue
-			}
-			if (name == "000070_huddles.up.sql" || name == "000070_huddles.down.sql") &&
-				(match[1] == "check_discussion_item_shape" || match[1] == "reject_discussion_run") {
-				continue
-			}
-			_, allowed := allowedFunctions[match[1]]
-			origins := []string{"000031_discussions.up.sql"}
-			if match[1] == "check_discussion_collaboration_shape" {
-				origins = []string{"000033_discussion_collaboration.up.sql"}
-			}
-			if match[1] == "advance_channel_execution_revision" {
-				origins = []string{"000042_channel_agent_invocations.up.sql"}
-			}
-			// 000101 adds the Group arm; its down file restores the 000086 body.
-			if match[1] == "project_permission_held" {
-				origins = []string{
-					"000086_project_access.up.sql",
-					"000101_groups.up.sql",
-					"000101_groups.down.sql",
-				}
-			}
-			// 000100 drops the audience; its down file restores the 000086 body.
-			if match[1] == "conversation_audience_reads" {
-				origins = []string{
-					"000086_project_access.up.sql",
-					"000100_runs_use_their_authorizers_access.down.sql",
-				}
-			}
-			// 000100 replaces both delegate functions, and its down file
-			// restores the 000099 forms.
-			if match[1] == "delegate_permission_held" || match[1] == "run_permission_held" {
-				origins = []string{
-					"000099_delegate_permission_held.up.sql",
-					"000100_runs_use_their_authorizers_access.up.sql",
-					"000100_runs_use_their_authorizers_access.down.sql",
-				}
-			}
-			declaration := name + "/" + match[1]
-			if !slices.Contains(origins, name) || !allowed || declared[declaration] {
+			if functionFile[match[1]] != name || seenFunctions[match[1]] {
 				t.Errorf("%s declares unapproved persistent function %s", name, match[1])
 				continue
 			}
-			declared[declaration] = true
-			allowedFunctions[match[1]] = true
+			seenFunctions[match[1]] = true
+		}
+		for _, match := range predicate.FindAllStringSubmatch(sql, -1) {
+			seenPredicates[match[1]] = true
 		}
 	}
-	for name, seen := range allowedFunctions {
-		if !seen {
+	for name := range functionFile {
+		if !seenFunctions[name] {
 			t.Errorf("missing pinned function %s", name)
 		}
 	}
-	predicate := regexp.MustCompile(`\) returns boolean\s+language sql stable\s+as \$\$`)
-	for _, pinned := range []struct {
-		file, names string
-		count       int
-	}{
-		{"000086_project_access.up.sql", "project_permission_held and conversation_audience_reads", 2},
-		{"000099_delegate_permission_held.up.sql", "delegate_permission_held and run_permission_held", 2},
-		{"000100_runs_use_their_authorizers_access.up.sql", "delegate_permission_held and run_permission_held", 2},
-		{
-			"000100_runs_use_their_authorizers_access.down.sql",
-			"conversation_audience_reads, delegate_permission_held and run_permission_held", 3,
-		},
-		{"000101_groups.up.sql", "project_permission_held", 1},
-		{"000101_groups.down.sql", "project_permission_held", 1},
-	} {
-		access, err := Files.ReadFile(pinned.file)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if predicates := predicate.FindAllString(statementSQL(access), -1); len(predicates) != pinned.count {
-			t.Errorf("%s declares %d LANGUAGE sql STABLE predicates; %s must each stay one",
-				pinned.file, len(predicates), pinned.names)
-		}
-	}
-	for name, seen := range allowedTriggers {
-		if !seen {
+	for name := range triggerFile {
+		if !seenTriggers[name] {
 			t.Errorf("missing discussion integrity trigger %s", name)
 		}
 	}
-}
-
-func TestUsageMigrationIsDDLOnlyAndDeclaresImmutableRunUsage(t *testing.T) {
-	t.Parallel()
-	content, err := Files.ReadFile("000007_usage.up.sql")
-	if err != nil {
-		t.Fatalf("read usage migration: %v", err)
-	}
-	sql := statementSQL(content)
-	for _, forbidden := range []string{
-		"insert into", "update ", "delete from", "create trigger",
-		"create function", "language plpgsql", "do $$",
-	} {
-		if strings.Contains(sql, forbidden) {
-			t.Fatalf("usage migration contains forbidden data/procedural statement %q", forbidden)
+	for _, name := range predicates {
+		if !seenPredicates[name] {
+			t.Errorf("%s must stay one LANGUAGE sql STABLE predicate", name)
 		}
 	}
+}
+
+// Usage facts are immutable and FK-free: a Run's usage outlives the Run's
+// other rows and is never rewritten.
+func TestRunUsageIsImmutableAndFKFree(t *testing.T) {
+	t.Parallel()
+	sql := readBaseline(t, "000005_runs.up.sql")
+	table := regexp.MustCompile(`(?s)create table run_usage \(.*?\n\);`).FindString(sql)
+	if table == "" {
+		t.Fatal("000005_runs.up.sql does not create run_usage")
+	}
 	for _, required := range []string{
-		"create table run_usage", "primary key (run_id, provider, model)",
-		"raw_json jsonb not null", "created_at timestamp with time zone",
+		"primary key (run_id, provider, model)", "raw_json jsonb not null", "created_at timestamptz",
 	} {
-		if !strings.Contains(sql, required) {
-			t.Errorf("usage migration is missing %q", required)
+		if !strings.Contains(table, required) {
+			t.Errorf("run_usage is missing %q", required)
 		}
 	}
 	for _, removed := range []string{
-		"worker_id", "foreign key", "references ", "updated_at", "reasoning_tokens",
-		"provider_cost_state", "rollup_applied_hash", "usage_hourly", "usage_counted_runs",
-		"usage_runs_hourly", "usage_run_model_memberships", "usage_tasks_hourly",
-		"usage_backfill_state",
+		"worker_id", "foreign key", "references ", "updated_at",
+		"provider_cost_state", "rollup_applied_hash",
 	} {
-		if strings.Contains(sql, removed) {
-			t.Errorf("usage migration retained removed vocabulary or constraint %q", removed)
+		if strings.Contains(table, removed) {
+			t.Errorf("run_usage retained removed vocabulary or constraint %q", removed)
+		}
+	}
+	for _, retired := range []string{
+		"usage_hourly", "usage_counted_runs", "usage_runs_hourly", "usage_run_model_memberships",
+		"usage_tasks_hourly", "usage_backfill_state",
+	} {
+		if strings.Contains(sql, "create table "+retired) {
+			t.Errorf("000005_runs.up.sql recreates the retired table %s", retired)
 		}
 	}
 }
 
-// The identity/tenancy/work/execution migrations carry real FK edges;
-// only usage facts stay FK-free, which the usage test above
-// pins. This guard now watches for resurrection of deleted tables only.
+// Watches for resurrection of deleted tables.
 func TestNoMigrationDeclaresDeletedTables(t *testing.T) {
 	t.Parallel()
 	entries, err := Files.ReadDir(".")
@@ -358,11 +310,7 @@ func TestNoMigrationDeclaresDeletedTables(t *testing.T) {
 		if !strings.HasSuffix(name, ".up.sql") {
 			continue
 		}
-		content, err := Files.ReadFile(name)
-		if err != nil {
-			t.Fatalf("read migration %q: %v", name, err)
-		}
-		sql := statementSQL(content)
+		sql := readBaseline(t, name)
 		for _, forbidden := range []string{
 			"create table realtime_outbox", "create table agent_sessions",
 			"create table run_inputs", "create table run_input_messages",
@@ -370,6 +318,8 @@ func TestNoMigrationDeclaresDeletedTables(t *testing.T) {
 			"create table executor_tokens", "create table workers",
 			"create table executors", "create table run_events",
 			"create table run_questions", "create table missions",
+			"create table commerce_", "create table deliverable_review_actions",
+			"create table run_identity_mappings",
 		} {
 			if strings.Contains(sql, forbidden) {
 				t.Errorf("migration %q contains forbidden statement %q", name, forbidden)
@@ -378,64 +328,24 @@ func TestNoMigrationDeclaresDeletedTables(t *testing.T) {
 	}
 }
 
-func TestDeliverableTablesRollbackChildrenFirst(t *testing.T) {
+// Each down file drops exactly the tables its up file creates, newest first,
+// so children always go before the tables they reference.
+func TestDownFilesDropTheirTablesChildrenFirst(t *testing.T) {
 	t.Parallel()
-	content, err := Files.ReadFile("000009_outputs.down.sql")
-	if err != nil {
-		t.Fatalf("read Deliverables rollback: %v", err)
-	}
-	sql := statementSQL(content)
-	childrenFirst := []string{
-		"drop table output_publications",
-		"drop table deliverable_review_actions",
-		"drop table deliverables",
-		"drop table output_items",
-		"drop table outputs",
-		"drop table asset_versions",
-		"drop table assets",
-		"drop constraint inbox_items_company_id_id_key",
-	}
-	previous := -1
-	for _, statement := range childrenFirst {
-		position := strings.Index(sql, statement)
-		if position < 0 || position <= previous {
-			t.Fatalf("Deliverables rollback is not children-first at %q:\n%s", statement, sql)
+	created := regexp.MustCompile(`(?m)^create table (\w+) \(`)
+	dropped := regexp.MustCompile(`(?m)^drop table if exists (\w+) cascade;`)
+	for _, name := range baselineFiles {
+		var want []string
+		for _, match := range created.FindAllStringSubmatch(readBaseline(t, name+".up.sql"), -1) {
+			want = append(want, match[1])
 		}
-		previous = position
-	}
-}
-
-// 000098: the session client is one typed column with a closed CHECK,
-// and its rollback ends every live daemon session before the column goes, so
-// a daemon session can never read as its person's own.
-func TestDaemonSessionRollbackEndsDaemonSessionsBeforeDroppingTheColumn(t *testing.T) {
-	t.Parallel()
-	up, err := Files.ReadFile("000098_daemon_sessions.up.sql")
-	if err != nil {
-		t.Fatalf("read daemon session migration: %v", err)
-	}
-	if sql := statementSQL(up); !strings.Contains(sql, "add column client text not null default 'person'") ||
-		!strings.Contains(sql, "check (client in ('person', 'daemon'))") {
-		t.Fatalf("000098 does not add the closed session client column:\n%s", sql)
-	}
-	down, err := Files.ReadFile("000098_daemon_sessions.down.sql")
-	if err != nil {
-		t.Fatalf("read daemon session rollback: %v", err)
-	}
-	sql := statementSQL(down)
-	previous := -1
-	for _, statement := range []string{
-		"update auth_sessions",
-		"revocation_reason = 'downgrade'",
-		"where client = 'daemon'",
-		"and revoked_at is null",
-		"drop column client",
-	} {
-		position := strings.Index(sql, statement)
-		if position < 0 || position <= previous {
-			t.Fatalf("000098 rollback does not end daemon sessions before dropping the column at %q:\n%s",
-				statement, sql)
+		slices.Reverse(want)
+		var got []string
+		for _, match := range dropped.FindAllStringSubmatch(readBaseline(t, name+".down.sql"), -1) {
+			got = append(got, match[1])
 		}
-		previous = position
+		if !slices.Equal(got, want) {
+			t.Errorf("%s.down.sql drops %v, want the up file's tables newest first %v", name, got, want)
+		}
 	}
 }

@@ -1,8 +1,6 @@
 package db
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -10,11 +8,7 @@ import (
 func TestProducerFactsDeriveCompanyThroughTheirCompositeOwners(t *testing.T) {
 	t.Parallel()
 
-	raw, err := os.ReadFile(filepath.Join("..", "..", "migrations", "000005_execution.up.sql"))
-	if err != nil {
-		t.Fatalf("read execution migration: %v", err)
-	}
-	source := string(raw)
+	source := upMigrationsSource(t)
 	tests := []struct {
 		table string
 		owner string
@@ -48,5 +42,12 @@ func migrationTableDefinition(t *testing.T, source, table string) string {
 	if end < 0 {
 		t.Fatalf("migration does not close %s definition", table)
 	}
-	return rest[:end]
+	// A link to a table created in a later file is added there.
+	definition := rest[:end]
+	for _, line := range strings.Split(source, "\n") {
+		if strings.HasPrefix(line, "ALTER TABLE "+table+" ADD CONSTRAINT ") {
+			definition += "\n" + line
+		}
+	}
+	return definition
 }

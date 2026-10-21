@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// SeedGroup creates a Group in the Company (migration 000101) and returns its
-// id. The name must be unique in the Company, ignoring case.
+// SeedGroup creates a Group in the Company and returns its id. The name must
+// be unique in the Company, ignoring case.
 func SeedGroup(
 	t *testing.T,
 	ctx context.Context,

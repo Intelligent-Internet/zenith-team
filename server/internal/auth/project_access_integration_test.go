@@ -241,8 +241,8 @@ func TestProjectAccessViews(t *testing.T) {
 	if !reads(w.f.DirectConversationA, w.f.UserA) || reads(w.f.DirectConversationA, w.member) {
 		t.Error("direct chat readers are not its creator alone")
 	}
-	// A Task chat detached before 000086 recorded no Project: every active
-	// member reads it, nobody else.
+	// A Task chat detached before Task chats recorded their Project has
+	// none: every active member reads it, nobody else.
 	var legacy uuid.UUID
 	if err := w.pool.QueryRow(ctx, `INSERT INTO conversations (company_id, kind, title, created_at, updated_at)
 		VALUES ($1, 'task', 'Legacy', '2020-01-01', '2020-01-01') RETURNING id`, w.f.CompanyA).Scan(&legacy); err != nil {

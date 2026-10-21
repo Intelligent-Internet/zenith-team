@@ -26,8 +26,7 @@ chat sharing and public link are the Artifact's (`execution/artifact_sharing.go`
 and `output_access` is the one access rule: read at level 1, edit at 2, share
 at 3. `internal/canvas/board*.go` owns the live scene: atomic scene commands,
 fixed-schema note CRDTs, lazy payload hydration, bounded JSON/Markdown context
-and retention (`board_retention.go`), in `boards.sql`, `board_files.sql` and
-migrations 107 to 109. `board_access.go` authorizes every call against the
+and retention (`board_retention.go`), in `boards.sql` and `board_files.sql`. `board_access.go` authorizes every call against the
 Artifact (`boardScopeLock`; a write also locks the Output's row against a
 sharing change) and owns the live Run/Task-generation fence (Run writes hold
 the Task and Run in share mode). A Run acts with its authorizing member's
@@ -179,13 +178,12 @@ See Skills technical design.
 ## Independent Huddle notes
 
 `conversation/huddle_notes*.go` owns independent capture policy, interval leases,
-transcript retention, recap revisions and source validation. Migration 117 and
-`huddle_notes.sql` persist these separately from invited-Agent transcripts.
-Migration 118 adds the fixed Stop-notes cutoff and bounded finalization lease;
-only that attempt may append pre-cutoff text before its deadline, then seal.
-Notes and voice invitations share `HUDDLE_AI_ENABLED`. Migration 119 enables
-untouched Company notes policies with 30-day retention and 100 monthly stream-hours;
-explicit administrator policies remain unchanged. Capture still requires Start notes.
+transcript retention, recap revisions and source validation. `huddle_notes.sql`
+persists these separately from invited-Agent transcripts. Stopping notes sets a
+fixed cutoff and a bounded finalization lease; only that attempt may append
+pre-cutoff text before its deadline, then seal. Notes and voice invitations
+share `HUDDLE_AI_ENABLED`. A Company's notes policy defaults to on, with 30-day
+retention and 100 monthly stream-hours. Capture still requires Start notes.
 `handler/huddle_notes.go` exposes person controls and workload-authenticated
 claim/append boundaries; `cmd/server/huddle_notes_recap.go` supplies the optional
 Responses transport. `task/huddle_notes.go` creates an explicitly confirmed
@@ -197,7 +195,7 @@ voice invitations retain their independent `helia:` identity and authority.
 
 `conversation/huddle_card.go` creates one immutable source-discussion receipt per
 new Huddle and batch-hydrates its live summary through `huddle_cards.sql`.
-Migration 78 links the receipt from `huddles.source_item_id`. Source-audience
+`huddles.source_item_id` links the receipt. Source-audience
 invalidation uses the discussion dispatcher; opening retained chat still requires
 the separate Huddle chat grant.
 
@@ -210,7 +208,7 @@ desktop can fetch currently authorized context before presenting it.
 
 `conversation/huddle_transcript.go` checkpoints bounded live-model text under the
 current attempt capability and freezes invitation identity across recoveries.
-Migration 77 adds `huddle_transcripts`; finalization posts one immutable system card
+Transcripts live in `huddle_transcripts`; finalization posts one immutable system card
 to the participant-only Huddle chat. It saves neither raw audio nor private Run
 transcripts, and opens no additional model session.
 
@@ -241,8 +239,8 @@ question body, or approval details are included in a proactive notice.
 ## Chat model settings
 
 `conversation/model_settings.go` owns direct/Task chat model and thinking choices,
-revision checks and creator/Task-assignee access. Migration 91 adds
-`conversation_model_settings`, keyed by Conversation and Agent so handoffs do
+revision checks and creator/Task-assignee access.
+`conversation_model_settings` is keyed by Conversation and Agent so handoffs do
 not reuse another Agent's provider settings. Direct creation and the shared
 `execution.EnqueueRunInTx` path initialize from Agent defaults. The Run brief
 query overlays saved chat settings, including explicit nulls, before freezing
@@ -277,8 +275,8 @@ and structural-change detection. `block_draft.go` performs the one-time, page-lo
 from Markdown `Y.Text`, preserving original bytes and text. PostgreSQL allocates
 block identities in `wiki_block_ids`; `wiki_canvas_drafts` holds the canonical
 collaboration snapshot and derived JSON/Markdown projections. Wiki revisions
-freeze block JSON alongside their derived Markdown body. Migration 000089
-adds shared draft metadata and records which Wiki revisions were published.
+freeze block JSON alongside their derived Markdown body. The schema keeps
+shared draft metadata and records which Wiki revisions were published.
 
 The Wiki and Canvas entry points share the block editor and merge machinery.
 Company Wiki edits use only the Wiki document routes; Canvas references expose
@@ -300,9 +298,7 @@ Alternative versions have a branch title and an independent Wiki page/draft.
 `library.go` owns shared pinned-layout templates, creator-private saved views,
 and restoration of removed placements. `search.go` returns authorized document
 matches and block locations. Queries live in `canvas.sql`, `canvas_search.sql`
-and `wiki_blocks.sql`; migration 000089 is additive and refuses destructive
-rollback once native documents or saved library data exist. The same migration
-adds the latest-structural-sequence fence without rewriting content.
+and `wiki_blocks.sql`. The tables carry the latest-structural-sequence fence.
 
 `output_document.go` imports supported Markdown once per Output item into
 `output_documents`. Original uploaded Asset Versions remain immutable. The page
@@ -317,8 +313,7 @@ Output documents require an explicit Editor/Manager grant or ownership to write;
 visibility and conversation sharing grant reading and commenting only. A
 Project-owned Output instead requires its source Project's read/write rights.
 Project placement alone never grants editing. Sharing remains Manager-only.
-Fresh-schema migration 000096 creates the canonical ownership constraints and
-consolidates discussion storage without backfilling historical databases. See
+The schema holds the canonical ownership constraints and one discussion store. See
 ADR 0019 for the content, placement and permission boundaries.
 
 `handler/canvas.go` exposes these human-only endpoints. Document cursor presence
@@ -366,9 +361,8 @@ capture uses Project editing authority; Company Wiki publication remains separat
 After Task Run admission, capture checkpoints the authorized native Pages through
 the same `wiki.CheckpointCanvasPageInTx` used by human editing. The existing Workflow catalog is supplied as
 a read-only lookup from the composition root; it gains no table or execution
-graph. Queries live in `overview.sql`; migration `000089_project_canvas` adds
-managed blocks, change receipts, captures and exact source pins, and
-refuses destructive rollback after authored data exists.
+graph. Queries live in `overview.sql`; the managed blocks, change receipts, captures
+and exact source pins are tables in `000003_work`.
 Contribution storage is shared by the Overview and supporting Pages:
 `project_page_changes` and `project_page_managed_blocks`. The artifact's
 `source_run_id` retains initial Task Run attribution across Page checkpoints.
@@ -400,12 +394,11 @@ sequence. Outputs retain their original Run and authorizing member as attributio
 (`source_run_id`, `on_behalf_of_user_id`) independently of the nullable live Run
 relation. Run completion records `source_run_completed` in the same transaction;
 retained completed deliveries remain selectable after Run deletion, while deleting
-failed or cancelled execution never grants result eligibility. Migration 000104
-backfills these facts and frozen scope from existing Runs.
+failed or cancelled execution never grants result eligibility.
 Human output resubmission remains removed. Automatic history in
 `canvas/document_history.go` resolves current document access at both Project and
 Output entry points. `wiki/history.go` records accepted saves transactionally in
-`document_changes` (migration 000105), with CRDT deltas and bounded checkpoints.
+`document_changes`, with CRDT deltas and bounded checkpoints.
 Restoration appends a new shared-document state, reconciles comments and suggestions,
 and publishes after commit; it never changes deliveries or Task result approval.
 Suggestion history links review receipts to their retained before/result captures.
@@ -414,7 +407,7 @@ available; ordinary document controls use automatic history.
 
 `canvas/document_agents.go` connects explicit Agent mentions on native Project
 Page comment threads to `conversation/document_agents.go` in the same transaction.
-Migration 000106 links one creator-private direct Conversation per thread and Agent;
+Each thread and Agent links one creator-private direct Conversation;
 these Conversations are hidden from the ordinary chat list. Follow-ups reuse the
 existing Run queue without creating Tasks. `/` writing actions use this same path.
 Tagged comment Runs receive `page_read`, `page_edit` and `source_read`, so they can
@@ -426,7 +419,7 @@ the code-mode host. Startup and thread restrictions share the feature settings
 in `pkg/agent/connector.go`. Explicit writing actions
 freeze `documentWriting` in the execution profile, receive no tools, and
 capture the text block, UTF-16 selection range and canonical content in
-`document_writing_requests` (migration 000106). Completion converts
+`document_writing_requests`. Completion converts
 the response to native block suggestions with the original block hash. Human review
 alone applies these to CRDT state; intervening edits require refreshed review.
 Both writing completion and `page_edit` persist proposals through `insertPageProposal`,
@@ -473,7 +466,7 @@ Shared event mutations write invitations, RSVP and update/cancellation notificat
 to Inbox in the same transaction; HTTP and Agent tools use the same path. Its bounded
 reminder worker writes durable Inbox items and advances indexed due times atomically.
 Inbox supports account-owned personal reminders alongside Company-scoped items.
-Migration `000030_calendar` includes reminder delivery and Calendar update Inbox types.
+The Inbox types include reminder delivery and Calendar updates.
 `internal/social` owns per-user social accounts and browser-bound
 OAuth flows, credential maintenance and idempotent immediate publication;
 `internal/infra/social` implements external OAuth, refresh, discovery and publishing.
@@ -483,7 +476,8 @@ These are separate domains, not aspects of Company activity or Agent Schedules,
 which is the forcing function for the two new domain packages. Their services use
 `db.Store` and sqlc (`calendar.sql`, `social.sql`); handlers live in `calendar.go`
 and `social.go`; `calendar_agent.go` and `social_agent.go` expose the Run-proven
-transports. Migrations `000030_calendar` and `000034_social` add their tables.
+transports. Their tables are in `000003_work` (calendars) and
+`000007_mail_and_social` (social).
 `calendar.manage` permits Company event management only; personal event visibility
 is organizer/invitation-based. Direct-chat Agents use explicitly allowlisted
 `calendar_read`/`calendar_write` MCP adapters, sharing the same domain mutations.
@@ -511,11 +505,11 @@ Run-read visibility. Publication state and Studio attachment mutations emit
 These are the current ownership and persistence rules after the clean-slate
 schema and payload cleanup.
 
-- The schema begins with eight domain-grouped baseline migrations, `000001`
-  through `000008`, followed by the checked-in incremental migrations in
-  `migrations/`. Server startup applies pending migrations; additive feature
-  changes preserve existing databases. The migration runner and schema tests
-  are authoritative.
+- The schema begins with eight domain baseline migrations, `000001_identity`
+  through `000008_activity` (see `migrations/README.md`); later migrations
+  append after them. Server startup applies pending migrations; additive
+  feature changes preserve existing databases. The migration runner and
+  schema tests are authoritative.
 - `internal/conversation/pins.go` owns personal pin/archive state for task and
   direct chats. Task filing lives in `conversation_user_states` with independent
   revisions; direct filing remains creator-private on `conversations`. Archive
@@ -579,9 +573,7 @@ schema and payload cleanup.
   `projects.sql` supplies the access-scoped reads and the writes;
   `project_access.sql` the grant rows, the Group grant rows, every person's
   stored paths and the access report; `groups.sql` the Groups and their
-  members. Migration
-  000086 also cancels, once, the Runs and re-addresses the decisions its
-  owner backfill left without access.
+  members.
   Task Runs freeze Project documents; the daemon places originals and bounded text
   extracts in Run scratch. PDF extraction uses host `pdftotext`; failures are named
   in the Agent prompt, with original files still available. Task owns
@@ -856,11 +848,10 @@ server/
 │   │                    TaskChatProjectID, ProjectAudienceInTx,
 │   │                    TaskChatDecidersInTx, ProjectDecidersInTx); the
 │   │                    rule lives in the project_access views and
-│   │                    project_permission_held (migration 000086); what a
+│   │                    project_permission_held; what a
 │   │                    delegate (a Run, the voice assistant) may do is
 │   │                    delegate_permission_held and run_permission_held:
-│   │                    its Authorizer's access, no chat audience
-│   │                    (migrations 000099 and 000100).
+│   │                    its Authorizer's access, no chat audience.
 │   │                    auth/project_audience.go decides a realtime
 │   │                    frame's Project audience in the producing
 │   │                    transaction (ProjectFrame, ProjectAudienceCarrier,
@@ -1094,9 +1085,8 @@ server/
 │   │                    WriteError, the one JSON error envelope every package
 │   │                    answers errors with
 │   └── testutil/dbtest/ shared PostgreSQL test scaffolding
-├── migrations/          historical baselines 000001–000008 and additive
-│                        migrations through 000035; retained discussions and
-│                        collaboration state block destructive rollback
+├── migrations/          the eight domain baseline files (000001–000008);
+│                        later migrations append after them
 └── tests/               testpostgres/ (one PostgreSQL container per test
                          command) and wsobserve/ (e2e smoke WS observer)
 ```
@@ -1307,4 +1297,4 @@ the Plan owns the combined Task history snapshots.
 jobs; PostgreSQL receipts and Company transaction fences make duplicate deliveries
 safe. `handler/task_calendar.go` is the HTTP boundary. Connector Schedules remain
 creator-private and use the non-task lane; Task schedules use Project access and
-Task capacity. Migration 000097 is additive and preserves legacy Task acceptance.
+Task capacity.

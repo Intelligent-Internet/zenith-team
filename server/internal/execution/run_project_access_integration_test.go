@@ -54,9 +54,9 @@ func enqueueInRolledBackTx(t *testing.T, ctx context.Context, pool *pgxpool.Pool
 	return err
 }
 
-// seedLegacyTaskChat inserts a Task chat whose Task was deleted before
-// migration 000086 recorded Projects: kind task, no Task, no Project. The
-// CHECK admits it only with a creation time before that migration.
+// seedLegacyTaskChat inserts a Task chat whose Task was deleted before Task
+// chats recorded their Project: kind task, no Task, no Project. The CHECK
+// admits it only with a creation time before its fixed cutoff.
 func seedLegacyTaskChat(t *testing.T, ctx context.Context, pool *pgxpool.Pool, companyID uuid.UUID) uuid.UUID {
 	t.Helper()
 	id := dbtest.NewUUID(t)
@@ -199,7 +199,8 @@ func TestClaimSkipsTaskRunsWhoseAuthorizerCannotExecute(t *testing.T) {
 	finish(taskRun)
 
 	// CreateRun writes no Run into a Task chat without its Task; this one was
-	// queued before its Task was deleted, before 000086.
+	// queued before its Task was deleted, before Task chats recorded their
+	// Project.
 	var legacyRun db.Run
 	if err := pool.QueryRow(ctx, `
 		INSERT INTO runs (company_id, agent_id, conversation_id, runtime_id,

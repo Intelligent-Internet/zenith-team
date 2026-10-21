@@ -21,7 +21,7 @@ SET continuation_status = 'abandoned',
     version = version + 1
 WHERE id = $2::uuid
   AND continuation_status = 'pending'
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type AbandonApprovalContinuationParams struct {
@@ -69,7 +69,6 @@ func (q *Queries) AbandonApprovalContinuation(ctx context.Context, arg AbandonAp
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -260,7 +259,7 @@ func (q *Queries) ApprovalStatsByRule(ctx context.Context, arg ApprovalStatsByRu
 }
 
 const claimDueApprovalContinuation = `-- name: ClaimDueApprovalContinuation :one
-SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 FROM approvals
 WHERE type = 'company_plan_apply'
   AND company_id = $1::uuid
@@ -310,7 +309,6 @@ func (q *Queries) ClaimDueApprovalContinuation(ctx context.Context, companyID uu
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -386,7 +384,7 @@ INSERT INTO approvals (
     $17::timestamptz
 )
 ON CONFLICT (origin_run_id, request_key) DO NOTHING
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type CreateApprovalParams struct {
@@ -466,7 +464,6 @@ func (q *Queries) CreateApproval(ctx context.Context, arg CreateApprovalParams) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -556,7 +553,7 @@ SET continuation_next_attempt_at = $1::timestamptz,
     continuation_attempts = continuation_attempts + 1
 WHERE id = $2::uuid
   AND continuation_status = 'pending'
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type DeferApprovalContinuationParams struct {
@@ -601,7 +598,6 @@ func (q *Queries) DeferApprovalContinuation(ctx context.Context, arg DeferApprov
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -661,7 +657,7 @@ SET continuation_run_id = $1::uuid,
     version = version + 1
 WHERE id = $2::uuid
   AND continuation_status = 'pending'
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type DeliverApprovalContinuationParams struct {
@@ -712,7 +708,6 @@ func (q *Queries) DeliverApprovalContinuation(ctx context.Context, arg DeliverAp
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -788,7 +783,7 @@ SET status = 'expired',
     version = version + 1
 FROM due
 WHERE approvals.id = due.id
-RETURNING approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version, approvals.commerce_manifest_id
+RETURNING approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version
 `
 
 func (q *Queries) ExpireDueApprovals(ctx context.Context, batchSize int32) ([]Approval, error) {
@@ -834,7 +829,6 @@ func (q *Queries) ExpireDueApprovals(ctx context.Context, batchSize int32) ([]Ap
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
-			&i.CommerceManifestID,
 		); err != nil {
 			return nil, err
 		}
@@ -914,7 +908,7 @@ func (q *Queries) ExpireDueQuestions(ctx context.Context, batchSize int32) ([]Qu
 }
 
 const getApprovalByOriginRequestKey = `-- name: GetApprovalByOriginRequestKey :one
-SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 FROM approvals
 WHERE origin_run_id = $1::uuid
   AND request_key = $2::uuid
@@ -964,14 +958,13 @@ func (q *Queries) GetApprovalByOriginRequestKey(ctx context.Context, arg GetAppr
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
 
 const getApprovalProjection = `-- name: GetApprovalProjection :one
 SELECT
-    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version, approvals.commerce_manifest_id,
+    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version,
     agents.name AS requesting_agent_name,
     decided_users.display_name AS decided_by_display_name,
     decided_users.avatar_url AS decided_by_avatar_url
@@ -1047,7 +1040,6 @@ func (q *Queries) GetApprovalProjection(ctx context.Context, arg GetApprovalProj
 		&i.Approval.CreatedAt,
 		&i.Approval.UpdatedAt,
 		&i.Approval.Version,
-		&i.Approval.CommerceManifestID,
 		&i.RequestingAgentName,
 		&i.DecidedByDisplayName,
 		&i.DecidedByAvatarUrl,
@@ -1057,7 +1049,7 @@ func (q *Queries) GetApprovalProjection(ctx context.Context, arg GetApprovalProj
 
 const getApprovalProjectionForSystem = `-- name: GetApprovalProjectionForSystem :one
 SELECT
-    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version, approvals.commerce_manifest_id,
+    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version,
     agents.name AS requesting_agent_name,
     decided_users.display_name AS decided_by_display_name,
     decided_users.avatar_url AS decided_by_avatar_url
@@ -1122,7 +1114,6 @@ func (q *Queries) GetApprovalProjectionForSystem(ctx context.Context, arg GetApp
 		&i.Approval.CreatedAt,
 		&i.Approval.UpdatedAt,
 		&i.Approval.Version,
-		&i.Approval.CommerceManifestID,
 		&i.RequestingAgentName,
 		&i.DecidedByDisplayName,
 		&i.DecidedByAvatarUrl,
@@ -1418,7 +1409,7 @@ WITH readable AS MATERIALIZED (
     ) AS decides
 )
 SELECT
-    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version, approvals.commerce_manifest_id,
+    approvals.id, approvals.company_id, approvals.type, approvals.status, approvals.rule_key, approvals.title, approvals.summary, approvals.preview_markdown, approvals.presentation, approvals.requested_by_agent_id, approvals.origin_run_id, approvals.request_key, approvals.task_id, approvals.conversation_id, approvals.origin_user_id, approvals.canonical_action, approvals.request_sha256, approvals.action_sha256, approvals.expires_at, approvals.decision_note, approvals.decided_by_user_id, approvals.execution_status, approvals.execution_result, approvals.skipped_reason, approvals.continuation_run_id, approvals.continuation_prompt, approvals.continuation_status, approvals.continuation_next_attempt_at, approvals.continuation_abandon_reason, approvals.continuation_attempts, approvals.created_at, approvals.updated_at, approvals.version,
     agents.name AS requesting_agent_name,
     decided_users.display_name AS decided_by_display_name,
     decided_users.avatar_url AS decided_by_avatar_url
@@ -1579,7 +1570,6 @@ func (q *Queries) ListApprovalProjections(ctx context.Context, arg ListApprovalP
 			&i.Approval.CreatedAt,
 			&i.Approval.UpdatedAt,
 			&i.Approval.Version,
-			&i.Approval.CommerceManifestID,
 			&i.RequestingAgentName,
 			&i.DecidedByDisplayName,
 			&i.DecidedByAvatarUrl,
@@ -1764,7 +1754,7 @@ func (q *Queries) ListQuestionProjections(ctx context.Context, arg ListQuestionP
 }
 
 const lockApprovalForResolution = `-- name: LockApprovalForResolution :one
-SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+SELECT id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 FROM approvals
 WHERE type = 'company_plan_apply'
   AND company_id = $1::uuid
@@ -1814,7 +1804,6 @@ func (q *Queries) LockApprovalForResolution(ctx context.Context, arg LockApprova
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -1926,7 +1915,7 @@ WHERE company_id = $8::uuid
   AND id = $9::uuid
   AND status = 'pending'
   AND version = $10::bigint
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type ResolveApprovalParams struct {
@@ -1994,7 +1983,6 @@ func (q *Queries) ResolveApproval(ctx context.Context, arg ResolveApprovalParams
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }
@@ -2018,7 +2006,7 @@ WHERE company_id = $5::uuid
   AND id = $6::uuid
   AND status = 'pending'
   AND version = $7::bigint
-RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version, commerce_manifest_id
+RETURNING id, company_id, type, status, rule_key, title, summary, preview_markdown, presentation, requested_by_agent_id, origin_run_id, request_key, task_id, conversation_id, origin_user_id, canonical_action, request_sha256, action_sha256, expires_at, decision_note, decided_by_user_id, execution_status, execution_result, skipped_reason, continuation_run_id, continuation_prompt, continuation_status, continuation_next_attempt_at, continuation_abandon_reason, continuation_attempts, created_at, updated_at, version
 `
 
 type ResolveApprovalInlineParams struct {
@@ -2079,7 +2067,6 @@ func (q *Queries) ResolveApprovalInline(ctx context.Context, arg ResolveApproval
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
-		&i.CommerceManifestID,
 	)
 	return i, err
 }

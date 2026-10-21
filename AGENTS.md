@@ -490,8 +490,8 @@ isolated database + fixture per caller.
   `StampProjectAudiencesInTx`). The rule itself lives in the
   `project_access` family of views and `project_permission_held`. A
   person's access is the union of their own grant, each of their Groups
-  (`project_group_grants` through `company_group_members`, migration
-  000101), the Company-visible floor and the management bridge; every
+  (`project_group_grants` through `company_group_members`), the
+  Company-visible floor and the management bridge; every
   Group arm keeps the rejoin fence, and `ProjectAccess.Granted` stays the
   person's own rows (`GroupGranted` is their Groups'). What a
   delegate (a Run, or the Huddle voice assistant) may do on a Project is one
@@ -504,12 +504,9 @@ isolated database + fixture per caller.
   restates it. The voice assistant's Authorizer is the person who shared
   Company context, and only while they are in the call
   (`HuddleContextGrantActive`). SQL names no permission or role, and
-  Go binds them through `auth.ProjectPermissionHeldSets()`. Beyond the
-  `project_grants` and `project_group_grants` table definitions (and their
-  CHECKs, redefined by 000102), only the one-off owner backfill and the
-  cutover at the end of migration 000086 and the one-off removal of
-  `project.results.review` in 000102 name a permission or the owner role in
-  SQL. The resolved set travels to the
+  Go binds them through `auth.ProjectPermissionHeldSets()`. Only the
+  `project_grants` and `project_group_grants` table definitions and their
+  CHECKs name a permission in SQL. The resolved set travels to the
   client on every Company read; the client gates on it and never re-derives
   policy from the role name.
 - **Transactions go through `db.Store.WithinTx`, its raw-handle variant

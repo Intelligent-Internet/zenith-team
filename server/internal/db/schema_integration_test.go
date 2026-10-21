@@ -39,15 +39,8 @@ func TestSchemaEnforcesRealtimeProjectionAndAccessGenerationContracts(t *testing
 		"wiki_collections":    true,
 		"users":               true, "companies": true, "company_members": true,
 		"agents": true, "company_resources": true, "company_mailboxes": true,
-		"commerce_accounts": true, "commerce_operations": true,
-		"commerce_sites": true, "commerce_manifests": true,
-		"commerce_site_signing_keys": true,
-		"commerce_offers":            true, "commerce_customers": true,
-		"commerce_gateway_operations": true, "commerce_payments": true,
-		"commerce_subscriptions": true, "commerce_entitlements": true,
-		"commerce_webhook_receipts": true,
-		"approvals":                 true,
-		"tasks":                     true, "task_dependencies": true,
+		"approvals": true,
+		"tasks":     true, "task_dependencies": true,
 		"conversations":                true,
 		"conversation_user_states":     true,
 		"conversation_thread_states":   true,
@@ -57,7 +50,6 @@ func TestSchemaEnforcesRealtimeProjectionAndAccessGenerationContracts(t *testing
 		"attachments":                  true,
 		"assets":                       true,
 		"deliverables":                 true,
-		"deliverable_review_actions":   true,
 		"inbox_items":                  true,
 		"output_publications":          true,
 		"questions":                    true,
@@ -382,30 +374,6 @@ func TestSchemaEnforcesTenantAndExecutionInvariants(t *testing.T) {
 	}
 	if _, err := deleteTx.Exec(ctx, "SET CONSTRAINTS ALL IMMEDIATE"); err != nil {
 		t.Fatalf("validate complete company cascade: %v", err)
-	}
-}
-
-func TestDeliverableReviewActionInboxForeignKeyPinsCompany(t *testing.T) {
-	pool, _ := dbtest.StartPostgres(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-	defer cancel()
-	if err := MigrateUp(ctx, pool); err != nil {
-		t.Fatalf("MigrateUp() error = %v", err)
-	}
-
-	var definition string
-	if err := pool.QueryRow(
-		ctx, `
-		SELECT pg_get_constraintdef(oid)
-		FROM pg_constraint
-		WHERE conrelid = 'deliverable_review_actions'::regclass
-		  AND conname = 'deliverable_review_actions_inbox_item_fkey'`,
-	).Scan(&definition); err != nil {
-		t.Fatalf("read Deliverable review Inbox foreign key: %v", err)
-	}
-	if !strings.Contains(definition, "FOREIGN KEY (company_id, inbox_item_id)") ||
-		!strings.Contains(definition, "REFERENCES inbox_items(company_id, id)") {
-		t.Fatalf("Deliverable review Inbox foreign key = %q, want company-pinned composite", definition)
 	}
 }
 

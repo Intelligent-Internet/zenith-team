@@ -132,7 +132,7 @@ func TestProjectFileListsProbeAttachmentAccessPerRow(t *testing.T) {
 		SELECT $1, 'direct', $2, $3, 'Direct ' || n, now() FROM generate_series(1, 200) AS n`, company, f.AgentA, owner)
 	// Forty Groups of forty more colleagues, each Group holding grants on
 	// every Project, so a scan of company_group_members or
-	// project_group_grants would show too (000101). Seeded after the channels:
+	// project_group_grants would show too. Seeded after the channels:
 	// a private channel holds at most 50 people, and the channel seed adds
 	// every Company member.
 	dbtest.SeedGroupColleagues(t, ctx, pool, company, "files-group-colleague", 40)

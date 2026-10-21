@@ -336,8 +336,8 @@ func projectGrantRoutesHandler(principal auth.UserPrincipal, preview *company.Pr
 
 // A grant, a Group grant or either preview naming a permission outside the
 // catalog answers 422 project_permission_unknown with the permission in the
-// detail. A desktop built before migration 000102 still sends the removed
-// project.results.review, and is told which permission it was.
+// detail. An older desktop still sends the removed project.results.review,
+// and is told which permission it was.
 func TestGrantRoutesNameAnUnknownPermission(t *testing.T) {
 	t.Parallel()
 	principal := phase4Principal(uuid.New(), uuid.New())

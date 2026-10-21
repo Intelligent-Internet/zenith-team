@@ -298,49 +298,27 @@ func SeedFixture(
 		f.RuntimeB, f.CompanyB, f.DaemonB, f.UserB)
 	// Agents are templates of a provider; each fixture owner runs their
 	// Company's Agent on their own runtime through a binding (ADR 0014).
-	// A migration test that deliberately stops before 000059 gets the shape
-	// that version had instead: an Agent fused to one runtime.
-	bound := columnExists(t, ctx, tx, "agents", "provider")
-	if bound {
-		mustExecTx(`
+	mustExecTx(`
 			INSERT INTO agents
 				(id, company_id, name, title, model, provider, created_by_user_id)
 			VALUES
 				($1, $2, 'Agent A', 'CEO', 'test', 'codex', $5),
 				($3, $4, 'Agent B', 'CEO', 'test', 'claude', $6)`,
-			f.AgentA, f.CompanyA, f.AgentB, f.CompanyB, f.UserA, f.UserB)
-		mustExecTx(`
+		f.AgentA, f.CompanyA, f.AgentB, f.CompanyB, f.UserA, f.UserB)
+	mustExecTx(`
 			INSERT INTO agent_runtime_bindings
 				(company_id, agent_id, user_id, runtime_id, provider)
 			VALUES
 				($1, $2, $3, $4, 'codex'),
 				($5, $6, $7, $8, 'claude')`,
-			f.CompanyA, f.AgentA, f.UserA, f.RuntimeA,
-			f.CompanyB, f.AgentB, f.UserB, f.RuntimeB)
-	} else {
-		mustExecTx(`
-			INSERT INTO agents
-				(id, company_id, name, title, model, runtime_id, created_by_user_id)
-			VALUES
-				($1, $2, 'Agent A', 'CEO', 'test', $7, $5),
-				($3, $4, 'Agent B', 'CEO', 'test', $8, $6)`,
-			f.AgentA, f.CompanyA, f.AgentB, f.CompanyB, f.UserA, f.UserB,
-			f.RuntimeA, f.RuntimeB)
-	}
-	// From 000086 a Task chat names its Task's Project (ADR 0017), and the
-	// fixture owners hold every Project permission, as Project creation and
-	// the migration's owner backfill give them. The catalog is read from the
-	// CHECK so the fixture never restates it.
-	projectScoped := columnExists(t, ctx, tx, "conversations", "project_id")
-	taskProjectA, taskProjectB := any(nil), any(nil)
-	projectColumn := ""
-	if projectScoped {
-		taskProjectA, taskProjectB = f.ProjectA, f.ProjectB
-		projectColumn = ", project_id"
-	}
+		f.CompanyA, f.AgentA, f.UserA, f.RuntimeA,
+		f.CompanyB, f.AgentB, f.UserB, f.RuntimeB)
+	// A Task chat names its Task's Project (ADR 0017), and the fixture owners
+	// hold every Project permission, as Project creation gives them. The
+	// catalog is read from the CHECK so the fixture never restates it.
 	mustExecTx(`
-		INSERT INTO conversations (id, company_id, kind, task_id, agent_id, created_by_user_id, title`+projectColumn+`)
-		SELECT id, company_id, kind, task_id, agent_id, created_by_user_id, title`+projectColumn+` FROM (VALUES
+		INSERT INTO conversations (id, company_id, kind, task_id, agent_id, created_by_user_id, title, project_id)
+		SELECT id, company_id, kind, task_id, agent_id, created_by_user_id, title, project_id FROM (VALUES
 			($1::uuid, $2::uuid, 'task', $9::uuid, NULL::uuid, NULL::uuid, 'Task A', $13::uuid),
 			($3, $4, 'task', $10, NULL, NULL, 'Task B', $14::uuid),
 			($5, $2, 'direct', NULL, $6, $7, 'Direct A', NULL),
@@ -349,9 +327,8 @@ func SeedFixture(
 		f.ConversationA, f.CompanyA,
 		f.ConversationB, f.CompanyB,
 		f.DirectConversationA, f.AgentA, f.UserA, f.UnownedConversationB,
-		f.TaskA, f.TaskB, f.AgentB, f.UserB, taskProjectA, taskProjectB)
-	if projectScoped {
-		mustExecTx(`
+		f.TaskA, f.TaskB, f.AgentB, f.UserB, f.ProjectA, f.ProjectB)
+	mustExecTx(`
 			INSERT INTO project_grants (company_id, project_id, user_id, permission, granted_by_user_id)
 			SELECT project.company_id, project.id, member.user_id, catalog.permission, member.user_id
 			FROM projects AS project
@@ -361,13 +338,10 @@ func SeedFixture(
 				FROM pg_constraint WHERE conname = 'project_grants_permission_check'
 			) AS catalog
 			WHERE project.id IN ($1, $2)`,
-			f.ProjectA, f.ProjectB)
-	}
+		f.ProjectA, f.ProjectB)
 	// Each Task is assigned to its Company's owner, who runs it through the
-	// Agent they bound above. Before 000059 a Task named exactly one
-	// assignee, so the older shape names the Agent alone.
-	if bound {
-		mustExecTx(`
+	// Agent they bound above.
+	mustExecTx(`
 			INSERT INTO tasks
 				(id, company_id, conversation_id, project_id,
 				 milestone_type, number, key, title,
@@ -375,20 +349,8 @@ func SeedFixture(
 			VALUES
 				($1, $2, $3, $11, 'product', 1, 'task_a', 'Task A', $5, $4, $5),
 				($6, $7, $8, $12, 'product', 1, 'task_b', 'Task B', $10, $9, $10)`,
-			f.TaskA, f.CompanyA, f.ConversationA, f.AgentA, f.UserA,
-			f.TaskB, f.CompanyB, f.ConversationB, f.AgentB, f.UserB, f.ProjectA, f.ProjectB)
-	} else {
-		mustExecTx(`
-			INSERT INTO tasks
-				(id, company_id, conversation_id, project_id,
-				 milestone_type, number, key, title,
-				 assignee_agent_id, creator_user_id)
-			VALUES
-				($1, $2, $3, $11, 'product', 1, 'task_a', 'Task A', $4, $5),
-				($6, $7, $8, $12, 'product', 1, 'task_b', 'Task B', $9, $10)`,
-			f.TaskA, f.CompanyA, f.ConversationA, f.AgentA, f.UserA,
-			f.TaskB, f.CompanyB, f.ConversationB, f.AgentB, f.UserB, f.ProjectA, f.ProjectB)
-	}
+		f.TaskA, f.CompanyA, f.ConversationA, f.AgentA, f.UserA,
+		f.TaskB, f.CompanyB, f.ConversationB, f.AgentB, f.UserB, f.ProjectA, f.ProjectB)
 	// The fixture runs anchor the seeded conversation items and the usage
 	// facts; they are seeded terminal so the shared graph never occupies the
 	// runtime-scoped claim queues a test exercises with its own runs.
@@ -433,30 +395,6 @@ func SeedFixture(
 		t.Fatalf("commit schema fixture: %v", err)
 	}
 	return f
-}
-
-// columnExists asks the database which era it is in. The shared fixture is
-// written for the head schema, but the migration tests seed a database they
-// have deliberately stopped partway up the ladder; this is how one fixture
-// serves both without either side guessing a version number.
-func columnExists(
-	t *testing.T,
-	ctx context.Context,
-	tx pgx.Tx,
-	table, column string,
-) bool {
-	t.Helper()
-	var exists bool
-	if err := tx.QueryRow(ctx, `
-		SELECT EXISTS (
-			SELECT 1 FROM information_schema.columns
-			WHERE table_schema = 'public'
-			  AND table_name = $1
-			  AND column_name = $2
-		)`, table, column).Scan(&exists); err != nil {
-		t.Fatalf("read schema fixture era: %v", err)
-	}
-	return exists
 }
 
 // WithinSeedTx runs fn inside one transaction and commits it. Seeds that

@@ -188,15 +188,6 @@ The access report (`GET /projects/access-report`) lists the members left
 outside restricted Projects where they hold open Tasks or recently ran
 work, and the Managed projects view is where owners repair access.
 
-The release needs a stop-the-world deploy: drain every older server before
-migration `000086_project_access` runs, and do not run old and new servers
-side by side. An older server creates Task chats without a Project, which the
-new CHECK refuses (SQLSTATE 23514), so Task creation fails there, and it
-serves reads with no Project scope. The migration also holds exclusive locks
-on `conversations`, `inbox_items`, `activity_events` and `task_report_events`
-while it fills their new `project_id` column, so its run time grows with
-Activity history; time it on a staging-sized copy before the release.
-
 Accepted residual risks: a file retired from every Project becomes readable
 by the chat it was shared in; Task chats whose Task was deleted before this
 change (no Project recorded) stay Company-readable. The CHECK
@@ -227,8 +218,7 @@ rewrite.
 
 ## Later changes
 
-- Migration `000101_groups` added Groups: a named set of members in one
-  Company that holds Project grants like a person does.
-- Migration `000102_remove_results_review` removed `project.results.review`
-  from the catalog, because nothing checked it once result review was
+- Groups: a named set of members in one Company that holds Project grants
+  like a person does.
+- `project.results.review` was removed from the catalog, because nothing checked it once result review was
   retired. The catalog now has nine permissions.

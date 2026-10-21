@@ -33,7 +33,7 @@ RETURNING *;
 -- The Project an Inbox item is about (ADR 0017), and whether its recipient
 -- reads it: the chat the item links to, else the Task, Run, Approval,
 -- Question or Deliverable it names, else the Project it names itself
--- (project_access_granted, 000101). No row means it is about no Project.
+-- (project_access_granted). No row means it is about no Project.
 -- Every arm reads one row by its key. An item about the Project itself also
 -- reads for a recipient whose active Company role holds the management
 -- bridge (Go binds auth.RolesWith(projects.manage)), as the read predicates

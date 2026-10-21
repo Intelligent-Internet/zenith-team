@@ -1,4 +1,0 @@
-DROP INDEX run_wiki_writes_company_created_idx;
-DROP INDEX wiki_canvas_checkpoints_page_seq_idx;
-DROP INDEX wiki_canvas_drafts_collection_idx;
-DROP INDEX wiki_revisions_collection_idx;

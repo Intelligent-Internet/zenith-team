@@ -557,8 +557,8 @@ func (h *Handler) joinProject(c *gin.Context) {
 
 // projectPermissionUnknownMapping refuses a grant, a Group grant or a
 // preview naming a permission outside the catalog, such as
-// project.results.review, which a desktop built before migration 000102
-// still sends. writeProjectError names the permission in the detail.
+// project.results.review, which an older desktop still sends.
+// writeProjectError names the permission in the detail.
 var projectPermissionUnknownMapping = errorMapping{
 	auth.ErrProjectPermissionUnknown,
 	http.StatusUnprocessableEntity,

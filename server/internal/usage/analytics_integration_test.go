@@ -15,7 +15,6 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
-	"github.com/Intelligent-Internet/zenith-team/server/migrations"
 )
 
 func TestAnalyticsSummaryCountsActiveRunsWithoutUsage(t *testing.T) {
@@ -413,101 +412,5 @@ func TestAnalyticsReconcilesScopesPricesAndPrivateWork(t *testing.T) {
 		ErrInvalidInput,
 	) {
 		t.Fatalf("cross-company budget error = %v, want invalid input", err)
-	}
-}
-
-func TestAnalyticsMigrationPreservesHistoricalEvidence(t *testing.T) {
-	t.Parallel()
-	pool, _ := dbtest.StartPostgres(t)
-	ctx := t.Context()
-	if err := db.MigrateUp(ctx, pool); err != nil {
-		t.Fatal(err)
-	}
-	f := dbtest.SeedFixture(t, ctx, pool)
-	down, err := migrations.Files.ReadFile("000067_analytics_foundation.down.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, string(down))
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`INSERT INTO run_usage(run_id,provider,model,input_tokens,output_tokens,cache_read_tokens,provider_cost_usd,raw_json) VALUES($1,'codex','historical',100,50,30,0.25,'{}')`,
-		f.RunA,
-	)
-	var beforeRuns, beforeUsage string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r) ORDER BY id)::text FROM runs r`).
-		Scan(&beforeRuns); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u) ORDER BY run_id,provider,model)::text FROM run_usage u`).
-		Scan(&beforeUsage); err != nil {
-		t.Fatal(err)
-	}
-	up, err := migrations.Files.ReadFile("000067_analytics_foundation.up.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	dbtest.MustExec(t, ctx, pool, string(up))
-	var afterRuns, afterUsage string
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(r)-ARRAY['queued_at','claimed_at','started_at','finished_at'] ORDER BY id)::text FROM runs r`).
-		Scan(&afterRuns); err != nil {
-		t.Fatal(err)
-	}
-	if err := pool.QueryRow(ctx, `SELECT jsonb_agg(to_jsonb(u)-ARRAY['reasoning_tokens','turns','provider_duration_ms','billing_mode'] ORDER BY run_id,provider,model)::text FROM run_usage u`).
-		Scan(&afterUsage); err != nil {
-		t.Fatal(err)
-	}
-	if beforeRuns != afterRuns || beforeUsage != afterUsage {
-		t.Fatal("Analytics migration changed existing Run or usage evidence")
-	}
-	var truthful bool
-	if err := pool.QueryRow(ctx, `SELECT bool_and(queued_at IS NULL AND claimed_at IS NULL AND started_at IS NULL AND finished_at IS NULL) FROM runs WHERE status IN ('completed','failed','cancelled')`).
-		Scan(&truthful); err != nil ||
-		!truthful {
-		t.Fatalf("historical timing preservation = %t, err = %v", truthful, err)
-	}
-	// Enough out-of-window rows make the optimizer choose a range scan without
-	// disabling its normal cost decisions. This checks plan shape, not latency.
-	dbtest.MustExec(
-		t,
-		ctx,
-		pool,
-		`INSERT INTO runs(company_id,agent_id,conversation_id,runtime_id,status,run_type,finished_at)
-		SELECT $1,$2,$3,$4,'completed','direct_chat',now()-n*interval '1 day' FROM generate_series(1,2000) n`,
-		f.CompanyA,
-		f.AgentA,
-		f.DirectConversationA,
-		f.RuntimeA,
-	)
-	dbtest.MustExec(t, ctx, pool, `ANALYZE runs`)
-	conn, err := pool.Acquire(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Release()
-	rows, err := conn.Query(
-		ctx,
-		`EXPLAIN SELECT id FROM runs WHERE company_id=$1 AND finished_at >= now()-interval '7 days' AND finished_at<now()`,
-		f.CompanyA,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
-	var plan strings.Builder
-	for rows.Next() {
-		var line string
-		if err := rows.Scan(&line); err != nil {
-			t.Fatal(err)
-		}
-		plan.WriteString(line)
-	}
-	if err := rows.Err(); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(plan.String(), "Index Cond:") || !strings.Contains(plan.String(), "finished_at >=") {
-		t.Fatalf("window scan does not use a finish-time range index: %s", plan.String())
 	}
 }

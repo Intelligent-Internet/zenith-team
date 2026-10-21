@@ -13,17 +13,18 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 )
 
-// Migration 000063 adds the keys the Plugins list matches Codex Plugins by:
-// a name without case, spaces or punctuation and a website's host
-// without "www.", stored on each observation, and curated_duplicate, which it
-// backfills for the observations already stored. Down restores 000062's
-// case-insensitive name index.
-func TestPluginMatchingMigration(t *testing.T) {
+// The Plugins list matches Codex Plugins by keys the database derives on
+// every observation: a name without case, spaces or punctuation, and a
+// website's host without "www.". The case-insensitive name index they
+// replaced stays gone.
+func TestPluginObservationsKeyTheirNameAndWebsite(t *testing.T) {
 	t.Parallel()
 	pool, _ := dbtest.StartPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
-	migrateTo(t, ctx, pool, 62)
+	if err := MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
 	fixture := dbtest.SeedFixture(t, ctx, pool)
 	generation := uuid.New()
 	dbtest.MustExec(t, ctx, pool, `
@@ -31,100 +32,7 @@ func TestPluginMatchingMigration(t *testing.T) {
 			(runtime_id, company_id, provider, generation, manifest_digest, observed_at)
 		VALUES ($1, $2, 'codex', $3, $4, now())`,
 		fixture.RuntimeA, fixture.CompanyA, generation, "sha256:"+uuid.NewString())
-	insert := func(nativeID, name, status, action string, rank int, website, developer string) {
-		t.Helper()
-		dbtest.MustExec(t, ctx, pool, `
-			WITH plugin AS (
-				INSERT INTO plugin_catalog_items (company_id, provider, native_id)
-				VALUES ($1, 'codex', $3) RETURNING id
-			)
-			INSERT INTO plugin_runtime_observations
-				(runtime_id, plugin_id, company_id, provider, generation, name, category,
-				 status, installed, enabled, action, catalog_rank, website_url, developer_name,
-				 observed_at)
-			SELECT $2, plugin.id, $1, 'codex', $4, $5, 'Other', $6, $6 = 'installed',
-				$6 = 'installed', $7, $8, $9, nullif($10, ''), now()
-			FROM plugin`,
-			fixture.CompanyA, fixture.RuntimeA, nativeID, generation, name, status, action, rank,
-			website, developer)
-	}
-	observe := func(nativeID, name string, installed bool, rank int) {
-		t.Helper()
-		status, action := "available", "install"
-		if installed {
-			status, action = "installed", "uninstall"
-		}
-		insert(nativeID, name, status, action, rank, "https://WWW.Example.COM:443/"+nativeID, "")
-	}
-	observe("canva@claude-plugins-official", "canva", false, 0)
-	observe("figma@claude-plugins-official", "figma", true, 1)
-	observe("browser@openai-bundled", "Browser", false, 2)
-	observe("canva@openai-curated-remote", "Canva", false, 3)
-	observe("figma@openai-curated-remote", "Figma", false, 4)
-	observe("browser@openai-curated-remote", "Browser", false, 5)
-	// A twin that cannot be installed hides nothing.
-	observe("pigment@claude-plugins-official", "pigment", false, 6)
-	insert("app-6a69a1fd1a3c81919924cbac1cb59d63@openai-curated-remote", "Pigment", "error", "none", 7,
-		"https://pigment.com", "")
-	// Only the name agrees, then the developer does.
-	insert("data@claude-plugins-official", "Data", "available", "install", 8,
-		"https://github.com/astronomer/agents", "Astronomer")
-	insert("data-analytics@openai-curated-remote", "Data", "available", "install", 9,
-		"https://openai.com/", "OpenAI")
-	insert("boltz@claude-plugins-official", "boltz", "available", "install", 10,
-		"https://github.com/boltz/skills", "Boltz")
-	insert("boltz-api-cli@openai-curated-remote", "Boltz", "available", "install", 11,
-		"https://docs.boltz.bio", "Boltz")
-	migrateTo(t, ctx, pool, 63)
 
-	rows, err := pool.Query(ctx, `
-		SELECT plugins.native_id, observations.name_key, observations.website_host,
-			observations.curated_duplicate
-		FROM plugin_runtime_observations AS observations
-		JOIN plugin_catalog_items AS plugins ON plugins.id = observations.plugin_id
-		ORDER BY observations.catalog_rank`)
-	if err != nil {
-		t.Fatal(err)
-	}
-	type stored struct {
-		nativeID, nameKey, host string
-		duplicate               bool
-	}
-	var got []stored
-	for rows.Next() {
-		var row stored
-		if err := rows.Scan(&row.nativeID, &row.nameKey, &row.host, &row.duplicate); err != nil {
-			t.Fatal(err)
-		}
-		got = append(got, row)
-	}
-	if err := rows.Err(); err != nil {
-		t.Fatal(err)
-	}
-	want := []stored{
-		{"canva@claude-plugins-official", "canva", "example.com", true},
-		{"figma@claude-plugins-official", "figma", "example.com", false},
-		{"browser@openai-bundled", "browser", "example.com", false},
-		{"canva@openai-curated-remote", "canva", "example.com", false},
-		{"figma@openai-curated-remote", "figma", "example.com", false},
-		{"browser@openai-curated-remote", "browser", "example.com", false},
-		{"pigment@claude-plugins-official", "pigment", "example.com", false},
-		{"app-6a69a1fd1a3c81919924cbac1cb59d63@openai-curated-remote", "pigment", "pigment.com", false},
-		{"data@claude-plugins-official", "data", "github.com", false},
-		{"data-analytics@openai-curated-remote", "data", "openai.com", false},
-		{"boltz@claude-plugins-official", "boltz", "github.com", true},
-		{"boltz-api-cli@openai-curated-remote", "boltz", "docs.boltz.bio", false},
-	}
-	if len(got) != len(want) {
-		t.Fatalf("stored observations = %+v", got)
-	}
-	for index := range want {
-		if got[index] != want[index] {
-			t.Errorf("observation %d = %+v, want %+v", index, got[index], want[index])
-		}
-	}
-
-	// Rows written after the migration key their name and website the same way.
 	const insertObservation = `
 		WITH plugin AS (
 			INSERT INTO plugin_catalog_items (company_id, provider, native_id)
@@ -170,32 +78,12 @@ func TestPluginMatchingMigration(t *testing.T) {
 	up := pluginObservationIndexes(t, ctx, pool)
 	for _, name := range matching {
 		if !up[name] {
-			t.Errorf("after 000063 index %s is missing: %v", name, up)
+			t.Errorf("index %s is missing: %v", name, up)
 		}
 	}
 	if up["plugin_runtime_observations_company_provider_name_idx"] {
-		t.Errorf("after 000063 the case-insensitive name index remains: %v", up)
+		t.Errorf("the case-insensitive name index remains: %v", up)
 	}
-
-	migrateTo(t, ctx, pool, 62)
-	down := pluginObservationIndexes(t, ctx, pool)
-	if !down["plugin_runtime_observations_company_provider_name_idx"] {
-		t.Errorf("after rollback indexes = %v", down)
-	}
-	for _, name := range matching {
-		if down[name] {
-			t.Errorf("after rollback index %s remains", name)
-		}
-	}
-	var leftovers int
-	if err := pool.QueryRow(ctx, `
-		SELECT count(*) FROM information_schema.columns
-		WHERE table_name = 'plugin_runtime_observations'
-		  AND column_name IN ('name_key', 'website_host', 'curated_duplicate')`).Scan(&leftovers); err != nil ||
-		leftovers != 0 {
-		t.Errorf("after rollback %d matching columns remain (%v)", leftovers, err)
-	}
-	migrateTo(t, ctx, pool, 63)
 }
 
 func pluginObservationIndexes(t *testing.T, ctx context.Context, pool *pgxpool.Pool) map[string]bool {

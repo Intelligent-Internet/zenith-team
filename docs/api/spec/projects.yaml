@@ -736,8 +736,8 @@ responses:
     description: |
       `422` — `project_permission_unknown` when `permissions` names a
       permission outside the catalog, such as `project.results.review`,
-      which migration 000102 removed and a desktop built before it still
-      sends; the `detail` names it. Any other rule a well-formed request
+      which was removed and an older desktop still sends; the `detail`
+      names it. Any other rule a well-formed request
       fails is `validation_failed`, a malformed `userId` included.
     content:
       application/json:

@@ -1,0 +1,28 @@
+-- Reverses 000006_content.up.sql.
+DROP VIEW IF EXISTS company_wiki_pages;
+DROP VIEW IF EXISTS canvas_version_sources;
+DROP VIEW IF EXISTS attachment_access;
+DROP TABLE IF EXISTS document_writing_requests CASCADE;
+DROP TABLE IF EXISTS document_changes CASCADE;
+DROP TABLE IF EXISTS page_suggestion_reviews CASCADE;
+DROP TABLE IF EXISTS wiki_block_ids CASCADE;
+DROP TABLE IF EXISTS wiki_canvas_checkpoints CASCADE;
+DROP TABLE IF EXISTS wiki_canvas_drafts CASCADE;
+DROP TABLE IF EXISTS wiki_artifact_refs CASCADE;
+DROP TABLE IF EXISTS wiki_favorites CASCADE;
+DROP TABLE IF EXISTS wiki_links CASCADE;
+DROP TABLE IF EXISTS wiki_revisions CASCADE;
+DROP TABLE IF EXISTS wiki_pages CASCADE;
+DROP TABLE IF EXISTS board_changes CASCADE;
+DROP TABLE IF EXISTS board_operations CASCADE;
+DROP TABLE IF EXISTS board_edges CASCADE;
+DROP TABLE IF EXISTS board_strokes CASCADE;
+DROP TABLE IF EXISTS board_notes CASCADE;
+DROP TABLE IF EXISTS board_items CASCADE;
+DROP TABLE IF EXISTS board_files CASCADE;
+DROP TABLE IF EXISTS boards CASCADE;
+DROP TABLE IF EXISTS canvas_personal_views CASCADE;
+DROP TABLE IF EXISTS canvas_templates CASCADE;
+DROP TABLE IF EXISTS canvas_edges CASCADE;
+DROP TABLE IF EXISTS canvas_items CASCADE;
+DROP TABLE IF EXISTS wiki_collections CASCADE;

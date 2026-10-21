@@ -1,7 +1,20 @@
-DROP TABLE desktop_handoff_codes;
-DROP TABLE password_reset_flows;
-DROP TABLE email_verification_flows;
-DROP TABLE oauth_login_flows;
-DROP TABLE oauth_accounts;
-DROP TABLE auth_sessions;
-DROP TABLE users;
+-- Reverses 000001_identity.up.sql.
+DROP TABLE IF EXISTS company_group_members CASCADE;
+DROP TABLE IF EXISTS company_groups CASCADE;
+DROP TABLE IF EXISTS company_initializations CASCADE;
+DROP TABLE IF EXISTS company_share_links CASCADE;
+DROP TABLE IF EXISTS company_invitation_tokens CASCADE;
+DROP TABLE IF EXISTS company_invitations CASCADE;
+DROP TABLE IF EXISTS company_milestone_attestations CASCADE;
+DROP TABLE IF EXISTS company_reference_documents CASCADE;
+DROP TABLE IF EXISTS company_resources CASCADE;
+DROP TABLE IF EXISTS company_members CASCADE;
+DROP TABLE IF EXISTS companies CASCADE;
+DROP TABLE IF EXISTS desktop_handoff_codes CASCADE;
+DROP TABLE IF EXISTS password_reset_flows CASCADE;
+DROP TABLE IF EXISTS email_verification_flows CASCADE;
+DROP TABLE IF EXISTS oauth_login_flows CASCADE;
+DROP TABLE IF EXISTS oauth_accounts CASCADE;
+DROP TABLE IF EXISTS auth_sessions CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP EXTENSION IF EXISTS pgcrypto;

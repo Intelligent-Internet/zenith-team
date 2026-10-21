@@ -37,14 +37,14 @@ func TestCollaborationSchemaEnforcesTenantCreatorsAndSafeOrdering(t *testing.T) 
 }
 
 func TestCollaborationSchemaIncludesDeterministicAccessIndexes(t *testing.T) {
-	sql := normalizedBaselineSQL(t, "000004_work.up.sql", "000005_execution.up.sql")
+	sql := normalizedBaselineSQL(t)
 	for _, index := range []string{
-		"on conversations using btree (company_id, updated_at desc, id desc) where (kind = 'task')",
-		"on conversations using btree (company_id, created_by_user_id, updated_at desc, id desc) where (kind = 'direct')",
-		"on tasks using btree (company_id, status, number desc)",
-		"on tasks using btree (company_id, milestone_type, number desc)",
-		"on tasks using btree (company_id, assignee_user_id, number desc)",
-		"on tasks using btree (company_id, assignee_agent_id, number desc)",
+		"on conversations (company_id, updated_at desc, id desc) where (kind = 'task')",
+		"on conversations (company_id, created_by_user_id, updated_at desc, id desc) where (kind = 'direct')",
+		"on tasks (company_id, status, number desc)",
+		"on tasks (company_id, milestone_type, number desc)",
+		"on tasks (company_id, assignee_user_id, number desc)",
+		"on tasks (company_id, executed_by_agent_id, number desc) where (executed_by_agent_id is not null)",
 		"on runs (conversation_id, created_at desc, id desc)",
 		"on runs (agent_id, runtime_id, priority desc, created_at, id)",
 	} {
