@@ -122,9 +122,11 @@ doctor:
 	[ "$$(git config core.hooksPath)" = ".githooks" ] || echo "  todo     run: make hooks"; \
 	exit $$fail
 
-# Points git at .githooks: commit-msg checks the Conventional Commit subject,
-# pre-push checks branch names, pre-commit scans staged changes for secrets
-# when gitleaks is installed.
+# Points git at .githooks, which share the rules in .githooks/conventions.sh:
+# pre-commit refuses commits on main or a badly named branch and scans staged
+# changes for secrets (when gitleaks is installed), commit-msg checks the
+# Conventional Commit subject, and pre-push checks pushed branch names and
+# commit subjects.
 hooks:
 	git config core.hooksPath .githooks
 	@echo "Git hooks enabled from .githooks"
