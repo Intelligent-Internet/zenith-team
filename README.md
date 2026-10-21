@@ -57,6 +57,9 @@ current release and sign in again.
   → [Schedules](docs/content/docs/schedules.mdx)
 - **Ready-made workflows.** Fill in a short form, pick an agent, and it runs
   as a normal task. → [Workflows](docs/content/docs/workflows.mdx)
+- **Plugins.** The Workflow catalog and managed tools such as Zenith Studio
+  are released from a separate repository and pinned here.
+  → [zenith-team-plugins](https://github.com/Intelligent-Internet/zenith-team-plugins)
 
 ## Get started
 
@@ -219,7 +222,9 @@ engineering rules.
 
 Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before you
 open a pull request. The [roadmap](ROADMAP.md) shows what comes next and where
-help is wanted. Everyone taking part follows our
+help is wanted. New or changed Workflows go to
+[zenith-team-plugins](https://github.com/Intelligent-Internet/zenith-team-plugins)
+instead. Everyone taking part follows our
 [Code of Conduct](CODE_OF_CONDUCT.md). Questions go to
 [GitHub Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions);
 see [SUPPORT.md](SUPPORT.md).

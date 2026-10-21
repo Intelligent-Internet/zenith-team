@@ -1,4 +1,4 @@
-// Package contentbundle verifies release-pinned content from boardly-plugins.
+// Package contentbundle verifies release-pinned content from zenith-team-plugins.
 // It owns the lock and Workflow archive formats without embedding release assets. This
 // package exists for the cmd/zen link set: the daemon needs managed Tool
 // bundles, while the server and MCP alone link the Workflow catalog.
@@ -74,7 +74,7 @@ var (
 	workflowFilePattern = regexp.MustCompile(`^([a-z0-9]+(?:-[a-z0-9]+)*)/(?:workflow\.yaml|playbook\.md)$`)
 )
 
-// Lock pins one component of one boardly-plugins release. bundlectl import
+// Lock pins one component of one zenith-team-plugins release. bundlectl import
 // writes it with MarshalLock; Load refuses a lock that is not byte-identical
 // to that encoding, so a hand edit cannot slip past review as a no-op.
 type Lock struct {
@@ -82,7 +82,7 @@ type Lock struct {
 	Plugin     string        `json:"plugin"`
 	Component  ComponentType `json:"component"`
 	Version    string        `json:"version"`
-	// Tag is <plugin>--v<version> and Commit the boardly-plugins commit it
+	// Tag is <plugin>--v<version> and Commit the zenith-team-plugins commit it
 	// points to. A development pin has no tag.
 	Tag    string `json:"tag"`
 	Commit string `json:"commit"`

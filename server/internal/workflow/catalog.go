@@ -5,7 +5,7 @@
 // Each Workflow is one directory of the zenith-workflows skill: workflow.yaml
 // is the card, the form and the brief template the page renders; playbook.md
 // is the procedure a Task Run loads with load_skill_reference. The content is
-// authored in Intelligent-Internet/boardly-plugins and pinned in
+// authored in Intelligent-Internet/zenith-team-plugins and pinned in
 // internal/platformbundle (ADR 0016); this package parses the same verified
 // bytes the MCP server serves, so the page and the Run can never disagree
 // about what ships.

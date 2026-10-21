@@ -85,7 +85,7 @@ func exitedWith(err error, status int) bool {
 	return errors.As(err, &exitErr) && exitErr.ExitCode() == status
 }
 
-// gitRepository is a boardly-plugins repository bundlectl reads objects from.
+// gitRepository is a zenith-team-plugins repository bundlectl reads objects from.
 // It never checks out, so no attribute or eol conversion touches the bytes.
 type gitRepository struct {
 	dir string

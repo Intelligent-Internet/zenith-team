@@ -1,6 +1,6 @@
 # Zenith Studio release metadata
 
-`boardly-plugins/plugins/zenith-studio/boardly/managed-tools/release.json`
+`zenith-team-plugins/plugins/zenith-studio/boardly/managed-tools/release.json`
 is the source of the reviewed npm versions, SHA512 integrities, host contract,
 package-relative skill source directories and expected Skill hash/count/size.
 The plugin and this committed pin contain metadata only. A single
