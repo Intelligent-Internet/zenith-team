@@ -70,7 +70,7 @@
     "livekit-client": "^2.15.0",
     "mdast-util-from-markdown": "2.0.3",
     "mdast-util-gfm-strikethrough": "2.0.0",
-    "mermaid": "11.17.2",
+    "mermaid": "12.2.0",
     "micromark-extension-gfm-strikethrough": "2.1.0",
     "nanoid": "^5.1.6",
     "next-themes": "^0.4.6",
