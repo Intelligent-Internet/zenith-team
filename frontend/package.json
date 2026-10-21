@@ -82,7 +82,7 @@
     "react-hook-form": "^7.79.0",
     "react-joyride": "^3.2.0",
     "react-redux": "^9.2.0",
-    "react-router": "^7.5.3",
+    "react-router": "^8.4.0",
     "react-virtuoso": "4.18.14",
     "recharts": "^3.8.1",
     "redux": "^5.0.1",
