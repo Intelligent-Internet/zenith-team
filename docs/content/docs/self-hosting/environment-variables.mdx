@@ -65,7 +65,7 @@ The stack refuses to start without these. `make selfhost-env` generates all thre
 | `APP_SERVER_IMAGE` | `zenith-team-server:latest` | The server image. Read by Compose. The default is the image `make selfhost-up` builds. Set it to a published image to skip the build, for example `ghcr.io/intelligent-internet/zenith-team-server:1.2.3`. |
 | `APP_WEB_IMAGE` | `zenith-team-web:latest` | The web app image. Read by Compose. Published as `ghcr.io/intelligent-internet/zenith-team-web`. |
 | `APP_DATABASE_URL` | the bundled PostgreSQL | Connection URL of your own PostgreSQL, such as `postgresql://zenith_team:password@db.example.com:5432/zenith_team`. |
-| `APP_REDIS_URL` | `redis://redis:6379/0` | Connection URL of your own Redis. Redis holds only short-lived realtime state. |
+| `APP_REDIS_URL` | `redis://redis:6379/0` | **Required.** Connection URL of your own Redis. Redis carries realtime updates and the queue that starts Schedules on time; PostgreSQL stays the source of truth. |
 | `AUTH_DESKTOP_HANDOFF_CODE_TTL_SECONDS` | `60` | How long a desktop sign-in handoff code stays valid. Between 10 and 300 seconds. |
 
 To use your own PostgreSQL or Redis, set the URL and remove the matching bundled service and the server's `depends_on` entry from `deploy/docker-compose.production.yml`.
@@ -203,7 +203,7 @@ The defaults suit a single server. Change these only for a reason.
 | --- | --- | --- |
 | `APP_HTTP_ADDR` | `:8788` | The server's listen address inside its container. Leave it: the Compose port mapping and health check expect port 8788. |
 | `APP_SHUTDOWN_TIMEOUT_SECONDS` | `15` | How long the server lets running requests finish when it stops. Keep it below the container's 30-second stop grace period. |
-| `APP_API_REPLICAS` | `1` | Number of server copies. Above 1, `APP_REDIS_URL` is required and every copy must use the same storage. |
+| `APP_API_REPLICAS` | `1` | Number of server copies. Every copy must use the same Redis and the same storage. |
 | `APP_DATABASE_MAX_CONNS` | `25` | Most PostgreSQL connections. |
 | `APP_SCHEDULE_WORKERS` | `8` | Schedule workers; at most one third of `APP_DATABASE_MAX_CONNS`. Set in the Compose file. |
 | `APP_SCHEDULE_SWEEP_SECONDS` | `30` | How often the scheduler sweeps for due work, 10 to 60 seconds. Set in the Compose file. |

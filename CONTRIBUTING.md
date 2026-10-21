@@ -11,6 +11,7 @@ Everyone taking part follows our [Code of Conduct](CODE_OF_CONDUCT.md).
 | --- | --- |
 | Ask a question | Post in [GitHub Discussions](https://github.com/Intelligent-Internet/zenith-team/discussions). |
 | Report a bug | Open a [bug report](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose). |
+| Find something to work on | See [How to help](ROADMAP.md#how-to-help) in the roadmap, or the `good first issue` and `help wanted` labels. |
 | Fix a bug or a doc | Open a pull request. An issue first is welcome but not required. |
 | Add a feature or change behavior | Open a [feature request](https://github.com/Intelligent-Internet/zenith-team/issues/new/choose) first. Wait until a maintainer agrees on the direction, then open a pull request. |
 | Report a security problem | Do **not** open an issue. Follow [SECURITY.md](SECURITY.md). |

@@ -39,6 +39,7 @@ Closes #
 
 - [ ] Tests added or updated (server changes)
 - [ ] Docs updated, if behavior or setup changed
+- [ ] A new feature matches a [roadmap](https://github.com/Intelligent-Internet/zenith-team/blob/main/ROADMAP.md) item or an issue a maintainer agreed to
 - [ ] Migrations are append-only: no merged migration was edited
 - [ ] No secrets, tokens or internal URLs; test fixtures use clearly fake values
 - [ ] `make api-generate` run and committed, if the API changed
