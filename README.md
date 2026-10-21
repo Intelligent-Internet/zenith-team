@@ -144,7 +144,9 @@ yourself; Zenith Team never holds your provider credentials.
 | Codex | `codex` | A `codex app-server` process, over JSON-RPC |
 
 Sessions, skills, models and usage are in
-[Providers](docs/content/docs/providers.mdx).
+[Providers](docs/content/docs/providers.mdx). Support for more agents,
+including Claude Code, OpenClaw, Pi, OpenCode and Hermes Agent, is on the
+[roadmap](ROADMAP.md).
 
 ## Documentation
 

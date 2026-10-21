@@ -2,7 +2,7 @@
 
 Where Zenith Team is going next, and where you can help.
 
-**Last reviewed:** 2026-10-21 · **Next review:** with the next minor release, and at least once a month · **Owners:** the maintainers ([CODEOWNERS](.github/CODEOWNERS))
+**Last reviewed:** 2026-10-22 · **Next review:** with the next minor release, and at least once a month · **Owners:** the maintainers ([CODEOWNERS](.github/CODEOWNERS))
 
 This is our direction, not a promise. Items have no dates, and plans change as
 we learn. Status follows the `main` branch; packaged versions are on
@@ -31,6 +31,7 @@ a few are still early.
 | Google sign-in, social accounts, publishing outputs | Needs your own provider apps |
 | Zenith Studio tools | Needs the hosted Studio service |
 | Desktop app | Early: macOS and Linux, built from source |
+| Agent CLIs | Codex; Claude Code is early, and more agents are planned |
 | `zen` CLI and daemon | macOS and Linux; Windows is planned |
 | Agent sandbox that keeps sign-in files away from agents | macOS; Linux and Windows are planned |
 | Self-hosting | Docker Compose |
@@ -66,6 +67,8 @@ Planned for the next releases. Most need a short design note in the issue
 before code.
 
 - 📋 **Agent sandbox on Linux.** Agents on Linux run without the sign-in-file protection macOS has. `area:daemon` · `help wanted`
+- 📋 **Claude Code you can rely on.** Bring Claude Code runs to the same level as Codex, then list it as supported again. `area:daemon`
+- 📋 **More agents.** Run OpenClaw, Pi, OpenCode and Hermes Agent next to Codex and Claude Code, then other agents people already use, such as Gemini CLI, GitHub Copilot CLI, Cursor CLI, Goose, Amp and Aider. Each agent is one adapter behind a shared runtime contract. `area:daemon` · `needs-design` · `help wanted`
 - 📋 **Honest runtime status.** Show a computer as ready only when its agent CLI is signed in and able to run, not just online. `area:daemon` · `area:web`
 - 📋 **Chat that survives reconnects.** Safe message retries and catch-up after a dropped connection. `area:web` · `area:server`
 - 📋 **Safer workspaces.** Each run gets its own files, and continuing earlier work never mixes in another run's files. `area:daemon` · `needs-design`
@@ -101,7 +104,6 @@ before any code. `needs-design`
 Ask in a Discussion if you need one of these. Strong demand can change this
 list.
 
-- **More agent CLIs in core.** Zenith Team runs Claude Code and Codex. Adding another CLI needs a maintainer decision first.
 - **Billing and payments.** The open-source project has no billing.
 - **Zenith Studio itself.** The Studio tools connect to a hosted service. Studio is not part of this repository.
 
