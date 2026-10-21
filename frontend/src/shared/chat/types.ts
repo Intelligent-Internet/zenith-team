@@ -1,4 +1,11 @@
 import type { FileUIPart } from "ai";
+
+// Chat state keeps plain file fields only. The SDK's provider metadata is a
+// deeply recursive JSON type that Redux's draft types cannot expand.
+export type ChatFilePart = Pick<
+  FileUIPart,
+  "type" | "mediaType" | "filename" | "url"
+>;
 import type {
   ActorRefDto,
   AgentProvider,
@@ -43,7 +50,7 @@ export type ChatMessage = {
   clientMessageId?: string;
   conversationId?: string;
   createdAt?: string;
-  files?: FileUIPart[];
+  files?: ChatFilePart[];
   // A file on the message was left out for this viewer: a Project file of a
   // Project they do not read (ADR 0017). Shown as a neutral placeholder.
   attachmentsWithheld?: boolean;
