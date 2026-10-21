@@ -7,3 +7,8 @@ dependencies = ["livekit-agents[openai]==1.8.7", "httpx==0.28.1", "aiohttp==3.14
 
 [dependency-groups]
 dev = ["ruff==0.17.0"]
+
+[tool.ruff.lint]
+# The rule set ruff checked by default before 0.17. Widen it in its own
+# change, not as a side effect of a version bump.
+select = ["E4", "E7", "E9", "F"]
