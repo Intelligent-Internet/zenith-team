@@ -1,0 +1,92 @@
+# Slow and platform-specific checks, run every night and on demand: the
+# PostgreSQL integration suites, the pinned platform content on Windows, and
+# the daemon's macOS sandbox. Pull requests run ci.yml instead.
+name: Nightly
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    # Every PostgreSQL suite with the race detector, on one shared container.
+    timeout-minutes: 60
+    env:
+      TEST_REQUIRE_DOCKER: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: make go-integration
+
+  # Proves that the pinned platform content (ADR 0016) reaches a Windows
+  # build byte for byte. Git for Windows' core.autocrlf would turn the harness
+  # SKILL.md and zenith-platform's files into CRLF unless .gitattributes
+  # holds; zenith-team-mcp refuses that frontmatter, and a converted tar fails
+  # its sha256 check.
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      # The runner image already defaults to true; setting it again keeps an
+      # image change from quietly turning this job into a no-op.
+      - run: git config --global core.autocrlf true
+        working-directory: .
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: go run ./cmd/bundlectl prepare
+      - run: go test -count=1 ./internal/platformbundle/ ./internal/contentbundle/
+      # A -run pattern that matches nothing passes as "no tests to run", so a
+      # renamed test would quietly prove nothing; the grep refuses that.
+      - shell: bash
+        run: |
+          go test -count=1 -run 'TestOpenTaskSkills' ./internal/mcp/ | tee "$RUNNER_TEMP/mcp.log"
+          go test -count=1 -run 'TestOpenTaskSkillService|TestPlatformSkills' ./internal/mcp/tools/ | tee "$RUNNER_TEMP/tools.log"
+          ! grep -q 'no tests to run' "$RUNNER_TEMP/mcp.log" "$RUNNER_TEMP/tools.log"
+      - run: go build ./cmd/mcp
+
+  # The daemon's macOS sandbox: agents must not read the person's sign-in
+  # files or reach another run's folders. These tests compile only on macOS.
+  macos:
+    runs-on: macos-15
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: go run ./cmd/bundlectl prepare
+      - run: go build ./cmd/zen ./cmd/mcp
+      - name: Sandbox tests
+        run: |
+          go test -count=1 -v \
+            -run 'OnMacOS|TestProbeEnforcesOnlyWhenTheSandboxHidesTheSessionFile|TestConnectorOnlyCodexLaunchRunsUnderTheWriteFence|TestUnixAppPreviewBackend' \
+            ./internal/daemon/ | tee "$RUNNER_TEMP/sandbox.log"
+          ! grep -q 'no tests to run' "$RUNNER_TEMP/sandbox.log"

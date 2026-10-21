@@ -542,23 +542,25 @@ isolated database + fixture per caller.
   suites** -- run `make go-integration` yourself before merging changes to
   migrations, sqlc queries, or fixtures. Local `make gate` includes the full
   PostgreSQL integration suite with the race detector as part of `go-gate`.
-- CI lanes are path-gated (`.github/workflows/ci.yml`). Each lane lists every
-  file its checks read, shared inputs included (`docs/api/**` and the deploy
-  env template for the server lane, `docs/api/spec/**` for the frontend lane);
-  the `Makefile` and `ci.yml` run every lane. The server lane runs
-  `go-fmt-check`, `go-lint` (on pull requests, only findings the branch adds)
-  and `go-unit`, which includes the pinned sqlc drift check. `server-windows`
-  proves the pinned platform content (`internal/platformbundle`,
-  `tools/builtin/`, `platform_skills.go`, `.gitattributes`) survives a CRLF
-  checkout; `server-macos` runs the daemon's macOS sandbox tests. The frontend
-  lane runs lint, typecheck, the API contract checks, a production build and
-  the Electron security scan; `selfhost` builds both images and boots the
-  Compose stack. A nightly run covers every lane plus the integration suites
-  and opens an issue when it fails. `ci-gate` is the one required check and
-  is fail-closed: a selected lane must succeed and an unselected one must be
-  skipped. `security.yml` scans secrets (gitleaks), workflows (actionlint,
-  zizmor), and dependencies; `pr-title.yml` checks Conventional Commit
-  titles. Merges to `main` build no image. Pushing a
+- CI (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main`.
+  Its lanes are path-gated: each lists the files its checks read, shared
+  inputs included (`docs/api/**` and the deploy env template for the server
+  lane, `docs/api/spec/**` for the frontend lane), and the `Makefile` runs
+  every lane except `workflows`. The server lane runs `go-fmt-check`,
+  `go-lint` (on pull requests, only findings the branch adds) and `go-unit`,
+  which includes the pinned sqlc drift check. The frontend lane runs lint,
+  typecheck, the API contract checks, a production build and the Electron
+  security scan; `voice` runs ruff and the Python tests; `selfhost` builds
+  both images and boots the Compose stack; `workflows` runs actionlint and
+  zizmor when `.github/**` changes. `ci-gate` is the one required check: it
+  fails when any lane failed or was cancelled. `.github/workflows/nightly.yml`
+  runs the PostgreSQL integration suites, the Windows platform-content check
+  (the pinned content in `internal/platformbundle`, `tools/builtin/` and
+  `platform_skills.go` survives a CRLF checkout) and the macOS daemon sandbox
+  tests. Secrets and vulnerable dependencies are GitHub's job: secret
+  scanning with push protection and Dependabot alerts are on. Commit-message,
+  branch-name and staged-secret checks are local git hooks in `.githooks/`
+  (`make hooks`). Merges to `main` build no image. Pushing a
   `v<major>.<minor>.<patch>` tag (or an `-alpha.N`, `-beta.N` or `-rc.N`
   pre-release) at a commit on `main` verifies again, scans Go dependencies
   fail-closed, and publishes the server and web images to GHCR and the `zen`

@@ -7,7 +7,7 @@ SHELL := /bin/bash
 GOFLAGS ?= -p=2
 export GOFLAGS
 
-.PHONY: help doctor dev desktop api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
+.PHONY: help doctor hooks dev desktop api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
 
 .DEFAULT_GOAL := help
 
@@ -48,6 +48,7 @@ help:
 	@echo ""
 	@echo "Local development:"
 	@echo "  make doctor      Check the tools local development needs"
+	@echo "  make hooks       Use the repo's git hooks: commit message, branch name, staged secrets"
 	@echo "  make dev         Start infra, then the API and the desktop app in this terminal (DEV_DESKTOP=false: the web app)"
 	@echo "  Or run each in its own terminal:"
 	@echo "  make server-local Run the Go API with services configured in server/.env (:8788)"
@@ -118,7 +119,15 @@ doctor:
 	else echo "  optional codex or claude - the daemon needs one to run agents"; fi; \
 	[ -d frontend/node_modules ] || echo "  todo     run: pnpm --dir frontend install"; \
 	[ -f server/.env ] || [ -f docker/dev.env ] || echo "  todo     no server env file found"; \
+	[ "$$(git config core.hooksPath)" = ".githooks" ] || echo "  todo     run: make hooks"; \
 	exit $$fail
+
+# Points git at .githooks: commit-msg checks the Conventional Commit subject,
+# pre-push checks branch names, pre-commit scans staged changes for secrets
+# when gitleaks is installed.
+hooks:
+	git config core.hooksPath .githooks
+	@echo "Git hooks enabled from .githooks"
 
 # Infra, the API and the desktop app (or, with DEV_DESKTOP=false, the web app)
 # in one terminal. Ctrl-C stops the API and the app; infra keeps running until

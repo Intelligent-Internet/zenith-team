@@ -161,8 +161,8 @@ it holds a plugin this build already pins to the key rules above.
   writer: `ParseLock` refuses a lock that is not in canonical form, and
   `Decode` refuses a tar that does not match its lock.
 - The root `.gitattributes` marks the tar binary and the lock and the
-  harness LF-only, so a Windows checkout builds the same bytes. The
-  `server-windows` CI job proves it.
+  harness LF-only, so a Windows checkout builds the same bytes. The nightly
+  `windows` job (`.github/workflows/nightly.yml`) proves it.
 - `cmd/zen` must never link this package; that is why it is a package of its
   own. It imports `internal/mcp/tools` and the asset-free `internal/contentbundle`
   verifier, so zenith-team-mcp stays sealed.

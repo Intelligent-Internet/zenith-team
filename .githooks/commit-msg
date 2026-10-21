@@ -1,0 +1,24 @@
+#!/bin/sh
+# Checks that a commit subject is a Conventional Commit: `type(scope): summary`,
+# `!` before the colon for a breaking change, at most 72 characters.
+# Install with `make hooks`; bypass once with `git commit --no-verify`.
+subject="$(sed -n '/^[[:space:]]*#/d;/^[[:space:]]*$/d;p;q' "$1")"
+
+case "$subject" in
+  "Merge "* | "Revert \""* | "fixup! "* | "squash! "* | "amend! "*) exit 0 ;;
+esac
+
+types='feat|fix|docs|refactor|perf|test|build|ci|chore|revert|security'
+if ! printf '%s\n' "$subject" | grep -Eq "^($types)(\([a-z0-9._/-]+\))?!?: [^ ].*[^.]$"; then
+  echo "commit-msg: use a Conventional Commit subject, for example:" >&2
+  echo "  fix(daemon): retry the first claim" >&2
+  echo "  feat(web)!: drop the old share links" >&2
+  echo "Types: $(printf '%s' "$types" | tr '|' ' '). No trailing period." >&2
+  echo "Got: $subject" >&2
+  exit 1
+fi
+
+if [ "${#subject}" -gt 72 ]; then
+  echo "commit-msg: keep the subject to 72 characters (it has ${#subject})." >&2
+  exit 1
+fi

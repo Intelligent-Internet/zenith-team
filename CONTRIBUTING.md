@@ -240,25 +240,26 @@ and a change to the `Makefile` runs all but the macOS sandbox tests.
 
 | You changed | CI runs | Run it yourself with |
 | --- | --- | --- |
-| `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | Format check, lint (only findings new in your branch fail), build, vet, unit tests with `-race`, the pinned sqlc drift check, and a Windows smoke test | `make go-fmt-check go-lint go-unit` |
-| `server/internal/daemon/**` | Also the daemon's sandbox tests on macOS | Runs on macOS only |
+| `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | Format check, lint (only findings new in your branch fail), build, vet, unit tests with `-race` and the pinned sqlc drift check | `make go-fmt-check go-lint go-unit` |
 | `frontend/**`, `docs/api/spec/**` | Lint, typecheck, API contract checks, a production build and the Electron security scan | `make lint typecheck api-lint api-types-check build` |
 | `voice-agent/**` | `ruff` lint and format check, the Python tests and a Docker build | `make voice-gate` (needs `uv`) |
 | `deploy/**`, a Dockerfile | Builds both images and boots the self-hosting stack | `make selfhost-env selfhost-up` on a throwaway checkout |
+| `.github/**` | `actionlint` and `zizmor` on the workflows | `actionlint` |
 
-`ci-gate` is the one required check. It fails when a lane that should have run
-did not succeed.
+`ci-gate` is the one required check. It fails when any lane failed or was
+cancelled.
 
-Every night CI runs every lane plus the PostgreSQL integration suites. Run
+Every night the Nightly workflow runs the PostgreSQL integration suites, the
+Windows platform-content check and the macOS daemon sandbox tests. Run
 `make go-integration` yourself when you change migrations, queries or test
 fixtures.
 
 `make gate` runs everything, including the integration suites. It needs Docker
 and `uv`.
 
-The Security workflow also runs on every pull request: `gitleaks` for secrets,
-and `actionlint` and `zizmor` for workflows. Its dependency audits only
-report. More detail is in
+GitHub checks every push for secrets (secret scanning with push protection)
+and watches dependencies (Dependabot alerts), so there is no separate security
+workflow. More detail is in
 [Testing](docs/content/docs/developers/testing.mdx).
 
 ## Command reference
@@ -360,8 +361,15 @@ docs(cli): explain the --server flag
 ```
 
 Common types are `feat`, `fix`, `docs`, `refactor`, `test`, `chore` and `ci`.
-The scope is the area you changed. Pull request titles follow the same form,
-because they become the squash-merge commit message, and a check enforces it.
+The scope is the area you changed. Keep the subject to 72 characters. Pull
+request titles follow the same form, because they become the squash-merge
+commit message.
+
+Name branches `type/short-name`, for example `fix/daemon-first-claim`.
+
+Run `make hooks` once per clone. The hooks in `.githooks/` check the commit
+subject and the branch name before you push, and scan staged changes for
+secrets when [gitleaks](https://github.com/gitleaks/gitleaks) is installed.
 
 ### Sign off every commit (DCO)
 
