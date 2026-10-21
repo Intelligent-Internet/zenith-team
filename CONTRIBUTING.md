@@ -360,16 +360,46 @@ fix(daemon): retry the claim after a dropped connection
 docs(cli): explain the --server flag
 ```
 
-Common types are `feat`, `fix`, `docs`, `refactor`, `test`, `chore` and `ci`.
-The scope is the area you changed. Keep the subject to 72 characters. Pull
-request titles follow the same form, because they become the squash-merge
-commit message.
+Use the standard types:
 
-Name branches `type/short-name`, for example `fix/daemon-first-claim`.
+| Type | For |
+| --- | --- |
+| `feat` | A new feature |
+| `fix` | A bug fix (security fixes too, for example `fix(auth): …`) |
+| `docs` | Documentation only |
+| `style` | Formatting that does not change behavior |
+| `refactor` | A code change that is neither a feature nor a fix |
+| `perf` | A performance improvement |
+| `test` | Adding or fixing tests |
+| `build` | The build system or dependencies |
+| `ci` | CI configuration |
+| `chore` | Other changes that do not touch the product |
+| `revert` | Reverting an earlier commit |
 
-Run `make hooks` once per clone. The hooks in `.githooks/` check the commit
-subject and the branch name before you push, and scan staged changes for
-secrets when [gitleaks](https://github.com/gitleaks/gitleaks) is installed.
+The type and scope are lowercase, and the scope is the area you changed. Add
+`!` before the colon for a breaking change (`feat(api)!: …`). Keep the subject
+to 72 characters with no trailing period. Pull request titles follow the same
+form, because they become the squash-merge commit message.
+
+### Branch names
+
+Name branches `type/short-name` with the same types, in lowercase words joined
+by hyphens: `feat/task-reorder`, `fix/daemon-first-claim`,
+`docs/self-hosting-tls`. `hotfix/…` and `release/1.4.0` are fine too. Do not
+commit on `main`.
+
+### Git hooks
+
+Run `make hooks` once per clone. The hooks in `.githooks/` share one set of
+rules (`.githooks/conventions.sh`):
+
+- `pre-commit` refuses commits on `main` and on a badly named branch, and scans
+  the staged changes for secrets when
+  [gitleaks](https://github.com/gitleaks/gitleaks) is installed.
+- `commit-msg` checks the commit subject.
+- `pre-push` checks every pushed branch name and the subject of every new
+  commit, so a commit made with `--no-verify` is still caught before it leaves
+  your machine.
 
 ### Sign off every commit (DCO)
 

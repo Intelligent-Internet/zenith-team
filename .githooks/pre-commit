@@ -1,7 +1,19 @@
 #!/bin/sh
-# Scans the staged changes for secrets with gitleaks and .gitleaks.toml, when
-# gitleaks is installed (https://github.com/gitleaks/gitleaks). GitHub secret
-# scanning and push protection check again on push.
+# Before a commit: refuses commits on main, checks the branch name (see
+# conventions.sh), and scans the staged changes for secrets with gitleaks and
+# .gitleaks.toml when gitleaks is installed (https://github.com/gitleaks/gitleaks).
 # Install with `make hooks`; bypass once with `git commit --no-verify`.
+. "$(dirname "$0")/conventions.sh"
+
+# Detached HEAD (a rebase or bisect in progress) has no branch to check.
+if branch="$(git symbolic-ref --quiet --short HEAD)"; then
+  if [ "$branch" = "main" ]; then
+    echo "pre-commit: commit on a branch, not on main:" >&2
+    echo "  git switch -c feat/short-name" >&2
+    exit 1
+  fi
+  check_branch "$branch" || { echo "pre-commit: commit refused." >&2; exit 1; }
+fi
+
 command -v gitleaks >/dev/null 2>&1 || exit 0
 exec gitleaks git --pre-commit --staged --redact --no-banner --config .gitleaks.toml

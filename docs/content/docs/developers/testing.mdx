@@ -129,13 +129,18 @@ GitHub does this work, so no workflow repeats it: secret scanning with push prot
 
 ## Local git hooks
 
-Run `make hooks` once per clone. It points git at `.githooks/`:
+Run `make hooks` once per clone. It points git at `.githooks/`, whose hooks share one set of rules in `.githooks/conventions.sh`:
 
 | Hook | Checks |
 | --- | --- |
-| `commit-msg` | The subject is a Conventional Commit, such as `fix(daemon): retry the first claim`, with no trailing period and at most 72 characters. Types: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`, `security`. Add `!` before the colon for a breaking change. |
-| `pre-push` | Branch names follow `type/short-name`, such as `fix/daemon-first-claim`. |
-| `pre-commit` | Scans the staged changes for secrets with `gitleaks` and `.gitleaks.toml`, when [gitleaks](https://github.com/gitleaks/gitleaks) is installed. |
+| `pre-commit` | Refuses commits on `main` and on a branch whose name breaks the rules below. Scans the staged changes for secrets with `gitleaks` and `.gitleaks.toml`, when [gitleaks](https://github.com/gitleaks/gitleaks) is installed. |
+| `commit-msg` | The subject is a Conventional Commit, such as `fix(daemon): retry the first claim`. |
+| `pre-push` | Every pushed branch name, and the subject of every new commit on it, so a commit made with `--no-verify` is still caught. Tags and branch deletions pass. |
+
+The rules follow the community conventions:
+
+- **Commit subjects** are `type(scope)!: description` ([Conventional Commits](https://www.conventionalcommits.org/)). Types are the standard list: `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `test`. Type and scope are lowercase, `!` marks a breaking change, there is no trailing period, and the subject is at most 72 characters. Merge, revert, `fixup!` and `squash!` subjects pass.
+- **Branch names** are `type/short-name` with the same types (plus `hotfix` and `release`), in lowercase words joined by hyphens: `feat/task-reorder`, `fix/daemon-first-claim`, `release/1.4.0`. Dependabot's `dependabot/…` branches pass.
 
 Pull request titles follow the same Conventional Commit form, because they become the squash-merge commit message.
 
