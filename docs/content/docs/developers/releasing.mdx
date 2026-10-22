@@ -7,7 +7,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. It needs no secrets beyond the workflow's own GitHub token.
 
-Merges to `main` publish nothing. Only a tag does.
+Only a tag publishes a release. Merges to `main` that change the server, and manual runs of `.github/workflows/image.yml` at a branch or tag, publish one server image tagged `sha-<full commit>` and nothing else: a build of that commit, not a release. A release cut at the same commit rebuilds the image and repoints `sha-<full commit>`, so deployments pin the digest too: `sha-<full commit>@sha256:<digest>`.
 
 ## Before you tag
 
@@ -54,22 +54,35 @@ The four jobs run in this order. One release runs at a time per tag, and a runni
 
 ### 2. Images
 
-Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, and pushes them to GitHub Container Registry:
+Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps `image.yml` uses: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
 
 - `ghcr.io/intelligent-internet/zenith-team-server`
 - `ghcr.io/intelligent-internet/zenith-team-web`
 
-For `v1.3.0`, each image gets three tags:
+For `v1.3.0`, each image gets four tags:
 
 | Tag | Meaning |
 | --- | --- |
 | `1.3.0` | This exact release. Self-hosters should pin this. |
 | `1.3` | The newest patch of the 1.3 line. |
 | `latest` | The newest release. |
+| `sha-<full commit>` | The tagged commit. Unreleased commits get this tag too, from `image.yml`. |
 
-A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`.
+A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`, plus `sha-<full commit>`.
 
-Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built).
+Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built), plus a GitHub build attestation that ties its digest to this repository, the ref and commit it was built from, and the workflow. Check one with:
+
+```bash
+gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.0 \
+  --repo Intelligent-Internet/zenith-team \
+  --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/build-image.yml \
+  --source-ref refs/tags/v1.3.0 \
+  --deny-self-hosted-runners
+```
+
+Always pin `--source-ref`: without it, a build of any branch passes. For a `sha-<commit>` image from `main`, use `--source-ref refs/heads/main --source-digest <commit>`.
+
+The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server` and `zenith-team-web` public once, in the package settings; until then nobody can pull them anonymously.
 
 ### 3. Binaries
 

@@ -560,12 +560,17 @@ isolated database + fixture per caller.
   tests. Secrets and vulnerable dependencies are GitHub's job: secret
   scanning with push protection and Dependabot alerts are on. Commit-message,
   branch-name and staged-secret checks are local git hooks in `.githooks/`
-  (`make hooks`). Merges to `main` build no image. Pushing a
+  (`make hooks`). A push to `main` that changes the server image, or a
+  dispatch at any branch or tag, publishes only the server image of that
+  commit, `zenith-team-server:sha-<full commit>`
+  (`.github/workflows/image.yml`); it is a build, not a release. Pushing a
   `v<major>.<minor>.<patch>` tag (or an `-alpha.N`, `-beta.N` or `-rc.N`
   pre-release) at a commit on `main` verifies again, scans Go dependencies
   fail-closed, and publishes the server and web images to GHCR and the `zen`
-  CLI to a GitHub Release (`.github/workflows/release.yml`). Nothing here
-  deploys.
+  CLI to a GitHub Release (`.github/workflows/release.yml`). Both build images
+  through `.github/workflows/build-image.yml`: a native runner per platform
+  with no registry credentials, then one publish job that pushes, tags and
+  attests the merged image. Nothing here deploys.
 - Preserve unrelated user changes and never commit credentials or generated
   build output.
 
